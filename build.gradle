@@ -1,0 +1,219 @@
+buildscript {
+  ext {
+    springBootVersion = "2.4.2"
+  }
+  repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "https://repo.spring.io/release" }
+    maven { url "https://repo.spring.io/milestone" }
+    maven { url "https://repo.spring.io/snapshot" }
+    maven { url "https://plugins.gradle.org/m2/" }
+  }
+
+  dependencies {
+    classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+    classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.7.0"
+  }
+}
+
+// This must be at the top of the file (only can be below buildscript)
+plugins {
+  id "com.github.hierynomus.license" version "0.15.0"
+}
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+  maven { url "https://repo.spring.io/release" }
+  maven { url "https://repo.spring.io/milestone" }
+  maven { url "https://repo.spring.io/snapshot" }
+}
+
+
+// Extra Properties
+ext {
+  // Parameters
+  if (!project.hasProperty("inputName")) {
+    inputName = "na"
+  }
+  if (!project.hasProperty("filePath")) {
+    filePath = "na"
+  }
+}
+
+// Plugins
+apply plugin: "java"
+apply plugin: "eclipse"
+apply plugin: "com.github.spotbugs"
+apply plugin: "org.springframework.boot"
+apply plugin: "checkstyle"
+/*
+ * The dependency management plugin remains a transitive dependency of spring-boot-gradle-plugin
+ * so there’s no need for it to be listed as a classpath dependency in the buildscript configuration.
+ */
+apply plugin: "io.spring.dependency-management"
+apply plugin: "maven"
+apply plugin: "maven-publish"
+apply plugin: 'application'
+
+mainClassName = 'org.ihtsdo.refsetservice.Application'
+
+// Version info (always use SNAPSHOT, upgrade version when needed)
+group = "org.ihtsdo.refsetservice"
+version = "0.0.1-SNAPSHOT"
+
+sourceCompatibility = 11
+targetCompatibility = 11
+
+springBoot {
+    // generate file META-INF/build-info.properties during the build
+    // TODO: need an explanation of why/what this is for
+    buildInfo()          
+}
+
+configurations.all {
+   exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+}
+
+// Dependencies - https://docs.gradle.org/current/userguide/declaring_dependencies.html
+dependencies {
+
+  // NOTE: "spring-boot-starter-web" must be the first dependency
+  implementation('org.springframework.boot:spring-boot-starter-web')
+  implementation('org.springframework.boot:spring-boot-starter-log4j2')
+  implementation "org.springframework.boot:spring-boot-devtools"
+  implementation "org.springframework.boot:spring-boot-starter-actuator"  
+  implementation "org.springframework.boot:spring-boot-starter-cache"
+  implementation "org.springframework.boot:spring-boot-properties-migrator"
+  implementation "org.springframework:spring-aop"
+  implementation "org.springframework.boot:spring-boot-starter-tomcat"
+  //implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+  implementation "org.apache.commons:commons-lang3:3.4"
+  implementation "commons-io:commons-io:2.6"
+  implementation("com.google.guava:guava:30.1-jre")
+  implementation "io.springfox:springfox-boot-starter:3.0.0" 
+  implementation "io.springfox:springfox-swagger-ui:3.0.0"
+  implementation "org.aspectj:aspectjweaver:1.9.2"
+  implementation "org.apache.commons:commons-text:1.8"
+  implementation "javax.cache:cache-api:1.1.1"
+  implementation "org.ehcache:ehcache:3.8.1"
+  implementation 'org.flywaydb:flyway-core'
+  implementation group: 'org.hibernate', name: 'hibernate-core', version: '5.3.6.Final' //'5.4.27.Final'
+  implementation group: 'org.hibernate', name: 'hibernate-search-orm', version: '5.10.4.Final' //'5.11.8.Final'
+  implementation group: 'org.hibernate', name: 'hibernate-search-elasticsearch', version: '5.11.8.Final'
+  implementation group: 'org.hibernate', name: 'hibernate-hikaricp', version: '5.3.8.Final'
+  implementation group: 'org.reflections', name: 'reflections', version: '0.9.11'
+  implementation group: 'javax.ws.rs', name: 'javax.ws.rs-api', version: '2.1.1'
+  implementation 'org.postgresql:postgresql:42.2.12'
+  implementation "commons-cli:commons-cli:1.4"
+  implementation "cglib:cglib:2.2.2"
+  
+  // runtime only
+  runtimeOnly 'com.h2database:h2'
+
+  // test dependencies
+  testImplementation "org.springframework.boot:spring-boot-starter-test"
+  spotbugs 'com.github.spotbugs:spotbugs:4.0.0'
+  testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+  testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+}
+
+// use "gradle licenseFormatMain/Test" to automatically generate headers
+license {
+  header rootProject.file("config/LICENSE")
+  mapping("java", "SLASHSTAR_STYLE")
+  includes(["**/*.java"])
+  excludes(["**/*.txt", "**/*.conf", "**/*package-info.java", "**/*.properties"])
+  strictCheck true
+  ext.year = Calendar.getInstance().get(Calendar.YEAR)
+  ext.company = "SNOMED International"
+}
+licenseTest.dependsOn licenseFormatTest
+licenseMain.dependsOn licenseFormatMain
+
+// SpotBugs and CheckStyle
+spotbugs {
+    ignoreFailures = false
+    showStackTraces = true
+    showProgress = true
+    // includeFilter = file("include.xml")
+    excludeFilter = file("config/spotbugs/exclude.xml")
+    // onlyAnalyze = [ 'com.foobar.MyClass', 'com.foobar.mypkg.*' ]
+    // jvmArgs = [ '-Duser.language=ja' ]
+}
+spotbugsMain {
+    enabled = true
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+spotbugsTest {
+    enabled = true
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+checkstyle {
+  // config = resources.text.fromFile(file("${project.rootDir}/config/checkstyle/checkstyle.xml"))
+  // toolVersion = "8.29"
+  toolVersion = "7.6.1"
+  checkstyleMain.exclude "**/package-info.java"
+  checkstyleTest.exclude "**/package-info.java"
+  // checkstyleIntegrationTest.exclude "**/package-info.java"
+  configProperties = [
+    "checkstyle.cache.file"         : rootProject.file(".out/checkstyle/checkstyle.cache"),
+    "checkstyle.suppressions.file"  : rootProject.file("config/checkstyle/suppressions.xml"),
+    "checkstyle.header.file"        : "",
+    "checkstyle.regexp.header.file" : "",
+    "checkstyle.importcontrol.file" : ""
+  ]
+}
+tasks.withType(Checkstyle) {
+  ignoreFailures = true
+  reports {
+    xml.enabled = true
+    html.enabled = false
+    //html.stylesheet resources.text.fromFile("config/xsl/checkstyle-custom.xsl")
+  }
+}
+test {
+   // Use junit platform for unit tests
+   systemProperty 'spring.profiles.active', 'test'
+   useJUnitPlatform()
+}
+
+// ./gradlew reindex
+task reindex(type: JavaExec) {
+
+   classpath = sourceSets.main.runtimeClasspath
+   main = "org.ihtsdo.refsetservice.GeneratorApplication"
+   systemProperties System.getProperties()
+   // arguments to pass to the application
+   args ("reindex")
+   jvmArgs "-Xmx8G"
+}
+
+// ./gradlew migrateRttRefset -PfilePath=src/test/resources/migration/refset/GeneralDentistrySingleVersion.txt
+task migrateRttRefset(type: JavaExec) {
+
+   classpath = sourceSets.main.runtimeClasspath
+   main = "org.ihtsdo.refsetservice.GeneratorApplication"
+   systemProperties System.getProperties()
+   // arguments to pass to the application
+   args ("reindex", filePath)
+   jvmArgs "-Xmx8G"
+}
+
+// Uncomment the manifest entry to specify the start class
+bootJar {
+  //  manifest {
+  //    attributes "Start-Class": "org.ihtsdo.refsetservice.application.AbcApplication"
+  // }
+}
+
+// We can launch via spring boot by simply running "java -jar *.jar"
+install.dependsOn = [ bootJar ]
