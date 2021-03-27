@@ -1,0 +1,2 @@
+{"terminology": "SNOMEDCT_US", "code": "404684003", "name": "Clinical finding", "version": "ver1", "active": true}
+{"terminology": "SNOMEDCT_US", "code": "71388002", "name": "Procedure", "version": "ver1", "active": true}
