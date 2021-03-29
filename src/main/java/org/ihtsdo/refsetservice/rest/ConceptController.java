@@ -7,7 +7,7 @@ import java.util.List;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.model.ConceptResultList;
+import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
