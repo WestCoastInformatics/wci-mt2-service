@@ -7,7 +7,7 @@ import java.util.List;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.ResultList;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -176,12 +176,12 @@ public class RefsetController extends BaseController {
                     String.join("\n ", errorMessages));
         }
 
-        try {
+        try (TerminologyService service = new TerminologyService()) {
 
             final long start = System.currentTimeMillis();
-            final ResultList<Refset> results = new ResultList<Refset>();
+            ResultList<Refset> results = new ResultList<Refset>();
 
-            // TBD
+            results = service.find("", null, Refset.class, null);
             results.setTimeTaken(System.currentTimeMillis() - start);
             return results;
 

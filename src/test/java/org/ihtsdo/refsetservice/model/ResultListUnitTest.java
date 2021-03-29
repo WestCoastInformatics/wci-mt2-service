@@ -9,6 +9,7 @@ import org.ihtsdo.refsetservice.EqualsHashcodeTester;
 import org.ihtsdo.refsetservice.GetterSetterTester;
 import org.ihtsdo.refsetservice.ProxyTester;
 import org.ihtsdo.refsetservice.SerializationTester;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
