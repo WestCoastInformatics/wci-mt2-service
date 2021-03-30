@@ -30,12 +30,6 @@ public class Edition extends AbstractHasModified {
     @SortableField
     private String name;
 
-    /** The country. */
-    @Column(nullable = false)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    private String country;
-
     /** The flag icon URI. */
     @Column(nullable = true)
     private String iconUri;
@@ -87,7 +81,6 @@ public class Edition extends AbstractHasModified {
         description = other.getDescription();
         branch = other.getBranch();
         iconUri = other.getIconUri();
-        country = other.getCountry();
     }
 
     /**
@@ -169,20 +162,6 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
-     * @return the country
-     */
-    public String getCountry() {
-        return country;
-    }
-
-    /**
-     * @param country the country to set
-     */
-    public void setCountry(String country) {
-        this.country = country;
-    }
-
-    /**
      * Hash code.
      *
      * @return the int
@@ -196,8 +175,8 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((branch == null) ? 0 : branch.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
-        result = prime * result + ((description == null) ? 0 : description.hashCode());
-        result = prime * result + ((country == null) ? 0 : country.hashCode());
+        result = prime * result
+                + ((description == null) ? 0 : description.hashCode());
         return result;
     }
 
@@ -261,14 +240,6 @@ public class Edition extends AbstractHasModified {
                 return false;
             }
         } else if (!description.equals(other.description)) {
-            return false;
-        }
-
-        if (country == null) {
-            if (other.country != null) {
-                return false;
-            }
-        } else if (!country.equals(other.country)) {
             return false;
         }
 

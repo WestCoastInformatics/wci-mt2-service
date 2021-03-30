@@ -48,8 +48,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Entity
 // @JsonInclude(Include.NON_EMPTY)
 // @JsonIgnoreProperties(ignoreUnknown = true)
-@AnalyzerDef(name = "whitespace",
-        tokenizer = @TokenizerDef(factory = WhitespaceTokenizerFactory.class))
+@AnalyzerDef(name = "whitespace", tokenizer = @TokenizerDef(factory = WhitespaceTokenizerFactory.class))
 @Table(name = "refsets")
 @Indexed
 public class Refset extends AbstractHasModified implements Comparable<Refset> {
@@ -61,7 +60,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The project ID. */
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @Column(nullable = false, length = 256)
+    @Column(nullable = true, length = 256)
+    // TODO: Make this non-nullable. But need to fill it in with meaningful data
+    // first
     private String projectId;
 
     /** The name. */
@@ -137,8 +138,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The definition clauses. */
     @IndexedEmbedded(targetElement = DefinitionClause.class)
     // @Fetch(FetchMode.JOIN)
-    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class,
-            orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DefinitionClause> definitionClauses = new ArrayList<>();
 
     /**
@@ -164,7 +164,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param code the code
      * @param name the name
      */
-    public Refset(final String terminology, final String code, final String name) {
+    public Refset(final String terminology, final String code,
+            final String name) {
         this.type = terminology;
         this.refsetId = code;
         this.name = name;
@@ -386,8 +387,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @SortableField
-    private String getEditionCountry() {
-        return edition == null ? null : edition.getCountry();
+    private String getEditionNamespace() {
+        return edition == null ? null : edition.getCode();
     }
 
     /**
@@ -470,16 +471,24 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((refsetId == null) ? 0 : refsetId.hashCode());
+        result = prime * result
+                + ((refsetId == null) ? 0 : refsetId.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((type == null) ? 0 : type.hashCode());
-        result = prime * result + ((projectId == null) ? 0 : projectId.hashCode());
-        result = prime * result + ((versionDate == null) ? 0 : versionDate.hashCode());
-        result = prime * result + ((versionStatus == null) ? 0 : versionStatus.hashCode());
-        result = prime * result + ((narrative == null) ? 0 : narrative.hashCode());
-        result = prime * result + ((versionNotes == null) ? 0 : versionNotes.hashCode());
-        result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
-        result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
+        result = prime * result
+                + ((projectId == null) ? 0 : projectId.hashCode());
+        result = prime * result
+                + ((versionDate == null) ? 0 : versionDate.hashCode());
+        result = prime * result
+                + ((versionStatus == null) ? 0 : versionStatus.hashCode());
+        result = prime * result
+                + ((narrative == null) ? 0 : narrative.hashCode());
+        result = prime * result
+                + ((versionNotes == null) ? 0 : versionNotes.hashCode());
+        result = prime * result
+                + ((moduleId == null) ? 0 : moduleId.hashCode());
+        result = prime * result
+                + ((externalUrl == null) ? 0 : externalUrl.hashCode());
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
@@ -608,7 +617,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Override
     public int compareTo(final Refset o) {
         // Handle null
-        return (name + refsetId).compareToIgnoreCase(o.getName() + o.getRefsetId());
+        return (name + refsetId)
+                .compareToIgnoreCase(o.getName() + o.getRefsetId());
     }
 
     @Override
