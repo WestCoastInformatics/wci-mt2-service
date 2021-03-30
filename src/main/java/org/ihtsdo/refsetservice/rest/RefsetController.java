@@ -155,9 +155,11 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search",
             produces = "application/json")
     public @ResponseBody ResultList<Refset> search(
-        @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
+        SearchParameters searchParameters, final BindingResult bindingResult)
         throws Exception {
 
+        logger.debug("******** searchParameters: " + ModelUtility.toJson(searchParameters));
+        
         // Check whether or not parameter binding was successful
         if (bindingResult.hasErrors()) {
 
@@ -182,7 +184,14 @@ public class RefsetController extends BaseController {
             ResultList<Refset> results = new ResultList<Refset>();
 
             results = service.find("", null, Refset.class, null);
+            
+            for (Refset refset : results.getItems()) {
+                
+                refset.setDownloadable(true);
+                refset.setFeedbackVisible(false);
+            }
             results.setTimeTaken(System.currentTimeMillis() - start);
+            logger.debug("******** searchParameters: " + ModelUtility.toJson(results));
             return results;
 
         } catch (final ResponseStatusException rse) {

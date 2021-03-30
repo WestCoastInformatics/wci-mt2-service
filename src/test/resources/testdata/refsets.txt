@@ -1,2 +1,2 @@
-{"refsetId": "001", "name": "refset 1", "type": "extensional", "versionStatus": "Published", "privateRefset": false, "localSet": false, "active": true, "moduleId": "123", "projectId": "123"}
-{"refsetId": "002", "name": "refset 2", "type": "intensional", "versionStatus": "Beta", "privateRefset": true, "localSet": false, "active": true, "moduleId": "456", "projectId": "456"}
+{"refsetId": "001", "name": "refset 1", "type": "extensional", "organization": "Org 1", "versionStatus": "Published", "privateRefset": false, "localSet": false, "active": true, "moduleId": "123", "projectId": "123"}
+{"refsetId": "002", "name": "refset 2", "type": "intensional", "organization": "Org 2",  "versionStatus": "Beta", "privateRefset": true, "localSet": false, "active": true, "moduleId": "456", "projectId": "456"}
