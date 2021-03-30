@@ -38,6 +38,7 @@ CREATE TABLE refsets
     created timestamp without time zone NOT NULL,
     modified timestamp without time zone NOT NULL,
     modifiedby character varying(256) NOT NULL,
+    organization character varying(256) NOT NULL,
     externalurl character varying(4000),
     localset boolean NOT NULL,
     moduleid character varying(256) NOT NULL,

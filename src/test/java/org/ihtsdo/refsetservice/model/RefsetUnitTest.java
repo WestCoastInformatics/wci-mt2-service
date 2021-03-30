@@ -140,6 +140,7 @@ public class RefsetUnitTest extends BaseTest {
 
             final ProxyTester tester2 = new ProxyTester(new Refset());
             final Refset object = (Refset) tester2.createObject(1);
+            logger.info("************ object: " + object);
             object.setId(null);
             object.setEdition(null);
             object.setDefinitionClauses(null);

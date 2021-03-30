@@ -18,6 +18,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.hibernate.annotations.Fetch;
@@ -84,6 +85,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = false, length = 256)
     @SortableField
     private String versionStatus;
+    
+    /** The organization. */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @Column(nullable = false, length = 256)
+    @SortableField
+    private String organization;
 
     /** The version date. */
     @Column(nullable = true)
@@ -112,6 +119,18 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false)
     private boolean localSet;
+    
+    /** The flag for if a user can download this refset. */
+    @Transient
+    @FieldBridge(impl = BooleanBridge.class)
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    private boolean downloadable;
+    
+    /** The flag for if a user can see the feedback for this refset. */
+    @Transient
+    @FieldBridge(impl = BooleanBridge.class)
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    private boolean feedbackVisible;
 
     /** The module ID. */
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
@@ -462,6 +481,48 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * @return the organization
+     */
+    public String getOrganization() {
+        return organization;
+    }
+
+    /**
+     * @param organization the organization to set
+     */
+    public void setOrganization(String organization) {
+        this.organization = organization;
+    }
+
+    /**
+     * @return the downloadable
+     */
+    public boolean isDownloadable() {
+        return downloadable;
+    }
+
+    /**
+     * @param downloadable the downloadable to set
+     */
+    public void setDownloadable(boolean downloadable) {
+        this.downloadable = downloadable;
+    }
+
+    /**
+     * @return the feedbackVisible
+     */
+    public boolean isFeedbackVisible() {
+        return feedbackVisible;
+    }
+
+    /**
+     * @param feedbackVisible the feedbackVisible to set
+     */
+    public void setFeedbackVisible(boolean feedbackVisible) {
+        this.feedbackVisible = feedbackVisible;
+    }
+
+    /**
      * Hash code.
      *
      * @return the int
@@ -480,6 +541,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((versionNotes == null) ? 0 : versionNotes.hashCode());
         result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
+        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
@@ -585,6 +647,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
                 return false;
             }
         } else if (!externalUrl.equals(other.externalUrl)) {
+            return false;
+        }
+        
+        if (organization == null) {
+            if (other.organization != null) {
+                return false;
+            }
+        } else if (!organization.equals(other.organization)) {
             return false;
         }
 
