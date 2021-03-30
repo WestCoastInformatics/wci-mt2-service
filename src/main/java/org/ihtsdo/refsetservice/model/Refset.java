@@ -62,7 +62,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The project ID. */
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @Column(nullable = false, length = 256)
+    @Column(nullable = true, length = 256)
+    // TODO: Make this non-nullable. But need to fill it in with meaningful data
+    // first
     private String projectId;
 
     /** The name. */
@@ -85,7 +87,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = false, length = 256)
     @SortableField
     private String versionStatus;
-    
+
     /** The organization. */
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false, length = 256)
@@ -119,13 +121,13 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false)
     private boolean localSet;
-    
+
     /** The flag for if a user can download this refset. */
     @Transient
     @FieldBridge(impl = BooleanBridge.class)
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     private boolean downloadable;
-    
+
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
     @FieldBridge(impl = BooleanBridge.class)
@@ -410,6 +412,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Returns the edition namespace.
+     *
+     * @return the to code
+     */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
+    private String getEditionNamespace() {
+        return edition == null ? null : edition.getCode();
+    }
+
+    /**
      * Returns the edition country.
      *
      * @return the to code
@@ -649,7 +662,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         } else if (!externalUrl.equals(other.externalUrl)) {
             return false;
         }
-        
+
         if (organization == null) {
             if (other.organization != null) {
                 return false;
