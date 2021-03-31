@@ -60,7 +60,7 @@ public class EditionUnitTest extends BaseTest {
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
         tester.include("code");
         tester.include("name");
-        tester.include("country");
+        tester.include("shortName");
         tester.include("iconUri");
         tester.include("branch");
         tester.include("description");
@@ -81,10 +81,10 @@ public class EditionUnitTest extends BaseTest {
     @Test
     public void testModelCopy() throws Exception {
 
-        final Refset copyObject = new Refset();
+        final Edition copyObject = new Edition();
 
         final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
-        assertTrue(tester.testCopyConstructor(Refset.class));
+        assertTrue(tester.testCopyConstructor(Edition.class));
     }
 
     /**
