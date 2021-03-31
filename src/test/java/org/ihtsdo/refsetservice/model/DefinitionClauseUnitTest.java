@@ -77,10 +77,10 @@ public class DefinitionClauseUnitTest extends BaseTest {
     @Test
     public void testModelCopy() throws Exception {
 
-        final Refset copyObject = new Refset();
+        final DefinitionClause copyObject = new DefinitionClause();
 
         final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
-        assertTrue(tester.testCopyConstructor(Refset.class));
+        assertTrue(tester.testCopyConstructor(DefinitionClause.class));
     }
 
     /**

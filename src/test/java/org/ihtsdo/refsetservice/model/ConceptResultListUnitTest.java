@@ -89,7 +89,7 @@ public class ConceptResultListUnitTest extends BaseTest {
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
         tester.include("total");
         tester.include("parameters");
-        tester.exclude("results");
+        tester.exclude("items");
 
         tester.proxy("concepts", 1, c1);
         tester.proxy("concepts", 2, c2);
