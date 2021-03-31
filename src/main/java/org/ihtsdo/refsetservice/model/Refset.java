@@ -60,13 +60,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = false, length = 256)
     private String refsetId;
 
-    /** The project ID. */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @Column(nullable = true, length = 256)
-    // TODO: Make this non-nullable. But need to fill it in with meaningful data
-    // first
-    private String projectId;
-
     /** The name. */
     @Fields({
             @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
@@ -87,12 +80,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = false, length = 256)
     @SortableField
     private String versionStatus;
-
-    /** The organization. */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @Column(nullable = false, length = 256)
-    @SortableField
-    private String organization;
 
     /** The version date. */
     @Column(nullable = true)
@@ -148,6 +135,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Edition edition;
+    
+    /** The project. */
+    @ManyToOne(targetEntity = Project.class)
+    @JoinColumn(nullable = true)
+    @Fetch(FetchMode.JOIN)
+    private Project project;
 
     /** The tags. */
     @ElementCollection
@@ -212,12 +205,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         type = other.getType();
         versionStatus = other.getVersionStatus();
         narrative = other.getNarrative();
-        projectId = other.getProjectId();
         tags = other.getTags();
         versionDate = other.getVersionDate();
         versionNotes = other.getVersionNotes();
         versionStatus = other.getVersionStatus();
         edition = other.getEdition();
+        project = other.getProject();
         definitionClauses = other.getDefinitionClauses();
         externalUrl = other.getExternalUrl();
         moduleId = other.getModuleId();
@@ -338,20 +331,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * @return the projectId
-     */
-    public String getProjectId() {
-        return projectId;
-    }
-
-    /**
-     * @param projectId the projectId to set
-     */
-    public void setProjectId(String projectId) {
-        this.projectId = projectId;
-    }
-
-    /**
      * @return the isPrivateRefset
      */
     public boolean isPrivateRefset() {
@@ -407,8 +386,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @SortableField
-    private String getEditionCountry() {
-        return edition == null ? null : edition.getCountry();
+    private String getEditionShortName() {
+        return edition == null ? null : edition.getShortName();
     }
 
     /**
@@ -494,20 +473,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * @return the organization
-     */
-    public String getOrganization() {
-        return organization;
-    }
-
-    /**
-     * @param organization the organization to set
-     */
-    public void setOrganization(String organization) {
-        this.organization = organization;
-    }
-
-    /**
      * @return the downloadable
      */
     public boolean isDownloadable() {
@@ -536,6 +501,42 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * @return the project
+     */
+    public Project getProject() {
+        return project;
+    }
+    
+    /**
+     * Returns the project name.
+     *
+     * @return the project name
+     */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
+    private String getProjectName() {
+        return project == null ? null : project.getName();
+    }
+    
+    /**
+     * Returns the organization name.
+     *
+     * @return the organization name
+     */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
+    private String getOrganizationName() {
+        return project == null || project.getOrganization() == null ? null : project.getOrganization().getName();
+    }
+
+    /**
+     * @param project the project to set
+     */
+    public void setProject(Project project) {
+        this.project = project;
+    }
+
+    /**
      * Hash code.
      *
      * @return the int
@@ -547,14 +548,13 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((refsetId == null) ? 0 : refsetId.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((type == null) ? 0 : type.hashCode());
-        result = prime * result + ((projectId == null) ? 0 : projectId.hashCode());
         result = prime * result + ((versionDate == null) ? 0 : versionDate.hashCode());
         result = prime * result + ((versionStatus == null) ? 0 : versionStatus.hashCode());
         result = prime * result + ((narrative == null) ? 0 : narrative.hashCode());
         result = prime * result + ((versionNotes == null) ? 0 : versionNotes.hashCode());
         result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
-        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + ((project == null) ? 0 : project.hashCode());
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
@@ -615,14 +615,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
             return false;
         }
 
-        if (projectId == null) {
-            if (other.projectId != null) {
-                return false;
-            }
-        } else if (!projectId.equals(other.projectId)) {
-            return false;
-        }
-
         if (versionDate == null) {
             if (other.versionDate != null) {
                 return false;
@@ -660,14 +652,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
                 return false;
             }
         } else if (!externalUrl.equals(other.externalUrl)) {
-            return false;
-        }
-
-        if (organization == null) {
-            if (other.organization != null) {
-                return false;
-            }
-        } else if (!organization.equals(other.organization)) {
             return false;
         }
 

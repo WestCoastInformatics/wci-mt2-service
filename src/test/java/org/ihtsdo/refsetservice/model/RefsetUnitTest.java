@@ -34,6 +34,12 @@ public class RefsetUnitTest extends BaseTest {
 
     /** The edition object. */
     private Edition edition;
+    
+    /** The organization object. */
+    private Organization organization;
+    
+    /** The project object. */
+    private Project project;
 
     /** The DefinitionClause list. */
     private List<DefinitionClause> definitionList;
@@ -47,14 +53,20 @@ public class RefsetUnitTest extends BaseTest {
     public void setup() throws Exception {
 
         object = new Refset();
+        
         final ProxyTester tester = new ProxyTester(new Edition());
-
         edition = (Edition) tester.createObject(1);
 
         final ProxyTester tester2 = new ProxyTester(new DefinitionClause());
         definitionList = new ArrayList<>();
         definitionList.add((DefinitionClause) tester2.createObject(1));
         definitionList.add((DefinitionClause) tester2.createObject(2));
+        
+        final ProxyTester tester3 = new ProxyTester(new Organization());
+        organization = (Organization) tester3.createObject(1);
+        
+        final ProxyTester tester4 = new ProxyTester(new Project());
+        project = (Project) tester4.createObject(1);
     }
 
     /**
@@ -79,7 +91,6 @@ public class RefsetUnitTest extends BaseTest {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
         tester.include("refsetId");
-        tester.include("projectId");
         tester.include("name");
         tester.include("type");
         tester.include("versionStatus");
@@ -110,6 +121,7 @@ public class RefsetUnitTest extends BaseTest {
         final Refset copyObject = new Refset();
         copyObject.setDefinitionClauses(definitionList);
         copyObject.setEdition(edition);
+        copyObject.setProject(project);
         // copyObject.setTags(tagList);
 
         final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
@@ -143,6 +155,7 @@ public class RefsetUnitTest extends BaseTest {
             logger.info("************ object: " + object);
             object.setId(null);
             object.setEdition(null);
+            object.setProject(null);
             object.setDefinitionClauses(null);
             object.setTags(null);
 
@@ -154,7 +167,15 @@ public class RefsetUnitTest extends BaseTest {
             edition.setId(null);
             service.add(edition);
             object.setEdition(edition);
-
+            
+            organization.setId(null);
+            service.add(organization);
+            
+            project.setId(null);
+            project.setOrganization(organization);
+            service.add(project);
+            object.setProject(project);
+            
             Set<String> tags = new HashSet<>();
             tags.add("blood");
             tags.add("covid 19");
@@ -194,9 +215,20 @@ public class RefsetUnitTest extends BaseTest {
                 throw new Exception(
                         "Refset edition not properly saved = " + retrievedObject.getId());
             }
+            
+            // test that project and organization were properly added.
+            if (retrievedObject.getProject() == null
+                    || !retrievedObject.getProject().getName().equals("1")
+                    || retrievedObject.getProject().getOrganization() == null
+                    || !retrievedObject.getProject().getOrganization().getName().equals("1")) {
+                throw new Exception(
+                        "Refset project and organization not properly saved = " + retrievedObject.getId());
+            }
 
             service.remove(object);
             service.remove(edition);
+            service.remove(project);
+            service.remove(organization);
 
             retrievedObject = service.get(object.getId(), object.getClass());
 

@@ -61,7 +61,7 @@ public class ResultListUnitTest extends BaseTest {
     }
 
     /**
-     * Test equals and hascode methods.
+     * Test equals and hashcode methods.
      *
      * @throws Exception the exception
      */
@@ -70,7 +70,7 @@ public class ResultListUnitTest extends BaseTest {
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
         tester.include("total");
         tester.include("parameters");
-        tester.exclude("results");
+        tester.exclude("items");
         tester.proxy(SearchParameters.class, 1, sc1);
         tester.proxy(SearchParameters.class, 2, sc2);
 

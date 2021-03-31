@@ -61,6 +61,31 @@ public class ResultList<T> implements Collection<T> {
             this.total = 0;
         }
     }
+    
+    /**
+     * Instantiates a {@link ResultList} from the specified parameters.
+     *
+     * @param other the other
+     */
+    public ResultList(final ResultList<T> other) {
+        populateFrom(other);
+    }
+    
+    /**
+     * Populate from.
+     *
+     * @param other the other
+     */
+    public void populateFrom(final ResultList<T> other) {
+        items = other.getItems();
+        limit = other.getLimit();
+        offset = other.getOffset();
+        parameters = other.getParameters();
+        scoreMap = other.getScoreMap();
+        timeTaken = other.getTimeTaken();
+        total = other.getTotal();
+        
+    }
 
     /**
      * Size.

@@ -12,8 +12,12 @@ package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.annotations.Analyze;
 import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Index;
@@ -22,16 +26,12 @@ import org.hibernate.search.annotations.SortableField;
 import org.hibernate.search.annotations.Store;
 
 /**
- * Represents the edition information for a refset.
+ * Represents a project.
  */
 @Entity
-@Table(name = "editions")
+@Table(name = "projects")
 @Indexed
-public class Edition extends AbstractHasModified {
-
-    /** The code. */
-    @Column(nullable = false)
-    private String code;
+public class Project extends AbstractHasModified {
 
     /** The name. */
     @Column(nullable = false)
@@ -39,49 +39,40 @@ public class Edition extends AbstractHasModified {
     @SortableField
     private String name;
 
-    /** The short name. */
-    @Column(nullable = true)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    private String shortName;
-
-    /** The flag icon URI. */
-    @Column(nullable = true)
-    private String iconUri;
-
-    /** The branch to use when retrieving from a terminology server. */
-    @Column(nullable = true)
-    private String branch;
-
     /** The description. */
     @Column(nullable = true, length = 4000)
     private String description;
 
+    /** The owning organization. */
+    @ManyToOne(targetEntity = Organization.class)
+    @JoinColumn(nullable = true)
+    @Fetch(FetchMode.JOIN)
+    private Organization organization;
+
     /**
-     * Instantiates an empty {@link Edition}.
+     * Instantiates an empty {@link Project}.
      */
-    public Edition() {
+    public Project() {
         // n/a
     }
 
     /**
-     * Instantiates a {@link Edition} from the specified parameters.
+     * Instantiates a {@link Project} from the specified parameters.
      *
      * @param other the other
      */
-    public Edition(final Edition other) {
+    public Project(final Project other) {
         populateFrom(other);
     }
 
     /**
-     * Instantiates a {@link Edition} from the specified parameters.
+     * Instantiates a {@link Project} from the specified parameters.
      *
-     * @param code the key
      * @param name the value
      */
-    public Edition(final String code, final String name) {
-        this.code = code;
+    public Project(final String name, final Organization organization) {
         this.name = name;
+        this.organization = organization;
     }
 
     /**
@@ -89,32 +80,11 @@ public class Edition extends AbstractHasModified {
      *
      * @param other the other
      */
-    public void populateFrom(final Edition other) {
+    public void populateFrom(final Project other) {
         super.populateFrom(other);
-        code = other.getCode();
         name = other.getName();
+        organization = other.getOrganization();
         description = other.getDescription();
-        branch = other.getBranch();
-        iconUri = other.getIconUri();
-        shortName = other.getShortName();
-    }
-
-    /**
-     * Returns the code.
-     *
-     * @return the code
-     */
-    public String getCode() {
-        return code;
-    }
-
-    /**
-     * Sets the code.
-     *
-     * @param code the code
-     */
-    public void setCode(final String code) {
-        this.code = code;
     }
 
     /**
@@ -136,34 +106,6 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
-     * @return the iconUri
-     */
-    public String getIconUri() {
-        return iconUri;
-    }
-
-    /**
-     * @param iconUri the iconUri to set
-     */
-    public void setIconUri(String iconUri) {
-        this.iconUri = iconUri;
-    }
-
-    /**
-     * @return the branch
-     */
-    public String getBranch() {
-        return branch;
-    }
-
-    /**
-     * @param branch the branch to set
-     */
-    public void setBranch(String branch) {
-        this.branch = branch;
-    }
-
-    /**
      * @return the description
      */
     public String getDescription() {
@@ -178,17 +120,17 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
-     * @return the country
+     * @return the organization
      */
-    public String getShortName() {
-        return shortName;
+    public Organization getOrganization() {
+        return organization;
     }
 
     /**
-     * @param country the country to set
+     * @param organization the organization to set
      */
-    public void setShortName(String country) {
-        this.shortName = country;
+    public void setOrganization(Organization organization) {
+        this.organization = organization;
     }
 
     /**
@@ -201,12 +143,9 @@ public class Edition extends AbstractHasModified {
 
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((code == null) ? 0 : code.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((branch == null) ? 0 : branch.hashCode());
-        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
-        result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
+        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
         return result;
     }
 
@@ -231,37 +170,13 @@ public class Edition extends AbstractHasModified {
             return false;
         }
 
-        final Edition other = (Edition) obj;
-
-        if (code == null) {
-            if (other.code != null) {
-                return false;
-            }
-        } else if (!code.equals(other.code)) {
-            return false;
-        }
+        final Project other = (Project) obj;
 
         if (name == null) {
             if (other.name != null) {
                 return false;
             }
         } else if (!name.equals(other.name)) {
-            return false;
-        }
-
-        if (branch == null) {
-            if (other.branch != null) {
-                return false;
-            }
-        } else if (!branch.equals(other.branch)) {
-            return false;
-        }
-
-        if (iconUri == null) {
-            if (other.iconUri != null) {
-                return false;
-            }
-        } else if (!iconUri.equals(other.iconUri)) {
             return false;
         }
 
@@ -273,11 +188,11 @@ public class Edition extends AbstractHasModified {
             return false;
         }
 
-        if (shortName == null) {
-            if (other.shortName != null) {
+        if (organization == null) {
+            if (other.organization != null) {
                 return false;
             }
-        } else if (!shortName.equals(other.shortName)) {
+        } else if (!organization.equals(other.organization)) {
             return false;
         }
 

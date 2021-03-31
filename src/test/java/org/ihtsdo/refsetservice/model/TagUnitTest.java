@@ -77,10 +77,10 @@ public class TagUnitTest extends BaseTest {
     @Test
     public void testModelCopy() throws Exception {
 
-        final Refset copyObject = new Refset();
+        final Tag copyObject = new Tag();
 
         final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
-        assertTrue(tester.testCopyConstructor(Refset.class));
+        assertTrue(tester.testCopyConstructor(Tag.class));
     }
 
     /**

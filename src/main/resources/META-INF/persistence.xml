@@ -16,6 +16,8 @@
     <class>org.ihtsdo.refsetservice.model.Refset</class>
     <class>org.ihtsdo.refsetservice.model.Tag</class>
     <class>org.ihtsdo.refsetservice.model.Edition</class>
+    <class>org.ihtsdo.refsetservice.model.Organization</class>
+    <class>org.ihtsdo.refsetservice.model.Project</class>
     <class>org.ihtsdo.refsetservice.model.DefinitionClause</class>
 
     <!--  import models for auth -->
