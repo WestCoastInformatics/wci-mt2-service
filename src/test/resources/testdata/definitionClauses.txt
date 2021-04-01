@@ -1,0 +1,2 @@
+{"value": "< 71388002", "negated": false}
+{"value": "< 404684003", "negated": true}
