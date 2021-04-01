@@ -58,6 +58,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The refset ID. */
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false, length = 256)
+    @SortableField
     private String refsetId;
 
     /** The name. */
