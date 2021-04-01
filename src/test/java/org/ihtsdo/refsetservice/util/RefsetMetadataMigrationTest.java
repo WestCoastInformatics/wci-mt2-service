@@ -14,14 +14,16 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 import org.ihtsdo.refsetservice.BaseTest;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.HasModified;
+import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.junit.jupiter.api.Test;
@@ -95,39 +97,40 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
     /** The multiple versions file path. */
     private final String projectsFile =
-            "src/test/resources/migration/refset/refsetProjects.txt";
+            "src/test/resources/migration/resources/projects.txt";
 
     /** The multiple versions file path. */
     private final String clausesFile =
-            "src/test/resources/migration/refset/refsetClauses.txt";
+            "src/test/resources/migration/resources/clauses.txt";
 
     /** The multiple versions file path. */
     private final String multipleVersionsFilePath =
-            "src/test/resources/migration/refset/GeneralDentistryAllVersions.txt";
+            "src/test/resources/migration/refsetsToImport/GeneralDentistryAllVersions.txt";
 
     /** The single version file path. */
-    private final String refsetClausesJoinFilePath =
-            "src/test/resources/migration/refset/refsetECLClausesJoins.txt";
+    private final String singleVersionWithRefsetFilePath =
+            "src/test/resources/migration/refsetsToImport/refsetECLClausesJoins.txt";
 
     /** The single version file path. */
     private final String singleVersionFilePath =
-            "src/test/resources/migration/refset/GeneralDentistrySingleVersion.txt";
+            "src/test/resources/migration/refsetsToImport/GeneralDentistrySingleVersion.txt";
 
     /** The all refsets file path. */
     private final String allRefsetsFilePath =
-            "src/test/resources/migration/refset/AllFromRTT.txt";
+            "src/test/resources/migration/refsetsToImport/AllFromRTT.txt";
 
     /** The metadata map. */
-    private final Map<Integer, Metadata> metadataMap = new HashMap<>();
+    private final Map<String, Metadata> metadataMap = new HashMap<>();
 
     /** The json map. */
-    private final Map<Integer, String> jsonMap = new HashMap<>();
+    private final Map<String, String> refsetsMap = new HashMap<>();
 
-    private final Map<String, HashSet<String>> clausesMap = new HashMap<>();
+    private final Map<String, ArrayList<String>> rttRefsetToClausesMap =
+            new HashMap<>();
 
     private final Map<String, String> projectsMap = new HashMap<>();
 
-    private final Map<String, Metadata> projectMetadataMap = new HashMap<>();
+    private final Map<String, String> refsetToProjectMap = new HashMap<>();
 
     /**
      * Test Single Version of General Dentistry Refset.
@@ -139,7 +142,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         preprocessingSupportingFiles();
 
         populateFromFile(singleVersionFilePath, FileProcessType.REFSET);
-        importRefsetJson();
+        importObjects();
     }
 
     /**
@@ -152,7 +155,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         preprocessingSupportingFiles();
 
         populateFromFile(multipleVersionsFilePath, FileProcessType.REFSET);
-        importRefsetJson();
+        importObjects();
     }
 
     /**
@@ -164,8 +167,9 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     public void testRefsetWithClauses() throws Exception {
         preprocessingSupportingFiles();
 
-        populateFromFile(refsetClausesJoinFilePath, FileProcessType.REFSET);
-        importRefsetJson();
+        populateFromFile(singleVersionWithRefsetFilePath,
+                FileProcessType.REFSET);
+        importObjects();
     }
 
     /**
@@ -178,63 +182,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         preprocessingSupportingFiles();
 
         populateFromFile(allRefsetsFilePath, FileProcessType.REFSET);
-        importRefsetJson();
-    }
-
-    private void preprocessingSupportingFiles() throws Exception {
-        populateFromFile(clausesFile, FileProcessType.CLAUSE);
-        populateFromFile(projectsFile, FileProcessType.PROJECT);
-    }
-
-    /**
-     * Import refset json.
-     */
-    private void importRefsetJson() {
-        Refset refset = null;
-        int count = 0;
-
-        try (final TerminologyService service = new TerminologyService()) {
-            for (Integer index : jsonMap.keySet()) {
-                // logger.debug("BBB: " + jsonMap.get(index));
-                if (jsonMap.get(index).contains("TMP-7746xq")) {
-                    int a = 1;
-                }
-                refset = ModelUtility.fromJson(jsonMap.get(index),
-                        Refset.class);
-
-                Metadata m = metadataMap.get(index);
-                service.setModifiedFlag(false);
-                ((HasModified) refset).setModified(m.getModified());
-                ((HasModified) refset).setCreated(m.getModified());
-                ((HasModified) refset).setModifiedBy(m.getModifiedBy());
-
-                for (DefinitionClause clause : refset.getDefinitionClauses()) {
-                    clause.setModified(m.getModified());
-                    clause.setCreated(m.getModified());
-                    clause.setModifiedBy(m.getModifiedBy());
-                }
-
-                refset.getEdition().setModified(projectMetadataMap
-                        .get(refset.getEdition().getName()).getModified());
-                refset.getEdition().setCreated(projectMetadataMap
-                        .get(refset.getEdition().getName()).getModified());
-                refset.getEdition().setModifiedBy(projectMetadataMap
-                        .get(refset.getEdition().getName()).getModifiedBy());
-
-                // Add an object
-                service.add(refset.getEdition());
-                service.add((HasModified) refset);
-
-                count++;
-                logger.info("Refset " + refset.getId() + " successfully added");
-            }
-        } catch (Exception e) {
-            logger.error("Have issue with: " + e.getMessage());
-
-            e.printStackTrace();
-        }
-
-        logger.info("Total of " + count + " refsets successfully added");
+        importObjects();
     }
 
     /**
@@ -256,42 +204,42 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             String line = reader.readLine();
             line = reader.readLine();
 
-            int count = 0;
             while (line != null) {
                 switch (processType) {
                     case REFSET:
-                        /*
-                         * if (!line.contains("TMP-7746xq")) { line =
-                         * reader.readLine(); continue; }
-                         */
-                        final String json = lineToRefsetJson(line);
-                        final Metadata meta = lineToRefsetMetadata(line);
-                        metadataMap.put(count, meta);
-                        jsonMap.put(count, json);
+                        final String refsetJson = lineToRefsetJson(line);
+                        refsetsMap.put(line.split(",")[0], refsetJson);
                         break;
+
                     case CLAUSE:
+                        // Combine multiline clauses into one
                         while (line.indexOf("\"") >= 0 && line
                                 .indexOf("\"") == line.lastIndexOf("\"")) {
                             line = line + " " + reader.readLine();
                         }
 
-                        final String[] clauseColumns = line.split(",");
+                        final String clauseJson = lineToClauseJson(line);
 
-                        if (!clausesMap.containsKey(clauseColumns[0])) {
-                            clausesMap.put(clauseColumns[0], new HashSet<>());
+                        // store all clauses associated wtih a given refset
+                        final String rttRefsetId = line.split(",")[0];
+                        if (!rttRefsetToClausesMap.containsKey(rttRefsetId)) {
+                            rttRefsetToClausesMap.put(rttRefsetId,
+                                    new ArrayList<String>());
                         }
-                        clausesMap.get(clauseColumns[0])
-                                .add(clauseColumns[1] + "," + clauseColumns[2]);
+                        rttRefsetToClausesMap.get(rttRefsetId).add(clauseJson);
                         break;
-                    case PROJECT:
-                        final String[] projectColumns = line.split(",");
-                        projectsMap.put(projectColumns[0], line);
-                        break;
-                    default:
-                        break;
-                }
 
-                count++;
+                    case PROJECT:
+                        final String projectJson = lineToProjectJson(line);
+                        final String editionJson = lineToEditionJson(line);
+                        projectsMap.put(line.split(",")[0], projectJson);
+                        break;
+
+                    default:
+                        throw new Exception(
+                                "Should never reach here have processType: "
+                                        + processType);
+                }
 
                 // read next line
                 line = reader.readLine();
@@ -304,17 +252,197 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     }
 
     /**
-     * Line to refset metadata.
-     *
-     * @param line the line
-     * @return the metadata
+     * Import refset json.
      */
-    private Metadata lineToRefsetMetadata(String line) {
-        line = line.replace("\"", "");
-        String[] values = line.split(",");
+    private void importObjects() {
+        int projectCount = 0;
+        int organizationCount = 0;
+        int count = 0;
 
-        Metadata m = new Metadata(values[3], values[4]);
-        return m;
+        try (final TerminologyService service = new TerminologyService()) {
+            service.setModifiedFlag(false);
+
+            // Persist Projects and Organizations
+            final Map<String, Project> projectIdToClassMap = new HashMap<>();
+            final Map<String, Organization> organizationsAdded =
+                    new HashMap<>();
+
+            for (String index : projectsMap.keySet()) {
+                final Project project = ModelUtility
+                        .fromJson(projectsMap.get(index), Project.class);
+
+                if (!organizationsAdded
+                        .containsKey(project.getOrganization().getName())) {
+                    setMetadata(project.getOrganization(),
+                            metadataMap.get("project-" + index));
+                    service.add(project.getOrganization());
+
+                    organizationsAdded.put(project.getOrganization().getName(),
+                            project.getOrganization());
+                    organizationCount++;
+                } else {
+                    project.setOrganization(organizationsAdded
+                            .get(project.getOrganization().getName()));
+                }
+
+                setMetadata(project, metadataMap.get("project-" + index));
+                service.add(project);
+                projectIdToClassMap.put(index, project);
+                projectCount++;
+            }
+
+            logger.debug("Have imported " + projectCount + " projects and "
+                    + organizationCount + " organizations");
+
+            // Persist Refsets & ECL Definition Clauses
+            for (String rttId : refsetsMap.keySet()) {
+                final Refset refset = ModelUtility
+                        .fromJson(refsetsMap.get(rttId), Refset.class);
+                String projectId = refsetToProjectMap.get(rttId);
+                refset.setProject(projectIdToClassMap.get(projectId));
+
+                setMetadata(refset, metadataMap.get("refset-" + rttId));
+                service.add(refset);
+
+                if (rttRefsetToClausesMap.containsKey(rttId)) {
+                    for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
+                        final DefinitionClause clause = ModelUtility
+                                .fromJson(clauseJson, DefinitionClause.class);
+
+                        setMetadata(clause, metadataMap.get("refset-" + rttId));
+                        service.add(clause);
+                        refset.getDefinitionClauses().add(clause);
+                    }
+                }
+
+                service.update(refset);
+                count++;
+            }
+        } catch (Exception e) {
+            logger.error("Have issue with: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        logger.info("Total of " + count + " refsets successfully added");
+    }
+
+    private String lineToProjectJson(String line) {
+        String projectName;
+        String projectDescription;
+        String organizationName;
+        String modified;
+        String modifiedBy;
+
+        if (line.split(",")[1].startsWith("\"")) {
+            // If description has commas (and some do), can't rely on splitting
+            // on comma. Must identify Description and then remove from line
+            // before finding other values
+            final int descStartIdx = line.indexOf("\"");
+            final int descEndIdx =
+                    line.substring(descStartIdx + 1).indexOf("\"");
+
+            projectDescription = line.substring(descStartIdx + 1,
+                    descStartIdx + descEndIdx + 1);
+            String[] values =
+                    line.substring(descStartIdx + descEndIdx + 3).split(",");
+
+            projectName = values[5].replaceAll("\"", "");
+            organizationName = values[7].replaceAll("\"", "");
+            modified = values[2];
+            modifiedBy = values[3];
+        } else {
+            String[] values = line.split(",");
+
+            projectDescription = values[1];
+            projectName = values[7].replaceAll("\"", "");
+            organizationName = values[9].replaceAll("\"", "");
+            modified = values[4];
+            modifiedBy = values[5];
+        }
+
+        StringBuffer buf = new StringBuffer();
+
+        buf.append("{");
+        buf.append("\"name\": \"" + projectName + "\",");
+        buf.append("\"description\": \"" + projectDescription + "\",");
+        buf.append(
+                "\"organization\": {\"name\": \"" + organizationName + "\"}");
+        buf.append("}");
+
+        metadataMap.put("project-" + line.split(",")[0],
+                new Metadata(modified, modifiedBy));
+
+        return buf.toString();
+    }
+
+    private String lineToEditionJson(String line) {
+        StringBuffer buf = new StringBuffer();
+
+
+        // Create Edition
+        String[] values = line.split(",");
+        final String projectId = values[27];
+
+        if (projectsMap.containsKey(projectId)) {
+            String namespace = values[18];
+            final String projectLine = projectsMap.get(projectId);
+
+            String description;
+            String projectName;
+            String modified;
+            String modifiedBy;
+
+            if (projectLine.split(",")[1].startsWith("\"")) {
+                // If description has commas (and some do), can't rely on
+                // splitting on comma. Must identify Description and then
+                // remove from line before finding other values
+                final int descStartIdx = projectLine.indexOf("\"");
+                final int descEndIdx =
+                        projectLine.substring(descStartIdx + 1).indexOf("\"");
+
+                description = projectLine.substring(descStartIdx + 1,
+                        descStartIdx + descEndIdx + 1);
+                String[] splitValues = projectsMap.get(projectId)
+                        .substring(descStartIdx + descEndIdx + 3).split(",");
+
+                projectName = splitValues[5].replaceAll("\"", "");
+                modified = splitValues[2];
+                modifiedBy = splitValues[3];
+            } else {
+                String[] splitValues = projectLine.split(",");
+
+                description = splitValues[1];
+                projectName = splitValues[7].replaceAll("\"", "");
+                modified = splitValues[4];
+                modifiedBy = splitValues[5];
+            }
+
+            buf.append("{");
+            if (namespace == null || namespace.isEmpty()
+                    || namespace.equals("NULL")) {
+                namespace = "Never Defined";
+            }
+            buf.append("\"code\": \"" + namespace + "\",");
+            buf.append("\"name\": \"" + projectName + "\",");
+            buf.append("\"branch\": \"" + values[25] + "\",");
+            buf.append("\"description\": \"" + description + "\"");
+            buf.append("}");
+        }
+        
+        return buf.toString();
+    }
+
+    private String lineToClauseJson(String line) {
+        StringBuffer buf = new StringBuffer();
+        String[] clauseValues = line.split(",");
+        buf.append("{ \"negated\":\"");
+        buf.append(clauseValues[1].equals("0") ? "false" : "true");
+        buf.append("\",");
+
+        buf.append("\"value\":\""
+                + clauseValues[2].replaceAll("\"", "").replaceAll("\t", "")
+                + "\"}");
+        return buf.toString();
     }
 
     /**
@@ -368,7 +496,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             line = line.replace("\"", "");
             String values[] = line.split(",");
             StringBuffer buf = new StringBuffer();
-            final String refsetTableId = values[0];
+            final String rttRefsetId = values[0];
 
             buf.append("{");
             buf.append("\"refsetId\": \"" + values[8] + "\",");
@@ -398,87 +526,17 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 buf.append("\"externalUrl\": \"" + values[11] + "\",");
             }
 
-            // Create Definition Clauses
-            if (clausesMap.containsKey(refsetTableId)) {
-                buf.append("\"definitionClauses\": [");
-                boolean initialProcessing = true;
-
-                for (String clause : clausesMap.get(refsetTableId)) {
-                    if (initialProcessing) {
-                        initialProcessing = false;
-                    } else {
-                        buf.append(", ");
-                    }
-
-                    String[] clauseValues = clause.split(",");
-                    buf.append("{ \"negated\":\"");
-                    buf.append(clauseValues[0].equals("0") ? "false" : "true");
-                    buf.append("\",");
-
-                    buf.append("\"value\":\"" + clauseValues[1]
-                            .replaceAll("\"", "").replaceAll("\t", "") + "\"}");
-                }
-
-                buf.append("], ");
-            }
-
-            // Create Edition
-            final String projectId = values[27];
-            if (projectsMap.containsKey(projectId)) {
-                String namespace = values[18];
-                final String projectLine = projectsMap.get(projectId);
-
-                String description;
-                String projectName;
-                String modified;
-                String modifiedBy;
-
-                if (projectLine.split(",")[1].startsWith("\"")) {
-                    // If description has commas (and some do), can't rely on
-                    // splitting on comma. Must identify Description and then
-                    // remove from line before finding other values
-                    final int descStartIdx = projectLine.indexOf("\"");
-                    final int descEndIdx = projectLine
-                            .substring(descStartIdx + 1).indexOf("\"");
-
-                    description = projectLine.substring(descStartIdx + 1,
-                            descStartIdx + descEndIdx + 1);
-                    String[] splitValues = projectsMap.get(projectId)
-                            .substring(descStartIdx + descEndIdx + 3)
-                            .split(",");
-
-                    projectName = splitValues[5].replaceAll("\"", "");
-                    modified = splitValues[2];
-                    modifiedBy = splitValues[3];
-                } else {
-                    String[] splitValues = projectLine.split(",");
-
-                    description = splitValues[1];
-                    projectName = splitValues[7].replaceAll("\"", "");
-                    modified = splitValues[4];
-                    modifiedBy = splitValues[5];
-                }
-
-                // 7, 1, 4, 5
-
-                buf.append("\"edition\": {");
-                if (namespace == null || namespace.isEmpty()
-                        || namespace.equals("NULL")) {
-                    namespace = "Never Defined";
-                }
-                buf.append("\"code\": \"" + namespace + "\",");
-                buf.append("\"name\": \"" + projectName + "\",");
-                buf.append("\"branch\": \"" + values[25] + "\",");
-                buf.append("\"description\": \"" + description + "\"");
-                buf.append("}, ");
-                projectMetadataMap.put(projectName,
-                        new Metadata(modified, modifiedBy));
-            }
+            // RefsetId to ProjectId
+            refsetToProjectMap.put(rttRefsetId, values[27]);
 
             // Finish Refset
             buf.append("\"moduleId\": \"" + values[15] + "\"");
             buf.append("}");
             // logger.debug("AAA: " + buf.toString());
+
+            Metadata meta = new Metadata(values[3], values[4]);
+            metadataMap.put("refset-" + rttRefsetId, meta);
+
             return buf.toString();
         } catch (Exception e) {
             logger.error("Line: " + line);
@@ -488,4 +546,14 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         }
     }
 
+    private void preprocessingSupportingFiles() throws Exception {
+        populateFromFile(clausesFile, FileProcessType.CLAUSE);
+        populateFromFile(projectsFile, FileProcessType.PROJECT);
+    }
+
+    private void setMetadata(HasModified object, Metadata metadata) {
+        object.setModified(metadata.getModified());
+        object.setCreated(metadata.getModified());
+        object.setModifiedBy(metadata.getModifiedBy());
+    }
 }
