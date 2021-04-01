@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.model.SearchParameters;
@@ -157,8 +158,6 @@ public class RefsetController extends BaseController {
     public @ResponseBody ResultList<Refset> search(
         SearchParameters searchParameters, final BindingResult bindingResult)
         throws Exception {
-
-        logger.debug("******** searchParameters: " + ModelUtility.toJson(searchParameters));
         
         // Check whether or not parameter binding was successful
         if (bindingResult.hasErrors()) {
@@ -182,8 +181,31 @@ public class RefsetController extends BaseController {
 
             final long start = System.currentTimeMillis();
             ResultList<Refset> results = new ResultList<Refset>();
+            
+            logger.debug("******** searchParameters: " + ModelUtility.toJson(searchParameters));
+            
+            final PfsParameter pfs = new PfsParameter();
+            
+            if (searchParameters.getOffset() != null) {
+              pfs.setOffset(searchParameters.getOffset());
+            }
+            
+            if (searchParameters.getLimit() != null) {
+              pfs.setLimit(searchParameters.getLimit());
+            }
+            
+            if (searchParameters.getSortAscending() != null) {
+              pfs.setAscending(searchParameters.getSortAscending());
+            }
+            
+            if (searchParameters.getSort() != null) {
+              pfs.setSort(searchParameters.getSort());
+            }
+            
+//            ResultList<Refset> test = service.find("id: 78659156-b6d6-4935-bcdf-c4692bcee10d", pfs, Refset.class, null);
+//            logger.debug("******** test: " + ModelUtility.toJson(test));
 
-            results = service.find("", null, Refset.class, null);
+            results = service.find(searchParameters.getQuery(), pfs, Refset.class, null);
             
             for (Refset refset : results.getItems()) {
                 
@@ -191,7 +213,7 @@ public class RefsetController extends BaseController {
                 refset.setFeedbackVisible(false);
             }
             results.setTimeTaken(System.currentTimeMillis() - start);
-            logger.debug("******** searchParameters: " + ModelUtility.toJson(results));
+            logger.debug("******** results: " + ModelUtility.toJson(results));
             return results;
 
         } catch (final ResponseStatusException rse) {

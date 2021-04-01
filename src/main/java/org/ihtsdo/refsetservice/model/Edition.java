@@ -20,6 +20,7 @@ import javax.persistence.Table;
 
 import org.hibernate.search.annotations.Analyze;
 import org.hibernate.search.annotations.Field;
+import org.hibernate.search.annotations.Fields;
 import org.hibernate.search.annotations.Index;
 import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
@@ -35,9 +36,12 @@ import org.hibernate.search.annotations.Store;
 public class Edition extends AbstractHasModified {
 
     /** The name. */
-    @Column(nullable = false)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @Column(nullable = false, length = 4000)
+    @Fields({
+        @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+        @Field(name = "nameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+})
+    @SortableField(forField = "nameSort")
     private String name;
 
     /** The namespace. */
@@ -48,8 +52,11 @@ public class Edition extends AbstractHasModified {
 
     /** The short name. */
     @Column(nullable = true)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @Fields({
+        @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+        @Field(name = "shortNameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+})
+    @SortableField(forField = "shortNameSort")
     private String shortName;
 
     /** The flag icon URI. */
