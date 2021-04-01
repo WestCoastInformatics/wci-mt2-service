@@ -7,6 +7,8 @@ import java.util.List;
 import javax.annotation.PreDestroy;
 
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.DefinitionClause;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -56,6 +58,12 @@ public class TestConfiguration {
     
     /** The project test data. */
     private static ArrayList<Project> projectList = new ArrayList<>();
+    
+    /** The definition test data. */
+    private static ArrayList<DefinitionClause> definitionList = new ArrayList<>();
+    
+    /** The edition test data. */
+    private static ArrayList<Edition> editionList = new ArrayList<>();
 
     /** The file path for refset test data. */
     private final String refsetDataFile = "src/test/resources/testdata/refsets.txt";
@@ -68,6 +76,12 @@ public class TestConfiguration {
     
     /** The file path for project test data. */
     private final String projectDataFile = "src/test/resources/testdata/projects.txt";
+    
+    /** The file path for definition test data. */
+    private final String definitionDataFile = "src/test/resources/testdata/definitionClauses.txt";
+    
+    /** The file path for edition test data. */
+    private final String editionDataFile = "src/test/resources/testdata/editions.txt";
 
     /**
      * Instantiates an empty {@link TestConfiguration}.
@@ -89,11 +103,13 @@ public class TestConfiguration {
             List<String> refsetsJson = FileUtility.readFileToArray(refsetDataFile);
             List<String> conceptsJson = FileUtility.readFileToArray(conceptDataFile);
             List<String> organizationsJson = FileUtility.readFileToArray(organizationDataFile);
-            List<String> projectsJson = FileUtility.readFileToArray(organizationDataFile);
+            List<String> projectsJson = FileUtility.readFileToArray(projectDataFile);
+            List<String> definitionsJson = FileUtility.readFileToArray(definitionDataFile);
+            List<String> editionsJson = FileUtility.readFileToArray(editionDataFile);
 
             try (final TerminologyService service = new TerminologyService()) {
 
-                service.setModifiedBy("test");
+                service.setModifiedBy("TestConfiguration");
                 service.setModifiedFlag(true);
                 
                 for (String organizationJson : organizationsJson) {
@@ -116,11 +132,36 @@ public class TestConfiguration {
                     projectList.add(project);
                     logger.info("Project " + project.getName() + " successfully added");
                 }
+                
+                for (String editionJson : editionsJson) {
+                    
+                    Edition edition = ModelUtility.fromJson(editionJson, Edition.class);
+                    
+                    // Add an object
+                    service.add(edition);
+                    editionList.add(edition);
+                    logger.info("Edition " + edition.getName() + " successfully added");
+                }
+                
+                for (String definitionJson : definitionsJson) {
+                    
+                    DefinitionClause definition = ModelUtility.fromJson(definitionJson, DefinitionClause.class);
+                    
+                    // Add an object
+                    service.add(definition);
+                    definitionList.add(definition);
+                    logger.info("Definition " + definition.getValue() + " successfully added");
+                }
 
                 for (String refsetJson : refsetsJson) {
 
                     Refset refset = ModelUtility.fromJson(refsetJson, Refset.class);
                     refset.setProject(projectList.get(0));
+                    refset.setEdition(editionList.get(0));
+                    
+                    if (refset.getType().equals("intensional")) {
+                        refset.getDefinitionClauses().addAll(definitionList);
+                    }
 
                     // Add an object
                     service.add(refset);
@@ -163,6 +204,15 @@ public class TestConfiguration {
                     service.remove(refset);
                     logger.info("Refset " + id + " successfully removed");
                 }
+                
+                for (Edition edition : editionList) {
+                    
+                    final String name = edition.getName();
+                    
+                    // remove an object
+                    service.remove(edition);
+                    logger.info("Edition " + name + " successfully removed");
+                }
 
                 for (Concept concept : conceptList) {
 
@@ -190,6 +240,15 @@ public class TestConfiguration {
                     service.remove(organization);
                     logger.info("Organization " + name + " successfully removed");
                 }
+                
+//                for (DefinitionClause definition : definitionList) {
+//                    
+//                    final String name = definition.getValue();
+//                    
+//                    // remove an object
+//                    service.remove(definition);
+//                    logger.info("Definition " + name + " successfully removed");
+//                }
 
                 refsetList.clear();
                 conceptList.clear();
