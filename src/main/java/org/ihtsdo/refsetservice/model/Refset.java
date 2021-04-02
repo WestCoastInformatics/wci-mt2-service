@@ -379,8 +379,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @Fields({
             @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "editionNameSort", index = Index.YES, analyze = Analyze.NO,
-                    store = Store.NO)
+            @Field(name = "editionNameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     })
     @SortableField(forField = "editionNameSort")
     public String getEditionName() {
@@ -401,8 +400,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @Fields({
             @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "editionShortNameSort", index = Index.YES, analyze = Analyze.NO,
-                    store = Store.NO)
+            @Field(name = "editionShortNameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     })
     @SortableField(forField = "editionShortNameSort")
     public String getEditionShortName() {
@@ -537,24 +535,23 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @Fields({
             @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "organizationNameSort", index = Index.YES, analyze = Analyze.NO,
-                    store = Store.NO)
+            @Field(name = "organizationNameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     })
     @SortableField(forField = "organizationNameSort")
     public String getOrganizationName() {
-        
+
         if (project == null || project.getOrganization() == null) {
             return null;
         } else {
             return project.getOrganization().getName();
         }
     }
-    
+
     /**
      * @param organizationName the organization name to set
      */
     public void setOrganizationName(String organizationName) {
-        
+
         this.project.getOrganization().setName(organizationName);
     }
 
