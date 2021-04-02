@@ -55,38 +55,24 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The refset ID. */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false, length = 256)
-    @SortableField
     private String refsetId;
 
     /** The name. */
-    @Fields({
-            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "nameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    })
     @Column(nullable = false, length = 4000)
-    @SortableField(forField = "nameSort")
     private String name;
 
     /** The refset type. */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false, length = 256)
-    @SortableField
     private String type;
 
     /** The version status. */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false, length = 256)
-    @SortableField
     private String versionStatus;
 
     /** The version date. */
     @Column(nullable = true)
     @Temporal(TemporalType.TIMESTAMP)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    @DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
     private Date versionDate;
 
     /** The version narrative. */
@@ -98,31 +84,22 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     private String versionNotes;
 
     /** The private flag. */
-    @FieldBridge(impl = BooleanBridge.class)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false)
     private boolean privateRefset;
 
     /** The local set flag. */
-    @FieldBridge(impl = BooleanBridge.class)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false)
     private boolean localSet;
 
     /** The flag for if a user can download this refset. */
     @Transient
-    @FieldBridge(impl = BooleanBridge.class)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     private boolean downloadable;
 
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
-    @FieldBridge(impl = BooleanBridge.class)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     private boolean feedbackVisible;
 
     /** The module ID. */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     @Column(nullable = false, length = 256)
     private String moduleId;
 
@@ -144,8 +121,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The tags. */
     @ElementCollection
-    @Field(analyze = Analyze.NO, store = Store.YES)
-    @IndexedEmbedded
     private Set<String> tags = new HashSet<String>();
 
     /** The definition clauses. */
@@ -221,6 +196,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the refset ID
      */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
     public String getRefsetId() {
         return refsetId;
     }
@@ -239,6 +216,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the name
      */
+    @Fields({
+            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+            @Field(name = "nameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    })
+    @SortableField(forField = "nameSort")
     public String getName() {
         return name;
     }
@@ -257,6 +239,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the type
      */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
     public String getType() {
         return type;
     }
@@ -275,6 +259,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the version status
      */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
     public String getVersionStatus() {
         return versionStatus;
     }
@@ -291,6 +277,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /**
      * @return the versionDate
      */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
+    @DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
     public Date getVersionDate() {
         return versionDate;
     }
@@ -333,6 +322,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /**
      * @return the isPrivateRefset
      */
+    @FieldBridge(impl = BooleanBridge.class)
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public boolean isPrivateRefset() {
         return privateRefset;
     }
@@ -347,6 +338,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /**
      * @return the tags
      */
+    @Field(analyze = Analyze.NO, store = Store.NO)
+    @IndexedEmbedded
     public Set<String> getTags() {
 
         if (tags == null) {
@@ -380,40 +373,54 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * Returns the edition country.
+     * Returns the edition name.
      *
-     * @return the to code
+     * @return the edition name
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    private String getEditionShortName() {
+    @Fields({
+            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+            @Field(name = "editionNameSort", index = Index.YES, analyze = Analyze.NO,
+                    store = Store.NO)
+    })
+    @SortableField(forField = "editionNameSort")
+    public String getEditionName() {
+        return edition == null ? null : edition.getName();
+    }
+
+    /**
+     * @param editionName the edition name to set
+     */
+    public void setEditionName(String editionName) {
+        this.edition.setName(editionName);
+    }
+
+    /**
+     * Returns the edition short name.
+     *
+     * @return the edition short name
+     */
+    @Fields({
+            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+            @Field(name = "editionShortNameSort", index = Index.YES, analyze = Analyze.NO,
+                    store = Store.NO)
+    })
+    @SortableField(forField = "editionShortNameSort")
+    public String getEditionShortName() {
         return edition == null ? null : edition.getShortName();
     }
 
     /**
-     * Returns the edition namespace.
-     *
-     * @return the to code
+     * @param editionShortName the edition short name to set
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    private String getEditionNamespace() {
-        return edition == null ? null : edition.getNamespace();
-    }
-
-    /**
-     * Returns the edition country.
-     *
-     * @return the to code
-     */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    private String getEditionName() {
-        return edition == null ? null : edition.getName();
+    public void setEditionShortName(String editionShortNameSort) {
+        this.edition.setShortName(editionShortNameSort);
     }
 
     /**
      * @return the localSet
      */
+    @FieldBridge(impl = BooleanBridge.class)
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public boolean isLocalSet() {
         return localSet;
     }
@@ -428,6 +435,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /**
      * @return the moduleId
      */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public String getModuleId() {
         return moduleId;
     }
@@ -475,6 +483,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /**
      * @return the downloadable
      */
+    @FieldBridge(impl = BooleanBridge.class)
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public boolean isDownloadable() {
         return downloadable;
     }
@@ -489,6 +499,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /**
      * @return the feedbackVisible
      */
+    @FieldBridge(impl = BooleanBridge.class)
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public boolean isFeedbackVisible() {
         return feedbackVisible;
     }
@@ -512,8 +524,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the project name
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    // @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    // @SortableField
     private String getProjectName() {
         return project == null ? null : project.getName();
     }
@@ -523,11 +535,27 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the organization name
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    private String getOrganizationName() {
-        return project == null || project.getOrganization() == null ? null
-                : project.getOrganization().getName();
+    @Fields({
+            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+            @Field(name = "organizationNameSort", index = Index.YES, analyze = Analyze.NO,
+                    store = Store.NO)
+    })
+    @SortableField(forField = "organizationNameSort")
+    public String getOrganizationName() {
+        
+        if (project == null || project.getOrganization() == null) {
+            return null;
+        } else {
+            return project.getOrganization().getName();
+        }
+    }
+    
+    /**
+     * @param organizationName the organization name to set
+     */
+    public void setOrganizationName(String organizationName) {
+        
+        this.project.getOrganization().setName(organizationName);
     }
 
     /**

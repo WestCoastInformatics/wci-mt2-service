@@ -34,30 +34,19 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
     /** The modified. */
     @Column(nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    @DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
     private Date modified;
 
     /** The created. */
     @Column(nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    @DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
     private Date created;
 
     /** The modified by. */
     @Column(nullable = false, length = 256)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
     private String modifiedBy;
 
     /** The active. */
-    @FieldBridge(impl = BooleanBridge.class)
     @Column(nullable = false)
-    @SortableField
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     private boolean active = true;
 
     /**
@@ -94,6 +83,9 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
 
     /* see superclass */
     @Override
+    @FieldBridge(impl = BooleanBridge.class)
+    @SortableField
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public boolean isActive() {
         return active;
     }
@@ -106,6 +98,9 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
 
     /* see superclass */
     @Override
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
+    @DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
     public Date getModified() {
         return modified;
     }
@@ -130,6 +125,8 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
 
     /* see superclass */
     @Override
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
     public String getModifiedBy() {
         return modifiedBy;
     }
