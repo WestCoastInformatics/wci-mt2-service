@@ -17,10 +17,13 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.refsetservice.BaseTest;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
@@ -29,6 +32,10 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /**
  * Validates the code-system-* files in the "src/resources" folder.
@@ -95,11 +102,13 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     private final Logger logger =
             LoggerFactory.getLogger(RefsetMetadataMigrationTest.class);
 
-    /** The multiple versions file path. */
     private final String projectsFile =
             "src/test/resources/migration/resources/projects.txt";
 
-    /** The multiple versions file path. */
+    /** The editions file. */
+    private final String editionsFile =
+            "src/test/resources/migration/resources/editions.txt";
+
     private final String clausesFile =
             "src/test/resources/migration/resources/clauses.txt";
 
@@ -131,6 +140,16 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     private final Map<String, String> projectsMap = new HashMap<>();
 
     private final Map<String, String> refsetToProjectMap = new HashMap<>();
+
+    private final Map<String, String> shortNameToNamespaceMap = new HashMap<>();
+
+    private final Map<String, Edition> shortNameEditionsMap = new HashMap<>();
+
+    private final Map<String, Edition> namespaceEditionsMap = new HashMap<>();
+
+    private final Map<String, String> refsetNamespaceMap = new HashMap<>();
+
+    private final Map<String, String> refsetShortnameMap = new HashMap<>();
 
     /**
      * Test Single Version of General Dentistry Refset.
@@ -231,7 +250,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
                     case PROJECT:
                         final String projectJson = lineToProjectJson(line);
-                        final String editionJson = lineToEditionJson(line);
                         projectsMap.put(line.split(",")[0], projectJson);
                         break;
 
@@ -253,11 +271,14 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
     /**
      * Import refset json.
+     * @throws Exception
      */
-    private void importObjects() {
+    private void importObjects() throws Exception {
         int projectCount = 0;
         int organizationCount = 0;
         int count = 0;
+
+        generateEditions(editionsFile);
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedFlag(false);
@@ -291,7 +312,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 projectCount++;
             }
 
-            logger.debug("Have imported " + projectCount + " projects and "
+            logger.debug("AAA - Have imported " + projectCount + " projects and "
                     + organizationCount + " organizations");
 
             // Persist Refsets & ECL Definition Clauses
@@ -315,6 +336,31 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                     }
                 }
 
+                String namespace = null;
+                String shortname = null;
+                // Connect to proper edition
+                if (refsetNamespaceMap.containsKey(refset.getRefsetId())) {
+                    namespace = refsetNamespaceMap.get(refset.getRefsetId());
+                }
+                if (refsetShortnameMap.containsKey(refset.getRefsetId())) {
+                    shortname = refsetShortnameMap.get(refset.getRefsetId());
+                }
+
+                Edition edition = null;
+                if (namespace != null) {
+                    edition = namespaceEditionsMap.get(namespace);
+                }
+
+                if (shortname != null) {
+                    edition = shortNameEditionsMap.get(shortname);
+                }
+
+                if (edition == null) {
+                    logger.debug(
+                            "BBB - No edition for refset: " + refset.getRefsetId());
+                }
+
+                refset.setEdition(edition);
                 service.update(refset);
                 count++;
             }
@@ -326,10 +372,12 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         logger.info("Total of " + count + " refsets successfully added");
     }
 
-    private String lineToProjectJson(String line) {
+    private String lineToProjectJson(String line) throws Exception {
         String projectName;
         String projectDescription;
         String organizationName;
+        String namespace;
+        String shortName;
         String modified;
         String modifiedBy;
 
@@ -350,6 +398,9 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             organizationName = values[7].replaceAll("\"", "");
             modified = values[2];
             modifiedBy = values[3];
+
+            identifyEditionInfo(values[6].replaceAll("\"", ""),
+                    values[8].replaceAll("\"", ""));
         } else {
             String[] values = line.split(",");
 
@@ -358,6 +409,9 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             organizationName = values[9].replaceAll("\"", "");
             modified = values[4];
             modifiedBy = values[5];
+
+            identifyEditionInfo(values[8].replaceAll("\"", ""),
+                    values[10].replaceAll("\"", ""));
         }
 
         StringBuffer buf = new StringBuffer();
@@ -375,61 +429,28 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         return buf.toString();
     }
 
-    private String lineToEditionJson(String line) {
-        StringBuffer buf = new StringBuffer();
-
-
-        // Create Edition
-        String[] values = line.split(",");
-        final String projectId = values[27];
-
-        if (projectsMap.containsKey(projectId)) {
-            String namespace = values[18];
-            final String projectLine = projectsMap.get(projectId);
-
-            String description;
-            String projectName;
-            String modified;
-            String modifiedBy;
-
-            if (projectLine.split(",")[1].startsWith("\"")) {
-                // If description has commas (and some do), can't rely on
-                // splitting on comma. Must identify Description and then
-                // remove from line before finding other values
-                final int descStartIdx = projectLine.indexOf("\"");
-                final int descEndIdx =
-                        projectLine.substring(descStartIdx + 1).indexOf("\"");
-
-                description = projectLine.substring(descStartIdx + 1,
-                        descStartIdx + descEndIdx + 1);
-                String[] splitValues = projectsMap.get(projectId)
-                        .substring(descStartIdx + descEndIdx + 3).split(",");
-
-                projectName = splitValues[5].replaceAll("\"", "");
-                modified = splitValues[2];
-                modifiedBy = splitValues[3];
-            } else {
-                String[] splitValues = projectLine.split(",");
-
-                description = splitValues[1];
-                projectName = splitValues[7].replaceAll("\"", "");
-                modified = splitValues[4];
-                modifiedBy = splitValues[5];
-            }
-
-            buf.append("{");
-            if (namespace == null || namespace.isEmpty()
-                    || namespace.equals("NULL")) {
-                namespace = "Never Defined";
-            }
-            buf.append("\"code\": \"" + namespace + "\",");
-            buf.append("\"name\": \"" + projectName + "\",");
-            buf.append("\"branch\": \"" + values[25] + "\",");
-            buf.append("\"description\": \"" + description + "\"");
-            buf.append("}");
+    private void identifyEditionInfo(String namespace, String shortName) {
+        if (shortName.equals("SNOMEDCT") || shortName.equals("IHTSDO")) {
+            namespace = "1000002";
         }
-        
-        return buf.toString();
+
+        // Ignore the demo namespaceId
+        if (!namespace.equals("1000003") && !namespace.equals("NULL")
+                && !namespace.equals("1000245")
+                && !namespace.equals("1000057")) {
+            if (!shortNameToNamespaceMap.containsKey(shortName)) {
+                shortNameToNamespaceMap.put(shortName, namespace);
+            } else if (!shortNameToNamespaceMap.get(shortName)
+                    .equals(namespace)) {
+
+                logger.debug("CCC - " +
+                        "inconsistent use of shortname and namespace across projects. Trying to map Shortname/Namespace: "
+                                + shortName + " / " + namespace
+                                + ", but already mapped to: "
+                                + shortNameToNamespaceMap.get(shortName));
+            }
+        }
+
     }
 
     private String lineToClauseJson(String line) {
@@ -469,7 +490,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 line = line.substring(0, descStartIdx)
                         + narrative.replaceAll(",", "")
                         + line.substring(descStartIdx + descEndIdx + 2);
-                // logger.debug(line);
             } else {
                 narrative = line.split(",")[9];
             }
@@ -488,7 +508,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 line = line.substring(0, descStartIdx)
                         + narrative.replaceAll(",", "")
                         + line.substring(descStartIdx + descEndIdx + 2);
-                // logger.debug(line);
             } else {
                 name = line.split(",")[17];
             }
@@ -529,10 +548,21 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             // RefsetId to ProjectId
             refsetToProjectMap.put(rttRefsetId, values[27]);
 
+            // RefsetId to Namespace
+            if (values[18] != null && !values[18].equalsIgnoreCase("null")) {
+                refsetNamespaceMap.put(values[8], values[18]);
+            }
+
+            // RefsetId to ShortName
+            if (values[18] != null && !values[23].equalsIgnoreCase("null")) {
+                refsetShortnameMap.put(values[8], values[23]);
+            }
+
             // Finish Refset
             buf.append("\"moduleId\": \"" + values[15] + "\"");
             buf.append("}");
-            // logger.debug("AAA: " + buf.toString());
+
+            identifyEditionInfo(values[18], values[23]);
 
             Metadata meta = new Metadata(values[3], values[4]);
             metadataMap.put("refset-" + rttRefsetId, meta);
@@ -543,6 +573,57 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             e.printStackTrace();
 
             throw e;
+        }
+    }
+
+    private void generateEditions(final String filePath) throws Exception {
+        final List<String> projectsJson = FileUtility.readFileToArray(filePath);
+
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode root = mapper.readTree(projectsJson.toString());
+
+        try (final TerminologyService service = new TerminologyService()) {
+            service.setModifiedBy("Migration");
+            service.setModifiedFlag(true);
+
+            Iterator<JsonNode> itr = root.iterator();
+            while (itr.hasNext()) {
+                JsonNode editionJson = itr.next();
+
+                Edition e = new Edition();
+                e.setName(editionJson.get("name").asText());
+                e.setShortName(editionJson.get("shortName").asText());
+                e.setBranch(editionJson.get("branchPath").asText());
+
+                if (e.getName().startsWith("Australian")) {
+                    int a = 1;
+                }
+                if (e.getShortName().equals("SNOMEDCT-AR")) {
+                    shortNameToNamespaceMap.put("SNOMEDCT-AR", "1000221");
+                } else if (e.getShortName().equals("SNOMEDCT-AU")) {
+                    shortNameToNamespaceMap.put("SNOMEDCT-AU", "1000036");
+                }
+                if (shortNameToNamespaceMap.get(e.getShortName()) == null) {
+                    logger.debug("DDD - Edition without defined namespace (from project or refsets). We probably need to use module?: " + e.getName());
+                }
+                e.setNamespace(shortNameToNamespaceMap.get(e.getShortName()));
+
+                if (editionJson.has("defaultLanguageReferenceSets")) {
+                    ArrayNode languageNodeArray = (ArrayNode) editionJson
+                            .get("defaultLanguageReferenceSets");
+                    for (JsonNode languageNode : languageNodeArray) {
+                        e.getDefaultLanguageRefsets()
+                                .add(languageNode.asText());
+                    }
+                }
+
+                service.add(e);
+                shortNameEditionsMap.put(e.getShortName(), e);
+                namespaceEditionsMap.put(e.getNamespace(), e);
+            }
+        } catch (Exception e) {
+            logger.error("Have issue with: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

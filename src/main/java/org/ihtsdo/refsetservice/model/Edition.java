@@ -38,9 +38,9 @@ public class Edition extends AbstractHasModified {
     /** The name. */
     @Column(nullable = false, length = 4000)
     @Fields({
-        @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-        @Field(name = "nameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-})
+            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+            @Field(name = "nameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    })
     @SortableField(forField = "nameSort")
     private String name;
 
@@ -53,9 +53,9 @@ public class Edition extends AbstractHasModified {
     /** The short name. */
     @Column(nullable = true)
     @Fields({
-        @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-        @Field(name = "shortNameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-})
+            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+            @Field(name = "shortNameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    })
     @SortableField(forField = "shortNameSort")
     private String shortName;
 
@@ -201,7 +201,7 @@ public class Edition extends AbstractHasModified {
      *
      * @param defaultLanguageRefsets the set of default language refset Ids
      */
-    public void setDescription(Set<String> defaultLanguageRefsets) {
+    public void setDefaultLanguageRefsets(Set<String> defaultLanguageRefsets) {
         this.defaultLanguageRefsets = defaultLanguageRefsets;
     }
 
