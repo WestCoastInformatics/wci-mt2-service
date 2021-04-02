@@ -52,13 +52,22 @@ CREATE TABLE editions
     modified timestamp without time zone NOT NULL,
     modifiedby character varying(256) NOT NULL,
     branch character varying(255),
-    code character varying(255) NOT NULL,
-    description character varying(4000),
     iconuri character varying(255),
-    name character varying(255) NOT NULL,
+    name character varying(4000) NOT NULL,
+    namespace character varying(255) NOT NULL,
     shortname character varying(255),
     CONSTRAINT editions_pkey PRIMARY KEY (id)
 );
+
+CREATE TABLE edition_defaultlanguagerefsets
+(
+    edition_id character varying(64) NOT NULL,
+    defaultlanguagerefsets character varying(255),
+    CONSTRAINT fksty54m8wa2yvysx49lsgdapq0 FOREIGN KEY (edition_id)
+        REFERENCES editions (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
 
 CREATE TABLE refsets
 (
