@@ -1,1 +1,1 @@
-{"name": "Project 1", "description": "Project 1",}
+{"name": "Project 1", "description": "Project 1"}

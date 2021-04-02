@@ -1,2 +1,2 @@
-{"code": "1", "name": "US English Edition", "shortName": "US English", "iconUri": "english_icon.png", "branch": "/snomed/us/english", "description": "The US edition"}
-{"code": "1", "name": "Belgian French Edition", "shortName": "Belgian French", "iconUri": "belgian_french_icon.png", "branch": "/snomed/us/english", "description": "The US edition"}
+{"name": "US English Edition", "shortName": "US English", "iconUri": "english_icon.png", "branch": "/snomed/us/english", "namespace": "12345"}
+{"name": "Belgian French Edition", "shortName": "Belgian French", "iconUri": "belgian_french_icon.png", "branch": "/snomed/us/english", "namespace": "67890"}
