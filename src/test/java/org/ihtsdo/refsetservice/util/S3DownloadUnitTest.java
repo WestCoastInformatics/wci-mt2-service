@@ -58,28 +58,6 @@ public class S3DownloadUnitTest extends BaseTest {
     }
 
     @Test
-    public void testFileIdentification() throws Exception {
-        AmazonS3 s3Client = connectToAmazonS3();
-
-        ObjectListing objects = s3Client.listObjects("wci1");
-        List<S3ObjectSummary> fullKeyList = objects.getObjectSummaries();
-        objects = s3Client.listNextBatchOfObjects(objects);
-
-        while (objects.isTruncated()) {
-            fullKeyList.addAll(objects.getObjectSummaries());
-            objects = s3Client.listNextBatchOfObjects(objects);
-        }
-
-        fullKeyList.addAll(objects.getObjectSummaries());
-
-        // start filtering full list, to keep only relevant zip files
-        logger.info("List of files in S3 Bucket:");
-        for (S3ObjectSummary obj : fullKeyList) {
-            logger.info(obj.getKey());
-        }
-    }
-
-    @Test
     public void testFileDownload() throws Exception {
         AmazonS3 s3Client = connectToAmazonS3();
 
