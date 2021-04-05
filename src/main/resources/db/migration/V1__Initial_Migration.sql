@@ -67,7 +67,7 @@ CREATE TABLE edition_defaultlanguagerefsets
         REFERENCES editions (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-)
+);
 
 CREATE TABLE refsets
 (
