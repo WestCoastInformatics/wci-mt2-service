@@ -1,13 +1,3 @@
-/*
- * Copyright 2021 SNOMED International - All Rights Reserved.
- *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
- * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
- * and are protected by trade secret or copyright law.  Dissemination of this information
- * or reproduction of this material is strictly forbidden.
- */
-
 package org.ihtsdo.refsetservice.util;
 
 import java.io.BufferedReader;
@@ -94,14 +84,24 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         }
     }
 
+    /**
+     * The Enum FileProcessType.
+     */
     private enum FileProcessType {
-        REFSET, CLAUSE, PROJECT;
+
+        /** The refset. */
+        REFSET,
+        /** The clause. */
+        CLAUSE,
+        /** The project. */
+        PROJECT;
     }
 
     /** The logger. */
     private final Logger logger =
             LoggerFactory.getLogger(RefsetMetadataMigrationTest.class);
 
+    /** The projects file. */
     private final String projectsFile =
             "src/test/resources/migration/resources/projects.txt";
 
@@ -109,6 +109,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     private final String editionsFile =
             "src/test/resources/migration/resources/editions.txt";
 
+    /** The clauses file. */
     private final String clausesFile =
             "src/test/resources/migration/resources/clauses.txt";
 
@@ -134,22 +135,35 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /** The json map. */
     private final Map<String, String> refsetsMap = new HashMap<>();
 
+    /** The rtt refset to clauses map. */
     private final Map<String, ArrayList<String>> rttRefsetToClausesMap =
             new HashMap<>();
 
+    /** The projects map. */
     private final Map<String, String> projectsMap = new HashMap<>();
 
+    /** The refset to project map. */
     private final Map<String, String> refsetToProjectMap = new HashMap<>();
 
+    /** The short name to namespace map. */
     private final Map<String, String> shortNameToNamespaceMap = new HashMap<>();
 
+    /** The short name editions map. */
     private final Map<String, Edition> shortNameEditionsMap = new HashMap<>();
 
+    /** The namespace editions map. */
     private final Map<String, Edition> namespaceEditionsMap = new HashMap<>();
 
+    /** The refset namespace map. */
     private final Map<String, String> refsetNamespaceMap = new HashMap<>();
 
+    /** The refset shortname map. */
     private final Map<String, String> refsetShortnameMap = new HashMap<>();
+
+    /*-
+     * For missing namespace analysis only
+    private Map<String, Set<String>> cccNameToNamespace = new HashMap<>();
+     */
 
     /**
      * Test Single Version of General Dentistry Refset.
@@ -196,11 +210,26 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    // @Test
     public void testAllRefsets() throws Exception {
         preprocessingSupportingFiles();
 
         populateFromFile(allRefsetsFilePath, FileProcessType.REFSET);
+
+        /*-
+         * For missing namespace analysis only
+        for (String shortName : cccNameToNamespace.keySet()) {
+            if (cccNameToNamespace.get(shortName).size() == 1) {
+                continue;
+            }
+            for (String namespace : cccNameToNamespace.get(shortName)) {
+                logger.debug("CCC - "
+                        + "inconsistent use of shortname and namespace across projects. Trying to map Shortname/Namespace: "
+                        + shortName + " / " + namespace);
+            }
+        }
+         */
+
         importObjects();
     }
 
@@ -271,19 +300,18 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
     /**
      * Import refset json.
-     * @throws Exception
+     *
+     * @throws Exception the exception
      */
     private void importObjects() throws Exception {
-        int projectCount = 0;
-        int organizationCount = 0;
-        int count = 0;
-
         generateEditions(editionsFile);
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedFlag(false);
 
             // Persist Projects and Organizations
+            int projectCount = 0;
+            int organizationCount = 0;
             final Map<String, Project> projectIdToClassMap = new HashMap<>();
             final Map<String, Organization> organizationsAdded =
                     new HashMap<>();
@@ -312,10 +340,13 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 projectCount++;
             }
 
-            logger.debug("AAA - Have imported " + projectCount + " projects and "
+            logger.debug("Have imported " + projectCount + " projects and "
                     + organizationCount + " organizations");
 
             // Persist Refsets & ECL Definition Clauses
+            int count = 0;
+            logger.info("About to import " + refsetsMap.keySet().size()
+                    + " refsets and their respsective clauses");
             for (String rttId : refsetsMap.keySet()) {
                 final Refset refset = ModelUtility
                         .fromJson(refsetsMap.get(rttId), Refset.class);
@@ -356,28 +387,37 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 }
 
                 if (edition == null) {
-                    logger.debug(
-                            "BBB - No edition for refset: " + refset.getRefsetId());
+                    logger.debug("BBB - No edition for refset: "
+                            + refset.getRefsetId());
                 }
 
                 refset.setEdition(edition);
                 service.update(refset);
                 count++;
+
+                if (count % 250 == 0) {
+                    logger.debug("Imported + " + count + " refsets thus far");
+                }
             }
+
+            logger.info("Total of " + count + " refsets successfully added");
         } catch (Exception e) {
             logger.error("Have issue with: " + e.getMessage());
             e.printStackTrace();
         }
-
-        logger.info("Total of " + count + " refsets successfully added");
     }
 
+    /**
+     * Line to project json.
+     *
+     * @param line the line
+     * @return the string
+     * @throws Exception the exception
+     */
     private String lineToProjectJson(String line) throws Exception {
         String projectName;
         String projectDescription;
         String organizationName;
-        String namespace;
-        String shortName;
         String modified;
         String modifiedBy;
 
@@ -399,6 +439,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             modified = values[2];
             modifiedBy = values[3];
 
+            // Based on Project Info
             identifyEditionInfo(values[6].replaceAll("\"", ""),
                     values[8].replaceAll("\"", ""));
         } else {
@@ -410,6 +451,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             modified = values[4];
             modifiedBy = values[5];
 
+            // Based on Project Info
             identifyEditionInfo(values[8].replaceAll("\"", ""),
                     values[10].replaceAll("\"", ""));
         }
@@ -429,30 +471,35 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         return buf.toString();
     }
 
+    /**
+     * Identify edition info.
+     *
+     * @param namespace the namespace
+     * @param shortName the short name
+     */
     private void identifyEditionInfo(String namespace, String shortName) {
-        if (shortName.equals("SNOMEDCT") || shortName.equals("IHTSDO")) {
-            namespace = "1000002";
+        /*-
+         * For missing namespace analysis only
+        if (!shortNameToNamespaceMap.containsKey(shortName)) {
+            shortNameToNamespaceMap.put(shortName, namespace);
+            cccNameToNamespace.put(shortName, new HashSet<>());
+            cccNameToNamespace.get(shortName).add(namespace);
+        } else if (!shortNameToNamespaceMap.get(shortName).equals(namespace)) {
+            cccNameToNamespace.get(shortName).add(namespace);
         }
+        */
 
-        // Ignore the demo namespaceId
-        if (!namespace.equals("1000003") && !namespace.equals("NULL")
-                && !namespace.equals("1000245")
-                && !namespace.equals("1000057")) {
-            if (!shortNameToNamespaceMap.containsKey(shortName)) {
-                shortNameToNamespaceMap.put(shortName, namespace);
-            } else if (!shortNameToNamespaceMap.get(shortName)
-                    .equals(namespace)) {
-
-                logger.debug("CCC - " +
-                        "inconsistent use of shortname and namespace across projects. Trying to map Shortname/Namespace: "
-                                + shortName + " / " + namespace
-                                + ", but already mapped to: "
-                                + shortNameToNamespaceMap.get(shortName));
-            }
+        if (!shortNameToNamespaceMap.containsKey(shortName)) {
+            shortNameToNamespaceMap.put(shortName, namespace);
         }
-
     }
 
+    /**
+     * Line to clause json.
+     *
+     * @param line the line
+     * @return the string
+     */
     private String lineToClauseJson(String line) {
         StringBuffer buf = new StringBuffer();
         String[] clauseValues = line.split(",");
@@ -539,7 +586,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                     + ((values[15].equals("0")) ? "true" : "false") + ",");
             buf.append("\"localSet\": "
                     + ((values[29].equals("1")) ? "true" : "false") + ",");
-            // buf.append("\"projectId\": \"" + values[1] + "\",");
 
             if (!values[11].equals("NULL")) {
                 buf.append("\"externalUrl\": \"" + values[11] + "\",");
@@ -562,6 +608,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             buf.append("\"moduleId\": \"" + values[15] + "\"");
             buf.append("}");
 
+            // Based on Refset Data
             identifyEditionInfo(values[18], values[23]);
 
             Metadata meta = new Metadata(values[3], values[4]);
@@ -576,6 +623,12 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         }
     }
 
+    /**
+     * Generate editions.
+     *
+     * @param filePath the file path
+     * @throws Exception the exception
+     */
     private void generateEditions(final String filePath) throws Exception {
         final List<String> projectsJson = FileUtility.readFileToArray(filePath);
 
@@ -586,6 +639,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
+            int count = 0;
             Iterator<JsonNode> itr = root.iterator();
             while (itr.hasNext()) {
                 JsonNode editionJson = itr.next();
@@ -595,18 +649,15 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 e.setShortName(editionJson.get("shortName").asText());
                 e.setBranch(editionJson.get("branchPath").asText());
 
-                if (e.getName().startsWith("Australian")) {
-                    int a = 1;
+                if (!shortNameToNamespaceMap.containsKey(e.getShortName())) {
+                    logger.debug(
+                            "DDD - Listing for Customer Feedback: Edition without defined namespace (from project or refsets). We probably need to use module?: "
+                                    + e.getName());
+                    e.setNamespace("To Be Defined");
+                } else {
+                    e.setNamespace(
+                            shortNameToNamespaceMap.get(e.getShortName()));
                 }
-                if (e.getShortName().equals("SNOMEDCT-AR")) {
-                    shortNameToNamespaceMap.put("SNOMEDCT-AR", "1000221");
-                } else if (e.getShortName().equals("SNOMEDCT-AU")) {
-                    shortNameToNamespaceMap.put("SNOMEDCT-AU", "1000036");
-                }
-                if (shortNameToNamespaceMap.get(e.getShortName()) == null) {
-                    logger.debug("DDD - Edition without defined namespace (from project or refsets). We probably need to use module?: " + e.getName());
-                }
-                e.setNamespace(shortNameToNamespaceMap.get(e.getShortName()));
 
                 if (editionJson.has("defaultLanguageReferenceSets")) {
                     ArrayNode languageNodeArray = (ArrayNode) editionJson
@@ -620,18 +671,32 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 service.add(e);
                 shortNameEditionsMap.put(e.getShortName(), e);
                 namespaceEditionsMap.put(e.getNamespace(), e);
+                count++;
             }
+
+            logger.info("Imported " + count + " editions");
         } catch (Exception e) {
             logger.error("Have issue with: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+    /**
+     * Preprocessing supporting files.
+     *
+     * @throws Exception the exception
+     */
     private void preprocessingSupportingFiles() throws Exception {
         populateFromFile(clausesFile, FileProcessType.CLAUSE);
         populateFromFile(projectsFile, FileProcessType.PROJECT);
     }
 
+    /**
+     * Sets the metadata.
+     *
+     * @param object the object
+     * @param metadata the metadata
+     */
     private void setMetadata(HasModified object, Metadata metadata) {
         object.setModified(metadata.getModified());
         object.setCreated(metadata.getModified());
