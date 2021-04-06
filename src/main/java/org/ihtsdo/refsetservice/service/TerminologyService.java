@@ -266,7 +266,8 @@ public class TerminologyService implements RootService {
 
         if (getTransactionPerOperation()) {
             throw new IllegalStateException(
-                    "Error attempting to commit a transaction when using transactions per operation mode.");
+                    "Error attempting to commit a transaction when using transactions per "
+                            + "operation mode.");
         } else if (transaction != null && !transaction.isActive()) {
             throw new IllegalStateException("Error attempting to commit a transaction when there "
                     + "is no active transaction");

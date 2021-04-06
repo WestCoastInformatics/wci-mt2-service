@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
  * Entry point for webapp.
  */
 @Service
-public class GeneratorApplication {
+class GeneratorApplication {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(GeneratorApplication.class);

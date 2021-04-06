@@ -132,7 +132,8 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @ApiOperation(value = "Get refset search results", response = ResultList.class,
-            notes = "Use cases for search range from very simple term searches, use of paging parameters, additional filters, searches properties, and so on.")
+            notes = "Use cases for search range from very simple term searches, use of paging "
+                    + "parameters, additional filters, searches properties, and so on.")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
             @ApiResponse(code = 400, message = "Bad request"),
