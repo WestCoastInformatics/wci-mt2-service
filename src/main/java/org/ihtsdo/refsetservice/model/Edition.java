@@ -93,7 +93,6 @@ public class Edition extends AbstractHasModified {
     /**
      * Instantiates a {@link Edition} from the specified parameters.
      *
-     * @param code the key
      * @param name the value
      */
     public Edition(final String name) {
@@ -147,7 +146,7 @@ public class Edition extends AbstractHasModified {
      *
      * @param namespace the namespace
      */
-    public void setNamespace(String namespace) {
+    public void setNamespace(final String namespace) {
         this.namespace = namespace;
     }
 
@@ -165,7 +164,7 @@ public class Edition extends AbstractHasModified {
      *
      * @param iconUri the iconUri to set
      */
-    public void setIconUri(String iconUri) {
+    public void setIconUri(final String iconUri) {
         this.iconUri = iconUri;
     }
 
@@ -183,7 +182,7 @@ public class Edition extends AbstractHasModified {
      *
      * @param branch the branch to set
      */
-    public void setBranch(String branch) {
+    public void setBranch(final String branch) {
         this.branch = branch;
     }
 
@@ -201,7 +200,8 @@ public class Edition extends AbstractHasModified {
      *
      * @param defaultLanguageRefsets the set of default language refset Ids
      */
-    public void setDefaultLanguageRefsets(Set<String> defaultLanguageRefsets) {
+    public void setDefaultLanguageRefsets(
+        final Set<String> defaultLanguageRefsets) {
         this.defaultLanguageRefsets = defaultLanguageRefsets;
     }
 
@@ -219,7 +219,7 @@ public class Edition extends AbstractHasModified {
      *
      * @param country the country to set
      */
-    public void setShortName(String country) {
+    public void setShortName(final String country) {
         this.shortName = country;
     }
 

@@ -41,7 +41,7 @@ public class ConceptControllerTests extends BaseTest {
 
     /** The env. */
     @Autowired
-    Environment env;
+    private Environment env;
 
     /**
      * Sets the up.

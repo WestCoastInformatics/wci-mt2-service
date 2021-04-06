@@ -24,10 +24,11 @@ import org.springframework.context.annotation.DependsOn;
 public class PersistenceConfiguration {
 
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(PersistenceConfiguration.class);
+    private static Logger logger =
+            LoggerFactory.getLogger(PersistenceConfiguration.class);
 
     /** The config properties. */
-    Properties properties = PropertyUtility.getProperties();
+    private final Properties properties = PropertyUtility.getProperties();
 
     /**
      * Instantiates an empty {@link PersistenceConfiguration}.
@@ -48,7 +49,7 @@ public class PersistenceConfiguration {
         FlywayMigrationStrategy strategy = new FlywayMigrationStrategy() {
 
             @Override
-            public void migrate(Flyway flyway) {
+            public void migrate(final Flyway flyway) {
                 logger.debug("******* SHOULD BE MIGRATING");
                 flyway.migrate();
             }
@@ -69,12 +70,12 @@ public class PersistenceConfiguration {
         final Properties config = PropertyUtility.getProperties();
         logger.debug("******* customFlyway config: ", config);
 
-        final String jdbcUrl =
-                properties.getProperty("spring.jpa.properties.hibernate.connection.url");
-        final String user =
-                properties.getProperty("spring.jpa.properties.hibernate.connection.username");
-        final String pwd =
-                properties.getProperty("spring.jpa.properties.hibernate.connection.password");
+        final String jdbcUrl = properties
+                .getProperty("spring.jpa.properties.hibernate.connection.url");
+        final String user = properties.getProperty(
+                "spring.jpa.properties.hibernate.connection.username");
+        final String pwd = properties.getProperty(
+                "spring.jpa.properties.hibernate.connection.password");
         final String location = "classpath:db/migration";
         Map<String, String> placeholders = new HashMap<>();
 
@@ -82,8 +83,10 @@ public class PersistenceConfiguration {
 
             placeholders.put("pre_if_exists", "if exists");
             placeholders.put("post_if_exists", "");
-            placeholders.put("create_mapping_events_seq", "CREATE SEQUENCE mapping_events_seq;");
-            placeholders.put("auto_increment", "set default nextval('mapping_events_seq')");
+            placeholders.put("create_mapping_events_seq",
+                    "CREATE SEQUENCE mapping_events_seq;");
+            placeholders.put("auto_increment",
+                    "set default nextval('mapping_events_seq')");
             placeholders.put("jsonb", "jsonb");
 
         } else if (jdbcUrl.toLowerCase().startsWith("jdbc:h2")) {
@@ -97,8 +100,8 @@ public class PersistenceConfiguration {
             throw new RuntimeException("Unhandled database url: " + jdbcUrl);
         }
 
-        return Flyway.configure().dataSource(jdbcUrl, user, pwd).locations(location)
-                .placeholders(placeholders)
+        return Flyway.configure().dataSource(jdbcUrl, user, pwd)
+                .locations(location).placeholders(placeholders)
                 // .schemas("MAPPING")
                 .load();
     }
@@ -112,8 +115,9 @@ public class PersistenceConfiguration {
      */
     @Bean
     @DependsOn("customMigrationStrategy")
-    public FlywayMigrationInitializer flywayInitializer(Flyway flyway,
-        ObjectProvider<FlywayMigrationStrategy> migrationStrategy) {
-        return new FlywayMigrationInitializer(flyway, migrationStrategy.getIfAvailable());
+    public FlywayMigrationInitializer flywayInitializer(final Flyway flyway,
+        final ObjectProvider<FlywayMigrationStrategy> migrationStrategy) {
+        return new FlywayMigrationInitializer(flyway,
+                migrationStrategy.getIfAvailable());
     }
 }

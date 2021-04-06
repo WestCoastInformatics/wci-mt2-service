@@ -8,16 +8,15 @@ import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -58,12 +57,10 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.",
-                    required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataType = "string", paramType = "path"),
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}",
-            produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}", produces = "application/json")
     public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId") final String refsetId)
         throws Exception {
 
@@ -97,7 +94,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetId}")
-    Refset updateActive(@RequestBody boolean active, @PathVariable String refsetId)
+    Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetId)
         throws Exception {
 
         try {
@@ -132,33 +129,24 @@ public class RefsetController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get refset search results", response = ResultList.class,
-            notes = "Use cases for search range from very simple term searches, use of paging parameters, additional filters, searches properties, and so on.")
+    @ApiOperation(value = "Get refset search results", response = ResultList.class, notes = "Use cases for search range from very simple term searches, use of paging parameters, additional filters, searches properties, and so on.")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology",
-                    value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true,
-                    dataType = "string", paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query",
-                    value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
-                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0")
-            // TODO: activeOnly, sort, sortAscending
+            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+    // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/search",
-            produces = "application/json")
-    public @ResponseBody ResultList<Refset> search(
-        SearchParameters searchParameters, final BindingResult bindingResult)
-        throws Exception {
-        
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = "application/json")
+    public @ResponseBody ResultList<Refset> search(final SearchParameters searchParameters,
+        final BindingResult bindingResult) throws Exception {
+
         // Check whether or not parameter binding was successful
         if (bindingResult.hasErrors()) {
 
@@ -181,34 +169,35 @@ public class RefsetController extends BaseController {
 
             final long start = System.currentTimeMillis();
             ResultList<Refset> results = new ResultList<Refset>();
-            
+
             logger.debug("******** searchParameters: " + ModelUtility.toJson(searchParameters));
-            
+
             final PfsParameter pfs = new PfsParameter();
-            
+
             if (searchParameters.getOffset() != null) {
-              pfs.setOffset(searchParameters.getOffset());
+                pfs.setOffset(searchParameters.getOffset());
             }
-            
+
             if (searchParameters.getLimit() != null) {
-              pfs.setLimit(searchParameters.getLimit());
+                pfs.setLimit(searchParameters.getLimit());
             }
-            
+
             if (searchParameters.getSortAscending() != null) {
-              pfs.setAscending(searchParameters.getSortAscending());
+                pfs.setAscending(searchParameters.getSortAscending());
             }
-            
+
             if (searchParameters.getSort() != null) {
-              pfs.setSort(searchParameters.getSort());
+                pfs.setSort(searchParameters.getSort());
             }
-            
-//            ResultList<Refset> test = service.find("id: 78659156-b6d6-4935-bcdf-c4692bcee10d", pfs, Refset.class, null);
-//            logger.debug("******** test: " + ModelUtility.toJson(test));
+
+            // ResultList<Refset> test = service.find("id:
+            // 78659156-b6d6-4935-bcdf-c4692bcee10d", pfs, Refset.class, null);
+            // logger.debug("******** test: " + ModelUtility.toJson(test));
 
             results = service.find(searchParameters.getQuery(), pfs, Refset.class, null);
-            
+
             for (Refset refset : results.getItems()) {
-                
+
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(false);
             }

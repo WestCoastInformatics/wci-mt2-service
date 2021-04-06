@@ -115,7 +115,7 @@ public class Project extends AbstractHasModified {
     /**
      * @param description the description to set
      */
-    public void setDescription(String description) {
+    public void setDescription(final String description) {
         this.description = description;
     }
 
@@ -129,7 +129,7 @@ public class Project extends AbstractHasModified {
     /**
      * @param organization the organization to set
      */
-    public void setOrganization(Organization organization) {
+    public void setOrganization(final Organization organization) {
         this.organization = organization;
     }
 
@@ -144,8 +144,10 @@ public class Project extends AbstractHasModified {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((description == null) ? 0 : description.hashCode());
-        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result
+                + ((description == null) ? 0 : description.hashCode());
+        result = prime * result
+                + ((organization == null) ? 0 : organization.hashCode());
         return result;
     }
 

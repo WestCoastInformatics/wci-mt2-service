@@ -27,15 +27,15 @@ public class PropertyUtility {
     @SuppressWarnings("unused")
     private static Logger logger = LoggerFactory.getLogger(PropertyUtility.class);
 
-    /** the Spring environment variable */
+    /** the Spring environment variable. */
     @Autowired
-    Environment env;
+    private Environment env;
 
-    /** the config properties cache */
+    /** the config properties cache. */
     private static Properties properties = new Properties();
 
-    /** are the properties ready to be accessed */
-    private volatile static boolean ready = false;
+    /** are the properties ready to be accessed. */
+    private static volatile boolean ready = false;
 
     /**
      * initialize the properties.
@@ -70,7 +70,7 @@ public class PropertyUtility {
      * @param key the property key
      * @param value The property value
      */
-    public static void setProperty(String key, String value) {
+    public static void setProperty(final String key, final String value) {
 
         assureReadiness();
         properties.put(key, value);
@@ -82,7 +82,7 @@ public class PropertyUtility {
      * @param key The key of the property to return
      * @return the value of the requested property or null
      */
-    public static String getProperty(String key) {
+    public static String getProperty(final String key) {
 
         assureReadiness();
 
@@ -94,7 +94,7 @@ public class PropertyUtility {
     }
 
     /**
-     * Return properties with the specified prefix
+     * Return properties with the specified prefix.
      *
      * @param prefix the prefix of the properties to return
      * @param removePrefix Should the prefix be removed from the keys of the

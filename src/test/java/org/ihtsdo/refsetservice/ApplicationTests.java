@@ -25,14 +25,14 @@ public class ApplicationTests extends BaseTest {
 
     /** The context. */
     @Autowired
-    ApplicationContext context;
+    private ApplicationContext context;
 
     /** The env. */
     @Autowired
-    Environment env;
+    private Environment env;
 
     /** The config properties. */
-    Properties properties = PropertyUtility.getProperties();
+    private Properties properties = PropertyUtility.getProperties();
 
     /**
      * Context loads.
@@ -48,7 +48,8 @@ public class ApplicationTests extends BaseTest {
      */
     @Test
     public void propertiesLoads() {
-        assertThat(properties.getProperty("spring.application.name")).isEqualTo("ihtsdo-refset-service");
+        assertThat(properties.getProperty("spring.application.name"))
+                .isEqualTo("ihtsdo-refset-service");
         logger.info("properties loaded successfully");
     }
 

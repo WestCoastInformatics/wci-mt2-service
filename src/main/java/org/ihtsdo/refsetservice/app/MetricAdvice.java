@@ -34,11 +34,11 @@ public class MetricAdvice {
 
     /** The elastic server properties. */
     @Autowired
-    ElasticServerProperties elasticServerProperties;
+    private ElasticServerProperties elasticServerProperties;
 
     /** The operations service. */
     @Autowired
-    ElasticOperationsService operationsService;
+    private ElasticOperationsService operationsService;
 
     /**
      * Record metric.

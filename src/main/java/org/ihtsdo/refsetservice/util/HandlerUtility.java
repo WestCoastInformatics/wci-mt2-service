@@ -11,7 +11,7 @@ import org.ihtsdo.refsetservice.model.Configurable;
 public class HandlerUtility {
 
     /** The property key for service handlers. */
-    public static final String serviceKey = "service.handler";
+    public static final String SERVICE_KEY = "service.handler";
 
     /**
      * Instantiates a handler using standard setup and configures it with
