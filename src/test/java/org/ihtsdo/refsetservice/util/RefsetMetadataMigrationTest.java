@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
+// TODO: Auto-generated Javadoc
 /**
  * Validates the code-system-* files in the "src/resources" folder.
  */
@@ -38,10 +39,10 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     private class Metadata {
 
         /** The modified. */
-        Date modified;
+        private Date modified;
 
         /** The modified by. */
-        String modifiedBy;
+        private String modifiedBy;
 
         /**
          * Instantiates a new metadata.
@@ -49,18 +50,19 @@ public class RefsetMetadataMigrationTest extends BaseTest {
          * @param modified the modified
          * @param modifiedBy the modified by
          */
-        public Metadata(String modified, String modifiedBy) {
+        public Metadata(final String modified, final String modifiedBy) {
+            String updatedModified = modified;
             try {
-                if (modified == null || modified.isEmpty()
-                        || modified.equals("NULL")) {
-                    modified = new Date().toString();
+                if (modified == null || modified.isEmpty() || modified.equals("NULL")) {
+                    updatedModified = new Date().toString();
                 }
+
                 this.modified = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                        .parse(modified.replaceAll("\"", ""));
+                        .parse(updatedModified.replaceAll("\"", ""));
                 this.modifiedBy = modifiedBy;
             } catch (Exception e) {
-                logger.error("Failed with mod/modBy: "
-                        + modified.replaceAll("\"", "") + " / " + modifiedBy);
+                logger.error("Failed with mod/modBy: " + updatedModified.replaceAll("\"", "")
+                        + " / " + modifiedBy);
                 e.printStackTrace();
             }
         }
@@ -98,20 +100,16 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     }
 
     /** The logger. */
-    private final Logger logger =
-            LoggerFactory.getLogger(RefsetMetadataMigrationTest.class);
+    private final Logger logger = LoggerFactory.getLogger(RefsetMetadataMigrationTest.class);
 
     /** The projects file. */
-    private final String projectsFile =
-            "src/test/resources/migration/resources/projects.txt";
+    private final String projectsFile = "src/test/resources/migration/resources/projects.txt";
 
     /** The editions file. */
-    private final String editionsFile =
-            "src/test/resources/migration/resources/editions.txt";
+    private final String editionsFile = "src/test/resources/migration/resources/editions.txt";
 
     /** The clauses file. */
-    private final String clausesFile =
-            "src/test/resources/migration/resources/clauses.txt";
+    private final String clausesFile = "src/test/resources/migration/resources/clauses.txt";
 
     /** The multiple versions file path. */
     private final String multipleVersionsFilePath =
@@ -136,8 +134,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     private final Map<String, String> refsetsMap = new HashMap<>();
 
     /** The rtt refset to clauses map. */
-    private final Map<String, ArrayList<String>> rttRefsetToClausesMap =
-            new HashMap<>();
+    private final Map<String, ArrayList<String>> rttRefsetToClausesMap = new HashMap<>();
 
     /** The projects map. */
     private final Map<String, String> projectsMap = new HashMap<>();
@@ -200,8 +197,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     public void testRefsetWithClauses() throws Exception {
         preprocessingSupportingFiles();
 
-        populateFromFile(singleVersionWithRefsetFilePath,
-                FileProcessType.REFSET);
+        populateFromFile(singleVersionWithRefsetFilePath, FileProcessType.REFSET);
         importObjects();
     }
 
@@ -224,8 +220,8 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             }
             for (String namespace : cccNameToNamespace.get(shortName)) {
                 logger.debug("CCC - "
-                        + "inconsistent use of shortname and namespace across projects. Trying to map Shortname/Namespace: "
-                        + shortName + " / " + namespace);
+                        + "inconsistent use of shortname and namespace across projects. Trying to "
+                        + "map Shortname/Namespace: " + shortName + " / " + namespace);
             }
         }
          */
@@ -238,10 +234,9 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @param inputFile the input file
      * @param processType the process type
-     * @return the string
      * @throws Exception the exception
      */
-    private void populateFromFile(String inputFile, FileProcessType processType)
+    private void populateFromFile(final String inputFile, final FileProcessType processType)
         throws Exception {
         BufferedReader reader;
 
@@ -261,8 +256,8 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
                     case CLAUSE:
                         // Combine multiline clauses into one
-                        while (line.indexOf("\"") >= 0 && line
-                                .indexOf("\"") == line.lastIndexOf("\"")) {
+                        while (line.indexOf("\"") >= 0
+                                && line.indexOf("\"") == line.lastIndexOf("\"")) {
                             line = line + " " + reader.readLine();
                         }
 
@@ -271,8 +266,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                         // store all clauses associated wtih a given refset
                         final String rttRefsetId = line.split(",")[0];
                         if (!rttRefsetToClausesMap.containsKey(rttRefsetId)) {
-                            rttRefsetToClausesMap.put(rttRefsetId,
-                                    new ArrayList<String>());
+                            rttRefsetToClausesMap.put(rttRefsetId, new ArrayList<String>());
                         }
                         rttRefsetToClausesMap.get(rttRefsetId).add(clauseJson);
                         break;
@@ -284,8 +278,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
                     default:
                         throw new Exception(
-                                "Should never reach here have processType: "
-                                        + processType);
+                                "Should never reach here have processType: " + processType);
                 }
 
                 // read next line
@@ -313,25 +306,22 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             int projectCount = 0;
             int organizationCount = 0;
             final Map<String, Project> projectIdToClassMap = new HashMap<>();
-            final Map<String, Organization> organizationsAdded =
-                    new HashMap<>();
+            final Map<String, Organization> organizationsAdded = new HashMap<>();
 
             for (String index : projectsMap.keySet()) {
-                final Project project = ModelUtility
-                        .fromJson(projectsMap.get(index), Project.class);
+                final Project project =
+                        ModelUtility.fromJson(projectsMap.get(index), Project.class);
 
-                if (!organizationsAdded
-                        .containsKey(project.getOrganization().getName())) {
-                    setMetadata(project.getOrganization(),
-                            metadataMap.get("project-" + index));
+                if (!organizationsAdded.containsKey(project.getOrganization().getName())) {
+                    setMetadata(project.getOrganization(), metadataMap.get("project-" + index));
                     service.add(project.getOrganization());
 
                     organizationsAdded.put(project.getOrganization().getName(),
                             project.getOrganization());
                     organizationCount++;
                 } else {
-                    project.setOrganization(organizationsAdded
-                            .get(project.getOrganization().getName()));
+                    project.setOrganization(
+                            organizationsAdded.get(project.getOrganization().getName()));
                 }
 
                 setMetadata(project, metadataMap.get("project-" + index));
@@ -340,16 +330,15 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 projectCount++;
             }
 
-            logger.debug("Have imported " + projectCount + " projects and "
-                    + organizationCount + " organizations");
+            logger.debug("Have imported " + projectCount + " projects and " + organizationCount
+                    + " organizations");
 
             // Persist Refsets & ECL Definition Clauses
             int count = 0;
             logger.info("About to import " + refsetsMap.keySet().size()
                     + " refsets and their respsective clauses");
             for (String rttId : refsetsMap.keySet()) {
-                final Refset refset = ModelUtility
-                        .fromJson(refsetsMap.get(rttId), Refset.class);
+                final Refset refset = ModelUtility.fromJson(refsetsMap.get(rttId), Refset.class);
                 String projectId = refsetToProjectMap.get(rttId);
                 refset.setProject(projectIdToClassMap.get(projectId));
 
@@ -358,8 +347,8 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
                 if (rttRefsetToClausesMap.containsKey(rttId)) {
                     for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
-                        final DefinitionClause clause = ModelUtility
-                                .fromJson(clauseJson, DefinitionClause.class);
+                        final DefinitionClause clause =
+                                ModelUtility.fromJson(clauseJson, DefinitionClause.class);
 
                         setMetadata(clause, metadataMap.get("refset-" + rttId));
                         service.add(clause);
@@ -387,8 +376,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 }
 
                 if (edition == null) {
-                    logger.debug("BBB - No edition for refset: "
-                            + refset.getRefsetId());
+                    logger.debug("BBB - No edition for refset: " + refset.getRefsetId());
                 }
 
                 refset.setEdition(edition);
@@ -414,7 +402,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      * @return the string
      * @throws Exception the exception
      */
-    private String lineToProjectJson(String line) throws Exception {
+    private String lineToProjectJson(final String line) throws Exception {
         String projectName;
         String projectDescription;
         String organizationName;
@@ -426,13 +414,10 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             // on comma. Must identify Description and then remove from line
             // before finding other values
             final int descStartIdx = line.indexOf("\"");
-            final int descEndIdx =
-                    line.substring(descStartIdx + 1).indexOf("\"");
+            final int descEndIdx = line.substring(descStartIdx + 1).indexOf("\"");
 
-            projectDescription = line.substring(descStartIdx + 1,
-                    descStartIdx + descEndIdx + 1);
-            String[] values =
-                    line.substring(descStartIdx + descEndIdx + 3).split(",");
+            projectDescription = line.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
+            String[] values = line.substring(descStartIdx + descEndIdx + 3).split(",");
 
             projectName = values[5].replaceAll("\"", "");
             organizationName = values[7].replaceAll("\"", "");
@@ -440,8 +425,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             modifiedBy = values[3];
 
             // Based on Project Info
-            identifyEditionInfo(values[6].replaceAll("\"", ""),
-                    values[8].replaceAll("\"", ""));
+            identifyEditionInfo(values[6].replaceAll("\"", ""), values[8].replaceAll("\"", ""));
         } else {
             String[] values = line.split(",");
 
@@ -452,8 +436,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             modifiedBy = values[5];
 
             // Based on Project Info
-            identifyEditionInfo(values[8].replaceAll("\"", ""),
-                    values[10].replaceAll("\"", ""));
+            identifyEditionInfo(values[8].replaceAll("\"", ""), values[10].replaceAll("\"", ""));
         }
 
         StringBuffer buf = new StringBuffer();
@@ -461,12 +444,10 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         buf.append("{");
         buf.append("\"name\": \"" + projectName + "\",");
         buf.append("\"description\": \"" + projectDescription + "\",");
-        buf.append(
-                "\"organization\": {\"name\": \"" + organizationName + "\"}");
+        buf.append("\"organization\": {\"name\": \"" + organizationName + "\"}");
         buf.append("}");
 
-        metadataMap.put("project-" + line.split(",")[0],
-                new Metadata(modified, modifiedBy));
+        metadataMap.put("project-" + line.split(",")[0], new Metadata(modified, modifiedBy));
 
         return buf.toString();
     }
@@ -477,7 +458,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      * @param namespace the namespace
      * @param shortName the short name
      */
-    private void identifyEditionInfo(String namespace, String shortName) {
+    private void identifyEditionInfo(final String namespace, final String shortName) {
         /*-
          * For missing namespace analysis only
         if (!shortNameToNamespaceMap.containsKey(shortName)) {
@@ -500,16 +481,15 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      * @param line the line
      * @return the string
      */
-    private String lineToClauseJson(String line) {
+    private String lineToClauseJson(final String line) {
         StringBuffer buf = new StringBuffer();
         String[] clauseValues = line.split(",");
         buf.append("{ \"negated\":\"");
         buf.append(clauseValues[1].equals("0") ? "false" : "true");
         buf.append("\",");
 
-        buf.append("\"value\":\""
-                + clauseValues[2].replaceAll("\"", "").replaceAll("\t", "")
-                + "\"}");
+        buf.append(
+                "\"value\":\"" + clauseValues[2].replaceAll("\"", "").replaceAll("\t", "") + "\"}");
         return buf.toString();
     }
 
@@ -519,55 +499,50 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      * @param line the line
      * @return the string
      */
-    private String lineToRefsetJson(String line) {
+    private String lineToRefsetJson(final String line) {
+        String updatedLine = line;
+
         try {
             String narrative;
             String name;
-            if (line.split(",")[9].startsWith("\"")) {
+            if (updatedLine.split(",")[9].startsWith("\"")) {
                 // If narrative has commas (and some do), can't rely on
                 // splitting on comma. Must identify narrative and then
                 // remove from line before finding other values
-                final int descStartIdx = line.indexOf(line.split(",")[9]);
-                final int descEndIdx =
-                        line.substring(descStartIdx + 1).indexOf("\"");
-                narrative = line.substring(descStartIdx + 1,
-                        descStartIdx + descEndIdx + 1);
+                final int descStartIdx = updatedLine.indexOf(updatedLine.split(",")[9]);
+                final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
+                narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
-                // Cleanup line to remove ',' in narrative
-                line = line.substring(0, descStartIdx)
-                        + narrative.replaceAll(",", "")
-                        + line.substring(descStartIdx + descEndIdx + 2);
+                // Cleanup updateLine to remove ',' in narrative
+                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(",", "")
+                        + updatedLine.substring(descStartIdx + descEndIdx + 2);
             } else {
-                narrative = line.split(",")[9];
+                narrative = updatedLine.split(",")[9];
             }
 
-            if (line.split(",")[17].startsWith("\"")) {
+            if (updatedLine.split(",")[17].startsWith("\"")) {
                 // If narrative has commas (and some do), can't rely on
                 // splitting on comma. Must identify narrative and then
                 // remove from line before finding other values
-                final int descStartIdx = line.indexOf(line.split(",")[17]);
-                final int descEndIdx =
-                        line.substring(descStartIdx + 1).indexOf("\"");
-                name = line.substring(descStartIdx + 1,
-                        descStartIdx + descEndIdx + 1);
+                final int descStartIdx = updatedLine.indexOf(updatedLine.split(",")[17]);
+                final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
+                name = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
                 // Cleanup line to remove ',' in narrative
-                line = line.substring(0, descStartIdx)
-                        + narrative.replaceAll(",", "")
-                        + line.substring(descStartIdx + descEndIdx + 2);
+                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(",", "")
+                        + updatedLine.substring(descStartIdx + descEndIdx + 2);
             } else {
-                name = line.split(",")[17];
+                name = updatedLine.split(",")[17];
             }
 
-            line = line.replace("\"", "");
-            String values[] = line.split(",");
-            StringBuffer buf = new StringBuffer();
+            updatedLine = updatedLine.replace("\"", "");
+            final String values[] = updatedLine.split(",");
+            final StringBuffer buf = new StringBuffer();
             final String rttRefsetId = values[0];
 
             buf.append("{");
             buf.append("\"refsetId\": \"" + values[8] + "\",");
-            buf.append("\"active\": "
-                    + ((values[1].equals("1")) ? "true" : "false") + ",");
+            buf.append("\"active\": " + ((values[1].equals("1")) ? "true" : "false") + ",");
             buf.append("\"name\": \"" + name + "\",");
             buf.append("\"type\": \"" + values[24] + "\",");
             buf.append("\"narrative\": \"" + narrative + "\",");
@@ -577,15 +552,12 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 buf.append("\"versionDate\": \"" + versionDate + "\",");
             }
 
-            if (values[28] != null && !values[28].isEmpty()
-                    && !values[28].equals("NULL")) {
+            if (values[28] != null && !values[28].isEmpty() && !values[28].equals("NULL")) {
                 buf.append("\"tags\": [\"" + values[28] + "\"],");
             }
             buf.append("\"versionStatus\": \"" + values[26] + "\",");
-            buf.append("\"privateRefset\": "
-                    + ((values[15].equals("0")) ? "true" : "false") + ",");
-            buf.append("\"localSet\": "
-                    + ((values[29].equals("1")) ? "true" : "false") + ",");
+            buf.append("\"privateRefset\": " + ((values[15].equals("0")) ? "true" : "false") + ",");
+            buf.append("\"localSet\": " + ((values[29].equals("1")) ? "true" : "false") + ",");
 
             if (!values[11].equals("NULL")) {
                 buf.append("\"externalUrl\": \"" + values[11] + "\",");
@@ -616,7 +588,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
             return buf.toString();
         } catch (Exception e) {
-            logger.error("Line: " + line);
+            logger.error("Line: " + line + " and updateLine: " + updatedLine);
             e.printStackTrace();
 
             throw e;
@@ -650,21 +622,19 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 e.setBranch(editionJson.get("branchPath").asText());
 
                 if (!shortNameToNamespaceMap.containsKey(e.getShortName())) {
-                    logger.debug(
-                            "DDD - Listing for Customer Feedback: Edition without defined namespace (from project or refsets). We probably need to use module?: "
-                                    + e.getName());
+                    logger.debug("DDD - Listing for Customer Feedback: Edition without defined "
+                            + "namespace (from project or refsets). We probably need to use "
+                            + "module?: " + e.getName());
                     e.setNamespace("To Be Defined");
                 } else {
-                    e.setNamespace(
-                            shortNameToNamespaceMap.get(e.getShortName()));
+                    e.setNamespace(shortNameToNamespaceMap.get(e.getShortName()));
                 }
 
                 if (editionJson.has("defaultLanguageReferenceSets")) {
-                    ArrayNode languageNodeArray = (ArrayNode) editionJson
-                            .get("defaultLanguageReferenceSets");
+                    ArrayNode languageNodeArray =
+                            (ArrayNode) editionJson.get("defaultLanguageReferenceSets");
                     for (JsonNode languageNode : languageNodeArray) {
-                        e.getDefaultLanguageRefsets()
-                                .add(languageNode.asText());
+                        e.getDefaultLanguageRefsets().add(languageNode.asText());
                     }
                 }
 
@@ -697,7 +667,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      * @param object the object
      * @param metadata the metadata
      */
-    private void setMetadata(HasModified object, Metadata metadata) {
+    private void setMetadata(final HasModified object, final Metadata metadata) {
         object.setModified(metadata.getModified());
         object.setCreated(metadata.getModified());
         object.setModifiedBy(metadata.getModifiedBy());
