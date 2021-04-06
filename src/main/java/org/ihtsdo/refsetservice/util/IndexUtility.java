@@ -471,7 +471,8 @@ public final class IndexUtility {
             // CONSIDER: re-enable this at some point
             // // Validate query terms
             // luceneQuery = luceneQuery
-            // .rewrite(fullTextEntityManager.getSearchFactory().getIndexReaderAccessor().open(clazz));
+            // .rewrite(fullTextEntityManager.getSearchFactory().getIndexReaderAccessor()
+            // .open(clazz));
             // final Set<Term> terms = new HashSet<>();
             // luceneQuery.extractTerms(terms);
             // for (final Term t : terms) {
