@@ -22,7 +22,7 @@ public class RESTUtils {
 
     /** The Constant log. */
     @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(RESTUtils.class);
+    private static Logger logger = LoggerFactory.getLogger(RESTUtils.class);
 
     /** The username. */
     private String username;

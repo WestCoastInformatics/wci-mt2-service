@@ -14,7 +14,7 @@ public final class TerminologyUtils {
 
     /** The Constant logger. */
     @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(TerminologyUtils.class);
+    private static Logger logger = LoggerFactory.getLogger(TerminologyUtils.class);
 
     /**
      * Instantiates an empty {@link TerminologyUtils}.

@@ -23,7 +23,7 @@ public class SystemController extends BaseController {
 
     /** Logger. */
     @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(SystemController.class);
+    private static Logger logger = LoggerFactory.getLogger(SystemController.class);
 
     /**
      * Reindex the database.

@@ -146,8 +146,9 @@ public class PropertyUtility {
      */
     public static void assureReadiness() {
 
-        if (true)
+        if (true) {
             return;
+        }
 
         // if (!isReady()) {
         //

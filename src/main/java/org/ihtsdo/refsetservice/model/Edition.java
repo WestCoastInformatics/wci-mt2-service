@@ -54,7 +54,8 @@ public class Edition extends AbstractHasModified {
     @Column(nullable = true)
     @Fields({
             @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "shortNameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+            @Field(name = "shortNameSort", index = Index.YES, analyze = Analyze.NO,
+                    store = Store.NO)
     })
     @SortableField(forField = "shortNameSort")
     private String shortName;
@@ -200,8 +201,7 @@ public class Edition extends AbstractHasModified {
      *
      * @param defaultLanguageRefsets the set of default language refset Ids
      */
-    public void setDefaultLanguageRefsets(
-        final Set<String> defaultLanguageRefsets) {
+    public void setDefaultLanguageRefsets(final Set<String> defaultLanguageRefsets) {
         this.defaultLanguageRefsets = defaultLanguageRefsets;
     }
 
@@ -234,14 +234,12 @@ public class Edition extends AbstractHasModified {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result
-                + ((namespace == null) ? 0 : namespace.hashCode());
+        result = prime * result + ((namespace == null) ? 0 : namespace.hashCode());
         result = prime * result + ((branch == null) ? 0 : branch.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
-        result = prime * result + ((defaultLanguageRefsets == null) ? 0
-                : defaultLanguageRefsets.hashCode());
         result = prime * result
-                + ((shortName == null) ? 0 : shortName.hashCode());
+                + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
+        result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
         return result;
     }
 
@@ -304,8 +302,7 @@ public class Edition extends AbstractHasModified {
             if (other.defaultLanguageRefsets != null) {
                 return false;
             }
-        } else if (!defaultLanguageRefsets
-                .equals(other.defaultLanguageRefsets)) {
+        } else if (!defaultLanguageRefsets.equals(other.defaultLanguageRefsets)) {
             return false;
         }
 

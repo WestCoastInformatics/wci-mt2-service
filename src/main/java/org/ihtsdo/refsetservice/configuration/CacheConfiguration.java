@@ -20,7 +20,7 @@ import org.springframework.util.CollectionUtils;
 public class CacheConfiguration {
 
     /** the constant logger *. */
-    private static final Logger logger = LoggerFactory.getLogger(CacheConfiguration.class);
+    private static Logger logger = LoggerFactory.getLogger(CacheConfiguration.class);
 
     /** the cache manager *. */
     @Autowired

@@ -22,7 +22,7 @@ public class ResultListUnitTest extends BaseTest {
 
     /** The logger. */
     @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(ResultListUnitTest.class);
+    private static Logger logger = LoggerFactory.getLogger(ResultListUnitTest.class);
 
     /** The model object to test. */
     private ResultList<AbstractHasId> object;

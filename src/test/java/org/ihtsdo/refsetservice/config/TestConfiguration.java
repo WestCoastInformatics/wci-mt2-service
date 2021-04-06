@@ -47,7 +47,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 public class TestConfiguration {
 
     /** The logger. */
-    private static final Logger logger = LoggerFactory.getLogger(TestConfiguration.class);
+    private static Logger logger = LoggerFactory.getLogger(TestConfiguration.class);
 
     /** the Spring environment variable. */
     @Autowired
@@ -170,9 +170,11 @@ public class TestConfiguration {
                     // refset.setProject(projectList.get(0));
                     // refset.setEdition(editionList.get(0));
 
+                    /*-
                     if (refset.getType().equals("intensional")) {
                         // refset.getDefinitionClauses().addAll(definitionList);
                     }
+                    */
 
                     // Add an object
                     // service.add(refset);
