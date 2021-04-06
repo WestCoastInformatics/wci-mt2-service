@@ -33,7 +33,8 @@ public class DefaultSearchHandler implements SearchHandler {
 
     /** The logger. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(DefaultSearchHandler.class);
+    private static Logger logger =
+            LoggerFactory.getLogger(DefaultSearchHandler.class);
 
     /** The score map. */
     private Map<String, Float> scoreMap = new HashMap<>();
@@ -42,7 +43,7 @@ public class DefaultSearchHandler implements SearchHandler {
     private Properties handlerProperties = new Properties();
 
     /**
-     * Instantiates a handler
+     * Instantiates a handler.
      *
      */
     public DefaultSearchHandler() {
@@ -66,14 +67,16 @@ public class DefaultSearchHandler implements SearchHandler {
     @SuppressWarnings("unused")
     @Override
     public <T extends HasId> List<T> getQueryResults(final String query,
-        final Map<String, String> fieldedClauses, final Set<String> additionalClauses,
-        final Class<T> clazz, final PfsParameter pfs, final int[] totalCt,
+        final Map<String, String> fieldedClauses,
+        final Set<String> additionalClauses, final Class<T> clazz,
+        final PfsParameter pfs, final int[] totalCt,
         final EntityManager manager) throws Exception {
 
-        final FullTextQuery fullTextQuery =
-                helper(query, fieldedClauses, additionalClauses, clazz, pfs, manager);
+        final FullTextQuery fullTextQuery = helper(query, fieldedClauses,
+                additionalClauses, clazz, pfs, manager);
         // Perform the final query and save score values
-        fullTextQuery.setProjection(ProjectionConstants.SCORE, ProjectionConstants.THIS);
+        fullTextQuery.setProjection(ProjectionConstants.SCORE,
+                ProjectionConstants.THIS);
         totalCt[0] = fullTextQuery.getResultSize();
 
         final List<T> classes = new ArrayList<>();
@@ -127,12 +130,12 @@ public class DefaultSearchHandler implements SearchHandler {
      */
     @Override
     public <T extends HasId> int countQueryResults(final String query,
-        final Map<String, String> fieldedClauses, final Set<String> additionalClauses,
-        final Class<T> clazz, final PfsParameter pfs, final EntityManager manager)
-        throws Exception {
+        final Map<String, String> fieldedClauses,
+        final Set<String> additionalClauses, final Class<T> clazz,
+        final PfsParameter pfs, final EntityManager manager) throws Exception {
 
-        final FullTextQuery fullTextQuery =
-                helper(query, fieldedClauses, additionalClauses, clazz, pfs, manager);
+        final FullTextQuery fullTextQuery = helper(query, fieldedClauses,
+                additionalClauses, clazz, pfs, manager);
         return fullTextQuery.getResultSize();
 
     }
@@ -151,12 +154,14 @@ public class DefaultSearchHandler implements SearchHandler {
      * @throws Exception the exception
      */
     @Override
-    public List<String> getIdResults(final String query, final Map<String, String> fieldedClauses,
-        final Set<String> additionalClauses, final Class<?> clazz, final PfsParameter pfs,
-        final int[] totalCt, final EntityManager manager) throws Exception {
+    public List<String> getIdResults(final String query,
+        final Map<String, String> fieldedClauses,
+        final Set<String> additionalClauses, final Class<?> clazz,
+        final PfsParameter pfs, final int[] totalCt,
+        final EntityManager manager) throws Exception {
 
-        final FullTextQuery fullTextQuery =
-                helper(query, fieldedClauses, additionalClauses, clazz, pfs, manager);
+        final FullTextQuery fullTextQuery = helper(query, fieldedClauses,
+                additionalClauses, clazz, pfs, manager);
         totalCt[0] = fullTextQuery.getResultSize();
 
         // Perform the final query and save score values
@@ -185,9 +190,10 @@ public class DefaultSearchHandler implements SearchHandler {
      * @throws Exception the exception
      */
     @SuppressWarnings("null")
-    public FullTextQuery helper(final String query, final Map<String, String> fieldedClauses,
-        final Set<String> additionalClauses, final Class<?> clazz, final PfsParameter pfs,
-        final EntityManager manager) throws Exception {
+    public FullTextQuery helper(final String query,
+        final Map<String, String> fieldedClauses,
+        final Set<String> additionalClauses, final Class<?> clazz,
+        final PfsParameter pfs, final EntityManager manager) throws Exception {
         // Default Search Handler algorithm: run the query "as-is"
         // with fielded or additional clauses
 
@@ -201,15 +207,16 @@ public class DefaultSearchHandler implements SearchHandler {
         escapedQuery = "\"" + QueryParserBase.escape(escapedQuery) + "\"";
 
         // 1. fielded clauses
-        final String part1 =
-                fieldedClauses == null ? null
-                        : StringUtility.composeQuery("AND", fieldedClauses.entrySet().stream()
-                                .map(e -> e.getKey() + ":" + QueryParserBase.escape(e.getValue()))
+        final String part1 = fieldedClauses == null ? null
+                : StringUtility.composeQuery("AND",
+                        fieldedClauses.entrySet().stream()
+                                .map(e -> e.getKey() + ":"
+                                        + QueryParserBase.escape(e.getValue()))
                                 .collect(Collectors.toList()));
         // logger.debug(" part1 = " + part1);
         // 2. additional clauses
-        final String part2 = additionalClauses == null ? null
-                : StringUtility.composeQuery("AND", new ArrayList<>(additionalClauses));
+        final String part2 = additionalClauses == null ? null : StringUtility
+                .composeQuery("AND", new ArrayList<>(additionalClauses));
         // logger.debug(" part2 = " + part2);
 
         // 3. (query OR escapedQuery^10.0)
@@ -222,19 +229,22 @@ public class DefaultSearchHandler implements SearchHandler {
         // logger.debug(" part3 = " + part3);
 
         // Assemble query - text, then fields, then additional
-        final String finalQuery = StringUtility.composeQuery("AND", part3, part1, part2);
+        final String finalQuery =
+                StringUtility.composeQuery("AND", part3, part1, part2);
 
         FullTextQuery fullTextQuery = null;
         try {
-            fullTextQuery =
-                    IndexUtility.applyPfsToLuceneQuery(clazz, finalQuery.toString(), pfs, manager);
+            fullTextQuery = IndexUtility.applyPfsToLuceneQuery(clazz,
+                    finalQuery.toString(), pfs, manager);
         } catch (ParseException | IllegalArgumentException | LocalException e) {
             // If a "local parse exception", just try again
-            if (!(e instanceof LocalException) || !(e.getCause() instanceof ParseException)) {
+            if (!(e instanceof LocalException)
+                    || !(e.getCause() instanceof ParseException)) {
                 e.printStackTrace();
             }
             // If there's a parse exception, try the literal query
-            fullTextQuery = IndexUtility.applyPfsToLuceneQuery(clazz, escapedQuery, pfs, manager);
+            fullTextQuery = IndexUtility.applyPfsToLuceneQuery(clazz,
+                    escapedQuery, pfs, manager);
         }
 
         return fullTextQuery;
@@ -272,7 +282,7 @@ public class DefaultSearchHandler implements SearchHandler {
     }
 
     @Override
-    public void setProperties(Properties properties) throws Exception {
+    public void setProperties(final Properties properties) throws Exception {
         handlerProperties.putAll(properties);
     }
 }

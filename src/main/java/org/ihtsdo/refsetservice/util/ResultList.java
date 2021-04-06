@@ -34,7 +34,7 @@ public class ResultList<T> implements Collection<T> {
 
     /** The score map. */
     private Map<String, Float> scoreMap = null;
-    
+
     /** The time taken. */
     private Long timeTaken;
 
@@ -61,7 +61,7 @@ public class ResultList<T> implements Collection<T> {
             this.total = 0;
         }
     }
-    
+
     /**
      * Instantiates a {@link ResultList} from the specified parameters.
      *
@@ -70,7 +70,7 @@ public class ResultList<T> implements Collection<T> {
     public ResultList(final ResultList<T> other) {
         populateFrom(other);
     }
-    
+
     /**
      * Populate from.
      *
@@ -84,7 +84,7 @@ public class ResultList<T> implements Collection<T> {
         scoreMap = other.getScoreMap();
         timeTaken = other.getTimeTaken();
         total = other.getTotal();
-        
+
     }
 
     /**
@@ -187,7 +187,7 @@ public class ResultList<T> implements Collection<T> {
     public void setOffset(final int offset) {
         this.offset = offset;
     }
-    
+
     /**
      * Time taken.
      *

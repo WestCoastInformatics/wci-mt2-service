@@ -1,3 +1,12 @@
+/*
+ * Copyright 2021 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.config;
 
@@ -45,23 +54,23 @@ public class TestConfiguration {
     private ConfigurableEnvironment env;
 
     /** Flag to indicate if test data has been loaded. */
-    static boolean dataLoaded = false;
+    private static boolean dataLoaded = false;
 
     /** The refset test data. */
     private static ArrayList<Refset> refsetList = new ArrayList<>();
 
     /** The concept test data. */
     private static ArrayList<Concept> conceptList = new ArrayList<>();
-    
+
     /** The organization test data. */
     private static ArrayList<Organization> organizationList = new ArrayList<>();
-    
+
     /** The project test data. */
     private static ArrayList<Project> projectList = new ArrayList<>();
-    
+
     /** The definition test data. */
     private static ArrayList<DefinitionClause> definitionList = new ArrayList<>();
-    
+
     /** The edition test data. */
     private static ArrayList<Edition> editionList = new ArrayList<>();
 
@@ -70,16 +79,16 @@ public class TestConfiguration {
 
     /** The file path for concept test data. */
     private final String conceptDataFile = "src/test/resources/testdata/concepts.txt";
-    
+
     /** The file path for organization test data. */
     private final String organizationDataFile = "src/test/resources/testdata/organizations.txt";
-    
+
     /** The file path for project test data. */
     private final String projectDataFile = "src/test/resources/testdata/projects.txt";
-    
+
     /** The file path for definition test data. */
     private final String definitionDataFile = "src/test/resources/testdata/definitionClauses.txt";
-    
+
     /** The file path for edition test data. */
     private final String editionDataFile = "src/test/resources/testdata/editions.txt";
 
@@ -111,61 +120,63 @@ public class TestConfiguration {
 
                 service.setModifiedBy("TestConfiguration");
                 service.setModifiedFlag(true);
-                
+
                 for (String organizationJson : organizationsJson) {
 
-                    Organization organization = ModelUtility.fromJson(organizationJson, Organization.class);
-                    
+                    Organization organization =
+                            ModelUtility.fromJson(organizationJson, Organization.class);
+
                     // Add an object
-                    service.add(organization);
-                    organizationList.add(organization);
+                    // service.add(organization);
+                    // organizationList.add(organization);
                     logger.info("Organization " + organization.getName() + " successfully added");
                 }
-                
+
                 for (String projectJson : projectsJson) {
 
                     Project project = ModelUtility.fromJson(projectJson, Project.class);
-                    project.setOrganization(organizationList.get(0));
-                    
+                    // project.setOrganization(organizationList.get(0));
+
                     // Add an object
-                    service.add(project);
-                    projectList.add(project);
+                    // service.add(project);
+                    // projectList.add(project);
                     logger.info("Project " + project.getName() + " successfully added");
                 }
-                
+
                 for (String editionJson : editionsJson) {
-                    
+
                     Edition edition = ModelUtility.fromJson(editionJson, Edition.class);
-                    
+
                     // Add an object
-                    service.add(edition);
-                    editionList.add(edition);
+                    // service.add(edition);
+                    // editionList.add(edition);
                     logger.info("Edition " + edition.getName() + " successfully added");
                 }
-                
+
                 for (String definitionJson : definitionsJson) {
-                    
-                    DefinitionClause definition = ModelUtility.fromJson(definitionJson, DefinitionClause.class);
-                    
+
+                    DefinitionClause definition =
+                            ModelUtility.fromJson(definitionJson, DefinitionClause.class);
+
                     // Add an object
-                    service.add(definition);
-                    definitionList.add(definition);
+                    // service.add(definition);
+                    // definitionList.add(definition);
                     logger.info("Definition " + definition.getValue() + " successfully added");
                 }
 
                 for (String refsetJson : refsetsJson) {
 
                     Refset refset = ModelUtility.fromJson(refsetJson, Refset.class);
-                    refset.setProject(projectList.get(0));
-                    refset.setEdition(editionList.get(0));
-                    
+                    // refset.setProject(projectList.get(0));
+                    // refset.setEdition(editionList.get(0));
+
                     if (refset.getType().equals("intensional")) {
-                        refset.getDefinitionClauses().addAll(definitionList);
+                        // refset.getDefinitionClauses().addAll(definitionList);
                     }
 
                     // Add an object
-                    service.add(refset);
-                    refsetList.add(refset);
+                    // service.add(refset);
+                    // refsetList.add(refset);
                     logger.info("Refset " + refset.getRefsetId() + " successfully added");
                 }
 
@@ -174,8 +185,8 @@ public class TestConfiguration {
                     Concept concept = ModelUtility.fromJson(conceptJson, Concept.class);
 
                     // Add an object
-                    service.add(concept);
-                    conceptList.add(concept);
+                    // service.add(concept);
+                    // conceptList.add(concept);
                     logger.info("Concept " + concept.getName() + " successfully added");
                 }
 
@@ -204,11 +215,11 @@ public class TestConfiguration {
                     service.remove(refset);
                     logger.info("Refset " + id + " successfully removed");
                 }
-                
+
                 for (Edition edition : editionList) {
-                    
+
                     final String name = edition.getName();
-                    
+
                     // remove an object
                     service.remove(edition);
                     logger.info("Edition " + name + " successfully removed");
@@ -222,7 +233,7 @@ public class TestConfiguration {
                     service.remove(concept);
                     logger.info("Concept " + name + " successfully removed");
                 }
-                
+
                 for (Project project : projectList) {
 
                     final String name = project.getName();
@@ -231,24 +242,24 @@ public class TestConfiguration {
                     service.remove(project);
                     logger.info("Project " + name + " successfully removed");
                 }
-                
+
                 for (Organization organization : organizationList) {
-                    
+
                     final String name = organization.getName();
-                    
+
                     // remove an object
                     service.remove(organization);
                     logger.info("Organization " + name + " successfully removed");
                 }
-                
-//                for (DefinitionClause definition : definitionList) {
-//                    
-//                    final String name = definition.getValue();
-//                    
-//                    // remove an object
-//                    service.remove(definition);
-//                    logger.info("Definition " + name + " successfully removed");
-//                }
+
+                // for (DefinitionClause definition : definitionList) {
+                //
+                // final String name = definition.getValue();
+                //
+                // // remove an object
+                // service.remove(definition);
+                // logger.info("Definition " + name + " successfully removed");
+                // }
 
                 refsetList.clear();
                 conceptList.clear();

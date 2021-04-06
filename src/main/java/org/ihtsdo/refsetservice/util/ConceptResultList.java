@@ -12,14 +12,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @Schema(description = "Represents a list of concepts returned from a find call")
 public class ConceptResultList extends ResultList<Concept> {
-    
+
     /**
      * Instantiates an empty {@link ConceptResultList}.
      */
     public ConceptResultList() {
         // NA
     }
-    
+
     /**
      * Instantiates a {@link ConceptResultList} from the specified parameters.
      *

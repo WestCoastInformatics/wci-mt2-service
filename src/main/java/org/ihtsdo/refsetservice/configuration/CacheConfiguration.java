@@ -24,7 +24,7 @@ public class CacheConfiguration {
 
     /** the cache manager *. */
     @Autowired
-    CacheManager cacheManager;
+    private CacheManager cacheManager;
 
     /**
      * Scheduled method to evict all cache managed by spring cache manager.

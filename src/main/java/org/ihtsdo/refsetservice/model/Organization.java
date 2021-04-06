@@ -103,7 +103,7 @@ public class Organization extends AbstractHasModified {
     /**
      * @param description the description to set
      */
-    public void setDescription(String description) {
+    public void setDescription(final String description) {
         this.description = description;
     }
 
@@ -118,7 +118,8 @@ public class Organization extends AbstractHasModified {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((description == null) ? 0 : description.hashCode());
+        result = prime * result
+                + ((description == null) ? 0 : description.hashCode());
         return result;
     }
 

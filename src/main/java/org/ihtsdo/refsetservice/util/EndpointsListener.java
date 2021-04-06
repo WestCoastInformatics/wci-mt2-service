@@ -27,7 +27,7 @@ public class EndpointsListener {
     private static Logger logger = LoggerFactory.getLogger(EndpointsListener.class);
 
     /** The config properties. */
-    Properties properties = PropertyUtility.getProperties();
+    private Properties properties = PropertyUtility.getProperties();
 
     /** The servlet context. */
     @Autowired
@@ -40,7 +40,7 @@ public class EndpointsListener {
      * @throws Exception The exception
      */
     @EventListener
-    public void handleContextRefresh(ContextRefreshedEvent event) throws Exception {
+    public void handleContextRefresh(final ContextRefreshedEvent event) throws Exception {
 
         // Local address
         String localAdd = InetAddress.getLocalHost().getHostAddress();

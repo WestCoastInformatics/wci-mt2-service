@@ -82,7 +82,7 @@ public class TerminologyService implements RootService {
     private static String modelPackage2 = "org.ihtsdo.refsetservice.model.data";
 
     /** Configuration properties. */
-    Properties properties;
+    private Properties properties;
 
     /**
      * Instantiates an empty {@link TerminologyService}.
@@ -1213,9 +1213,8 @@ public class TerminologyService implements RootService {
         // fullTextEntityManager.close();
     }
 
-    @Override
-    public <T extends HasModified> T findSingle(QueryParameter query, Class<T> clazz,
-        String handler) throws Exception {
+    public <T extends HasModified> T findSingle(final QueryParameter query, final Class<T> clazz,
+        final String handler) throws Exception {
 
         final PfsParameter pfs = new PfsParameter();
         pfs.setOffset(0);
@@ -1236,27 +1235,25 @@ public class TerminologyService implements RootService {
                 + list.toString());
     }
 
-    @Override
-    public <T extends HasModified> T findSingle(String query, Class<T> clazz, String handler)
-        throws Exception {
+    public <T extends HasModified> T findSingle(final String query, final Class<T> clazz,
+        final String handler) throws Exception {
 
         return findSingle(new QueryParameter(query), clazz, handler);
     }
 
-    @Override
     public String getDbPrefix() throws Exception {
         // TODO Auto-generated method stub
         return null;
     }
 
-    @Override
-    public String checkCache(String cache, String key) throws Exception {
+    public String checkCache(final String cache, final String key) throws Exception {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public void addCache(String cache, String key, String value) throws Exception {
+    public void addCache(final String cache, final String key, final String value)
+        throws Exception {
         // TODO Auto-generated method stub
 
     }

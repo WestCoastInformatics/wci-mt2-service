@@ -42,6 +42,7 @@ import org.hibernate.search.bridge.builtin.BooleanBridge;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+// TODO: Auto-generated Javadoc
 /**
  * Represents a refset.
  * 
@@ -275,6 +276,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Gets the version date.
+     *
      * @return the versionDate
      */
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
@@ -285,13 +288,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the version date.
+     *
      * @param versionDate the versionDate to set
      */
-    public void setVersionDate(Date versionDate) {
+    public void setVersionDate(final Date versionDate) {
         this.versionDate = versionDate;
     }
 
     /**
+     * Gets the narrative.
+     *
      * @return the narrative
      */
     public String getNarrative() {
@@ -299,13 +306,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the narrative.
+     *
      * @param narrative the narrative to set
      */
-    public void setNarrative(String narrative) {
+    public void setNarrative(final String narrative) {
         this.narrative = narrative;
     }
 
     /**
+     * Gets the version notes.
+     *
      * @return the versionNotes
      */
     public String getVersionNotes() {
@@ -313,13 +324,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the version notes.
+     *
      * @param versionNotes the versionNotes to set
      */
-    public void setVersionNotes(String versionNotes) {
+    public void setVersionNotes(final String versionNotes) {
         this.versionNotes = versionNotes;
     }
 
     /**
+     * Checks if is private refset.
+     *
      * @return the isPrivateRefset
      */
     @FieldBridge(impl = BooleanBridge.class)
@@ -329,13 +344,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the private refset.
+     *
      * @param privateRefset the isPrivateRefset to set
      */
-    public void setPrivateRefset(boolean privateRefset) {
+    public void setPrivateRefset(final boolean privateRefset) {
         this.privateRefset = privateRefset;
     }
 
     /**
+     * Gets the tags.
+     *
      * @return the tags
      */
     @Field(analyze = Analyze.NO, store = Store.NO)
@@ -350,13 +369,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the tags.
+     *
      * @param tags the tags to set
      */
-    public void setTags(Set<String> tags) {
+    public void setTags(final Set<String> tags) {
         this.tags = tags;
     }
 
     /**
+     * Gets the edition.
+     *
      * @return the edition
      */
     @JsonSerialize(contentAs = Edition.class)
@@ -366,9 +389,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the edition.
+     *
      * @param edition the edition to set
      */
-    public void setEdition(Edition edition) {
+    public void setEdition(final Edition edition) {
         this.edition = edition;
     }
 
@@ -387,9 +412,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the edition name.
+     *
      * @param editionName the edition name to set
      */
-    public void setEditionName(String editionName) {
+    public void setEditionName(final String editionName) {
         this.edition.setName(editionName);
     }
 
@@ -408,13 +435,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * @param editionShortName the edition short name to set
+     * Sets the edition short name.
+     *
+     * @param editionShortNameSort the new edition short name
      */
-    public void setEditionShortName(String editionShortNameSort) {
+    public void setEditionShortName(final String editionShortNameSort) {
         this.edition.setShortName(editionShortNameSort);
     }
 
     /**
+     * Checks if is local set.
+     *
      * @return the localSet
      */
     @FieldBridge(impl = BooleanBridge.class)
@@ -424,13 +455,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the local set.
+     *
      * @param localSet the localSet to set
      */
-    public void setLocalSet(boolean localSet) {
+    public void setLocalSet(final boolean localSet) {
         this.localSet = localSet;
     }
 
     /**
+     * Gets the module id.
+     *
      * @return the moduleId
      */
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
@@ -439,13 +474,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the module id.
+     *
      * @param moduleId the moduleId to set
      */
-    public void setModuleId(String moduleId) {
+    public void setModuleId(final String moduleId) {
         this.moduleId = moduleId;
     }
 
     /**
+     * Gets the external url.
+     *
      * @return the externalUrl
      */
     public String getExternalUrl() {
@@ -453,13 +492,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the external url.
+     *
      * @param externalUrl the externalUrl to set
      */
-    public void setExternalUrl(String externalUrl) {
+    public void setExternalUrl(final String externalUrl) {
         this.externalUrl = externalUrl;
     }
 
     /**
+     * Gets the definition clauses.
+     *
      * @return the definitionClauses
      */
     public List<DefinitionClause> getDefinitionClauses() {
@@ -472,13 +515,18 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the definition clauses.
+     *
      * @param definitionClauses the definitionClauses to set
      */
-    public void setDefinitionClauses(List<DefinitionClause> definitionClauses) {
+    public void setDefinitionClauses(
+        final List<DefinitionClause> definitionClauses) {
         this.definitionClauses = definitionClauses;
     }
 
     /**
+     * Checks if is downloadable.
+     *
      * @return the downloadable
      */
     @FieldBridge(impl = BooleanBridge.class)
@@ -488,13 +536,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the downloadable.
+     *
      * @param downloadable the downloadable to set
      */
-    public void setDownloadable(boolean downloadable) {
+    public void setDownloadable(final boolean downloadable) {
         this.downloadable = downloadable;
     }
 
     /**
+     * Checks if is feedback visible.
+     *
      * @return the feedbackVisible
      */
     @FieldBridge(impl = BooleanBridge.class)
@@ -504,13 +556,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the feedback visible.
+     *
      * @param feedbackVisible the feedbackVisible to set
      */
-    public void setFeedbackVisible(boolean feedbackVisible) {
+    public void setFeedbackVisible(final boolean feedbackVisible) {
         this.feedbackVisible = feedbackVisible;
     }
 
     /**
+     * Gets the project.
+     *
      * @return the project
      */
     public Project getProject() {
@@ -548,17 +604,21 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the organization name.
+     *
      * @param organizationName the organization name to set
      */
-    public void setOrganizationName(String organizationName) {
+    public void setOrganizationName(final String organizationName) {
 
         this.project.getOrganization().setName(organizationName);
     }
 
     /**
+     * Sets the project.
+     *
      * @param project the project to set
      */
-    public void setProject(Project project) {
+    public void setProject(final Project project) {
         this.project = project;
     }
 
@@ -712,6 +772,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
                 .compareToIgnoreCase(o.getName() + o.getRefsetId());
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
         // TODO Auto-generated method stub

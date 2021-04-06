@@ -32,7 +32,8 @@ public class ErrorHandlerController implements ErrorController {
 
     /** Logger. */
     @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(ErrorHandlerController.class);
+    private static final Logger logger =
+            LoggerFactory.getLogger(ErrorHandlerController.class);
 
     /** The error attributes. */
     private ErrorAttributes errorAttributes;
@@ -42,7 +43,7 @@ public class ErrorHandlerController implements ErrorController {
      *
      * @param errorAttributes the error attributes
      */
-    public ErrorHandlerController(ErrorAttributes errorAttributes) {
+    public ErrorHandlerController(final ErrorAttributes errorAttributes) {
         this.errorAttributes = errorAttributes;
     }
 
@@ -55,12 +56,13 @@ public class ErrorHandlerController implements ErrorController {
     @RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String handleErrorHtml(final HttpServletRequest request) {
-        final Integer statusCode =
-                (Integer) request.getAttribute("javax.servlet.error.status_code");
+        final Integer statusCode = (Integer) request
+                .getAttribute("javax.servlet.error.status_code");
         final Map<String, Object> body = getErrorAttributes(request, false);
         String ppBody = null;
         try {
-            ppBody = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(body);
+            ppBody = new ObjectMapper().writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(body);
         } catch (Exception e) {
             ppBody = body.toString().replaceAll("<", "&lt;");
         }
@@ -68,8 +70,9 @@ public class ErrorHandlerController implements ErrorController {
         // TODO: Replace the commmented out portion with something appropriate
         // for
         // this service
-        return String.format("<html><body><h2>Error Page</h2><div>Something went wrong", statusCode,
-                ppBody);
+        return String.format(
+                "<html><body><h2>Error Page</h2><div>Something went wrong",
+                statusCode, ppBody);
         // + "<a
         // href=\"https://datascience.cancer.gov/about/application-support\">"
         // + "please contact the NCI helpdesk</a></div><div>Status code:
@@ -86,7 +89,8 @@ public class ErrorHandlerController implements ErrorController {
      */
     @RequestMapping()
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> handleErrorJson(HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> handleErrorJson(
+        final HttpServletRequest request) {
         HttpStatus status = getStatus(request);
         if (status == HttpStatus.NO_CONTENT) {
             return new ResponseEntity<>(status);
@@ -101,8 +105,9 @@ public class ErrorHandlerController implements ErrorController {
      * @param request the request
      * @return the status
      */
-    protected HttpStatus getStatus(HttpServletRequest request) {
-        Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
+    protected HttpStatus getStatus(final HttpServletRequest request) {
+        Integer statusCode = (Integer) request
+                .getAttribute("javax.servlet.error.status_code");
         if (statusCode == null) {
             return HttpStatus.INTERNAL_SERVER_ERROR;
         }
@@ -120,14 +125,15 @@ public class ErrorHandlerController implements ErrorController {
      * @param includeStackTrace the include stack trace
      * @return the error attributes
      */
-    protected Map<String, Object> getErrorAttributes(HttpServletRequest request,
-        boolean includeStackTrace) {
+    protected Map<String, Object> getErrorAttributes(
+        final HttpServletRequest request, final boolean includeStackTrace) {
         WebRequest webRequest = new ServletWebRequest(request);
         final ErrorAttributeOptions options = ErrorAttributeOptions.defaults();
         if (includeStackTrace) {
             options.including(Include.STACK_TRACE);
         }
-        Map<String, Object> body = errorAttributes.getErrorAttributes(webRequest, options);
+        Map<String, Object> body =
+                errorAttributes.getErrorAttributes(webRequest, options);
         if (body.containsKey("message")) {
             try {
                 final String message = body.get("message").toString();
@@ -139,7 +145,8 @@ public class ErrorHandlerController implements ErrorController {
                 // remove the trailing \n
                 body.put("message", sb.toString().replaceFirst("\\n$", ""));
             } catch (Exception e) {
-                body.put("message", body.get("message").toString().replaceAll("<", "&lt;"));
+                body.put("message",
+                        body.get("message").toString().replaceAll("<", "&lt;"));
             }
         }
         return body;
