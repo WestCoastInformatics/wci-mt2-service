@@ -225,7 +225,7 @@ public final class FileUtility {
      * @return the line string List
      * @throws Exception the exception
      */
-    public static List<String> readFileToArray(String inputFile) throws Exception {
+    public static List<String> readFileToArray(final String inputFile) throws Exception {
 
         List<String> lineArray = new ArrayList<>();
 

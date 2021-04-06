@@ -13,7 +13,7 @@ import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
  */
 @Configuration
 public class JacksonConfiguration {
- 
+
     /**
      * Object mapper.
      *

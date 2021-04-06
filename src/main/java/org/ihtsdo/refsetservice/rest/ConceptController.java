@@ -7,9 +7,9 @@ import java.util.List;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.TerminologyUtils;
 import org.slf4j.Logger;
@@ -43,11 +43,12 @@ import io.swagger.annotations.ApiResponses;
 public class ConceptController extends BaseController {
 
     /** Logger. */
-    private static final Logger logger = LoggerFactory.getLogger(ConceptController.class);
+    private static final Logger logger =
+            LoggerFactory.getLogger(ConceptController.class);
 
     /** The term utils. */
     @Autowired
-    TerminologyUtils termUtils;
+    private TerminologyUtils termUtils;
 
     /**
      * Returns the concept.
@@ -57,46 +58,40 @@ public class ConceptController extends BaseController {
      * @return the concept
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get the concept for the specified terminology and code",
-            response = Concept.class)
+    @ApiOperation(value = "Get the concept for the specified terminology and code", response = Concept.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology", value = "Terminology, e.g. 'ncit'",
-                    required = true, dataType = "string", paramType = "path",
-                    defaultValue = "ncit"),
-            @ApiImplicitParam(name = "code",
-                    value = "Code in the specified terminology, e.g. 'C3224'", required = true,
-                    dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "include",
-                    value = "Indicator of how much data to return. Comma-separated list of any of the following values: "
-                            + "minimal, summary, full, associations, children, definitions, disjointWith, inverseAssociations, "
-                            + "inverseRoles, maps, parents, properties, roles, synonyms. "
-                            + "<a href='https://github.com/NCIEVS/evsrestapi-client-SDK/blob/master/doc/INCLUDE.md'>See here "
-                            + "for detailed information</a>.",
-                    required = false, dataType = "string", paramType = "query",
-                    defaultValue = "summary")
+            @ApiImplicitParam(name = "terminology", value = "Terminology, e.g. 'ncit'", required = true, dataType = "string", paramType = "path", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "code", value = "Code in the specified terminology, e.g. 'C3224'", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "include", value = "Indicator of how much data to return. Comma-separated list of any of the following values: "
+                    + "minimal, summary, full, associations, children, definitions, disjointWith, inverseAssociations, "
+                    + "inverseRoles, maps, parents, properties, roles, synonyms. "
+                    + "<a href='https://github.com/NCIEVS/evsrestapi-client-SDK/blob/master/doc/INCLUDE.md'>See here "
+                    + "for detailed information</a>.", required = false, dataType = "string", paramType = "query", defaultValue = "summary")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{code}",
-            produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{code}", produces = "application/json")
     public @ResponseBody Concept getConcept(
         @PathVariable(value = "terminology") final String terminology,
         @PathVariable(value = "code") final String code) throws Exception {
         try {
 
-            logger.info("*********** getConcept: terminology: " + terminology + " ; code: " + code);
+            logger.info("*********** getConcept: terminology: " + terminology
+                    + " ; code: " + code);
 
             try (TerminologyService service = new TerminologyService()) {
 
-                final Concept concept = service.findSingle("terminology:" + terminology
-                        + " AND code:" + QueryParserBase.escape(code) + "", Concept.class, null);
+                final Concept concept = service.findSingle(
+                        "terminology:" + terminology + " AND code:"
+                                + QueryParserBase.escape(code) + "",
+                        Concept.class, null);
 
-                logger.info(
-                        "*********** getConcept: serviceConcept: " + ModelUtility.toJson(concept));
+                logger.info("*********** getConcept: serviceConcept: "
+                        + ModelUtility.toJson(concept));
 
                 return concept;
             }
@@ -117,22 +112,25 @@ public class ConceptController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/concept/{code}")
-    Concept updateActive(@RequestBody boolean active, @PathVariable String code) throws Exception {
+    Concept updateActive(final @RequestBody boolean active,
+        final @PathVariable String code) throws Exception {
 
         try {
 
-            logger.info("*********** getConcept: active: " + active + " ; code: " + code);
+            logger.info("*********** getConcept: active: " + active
+                    + " ; code: " + code);
 
             try (TerminologyService service = new TerminologyService()) {
 
                 final Concept concept = service.findSingle(
-                        "code:" + QueryParserBase.escape(code) + "", Concept.class, null);
+                        "code:" + QueryParserBase.escape(code) + "",
+                        Concept.class, null);
                 concept.setActive(active);
                 service.setModifiedBy("restApi");
                 service.update(concept);
 
-                logger.info(
-                        "*********** getConcept: serviceConcept: " + ModelUtility.toJson(concept));
+                logger.info("*********** getConcept: serviceConcept: "
+                        + ModelUtility.toJson(concept));
 
                 return concept;
             }
@@ -152,40 +150,33 @@ public class ConceptController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get concept search results", response = ConceptResultList.class,
-            notes = "Use cases for search range from very simple term searches, use of paging parameters, additional filters, searches properties, roles, and associations, and so on.  To further explore the range of search options, take a look at the <a href='https://github.com/NCIEVS/evsrestapi-client-SDK' target='_blank'>Github client SDK library created for the NCI EVS Rest API</a>.")
+    @ApiOperation(value = "Get concept search results", response = ConceptResultList.class, notes = "Use cases for search range from very simple term searches, use of paging parameters, additional filters, searches properties, roles, and associations, and so on.  To further explore the range of search options, take a look at the <a href='https://github.com/NCIEVS/evsrestapi-client-SDK' target='_blank'>Github client SDK library created for the NCI EVS Rest API</a>.")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology",
-                    value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true,
-                    dataType = "string", paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query",
-                    value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
-                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0")
-            // TODO: activeOnly, sort, sortAscending
+            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+    // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/concept/search",
-            produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/concept/search", produces = "application/json")
     public @ResponseBody ConceptResultList search(
-        @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
-        throws Exception {
+        @ModelAttribute final SearchParameters searchParameters,
+        final BindingResult bindingResult) throws Exception {
 
         // Check whether or not parameter binding was successful
         if (bindingResult.hasErrors()) {
             final List<FieldError> errors = bindingResult.getFieldErrors();
             final List<String> errorMessages = new ArrayList<>();
             for (final FieldError error : errors) {
-                final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = "
-                        + error.getField() + ", " + error.getCode();
+                final String errorMessage =
+                        "ERROR " + bindingResult.getObjectName() + " = "
+                                + error.getField() + ", " + error.getCode();
                 logger.error(errorMessage);
                 errorMessages.add(errorMessage);
             }

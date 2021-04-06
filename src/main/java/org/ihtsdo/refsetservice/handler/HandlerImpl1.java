@@ -7,13 +7,13 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.springframework.stereotype.Component;
 
 /**
- * Sample implementation of the handler
+ * Sample implementation of the handler.
  */
 @Component
 public class HandlerImpl1 implements ExampleHandler {
 
     /** The config properties. */
-    Properties properties = PropertyUtility.getProperties();
+    private Properties properties = PropertyUtility.getProperties();
 
     /**
      * Do something.
