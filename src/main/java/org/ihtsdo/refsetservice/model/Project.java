@@ -25,6 +25,7 @@ import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.SortableField;
 import org.hibernate.search.annotations.Store;
 
+// TODO: Auto-generated Javadoc
 /**
  * Represents a project.
  */
@@ -68,7 +69,8 @@ public class Project extends AbstractHasModified {
     /**
      * Instantiates a {@link Project} from the specified parameters.
      *
-     * @param name the value
+     * @param name the name
+     * @param organization the organization
      */
     public Project(final String name, final Organization organization) {
         this.name = name;
@@ -106,6 +108,8 @@ public class Project extends AbstractHasModified {
     }
 
     /**
+     * Gets the description.
+     *
      * @return the description
      */
     public String getDescription() {
@@ -113,6 +117,8 @@ public class Project extends AbstractHasModified {
     }
 
     /**
+     * Sets the description.
+     *
      * @param description the description to set
      */
     public void setDescription(final String description) {
@@ -120,6 +126,8 @@ public class Project extends AbstractHasModified {
     }
 
     /**
+     * Gets the organization.
+     *
      * @return the organization
      */
     public Organization getOrganization() {
@@ -127,6 +135,8 @@ public class Project extends AbstractHasModified {
     }
 
     /**
+     * Sets the organization.
+     *
      * @param organization the organization to set
      */
     public void setOrganization(final Organization organization) {
@@ -144,10 +154,8 @@ public class Project extends AbstractHasModified {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result
-                + ((description == null) ? 0 : description.hashCode());
-        result = prime * result
-                + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + ((description == null) ? 0 : description.hashCode());
+        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
         return result;
     }
 
@@ -201,6 +209,9 @@ public class Project extends AbstractHasModified {
         return true;
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
         // TODO Auto-generated method stub

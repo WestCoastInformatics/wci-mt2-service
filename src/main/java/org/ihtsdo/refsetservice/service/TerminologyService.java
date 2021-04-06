@@ -42,6 +42,7 @@ import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: Auto-generated Javadoc
 /**
  * JPA implementation of the root services.
  */
@@ -142,6 +143,11 @@ public class TerminologyService implements RootService {
         }
     }
 
+    /**
+     * Validate init.
+     *
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public void validateInit() throws Exception {
@@ -152,6 +158,13 @@ public class TerminologyService implements RootService {
         }
     }
 
+    /**
+     * Gets the type.
+     *
+     * @param type the type
+     * @return the type
+     * @throws Exception the exception
+     */
     /* see superclass */
     @SuppressWarnings("unchecked")
     @Override
@@ -231,7 +244,8 @@ public class TerminologyService implements RootService {
 
         if (getTransactionPerOperation()) {
             throw new IllegalStateException(
-                    "Error attempting to begin a transaction when using transactions per operation mode.");
+                    "Error attempting to begin a transaction when using transactions "
+                            + "per operation mode.");
         } else if (transaction != null && transaction.isActive()) {
             throw new IllegalStateException("Error attempting to begin a transaction when there "
                     + "is already an active transaction");
@@ -273,7 +287,8 @@ public class TerminologyService implements RootService {
 
         if (getTransactionPerOperation()) {
             throw new IllegalStateException(
-                    "Error attempting to rollback a transaction when using transactions per operation mode.");
+                    "Error attempting to rollback a transaction when using transactions per "
+                            + " operation mode.");
         } else if (transaction != null && !transaction.isActive()) {
             logger.debug("n/a");
         } else if (transaction != null) {
@@ -282,6 +297,11 @@ public class TerminologyService implements RootService {
         }
     }
 
+    /**
+     * Close.
+     *
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public void close() throws Exception {
@@ -584,12 +604,22 @@ public class TerminologyService implements RootService {
         return result;
     }
 
+    /**
+     * Sets the modified flag.
+     *
+     * @param lastModifiedFlag the new modified flag
+     */
     /* see superclass */
     @Override
     public void setModifiedFlag(final boolean lastModifiedFlag) {
         this.lastModifiedFlag = lastModifiedFlag;
     }
 
+    /**
+     * Checks if is modified flag.
+     *
+     * @return true, if is modified flag
+     */
     /* see superclass */
     @Override
     public boolean isModifiedFlag() {
@@ -666,6 +696,14 @@ public class TerminologyService implements RootService {
         return addObject(hasLastModified);
     }
 
+    /**
+     * Adds the object.
+     *
+     * @param <T> the generic type
+     * @param object the object
+     * @return the t
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends Object> T addObject(final T object) throws Exception {
@@ -720,6 +758,13 @@ public class TerminologyService implements RootService {
 
     }
 
+    /**
+     * Update object.
+     *
+     * @param <T> the generic type
+     * @param object the object
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends Object> void updateObject(final T object) throws Exception {
@@ -796,6 +841,13 @@ public class TerminologyService implements RootService {
 
     }
 
+    /**
+     * Removes the object.
+     *
+     * @param <T> the generic type
+     * @param object the object
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends Object> void removeObject(final T object) throws Exception {
@@ -843,24 +895,47 @@ public class TerminologyService implements RootService {
         return component;
     }
 
+    /**
+     * Lock object.
+     *
+     * @param object the object
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public void lockObject(final Object object) throws Exception {
         manager.lock(object, LockModeType.PESSIMISTIC_WRITE);
     }
 
+    /**
+     * Unlock object.
+     *
+     * @param object the object
+     */
     /* see superclass */
     @Override
     public void unlockObject(final Object object) {
         manager.lock(object, LockModeType.NONE);
     }
 
+    /**
+     * Checks if is object locked.
+     *
+     * @param object the object
+     * @return true, if is object locked
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public boolean isObjectLocked(final Object object) throws Exception {
         return manager.getLockMode(object).equals(LockModeType.PESSIMISTIC_WRITE);
     }
 
+    /**
+     * Refresh caches.
+     *
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public void refreshCaches() throws Exception {
@@ -869,18 +944,37 @@ public class TerminologyService implements RootService {
         openFactory();
     }
 
+    /**
+     * Gets the modified by.
+     *
+     * @return the modified by
+     */
     /* see superclass */
     @Override
     public String getModifiedBy() {
         return lastModifiedBy;
     }
 
+    /**
+     * Sets the modified by.
+     *
+     * @param lastModifiedBy the new modified by
+     */
     /* see superclass */
     @Override
     public void setModifiedBy(final String lastModifiedBy) {
         this.lastModifiedBy = lastModifiedBy;
     }
 
+    /**
+     * Gets the.
+     *
+     * @param <T> the generic type
+     * @param id the id
+     * @param clazz the clazz
+     * @return the t
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasId> T get(final String id, final Class<T> clazz) throws Exception {
@@ -898,6 +992,14 @@ public class TerminologyService implements RootService {
         return component;
     }
 
+    /**
+     * Gets the all.
+     *
+     * @param <T> the generic type
+     * @param clazz the clazz
+     * @return the all
+     * @throws Exception the exception
+     */
     /* see superclass */
     @SuppressWarnings("unchecked")
     @Override
@@ -911,6 +1013,17 @@ public class TerminologyService implements RootService {
         }
     }
 
+    /**
+     * Find.
+     *
+     * @param <T> the generic type
+     * @param query the query
+     * @param pfs the pfs
+     * @param clazz the clazz
+     * @param handler the handler
+     * @return the result list
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasId> ResultList<T> find(final String query, final PfsParameter pfs,
@@ -918,6 +1031,17 @@ public class TerminologyService implements RootService {
         return find(new QueryParameter(query), pfs, clazz, handler);
     }
 
+    /**
+     * Find ids.
+     *
+     * @param <T> the generic type
+     * @param query the query
+     * @param pfs the pfs
+     * @param clazz the clazz
+     * @param handler the handler
+     * @return the result list
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasId> ResultList<String> findIds(final String query, final PfsParameter pfs,
@@ -925,6 +1049,17 @@ public class TerminologyService implements RootService {
         return findIds(new QueryParameter(query), pfs, clazz, handler);
     }
 
+    /**
+     * Find total.
+     *
+     * @param <T> the generic type
+     * @param query the query
+     * @param pfs the pfs
+     * @param clazz the clazz
+     * @param handler the handler
+     * @return the int
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasId> int findTotal(final String query, final PfsParameter pfs,
@@ -932,6 +1067,17 @@ public class TerminologyService implements RootService {
         return findTotal(new QueryParameter(query), pfs, clazz, handler);
     }
 
+    /**
+     * Find.
+     *
+     * @param <T> the generic type
+     * @param query the query
+     * @param pfs the pfs
+     * @param clazz the clazz
+     * @param handler the handler
+     * @return the result list
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasId> ResultList<T> find(final QueryParameter query, final PfsParameter pfs,
@@ -964,6 +1110,17 @@ public class TerminologyService implements RootService {
         return list;
     }
 
+    /**
+     * Find ids.
+     *
+     * @param <T> the generic type
+     * @param query the query
+     * @param pfs the pfs
+     * @param clazz the clazz
+     * @param handler the handler
+     * @return the result list
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasId> ResultList<String> findIds(final QueryParameter query,
@@ -985,6 +1142,17 @@ public class TerminologyService implements RootService {
         return list;
     }
 
+    /**
+     * Find total.
+     *
+     * @param <T> the generic type
+     * @param query the query
+     * @param pfs the pfs
+     * @param clazz the clazz
+     * @param handler the handler
+     * @return the int
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasId> int findTotal(final QueryParameter query, final PfsParameter pfs,
@@ -1000,12 +1168,28 @@ public class TerminologyService implements RootService {
                         query.getAdditionalClauses(), clazz, pfs, getEntityManager());
     }
 
+    /**
+     * Adds the.
+     *
+     * @param <T> the generic type
+     * @param object the object
+     * @return the t
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasModified> T add(final T object) throws Exception {
         return addHasLastModified(object);
     }
 
+    /**
+     * Update.
+     *
+     * @param <T> the generic type
+     * @param object the object
+     * @return the t
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasModified> T update(final T object) throws Exception {
@@ -1013,12 +1197,27 @@ public class TerminologyService implements RootService {
         return object;
     }
 
+    /**
+     * Removes the.
+     *
+     * @param <T> the generic type
+     * @param object the object
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public <T extends HasModified> void remove(final T object) throws Exception {
         removeObject(object);
     }
 
+    /**
+     * Gets the handlers.
+     *
+     * @param <T> the generic type
+     * @param type the type
+     * @return the handlers
+     * @throws Exception the exception
+     */
     /* see superclass */
     @SuppressWarnings("unchecked")
     @Override
@@ -1033,6 +1232,14 @@ public class TerminologyService implements RootService {
         return null;
     }
 
+    /**
+     * Gets the handler.
+     *
+     * @param <T> the generic type
+     * @param type the type
+     * @return the handler
+     * @throws Exception the exception
+     */
     /* see superclass */
     @SuppressWarnings("unchecked")
     @Override
@@ -1043,6 +1250,15 @@ public class TerminologyService implements RootService {
         return null;
     }
 
+    /**
+     * Gets the handler by name.
+     *
+     * @param <T> the generic type
+     * @param name the name
+     * @param type the type
+     * @return the handler by name
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     @SuppressWarnings("unchecked")
@@ -1083,6 +1299,15 @@ public class TerminologyService implements RootService {
 
     }
 
+    /**
+     * Gets the type.
+     *
+     * @param <T> the generic type
+     * @param <S> the generic type
+     * @param clazz the clazz
+     * @return the type
+     * @throws Exception the exception
+     */
     /* see superclass */
     @SuppressWarnings("unchecked")
     @Override
@@ -1094,6 +1319,15 @@ public class TerminologyService implements RootService {
         return (Class<S>) Class.forName(jpaClassName);
     }
 
+    /**
+     * Copy instance.
+     *
+     * @param <T> the generic type
+     * @param clazz the clazz
+     * @param object the object
+     * @return the t
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     @SuppressWarnings("unchecked")
@@ -1109,6 +1343,12 @@ public class TerminologyService implements RootService {
         return (T) jpaConstructor.newInstance(object);
     }
 
+    /**
+     * Compute lucene indexes.
+     *
+     * @param indexedObjects the indexed objects
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public void computeLuceneIndexes(final String indexedObjects) throws Exception {
@@ -1193,6 +1433,11 @@ public class TerminologyService implements RootService {
 
     }
 
+    /**
+     * Clear lucene indexes.
+     *
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public void clearLuceneIndexes() throws Exception {
@@ -1213,6 +1458,16 @@ public class TerminologyService implements RootService {
         // fullTextEntityManager.close();
     }
 
+    /**
+     * Find single.
+     *
+     * @param <T> the generic type
+     * @param query the query
+     * @param clazz the clazz
+     * @param handler the handler
+     * @return the t
+     * @throws Exception the exception
+     */
     public <T extends HasModified> T findSingle(final QueryParameter query, final Class<T> clazz,
         final String handler) throws Exception {
 
@@ -1235,22 +1490,54 @@ public class TerminologyService implements RootService {
                 + list.toString());
     }
 
+    /**
+     * Find single.
+     *
+     * @param <T> the generic type
+     * @param query the query
+     * @param clazz the clazz
+     * @param handler the handler
+     * @return the t
+     * @throws Exception the exception
+     */
     public <T extends HasModified> T findSingle(final String query, final Class<T> clazz,
         final String handler) throws Exception {
 
         return findSingle(new QueryParameter(query), clazz, handler);
     }
 
+    /**
+     * Gets the db prefix.
+     *
+     * @return the db prefix
+     * @throws Exception the exception
+     */
     public String getDbPrefix() throws Exception {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /**
+     * Check cache.
+     *
+     * @param cache the cache
+     * @param key the key
+     * @return the string
+     * @throws Exception the exception
+     */
     public String checkCache(final String cache, final String key) throws Exception {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /**
+     * Adds the cache.
+     *
+     * @param cache the cache
+     * @param key the key
+     * @param value the value
+     * @throws Exception the exception
+     */
     @Override
     public void addCache(final String cache, final String key, final String value)
         throws Exception {

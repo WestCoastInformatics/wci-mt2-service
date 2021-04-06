@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class Scheduler {
 
     /** The logger. */
-    private static final Logger logger = LoggerFactory.getLogger(Scheduler.class);
+    private static Logger logger = LoggerFactory.getLogger(Scheduler.class);
 
     /**
      * Instantiates an empty {@link Scheduler}.

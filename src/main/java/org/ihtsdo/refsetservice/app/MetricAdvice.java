@@ -30,7 +30,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class MetricAdvice {
 
     /** The logger. */
-    private static final Logger logger = LoggerFactory.getLogger(MetricAdvice.class);
+    private static Logger logger = LoggerFactory.getLogger(MetricAdvice.class);
 
     /** The elastic server properties. */
     @Autowired

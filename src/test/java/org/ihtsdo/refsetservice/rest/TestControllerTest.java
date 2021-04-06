@@ -44,7 +44,7 @@ public class TestControllerTest extends BaseTest {
 
     /** The env. */
     @Autowired
-    Environment env;
+    private Environment env;
 
     /**
      * Sets the up.

@@ -14,7 +14,7 @@ public class TestController {
 
     /** Logger. */
     @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(TestController.class);
+    private static Logger logger = LoggerFactory.getLogger(TestController.class);
 
     /**
      * Info.
