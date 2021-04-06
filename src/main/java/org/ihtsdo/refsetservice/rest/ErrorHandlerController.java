@@ -32,7 +32,7 @@ public class ErrorHandlerController implements ErrorController {
 
     /** Logger. */
     @SuppressWarnings("unused")
-    private static final Logger logger =
+    private static Logger logger =
             LoggerFactory.getLogger(ErrorHandlerController.class);
 
     /** The error attributes. */

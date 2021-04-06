@@ -53,8 +53,8 @@ public class SwaggerConfiguration {
                 .license("The Apache License, Version 2.0")
                 .licenseUrl("http://www.apache.org/licenses/LICENSE-2.0.html")
                 .termsOfServiceUrl("terms-of-service url").version("0.0.1")
-                .contact(new Contact("SNOMED International",
-                        "https://www.snomed.org/", "info@snomed.org"))
+                .contact(new Contact("SNOMED International", "https://www.snomed.org/",
+                        "info@snomed.org"))
                 .build();
     }
 

@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class BaseController {
 
     /** The Constant log. */
-    private static final Logger logger = LoggerFactory.getLogger(BaseController.class);
+    private static Logger logger = LoggerFactory.getLogger(BaseController.class);
 
     /**
      * Handle exception.

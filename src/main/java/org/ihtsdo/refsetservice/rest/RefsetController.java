@@ -41,7 +41,7 @@ import io.swagger.annotations.ApiResponses;
 public class RefsetController extends BaseController {
 
     /** Logger. */
-    private static final Logger logger = LoggerFactory.getLogger(RefsetController.class);
+    private static Logger logger = LoggerFactory.getLogger(RefsetController.class);
 
     /**
      * Returns the refset.
@@ -57,12 +57,14 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.",
+                    required = true, dataType = "string", paramType = "path"),
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}", produces = "application/json")
-    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId") final String refsetId)
-        throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}",
+            produces = "application/json")
+    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId")
+    final String refsetId) throws Exception {
 
         try {
 
@@ -129,21 +131,29 @@ public class RefsetController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get refset search results", response = ResultList.class, notes = "Use cases for search range from very simple term searches, use of paging parameters, additional filters, searches properties, and so on.")
+    @ApiOperation(value = "Get refset search results", response = ResultList.class,
+            notes = "Use cases for search range from very simple term searches, use of paging parameters, additional filters, searches properties, and so on.")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            @ApiImplicitParam(name = "terminology",
+                    value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true,
+                    dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query",
+                    value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
+                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return",
+                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result",
+                    required = false, dataType = "int", paramType = "query", defaultValue = "0")
     // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/search",
+            produces = "application/json")
     public @ResponseBody ResultList<Refset> search(final SearchParameters searchParameters,
         final BindingResult bindingResult) throws Exception {
 

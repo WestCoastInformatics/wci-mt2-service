@@ -21,7 +21,7 @@ import org.springframework.core.env.Environment;
 public class ApplicationTests extends BaseTest {
 
     /** The logger. */
-    private static final Logger logger = LoggerFactory.getLogger(ApplicationTests.class);
+    private static Logger logger = LoggerFactory.getLogger(ApplicationTests.class);
 
     /** The context. */
     @Autowired

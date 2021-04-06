@@ -153,8 +153,8 @@ public final class IndexUtility {
                 final IndexedEmbedded annotation = m.getAnnotation(IndexedEmbedded.class);
                 final Class<?> jpaType = annotation.targetElement();
                 if (jpaType == null) {
-                    throw new Exception(
-                            "Unable to determine jpa type, @IndexedEmbedded must use targetElement");
+                    throw new Exception("Unable to determine jpa type, @IndexedEmbedded must use "
+                            + "targetElement");
                 }
                 for (final String embeddedField : getIndexedFieldNames(jpaType, stringOnly)) {
                     fieldNames.add(annotation.prefix() + embeddedField);
