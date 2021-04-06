@@ -155,7 +155,12 @@ public class ConceptController extends BaseController {
      * @throws Exception the exception
      */
     @ApiOperation(value = "Get concept search results", response = ConceptResultList.class,
-            notes = "Use cases for search range from very simple term searches, use of paging parameters, additional filters, searches properties, roles, and associations, and so on.  To further explore the range of search options, take a look at the <a href='https://github.com/NCIEVS/evsrestapi-client-SDK' target='_blank'>Github client SDK library created for the NCI EVS Rest API</a>.")
+            notes = "Use cases for search range from very simple term searches, use of paging "
+                    + "parameters, additional filters, searches properties, roles, and "
+                    + "associations, and so on.  To further explore the range of search options, "
+                    + "take a look at the "
+                    + "<a href='https://github.com/NCIEVS/evsrestapi-client-SDK' target='_blank'>"
+                    + "Github client SDK library created for the NCI EVS Rest API</a>.")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
             @ApiResponse(code = 400, message = "Bad request"),
