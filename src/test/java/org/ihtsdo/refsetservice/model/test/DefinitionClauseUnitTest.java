@@ -1,30 +1,31 @@
 
-package org.ihtsdo.refsetservice.model;
+package org.ihtsdo.refsetservice.model.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.ihtsdo.refsetservice.BaseTest;
-import org.ihtsdo.refsetservice.CopyConstructorTester;
-import org.ihtsdo.refsetservice.EqualsHashcodeTester;
-import org.ihtsdo.refsetservice.GetterSetterTester;
-import org.ihtsdo.refsetservice.PersistenceTester;
-import org.ihtsdo.refsetservice.SerializationTester;
+import org.ihtsdo.refsetservice.model.DefinitionClause;
+import org.ihtsdo.refsetservice.test.BaseTest;
+import org.ihtsdo.refsetservice.test.CopyConstructorTester;
+import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
+import org.ihtsdo.refsetservice.test.GetterSetterTester;
+import org.ihtsdo.refsetservice.test.PersistenceTester;
+import org.ihtsdo.refsetservice.test.SerializationTester;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Unit test for {@link Concept}.
+ * Unit test for {@link DefinitionClause}.
  */
-public class ConceptUnitTest extends BaseTest {
+public class DefinitionClauseUnitTest extends BaseTest {
 
     /** The logger. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(ConceptUnitTest.class);
+    private final Logger logger = LoggerFactory.getLogger(DefinitionClauseUnitTest.class);
 
     /** The model object to test. */
-    private Concept object;
+    private DefinitionClause object;
 
     /**
      * Setup.
@@ -34,7 +35,7 @@ public class ConceptUnitTest extends BaseTest {
     @BeforeEach
     public void setup() throws Exception {
 
-        object = new Concept();
+        object = new DefinitionClause();
     }
 
     /**
@@ -50,7 +51,7 @@ public class ConceptUnitTest extends BaseTest {
     }
 
     /**
-     * Test equals and hascode methods.
+     * Test equals and hashcode methods.
      *
      * @throws Exception the exception
      */
@@ -58,10 +59,8 @@ public class ConceptUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        tester.include("name");
-        tester.include("code");
-        tester.include("terminology");
-        tester.include("version");
+        tester.include("value");
+        tester.include("negated");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -79,8 +78,10 @@ public class ConceptUnitTest extends BaseTest {
     @Test
     public void testModelCopy() throws Exception {
 
-        final CopyConstructorTester tester = new CopyConstructorTester(object);
-        assertTrue(tester.testCopyConstructor(Concept.class));
+        final DefinitionClause copyObject = new DefinitionClause();
+
+        final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
+        assertTrue(tester.testCopyConstructor(DefinitionClause.class));
     }
 
     /**
@@ -103,7 +104,7 @@ public class ConceptUnitTest extends BaseTest {
     @Test
     public void testPersistence() throws Exception {
 
-        final PersistenceTester tester = new PersistenceTester(object, true, true);
+        final PersistenceTester tester = new PersistenceTester(object, false, true);
         tester.test();
     }
 }

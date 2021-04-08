@@ -1,11 +1,12 @@
 
-package org.ihtsdo.refsetservice.rest;
+package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.ihtsdo.refsetservice.BaseTest;
+import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.test.BaseTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -23,18 +24,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Integration tests for MetadataController.
  */
 @AutoConfigureMockMvc
-public class TestControllerTest extends BaseTest {
+public class ConceptControllerTests extends BaseTest {
 
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(TestControllerTest.class);
+    private static Logger logger = LoggerFactory.getLogger(ConceptControllerTests.class);
 
     /** The mvc. */
     @Autowired
     private MockMvc mvc;
-
-    /** The test properties. */
-    // @Autowired
-    // TestProperties testProperties;
 
     /** The object mapper. */
     private ObjectMapper objectMapper;
@@ -54,7 +51,7 @@ public class TestControllerTest extends BaseTest {
 
         objectMapper = new ObjectMapper();
         JacksonTester.initFields(this, objectMapper);
-        baseUrl = "/test";
+        baseUrl = "/concept";
     }
 
     /**
@@ -63,21 +60,21 @@ public class TestControllerTest extends BaseTest {
      * @throws Exception the exception
      */
     @Test
-    public void testInfo() throws Exception {
+    public void testConcept() throws Exception {
         String url = null;
         MvcResult result = null;
         String content = null;
-        // Concept concept = null;
+        Concept concept = null;
 
         // Test with "by code"
-        url = baseUrl + "/info";
+        url = baseUrl + "/SNOMEDCT_US/404684003";
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        assertThat(content).isEqualTo("welcome");
-        // concept = new ObjectMapper().readValue(content, Concept.class);
-        // assertThat(concept).isNotNull();
+        concept = new ObjectMapper().readValue(content, Concept.class);
+        assertThat(concept).isNotNull();
+        assertThat(concept.getCode()).isEqualTo("404684003");
 
     }
 

@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.util;
+package org.ihtsdo.refsetservice.util.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -6,7 +6,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
 
-import org.ihtsdo.refsetservice.BaseTest;
+import org.ihtsdo.refsetservice.test.BaseTest;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

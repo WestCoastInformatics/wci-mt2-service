@@ -1,5 +1,5 @@
 
-package org.ihtsdo.refsetservice;
+package org.ihtsdo.refsetservice.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
