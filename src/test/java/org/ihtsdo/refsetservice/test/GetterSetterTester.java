@@ -1,5 +1,5 @@
 
-package org.ihtsdo.refsetservice;
+package org.ihtsdo.refsetservice.test;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

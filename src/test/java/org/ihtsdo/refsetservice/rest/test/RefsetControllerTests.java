@@ -1,12 +1,12 @@
 
-package org.ihtsdo.refsetservice.rest;
+package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.ihtsdo.refsetservice.BaseTest;
-import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.test.BaseTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -23,11 +23,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Integration tests for MetadataController.
  */
+
 @AutoConfigureMockMvc
-public class ConceptControllerTests extends BaseTest {
+public class RefsetControllerTests extends BaseTest {
 
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(ConceptControllerTests.class);
+    private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
 
     /** The mvc. */
     @Autowired
@@ -51,7 +52,7 @@ public class ConceptControllerTests extends BaseTest {
 
         objectMapper = new ObjectMapper();
         JacksonTester.initFields(this, objectMapper);
-        baseUrl = "/concept";
+        baseUrl = "/refset";
     }
 
     /**
@@ -60,21 +61,21 @@ public class ConceptControllerTests extends BaseTest {
      * @throws Exception the exception
      */
     @Test
-    public void testConcept() throws Exception {
+    public void testRefset() throws Exception {
         String url = null;
         MvcResult result = null;
         String content = null;
-        Concept concept = null;
+        Refset refset = null;
 
         // Test with "by code"
-        url = baseUrl + "/SNOMEDCT_US/404684003";
+        url = baseUrl + "/001";
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        concept = new ObjectMapper().readValue(content, Concept.class);
-        assertThat(concept).isNotNull();
-        assertThat(concept.getCode()).isEqualTo("404684003");
+        refset = new ObjectMapper().readValue(content, Refset.class);
+        assertThat(refset).isNotNull();
+        assertThat(refset.getRefsetId()).isEqualTo("001");
 
     }
 

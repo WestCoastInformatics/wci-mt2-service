@@ -8,7 +8,7 @@
  * or reproduction of this material is strictly forbidden.
  */
 
-package org.ihtsdo.refsetservice.config;
+package org.ihtsdo.refsetservice.config.test;
 
 import java.util.ArrayList;
 import java.util.List;

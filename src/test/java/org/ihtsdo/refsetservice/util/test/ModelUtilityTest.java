@@ -1,12 +1,13 @@
 
-package org.ihtsdo.refsetservice.util;
+package org.ihtsdo.refsetservice.util.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.ihtsdo.refsetservice.BaseTest;
+import org.ihtsdo.refsetservice.test.BaseTest;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

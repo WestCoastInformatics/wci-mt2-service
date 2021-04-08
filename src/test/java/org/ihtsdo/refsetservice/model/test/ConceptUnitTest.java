@@ -1,37 +1,31 @@
 
-package org.ihtsdo.refsetservice.model;
+package org.ihtsdo.refsetservice.model.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.ihtsdo.refsetservice.BaseTest;
-import org.ihtsdo.refsetservice.CopyConstructorTester;
-import org.ihtsdo.refsetservice.EqualsHashcodeTester;
-import org.ihtsdo.refsetservice.GetterSetterTester;
-import org.ihtsdo.refsetservice.ProxyTester;
-import org.ihtsdo.refsetservice.SerializationTester;
-import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.test.BaseTest;
+import org.ihtsdo.refsetservice.test.CopyConstructorTester;
+import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
+import org.ihtsdo.refsetservice.test.GetterSetterTester;
+import org.ihtsdo.refsetservice.test.PersistenceTester;
+import org.ihtsdo.refsetservice.test.SerializationTester;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Unit test for {@link ResultList}.
+ * Unit test for {@link Concept}.
  */
-public class ResultListUnitTest extends BaseTest {
+public class ConceptUnitTest extends BaseTest {
 
     /** The logger. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(ResultListUnitTest.class);
+    private static Logger logger = LoggerFactory.getLogger(ConceptUnitTest.class);
 
     /** The model object to test. */
-    private ResultList<AbstractHasId> object;
-
-    /** The sc 1. */
-    private SearchParameters sc1;
-
-    /** The sc 2. */
-    private SearchParameters sc2;
+    private Concept object;
 
     /**
      * Setup.
@@ -40,11 +34,8 @@ public class ResultListUnitTest extends BaseTest {
      */
     @BeforeEach
     public void setup() throws Exception {
-        object = new ResultList<>();
 
-        final ProxyTester tester = new ProxyTester(new SearchParameters());
-        sc1 = (SearchParameters) tester.createObject(1);
-        sc2 = (SearchParameters) tester.createObject(2);
+        object = new Concept();
     }
 
     /**
@@ -54,25 +45,24 @@ public class ResultListUnitTest extends BaseTest {
      */
     @Test
     public void testModelGetSet() throws Exception {
+
         final GetterSetterTester tester = new GetterSetterTester(object);
-        tester.proxy(SearchParameters.class, 1, sc1);
-        tester.proxy(SearchParameters.class, 2, sc2);
         tester.test();
     }
 
     /**
-     * Test equals and hashcode methods.
+     * Test equals and hascode methods.
      *
      * @throws Exception the exception
      */
     @Test
     public void testModelEqualsHashcode() throws Exception {
+
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        tester.include("total");
-        tester.include("parameters");
-        tester.exclude("items");
-        tester.proxy(SearchParameters.class, 1, sc1);
-        tester.proxy(SearchParameters.class, 2, sc2);
+        tester.include("name");
+        tester.include("code");
+        tester.include("terminology");
+        tester.include("version");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -89,9 +79,9 @@ public class ResultListUnitTest extends BaseTest {
      */
     @Test
     public void testModelCopy() throws Exception {
+
         final CopyConstructorTester tester = new CopyConstructorTester(object);
-        tester.proxy(SearchParameters.class, 1, sc1);
-        assertTrue(tester.testCopyConstructor(ResultList.class));
+        assertTrue(tester.testCopyConstructor(Concept.class));
     }
 
     /**
@@ -101,9 +91,20 @@ public class ResultListUnitTest extends BaseTest {
      */
     @Test
     public void testModelSerialization() throws Exception {
-        final SerializationTester tester = new SerializationTester(object);
-        tester.proxy(SearchParameters.class, 1, sc1);
 
+        final SerializationTester tester = new SerializationTester(object);
         assertTrue(tester.testJsonSerialization());
+    }
+
+    /**
+     * Test persistence.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testPersistence() throws Exception {
+
+        final PersistenceTester tester = new PersistenceTester(object, true, true);
+        tester.test();
     }
 }

@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.util;
+package org.ihtsdo.refsetservice.util.test;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -11,7 +11,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.ihtsdo.refsetservice.BaseTest;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
@@ -19,6 +18,9 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.test.BaseTest;
+import org.ihtsdo.refsetservice.util.FileUtility;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

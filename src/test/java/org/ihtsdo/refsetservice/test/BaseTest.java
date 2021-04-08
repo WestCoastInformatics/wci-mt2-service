@@ -1,5 +1,5 @@
 
-package org.ihtsdo.refsetservice;
+package org.ihtsdo.refsetservice.test;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;

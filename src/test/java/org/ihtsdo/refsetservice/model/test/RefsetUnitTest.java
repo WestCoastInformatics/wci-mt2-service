@@ -1,5 +1,5 @@
 
-package org.ihtsdo.refsetservice.model;
+package org.ihtsdo.refsetservice.model.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -8,13 +8,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.ihtsdo.refsetservice.BaseTest;
-import org.ihtsdo.refsetservice.CopyConstructorTester;
-import org.ihtsdo.refsetservice.EqualsHashcodeTester;
-import org.ihtsdo.refsetservice.GetterSetterTester;
-import org.ihtsdo.refsetservice.ProxyTester;
-import org.ihtsdo.refsetservice.SerializationTester;
+import org.ihtsdo.refsetservice.model.DefinitionClause;
+import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.test.BaseTest;
+import org.ihtsdo.refsetservice.test.CopyConstructorTester;
+import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
+import org.ihtsdo.refsetservice.test.GetterSetterTester;
+import org.ihtsdo.refsetservice.test.ProxyTester;
+import org.ihtsdo.refsetservice.test.SerializationTester;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
