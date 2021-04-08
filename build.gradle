@@ -17,11 +17,6 @@ buildscript {
   }
 }
 
-// This must be at the top of the file (only can be below buildscript)
-plugins {
-  id "com.github.hierynomus.license" version "0.15.0"
-}
-
 repositories {
   mavenLocal()
   mavenCentral()
@@ -109,6 +104,7 @@ dependencies {
   implementation 'org.postgresql:postgresql:42.2.12'
   implementation "commons-cli:commons-cli:1.4"
   implementation "cglib:cglib:2.2.2"
+  implementation "com.amazonaws:aws-java-sdk-s3:1.11.989"
   
   // runtime only
   runtimeOnly 'com.h2database:h2'
@@ -119,19 +115,6 @@ dependencies {
   testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 }
-
-// use "gradle licenseFormatMain/Test" to automatically generate headers
-license {
-  header rootProject.file("config/LICENSE")
-  mapping("java", "SLASHSTAR_STYLE")
-  includes(["**/*.java"])
-  excludes(["**/*.txt", "**/*.conf", "**/*package-info.java", "**/*.properties"])
-  strictCheck true
-  ext.year = Calendar.getInstance().get(Calendar.YEAR)
-  ext.company = "SNOMED International"
-}
-licenseTest.dependsOn licenseFormatTest
-licenseMain.dependsOn licenseFormatMain
 
 // SpotBugs and CheckStyle
 spotbugs {
