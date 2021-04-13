@@ -1,15 +1,11 @@
 
 package org.ihtsdo.refsetservice.model;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Index;
-import org.hibernate.search.annotations.Indexed;
-import org.hibernate.search.annotations.Store;
-
+// TODO: Auto-generated Javadoc
 /**
  * Represents a concept with a code from a terminology.
  * 
@@ -20,28 +16,29 @@ import org.hibernate.search.annotations.Store;
  * }
  * </pre>
  */
-@Entity
-// @JsonInclude(Include.NON_EMPTY)
-// @JsonIgnoreProperties(ignoreUnknown = true)
-// @AnalyzerDef(name = "whitespace",
-// tokenizer = @TokenizerDef(factory = WhitespaceTokenizerFactory.class))
-@Table(name = "concepts")
-@Indexed
+
 public class Concept extends AbstractHasModified implements Comparable<Concept> {
 
     /** The code. */
-    @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO)
     private String code;
 
     /** The name. */
     private String name;
 
     /** The terminology. */
-    @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO)
     private String terminology;
 
     /** The version. */
     private String version;
+
+    /** The member status. */
+    private boolean memberStatus;
+
+    /** The member effective time. */
+    private String memberEffectiveTime;
+
+    /** The descriptions. */
+    private List<Map<String, String>> descriptions = new ArrayList<>();
 
     /**
      * Instantiates an empty {@link Concept}.
@@ -167,6 +164,60 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Checks if is member status.
+     *
+     * @return true, if is member status
+     */
+    public boolean isMemberStatus() {
+        return memberStatus;
+    }
+
+    /**
+     * Sets the member status.
+     *
+     * @param memberStatus the new member status
+     */
+    public void setMemberStatus(boolean memberStatus) {
+        this.memberStatus = memberStatus;
+    }
+
+    /**
+     * Gets the member effective time.
+     *
+     * @return the member effective time
+     */
+    public String getMemberEffectiveTime() {
+        return memberEffectiveTime;
+    }
+
+    /**
+     * Sets the member effective time.
+     *
+     * @param memberEffectiveTime the new member effective time
+     */
+    public void setMemberEffectiveTime(String memberEffectiveTime) {
+        this.memberEffectiveTime = memberEffectiveTime;
+    }
+
+    /**
+     * Gets the descriptions.
+     *
+     * @return the descriptions
+     */
+    public List<Map<String, String>> getDescriptions() {
+        return descriptions;
+    }
+
+    /**
+     * Sets the descriptions.
+     *
+     * @param descriptions the descriptions
+     */
+    public void setDescriptions(List<Map<String, String>> descriptions) {
+        this.descriptions = descriptions;
+    }
+
+    /**
      * Hash code.
      *
      * @return the int
@@ -180,6 +231,10 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
+        result = prime * result + (memberStatus ? 1 : 0);
+        result = prime * result
+                + ((memberEffectiveTime == null) ? 0 : memberEffectiveTime.hashCode());
+        result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         return result;
     }
 
@@ -230,6 +285,27 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         } else if (!version.equals(other.version)) {
             return false;
         }
+
+        if (memberEffectiveTime == null) {
+            if (other.memberEffectiveTime != null) {
+                return false;
+            }
+        } else if (!memberEffectiveTime.equals(other.memberEffectiveTime)) {
+            return false;
+        }
+
+        if (descriptions == null) {
+            if (other.descriptions != null) {
+                return false;
+            }
+        } else if (!descriptions.equals(other.descriptions)) {
+            return false;
+        }
+
+        if (memberStatus != other.memberStatus) {
+            return false;
+        }
+
         return true;
     }
 
@@ -246,6 +322,9 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         return (name + code).compareToIgnoreCase(o.getName() + o.getCode());
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
         // TODO Auto-generated method stub
