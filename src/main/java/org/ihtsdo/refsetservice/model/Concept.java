@@ -2,6 +2,7 @@
 package org.ihtsdo.refsetservice.model;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     private boolean memberStatus;
 
     /** The member effective time. */
-    private String memberEffectiveTime;
+    private Date memberEffectiveTime;
 
     /** The descriptions. */
     private List<Map<String, String>> descriptions = new ArrayList<>();
@@ -89,6 +90,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         name = other.getName();
         terminology = other.getTerminology();
         version = other.getVersion();
+        memberEffectiveTime = other.getMemberEffectiveTime();
+        memberStatus = other.isMemberStatus();
     }
 
     /**
@@ -186,7 +189,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @return the member effective time
      */
-    public String getMemberEffectiveTime() {
+    public Date getMemberEffectiveTime() {
         return memberEffectiveTime;
     }
 
@@ -195,7 +198,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param memberEffectiveTime the new member effective time
      */
-    public void setMemberEffectiveTime(String memberEffectiveTime) {
+    public void setMemberEffectiveTime(Date memberEffectiveTime) {
         this.memberEffectiveTime = memberEffectiveTime;
     }
 
