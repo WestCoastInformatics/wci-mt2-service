@@ -59,9 +59,6 @@ public class TestConfiguration {
     /** The refset test data. */
     private static ArrayList<Refset> refsetList = new ArrayList<>();
 
-    /** The concept test data. */
-    private static ArrayList<Concept> conceptList = new ArrayList<>();
-
     /** The organization test data. */
     private static ArrayList<Organization> organizationList = new ArrayList<>();
 
@@ -76,9 +73,6 @@ public class TestConfiguration {
 
     /** The file path for refset test data. */
     private final String refsetDataFile = "src/test/resources/testdata/refsets.txt";
-
-    /** The file path for concept test data. */
-    private final String conceptDataFile = "src/test/resources/testdata/concepts.txt";
 
     /** The file path for organization test data. */
     private final String organizationDataFile = "src/test/resources/testdata/organizations.txt";
@@ -110,7 +104,6 @@ public class TestConfiguration {
         if (!dataLoaded) {
 
             List<String> refsetsJson = FileUtility.readFileToArray(refsetDataFile);
-            List<String> conceptsJson = FileUtility.readFileToArray(conceptDataFile);
             List<String> organizationsJson = FileUtility.readFileToArray(organizationDataFile);
             List<String> projectsJson = FileUtility.readFileToArray(projectDataFile);
             List<String> definitionsJson = FileUtility.readFileToArray(definitionDataFile);
@@ -182,16 +175,6 @@ public class TestConfiguration {
                     logger.info("Refset " + refset.getRefsetId() + " successfully added");
                 }
 
-                for (String conceptJson : conceptsJson) {
-
-                    Concept concept = ModelUtility.fromJson(conceptJson, Concept.class);
-
-                    // Add an object
-                    // service.add(concept);
-                    // conceptList.add(concept);
-                    logger.info("Concept " + concept.getName() + " successfully added");
-                }
-
                 dataLoaded = true;
             }
         }
@@ -227,15 +210,6 @@ public class TestConfiguration {
                     logger.info("Edition " + name + " successfully removed");
                 }
 
-                for (Concept concept : conceptList) {
-
-                    final String name = concept.getName();
-
-                    // remove an object
-                    service.remove(concept);
-                    logger.info("Concept " + name + " successfully removed");
-                }
-
                 for (Project project : projectList) {
 
                     final String name = project.getName();
@@ -264,7 +238,6 @@ public class TestConfiguration {
                 // }
 
                 refsetList.clear();
-                conceptList.clear();
                 dataLoaded = false;
             }
         }

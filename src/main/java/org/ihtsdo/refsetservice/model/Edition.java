@@ -219,8 +219,8 @@ public class Edition extends AbstractHasModified {
      *
      * @param country the country to set
      */
-    public void setShortName(final String country) {
-        this.shortName = country;
+    public void setShortName(final String shortName) {
+        this.shortName = shortName;
     }
 
     /**

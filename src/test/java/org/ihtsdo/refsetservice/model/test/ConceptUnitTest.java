@@ -63,6 +63,9 @@ public class ConceptUnitTest extends BaseTest {
         tester.include("code");
         tester.include("terminology");
         tester.include("version");
+        tester.include("memberStatus");
+        tester.include("memberEffectiveTime");
+        tester.exclude("descriptions");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -94,17 +97,5 @@ public class ConceptUnitTest extends BaseTest {
 
         final SerializationTester tester = new SerializationTester(object);
         assertTrue(tester.testJsonSerialization());
-    }
-
-    /**
-     * Test persistence.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testPersistence() throws Exception {
-
-        final PersistenceTester tester = new PersistenceTester(object, true, true);
-        tester.test();
     }
 }
