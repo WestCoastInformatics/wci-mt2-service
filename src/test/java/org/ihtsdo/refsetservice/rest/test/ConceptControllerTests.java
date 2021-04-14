@@ -59,23 +59,23 @@ public class ConceptControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
-    public void testConcept() throws Exception {
-        String url = null;
-        MvcResult result = null;
-        String content = null;
-        Concept concept = null;
-
-        // Test with "by code"
-        url = baseUrl + "/SNOMEDCT_US/404684003";
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        concept = new ObjectMapper().readValue(content, Concept.class);
-        assertThat(concept).isNotNull();
-        assertThat(concept.getCode()).isEqualTo("404684003");
-
-    }
+//    @Test
+//    public void testConcept() throws Exception {
+//        String url = null;
+//        MvcResult result = null;
+//        String content = null;
+//        Concept concept = null;
+//
+//        // Test with "by code"
+//        url = baseUrl + "/SNOMEDCT_US/404684003";
+//        logger.info("Testing url - " + url);
+//        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+//        content = result.getResponse().getContentAsString();
+//        logger.info(" content = " + content);
+//        concept = new ObjectMapper().readValue(content, Concept.class);
+//        assertThat(concept).isNotNull();
+//        assertThat(concept.getCode()).isEqualTo("404684003");
+//
+//    }
 
 }

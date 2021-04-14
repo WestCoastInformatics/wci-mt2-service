@@ -83,6 +83,9 @@ public class RefsetUnitTest extends BaseTest {
     public void testModelGetSet() throws Exception {
 
         final GetterSetterTester tester = new GetterSetterTester(object);
+        tester.exclude("organizationName");
+        tester.exclude("editionName");
+        tester.exclude("editionShortName");
         tester.test();
     }
 

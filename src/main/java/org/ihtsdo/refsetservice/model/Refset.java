@@ -419,7 +419,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param editionName the edition name to set
      */
     public void setEditionName(final String editionName) {
-        this.edition.setName(editionName);
+        
+        if (edition != null) {
+            this.edition.setName(editionName);
+        }
     }
 
     /**
@@ -440,10 +443,13 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /**
      * Sets the edition short name.
      *
-     * @param editionShortNameSort the new edition short name
+     * @param editionShortName the new edition short name
      */
-    public void setEditionShortName(final String editionShortNameSort) {
-        this.edition.setShortName(editionShortNameSort);
+    public void setEditionShortName(final String editionShortName) {
+        
+        if (edition != null) {
+            this.edition.setShortName(editionShortName);
+        }
     }
 
     /**
@@ -613,7 +619,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setOrganizationName(final String organizationName) {
 
-        this.project.getOrganization().setName(organizationName);
+        if (project != null && project.getOrganization() != null) {
+            this.project.getOrganization().setName(organizationName);
+        }
+        
     }
 
     /**
