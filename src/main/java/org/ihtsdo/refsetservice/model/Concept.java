@@ -92,6 +92,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         version = other.getVersion();
         memberEffectiveTime = other.getMemberEffectiveTime();
         memberStatus = other.isMemberStatus();
+        descriptions = other.getDescriptions();
     }
 
     /**
