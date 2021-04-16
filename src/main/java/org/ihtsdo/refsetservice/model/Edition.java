@@ -75,6 +75,10 @@ public class Edition extends AbstractHasModified {
     @IndexedEmbedded
     private Set<String> defaultLanguageRefsets = new HashSet<String>();
 
+    /** The default language code. */
+    @Column(nullable = true)
+    private String defaultLanguageCode;
+
     /**
      * Instantiates an empty {@link Edition}.
      */
@@ -110,6 +114,7 @@ public class Edition extends AbstractHasModified {
         name = other.getName();
         namespace = other.getNamespace();
         defaultLanguageRefsets = other.getDefaultLanguageRefsets();
+        defaultLanguageCode = other.getDefaultLanguageCode();
         branch = other.getBranch();
         iconUri = other.getIconUri();
         shortName = other.getShortName();
@@ -206,6 +211,24 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
+     * Gets the default language code.
+     *
+     * @return the default language code
+     */
+    public String getDefaultLanguageCode() {
+        return defaultLanguageCode;
+    }
+
+    /**
+     * Sets the default language code.
+     *
+     * @param defaultLanguageCode the set of default language refset Ids
+     */
+    public void setDefaultLanguageCode(final String defaultLanguageCode) {
+        this.defaultLanguageCode = defaultLanguageCode;
+    }
+
+    /**
      * Gets the short name.
      *
      * @return the country
@@ -217,7 +240,7 @@ public class Edition extends AbstractHasModified {
     /**
      * Sets the short name.
      *
-     * @param country the country to set
+     * @param shortName the new short name
      */
     public void setShortName(final String shortName) {
         this.shortName = shortName;
@@ -239,6 +262,8 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         result = prime * result
                 + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
+        result = prime * result
+                + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
         result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
         return result;
     }
@@ -303,6 +328,14 @@ public class Edition extends AbstractHasModified {
                 return false;
             }
         } else if (!defaultLanguageRefsets.equals(other.defaultLanguageRefsets)) {
+            return false;
+        }
+
+        if (defaultLanguageCode == null) {
+            if (other.defaultLanguageCode != null) {
+                return false;
+            }
+        } else if (!defaultLanguageCode.equals(other.defaultLanguageCode)) {
             return false;
         }
 
