@@ -241,8 +241,8 @@ public class SnowstormConceptAccessUnitTest {
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    private Set<Concept> getConceptDescriptions(String refsetId, Set<Concept> members,
-        List<String> orderedRemainingPts, String defaultLanguageCode)
+    private Set<Concept> getConceptDescriptions(final String refsetId, final Set<Concept> members,
+        final List<String> orderedRemainingPts, final String defaultLanguageCode)
         throws MalformedURLException, Exception {
         final Client client = ClientBuilder.newClient();
 
@@ -346,7 +346,6 @@ public class SnowstormConceptAccessUnitTest {
      * @throws Exception the exception
      */
     /*-
-     *
      * Sort descriptions in the order defined below.
      * 
      * 1)   PT – Default Lange Code
@@ -354,15 +353,10 @@ public class SnowstormConceptAccessUnitTest {
      * 3)  All other PTs 
      *      a.  Order by language code
      *      b.  If no translation, will be null
-     *
-     * @param refsetId the refset id
-     * @param conDescMap the con desc map
-     * @return the list
-     * @throws Exception the exception
      */
     private Map<String, List<Map<String, String>>> sortDescriptions(final String refsetId,
         final HashMap<String, Set<Map<String, String>>> conDescMap,
-        List<String> orderedRemainingPts, String defaultLanguageCode) throws Exception {
+        final List<String> orderedRemainingPts, final String defaultLanguageCode) throws Exception {
         Map<String, List<Map<String, String>>> retValues = new HashMap<>();
 
         // Actual code
@@ -433,7 +427,7 @@ public class SnowstormConceptAccessUnitTest {
      * @param map the map
      * @return the string
      */
-    private String printDesc(Map<String, String> map) {
+    private String printDesc(final Map<String, String> map) {
         return "Type = " + map.get(DESC_TYPE) + " for lang = " + map.get(DESC_LANG)
                 + " with term = " + map.get(DESC_TERM);
     }
