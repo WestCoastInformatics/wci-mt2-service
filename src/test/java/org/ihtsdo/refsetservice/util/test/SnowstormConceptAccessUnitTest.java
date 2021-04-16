@@ -348,7 +348,7 @@ public class SnowstormConceptAccessUnitTest {
     /*-
      * Sort descriptions in the order defined below.
      * 
-     * 1)   PT – Default Lange Code
+     * 1)   PT – Default Lang Code
      * 2)  FSN
      * 3)  All other PTs 
      *      a.  Order by language code
@@ -408,8 +408,8 @@ public class SnowstormConceptAccessUnitTest {
                 }
             }
 
-            sortedConDescs.add(sortingMap.get(TYPE_FSN));
             sortedConDescs.add(sortingMap.get(TYPE_DEFAULT_PT));
+            sortedConDescs.add(sortingMap.get(TYPE_FSN));
 
             for (int i = 0; i < otherPtCount; i++) {
                 sortedConDescs.add(sortingMap.get(TYPE_OTHER_PT + i));
