@@ -622,6 +622,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 e.setName(editionJson.get("name").asText());
                 e.setShortName(editionJson.get("shortName").asText());
                 e.setBranch(editionJson.get("branchPath").asText());
+                e.setDefaultLanguageCode(editionJson.get("defaultLanguageCode").asText());
 
                 if (!shortNameToNamespaceMap.containsKey(e.getShortName())) {
                     logger.debug("DDD - Listing for Customer Feedback: Edition without defined "

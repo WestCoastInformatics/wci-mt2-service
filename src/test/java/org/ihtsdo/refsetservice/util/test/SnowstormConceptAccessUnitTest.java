@@ -95,7 +95,7 @@ public class SnowstormConceptAccessUnitTest {
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyyMMdd");
 
     /** The Constant refsetToLanguageMap. */
-    private static final Map<String, String> refsetToLanguageMap = new HashMap<>();
+    private static final Set<String> refsetToLanguages = new HashSet<>();
 
     /** The Constant DESC_TERM. */
     private static final String DESC_TERM = "term";
@@ -117,9 +117,9 @@ public class SnowstormConceptAccessUnitTest {
 
     {
         // TODO: Remove once Edition updated
-        refsetToLanguageMap.put("900000000000509007", "en");
-        refsetToLanguageMap.put("31000172101", "nl");
-        refsetToLanguageMap.put("21000172104", "fr");
+        refsetToLanguages.add("900000000000509007");
+        refsetToLanguages.add("31000172101");
+        refsetToLanguages.add("21000172104");
     }
 
     /**
@@ -177,8 +177,7 @@ public class SnowstormConceptAccessUnitTest {
             // is blank right now
 
             defaultLanguageCode = "en";
-            orderedRemainingPts =
-                    refsetToLanguageMap.values().stream().collect(Collectors.toList());
+            orderedRemainingPts = refsetToLanguages.stream().collect(Collectors.toList());
             orderedRemainingPts.remove(defaultLanguageCode);
             Collections.sort(orderedRemainingPts);
 
@@ -298,11 +297,11 @@ public class SnowstormConceptAccessUnitTest {
                     String typeName = null;
 
                     if (!"900000000000003001".equals(desc.get("typeId").asText())) {
-                        JsonNode map = desc.get("acceptabilityMap");
-                        Iterator<JsonNode> mapItr = map.iterator();
-                        while (mapItr.hasNext()) {
-                            JsonNode acceptability = mapItr.next();
-                            if ("PREFERRED".equals(acceptability.asText())) {
+                        JsonNode acceptabilityMap = desc.get("acceptabilityMap");
+
+                        for (String langRefsetId : refsetToLanguages) {
+                            if (acceptabilityMap.has(langRefsetId)
+                                    && "PREFERRED".equals(acceptabilityMap.get(langRefsetId).asText())) {
                                 isPreferred = true;
                                 typeName = "PT";
                                 break;
