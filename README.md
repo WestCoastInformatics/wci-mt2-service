@@ -36,7 +36,7 @@ createdb -Upostgres --encoding=UTF-8 rt2
 
 ## Build, Test, Install, Release
 Run these commands from a command prompt in a the root directory of the project
-Run this to build the project without running tests
+Run this to build the project without running tests (Do not run this command at the moment)
 
 ```sh
   $ make build
@@ -70,10 +70,10 @@ Run this to run the web server
 ## Usage
 To hit a REST endpoint go to the following URLs in a browser or in Postman (as GET):
 * http://localhost:8080/test/info (You will see "Welcome")
-* http://localhost:8080/concept/SNOMEDCT_US/404684003 (You will see a concept returned
+* http://localhost:8080/refset/001 (You will see a refset returned)
 
 This endpoint requires Postman (as Put, with a body of type "raw" with JSON. In the body enter "false" to change the concept's active flag.):
-* http://localhost:8080/concept/404684003
+* http://localhost:8080/refset/001
 
 
 
