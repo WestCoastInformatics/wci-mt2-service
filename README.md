@@ -70,10 +70,10 @@ Run this to run the web server
 ## Usage
 To hit a REST endpoint go to the following URLs in a browser or in Postman (as GET):
 * http://localhost:8080/test/info (You will see "Welcome")
-* http://localhost:8080/refset/001 (You will see a refset returned)
+* http://localhost:8080/refset/721144007 (You will see a refset returned)
 
 This endpoint requires Postman (as Put, with a body of type "raw" with JSON. In the body enter "false" to change the concept's active flag.):
-* http://localhost:8080/refset/001
+* http://localhost:8080/refset/721144007
 
 
 
