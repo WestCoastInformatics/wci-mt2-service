@@ -6,10 +6,13 @@ import java.util.List;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
+import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
@@ -38,6 +41,7 @@ import io.swagger.annotations.ApiResponses;
  */
 @RestController
 @Api(tags = "Refset endpoints")
+@SuppressWarnings("javadoc")
 public class RefsetController extends BaseController {
 
     /** Logger. */
@@ -50,6 +54,7 @@ public class RefsetController extends BaseController {
      * @return the concept
      * @throws Exception the exception
      */
+
     @ApiOperation(value = "Get the refset for the specified ID", response = Refset.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
@@ -63,8 +68,8 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}",
             produces = "application/json")
-    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId")
-    final String refsetId) throws Exception {
+    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId") final String refsetId)
+        throws Exception {
 
         try {
 
@@ -150,7 +155,7 @@ public class RefsetController extends BaseController {
                     required = false, dataType = "int", paramType = "query", defaultValue = "0"),
             @ApiImplicitParam(name = "offset", value = "The offset for the first result",
                     required = false, dataType = "int", paramType = "query", defaultValue = "0")
-    // TODO: activeOnly, sort, sortAscending
+            // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search",
@@ -225,4 +230,78 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
+
+    /**
+     * Refset Members.
+     *
+     * @param refsetId the refset ID
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the string
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Get refset search results", response = ResultList.class,
+            notes = "Use cases for search range from very simple term searches, use of paging "
+                    + "parameters, additional filters, searches properties, and so on.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "terminology",
+                    value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true,
+                    dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query",
+                    value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
+                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return",
+                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result",
+                    required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            // TODO: activeOnly, sort, sortAscending
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/members",
+            produces = "application/json")
+    public @ResponseBody ConceptResultList members(
+        @PathVariable(value = "refsetId") final String refsetId,
+        final SearchParameters searchParameters, final BindingResult bindingResult)
+        throws Exception {
+
+        // Check whether or not parameter binding was successful
+        if (bindingResult.hasErrors()) {
+
+            final List<FieldError> errors = bindingResult.getFieldErrors();
+            final List<String> errorMessages = new ArrayList<>();
+
+            for (final FieldError error : errors) {
+
+                final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = "
+                        + error.getField() + ", " + error.getCode();
+                logger.error(errorMessage);
+                errorMessages.add(errorMessage);
+            }
+
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.join("\n ", errorMessages));
+        }
+
+        final long start = System.currentTimeMillis();
+        ConceptResultList results = new ConceptResultList();
+
+        try {
+
+            results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters);
+
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            return results;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+
 }
