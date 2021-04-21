@@ -56,6 +56,7 @@ CREATE TABLE editions
     name character varying(4000) NOT NULL,
     namespace character varying(255) NOT NULL,
     shortname character varying(255),
+    defaultLanguageCode character varying(255),
     CONSTRAINT editions_pkey PRIMARY KEY (id)
 );
 
