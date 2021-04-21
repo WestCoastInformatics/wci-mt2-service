@@ -37,47 +37,32 @@ public class Edition extends AbstractHasModified {
 
     /** The name. */
     @Column(nullable = false, length = 4000)
-    @Fields({
-            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "nameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    })
-    @SortableField(forField = "nameSort")
     private String name;
 
     /** The namespace. */
-    @Column(nullable = false)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @Column(nullable = false, length = 256)
     private String namespace;
 
     /** The short name. */
-    @Column(nullable = true)
-    @Fields({
-            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "shortNameSort", index = Index.YES, analyze = Analyze.NO,
-                    store = Store.NO)
-    })
-    @SortableField(forField = "shortNameSort")
+    @Column(nullable = true, length = 256)
     private String shortName;
 
     /** The flag icon URI. */
-    @Column(nullable = true)
+    @Column(nullable = true, length = 512)
     private String iconUri;
 
     /** The branch to use when retrieving from a terminology server. */
     @Column(nullable = true)
     private String branch;
+    
+    /** The default language code. */
+    @Column(nullable = true, length = 256)
+    private String defaultLanguageCode;
 
     /** The default language refsets. */
     @Column(nullable = true)
     @ElementCollection
-    @Field(analyze = Analyze.NO, store = Store.YES)
-    @IndexedEmbedded
     private Set<String> defaultLanguageRefsets = new HashSet<String>();
-
-    /** The default language code. */
-    @Column(nullable = true)
-    private String defaultLanguageCode;
 
     /**
      * Instantiates an empty {@link Edition}.
@@ -125,6 +110,11 @@ public class Edition extends AbstractHasModified {
      *
      * @return the name
      */
+    @Fields({
+            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+            @Field(name = "nameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    })
+    @SortableField(forField = "nameSort")
     public String getName() {
         return name;
     }
@@ -143,6 +133,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the namespace
      */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @SortableField
     public String getNamespace() {
         return namespace;
     }
@@ -197,6 +189,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the default language refsets
      */
+    @Field(analyze = Analyze.NO, store = Store.YES)
+    @IndexedEmbedded
     public Set<String> getDefaultLanguageRefsets() {
         return defaultLanguageRefsets;
     }
@@ -233,6 +227,12 @@ public class Edition extends AbstractHasModified {
      *
      * @return the country
      */
+    @Fields({
+            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
+            @Field(name = "shortNameSort", index = Index.YES, analyze = Analyze.NO,
+                    store = Store.NO)
+    })
+    @SortableField(forField = "shortNameSort")
     public String getShortName() {
         return shortName;
     }

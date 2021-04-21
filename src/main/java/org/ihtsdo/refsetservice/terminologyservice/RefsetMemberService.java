@@ -50,7 +50,16 @@ public class RefsetMemberService {
     private static final String DESCRIPTION_TYPE = "type";
 
     /** The description language. */
-    private static final String DESCRIPTION_LANG = "lang";
+    private static final String DESCRIPTION_LANGUAGE = "language";
+    
+    /** The description language. */
+    private static final String DESCRIPTION_ID = "descriptionId";
+    
+    /** The description language. */
+    private static final String LANGUAGE_ID = "languageId";
+    
+    /** The description language. */
+    private static final String LANGUAGE_NAME = "languageName";
 
     /** The fully specified name description type. */
     private static final String TYPE_FSN = "FSN";
@@ -135,6 +144,8 @@ public class RefsetMemberService {
                 concept.setCode(item.get("referencedComponentId").asText());
                 concept.setTerminology("SNOMEDCT");
                 concept.setMemberStatus(item.get("active").asBoolean());
+                concept.setHistoryVisible(true);
+                concept.setFeedbackVisible(true);
                 concept.setMemberEffectiveTime(
                         SIMPLE_DATE_FORMAT.parse(item.get("releasedEffectiveTime").asText()));
 
@@ -217,24 +228,36 @@ public class RefsetMemberService {
                     if (descriptionNode.get("active").asBoolean()) {
 
                         boolean isPreferred = false;
+                        String languageId = null;
                         String typeName = null;
+                        JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
 
                         if (!"900000000000003001".equals(descriptionNode.get("typeId").asText())) {
 
-                            JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
-
                             for (String langRefsetId : refsetToLanguages) {
-
+                                
                                 if (acceptabilityMap.has(langRefsetId) && "PREFERRED"
                                         .equals(acceptabilityMap.get(langRefsetId).asText())) {
 
+                                    languageId = langRefsetId;
                                     isPreferred = true;
                                     typeName = "PT";
                                     break;
                                 }
                             }
                         } else {
+                            
                             typeName = "FSN";
+                            
+                            for (String langRefsetId : refsetToLanguages) {
+                                
+                                if (acceptabilityMap.has(langRefsetId) && "PREFERRED"
+                                        .equals(acceptabilityMap.get(langRefsetId).asText())) {
+                                    
+                                    languageId = langRefsetId;
+                                    break;
+                                }
+                            }
                         }
 
                         if (isPreferred || "900000000000003001"
@@ -243,7 +266,10 @@ public class RefsetMemberService {
                             descriptionMap.put(DESCRIPTION_TERM,
                                     descriptionNode.get("term").asText());
                             descriptionMap.put(DESCRIPTION_TYPE, typeName);
-                            descriptionMap.put(DESCRIPTION_LANG,
+                            descriptionMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asText());
+                            descriptionMap.put(LANGUAGE_ID, languageId);
+                            descriptionMap.put(LANGUAGE_NAME, descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
+                            descriptionMap.put(DESCRIPTION_LANGUAGE,
                                     descriptionNode.get("lang").asText());
 
                             descriptions.add(descriptionMap);
@@ -317,7 +343,7 @@ public class RefsetMemberService {
 
                     sortingMap.put(TYPE_FSN, descriptionMap);
 
-                } else if (descriptionMap.get(DESCRIPTION_LANG).equals(defaultLanguageCode)) {
+                } else if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(defaultLanguageCode)) {
 
                     // Always 1
                     if (sortingMap.containsKey(TYPE_DEFAULT_PT)) {
@@ -337,12 +363,12 @@ public class RefsetMemberService {
 
                     // Always 2 + the index in nonDefaultPreferredTerms
                     int index =
-                            nonDefaultPreferredTerms.indexOf(descriptionMap.get(DESCRIPTION_LANG));
+                            nonDefaultPreferredTerms.indexOf(descriptionMap.get(DESCRIPTION_LANGUAGE));
 
                     if (sortingMap.containsKey(TYPE_OTHER_PT + index)) {
 
                         logger.debug("A PT in the non-default language "
-                                + descriptionMap.get(DESCRIPTION_LANG)
+                                + descriptionMap.get(DESCRIPTION_LANGUAGE)
                                 + " has already been identified for conceptId: " + conceptId);
                         logger.debug("Original one identified. "
                                 + printDescription(sortingMap.get(TYPE_OTHER_PT + index)));
@@ -376,7 +402,7 @@ public class RefsetMemberService {
      */
     private static String printDescription(final Map<String, String> map) {
 
-        return "Type = " + map.get(DESCRIPTION_TYPE) + " for lang = " + map.get(DESCRIPTION_LANG)
+        return "Type = " + map.get(DESCRIPTION_TYPE) + " for lang = " + map.get(DESCRIPTION_LANGUAGE)
                 + " with term = " + map.get(DESCRIPTION_TERM);
     }
 }

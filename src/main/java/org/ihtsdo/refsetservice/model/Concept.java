@@ -6,6 +6,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import javax.persistence.Transient;
+
+import org.hibernate.search.annotations.Analyze;
+import org.hibernate.search.annotations.Field;
+import org.hibernate.search.annotations.FieldBridge;
+import org.hibernate.search.annotations.Index;
+import org.hibernate.search.annotations.Store;
+import org.hibernate.search.bridge.builtin.BooleanBridge;
+
 // TODO: Auto-generated Javadoc
 /**
  * Represents a concept with a code from a terminology.
@@ -40,6 +49,12 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The descriptions. */
     private List<Map<String, String>> descriptions = new ArrayList<>();
+    
+    /** The flag for if a user can see the history for this concept. */
+    private boolean historyVisible;
+
+    /** The flag for if a user can see the feedback for this concept. */
+    private boolean feedbackVisible;
 
     /**
      * Instantiates an empty {@link Concept}.
@@ -219,6 +234,42 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      */
     public void setDescriptions(List<Map<String, String>> descriptions) {
         this.descriptions = descriptions;
+    }
+    
+    /**
+     * Checks if history is visible.
+     *
+     * @return the history visible flag
+     */
+    public boolean isHistoryVisible() {
+        return historyVisible;
+    }
+
+    /**
+     * Sets if history is visible.
+     *
+     * @param historyVisible the history to set
+     */
+    public void setHistoryVisible(final boolean historyVisible) {
+        this.historyVisible = historyVisible;
+    }
+
+    /**
+     * Checks if feedback is visible.
+     *
+     * @return the feedback visible flag
+     */
+    public boolean isFeedbackVisible() {
+        return feedbackVisible;
+    }
+
+    /**
+     * Sets if the feedback visible.
+     *
+     * @param feedbackVisible the feedbackVisible to set
+     */
+    public void setFeedbackVisible(final boolean feedbackVisible) {
+        this.feedbackVisible = feedbackVisible;
     }
 
     /**
