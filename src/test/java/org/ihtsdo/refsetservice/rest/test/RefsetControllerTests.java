@@ -5,8 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.test.BaseTest;
+import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -56,18 +59,18 @@ public class RefsetControllerTests extends BaseTest {
     }
 
     /**
-     * Test.
+     * Test getting a refset.
      *
      * @throws Exception the exception
      */
     @Test
     public void testRefset() throws Exception {
+        
         String url = null;
         MvcResult result = null;
         String content = null;
         Refset refset = null;
 
-        // Test with "by code"
         url = baseUrl + "/001";
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -76,6 +79,33 @@ public class RefsetControllerTests extends BaseTest {
         refset = new ObjectMapper().readValue(content, Refset.class);
         assertThat(refset).isNotNull();
         assertThat(refset.getRefsetId()).isEqualTo("001");
+
+    }
+    
+    /**
+     * Test getting the member concepts of a refset.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testRefsetMembers() throws Exception {
+        
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+        ConceptResultList members = null;
+
+        url = baseUrl + "/721000172106/members?limit=10&offset=0";
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        members = new ObjectMapper().readValue(content, (ConceptResultList.class));
+        assertThat(members).isNotNull();
+        assertThat(members.getItems().size()).isGreaterThan(0);
+        assertThat(members.getItems().get(0).getCode()).isEqualTo("162290004");
+        assertThat(members.getItems().get(0).getDescriptions().size()).isGreaterThan(0);
+        assertThat(members.getItems().get(0).getDescriptions().get(0).get("term")).isEqualTo("Dry eyes");
 
     }
 
