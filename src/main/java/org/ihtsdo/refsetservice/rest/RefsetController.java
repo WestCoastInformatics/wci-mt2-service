@@ -293,7 +293,7 @@ public class RefsetController extends BaseController {
         try {
 
             results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters);
-
+            logger.debug("******** results: " + ModelUtility.toJson(results));
             results.setTimeTaken(System.currentTimeMillis() - start);
             return results;
 
