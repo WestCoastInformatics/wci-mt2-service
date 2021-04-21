@@ -3,9 +3,12 @@ Service application to provide REST endpoints for the Refset Tool GUI and to int
 
 ## Setup 
 
+
 * Clone the project
+Make sure your GIT client is setting the proper Unix line endings: you can run this command though it may not change TortiseGit or other GUI client settings 
 
 ```
+git config --global core.autocrlf false
 git clone https://github.com/IHTSDO/snomed-refset-service.git
 ```
 
@@ -25,6 +28,8 @@ username: postgres
 password: rootpwd
 port: 5432
 
+Make sure to have the Postgres bin folder on your path in order to run the command below:
+
 * Create a database named: rt2
 
 ```
@@ -36,6 +41,8 @@ createdb -Upostgres --encoding=UTF-8 rt2
 
 ## Build, Test, Install, Release
 Run these commands from a command prompt in a the root directory of the project
+Be sure to have cygwin, (or install other linux tools like make), and have those tools on your path to run the commands below 
+
 Run this to build the project without running tests (Do not run this command at the moment)
 
 ```sh
