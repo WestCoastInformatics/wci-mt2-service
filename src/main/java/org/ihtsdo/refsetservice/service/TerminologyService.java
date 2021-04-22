@@ -135,7 +135,7 @@ public class TerminologyService implements RootService {
         transaction = manager.getTransaction();
 
         // If we're using DDL "create" mode, clear the indexes
-        if (!reindex && "create".equals(properties.getProperty("hibernate.hbm2ddl.auto"))) {
+        if (reindex || "create".equals(properties.getProperty("hibernate.hbm2ddl.auto"))) {
             logger.info("  clear indexes");
             clearLuceneIndexes();
             computeLuceneIndexes(null);
