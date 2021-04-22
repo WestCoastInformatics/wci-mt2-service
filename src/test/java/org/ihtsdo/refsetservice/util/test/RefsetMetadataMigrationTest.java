@@ -182,7 +182,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    //@Test
     public void testGeneralDensitryAllVersions() throws Exception {
         preprocessingSupportingFiles();
 
