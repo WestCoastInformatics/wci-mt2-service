@@ -120,8 +120,8 @@ public class TestConfiguration {
                             ModelUtility.fromJson(organizationJson, Organization.class);
 
                     // Add an object
-                    // service.add(organization);
-                    // organizationList.add(organization);
+                    service.add(organization);
+                    organizationList.add(organization);
                     logger.info("Organization " + organization.getName() + " successfully added");
                 }
 
@@ -131,8 +131,8 @@ public class TestConfiguration {
                     // project.setOrganization(organizationList.get(0));
 
                     // Add an object
-                    // service.add(project);
-                    // projectList.add(project);
+                    service.add(project);
+                    projectList.add(project);
                     logger.info("Project " + project.getName() + " successfully added");
                 }
 
@@ -141,8 +141,8 @@ public class TestConfiguration {
                     Edition edition = ModelUtility.fromJson(editionJson, Edition.class);
 
                     // Add an object
-                    // service.add(edition);
-                    // editionList.add(edition);
+                    service.add(edition);
+                    editionList.add(edition);
                     logger.info("Edition " + edition.getName() + " successfully added");
                 }
 
@@ -152,26 +152,25 @@ public class TestConfiguration {
                             ModelUtility.fromJson(definitionJson, DefinitionClause.class);
 
                     // Add an object
-                    // service.add(definition);
-                    // definitionList.add(definition);
+                    service.add(definition);
+                    definitionList.add(definition);
                     logger.info("Definition " + definition.getValue() + " successfully added");
                 }
 
                 for (String refsetJson : refsetsJson) {
 
                     Refset refset = ModelUtility.fromJson(refsetJson, Refset.class);
-                    // refset.setProject(projectList.get(0));
-                    // refset.setEdition(editionList.get(0));
+                    refset.setProject(projectList.get(0));
+                    refset.setEdition(editionList.get(0));
 
-                    /*-
+                    
                     if (refset.getType().equals("intensional")) {
-                        // refset.getDefinitionClauses().addAll(definitionList);
+                        refset.getDefinitionClauses().addAll(definitionList);
                     }
-                    */
 
                     // Add an object
-                    // service.add(refset);
-                    // refsetList.add(refset);
+                    service.add(refset);
+                    refsetList.add(refset);
                     logger.info("Refset " + refset.getRefsetId() + " successfully added");
                 }
 
@@ -228,14 +227,14 @@ public class TestConfiguration {
                     logger.info("Organization " + name + " successfully removed");
                 }
 
-                // for (DefinitionClause definition : definitionList) {
-                //
-                // final String name = definition.getValue();
-                //
-                // // remove an object
-                // service.remove(definition);
-                // logger.info("Definition " + name + " successfully removed");
-                // }
+                 for (DefinitionClause definition : definitionList) {
+                
+                     final String name = definition.getValue();
+                    
+                     // remove an object
+                     service.remove(definition);
+                     logger.info("Definition " + name + " successfully removed");
+                 }
 
                 refsetList.clear();
                 dataLoaded = false;
