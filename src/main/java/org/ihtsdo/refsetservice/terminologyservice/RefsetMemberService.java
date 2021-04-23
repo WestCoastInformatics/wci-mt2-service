@@ -29,8 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Service class to get refset member concept information from a terminology
- * service
- *
+ * service.
  */
 public class RefsetMemberService {
 
@@ -41,7 +40,7 @@ public class RefsetMemberService {
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
     /** The refset to language map. */
-    private static final Set<String> refsetToLanguages = new HashSet<>();
+    private static final Map<String, String> refsetToLanguagesMap = new HashMap<>();
 
     /** The description term. */
     private static final String DESCRIPTION_TERM = "term";
@@ -51,15 +50,18 @@ public class RefsetMemberService {
 
     /** The description language. */
     private static final String DESCRIPTION_LANGUAGE = "language";
-    
+
     /** The description language. */
     private static final String DESCRIPTION_ID = "descriptionId";
-    
+
     /** The description language. */
     private static final String LANGUAGE_ID = "languageId";
-    
+
     /** The description language. */
     private static final String LANGUAGE_NAME = "languageName";
+
+    /** The Constant DESC_LANG. */
+    private static final String COLUMN_IDENTIFIER = "columnId";
 
     /** The fully specified name description type. */
     private static final String TYPE_FSN = "FSN";
@@ -69,12 +71,12 @@ public class RefsetMemberService {
 
     /** The other description type. */
     private static final String TYPE_OTHER_PT = "OTHER";
-    
+
     static {
         // TODO: Remove once Edition updated
-        refsetToLanguages.add("900000000000509007");
-        refsetToLanguages.add("31000172101");
-        refsetToLanguages.add("21000172104");
+        refsetToLanguagesMap.put("900000000000509007", "en");
+        refsetToLanguagesMap.put("31000172101", "nl");
+        refsetToLanguagesMap.put("21000172104", "fr");
     }
 
     /**
@@ -89,7 +91,7 @@ public class RefsetMemberService {
         final SearchParameters searchParameters) throws Exception {
 
         // TODO remove this hardcoding once good data is in
-        refsetId = "721000172106"; 
+        refsetId = "721000172106";
         List<String> nonDefaultPreferredTerms = null;
         String defaultLanguageCode = null;
         ConceptResultList members = new ConceptResultList();
@@ -126,8 +128,13 @@ public class RefsetMemberService {
                 // is blank right now
 
                 defaultLanguageCode = "en";
-                nonDefaultPreferredTerms = refsetToLanguages.stream().collect(Collectors.toList());
-                nonDefaultPreferredTerms.remove(defaultLanguageCode);
+                nonDefaultPreferredTerms =
+                        refsetToLanguagesMap.keySet().stream().collect(Collectors.toList());
+                final String langToRemove = refsetToLanguagesMap.entrySet().stream()
+                        .filter(entry -> "en".equals(entry.getValue())).map(Map.Entry::getKey)
+                        .findFirst().get();
+                nonDefaultPreferredTerms.remove(langToRemove);
+
                 Collections.sort(nonDefaultPreferredTerms);
 
             }
@@ -135,12 +142,12 @@ public class RefsetMemberService {
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
-            JsonNode items = root.get("items");
-            Iterator<JsonNode> iterator = items.iterator();
+            final JsonNode items = root.get("items");
+            final Iterator<JsonNode> iterator = items.iterator();
 
             while (iterator.hasNext()) {
-                JsonNode item = iterator.next();
-                Concept concept = new Concept();
+                final JsonNode item = iterator.next();
+                final Concept concept = new Concept();
                 concept.setCode(item.get("referencedComponentId").asText());
                 concept.setTerminology("SNOMEDCT");
                 concept.setMemberStatus(item.get("active").asBoolean());
@@ -152,8 +159,8 @@ public class RefsetMemberService {
                 members.getItems().add(concept);
             }
 
-            members = getConceptDescriptions(refsetId, members,
-                    nonDefaultPreferredTerms, defaultLanguageCode, searchParameters);
+            members = getConceptDescriptions(refsetId, members, nonDefaultPreferredTerms,
+                    defaultLanguageCode, searchParameters);
 
             return members;
 
@@ -174,13 +181,14 @@ public class RefsetMemberService {
      */
     public static ConceptResultList getConceptDescriptions(final String refsetId,
         final ConceptResultList members, final List<String> nonDefaultPreferredTerms,
-        final String defaultLanguageCode, final SearchParameters searchParameters) throws MalformedURLException, Exception {
+        final String defaultLanguageCode, final SearchParameters searchParameters)
+        throws MalformedURLException, Exception {
 
-        StringBuffer conceptIds = new StringBuffer();
+        final StringBuffer conceptIds = new StringBuffer();
 
         for (int i = 0; i < members.size(); i++) {
 
-            Concept concept = (Concept) members.getItems().toArray()[i];
+            final Concept concept = (Concept) members.getItems().toArray()[i];
             conceptIds.append(concept.getCode());
 
             if (i + 1 < members.size()) {
@@ -191,7 +199,7 @@ public class RefsetMemberService {
         // SHould have 3 results
         String url = SnowstormConnection.BASE_URL
                 + "browser/MAIN%2FSNOMEDCT-BE%2F2021-03-15/concepts?conceptIds=" + conceptIds;
-        
+
         if (searchParameters.getOffset() != null) {
             url += "&offset=" + searchParameters.getOffset();
         }
@@ -206,71 +214,61 @@ public class RefsetMemberService {
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
-            JsonNode concepts = root.get("items");
-            Iterator<JsonNode> conceptIterator = concepts.iterator();
-            HashMap<String, Set<Map<String, String>>> conceptDescriptions = new HashMap<>();
+            final JsonNode concepts = root.get("items");
+            final Iterator<JsonNode> conceptIterator = concepts.iterator();
+            final HashMap<String, Set<Map<String, String>>> conceptDescriptions = new HashMap<>();
 
             while (conceptIterator.hasNext()) {
 
-                JsonNode concept = conceptIterator.next();
-                String conceptId = concept.get("conceptId").asText();
+                final JsonNode concept = conceptIterator.next();
+                final String conceptId = concept.get("conceptId").asText();
 
-                JsonNode descriptionNodes = concept.get("descriptions");
-                Iterator<JsonNode> descriptionIterator = descriptionNodes.iterator();
+                final JsonNode descriptionNodes = concept.get("descriptions");
+                final Iterator<JsonNode> descriptionIterator = descriptionNodes.iterator();
 
-                Set<Map<String, String>> descriptions = new HashSet<>();
+                final Set<Map<String, String>> descriptions = new HashSet<>();
 
                 while (descriptionIterator.hasNext()) {
 
-                    Map<String, String> descriptionMap = new HashMap<>();
-                    JsonNode descriptionNode = descriptionIterator.next();
+                    final Map<String, String> descriptionMap = new HashMap<>();
+                    final JsonNode descriptionNode = descriptionIterator.next();
 
                     if (descriptionNode.get("active").asBoolean()) {
-
-                        boolean isPreferred = false;
+                        final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
+                        String acceptability = null;
                         String languageId = null;
                         String typeName = null;
-                        JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
 
-                        if (!"900000000000003001".equals(descriptionNode.get("typeId").asText())) {
-
-                            for (String langRefsetId : refsetToLanguages) {
-                                
-                                if (acceptabilityMap.has(langRefsetId) && "PREFERRED"
-                                        .equals(acceptabilityMap.get(langRefsetId).asText())) {
-
-                                    languageId = langRefsetId;
-                                    isPreferred = true;
-                                    typeName = "PT";
-                                    break;
-                                }
-                            }
-                        } else {
-                            
-                            typeName = "FSN";
-                            
-                            for (String langRefsetId : refsetToLanguages) {
-                                
-                                if (acceptabilityMap.has(langRefsetId) && "PREFERRED"
-                                        .equals(acceptabilityMap.get(langRefsetId).asText())) {
-                                    
-                                    languageId = langRefsetId;
-                                    break;
-                                }
+                        for (String langRefsetId : refsetToLanguagesMap.keySet()) {
+                            if (acceptabilityMap.has(langRefsetId)) {
+                                acceptability = acceptabilityMap.get(langRefsetId).asText();
+                                languageId = langRefsetId;
+                                break;
                             }
                         }
 
-                        if (isPreferred || "900000000000003001"
-                                .equals(descriptionNode.get("typeId").asText())) {
+                        if (acceptability != null && "PREFERRED".equals(acceptability)) {
+                            if ("900000000000003001"
+                                    .equals(descriptionNode.get("typeId").asText())) {
+                                typeName = "FSN";
+                            } else {
+                                typeName = "PT";
+                            }
+                        }
 
+                        if (typeName != null) {
                             descriptionMap.put(DESCRIPTION_TERM,
                                     descriptionNode.get("term").asText());
                             descriptionMap.put(DESCRIPTION_TYPE, typeName);
-                            descriptionMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asText());
+                            descriptionMap.put(DESCRIPTION_ID,
+                                    descriptionNode.get("descriptionId").asText());
                             descriptionMap.put(LANGUAGE_ID, languageId);
-                            descriptionMap.put(LANGUAGE_NAME, descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
+                            descriptionMap.put(LANGUAGE_NAME,
+                                    descriptionNode.get("lang").asText().toUpperCase() + " ("
+                                            + typeName + ")");
                             descriptionMap.put(DESCRIPTION_LANGUAGE,
                                     descriptionNode.get("lang").asText());
+                            descriptionMap.put(COLUMN_IDENTIFIER, languageId + "-" + typeName);
 
                             descriptions.add(descriptionMap);
                         }
@@ -280,8 +278,8 @@ public class RefsetMemberService {
                 conceptDescriptions.put(conceptId, descriptions);
             }
 
-            Map<String, List<Map<String, String>>> sortedDescriptions = sortDescriptions(refsetId,
-                    conceptDescriptions, nonDefaultPreferredTerms, defaultLanguageCode);
+            final Map<String, List<Map<String, String>>> sortedDescriptions = sortDescriptions(
+                    refsetId, conceptDescriptions, nonDefaultPreferredTerms, defaultLanguageCode);
 
             for (Concept concept : members.getItems()) {
                 concept.setDescriptions(sortedDescriptions.get(concept.getCode()));
@@ -315,68 +313,52 @@ public class RefsetMemberService {
         final List<String> nonDefaultPreferredTerms, final String defaultLanguageCode)
         throws Exception {
 
-        Map<String, List<Map<String, String>>> sortedMemberDescriptions = new HashMap<>();
+        final Map<String, List<Map<String, String>>> sortedMemberDescriptions = new HashMap<>();
 
         // Actual code
         for (String conceptId : conceptDescriptions.keySet()) {
 
             // do this for each concept
-            List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
-            Map<String, Map<String, String>> sortingMap = new HashMap<>();
-            int otherPtCount = 0;
+            final List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
+            final Map<String, Map<String, String>> sortingMap = new HashMap<>();
 
             for (Map<String, String> descriptionMap : conceptDescriptions.get(conceptId)) {
 
                 if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
-
                     // Always 0
                     if (sortingMap.containsKey(TYPE_FSN)) {
-
-                        logger.debug(
-                                "An FSN in the default language has already been identified for conceptId: "
-                                        + conceptId);
-                        logger.debug("Original one identified: "
-                                + printDescription(sortingMap.get(TYPE_FSN)));
-                        logger.debug("New one encountered: " + printDescription(descriptionMap));
+                        displayDuplicateWarning("A FSN in the default language", conceptId,
+                                descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(TYPE_FSN),
+                                descriptionMap);
                         continue;
                     }
 
                     sortingMap.put(TYPE_FSN, descriptionMap);
-
                 } else if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(defaultLanguageCode)) {
-
                     // Always 1
                     if (sortingMap.containsKey(TYPE_DEFAULT_PT)) {
-
-                        logger.debug(
-                                "A PT in the default language has already been identified for conceptId: "
-                                        + conceptId);
-                        logger.debug("Original one identified. "
-                                + printDescription(sortingMap.get(TYPE_DEFAULT_PT)));
-                        logger.debug("New one encountered: " + printDescription(descriptionMap));
+                        displayDuplicateWarning("A PT in the default language", conceptId,
+                                descriptionMap.get(DESCRIPTION_LANGUAGE),
+                                sortingMap.get(TYPE_DEFAULT_PT), descriptionMap);
                         continue;
                     }
 
                     sortingMap.put(TYPE_DEFAULT_PT, descriptionMap);
-
                 } else {
-
                     // Always 2 + the index in nonDefaultPreferredTerms
-                    int index =
-                            nonDefaultPreferredTerms.indexOf(descriptionMap.get(DESCRIPTION_LANGUAGE));
+                    final int index =
+                            nonDefaultPreferredTerms.indexOf(descriptionMap.get(LANGUAGE_ID));
 
                     if (sortingMap.containsKey(TYPE_OTHER_PT + index)) {
+                        displayDuplicateWarning("A PT in the non-default language", conceptId,
+                                descriptionMap.get(DESCRIPTION_LANGUAGE),
+                                sortingMap.get(TYPE_OTHER_PT + index), descriptionMap);
 
-                        logger.debug("A PT in the non-default language "
-                                + descriptionMap.get(DESCRIPTION_LANGUAGE)
-                                + " has already been identified for conceptId: " + conceptId);
-                        logger.debug("Original one identified. "
-                                + printDescription(sortingMap.get(TYPE_OTHER_PT + index)));
-                        logger.debug("New one encountered: " + printDescription(descriptionMap));
+                        // + " has already been identified for conceptId: " +
+                        // conceptId);
                         continue;
                     }
 
-                    otherPtCount++;
                     sortingMap.put(TYPE_OTHER_PT + index, descriptionMap);
                 }
             }
@@ -384,7 +366,7 @@ public class RefsetMemberService {
             sortedDescriptionList.add(sortingMap.get(TYPE_DEFAULT_PT));
             sortedDescriptionList.add(sortingMap.get(TYPE_FSN));
 
-            for (int i = 0; i < otherPtCount; i++) {
+            for (int i = 0; i < nonDefaultPreferredTerms.size(); i++) {
                 sortedDescriptionList.add(sortingMap.get(TYPE_OTHER_PT + i));
             }
 
@@ -395,14 +377,31 @@ public class RefsetMemberService {
     }
 
     /**
+     * Display duplicate warning.
+     *
+     * @param errorMsg the error msg
+     * @param conId the con id
+     * @param language the language
+     * @param origMap the orig map
+     * @param descMap the desc map
+     */
+    private static void displayDuplicateWarning(final String errorMsg, final String conId,
+        final String language, final Map<String, String> origMap,
+        final Map<String, String> descMap) {
+        logger.warn(errorMsg + "(" + language + ") has already been identified for conceptId: "
+                + conId);
+        logger.warn("Original one identified. " + printDescription(origMap));
+        logger.warn("New one encountered: " + printDescription(descMap));
+    }
+
+    /**
      * Prints the description.
      *
      * @param map the map
      * @return the string
      */
     private static String printDescription(final Map<String, String> map) {
-
-        return "Type = " + map.get(DESCRIPTION_TYPE) + " for lang = " + map.get(DESCRIPTION_LANGUAGE)
-                + " with term = " + map.get(DESCRIPTION_TERM);
+        return "Type = " + map.get(DESCRIPTION_TYPE) + " for lang = "
+                + map.get(DESCRIPTION_LANGUAGE) + " with term = " + map.get(DESCRIPTION_TERM);
     }
 }
