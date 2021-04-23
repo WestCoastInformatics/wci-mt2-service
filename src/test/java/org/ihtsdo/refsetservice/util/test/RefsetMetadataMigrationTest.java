@@ -8,8 +8,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -18,8 +19,8 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.test.BaseTest;
-import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -27,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -107,9 +107,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /** The projects file. */
     private final String projectsFile = "src/test/resources/migration/resources/projects.txt";
 
-    /** The editions file. */
-    private final String editionsFile = "src/test/resources/migration/resources/editions.txt";
-
     /** The clauses file. */
     private final String clausesFile = "src/test/resources/migration/resources/clauses.txt";
 
@@ -149,9 +146,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
     /** The short name editions map. */
     private final Map<String, Edition> shortNameEditionsMap = new HashMap<>();
-
-    /** The namespace editions map. */
-    private final Map<String, Edition> namespaceEditionsMap = new HashMap<>();
 
     /** The refset namespace map. */
     private final Map<String, String> refsetNamespaceMap = new HashMap<>();
@@ -211,6 +205,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     // @Test
     public void testAllRefsets() throws Exception {
         preprocessingSupportingFiles();
+        populateEditions();
 
         populateFromFile(allRefsetsFilePath, FileProcessType.REFSET);
 
@@ -229,6 +224,69 @@ public class RefsetMetadataMigrationTest extends BaseTest {
          */
 
         importObjects();
+    }
+
+    /**
+     * Populate editions.
+     *
+     * @throws Exception the exception
+     */
+    private void populateEditions() throws Exception {
+
+        // SHould have 3 results
+        String url = SnowstormConnection.BASE_URL + "/codesystems";
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+
+            try (final TerminologyService service = new TerminologyService()) {
+                service.setModifiedBy("Migration");
+                service.setModifiedFlag(true);
+
+                final Iterator<JsonNode> responseIterator = root.iterator();
+
+                while (responseIterator.hasNext()) {
+
+                    final Iterator<JsonNode> codeSystems = responseIterator.next().iterator();
+
+                    while (codeSystems.hasNext()) {
+                        JsonNode codeSystem = codeSystems.next();
+
+                        // Process Edition
+                        Edition edition = new Edition();
+
+                        edition.setName(codeSystem.get("name").asText());
+                        edition.setShortName(codeSystem.get("shortName").asText());
+                        edition.setBranch(codeSystem.get("branchPath").asText());
+
+                        if (codeSystem.has("defaultLanguageReferenceSets")) {
+                            final JsonNode defaultLanguageReferenceSets =
+                                    codeSystem.get("defaultLanguageReferenceSets");
+                            final Iterator<JsonNode> defaultLanguageReferencesSetIterator =
+                                    defaultLanguageReferenceSets.iterator();
+                            while (defaultLanguageReferencesSetIterator.hasNext()) {
+                                edition.getDefaultLanguageRefsets()
+                                        .add(defaultLanguageReferencesSetIterator.next().asText());
+                            }
+
+                        }
+
+                        if (codeSystem.has("defaultLanguageCode")) {
+                            edition.setDefaultLanguageCode(
+                                    codeSystem.get("defaultLanguageCode").asText());
+                        }
+
+                        final Edition storedEdition = service.add(edition);
+
+                        // TODO: Still need this?
+                        shortNameEditionsMap.put(storedEdition.getShortName(), storedEdition);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -299,7 +357,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      * @throws Exception the exception
      */
     private void importObjects() throws Exception {
-        generateEditions(editionsFile);
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedFlag(false);
@@ -358,24 +415,15 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                     }
                 }
 
-                String namespace = null;
-                String shortname = null;
                 // Connect to proper edition
-                if (refsetNamespaceMap.containsKey(refset.getRefsetId())) {
-                    namespace = refsetNamespaceMap.get(refset.getRefsetId());
-                }
-                if (refsetShortnameMap.containsKey(refset.getRefsetId())) {
-                    shortname = refsetShortnameMap.get(refset.getRefsetId());
-                }
-
-                Edition edition = null;
-                if (namespace != null) {
-                    edition = namespaceEditionsMap.get(namespace);
+                if (!refsetShortnameMap.containsKey(refset.getRefsetId()) || !shortNameEditionsMap
+                        .containsKey(refsetShortnameMap.get(refset.getRefsetId()))) {
+                    throw new Exception("Unable to associate an edition with refsetId: "
+                            + refset.getRefsetId());
                 }
 
-                if (shortname != null) {
-                    edition = shortNameEditionsMap.get(shortname);
-                }
+                final String shortname = refsetShortnameMap.get(refset.getRefsetId());
+                final Edition edition = shortNameEditionsMap.get(shortname);
 
                 if (edition == null) {
                     logger.debug("BBB - No edition for refset: " + refset.getRefsetId());
@@ -594,63 +642,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             e.printStackTrace();
 
             throw e;
-        }
-    }
-
-    /**
-     * Generate editions.
-     *
-     * @param filePath the file path
-     * @throws Exception the exception
-     */
-    private void generateEditions(final String filePath) throws Exception {
-        final List<String> projectsJson = FileUtility.readFileToArray(filePath);
-
-        final ObjectMapper mapper = new ObjectMapper();
-        final JsonNode root = mapper.readTree(projectsJson.toString());
-
-        try (final TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy("Migration");
-            service.setModifiedFlag(true);
-
-            int count = 0;
-            Iterator<JsonNode> itr = root.iterator();
-            while (itr.hasNext()) {
-                JsonNode editionJson = itr.next();
-
-                Edition e = new Edition();
-                e.setName(editionJson.get("name").asText());
-                e.setShortName(editionJson.get("shortName").asText());
-                e.setBranch(editionJson.get("branchPath").asText());
-                e.setDefaultLanguageCode(editionJson.get("defaultLanguageCode").asText());
-
-                if (!shortNameToNamespaceMap.containsKey(e.getShortName())) {
-                    logger.debug("DDD - Listing for Customer Feedback: Edition without defined "
-                            + "namespace (from project or refsets). We probably need to use "
-                            + "module?: " + e.getName());
-                    e.setNamespace("To Be Defined");
-                } else {
-                    e.setNamespace(shortNameToNamespaceMap.get(e.getShortName()));
-                }
-
-                if (editionJson.has("defaultLanguageReferenceSets")) {
-                    ArrayNode languageNodeArray =
-                            (ArrayNode) editionJson.get("defaultLanguageReferenceSets");
-                    for (JsonNode languageNode : languageNodeArray) {
-                        e.getDefaultLanguageRefsets().add(languageNode.asText());
-                    }
-                }
-
-                service.add(e);
-                shortNameEditionsMap.put(e.getShortName(), e);
-                namespaceEditionsMap.put(e.getNamespace(), e);
-                count++;
-            }
-
-            logger.info("Imported " + count + " editions");
-        } catch (Exception e) {
-            logger.error("Have issue with: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
