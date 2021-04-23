@@ -40,7 +40,7 @@ public class Edition extends AbstractHasModified {
     private String name;
 
     /** The namespace. */
-    @Column(nullable = false, length = 256)
+    @Column(nullable = true, length = 256)
     private String namespace;
 
     /** The short name. */
