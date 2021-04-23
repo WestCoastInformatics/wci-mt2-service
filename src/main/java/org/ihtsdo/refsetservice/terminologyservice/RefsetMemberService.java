@@ -162,6 +162,8 @@ public class RefsetMemberService {
             members = getConceptDescriptions(refsetId, members, nonDefaultPreferredTerms,
                     defaultLanguageCode, searchParameters);
 
+            members.setTotal(root.get("totalElements").asInt());
+
             return members;
 
         }
