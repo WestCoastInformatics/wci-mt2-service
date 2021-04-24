@@ -60,7 +60,6 @@ public class Edition extends AbstractHasModified {
     private String defaultLanguageCode;
 
     /** The default language refsets. */
-    @Column(nullable = true)
     @ElementCollection
     private Set<String> defaultLanguageRefsets = new HashSet<String>();
 

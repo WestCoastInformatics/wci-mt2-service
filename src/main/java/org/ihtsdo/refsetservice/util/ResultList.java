@@ -122,7 +122,6 @@ public class ResultList<T> implements Collection<T> {
      * @return the objects transient
      */
     @Override
-    @JsonProperty("items")
     public List<T> getItems() {
         if (items == null) {
             items = new ArrayList<>();
