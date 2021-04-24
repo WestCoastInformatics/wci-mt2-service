@@ -78,7 +78,7 @@ public class RefsetController extends BaseController {
             try (TerminologyService service = new TerminologyService()) {
 
                 final Refset refset = service.findSingle(
-                        "refsetId:" + QueryParserBase.escape(refsetId) + "", Refset.class, null);
+                        "id:" + QueryParserBase.escape(refsetId) + "", Refset.class, null);
 
                 logger.info("*********** getRefset: refset: " + ModelUtility.toJson(refset));
 
@@ -264,7 +264,7 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/members",
             produces = "application/json")
-    public @ResponseBody ConceptResultList members(
+    public @ResponseBody ConceptResultList getMembers(
         @PathVariable(value = "refsetId") final String refsetId,
         final SearchParameters searchParameters, final BindingResult bindingResult)
         throws Exception {
@@ -290,6 +290,8 @@ public class RefsetController extends BaseController {
         final long start = System.currentTimeMillis();
         ConceptResultList results = new ConceptResultList();
 
+        logger.info("*********** getMembers: refsetId: " + refsetId);
+        
         try {
 
             results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters);

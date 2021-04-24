@@ -104,40 +104,51 @@ public class RefsetMemberService {
         // refsetId = "721000172106";
         List<String> nonDefaultPreferredTerms = null;
         ConceptResultList members = new ConceptResultList();
-        String url = SnowstormConnection.BASE_URL
-                + "browser/MAIN%2FSNOMEDCT-BE%2F2021-03-15/members?referenceSet=" + refsetId;
-
-        if (searchParameters.getOffset() != null) {
-            url += "&offset=" + searchParameters.getOffset();
-        }
-
-        if (searchParameters.getLimit() != null) {
-            url += "&limit=" + searchParameters.getLimit();
-        }
-
-        // if (searchParameters.getSortAscending() != null) {
-        //
-        // }
-        //
-        // if (searchParameters.getSort() != null) {
-        //
-        // }
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            final String resultString = response.readEntity(String.class);
-
-            try (final TerminologyService service = new TerminologyService()) {
-                Refset r = service.get(refsetId, Refset.class);
-                Edition e = r.getEdition();
-
+        
+        try (final TerminologyService service = new TerminologyService()) { 
+            
+            Refset refset = service.get(refsetId, Refset.class);
+            final Edition edition = refset.getEdition();
+            
+            String url = SnowstormConnection.BASE_URL
+                    + "browser/MAIN%2FSNOMEDCT-BE%2F2021-03-15/members?referenceSet=" + refset.getRefsetId();
+    
+            if (searchParameters.getOffset() != null) {
+                url += "&offset=" + searchParameters.getOffset();
+            }
+    
+            if (searchParameters.getLimit() != null) {
+                url += "&limit=" + searchParameters.getLimit();
+            }
+    
+            // if (searchParameters.getSortAscending() != null) {
+            //
+            // }
+            //
+            // if (searchParameters.getSort() != null) {
+            //
+            // }
+    
+            try (final Response response = SnowstormConnection.getResponse(url)) {
+    
+                final String resultString = response.readEntity(String.class);
+    
                 // TODO: Remove Hardcoding of refsetToLanguageMap
                 nonDefaultPreferredTerms =
                         refsetToLanguagesMap.keySet().stream().collect(Collectors.toList());
-                final String langToRemove = refsetToLanguagesMap.entrySet().stream()
-                        .filter(entry -> e.getDefaultLanguageCode().equals(entry.getValue()))
+                
+                String languageToRemove = "en";
+                
+                if (edition.getDefaultLanguageCode() != null) {
+                    
+                    languageToRemove = refsetToLanguagesMap.entrySet().stream()
+                        .filter(entry -> 
+                            edition.getDefaultLanguageCode().equals(entry.getValue())
+                        )
                         .map(Map.Entry::getKey).findFirst().get();
-                nonDefaultPreferredTerms.remove(langToRemove);
+                } 
+                
+                nonDefaultPreferredTerms.remove(languageToRemove);
 
                 Collections.sort(nonDefaultPreferredTerms);
 
@@ -148,6 +159,7 @@ public class RefsetMemberService {
                 final Iterator<JsonNode> iterator = items.iterator();
 
                 while (iterator.hasNext()) {
+                    
                     final JsonNode item = iterator.next();
                     final Concept concept = new Concept();
                     concept.setCode(item.get("referencedComponentId").asText());
@@ -161,21 +173,25 @@ public class RefsetMemberService {
                     members.getItems().add(concept);
                 }
 
-                members = getConceptDescriptions(refsetId, members, nonDefaultPreferredTerms,
-                        e.getDefaultLanguageCode(), searchParameters);
+                members = getConceptDescriptions(members, nonDefaultPreferredTerms,
+                        edition.getDefaultLanguageCode(), searchParameters);
 
                 members.setTotal(root.get("totalElements").asInt());
 
-                return members;
             }
-
+            
+        } catch (Exception ex) {
+            
+            logger.error("Could not retrieve refset");
+            ex.printStackTrace();
         }
+        
+        return members;
     }
 
     /**
      * Gets the concept descriptions.
      *
-     * @param refsetId the refset id
      * @param members the members
      * @param nonDefaultPreferredTerms the non-default preferred terms
      * @param defaultLanguageCode the default language code
@@ -184,7 +200,7 @@ public class RefsetMemberService {
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static ConceptResultList getConceptDescriptions(final String refsetId,
+    public static ConceptResultList getConceptDescriptions(
         final ConceptResultList members, final List<String> nonDefaultPreferredTerms,
         final String defaultLanguageCode, final SearchParameters searchParameters)
         throws MalformedURLException, Exception {
@@ -284,7 +300,7 @@ public class RefsetMemberService {
             }
 
             final Map<String, List<Map<String, String>>> sortedDescriptions = sortDescriptions(
-                    refsetId, conceptDescriptions, nonDefaultPreferredTerms, defaultLanguageCode);
+                    conceptDescriptions, nonDefaultPreferredTerms, defaultLanguageCode);
 
             for (Concept concept : members.getItems()) {
                 concept.setDescriptions(sortedDescriptions.get(concept.getCode()));
@@ -297,7 +313,6 @@ public class RefsetMemberService {
     /**
      * Sort descriptions.
      *
-     * @param refsetId the refset id
      * @param conceptDescriptions the con desc map
      * @param nonDefaultPreferredTerms the non-default preferred terms
      * @param defaultLanguageCode the default language code
@@ -313,7 +328,7 @@ public class RefsetMemberService {
      *      a.  Order by language code
      *      b.  If no translation, will be null
      */
-    private static Map<String, List<Map<String, String>>> sortDescriptions(final String refsetId,
+    private static Map<String, List<Map<String, String>>> sortDescriptions(
         final HashMap<String, Set<Map<String, String>>> conceptDescriptions,
         final List<String> nonDefaultPreferredTerms, final String defaultLanguageCode)
         throws Exception {
@@ -382,29 +397,30 @@ public class RefsetMemberService {
     /**
      * Display duplicate warning.
      *
-     * @param errorMsg the error msg
-     * @param conId the con id
+     * @param errorMessage the error msg
+     * @param conceptId the con id
      * @param language the language
-     * @param origMap the orig map
-     * @param descMap the desc map
+     * @param firstFoundMap the orig map
+     * @param descriptionMap the desc map
      */
-    private static void displayDuplicateWarning(final String errorMsg, final String conId,
-        final String language, final Map<String, String> origMap,
-        final Map<String, String> descMap) {
-        logger.warn(errorMsg + "(" + language + ") has already been identified for conceptId: "
-                + conId);
-        logger.warn("Original one identified. " + printDescription(origMap));
-        logger.warn("New one encountered: " + printDescription(descMap));
+    private static void displayDuplicateWarning(final String errorMessage, final String conceptId,
+        final String language, final Map<String, String> firstFoundMap,
+        final Map<String, String> descriptionMap) {
+        
+        logger.warn(errorMessage + "(" + language + ") has already been identified for conceptId: "
+                + conceptId);
+        logger.warn("Original one identified. " + printDescription(firstFoundMap));
+        logger.warn("New one encountered: " + printDescription(descriptionMap));
     }
 
     /**
      * Prints the description.
      *
-     * @param map the map
+     * @param description the map
      * @return the string
      */
-    private static String printDescription(final Map<String, String> map) {
-        return "Type = " + map.get(DESCRIPTION_TYPE) + " for lang = "
-                + map.get(DESCRIPTION_LANGUAGE) + " with term = " + map.get(DESCRIPTION_TERM);
+    private static String printDescription(final Map<String, String> description) {
+        return "Type = " + description.get(DESCRIPTION_TYPE) + " for lang = "
+                + description.get(DESCRIPTION_LANGUAGE) + " with term = " + description.get(DESCRIPTION_TERM);
     }
 }
