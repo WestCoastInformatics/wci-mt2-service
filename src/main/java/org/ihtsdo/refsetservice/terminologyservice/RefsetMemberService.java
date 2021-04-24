@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
@@ -74,9 +76,17 @@ public class RefsetMemberService {
 
     static {
         // TODO: Remove once Edition updated
+        refsetToLanguagesMap.put("450828004", "es");
+        refsetToLanguagesMap.put("32570271000036106", "en");
         refsetToLanguagesMap.put("900000000000509007", "en");
-        refsetToLanguagesMap.put("31000172101", "nl");
         refsetToLanguagesMap.put("21000172104", "fr");
+        refsetToLanguagesMap.put("31000172101", "nl");
+        refsetToLanguagesMap.put("554461000005103", "da");
+        refsetToLanguagesMap.put("71000181105", "et");
+        refsetToLanguagesMap.put("5641000179103", "es");
+        refsetToLanguagesMap.put("21000220103", "en");
+        refsetToLanguagesMap.put("61000202103", "no");
+        refsetToLanguagesMap.put("46011000052107", "sv");
     }
 
     /**
@@ -91,9 +101,8 @@ public class RefsetMemberService {
         final SearchParameters searchParameters) throws Exception {
 
         // TODO remove this hardcoding once good data is in
-        refsetId = "721000172106";
+        // refsetId = "721000172106";
         List<String> nonDefaultPreferredTerms = null;
-        String defaultLanguageCode = null;
         ConceptResultList members = new ConceptResultList();
         String url = SnowstormConnection.BASE_URL
                 + "browser/MAIN%2FSNOMEDCT-BE%2F2021-03-15/members?referenceSet=" + refsetId;
@@ -118,53 +127,47 @@ public class RefsetMemberService {
 
             final String resultString = response.readEntity(String.class);
 
-            // TODO: Integrate with Edition below and remove hard coding listed
-            // here
             try (final TerminologyService service = new TerminologyService()) {
-                // Refset r = service.get(refsetId, Refset.class);
-                // Edition e = r.getEdition();
-                // Hardcoding defaultLanguageCode & refsetToLanguageMap as
-                // edition
-                // is blank right now
+                Refset r = service.get(refsetId, Refset.class);
+                Edition e = r.getEdition();
 
-                defaultLanguageCode = "en";
+                // TODO: Remove Hardcoding of refsetToLanguageMap
                 nonDefaultPreferredTerms =
                         refsetToLanguagesMap.keySet().stream().collect(Collectors.toList());
                 final String langToRemove = refsetToLanguagesMap.entrySet().stream()
-                        .filter(entry -> "en".equals(entry.getValue())).map(Map.Entry::getKey)
-                        .findFirst().get();
+                        .filter(entry -> e.getDefaultLanguageCode().equals(entry.getValue()))
+                        .map(Map.Entry::getKey).findFirst().get();
                 nonDefaultPreferredTerms.remove(langToRemove);
 
                 Collections.sort(nonDefaultPreferredTerms);
 
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString.toString());
+
+                final JsonNode items = root.get("items");
+                final Iterator<JsonNode> iterator = items.iterator();
+
+                while (iterator.hasNext()) {
+                    final JsonNode item = iterator.next();
+                    final Concept concept = new Concept();
+                    concept.setCode(item.get("referencedComponentId").asText());
+                    concept.setTerminology("SNOMEDCT");
+                    concept.setMemberStatus(item.get("active").asBoolean());
+                    concept.setHistoryVisible(true);
+                    concept.setFeedbackVisible(true);
+                    concept.setMemberEffectiveTime(
+                            SIMPLE_DATE_FORMAT.parse(item.get("releasedEffectiveTime").asText()));
+
+                    members.getItems().add(concept);
+                }
+
+                members = getConceptDescriptions(refsetId, members, nonDefaultPreferredTerms,
+                        e.getDefaultLanguageCode(), searchParameters);
+
+                members.setTotal(root.get("totalElements").asInt());
+
+                return members;
             }
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
-
-            final JsonNode items = root.get("items");
-            final Iterator<JsonNode> iterator = items.iterator();
-
-            while (iterator.hasNext()) {
-                final JsonNode item = iterator.next();
-                final Concept concept = new Concept();
-                concept.setCode(item.get("referencedComponentId").asText());
-                concept.setTerminology("SNOMEDCT");
-                concept.setMemberStatus(item.get("active").asBoolean());
-                concept.setHistoryVisible(true);
-                concept.setFeedbackVisible(true);
-                concept.setMemberEffectiveTime(
-                        SIMPLE_DATE_FORMAT.parse(item.get("releasedEffectiveTime").asText()));
-
-                members.getItems().add(concept);
-            }
-
-            members = getConceptDescriptions(refsetId, members, nonDefaultPreferredTerms,
-                    defaultLanguageCode, searchParameters);
-
-            members.setTotal(root.get("totalElements").asInt());
-
-            return members;
 
         }
     }
@@ -356,8 +359,6 @@ public class RefsetMemberService {
                                 descriptionMap.get(DESCRIPTION_LANGUAGE),
                                 sortingMap.get(TYPE_OTHER_PT + index), descriptionMap);
 
-                        // + " has already been identified for conceptId: " +
-                        // conceptId);
                         continue;
                     }
 
