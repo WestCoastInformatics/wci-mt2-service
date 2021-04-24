@@ -71,7 +71,7 @@ public class RefsetControllerTests extends BaseTest {
         String content = null;
         Refset refset = null;
 
-        url = baseUrl + "/001";
+        url = baseUrl + "/d11dfa11-d2c2-4f6d-a85a-32071fd49c42";
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
@@ -95,7 +95,7 @@ public class RefsetControllerTests extends BaseTest {
         String content = null;
         ConceptResultList members = null;
 
-        url = baseUrl + "/721000172106/members?limit=10&offset=0";
+        url = baseUrl + "/7626e1f3-60ef-4cb4-a900-7905d4897a20/members?limit=10&offset=0"; //5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();

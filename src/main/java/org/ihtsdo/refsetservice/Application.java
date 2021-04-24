@@ -1,5 +1,6 @@
 package org.ihtsdo.refsetservice;
 
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -45,6 +46,11 @@ public class Application extends SpringBootServletInitializer {
     public static void main(final String[] args) throws Exception {
 
         SpringApplication.run(Application.class, args);
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            // just kicking off the lucene reindexing
+        }
+        
         logger.debug("TEMPLATE SERVICE MAIN APPLICATION START");
     }
 
