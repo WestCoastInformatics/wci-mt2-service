@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-// TODO: Auto-generated Javadoc
 /**
  * Validates the code-system-* files in the "src/resources" folder.
  */
@@ -153,11 +152,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /** The refset shortname map. */
     private final Map<String, String> refsetShortnameMap = new HashMap<>();
 
-    /*-
-     * For missing namespace analysis only
-    private Map<String, Set<String>> cccNameToNamespace = new HashMap<>();
-     */
-
     /**
      * Test Single Version of General Dentistry Refset.
      *
@@ -176,7 +170,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    //@Test
+    // @Test
     public void testGeneralDensitryAllVersions() throws Exception {
         preprocessingSupportingFiles();
 
@@ -208,20 +202,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         populateEditions();
 
         populateFromFile(allRefsetsFilePath, FileProcessType.REFSET);
-
-        /*-
-         * For missing namespace analysis only
-        for (String shortName : cccNameToNamespace.keySet()) {
-            if (cccNameToNamespace.get(shortName).size() == 1) {
-                continue;
-            }
-            for (String namespace : cccNameToNamespace.get(shortName)) {
-                logger.debug("CCC - "
-                        + "inconsistent use of shortname and namespace across projects. Trying to "
-                        + "map Shortname/Namespace: " + shortName + " / " + namespace);
-            }
-        }
-         */
 
         importObjects();
     }
@@ -509,17 +489,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      * @param shortName the short name
      */
     private void identifyEditionInfo(final String namespace, final String shortName) {
-        /*-
-         * For missing namespace analysis only
-        if (!shortNameToNamespaceMap.containsKey(shortName)) {
-            shortNameToNamespaceMap.put(shortName, namespace);
-            cccNameToNamespace.put(shortName, new HashSet<>());
-            cccNameToNamespace.get(shortName).add(namespace);
-        } else if (!shortNameToNamespaceMap.get(shortName).equals(namespace)) {
-            cccNameToNamespace.get(shortName).add(namespace);
-        }
-        */
-
         if (!shortNameToNamespaceMap.containsKey(shortName)) {
             shortNameToNamespaceMap.put(shortName, namespace);
         }
