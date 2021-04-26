@@ -32,19 +32,6 @@ public class S3DownloadUnitTest extends BaseTest {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(S3DownloadUnitTest.class);
 
-    /**
-     * 
-     * Gets an AmazonS3 object based first on
-     * InstanceProfileCredentialsProvider. If not available, will then use
-     * AWSStaticCredentialsProvider.
-     * 
-     * @throws Exception the exception
-     */
-    @Test
-    public void testConnectability() throws Exception {
-        AmazonS3 s3Client = connectToAmazonS3();
-        assertNotNull(s3Client);
-    }
 
     /**
      * Test file download.
