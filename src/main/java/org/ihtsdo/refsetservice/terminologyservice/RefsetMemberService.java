@@ -422,4 +422,11 @@ public class RefsetMemberService {
                 + description.get(DESCRIPTION_LANGUAGE) + " with term = "
                 + description.get(DESCRIPTION_TERM);
     }
+
+    /**
+     * @return the refsetToLanguagesMap
+     */
+    public static Map<String, String> getRefsetToLanguagesMap() {
+        return refsetToLanguagesMap;
+    }
 }
