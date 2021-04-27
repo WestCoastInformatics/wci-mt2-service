@@ -10,7 +10,11 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -26,6 +30,7 @@ import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
 import org.hibernate.search.annotations.SortableField;
 import org.hibernate.search.annotations.Store;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 
 /**
  * Represents the edition information for a refset.
@@ -193,6 +198,51 @@ public class Edition extends AbstractHasModified {
     public Set<String> getDefaultLanguageRefsets() {
         return defaultLanguageRefsets;
     }
+    
+    /**
+     * Gets the default language refsets qualified with the language code and types.
+     *
+     * @return the default language refsets qualified with the language code and types.
+     */
+    public List<Map<String, String>> getFullyQualifiedLanguageRefsets() {
+        
+        final Map<String, String> refsetToLanguagesMap = RefsetMemberService.getRefsetToLanguagesMap();
+        final List<Map<String, String>> qualifiedLanguageList  = new ArrayList<>();
+        
+        for (final String languageRefsetCode : defaultLanguageRefsets) {
+            
+            final String languageCode = refsetToLanguagesMap.get(languageRefsetCode);
+            Map<String, String> languageDetails = Map.of(
+                    "languageRefset", languageRefsetCode,
+                    "languageCode", languageCode,
+                    "qualifiedLanguageRefset", languageRefsetCode + "PT",
+                    "qualifiedLanguageCode", languageCode.toUpperCase() + " (PT)"
+                    ); 
+            
+            // if this is the default language code make sure it is first and add a FSN version
+            if (!languageCode.equalsIgnoreCase(defaultLanguageCode)) {
+                qualifiedLanguageList.add(languageDetails);
+            } else {
+                
+                qualifiedLanguageList.add(0, languageDetails);
+                qualifiedLanguageList.add(1, Map.of(
+                        "languageRefset", languageRefsetCode,
+                        "languageCode", languageCode,
+                        "qualifiedLanguageRefset", languageRefsetCode + "FSN",
+                        "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"
+                        ));
+            }
+        }
+        
+        return qualifiedLanguageList;
+    }
+    
+    /**
+     * This is solely for bean validation, method does nothing.
+     *
+     ** @param qualifiedLanguageList 
+     */
+    public void setFullyQualifiedLanguageRefsets(List<Map<String, String>> qualifiedLanguageList) { /*NA */}
 
     /**
      * Sets the default language refsets.
