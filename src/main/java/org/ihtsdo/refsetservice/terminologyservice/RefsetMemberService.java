@@ -109,9 +109,16 @@ public class RefsetMemberService {
 
             Refset refset = service.get(refsetId, Refset.class);
             final Edition edition = refset.getEdition();
-
+            String versionDate = "";
+            
+            if (refset.getVersionDate() != null) {
+                
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                //versionDate = "/" + simpleDateFormat.format(refset.getVersionDate());
+            }
+            
             String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch()
-                    + "/members?referenceSet=" + refset.getRefsetId();
+                + versionDate + "/members?referenceSet=" + refset.getRefsetId();
 
             if (searchParameters.getOffset() != null) {
                 url += "&offset=" + searchParameters.getOffset();
@@ -147,13 +154,16 @@ public class RefsetMemberService {
                             .map(Map.Entry::getKey).findFirst().get();
                 }
 
-                nonDefaultPreferredTerms.remove(languageToRemove);
+                // remove the default language and any languages that are not in the edition's default list
+                nonDefaultPreferredTerms.remove(languageToRemove);                
+                nonDefaultPreferredTerms.removeIf(languageRefset -> !edition.getDefaultLanguageRefsets().contains(languageRefset));
+                
 
                 Collections.sort(nonDefaultPreferredTerms);
 
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString.toString());
-
+                
                 final JsonNode items = root.get("items");
                 final Iterator<JsonNode> iterator = items.iterator();
 
@@ -379,11 +389,20 @@ public class RefsetMemberService {
                 }
             }
 
-            sortedDescriptionList.add(sortingMap.get(TYPE_DEFAULT_PT));
-            sortedDescriptionList.add(sortingMap.get(TYPE_FSN));
+            if (sortingMap.get(TYPE_DEFAULT_PT) != null) {
+                sortedDescriptionList.add(sortingMap.get(TYPE_DEFAULT_PT));
+            }
+            
+            if (sortingMap.get(TYPE_FSN) != null) {
+                sortedDescriptionList.add(sortingMap.get(TYPE_FSN));
+            }
 
             for (int i = 0; i < nonDefaultPreferredTerms.size(); i++) {
-                sortedDescriptionList.add(sortingMap.get(TYPE_OTHER_PT + i));
+                
+                if (sortingMap.get(TYPE_OTHER_PT + i) != null) {
+                    sortedDescriptionList.add(sortingMap.get(TYPE_OTHER_PT + i));
+                }
+                
             }
 
             sortedMemberDescriptions.put(conceptId, sortedDescriptionList);
