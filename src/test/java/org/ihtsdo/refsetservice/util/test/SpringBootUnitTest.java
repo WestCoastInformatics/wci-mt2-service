@@ -27,6 +27,11 @@ public class SpringBootUnitTest {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(SpringBootUnitTest.class);
 
+    /**
+     * Test connectability.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testConnectability() throws Exception {
         logger.info("TEST");
