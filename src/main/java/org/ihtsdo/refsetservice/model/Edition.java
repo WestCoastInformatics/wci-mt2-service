@@ -212,18 +212,18 @@ public class Edition extends AbstractHasModified {
         for (final String languageRefsetCode : defaultLanguageRefsets) {
             
             final String languageCode = refsetToLanguagesMap.get(languageRefsetCode);
-            Map<String, String> languageDetails = Map.of(
-                    "languageRefset", languageRefsetCode,
-                    "languageCode", languageCode,
-                    "qualifiedLanguageRefset", languageRefsetCode + "PT",
-                    "qualifiedLanguageCode", languageCode.toUpperCase() + " (PT)"
-                    ); 
+            Map<String, String> languageDetails = new HashMap<>();
+            languageDetails.put("languageRefset", languageRefsetCode);
+            languageDetails.put("languageCode", languageCode); 
+            languageDetails.put("qualifiedLanguageRefset", languageRefsetCode + "PT"); 
+            languageDetails.put("qualifiedLanguageCode", languageCode.toUpperCase() + " (PT)"); 
             
             // if this is the default language code make sure it is first and add a FSN version
             if (!languageCode.equalsIgnoreCase(defaultLanguageCode)) {
                 qualifiedLanguageList.add(languageDetails);
             } else {
                 
+                languageDetails.put("default", "true");
                 qualifiedLanguageList.add(0, languageDetails);
                 qualifiedLanguageList.add(1, Map.of(
                         "languageRefset", languageRefsetCode,
