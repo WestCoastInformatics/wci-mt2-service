@@ -187,7 +187,7 @@ public class SearchParameters {
     public void setSortAscending(final Boolean sortAscending) {
         this.sortAscending = sortAscending;
     }
-    
+
     /**
      * Sets the sort ascending.
      *
@@ -195,71 +195,71 @@ public class SearchParameters {
      */
     @Override
     public boolean equals(final Object obj) {
-        
+
         if (this == obj) {
             return true;
         }
-        
+
         if (obj == null) {
             return false;
         }
-        
+
         if (getClass() != obj.getClass()) {
             return false;
         }
-        
+
         final SearchParameters other = (SearchParameters) obj;
-        
+
         if (query == null) {
-            
+
             if (other.query != null) {
                 return false;
             }
-            
+
         } else if (!query.equals(other.query)) {
             return false;
         }
-        
+
         if (sort == null) {
-            
+
             if (other.sort != null) {
                 return false;
             }
-            
+
         } else if (!sort.equals(other.sort)) {
             return false;
         }
-        
+
         if (limit == null) {
-            
+
             if (other.limit != null) {
                 return false;
             }
-            
+
         } else if (!limit.equals(other.limit)) {
             return false;
         }
-        
+
         if (offset == null) {
-            
+
             if (other.offset != null) {
                 return false;
             }
-            
+
         } else if (!offset.equals(other.offset)) {
             return false;
         }
-        
+
         if (terminology == null) {
-            
+
             if (other.terminology != null) {
                 return false;
             }
-            
+
         } else if (!terminology.equals(other.terminology)) {
             return false;
         }
-        
+
         if (activeOnly != other.activeOnly) {
             return false;
         }
@@ -267,10 +267,10 @@ public class SearchParameters {
         if (sortAscending != other.sortAscending) {
             return false;
         }
-        
+
         return true;
     }
-    
+
     /**
      * Hash code.
      *
@@ -278,7 +278,7 @@ public class SearchParameters {
      */
     @Override
     public int hashCode() {
-        
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((limit == null) ? 0 : limit.hashCode());
@@ -294,7 +294,7 @@ public class SearchParameters {
     /* see superclass */
     @Override
     public String toString() {
-        
+
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {
