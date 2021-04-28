@@ -63,9 +63,6 @@ public class RefsetMemberService {
     /** The description language. */
     private static final String LANGUAGE_NAME = "languageName";
 
-    /** The Constant DESC_LANG. */
-    private static final String COLUMN_IDENTIFIER = "columnId";
-
     /** The fully specified name description type. */
     private static final String TYPE_FSN = "FSN";
 
@@ -363,13 +360,12 @@ public class RefsetMemberService {
                             descriptionMap.put(DESCRIPTION_TYPE, typeName);
                             descriptionMap.put(DESCRIPTION_ID,
                                     descriptionNode.get("descriptionId").asText());
-                            descriptionMap.put(LANGUAGE_ID, languageId);
+                            descriptionMap.put(LANGUAGE_ID, languageId + typeName);
                             descriptionMap.put(LANGUAGE_NAME,
                                     descriptionNode.get("lang").asText().toUpperCase() + " ("
                                             + typeName + ")");
                             descriptionMap.put(DESCRIPTION_LANGUAGE,
                                     descriptionNode.get("lang").asText());
-                            descriptionMap.put(COLUMN_IDENTIFIER, languageId + "-" + typeName);
 
                             descriptions.add(descriptionMap);
                         }
