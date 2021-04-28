@@ -1,5 +1,5 @@
 
-package org.ihtsdo.refsetservice.model;
+package org.ihtsdo.refsetservice.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * Represents search parameters for a "find" call.
  */
 @JsonInclude(Include.NON_EMPTY)
-public class SearchParameters extends AbstractHasId {
+public class SearchParameters {
 
     /** The terminology. */
     private String terminology;
@@ -186,6 +186,75 @@ public class SearchParameters extends AbstractHasId {
      */
     public void setSortAscending(final Boolean sortAscending) {
         this.sortAscending = sortAscending;
+    }
+    
+    /**
+     * Sets the sort ascending.
+     *
+     * @param obj the obj
+     */
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final SearchParameters other = (SearchParameters) obj;
+        
+        if (query == null) {
+            
+            if (other.query != null) {
+                return false;
+            }
+            
+        } else if (!query.equals(other.query)) {
+            return false;
+        }
+        
+        if (sort == null) {
+            
+            if (other.sort != null) {
+                return false;
+            }
+            
+        } else if (!sort.equals(other.sort)) {
+            return false;
+        }
+        
+        if (terminology == null) {
+            
+            if (other.terminology != null) {
+                return false;
+            }
+            
+        } else if (!terminology.equals(other.terminology)) {
+            return false;
+        }
+        
+        if (activeOnly != other.activeOnly) {
+            return false;
+        }
+
+        if (sortAscending != other.sortAscending) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /* see superclass */
+    @Override
+    public String toString() {
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
     }
 
 }
