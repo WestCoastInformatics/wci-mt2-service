@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
-import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -259,17 +258,22 @@ public class RefsetController extends BaseController {
                     value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
                     required = false, dataType = "string", paramType = "query", defaultValue = ""),
             @ApiImplicitParam(name = "limit", value = "The max number of results to return",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+                    required = true, dataType = "int", paramType = "query", defaultValue = "0"),
             @ApiImplicitParam(name = "offset", value = "The offset for the first result",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+                    required = true, dataType = "int", paramType = "query", defaultValue = "0"),
             @ApiImplicitParam(name = "displayType", value = "Should results be a list or taxonomy",
-            required = false, dataType = "string", paramType = "query", defaultValue = "list"),
-            @ApiImplicitParam(name = "startingConceptId", value = "For taxonomy calls the starting concept ID (exclusive - get the children of this concept not the concept itself)",
-            required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "depth", value = "For taxonomy calls the depth - how many levels of children or parents to retrieve",
-            required = false, dataType = "int", paramType = "query", defaultValue = "1"),
-            @ApiImplicitParam(name = "returnChildren", value = "For taxonomy calls should children be returned. If false then parents will be returned",
-            required = false, dataType = "boolean", paramType = "query", defaultValue = "true"),
+                    required = false, dataType = "string", paramType = "query",
+                    defaultValue = "list"),
+            @ApiImplicitParam(name = "startingConceptId",
+                    value = "For taxonomy calls the starting concept ID (exclusive - get the children of this concept not the concept itself)",
+                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "depth",
+                    value = "For taxonomy calls the depth - how many levels of children or parents to retrieve",
+                    required = false, dataType = "int", paramType = "query", defaultValue = "1"),
+            @ApiImplicitParam(name = "returnChildren",
+                    value = "For taxonomy calls should children be returned. If false then parents will be returned",
+                    required = false, dataType = "boolean", paramType = "query",
+                    defaultValue = "true"),
 
             // TODO: activeOnly, sort, sortAscending
     })
@@ -278,10 +282,8 @@ public class RefsetController extends BaseController {
             produces = "application/json")
     public @ResponseBody ConceptResultList getMembers(
         @PathVariable(value = "refsetId") final String refsetId,
-        final SearchParameters searchParameters, 
-        final String displayType, 
-        final TaxonomyParameters taxonomyParameters, 
-        final BindingResult bindingResult)
+        final SearchParameters searchParameters, final String displayType,
+        final TaxonomyParameters taxonomyParameters, final BindingResult bindingResult)
         throws Exception {
 
         // Check whether or not parameter binding was successful
@@ -301,9 +303,9 @@ public class RefsetController extends BaseController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.join("\n ", errorMessages));
         }
-        
+
         String resolvedDisplayType = displayType;
-        
+
         if (resolvedDisplayType == null || resolvedDisplayType.equals("")) {
             resolvedDisplayType = "list";
         }
@@ -312,10 +314,11 @@ public class RefsetController extends BaseController {
         ConceptResultList results = new ConceptResultList();
 
         logger.info("*********** getMembers: refsetId: " + refsetId);
-        
+
         try {
 
-            results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters, resolvedDisplayType, taxonomyParameters);
+            results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters,
+                    resolvedDisplayType, taxonomyParameters);
             logger.debug("******** results: " + ModelUtility.toJson(results));
             results.setTimeTaken(System.currentTimeMillis() - start);
             return results;

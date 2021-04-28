@@ -6,15 +6,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.Transient;
-
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.FieldBridge;
-import org.hibernate.search.annotations.Index;
-import org.hibernate.search.annotations.Store;
-import org.hibernate.search.bridge.builtin.BooleanBridge;
-
 // TODO: Auto-generated Javadoc
 /**
  * Represents a concept with a code from a terminology.
@@ -41,20 +32,41 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /** The version. */
     private String version;
 
-    /** The member status. */
+    /** Is this concept's membership status in the refset active. */
     private boolean memberStatus;
+
+    /** The is this concept a member of the refset. */
+    private boolean memberOfRefset;
 
     /** The member effective time. */
     private Date memberEffectiveTime;
 
     /** The descriptions. */
     private List<Map<String, String>> descriptions = new ArrayList<>();
-    
+
     /** The flag for if a user can see the history for this concept. */
     private boolean historyVisible;
 
     /** The flag for if a user can see the feedback for this concept. */
     private boolean feedbackVisible;
+
+    /** A list of the parents of this concept. */
+    private List<Concept> parents;
+
+    /**
+     * Does this concept have parents at any level that are members of the
+     * refset.
+     */
+    private boolean hasParentsRefsetMembers;
+
+    /** A list of the parents of this concept. */
+    private List<Concept> children;
+
+    /**
+     * Does this concept have children at any level that are members of the
+     * refset.
+     */
+    private boolean hasChildrenRefsetMembers;
 
     /**
      * Instantiates an empty {@link Concept}.
@@ -100,6 +112,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param other the other
      */
     public void populateFrom(final Concept other) {
+
         super.populateFrom(other);
         code = other.getCode();
         name = other.getName();
@@ -107,7 +120,11 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         version = other.getVersion();
         memberEffectiveTime = other.getMemberEffectiveTime();
         memberStatus = other.isMemberStatus();
-        descriptions = other.getDescriptions();
+        parents = other.getParents();
+        hasParentsRefsetMembers = other.getHasParentsRefsetMembers();
+        children = other.getChildren();
+        hasChildrenRefsetMembers = other.getHasChildrenRefsetMembers();
+        memberOfRefset = other.isMemberOfRefset();
     }
 
     /**
@@ -235,7 +252,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     public void setDescriptions(List<Map<String, String>> descriptions) {
         this.descriptions = descriptions;
     }
-    
+
     /**
      * Checks if history is visible.
      *
@@ -273,6 +290,86 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * @return the memberOfRefset
+     */
+    public boolean isMemberOfRefset() {
+        return memberOfRefset;
+    }
+
+    /**
+     * @param memberOfRefset the memberOfRefset to set
+     */
+    public void setMemberOfRefset(boolean memberOfRefset) {
+        this.memberOfRefset = memberOfRefset;
+    }
+
+    /**
+     * @return the parents
+     */
+    public List<Concept> getParents() {
+
+        if (parents == null) {
+            parents = new ArrayList<>();
+        }
+
+        return parents;
+    }
+
+    /**
+     * @param parents the parents to set
+     */
+    public void setParents(List<Concept> parents) {
+        this.parents = parents;
+    }
+
+    /**
+     * @return the hasParentsRefsetMembers
+     */
+    public boolean getHasParentsRefsetMembers() {
+        return hasParentsRefsetMembers;
+    }
+
+    /**
+     * @param hasParentsRefsetMembers the hasParentsRefsetMembers to set
+     */
+    public void setHasParentsRefsetMembers(boolean hasParentsRefsetMembers) {
+        this.hasParentsRefsetMembers = hasParentsRefsetMembers;
+    }
+
+    /**
+     * @return the children
+     */
+    public List<Concept> getChildren() {
+
+        if (children == null) {
+            children = new ArrayList<>();
+        }
+
+        return children;
+    }
+
+    /**
+     * @param children the children to set
+     */
+    public void setChildren(List<Concept> children) {
+        this.children = children;
+    }
+
+    /**
+     * @return the hasChildrenRefsetMembers
+     */
+    public boolean getHasChildrenRefsetMembers() {
+        return hasChildrenRefsetMembers;
+    }
+
+    /**
+     * @param hasChildrenRefsetMembers the hasChildrenRefsetMembers to set
+     */
+    public void setHasChildrenRefsetMembers(boolean hasChildrenRefsetMembers) {
+        this.hasChildrenRefsetMembers = hasChildrenRefsetMembers;
+    }
+
+    /**
      * Hash code.
      *
      * @return the int
@@ -286,7 +383,12 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
+        result = prime * result + ((children == null) ? 0 : children.hashCode());
+        result = prime * result + ((parents == null) ? 0 : parents.hashCode());
         result = prime * result + (memberStatus ? 1 : 0);
+        result = prime * result + (memberOfRefset ? 1 : 0);
+        result = prime * result + (hasChildrenRefsetMembers ? 1 : 0);
+        result = prime * result + (hasParentsRefsetMembers ? 1 : 0);
         result = prime * result
                 + ((memberEffectiveTime == null) ? 0 : memberEffectiveTime.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
@@ -302,38 +404,50 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /* see superclass */
     @Override
     public boolean equals(final Object obj) {
+
         if (this == obj) {
             return true;
         }
+
         if (obj == null) {
             return false;
         }
+
         if (getClass() != obj.getClass()) {
             return false;
         }
+
         final Concept other = (Concept) obj;
+
         if (code == null) {
+
             if (other.code != null) {
                 return false;
             }
         } else if (!code.equals(other.code)) {
             return false;
         }
+
         if (name == null) {
+
             if (other.name != null) {
                 return false;
             }
         } else if (!name.equals(other.name)) {
             return false;
         }
+
         if (terminology == null) {
+
             if (other.terminology != null) {
                 return false;
             }
         } else if (!terminology.equals(other.terminology)) {
             return false;
         }
+
         if (version == null) {
+
             if (other.version != null) {
                 return false;
             }
@@ -342,6 +456,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         }
 
         if (memberEffectiveTime == null) {
+
             if (other.memberEffectiveTime != null) {
                 return false;
             }
@@ -350,6 +465,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         }
 
         if (descriptions == null) {
+
             if (other.descriptions != null) {
                 return false;
             }
@@ -357,7 +473,37 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
             return false;
         }
 
+        if (children == null) {
+
+            if (other.children != null) {
+                return false;
+            }
+        } else if (!children.equals(other.children)) {
+            return false;
+        }
+
+        if (parents == null) {
+
+            if (other.parents != null) {
+                return false;
+            }
+        } else if (!parents.equals(other.parents)) {
+            return false;
+        }
+
         if (memberStatus != other.memberStatus) {
+            return false;
+        }
+
+        if (hasChildrenRefsetMembers != other.hasChildrenRefsetMembers) {
+            return false;
+        }
+
+        if (hasParentsRefsetMembers != other.hasParentsRefsetMembers) {
+            return false;
+        }
+
+        if (memberOfRefset != other.memberOfRefset) {
             return false;
         }
 

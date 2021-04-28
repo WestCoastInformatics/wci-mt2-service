@@ -89,7 +89,7 @@ public class RefsetMemberService {
         refsetToLanguagesMap.put("61000202103", "no");
         refsetToLanguagesMap.put("46011000052107", "sv");
     }
-    
+
     /**
      * Get the refset member concepts.
      *
@@ -101,8 +101,7 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static ConceptResultList getRefsetMembers(String refsetId,
-        final SearchParameters searchParameters,
-        final String displayType,
+        final SearchParameters searchParameters, final String displayType,
         final TaxonomyParameters taxonomyParameters) throws Exception {
 
         List<String> nonDefaultPreferredTerms = null;
@@ -112,7 +111,7 @@ public class RefsetMemberService {
 
             Refset refset = service.get(refsetId, Refset.class);
             final Edition edition = refset.getEdition();
-            
+
             // get the list of languages the refset supports
             nonDefaultPreferredTerms =
                     refsetToLanguagesMap.keySet().stream().collect(Collectors.toList());
@@ -122,29 +121,33 @@ public class RefsetMemberService {
             if (edition.getDefaultLanguageCode() != null) {
 
                 languageToRemove = refsetToLanguagesMap.entrySet().stream()
-                        .filter(entry -> edition.getDefaultLanguageCode()
-                                .equals(entry.getValue()))
+                        .filter(entry -> edition.getDefaultLanguageCode().equals(entry.getValue()))
                         .map(Map.Entry::getKey).findFirst().get();
             }
 
-            // remove the default language and any languages that are not in the edition's default list
-            nonDefaultPreferredTerms.remove(languageToRemove);                
-            nonDefaultPreferredTerms.removeIf(languageRefset -> !edition.getDefaultLanguageRefsets().contains(languageRefset));
-            
+            // remove the default language and any languages that are not in the
+            // edition's default list
+            nonDefaultPreferredTerms.remove(languageToRemove);
+            nonDefaultPreferredTerms.removeIf(languageRefset -> !edition.getDefaultLanguageRefsets()
+                    .contains(languageRefset));
+
             Collections.sort(nonDefaultPreferredTerms);
-            
+
             // build the common terminolgy server url params
-            final String pagingParams = "offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit=" + searchParameters.getLimit();
+            final String pagingParams =
+                    "offset=" + (searchParameters.getOffset() * searchParameters.getLimit())
+                            + "&limit=" + searchParameters.getLimit();
             String versionDate = "";
-            
+
             if (refset.getVersionDate() != null) {
-                
+
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                //versionDate = "/" + simpleDateFormat.format(refset.getVersionDate());
+                // versionDate = "/" +
+                // simpleDateFormat.format(refset.getVersionDate());
             }
-            
+
             String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch()
-                + versionDate + "/";
+                    + versionDate + "/";
 
             // if (searchParameters.getSortAscending() != null) {
             //
@@ -153,23 +156,27 @@ public class RefsetMemberService {
             // if (searchParameters.getSort() != null) {
             //
             // }
-            
+
             // the next call depend if a list or taxonomy is being returned
             if (displayType.equals("list")) {
-                
-                members = getRefsetMemberList(refset, members, nonDefaultPreferredTerms, url + "members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams);
+
+                members = getRefsetMemberList(refset, members, nonDefaultPreferredTerms,
+                        url + "members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams);
             } else {
-                
-                members = getRefsetMemberTaxonomy(refset, members, nonDefaultPreferredTerms, taxonomyParameters, url + "members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams);
+
+                members = getRefsetMemberTaxonomy(refset, members, nonDefaultPreferredTerms,
+                        taxonomyParameters,
+                        url + "members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams);
             }
-            
+
             // add the descriptions to the member concepts
-            members = getConceptDescriptions(refset, members, nonDefaultPreferredTerms, url + "concepts?" + pagingParams + "&");
-            
+            members = getConceptDescriptions(refset, members, nonDefaultPreferredTerms,
+                    url + "concepts?" + pagingParams + "&");
+
         }
-        
+
         return members;
-        }
+    }
 
     /**
      * Get the refset member concepts as a list.
@@ -182,7 +189,8 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static ConceptResultList getRefsetMemberList(final Refset refset,
-        final ConceptResultList members, final List<String> nonDefaultPreferredTerms, final String url) throws Exception {
+        final ConceptResultList members, final List<String> nonDefaultPreferredTerms,
+        final String url) throws Exception {
 
         logger.debug("Get Member List URL: " + url);
         try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -219,7 +227,7 @@ public class RefsetMemberService {
 
         return members;
     }
-    
+
     /**
      * Get the refset member concepts as a hierarchical taxonomy tree.
      *
@@ -232,10 +240,8 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static ConceptResultList getRefsetMemberTaxonomy(final Refset refset,
-        final ConceptResultList members, 
-        final List<String> nonDefaultPreferredTerms, 
-        final TaxonomyParameters taxonomyParameters,
-        final String url) throws Exception {
+        final ConceptResultList members, final List<String> nonDefaultPreferredTerms,
+        final TaxonomyParameters taxonomyParameters, final String url) throws Exception {
 
         logger.debug("Get Member Taxonomy URL: " + url);
         try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -285,7 +291,8 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static ConceptResultList getConceptDescriptions(final Refset refset,
-        final ConceptResultList members, final List<String> nonDefaultPreferredTerms, final String url) throws MalformedURLException, Exception {
+        final ConceptResultList members, final List<String> nonDefaultPreferredTerms,
+        final String url) throws MalformedURLException, Exception {
 
         final Edition edition = refset.getEdition();
         final StringBuffer conceptIds = new StringBuffer();
@@ -301,8 +308,9 @@ public class RefsetMemberService {
         }
 
         logger.debug("Get Member Descriptions URL: " + url + "conceptIds=" + conceptIds);
-        
-        try (final Response response = SnowstormConnection.getResponse(url + "conceptIds=" + conceptIds)) {
+
+        try (final Response response =
+                SnowstormConnection.getResponse(url + "conceptIds=" + conceptIds)) {
 
             final String resultString = response.readEntity(String.class);
             final ObjectMapper mapper = new ObjectMapper();
@@ -342,7 +350,7 @@ public class RefsetMemberService {
                         }
 
                         if (acceptability != null && "PREFERRED".equals(acceptability)) {
-                            
+
                             if ("900000000000003001"
                                     .equals(descriptionNode.get("typeId").asText())) {
                                 typeName = "FSN";
@@ -377,7 +385,7 @@ public class RefsetMemberService {
             for (Concept concept : members.getItems()) {
                 concept.setDescriptions(sortedDescriptions.get(concept.getCode()));
             }
-            
+
         } catch (Exception ex) {
 
             logger.error("Could not retrieve descriptions" + ex.getMessage());
@@ -461,17 +469,17 @@ public class RefsetMemberService {
             if (sortingMap.get(TYPE_DEFAULT_PT) != null) {
                 sortedDescriptionList.add(sortingMap.get(TYPE_DEFAULT_PT));
             }
-            
+
             if (sortingMap.get(TYPE_FSN) != null) {
                 sortedDescriptionList.add(sortingMap.get(TYPE_FSN));
             }
 
             for (int i = 0; i < nonDefaultPreferredTerms.size(); i++) {
-                
+
                 if (sortingMap.get(TYPE_OTHER_PT + i) != null) {
                     sortedDescriptionList.add(sortingMap.get(TYPE_OTHER_PT + i));
                 }
-                
+
             }
 
             sortedMemberDescriptions.put(conceptId, sortedDescriptionList);
