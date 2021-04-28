@@ -195,15 +195,19 @@ public class SearchParameters {
      */
     @Override
     public boolean equals(final Object obj) {
+        
         if (this == obj) {
             return true;
         }
+        
         if (obj == null) {
             return false;
         }
+        
         if (getClass() != obj.getClass()) {
             return false;
         }
+        
         final SearchParameters other = (SearchParameters) obj;
         
         if (query == null) {
@@ -223,6 +227,26 @@ public class SearchParameters {
             }
             
         } else if (!sort.equals(other.sort)) {
+            return false;
+        }
+        
+        if (limit == null) {
+            
+            if (other.limit != null) {
+                return false;
+            }
+            
+        } else if (!limit.equals(other.limit)) {
+            return false;
+        }
+        
+        if (offset == null) {
+            
+            if (other.offset != null) {
+                return false;
+            }
+            
+        } else if (!offset.equals(other.offset)) {
             return false;
         }
         
@@ -246,15 +270,35 @@ public class SearchParameters {
         
         return true;
     }
+    
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
+    @Override
+    public int hashCode() {
+        
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((limit == null) ? 0 : limit.hashCode());
+        result = prime * result + ((offset == null) ? 0 : offset.hashCode());
+        result = prime * result + ((query == null) ? 0 : query.hashCode());
+        result = prime * result + ((sort == null) ? 0 : sort.hashCode());
+        result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());
+        result = prime * result + (activeOnly ? 1 : 0);
+        result = prime * result + (sortAscending ? 1 : 0);
+        return result;
+    }
 
     /* see superclass */
     @Override
     public String toString() {
+        
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {
             return e.getMessage();
         }
     }
-
 }
