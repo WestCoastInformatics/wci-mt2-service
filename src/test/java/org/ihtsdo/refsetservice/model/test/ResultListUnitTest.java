@@ -4,7 +4,6 @@ package org.ihtsdo.refsetservice.model.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.ihtsdo.refsetservice.model.AbstractHasId;
-import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.CopyConstructorTester;
 import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
@@ -12,6 +11,7 @@ import org.ihtsdo.refsetservice.test.GetterSetterTester;
 import org.ihtsdo.refsetservice.test.ProxyTester;
 import org.ihtsdo.refsetservice.test.SerializationTester;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;

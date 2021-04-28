@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.CopyConstructorTester;
 import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
@@ -15,6 +14,7 @@ import org.ihtsdo.refsetservice.test.GetterSetterTester;
 import org.ihtsdo.refsetservice.test.ProxyTester;
 import org.ihtsdo.refsetservice.test.SerializationTester;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;

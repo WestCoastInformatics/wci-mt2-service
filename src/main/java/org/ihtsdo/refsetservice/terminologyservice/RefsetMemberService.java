@@ -20,9 +20,9 @@ import javax.ws.rs.core.Response;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,7 +161,7 @@ public class RefsetMemberService {
         }
 
     /**
-     * Get the refset member concepts.
+     * Get the refset member concepts as a list.
      *
      * @param refset the refset who's members are being retrieved
      * @param members the members
@@ -174,6 +174,55 @@ public class RefsetMemberService {
         final ConceptResultList members, final List<String> nonDefaultPreferredTerms, final String url) throws Exception {
 
         logger.debug("Get Member List URL: " + url);
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            final String resultString = response.readEntity(String.class);
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode items = root.get("items");
+            final Iterator<JsonNode> iterator = items.iterator();
+
+            while (iterator.hasNext()) {
+
+                final JsonNode item = iterator.next();
+                final Concept concept = new Concept();
+                concept.setCode(item.get("referencedComponentId").asText());
+                concept.setTerminology("SNOMEDCT");
+                concept.setMemberStatus(item.get("active").asBoolean());
+                concept.setHistoryVisible(true);
+                concept.setFeedbackVisible(true);
+                concept.setMemberEffectiveTime(
+                        SIMPLE_DATE_FORMAT.parse(item.get("releasedEffectiveTime").asText()));
+
+                members.getItems().add(concept);
+            }
+
+            members.setTotal(root.get("totalElements").asInt());
+
+        } catch (Exception ex) {
+
+            logger.error("Could not retrieve members" + ex.getMessage());
+            ex.printStackTrace();
+        }
+
+        return members;
+    }
+    
+    /**
+     * Get the refset member concepts as a hierarchical taxonomy tree.
+     *
+     * @param refset the refset who's members are being retrieved
+     * @param members the members
+     * @param nonDefaultPreferredTerms the non-default preferred terms
+     * @param url the terminology server URL
+     * @return the refset member concepts
+     * @throws Exception the exception
+     */
+    public static ConceptResultList getRefsetMemberTaxonomy(final Refset refset,
+        final ConceptResultList members, final List<String> nonDefaultPreferredTerms, final String url) throws Exception {
+
+        logger.debug("Get Member Taxonomy URL: " + url);
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = response.readEntity(String.class);

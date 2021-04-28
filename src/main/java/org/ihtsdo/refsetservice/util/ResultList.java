@@ -9,7 +9,6 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlTransient;
 
 import org.ihtsdo.refsetservice.model.Collection;
-import org.ihtsdo.refsetservice.model.SearchParameters;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

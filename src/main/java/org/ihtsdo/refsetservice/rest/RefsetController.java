@@ -9,12 +9,12 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.SearchParameters;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -266,7 +266,7 @@ public class RefsetController extends BaseController {
             produces = "application/json")
     public @ResponseBody ConceptResultList getMembers(
         @PathVariable(value = "refsetId") final String refsetId,
-        final SearchParameters searchParameters, final BindingResult bindingResult)
+        final SearchParameters searchParameters, final String displayType, final BindingResult bindingResult)
         throws Exception {
 
         // Check whether or not parameter binding was successful
