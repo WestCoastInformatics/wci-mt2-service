@@ -23,6 +23,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,11 +95,15 @@ public class RefsetMemberService {
      *
      * @param refsetId the refset ID
      * @param searchParameters the search parameters
+     * @param displayType Should results be a list or hierarchical taxonomy
+     * @param taxonomyParameters the taxonomy parameters
      * @return the refset member concepts
      * @throws Exception the exception
      */
     public static ConceptResultList getRefsetMembers(String refsetId,
-        final SearchParameters searchParameters) throws Exception {
+        final SearchParameters searchParameters,
+        final String displayType,
+        final TaxonomyParameters taxonomyParameters) throws Exception {
 
         List<String> nonDefaultPreferredTerms = null;
         ConceptResultList members = new ConceptResultList();
@@ -107,26 +112,6 @@ public class RefsetMemberService {
 
             Refset refset = service.get(refsetId, Refset.class);
             final Edition edition = refset.getEdition();
-            
-            final String pagingParams = "offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit=" + searchParameters.getLimit();
-            String versionDate = "";
-            
-            if (refset.getVersionDate() != null) {
-                
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                //versionDate = "/" + simpleDateFormat.format(refset.getVersionDate());
-            }
-            
-            String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch()
-                + versionDate + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams;
-
-            // if (searchParameters.getSortAscending() != null) {
-            //
-            // }
-            //
-            // if (searchParameters.getSort() != null) {
-            //
-            // }
             
             // get the list of languages the refset supports
             nonDefaultPreferredTerms =
@@ -148,12 +133,38 @@ public class RefsetMemberService {
             
             Collections.sort(nonDefaultPreferredTerms);
             
-            members = getRefsetMemberList(refset, members, nonDefaultPreferredTerms, url);
+            // build the common terminolgy server url params
+            final String pagingParams = "offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit=" + searchParameters.getLimit();
+            String versionDate = "";
             
-            url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch()
-                + "/concepts?" + pagingParams + "&";
+            if (refset.getVersionDate() != null) {
+                
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                //versionDate = "/" + simpleDateFormat.format(refset.getVersionDate());
+            }
             
-            members = getConceptDescriptions(refset, members, nonDefaultPreferredTerms, url);
+            String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch()
+                + versionDate + "/";
+
+            // if (searchParameters.getSortAscending() != null) {
+            //
+            // }
+            //
+            // if (searchParameters.getSort() != null) {
+            //
+            // }
+            
+            // the next call depend if a list or taxonomy is being returned
+            if (displayType.equals("list")) {
+                
+                members = getRefsetMemberList(refset, members, nonDefaultPreferredTerms, url + "members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams);
+            } else {
+                
+                members = getRefsetMemberTaxonomy(refset, members, nonDefaultPreferredTerms, taxonomyParameters, url + "members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams);
+            }
+            
+            // add the descriptions to the member concepts
+            members = getConceptDescriptions(refset, members, nonDefaultPreferredTerms, url + "concepts?" + pagingParams + "&");
             
         }
         
@@ -216,11 +227,15 @@ public class RefsetMemberService {
      * @param members the members
      * @param nonDefaultPreferredTerms the non-default preferred terms
      * @param url the terminology server URL
+     * @param taxonomyParameters the taxonomy parameters
      * @return the refset member concepts
      * @throws Exception the exception
      */
     public static ConceptResultList getRefsetMemberTaxonomy(final Refset refset,
-        final ConceptResultList members, final List<String> nonDefaultPreferredTerms, final String url) throws Exception {
+        final ConceptResultList members, 
+        final List<String> nonDefaultPreferredTerms, 
+        final TaxonomyParameters taxonomyParameters,
+        final String url) throws Exception {
 
         logger.debug("Get Member Taxonomy URL: " + url);
         try (final Response response = SnowstormConnection.getResponse(url)) {

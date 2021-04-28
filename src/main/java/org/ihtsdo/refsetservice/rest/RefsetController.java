@@ -15,6 +15,7 @@ import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -236,6 +237,8 @@ public class RefsetController extends BaseController {
      *
      * @param refsetId the refset ID
      * @param searchParameters the search parameters
+     * @param displayType Should results be a list or hierarchical taxonomy
+     * @param taxonomyParameters the taxonomy parameters
      * @param bindingResult the binding result
      * @return the string
      * @throws Exception the exception
@@ -258,7 +261,16 @@ public class RefsetController extends BaseController {
             @ApiImplicitParam(name = "limit", value = "The max number of results to return",
                     required = false, dataType = "int", paramType = "query", defaultValue = "0"),
             @ApiImplicitParam(name = "offset", value = "The offset for the first result",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0")
+                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "displayType", value = "Should results be a list or taxonomy",
+            required = false, dataType = "string", paramType = "query", defaultValue = "list"),
+            @ApiImplicitParam(name = "startingConceptId", value = "For taxonomy calls the starting concept ID (exclusive - get the children of this concept not the concept itself)",
+            required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "depth", value = "For taxonomy calls the depth - how many levels of children or parents to retrieve",
+            required = false, dataType = "int", paramType = "query", defaultValue = "1"),
+            @ApiImplicitParam(name = "returnChildren", value = "For taxonomy calls should children be returned. If false then parents will be returned",
+            required = false, dataType = "boolean", paramType = "query", defaultValue = "true"),
+
             // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -266,7 +278,10 @@ public class RefsetController extends BaseController {
             produces = "application/json")
     public @ResponseBody ConceptResultList getMembers(
         @PathVariable(value = "refsetId") final String refsetId,
-        final SearchParameters searchParameters, final String displayType, final BindingResult bindingResult)
+        final SearchParameters searchParameters, 
+        final String displayType, 
+        final TaxonomyParameters taxonomyParameters, 
+        final BindingResult bindingResult)
         throws Exception {
 
         // Check whether or not parameter binding was successful
@@ -286,6 +301,12 @@ public class RefsetController extends BaseController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.join("\n ", errorMessages));
         }
+        
+        String resolvedDisplayType = displayType;
+        
+        if (resolvedDisplayType == null || resolvedDisplayType.equals("")) {
+            resolvedDisplayType = "list";
+        }
 
         final long start = System.currentTimeMillis();
         ConceptResultList results = new ConceptResultList();
@@ -294,7 +315,7 @@ public class RefsetController extends BaseController {
         
         try {
 
-            results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters);
+            results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters, resolvedDisplayType, taxonomyParameters);
             logger.debug("******** results: " + ModelUtility.toJson(results));
             results.setTimeTaken(System.currentTimeMillis() - start);
             return results;
