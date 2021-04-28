@@ -132,7 +132,7 @@ public class RefsetControllerTests extends BaseTest {
             refsetTerminologyId = refset.getId();
         }
 
-        url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=0"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
+        url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=2"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
