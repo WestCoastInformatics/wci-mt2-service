@@ -10,14 +10,16 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_EMPTY)
 public class TaxonomyParameters {
 
+    private static final String SNOMED_ROOT_CONCEPT_ID = "138875005";
+
     /** The starting concept ID (exclusive - get the children of this concept not the concept itself). */
-    private String startingConceptId;
+    private String startingConceptId = SNOMED_ROOT_CONCEPT_ID;
 
     /** The depth - how many levels of children or parents to retrieve. */
     private Integer depth;
 
     /** Should children be returned. If false then parents will be returned */
-    private Boolean returnChildren;
+    private Boolean returnChildren = true;
 
     /**
      * Instantiates an empty {@link TaxonomyParameters}.
@@ -86,7 +88,7 @@ public class TaxonomyParameters {
     /**
      * Should children be returned. If false then parents will be returned
      *
-     * @return the active only
+     * @return the return children
      */
     public Boolean getReturnChildren() {
         return returnChildren;
@@ -105,6 +107,7 @@ public class TaxonomyParameters {
      * Sets the sort ascending.
      *
      * @param obj the obj
+     * @return true, if successful
      */
     @Override
     public boolean equals(final Object obj) {
@@ -166,6 +169,11 @@ public class TaxonomyParameters {
         return result;
     }
 
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     /* see superclass */
     @Override
     public String toString() {
