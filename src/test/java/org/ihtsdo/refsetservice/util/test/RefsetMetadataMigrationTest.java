@@ -1,16 +1,22 @@
 package org.ihtsdo.refsetservice.util.test;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -26,6 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,6 +41,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Validates the code-system-* files in the "src/resources" folder.
  */
 public class RefsetMetadataMigrationTest extends BaseTest {
+
+    /** The formatter. */
+    SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
 
     /**
      * The Class Metadata.
@@ -112,18 +123,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /** The clauses file. */
     private final String clausesFile = "src/test/resources/migration/resources/clauses.txt";
 
-    /** The multiple versions file path. */
-    private final String multipleVersionsFilePath =
-            "src/test/resources/migration/refsetsToImport/GeneralDentistryAllVersions.txt";
-
-    /** The single version file path. */
-    private final String singleVersionWithRefsetFilePath =
-            "src/test/resources/migration/refsetsToImport/refsetECLClausesJoins.txt";
-
-    /** The single version file path. */
-    private final String singleVersionFilePath =
-            "src/test/resources/migration/refsetsToImport/GeneralDentistrySingleVersion.txt";
-
     /** The all refsets file path. */
     private final String allRefsetsFilePath =
             "src/test/resources/migration/refsetsToImport/AllFromRTT.txt";
@@ -132,7 +131,9 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     private final Map<String, Metadata> metadataMap = new HashMap<>();
 
     /** The json map. */
-    private final Map<String, String> refsetsMap = new HashMap<>();
+    private final Map<String, String> refsetInternalIdMap = new HashMap<>();
+
+    private final Map<String, String> refsetSctIdToInternalIdMap = new HashMap<>();
 
     /** The rtt refset to clauses map. */
     private final Map<String, ArrayList<String>> rttRefsetToClausesMap = new HashMap<>();
@@ -143,79 +144,222 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /** The refset to project map. */
     private final Map<String, String> refsetToProjectMap = new HashMap<>();
 
-    /** The short name to namespace map. */
-    private final Map<String, String> shortNameToNamespaceMap = new HashMap<>();
-
     /** The short name editions map. */
     private final Map<String, Edition> shortNameEditionsMap = new HashMap<>();
 
-    /** The refset namespace map. */
-    private final Map<String, String> refsetNamespaceMap = new HashMap<>();
-
-    /** The refset shortname map. */
-    private final Map<String, String> refsetShortnameMap = new HashMap<>();
-
-    /**
-     * Test Single Version of General Dentistry Refset.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testGeneralDensitrySingleVersion() throws Exception {
-        preprocessingSupportingFiles();
-
-        populateFromFile(singleVersionFilePath, FileProcessType.REFSET);
-        importObjects();
-    }
-
-    /**
-     * Test All Versions of General Dentistry Refset.
-     *
-     * @throws Exception the exception
-     */
-    // @Test
-    public void testGeneralDensitryAllVersions() throws Exception {
-        preprocessingSupportingFiles();
-
-        populateFromFile(multipleVersionsFilePath, FileProcessType.REFSET);
-        importObjects();
-    }
-
-    /**
-     * Test All Versions of General Dentistry Refset.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testRefsetWithClauses() throws Exception {
-        preprocessingSupportingFiles();
-
-        populateFromFile(singleVersionWithRefsetFilePath, FileProcessType.REFSET);
-        importObjects();
-    }
+    private final Set<String> refsetsToIgnore = new HashSet<>();
 
     /**
      * Test all refsets.
      *
      * @throws Exception the exception
      */
-    // @Test
+    @Test
     public void testAllRefsets() throws Exception {
+        createEditionsFromSnowstorm();
+        Set<Refset> allRefsets = createRefsetsFromSnowstorm();
+
         preprocessingSupportingFiles();
-        populateEditions();
 
-        populateFromFile(allRefsetsFilePath, FileProcessType.REFSET);
+        // Skip those refsets that live on SnowS, but I don't have a dmp of
+        // yet
+        for (Refset refset : allRefsets) {
+            if (!refsetSctIdToInternalIdMap.keySet().contains(refset.getRefsetId())) {
+                refsetsToIgnore.add(refset.getRefsetId());
+            }
+        }
 
-        importObjects();
+        updateRefsets(allRefsets);
+
+        // TODO: Update this
+        createAllRefsetVersions(allRefsets);
+
+        persistObjects(allRefsets);
+    }
+
+    private void createAllRefsetVersions(Set<Refset> allRefsets) {
+        for (Refset refset : allRefsets) {
+            if (refsetsToIgnore.contains(refset.getRefsetId())) {
+                continue;
+            }
+
+            refset.setVersionStatus("PUBLISHED");
+        }
+    }
+
+    private void updateRefsets(Set<Refset> allRefsets)
+        throws JsonMappingException, JsonProcessingException {
+        for (Refset refset : allRefsets) {
+            if (refsetsToIgnore.contains(refset.getRefsetId())) {
+                continue;
+            }
+
+            final String rttId = refsetSctIdToInternalIdMap.get(refset.getRefsetId());
+            final String refsetJsonString = refsetInternalIdMap.get(rttId);
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode refsetJson = mapper.readTree(refsetJsonString);
+            logger.debug(refsetJson.toString());
+
+            refset.setType(refsetJson.get("type").asText());
+            refset.setNarrative(refsetJson.get("narrative").asText());
+            refset.setPrivateRefset(refsetJson.get("privateRefset").asBoolean());
+
+            // Tags
+            if (refsetJson.has("tags")) {
+                Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
+                while (tagsIterator.hasNext()) {
+                    refset.getTags().add(tagsIterator.next().asText());
+                }
+            }
+        }
+
     }
 
     /**
      * Populate editions.
      *
+     * @param internationalModules the international modules
+     * @return the sets the
      * @throws Exception the exception
      */
-    private void populateEditions() throws Exception {
+    private Set<Refset> createRefsetsFromSnowstorm() throws Exception {
+        Set<Refset> allRefsets = new HashSet<>();
 
+        String url = SnowstormConnection.BASE_URL + "browser/{branch}/members";
+
+        try (final TerminologyService service = new TerminologyService()) {
+            service.setModifiedBy("Migration");
+            service.setModifiedFlag(true);
+
+            HashSet<String> internationalRefsets = new HashSet<>();
+            List<Edition> editions = service.getAll(Edition.class);
+
+            BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsAdded.txt"));
+
+            for (Edition edition : editions) {
+                logger.debug("Processing Edition: " + edition.getName());
+                writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
+                try (final Response response = SnowstormConnection
+                        .getResponse(url.replace("{branch}", edition.getBranch()))) {
+                    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                        if (edition.getBranch().startsWith("MAIN")) {
+                            throw new Exception("Unable to process this edition: " + edition);
+                        } else {
+                            logger.debug("Found that '" + edition.getName() + "' has odd branch: "
+                                    + edition.getBranch());
+                            continue;
+                        }
+                    }
+                    final String resultString = response.readEntity(String.class);
+                    final ObjectMapper mapper = new ObjectMapper();
+                    final JsonNode root = mapper.readTree(resultString.toString());
+
+                    // get RefSets from edition as long as a) active & b) within
+                    // edition's module
+                    final Iterator<JsonNode> refsetIterator = root.get("referenceSets").iterator();
+
+                    while (refsetIterator.hasNext()) {
+                        final JsonNode refsetNode = refsetIterator.next();
+                        final String moduleId = refsetNode.get("moduleId").asText();
+                        final String refsetId = refsetNode.get("conceptId").asText();
+
+                        if (refsetNode.get("active").asBoolean() && (internationalRefsets.isEmpty()
+                                || !internationalRefsets.contains(refsetId))) {
+                            // Process Valid Refset
+                            try {
+                                Refset refset = new Refset();
+
+                                refset.setRefsetId(refsetNode.get("conceptId").asText());
+                                String refsetDate = refsetNode.get("effectiveTime").asText();
+                                refset.setVersionDate(formatter.parse(refsetDate));
+                                refset.setModuleId(moduleId);
+                                refset.setEdition(edition);
+                                refset.setActive(true);
+
+                                if (refsetNode.get("pt").has("term")) {
+                                    refset.setName(refsetNode.get("pt").get("term").asText());
+                                } else {
+                                    refset.setName(lookupRefsetName(refsetId, edition));
+                                }
+
+                                writer.write("Adding refset: " + refsetId);
+                                allRefsets.add(refset);
+
+                                if (edition.getName().equals("International Edition")) {
+                                    internationalRefsets.add(refsetNode.get("conceptId").asText());
+                                }
+
+                                writer.write("\n");
+                            } catch (Exception e) {
+                                logger.error("Failed with refsetNode: " + refsetNode);
+                            }
+                        }
+                    }
+
+                }
+
+            }
+            writer.close();
+        }
+
+        return allRefsets;
+    }
+
+    /**
+     * Lookup refset name.
+     *
+     * @param refsetId the refset id
+     * @param edition the edition
+     * @return the string
+     * @throws Exception the exception
+     */
+    private String lookupRefsetName(String refsetId, Edition edition) throws Exception {
+        String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch() + "/concepts/"
+                + refsetId;
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode conceptNode = mapper.readTree(resultString.toString());
+
+            Iterator<JsonNode> descriptionIterator = conceptNode.get("descriptions").iterator();
+            while (descriptionIterator.hasNext()) {
+                JsonNode descriptionNode = descriptionIterator.next();
+                String acceptability = null;
+
+                if (descriptionNode.get("type").asText().equals("SYNONYM") && descriptionNode
+                        .get("lang").asText().equals(edition.getDefaultLanguageCode())) {
+                    final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
+                    for (String langRefsetId : edition.getDefaultLanguageRefsets()) {
+                        if (acceptabilityMap.has(langRefsetId)) {
+                            acceptability = acceptabilityMap.get(langRefsetId).asText();
+                            break;
+                        }
+                    }
+
+                    if (acceptability == null) {
+                        throw new Exception(
+                                "Not able to properly identify refset name for description: "
+                                        + descriptionNode);
+                    }
+                    if (acceptability.equals("PREFERRED")) {
+                        return descriptionNode.get("term").asText();
+                    }
+                }
+            }
+
+            throw new Exception("Unable to find PrefTerm for refset concept: " + conceptNode);
+        }
+    }
+
+    /**
+     * Populate editions.
+     *
+     * @return the sets the
+     * @throws Exception the exception
+     */
+    private void createEditionsFromSnowstorm() throws Exception {
         // SHould have 3 results
         String url = SnowstormConnection.BASE_URL + "/codesystems";
 
@@ -301,7 +445,8 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 switch (processType) {
                     case REFSET:
                         final String refsetJson = lineToRefsetJson(line);
-                        refsetsMap.put(line.split(",")[0], refsetJson);
+                        refsetInternalIdMap.put(line.split(",")[0], refsetJson);
+                        refsetSctIdToInternalIdMap.put(line.split(",")[8], line.split(",")[0]);
                         break;
 
                     case CLAUSE:
@@ -346,7 +491,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    private void importObjects() throws Exception {
+    private void persistObjects(Set<Refset> allRefsets) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedFlag(false);
@@ -384,10 +529,14 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
             // Persist Refsets & ECL Definition Clauses
             int count = 0;
-            logger.info("About to import " + refsetsMap.keySet().size()
+            logger.info("About to import " + refsetInternalIdMap.keySet().size()
                     + " refsets and their respsective clauses");
-            for (String rttId : refsetsMap.keySet()) {
-                final Refset refset = ModelUtility.fromJson(refsetsMap.get(rttId), Refset.class);
+
+            for (Refset refset : allRefsets) {
+                if (refsetsToIgnore.contains(refset.getRefsetId())) {
+                    continue;
+                }
+                final String rttId = refsetSctIdToInternalIdMap.get(refset.getRefsetId());
                 String projectId = refsetToProjectMap.get(rttId);
                 refset.setProject(projectIdToClassMap.get(projectId));
 
@@ -403,24 +552,10 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                         service.add(clause);
                         refset.getDefinitionClauses().add(clause);
                     }
+
+                    service.update(refset);
                 }
 
-                // Connect to proper edition
-                if (!refsetShortnameMap.containsKey(refset.getRefsetId()) || !shortNameEditionsMap
-                        .containsKey(refsetShortnameMap.get(refset.getRefsetId()))) {
-                    throw new Exception("Unable to associate an edition with refsetId: "
-                            + refset.getRefsetId());
-                }
-
-                final String shortname = refsetShortnameMap.get(refset.getRefsetId());
-                final Edition edition = shortNameEditionsMap.get(shortname);
-
-                if (edition == null) {
-                    logger.debug("BBB - No edition for refset: " + refset.getRefsetId());
-                }
-
-                refset.setEdition(edition);
-                service.update(refset);
                 count++;
 
                 if (count % 250 == 0) {
@@ -463,9 +598,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             organizationName = values[7].replaceAll("\"", "");
             modified = values[2];
             modifiedBy = values[3];
-
-            // Based on Project Info
-            identifyEditionInfo(values[6].replaceAll("\"", ""), values[8].replaceAll("\"", ""));
         } else {
             String[] values = line.split(",");
 
@@ -474,9 +606,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             organizationName = values[9].replaceAll("\"", "");
             modified = values[4];
             modifiedBy = values[5];
-
-            // Based on Project Info
-            identifyEditionInfo(values[8].replaceAll("\"", ""), values[10].replaceAll("\"", ""));
         }
 
         StringBuffer buf = new StringBuffer();
@@ -490,18 +619,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         metadataMap.put("project-" + line.split(",")[0], new Metadata(modified, modifiedBy));
 
         return buf.toString();
-    }
-
-    /**
-     * Identify edition info.
-     *
-     * @param namespace the namespace
-     * @param shortName the short name
-     */
-    private void identifyEditionInfo(final String namespace, final String shortName) {
-        if (!shortNameToNamespaceMap.containsKey(shortName)) {
-            shortNameToNamespaceMap.put(shortName, namespace);
-        }
     }
 
     /**
@@ -530,14 +647,13 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      */
     private String lineToRefsetJson(final String line) {
         String updatedLine = line;
+        String narrative;
 
         try {
-            String narrative;
-            String name;
+            // Clean up narrative if has commas which some do
             if (updatedLine.split(",")[9].startsWith("\"")) {
-                // If narrative has commas (and some do), can't rely on
-                // splitting on comma. Must identify narrative and then
-                // remove from line before finding other values
+                // Can't rely on splitting on comma. Must identify narrative and
+                // then remove from line before finding other values
                 final int descStartIdx = updatedLine.indexOf(updatedLine.split(",")[9]);
                 final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
                 narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
@@ -549,19 +665,16 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 narrative = updatedLine.split(",")[9];
             }
 
+            // Clean up name if has commas (which some do)
             if (updatedLine.split(",")[17].startsWith("\"")) {
-                // If narrative has commas (and some do), can't rely on
-                // splitting on comma. Must identify narrative and then
-                // remove from line before finding other values
+                // Can't rely on splitting on comma. Must identify name portion
+                // and then remove from line before finding other values
                 final int descStartIdx = updatedLine.indexOf(updatedLine.split(",")[17]);
                 final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
-                name = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
                 // Cleanup line to remove ',' in narrative
                 updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(",", "")
                         + updatedLine.substring(descStartIdx + descEndIdx + 2);
-            } else {
-                name = updatedLine.split(",")[17];
             }
 
             updatedLine = updatedLine.replace("\"", "");
@@ -569,48 +682,22 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             final StringBuffer buf = new StringBuffer();
             final String rttRefsetId = values[0];
 
+            // Begin RefsetJson
             buf.append("{");
-            buf.append("\"refsetId\": \"" + values[8] + "\",");
-            buf.append("\"active\": " + ((values[1].equals("1")) ? "true" : "false") + ",");
-            buf.append("\"name\": \"" + name + "\",");
             buf.append("\"type\": \"" + values[24] + "\",");
             buf.append("\"narrative\": \"" + narrative + "\",");
+            buf.append("\"privateRefset\": " + ((values[15].equals("0")) ? "true" : "false"));
 
-            if (!values[2].equals("NULL")) {
-                final String versionDate = values[2].replace(" ", "T");
-                buf.append("\"versionDate\": \"" + versionDate + "\",");
-            }
-
+            // Tags
             if (values[28] != null && !values[28].isEmpty() && !values[28].equals("NULL")) {
-                buf.append("\"tags\": [\"" + values[28] + "\"],");
+                buf.append(",");
+                buf.append("\"tags\": [\"" + values[28] + "\"]");
             }
-            buf.append("\"versionStatus\": \"" + values[26] + "\",");
-            buf.append("\"privateRefset\": " + ((values[15].equals("0")) ? "true" : "false") + ",");
-            buf.append("\"localSet\": " + ((values[29].equals("1")) ? "true" : "false") + ",");
-
-            if (!values[11].equals("NULL")) {
-                buf.append("\"externalUrl\": \"" + values[11] + "\",");
-            }
-
-            // RefsetId to ProjectId
-            refsetToProjectMap.put(rttRefsetId, values[27]);
-
-            // RefsetId to Namespace
-            if (values[18] != null && !values[18].equalsIgnoreCase("null")) {
-                refsetNamespaceMap.put(values[8], values[18]);
-            }
-
-            // RefsetId to ShortName
-            if (values[18] != null && !values[23].equalsIgnoreCase("null")) {
-                refsetShortnameMap.put(values[8], values[23]);
-            }
-
-            // Finish Refset
-            buf.append("\"moduleId\": \"" + values[15] + "\"");
             buf.append("}");
+            // End RefsetJson
 
-            // Based on Refset Data
-            identifyEditionInfo(values[18], values[23]);
+            // Store ability to map from RefsetId to ProjectId
+            refsetToProjectMap.put(rttRefsetId, values[27]);
 
             Metadata meta = new Metadata(values[3], values[4]);
             metadataMap.put("refset-" + rttRefsetId, meta);
@@ -625,13 +712,14 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     }
 
     /**
-     * Preprocessing supporting files.
+     * Pre-processing supporting files.
      *
      * @throws Exception the exception
      */
     private void preprocessingSupportingFiles() throws Exception {
         populateFromFile(clausesFile, FileProcessType.CLAUSE);
         populateFromFile(projectsFile, FileProcessType.PROJECT);
+        populateFromFile(allRefsetsFilePath, FileProcessType.REFSET);
     }
 
     /**
