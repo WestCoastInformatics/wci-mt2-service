@@ -4,6 +4,7 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,8 +16,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.glassfish.jersey.client.ClientConfig;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -520,5 +528,48 @@ public class RefsetMemberService {
      */
     public static Map<String, String> getRefsetToLanguagesMap() {
         return refsetToLanguagesMap;
+    }
+    
+    /**
+     * Get the refset member concepts.
+     *
+     * @param refsetId the refset ID
+     * @param type the type
+     * @param fileNameDate the file name date
+     * @param startEffectiveTime the start effective time
+     * @param transientEffectiveTime the transient effective time
+     * @param branchPath the branch path
+     * @return the refset member concepts
+     * @throws Exception the exception
+     */
+    public static String exportRefset(String refsetId, String type, String fileNameDate, 
+    		String startEffectiveTime, String transientEffectiveTime, String branchPath) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            
+            String url = SnowstormConnection.BASE_URL + "exports";
+            
+            String entity = "{\"refsetIds\": [\"" + refsetId + "\"],  \"branchPath\": \"" + 
+            		branchPath + "\", \"conceptsAndRelationshipsOnly\": \"false\", \"filenameEffectiveDate\": \"" + 
+            		fileNameDate + "\", \"legacyZipNaming\": \"false\", \"type\": \"" + 
+            		type + "\", \"unpromotedChangesOnly\": \"false\"" +  
+            		(startEffectiveTime == null ? "" : ",  \"startEffectiveTime\": \"" + startEffectiveTime + "\"") +
+            		(transientEffectiveTime == null ? "" : ",  \"transientEffectiveTime\": \"" + transientEffectiveTime + "\"") +"}";
+            
+            logger.info("Snowstorm URL: " + url + entity);
+            final Response response = SnowstormConnection.postResponse(url, entity);
+
+            logger.info("Response location " + response.getLocation());
+            
+            return response.getLocation().toString();
+            
+        } catch (Exception ex) {
+
+            logger.error("Could not export refset" + ex.getMessage());
+            ex.printStackTrace();
+            return null;
+        }
+
     }
 }
