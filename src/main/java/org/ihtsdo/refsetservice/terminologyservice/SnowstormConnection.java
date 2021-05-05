@@ -89,6 +89,27 @@ public class SnowstormConnection {
         return response;
     }
     
+	/**
+	 * Post response.
+	 *
+	 * @param url the url
+	 * @param entity the entity
+	 * @return the response
+	 * @throws Exception the exception
+	 */
+	public static Response postResponse(final String url, String entity) throws Exception {
+		Client client = ClientBuilder.newClient();
+		WebTarget target = client.target(url);
+		Builder builder = target.request(MediaType.APPLICATION_JSON);
+
+		Response response = builder
+				.post(Entity.json(entity));
+		if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+			throw new LocalException("Authentication of generic user failed. " + response.toString());
+		}
+		return response;
+	}
+    
     /**
      * Gets the generic user cookie.
      *
