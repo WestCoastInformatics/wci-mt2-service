@@ -118,10 +118,10 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     private final Logger logger = LoggerFactory.getLogger(RefsetMetadataMigrationTest.class);
 
     /** The projects file. */
-    private final String projectsFile = "src/test/resources/migration/resources/projects.txt";
+    private final String projectsFile = "src/test/resources/migration/refsetsToImport/projects.txt";
 
     /** The clauses file. */
-    private final String clausesFile = "src/test/resources/migration/resources/clauses.txt";
+    private final String clausesFile = "src/test/resources/migration/refsetsToImport/clauses.txt";
 
     /** The all refsets file path. */
     private final String allRefsetsFilePath =
