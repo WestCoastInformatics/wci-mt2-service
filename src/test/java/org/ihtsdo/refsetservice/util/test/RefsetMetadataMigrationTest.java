@@ -100,6 +100,9 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         PROJECT;
     }
 
+    /** The Constant DEFAULT_LANGUAGE_SET_ID. */
+    private static final String DEFAULT_LANGUAGE_SET_ID = "900000000000509007";
+
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(RefsetMetadataMigrationTest.class);
 
@@ -252,11 +255,18 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                                         .add(defaultLanguageReferencesSetIterator.next().asText());
                             }
 
+                        } else {
+                            edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_SET_ID);
                         }
 
                         if (codeSystem.has("defaultLanguageCode")) {
                             edition.setDefaultLanguageCode(
                                     codeSystem.get("defaultLanguageCode").asText());
+                        } else if (codeSystem.has("languages")) {
+                            edition.setDefaultLanguageCode(
+                                    codeSystem.get("languages").fieldNames().next());
+                        } else {
+                            throw new Exception("No langauages for edition: " + edition.toString());
                         }
 
                         final Edition storedEdition = service.add(edition);
