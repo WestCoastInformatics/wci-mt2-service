@@ -130,9 +130,10 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /** The metadata map. */
     private final Map<String, Metadata> metadataMap = new HashMap<>();
 
-    /** The json map. */
+    /** The refset internal id map. */
     private final Map<String, String> refsetInternalIdMap = new HashMap<>();
 
+    /** The refset sct id to internal id map. */
     private final Map<String, String> refsetSctIdToInternalIdMap = new HashMap<>();
 
     /** The rtt refset to clauses map. */
@@ -144,13 +145,11 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /** The refset to project map. */
     private final Map<String, String> refsetToProjectMap = new HashMap<>();
 
-    /** The short name editions map. */
-    private final Map<String, Edition> shortNameEditionsMap = new HashMap<>();
-
+    /** The refsets to ignore. */
     private final Set<String> refsetsToIgnore = new HashSet<>();
 
     /**
-     * Test all refsets.
+     * Import all refsets.
      *
      * @throws Exception the exception
      */
@@ -177,6 +176,11 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         persistObjects(allRefsets);
     }
 
+    /**
+     * Creates the all refset versions.
+     *
+     * @param allRefsets the all refsets
+     */
     private void createAllRefsetVersions(Set<Refset> allRefsets) {
         for (Refset refset : allRefsets) {
             if (refsetsToIgnore.contains(refset.getRefsetId())) {
@@ -187,6 +191,13 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         }
     }
 
+    /**
+     * Update refsets.
+     *
+     * @param allRefsets the all refsets
+     * @throws JsonMappingException the json mapping exception
+     * @throws JsonProcessingException the json processing exception
+     */
     private void updateRefsets(Set<Refset> allRefsets)
         throws JsonMappingException, JsonProcessingException {
         for (Refset refset : allRefsets) {
@@ -219,7 +230,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /**
      * Populate editions.
      *
-     * @param internationalModules the international modules
      * @return the sets the
      * @throws Exception the exception
      */
@@ -413,10 +423,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                             throw new Exception("No langauages for edition: " + edition.toString());
                         }
 
-                        final Edition storedEdition = service.add(edition);
-
-                        // TODO: Still need this?
-                        shortNameEditionsMap.put(storedEdition.getShortName(), storedEdition);
+                        service.add(edition);
                     }
                 }
             }
@@ -489,6 +496,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /**
      * Import refset json.
      *
+     * @param allRefsets the all refsets
      * @throws Exception the exception
      */
     private void persistObjects(Set<Refset> allRefsets) throws Exception {
