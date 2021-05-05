@@ -330,4 +330,71 @@ public class RefsetController extends BaseController {
         }
     }
 
+    
+
+    /**
+     * Export refset.
+     *
+     * @param refsetId the refset id
+     * @param type the exportType
+     * @return the uri
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Export the refset for the specified ID", response = Refset.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.",
+                    required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
+            		required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "fileNameDate", value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.",
+            		required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "startEffectiveTime", value = "Format: yyyymmdd. Can be used to produce a delta after content is versioned by filtering a SNAPSHOT export by effectiveTime.",
+    				required = false, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transientEffectiveTime", value = "Format: yyyymmdd. Add a transient effectiveTime to rows of content which are not yet versioned.",
+					required = false, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "branchPath", value = "e.g.  MAIN  or MAIN/2021-01-31",
+					required = true, dataType = "string", paramType = "query"),
+})
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetId}",
+            produces = "application/json")
+    public @ResponseBody String exportRefset(@PathVariable(value = "refsetId") final String refsetId,
+    		final String exportType, final String fileNameDate, final String startEffectiveTime,
+    		final String transientEffectiveTime, final String branchPath)
+        throws Exception {
+
+        try {
+
+            logger.info("*********** exportRefset: refsetId: type: fileNameDate: startEffectiveTime: transientEffectiveTime: branchPath:" + 
+            		refsetId + "," + exportType + "," + fileNameDate + "," + 
+            		startEffectiveTime + "," + transientEffectiveTime + "," + branchPath);
+            
+            try (TerminologyService service = new TerminologyService()) {
+
+            	try {
+
+                    String uri = RefsetMemberService.exportRefset(refsetId, exportType, fileNameDate, 
+                    		startEffectiveTime, transientEffectiveTime, branchPath);
+                    logger.debug("******** results: " +uri);
+                    return uri;
+
+                } catch (final Exception e) {
+
+                    handleException(e);
+                    return null;
+                }
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+
 }
