@@ -364,7 +364,7 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetId}",
             produces = "application/json")
     public @ResponseBody String exportRefset(@PathVariable(value = "refsetId") final String refsetId,
-    		final String exportType, final String fileNameDate, final String startEffectiveTime,
+    		final String exportType, final String fileNameDate,  String startEffectiveTime,
     		final String transientEffectiveTime, final String branchPath)
         throws Exception {
 
@@ -381,7 +381,7 @@ public class RefsetController extends BaseController {
                     String uri = RefsetMemberService.exportRefset(refsetId, exportType, fileNameDate, 
                     		startEffectiveTime, transientEffectiveTime, branchPath);
                     logger.debug("******** results: " +uri);
-                    return uri;
+                    return "{\"url\": \"" + uri +  "/archive\"}";
 
                 } catch (final Exception e) {
 
