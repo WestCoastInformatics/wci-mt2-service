@@ -14,6 +14,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -43,7 +45,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class RefsetMetadataMigrationTest extends BaseTest {
 
     /** The formatter. */
-    SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
+    SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
     /**
      * The Class Metadata.
@@ -156,7 +158,8 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     @Test
     public void testAllRefsets() throws Exception {
         createEditionsFromSnowstorm();
-        Set<Refset> allRefsets = createRefsetsFromSnowstorm();
+        Map<String, SortedMap<Date, String>> branches = identifyBranches();
+        Set<Refset> allRefsets = createRefsetsFromSnowstorm(branches);
 
         preprocessingSupportingFiles();
 
@@ -170,25 +173,46 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
         updateRefsets(allRefsets);
 
-        // TODO: Update this
-        createAllRefsetVersions(allRefsets);
-
         persistObjects(allRefsets);
     }
 
-    /**
-     * Creates the all refset versions.
-     *
-     * @param allRefsets the all refsets
-     */
-    private void createAllRefsetVersions(Set<Refset> allRefsets) {
-        for (Refset refset : allRefsets) {
-            if (refsetsToIgnore.contains(refset.getRefsetId())) {
-                continue;
-            }
+    private Map<String, SortedMap<Date, String>> identifyBranches() throws Exception {
+        final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
+        final Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
 
-            refset.setVersionStatus("PUBLISHED");
+        try (final TerminologyService service = new TerminologyService()) {
+            List<Edition> editions = service.getAll(Edition.class);
+
+            for (Edition edition : editions) {
+                SortedMap<Date, String> children = new TreeMap<>();
+
+                try (final Response response = SnowstormConnection
+                        .getResponse(genericUrl.replace("{branch}", edition.getBranch()))) {
+                    final String resultString = response.readEntity(String.class);
+                    final ObjectMapper mapper = new ObjectMapper();
+                    final JsonNode root = mapper.readTree(resultString.toString());
+
+                    // get RefSets from edition as long as a) active & b) within
+                    // edition's module
+                    final Iterator<JsonNode> branchIterator = root.iterator();
+
+                    while (branchIterator.hasNext()) {
+                        JsonNode child = branchIterator.next();
+                        final String childBranch = child.get("path").asText();
+                        String childDate = childBranch.replace(edition.getBranch(), "");
+                        if (childDate.startsWith("/")) {
+                            childDate = childDate.substring(1);
+                        }
+                        Date branchDate = branchDateFormatter.parse(childDate);
+                        children.put(branchDate, childBranch);
+                    }
+
+                    retMap.put(edition.getId(), children);
+                }
+            }
         }
+
+        return retMap;
     }
 
     /**
@@ -229,11 +253,13 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
     /**
      * Populate editions.
+     * @param branchChildren
      *
      * @return the sets the
      * @throws Exception the exception
      */
-    private Set<Refset> createRefsetsFromSnowstorm() throws Exception {
+    private Set<Refset> createRefsetsFromSnowstorm(
+        Map<String, SortedMap<Date, String>> branchChildren) throws Exception {
         Set<Refset> allRefsets = new HashSet<>();
 
         String url = SnowstormConnection.BASE_URL + "browser/{branch}/members";
@@ -243,70 +269,80 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             service.setModifiedFlag(true);
 
             HashSet<String> internationalRefsets = new HashSet<>();
-            List<Edition> editions = service.getAll(Edition.class);
-
             BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsAdded.txt"));
 
-            for (Edition edition : editions) {
+            for (String editionId : branchChildren.keySet()) {
+                final Edition edition = service.get(editionId, Edition.class);
+
                 logger.debug("Processing Edition: " + edition.getName());
                 writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
-                try (final Response response = SnowstormConnection
-                        .getResponse(url.replace("{branch}", edition.getBranch()))) {
-                    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                        if (edition.getBranch().startsWith("MAIN")) {
-                            throw new Exception("Unable to process this edition: " + edition);
-                        } else {
-                            logger.debug("Found that '" + edition.getName() + "' has odd branch: "
-                                    + edition.getBranch());
-                            continue;
-                        }
-                    }
-                    final String resultString = response.readEntity(String.class);
-                    final ObjectMapper mapper = new ObjectMapper();
-                    final JsonNode root = mapper.readTree(resultString.toString());
 
-                    // get RefSets from edition as long as a) active & b) within
-                    // edition's module
-                    final Iterator<JsonNode> refsetIterator = root.get("referenceSets").iterator();
+                for (Date branchDate : branchChildren.get(editionId).keySet()) {
+                    final String childBranch = branchChildren.get(editionId).get(branchDate);
 
-                    while (refsetIterator.hasNext()) {
-                        final JsonNode refsetNode = refsetIterator.next();
-                        final String moduleId = refsetNode.get("moduleId").asText();
-                        final String refsetId = refsetNode.get("conceptId").asText();
-
-                        if (refsetNode.get("active").asBoolean() && (internationalRefsets.isEmpty()
-                                || !internationalRefsets.contains(refsetId))) {
-                            // Process Valid Refset
-                            try {
-                                Refset refset = new Refset();
-
-                                refset.setRefsetId(refsetNode.get("conceptId").asText());
-                                String refsetDate = refsetNode.get("effectiveTime").asText();
-                                refset.setVersionDate(formatter.parse(refsetDate));
-                                refset.setModuleId(moduleId);
-                                refset.setEdition(edition);
-                                refset.setActive(true);
-
-                                if (refsetNode.get("pt").has("term")) {
-                                    refset.setName(refsetNode.get("pt").get("term").asText());
-                                } else {
-                                    refset.setName(lookupRefsetName(refsetId, edition));
-                                }
-
-                                writer.write("Adding refset: " + refsetId);
-                                allRefsets.add(refset);
-
-                                if (edition.getName().equals("International Edition")) {
-                                    internationalRefsets.add(refsetNode.get("conceptId").asText());
-                                }
-
-                                writer.write("\n");
-                            } catch (Exception e) {
-                                logger.error("Failed with refsetNode: " + refsetNode);
+                    try (final Response response =
+                            SnowstormConnection.getResponse(url.replace("{branch}", childBranch))) {
+                        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                            if (edition.getBranch().startsWith("MAIN")) {
+                                throw new Exception("Unable to process this edition: " + edition);
+                            } else {
+                                logger.debug("Found that '" + edition.getName()
+                                        + "' has odd branch: " + edition.getBranch());
+                                continue;
                             }
                         }
-                    }
+                        final String resultString = response.readEntity(String.class);
+                        final ObjectMapper mapper = new ObjectMapper();
+                        final JsonNode root = mapper.readTree(resultString.toString());
 
+                        // get RefSets from edition as long as a) active &
+                        // b) within
+                        // edition's module
+                        final Iterator<JsonNode> refsetIterator =
+                                root.get("referenceSets").iterator();
+
+                        while (refsetIterator.hasNext()) {
+                            final JsonNode refsetNode = refsetIterator.next();
+
+                            final String moduleId = refsetNode.get("moduleId").asText();
+                            final String refsetId = refsetNode.get("conceptId").asText();
+
+                            if (refsetNode.get("active").asBoolean()
+                                    && (internationalRefsets.isEmpty()
+                                            || !internationalRefsets.contains(refsetId))) {
+                                // Process Valid Refset
+                                try {
+                                    Refset refset = new Refset();
+
+                                    refset.setRefsetId(refsetNode.get("conceptId").asText());
+                                    refset.setModuleId(moduleId);
+                                    refset.setVersionDate(branchDate);
+                                    refset.setVersionStatus("PUBLISHED");
+                                    refset.setEdition(edition);
+                                    refset.setActive(true);
+
+                                    if (refsetNode.get("pt").has("term")) {
+                                        refset.setName(refsetNode.get("pt").get("term").asText());
+                                    } else {
+                                        refset.setName(lookupRefsetName(refsetId, edition));
+                                    }
+
+                                    writer.write("Adding refset: " + refsetId);
+                                    allRefsets.add(refset);
+
+                                    if (edition.getName().equals("International Edition")) {
+                                        internationalRefsets
+                                                .add(refsetNode.get("conceptId").asText());
+                                    }
+
+                                    writer.write("\n");
+                                } catch (Exception e) {
+                                    logger.error("Failed with refsetNode: " + refsetNode);
+                                }
+                            }
+                        }
+
+                    }
                 }
 
             }
