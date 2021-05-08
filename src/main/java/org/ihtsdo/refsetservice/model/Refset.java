@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.CascadeType;
@@ -100,6 +101,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
     private boolean feedbackVisible;
+    
+    /** The flag for if a user can see the feedback for this refset. */
+    @Transient
+    private List<Map<String, String>> versionList;
 
     /** The module ID. */
     @Column(nullable = false, length = 256)
@@ -351,6 +356,25 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setPrivateRefset(final boolean privateRefset) {
         this.privateRefset = privateRefset;
+    }
+    
+    /**
+     * @return the versionList
+     */
+    public List<Map<String, String>> getVersionList() {
+        
+        if (versionList == null) {
+            versionList = new ArrayList<>();
+        }
+        
+        return versionList;
+    }
+
+    /**
+     * @param versionList the versionList to set
+     */
+    public void setVersionList(List<Map<String, String>> versionList) {
+        this.versionList = versionList;
     }
 
     /**
