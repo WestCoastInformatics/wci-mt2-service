@@ -2,7 +2,10 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -11,6 +14,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -79,6 +83,10 @@ public class RefsetController extends BaseController {
 
                 final Refset refset = service.findSingle(
                         "id:" + QueryParserBase.escape(refsetId) + "", Refset.class, null);
+                
+                refset.setDownloadable(true);
+                refset.setFeedbackVisible(true);
+                refset.setVersionList(getRefsetVersionList(refset.getRefsetId(), service));
 
                 logger.info("*********** getRefset: refset: " + ModelUtility.toJson(refset));
 
@@ -216,6 +224,7 @@ public class RefsetController extends BaseController {
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(false);
+                refset.setVersionList(getRefsetVersionList(refset.getRefsetId(), service));
             }
             results.setTimeTaken(System.currentTimeMillis() - start);
             logger.debug("******** results: " + ModelUtility.toJson(results));
@@ -395,6 +404,47 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+    }
+    
+    /**
+     * Get the full list of versions for a refset.
+     *
+     * @param refsetId the refset id
+     * @param service the Terminology Service
+     * @return the list of refset versions
+     * @throws Exception the exception
+     */
+    private List<Map<String, String>> getRefsetVersionList(final String refsetId, final TerminologyService service) throws Exception{
+        
+        final List<Map<String, String>> versionList = new ArrayList<>();
+        final PfsParameter pfs = new PfsParameter();
+        pfs.setSort("versionDate");
+        pfs.setAscending(false);
+
+        // ResultList<Refset> test = service.find("id:
+        // 78659156-b6d6-4935-bcdf-c4692bcee10d", pfs, Refset.class, null);
+        // logger.debug("******** test: " + ModelUtility.toJson(test));
+
+        final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refsetId), pfs, Refset.class, null);
+
+        for (Refset refset : results.getItems()) {
+            
+            final Map<String, String> version = new HashMap<>();
+            version.put("status", refset.getVersionStatus());
+
+            if (refset.getVersionStatus().toLowerCase().equals("in development")) {
+                
+                version.put("date", DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
+                versionList.add(0, version);
+                
+            } else if ("beta, published".contains(refset.getVersionStatus().toLowerCase())) { 
+                
+                version.put("date", DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
+                versionList.add(version);
+            }
+        }
+        
+        return versionList;
     }
 
 }
