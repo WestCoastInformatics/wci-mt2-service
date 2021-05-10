@@ -531,7 +531,7 @@ public class RefsetMemberService {
     }
     
     /**
-     * Get the refset member concepts.
+     * Get the refset member concepts in RF2 format.
      *
      * @param refsetId the refset ID
      * @param type the type
@@ -542,7 +542,7 @@ public class RefsetMemberService {
      * @return the refset member concepts
      * @throws Exception the exception
      */
-    public static String exportRefset(String refsetId, String type, String fileNameDate, 
+    public static String exportRefsetRf2(String refsetId, String type, String fileNameDate, 
     		String startEffectiveTime, String transientEffectiveTime, String branchPath) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {

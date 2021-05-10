@@ -1,8 +1,8 @@
-***REMOVED***
+```
                              Apache License
                        Version 2.0, January 2004
                     http://www.apache.org/licenses/
-***REMOVED***
+```
 
 TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
@@ -36,28 +36,28 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
   (a) You must give any other recipients of the Work or
 
-  ***REMOVED***
+  ```
   Derivative Works a copy of this License; and
-  ***REMOVED***
+  ```
 
   (b) You must cause any modified files to carry prominent notices
 
-  ***REMOVED***
+  ```
   stating that You changed the files; and
-  ***REMOVED***
+  ```
 
   (c) You must retain, in the Source form of any Derivative Works
 
-  ***REMOVED***
+  ```
   that You distribute, all copyright, patent, trademark, and
   attribution notices from the Source form of the Work,
   excluding those notices that do not pertain to any part of
   the Derivative Works; and
-  ***REMOVED***
+  ```
 
   (d) If the Work includes a "NOTICE" text file as part of its
 
-  ***REMOVED***
+  ```
   distribution, then any Derivative Works that You distribute must
   include a readable copy of the attribution notices contained
   within such NOTICE file, excluding those notices that do not
@@ -73,7 +73,7 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
   or as an addendum to the NOTICE text from the Work, provided
   that such additional attribution notices cannot be construed
   as modifying the License.
-  ***REMOVED***
+  ```
 
   You may add Your own copyright statement to Your modifications and may provide additional or different license terms and conditions for use, reproduction, or distribution of Your modifications, or for any such Derivative Works as a whole, provided Your use, reproduction, and distribution of the Work otherwise complies with the conditions stated in this License.
 
