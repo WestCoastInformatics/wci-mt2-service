@@ -360,6 +360,8 @@ public class RefsetController extends BaseController {
                     required = true, dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
             		required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names', 'free_set', or 'sctids'.",
+            required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "fileNameDate", value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.",
             		required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "startEffectiveTime", value = "Format: yyyymmdd. Can be used to produce a delta after content is versioned by filtering a SNAPSHOT export by effectiveTime.",
@@ -373,7 +375,7 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetId}",
             produces = "application/json")
     public @ResponseBody String exportRefset(@PathVariable(value = "refsetId") final String refsetId,
-    		final String exportType, final String fileNameDate,  String startEffectiveTime,
+            final String format, final String exportType, final String fileNameDate,  String startEffectiveTime,
     		final String transientEffectiveTime, final String branchPath)
         throws Exception {
 
@@ -386,12 +388,24 @@ public class RefsetController extends BaseController {
             try (TerminologyService service = new TerminologyService()) {
 
             	try {
+            	    
+            	    String url = null;
 
-                    String uri = RefsetMemberService.exportRefset(refsetId, exportType, fileNameDate, 
-                    		startEffectiveTime, transientEffectiveTime, branchPath);
-                    logger.debug("******** results: " +uri);
-                    return "{\"url\": \"" + uri +  "/archive\"}";
+            	    if (format.equals("rf2") || format.equals("rf2_with_names")) {
+            	        
+            	        String uri = RefsetMemberService.exportRefsetRf2(refsetId, exportType, fileNameDate, 
+                                startEffectiveTime, transientEffectiveTime, branchPath);
+                        logger.debug("******** results: " +uri);
+                        url = "{\"url\": \"" + uri +  "/archive\"}";
+                        
+            	    } else if (format.equals("sctids")) {
+            	        
+            	        
+            	    }
+                    
 
+            	    return url;
+            	    
                 } catch (final Exception e) {
 
                     handleException(e);
@@ -405,6 +419,7 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
+    
     
     /**
      * Get the full list of versions for a refset.
