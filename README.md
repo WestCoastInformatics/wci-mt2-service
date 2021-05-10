@@ -25,6 +25,8 @@ EOF
 ```
 
 * Set the following environment variables with appropriate values for the system the application us being run on:
+
+```
 set PG_USER=changeme
 set PG_PASSWORD=changeme
 set PG_DATABASE=changeme
@@ -38,6 +40,7 @@ set SNOWSTORM_USERNAME=changeme
 set SNOWSTORM_PASSWORD=changeme
 set SNOWSTORM_AUTH_URL=changeme
 set SNOWSTORM_AUTH_HEADER=changeme
+```
 
 * Install PostgreSQL Database or run through a docker container. Configure the database to use the environment values you set above:
 username: %PG_USER%
