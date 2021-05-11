@@ -193,13 +193,17 @@ public class RefsetMemberService {
                             getChildren(child.getCode(), refset.getEdition().getBranch());
 
                     child.setChildren(grandchildren.getItems());
+                    
+                    // TODO: Need to only populate hasChildren on the child... so update the getChildren() method to break after one found and return boolean
+                    
+                    /* - Not needed for 
 
                     ConceptResultList grandparents =
                             getParents(child.getCode(), refset.getEdition().getBranch());
 
                     child.setParents(grandparents.getItems());
+                */
 
-                    logger.info("Child with: " + child.toString());
                 }
             }
         }
@@ -258,7 +262,7 @@ public class RefsetMemberService {
             for (Concept child : populatedConcepts.getItems()) {
                 if (allMembersMap.containsKey(child.getId())) {
                     Concept member = allMembersMap.get(child.getId());
-                    child.setMemberOfRefset(true);
+                    child.setMemberOfRefset(member.isMemberOfRefset());
                     child.setMemberStatus(member.isMemberStatus());
                     child.setMemberEffectiveTime(member.getMemberEffectiveTime());
                 }
