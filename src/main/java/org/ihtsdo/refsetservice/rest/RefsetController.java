@@ -48,6 +48,9 @@ import io.swagger.annotations.ApiResponses;
 @SuppressWarnings("javadoc")
 public class RefsetController extends BaseController {
 
+    // Setting it to blank ("") leaves value as default ConId (SNOMED_ROOT)
+    private static final String STARTING_CONCEPT_ID = "35079003";
+
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetController.class);
 
@@ -72,8 +75,8 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}",
             produces = "application/json")
-    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId") final String refsetId)
-        throws Exception {
+    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId")
+    final String refsetId) throws Exception {
 
         try {
 
@@ -83,7 +86,7 @@ public class RefsetController extends BaseController {
 
                 final Refset refset = service.findSingle(
                         "id:" + QueryParserBase.escape(refsetId) + "", Refset.class, null);
-                
+
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(true);
                 refset.setVersionList(getRefsetVersionList(refset.getRefsetId(), service));
@@ -163,7 +166,7 @@ public class RefsetController extends BaseController {
                     required = false, dataType = "int", paramType = "query", defaultValue = "0"),
             @ApiImplicitParam(name = "offset", value = "The offset for the first result",
                     required = false, dataType = "int", paramType = "query", defaultValue = "0")
-            // TODO: activeOnly, sort, sortAscending
+    // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search",
@@ -284,14 +287,13 @@ public class RefsetController extends BaseController {
                     required = false, dataType = "boolean", paramType = "query",
                     defaultValue = "true"),
 
-            // TODO: activeOnly, sort, sortAscending
+    // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/members",
             produces = "application/json")
-    public @ResponseBody ConceptResultList getMembers(
-        @PathVariable(value = "refsetId") final String refsetId,
-        final SearchParameters searchParameters, final String displayType,
+    public @ResponseBody ConceptResultList getMembers(@PathVariable(value = "refsetId")
+    final String refsetId, final SearchParameters searchParameters, final String displayType,
         final TaxonomyParameters taxonomyParameters, final BindingResult bindingResult)
         throws Exception {
 
@@ -315,8 +317,9 @@ public class RefsetController extends BaseController {
 
         String resolvedDisplayType = displayType;
 
+        // 'list' or 'taxonomy'
         if (resolvedDisplayType == null || resolvedDisplayType.equals("")) {
-            resolvedDisplayType = "list";
+            resolvedDisplayType = "taxonomy";
         }
 
         final long start = System.currentTimeMillis();
@@ -325,6 +328,11 @@ public class RefsetController extends BaseController {
         logger.info("*********** getMembers: refsetId: " + refsetId);
 
         try {
+            taxonomyParameters.setDepth(2);
+
+            if (!STARTING_CONCEPT_ID.isBlank()) {
+                taxonomyParameters.setStartingConceptId(STARTING_CONCEPT_ID);
+            }
 
             results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters,
                     resolvedDisplayType, taxonomyParameters);
@@ -338,8 +346,6 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-
-    
 
     /**
      * Export refset.
@@ -359,53 +365,57 @@ public class RefsetController extends BaseController {
             @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.",
                     required = true, dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
-            		required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names', 'free_set', or 'sctids'.",
-            required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "fileNameDate", value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.",
-            		required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "startEffectiveTime", value = "Format: yyyymmdd. Can be used to produce a delta after content is versioned by filtering a SNAPSHOT export by effectiveTime.",
-    				required = false, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transientEffectiveTime", value = "Format: yyyymmdd. Add a transient effectiveTime to rows of content which are not yet versioned.",
-					required = false, dataType = "string", paramType = "query"),
+                    required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "format",
+                    value = "The type of export: 'rf2', 'rf2_with_names', 'free_set', or 'sctids'.",
+                    required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "fileNameDate",
+                    value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.",
+                    required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "startEffectiveTime",
+                    value = "Format: yyyymmdd. Can be used to produce a delta after content is versioned by filtering a SNAPSHOT export by effectiveTime.",
+                    required = false, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transientEffectiveTime",
+                    value = "Format: yyyymmdd. Add a transient effectiveTime to rows of content which are not yet versioned.",
+                    required = false, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "branchPath", value = "e.g.  MAIN  or MAIN/2021-01-31",
-					required = true, dataType = "string", paramType = "query"),
-})
+                    required = true, dataType = "string", paramType = "query"),
+    })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetId}",
             produces = "application/json")
-    public @ResponseBody String exportRefset(@PathVariable(value = "refsetId") final String refsetId,
-            final String format, final String exportType, final String fileNameDate,  String startEffectiveTime,
-    		final String transientEffectiveTime, final String branchPath)
+    public @ResponseBody String exportRefset(@PathVariable(value = "refsetId")
+    final String refsetId, final String format, final String exportType, final String fileNameDate,
+        String startEffectiveTime, final String transientEffectiveTime, final String branchPath)
         throws Exception {
 
         try {
 
-            logger.info("*********** exportRefset: refsetId: type: fileNameDate: startEffectiveTime: transientEffectiveTime: branchPath:" + 
-            		refsetId + "," + exportType + "," + fileNameDate + "," + 
-            		startEffectiveTime + "," + transientEffectiveTime + "," + branchPath);
-            
+            logger.info(
+                    "*********** exportRefset: refsetId: type: fileNameDate: startEffectiveTime: transientEffectiveTime: branchPath:"
+                            + refsetId + "," + exportType + "," + fileNameDate + ","
+                            + startEffectiveTime + "," + transientEffectiveTime + "," + branchPath);
+
             try (TerminologyService service = new TerminologyService()) {
 
-            	try {
-            	    
-            	    String url = null;
+                try {
 
-            	    if (format.equals("rf2") || format.equals("rf2_with_names")) {
-            	        
-            	        String uri = RefsetMemberService.exportRefsetRf2(refsetId, exportType, fileNameDate, 
-                                startEffectiveTime, transientEffectiveTime, branchPath);
-                        logger.debug("******** results: " +uri);
-                        url = "{\"url\": \"" + uri +  "/archive\"}";
-                        
-            	    } else if (format.equals("sctids")) {
-            	        
-            	        
-            	    }
-                    
+                    String url = null;
 
-            	    return url;
-            	    
+                    if (format.equals("rf2") || format.equals("rf2_with_names")) {
+
+                        String uri = RefsetMemberService.exportRefsetRf2(refsetId, exportType,
+                                fileNameDate, startEffectiveTime, transientEffectiveTime,
+                                branchPath);
+                        logger.debug("******** results: " + uri);
+                        url = "{\"url\": \"" + uri + "/archive\"}";
+
+                    } else if (format.equals("sctids")) {
+
+                    }
+
+                    return url;
+
                 } catch (final Exception e) {
 
                     handleException(e);
@@ -419,8 +429,7 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-    
-    
+
     /**
      * Get the full list of versions for a refset.
      *
@@ -429,8 +438,9 @@ public class RefsetController extends BaseController {
      * @return the list of refset versions
      * @throws Exception the exception
      */
-    private List<Map<String, String>> getRefsetVersionList(final String refsetId, final TerminologyService service) throws Exception{
-        
+    private List<Map<String, String>> getRefsetVersionList(final String refsetId,
+        final TerminologyService service) throws Exception {
+
         final List<Map<String, String>> versionList = new ArrayList<>();
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("versionDate");
@@ -440,25 +450,28 @@ public class RefsetController extends BaseController {
         // 78659156-b6d6-4935-bcdf-c4692bcee10d", pfs, Refset.class, null);
         // logger.debug("******** test: " + ModelUtility.toJson(test));
 
-        final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refsetId), pfs, Refset.class, null);
+        final ResultList<Refset> results = service
+                .find("refsetId: " + QueryParserBase.escape(refsetId), pfs, Refset.class, null);
 
         for (Refset refset : results.getItems()) {
-            
+
             final Map<String, String> version = new HashMap<>();
             version.put("status", refset.getVersionStatus());
 
             if (refset.getVersionStatus().toLowerCase().equals("in development")) {
-                
-                version.put("date", DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
+
+                version.put("date",
+                        DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
                 versionList.add(0, version);
-                
-            } else if ("beta, published".contains(refset.getVersionStatus().toLowerCase())) { 
-                
-                version.put("date", DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
+
+            } else if ("beta, published".contains(refset.getVersionStatus().toLowerCase())) {
+
+                version.put("date", DateUtility.formatDate(refset.getVersionDate(),
+                        DateUtility.DATE_FORMAT_REVERSE, null));
                 versionList.add(version);
             }
         }
-        
+
         return versionList;
     }
 
