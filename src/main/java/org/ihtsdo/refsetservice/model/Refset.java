@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.CascadeType;
@@ -39,6 +40,7 @@ import org.hibernate.search.annotations.Store;
 import org.hibernate.search.annotations.TokenizerDef;
 import org.hibernate.search.bridge.builtin.BooleanBridge;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -100,6 +102,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
     private boolean feedbackVisible;
+    
+    /** The flag for if a user can see the feedback for this refset. */
+    @Transient
+    private List<Map<String, String>> versionList;
 
     /** The module ID. */
     @Column(nullable = false, length = 256)
@@ -191,6 +197,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         definitionClauses = other.getDefinitionClauses();
         externalUrl = other.getExternalUrl();
         moduleId = other.getModuleId();
+        downloadable = other.isDownloadable();
+        feedbackVisible = other.isFeedbackVisible();
+        versionList = other.getVersionList();
     }
 
     /**
@@ -351,6 +360,26 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setPrivateRefset(final boolean privateRefset) {
         this.privateRefset = privateRefset;
+    }
+    
+    /**
+     * @return the versionList
+     */
+    @JsonGetter()
+    public List<Map<String, String>> getVersionList() {
+        
+        if (versionList == null) {
+            versionList = new ArrayList<>();
+        }
+        
+        return versionList;
+    }
+
+    /**
+     * @param versionList the versionList to set
+     */
+    public void setVersionList(List<Map<String, String>> versionList) {
+        this.versionList = versionList;
     }
 
     /**
@@ -537,6 +566,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the downloadable
      */
+    @JsonGetter()
     @FieldBridge(impl = BooleanBridge.class)
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public boolean isDownloadable() {
@@ -557,6 +587,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the feedbackVisible
      */
+    @JsonGetter()
     @FieldBridge(impl = BooleanBridge.class)
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public boolean isFeedbackVisible() {
@@ -642,7 +673,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
         result = prime * result + ((project == null) ? 0 : project.hashCode());
+        result = prime * result + ((versionList == null) ? 0 : versionList.hashCode());
         result = prime * result + (privateRefset ? 1 : 0);
+        result = prime * result + (downloadable ? 1 : 0);
+        result = prime * result + (feedbackVisible ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
     }
