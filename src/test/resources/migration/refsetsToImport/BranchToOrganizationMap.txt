@@ -1,0 +1,9 @@
+SNOMEDCT	IHTSDO
+SNOMEDCT-BE	BE NRC
+SNOMEDCT-CA	Canada Infoway
+SNOMEDCT-EE	TEHIK
+SNOMEDCT-IE	HSE
+SNOMEDCT-NO	Direktoratet for e-helse
+SNOMEDCT-NZ	New Zealand Ministry of Health
+SNOMEDCT-SE	Swedish NRC
+SNOMEDCT-US	National Library of Medicine
