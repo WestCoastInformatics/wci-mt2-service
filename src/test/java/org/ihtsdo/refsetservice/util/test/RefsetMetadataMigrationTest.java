@@ -45,7 +45,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class RefsetMetadataMigrationTest extends BaseTest {
 
     /** The formatter. */
-    SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+    private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+
+    /** The sdf. */
+    private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
      * The Class Metadata.
@@ -71,8 +74,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                     updatedModified = new Date().toString();
                 }
 
-                this.modified = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                        .parse(updatedModified.replaceAll("\"", ""));
+                this.modified = sdf.parse(updatedModified.replaceAll("\"", ""));
                 this.modifiedBy = modifiedBy;
             } catch (Exception e) {
                 logger.error("Failed with mod/modBy: " + updatedModified.replaceAll("\"", "")
@@ -114,7 +116,16 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     }
 
     /** The Constant DEFAULT_LANGUAGE_SET_ID. */
-    private static final String DEFAULT_LANGUAGE_SET_ID = "900000000000509007";
+    private static final String DEFAULT_LANGUAGE_REFSET_ID = "900000000000509007";
+
+    /** The Constant CFR_LANGUAGE_REFSET_ID. */
+    private static final String CFR_LANGUAGE_REFSET_ID = "21000241105";
+
+    /** The Constant NL_LANGUAGE_REFSET_ID. */
+    private static final String NL_LANGUAGE_REFSET_ID = "15551000146102";
+
+    /** The Constant SPLIT_CHARACTER. */
+    private static final String SPLIT_CHARACTER = "\t";
 
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(RefsetMetadataMigrationTest.class);
@@ -124,6 +135,10 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
     /** The clauses file. */
     private final String clausesFile = "src/test/resources/migration/refsetsToImport/clauses.txt";
+
+    /** The clauses file. */
+    private final String branchToOrgFile =
+            "src/test/resources/migration/refsetsToImport/BranchToOrganizationMap.txt";
 
     /** The all refsets file path. */
     private final String allRefsetsFilePath =
@@ -150,6 +165,21 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /** The refsets to ignore. */
     private final Set<String> refsetsToIgnore = new HashSet<>();
 
+    /** The international refsets. */
+    private final Set<String> internationalRefsets = new HashSet<>();
+
+    /** The not from RTT map. */
+    private final Map<String, Refset> notFromRTTMap = new HashMap<>();
+
+    /** The testing. */
+    private boolean testing = false;
+
+    /** The Constant TESTING_EDITION. */
+    private static final String TESTING_EDITION = "Swed";
+
+    /** The Constant TESTING_REFSET. */
+    private static final String TESTING_REFSET = "46011000052107";
+
     /**
      * Import all refsets.
      *
@@ -157,25 +187,64 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      */
     @Test
     public void testAllRefsets() throws Exception {
-        createEditionsFromSnowstorm();
+        HashSet<String> internationalModules = createEditionsFromSnowstorm();
         Map<String, SortedMap<Date, String>> branches = identifyBranches();
-        Set<Refset> allRefsets = createRefsetsFromSnowstorm(branches);
 
-        preprocessingSupportingFiles();
+        Set<Refset> allRefsets = createRefsetsFromSnowstorm(branches, internationalModules);
+        // Read refset metadata and associated information (projects & ECLs)
+        parseRTTMetadata();
 
-        // Skip those refsets that live on SnowS, but I don't have a dmp of
-        // yet
+        // Skip those refsets that live on SnowS, but I don't have a dmp of yet
         for (Refset refset : allRefsets) {
             if (!refsetSctIdToInternalIdMap.keySet().contains(refset.getRefsetId())) {
-                refsetsToIgnore.add(refset.getRefsetId());
+                if (internationalRefsets.contains(refset.getRefsetId())) {
+                    refsetsToIgnore.add(refset.getRefsetId());
+                    logger.debug("Int'l refsets supported by extensions for: "
+                            + refset.getEditionName() + " refset: " + refset.getName() + " ("
+                            + refset.getRefsetId() + ")");
+                }
             }
         }
 
+        // With metadata from RTT project (defined in parseRTTMetadata())
         updateRefsets(allRefsets);
-
+        removeUnnecessaryProjects(allRefsets);
         persistObjects(allRefsets);
     }
 
+    /**
+     * Removes the unnecessary projects.
+     *
+     * @param allRefsets the all refsets
+     */
+    private void removeUnnecessaryProjects(Set<Refset> allRefsets) {
+        Set<String> projectsWithRefsets = new HashSet<>();
+        Set<String> projectsToRemove = new HashSet<>();
+
+        for (Refset refset : allRefsets) {
+            final String rttId = refsetSctIdToInternalIdMap.get(refset.getRefsetId());
+            String projectId = refsetToProjectMap.get(rttId);
+
+            projectsWithRefsets.add(projectId);
+        }
+
+        for (String projectId : projectsMap.keySet()) {
+            if (!projectsWithRefsets.contains(projectId)) {
+                projectsToRemove.add(projectId);
+            }
+        }
+
+        for (String projectId : projectsToRemove) {
+            projectsMap.remove(projectId);
+        }
+    }
+
+    /**
+     * Identify branches.
+     *
+     * @return the map
+     * @throws Exception the exception
+     */
     private Map<String, SortedMap<Date, String>> identifyBranches() throws Exception {
         final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
         final Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
@@ -184,6 +253,9 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             List<Edition> editions = service.getAll(Edition.class);
 
             for (Edition edition : editions) {
+                if (testing && !edition.getName().contains(TESTING_EDITION)) {
+                    continue;
+                }
                 SortedMap<Date, String> children = new TreeMap<>();
 
                 try (final Response response = SnowstormConnection
@@ -203,8 +275,13 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                         if (childDate.startsWith("/")) {
                             childDate = childDate.substring(1);
                         }
-                        Date branchDate = branchDateFormatter.parse(childDate);
-                        children.put(branchDate, childBranch);
+
+                        // Since grabbing all children branches, avoid
+                        // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
+                        if (childDate.matches("^[0-9].*$")) {
+                            Date branchDate = branchDateFormatter.parse(childDate);
+                            children.put(branchDate, childBranch);
+                        }
                     }
 
                     retMap.put(edition.getId(), children);
@@ -229,23 +306,32 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 continue;
             }
 
-            final String rttId = refsetSctIdToInternalIdMap.get(refset.getRefsetId());
-            final String refsetJsonString = refsetInternalIdMap.get(rttId);
+            if (refsetSctIdToInternalIdMap.keySet().contains(refset.getRefsetId())) {
+                final String rttId = refsetSctIdToInternalIdMap.get(refset.getRefsetId());
+                final String refsetJsonString = refsetInternalIdMap.get(rttId);
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode refsetJson = mapper.readTree(refsetJsonString);
-            logger.debug(refsetJson.toString());
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode refsetJson = mapper.readTree(refsetJsonString);
 
-            refset.setType(refsetJson.get("type").asText());
-            refset.setNarrative(refsetJson.get("narrative").asText());
-            refset.setPrivateRefset(refsetJson.get("privateRefset").asBoolean());
+                refset.setType(refsetJson.get("type").asText());
+                refset.setNarrative(refsetJson.get("narrative").asText());
+                refset.setPrivateRefset(refsetJson.get("privateRefset").asBoolean());
 
-            // Tags
-            if (refsetJson.has("tags")) {
-                Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
-                while (tagsIterator.hasNext()) {
-                    refset.getTags().add(tagsIterator.next().asText());
+                // Tags
+                if (refsetJson.has("tags")) {
+                    Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
+                    while (tagsIterator.hasNext()) {
+                        refset.getTags().add(tagsIterator.next().asText());
+                    }
                 }
+            } else {
+                // Refsets in Snowstorm but not RT2
+                refset.setType("EXTENSIONAL");
+                refset.setNarrative("None as not from RTT");
+                refset.setPrivateRefset(true);
+                refset.getEdition().setDefaultLanguageRefsets(new HashSet<String>());
+
+                notFromRTTMap.put(refset.getRefsetId(), refset);
             }
         }
 
@@ -253,13 +339,15 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
     /**
      * Populate editions.
-     * @param branchChildren
      *
+     * @param branchChildren the branch children
+     * @param internationalModules the international modules
      * @return the sets the
      * @throws Exception the exception
      */
     private Set<Refset> createRefsetsFromSnowstorm(
-        Map<String, SortedMap<Date, String>> branchChildren) throws Exception {
+        Map<String, SortedMap<Date, String>> branchChildren, HashSet<String> internationalModules)
+        throws Exception {
         Set<Refset> allRefsets = new HashSet<>();
 
         String url = SnowstormConnection.BASE_URL + "browser/{branch}/members";
@@ -268,17 +356,17 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
-            HashSet<String> internationalRefsets = new HashSet<>();
             BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsAdded.txt"));
 
             for (String editionId : branchChildren.keySet()) {
                 final Edition edition = service.get(editionId, Edition.class);
 
-                logger.debug("Processing Edition: " + edition.getName());
+                logger.info("Processing Edition: " + edition.getName());
                 writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
 
                 for (Date branchDate : branchChildren.get(editionId).keySet()) {
                     final String childBranch = branchChildren.get(editionId).get(branchDate);
+                    writer.append("\n\n\nProcessing Branch: " + branchDate + "\n");
 
                     try (final Response response =
                             SnowstormConnection.getResponse(url.replace("{branch}", childBranch))) {
@@ -304,17 +392,25 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                         while (refsetIterator.hasNext()) {
                             final JsonNode refsetNode = refsetIterator.next();
 
+                            if (!refsetNode.has("moduleId") || !refsetNode.has("conceptId")
+                                    || !refsetNode.has("active")) {
+                                throw new Exception("Getting unexpected Refset info from node: "
+                                        + refsetNode.toString());
+                            }
                             final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
+                            final Boolean isActive = refsetNode.get("active").asBoolean();
 
-                            if (refsetNode.get("active").asBoolean()
-                                    && (internationalRefsets.isEmpty()
-                                            || !internationalRefsets.contains(refsetId))) {
+                            if (testing && !refsetId.equals(TESTING_REFSET)) {
+                                continue;
+                            }
+
+                            if (!internationalModules.contains(moduleId) && isActive) {
                                 // Process Valid Refset
                                 try {
                                     Refset refset = new Refset();
 
-                                    refset.setRefsetId(refsetNode.get("conceptId").asText());
+                                    refset.setRefsetId(refsetId);
                                     refset.setModuleId(moduleId);
                                     refset.setVersionDate(branchDate);
                                     refset.setVersionStatus("PUBLISHED");
@@ -324,27 +420,25 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                                     if (refsetNode.get("pt").has("term")) {
                                         refset.setName(refsetNode.get("pt").get("term").asText());
                                     } else {
-                                        refset.setName(lookupRefsetName(refsetId, edition));
+                                        refset.setName(
+                                                lookupRefsetName(refsetId, edition, childBranch));
                                     }
 
                                     writer.write("Adding refset: " + refsetId);
                                     allRefsets.add(refset);
-
-                                    if (edition.getName().equals("International Edition")) {
-                                        internationalRefsets
-                                                .add(refsetNode.get("conceptId").asText());
-                                    }
 
                                     writer.write("\n");
                                 } catch (Exception e) {
                                     logger.error("Failed with refsetNode: " + refsetNode);
                                 }
                             }
+                            if (edition.getName().equals("International Edition")) {
+                                internationalRefsets.add(refsetId);
+                            }
                         }
 
                     }
                 }
-
             }
             writer.close();
         }
@@ -357,12 +451,14 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @param refsetId the refset id
      * @param edition the edition
+     * @param childBranch the child branch
      * @return the string
      * @throws Exception the exception
      */
-    private String lookupRefsetName(String refsetId, Edition edition) throws Exception {
-        String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch() + "/concepts/"
-                + refsetId;
+    private String lookupRefsetName(String refsetId, Edition edition, String childBranch)
+        throws Exception {
+        String url =
+                SnowstormConnection.BASE_URL + "browser/" + childBranch + "/concepts/" + refsetId;
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
             final String resultString = response.readEntity(String.class);
@@ -405,9 +501,10 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      * @return the sets the
      * @throws Exception the exception
      */
-    private void createEditionsFromSnowstorm() throws Exception {
+    private HashSet<String> createEditionsFromSnowstorm() throws Exception {
         // SHould have 3 results
         String url = SnowstormConnection.BASE_URL + "/codesystems";
+        HashSet<String> internationalModules = new HashSet<>();
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -445,8 +542,12 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                                         .add(defaultLanguageReferencesSetIterator.next().asText());
                             }
 
+                        } else if (edition.getName().equals("Common French Translation")) {
+                            edition.getDefaultLanguageRefsets().add(CFR_LANGUAGE_REFSET_ID);
+                        } else if (edition.getName().equals("Netherlands Edition")) {
+                            edition.getDefaultLanguageRefsets().add(NL_LANGUAGE_REFSET_ID);
                         } else {
-                            edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_SET_ID);
+                            edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET_ID);
                         }
 
                         if (codeSystem.has("defaultLanguageCode")) {
@@ -460,10 +561,22 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                         }
 
                         service.add(edition);
+
+                        if (edition.getName().equals("International Edition")) {
+                            Iterator<JsonNode> moduleIterator =
+                                    codeSystem.get("modules").iterator();
+
+                            while (moduleIterator.hasNext()) {
+                                JsonNode module = moduleIterator.next();
+                                internationalModules.add(module.asText());
+                            }
+                        }
                     }
                 }
             }
         }
+
+        return internationalModules;
     }
 
     /**
@@ -488,8 +601,9 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 switch (processType) {
                     case REFSET:
                         final String refsetJson = lineToRefsetJson(line);
-                        refsetInternalIdMap.put(line.split(",")[0], refsetJson);
-                        refsetSctIdToInternalIdMap.put(line.split(",")[8], line.split(",")[0]);
+                        refsetInternalIdMap.put(line.split(SPLIT_CHARACTER)[0], refsetJson);
+                        refsetSctIdToInternalIdMap.put(line.split(SPLIT_CHARACTER)[8],
+                                line.split(SPLIT_CHARACTER)[0]);
                         break;
 
                     case CLAUSE:
@@ -502,7 +616,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                         final String clauseJson = lineToClauseJson(line);
 
                         // store all clauses associated wtih a given refset
-                        final String rttRefsetId = line.split(",")[0];
+                        final String rttRefsetId = line.split(SPLIT_CHARACTER)[0];
                         if (!rttRefsetToClausesMap.containsKey(rttRefsetId)) {
                             rttRefsetToClausesMap.put(rttRefsetId, new ArrayList<String>());
                         }
@@ -511,7 +625,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
                     case PROJECT:
                         final String projectJson = lineToProjectJson(line);
-                        projectsMap.put(line.split(",")[0], projectJson);
+                        projectsMap.put(line.split(SPLIT_CHARACTER)[0], projectJson);
                         break;
 
                     default:
@@ -568,50 +682,142 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                 projectCount++;
             }
 
-            logger.debug("Have imported " + projectCount + " projects and " + organizationCount
+            logger.info("Have imported " + projectCount + " projects and " + organizationCount
                     + " organizations");
+
+            // Handle refsets not in RTT
+            Set<String> editionsProcessed = new HashSet<>();
+            Map<String, Project> editionToProjects = new HashMap<>();
+            Map<String, String> branchOrganizationMap = identifyExistingOrganizations();
+            projectCount = 0;
+            organizationCount = 0;
+            Metadata meta = new Metadata(sdf.format(new Date()), "System initialization");
+
+            for (String id : notFromRTTMap.keySet()) {
+                Refset refset = notFromRTTMap.get(id);
+
+                if (!editionsProcessed.contains(refset.getEdition().getId())) {
+                    editionsProcessed.add(refset.getEdition().getId());
+
+                    // Create Organization for non-RTT based refsets
+                    Organization org = new Organization();
+                    String branchName = refset.getEdition().getBranch()
+                            .substring(refset.getEdition().getBranch().indexOf("SNOMEDCT"));
+                    String orgName = branchOrganizationMap.get(branchName);
+                    if (orgName == null) {
+                        orgName = "Organization responsible for " + refset.getEditionName();
+                    }
+                    org.setName(orgName);
+                    org.setDescription(
+                            "This organization was created to support non-RTT based refsets.");
+
+                    setMetadata(org, meta);
+                    service.add(org);
+                    organizationCount++;
+
+                    // Create Project for non-RTT based refsets
+                    Project project = new Project();
+                    project.setName("Default project for " + refset.getEditionName());
+                    project.setDescription(project.getName()
+                            + ". This project was created to support non-RTT based refsets.");
+                    project.setOrganization(org);
+                    editionToProjects.put(refset.getEdition().getId(), project);
+
+                    setMetadata(project, meta);
+                    service.add(project);
+                    projectCount++;
+                }
+            }
+
+            logger.info("Have created " + projectCount + " projects and " + organizationCount
+                    + " organizations to support refsets not found in RTT");
 
             // Persist Refsets & ECL Definition Clauses
             int count = 0;
-            logger.info("About to import " + refsetInternalIdMap.keySet().size()
-                    + " refsets and their respsective clauses");
+            logger.info("About to import " + allRefsets.size()
+                    + " refsets (which list multiple versions separately) and their respsective clauses");
+
+            BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsIgnored.txt"));
+            int ignoreCounter = 0;
 
             for (Refset refset : allRefsets) {
                 if (refsetsToIgnore.contains(refset.getRefsetId())) {
+                    ignoreCounter++;
+                    writer.append("From " + refset.getEditionName() + " ignoring refset:\t"
+                            + refset.getName() + "\t(" + refset.getRefsetId() + ")\n");
                     continue;
-                }
-                final String rttId = refsetSctIdToInternalIdMap.get(refset.getRefsetId());
-                String projectId = refsetToProjectMap.get(rttId);
-                refset.setProject(projectIdToClassMap.get(projectId));
+                } else if (notFromRTTMap.keySet().contains(refset.getRefsetId())) {
+                    // Handle refsets not in RTT
+                    refset.setProject(editionToProjects.get(refset.getEdition().getId()));
+                    setMetadata(refset, meta);
+                    service.add(refset);
+                } else {
 
-                setMetadata(refset, metadataMap.get("refset-" + rttId));
-                service.add(refset);
+                    final String rttId = refsetSctIdToInternalIdMap.get(refset.getRefsetId());
+                    String projectId = refsetToProjectMap.get(rttId);
+                    refset.setProject(projectIdToClassMap.get(projectId));
 
-                if (rttRefsetToClausesMap.containsKey(rttId)) {
-                    for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
-                        final DefinitionClause clause =
-                                ModelUtility.fromJson(clauseJson, DefinitionClause.class);
+                    setMetadata(refset, metadataMap.get("refset-" + rttId));
+                    service.add(refset);
 
-                        setMetadata(clause, metadataMap.get("refset-" + rttId));
-                        service.add(clause);
-                        refset.getDefinitionClauses().add(clause);
+                    if (rttRefsetToClausesMap.containsKey(rttId)) {
+                        for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
+                            final DefinitionClause clause =
+                                    ModelUtility.fromJson(clauseJson, DefinitionClause.class);
+
+                            setMetadata(clause, metadataMap.get("refset-" + rttId));
+                            service.add(clause);
+                            refset.getDefinitionClauses().add(clause);
+                        }
+
+                        service.update(refset);
                     }
-
-                    service.update(refset);
                 }
 
                 count++;
 
                 if (count % 250 == 0) {
-                    logger.debug("Imported + " + count + " refsets thus far");
+                    logger.info("Imported + " + count + " refsets thus far");
                 }
             }
 
-            logger.info("Total of " + count + " refsets successfully added");
+            writer.close();
+            logger.info("Total of " + count + " refsets successfully added and " + ignoreCounter
+                    + " refsets ignored");
         } catch (Exception e) {
             logger.error("Have issue with: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Identify existing organizations.
+     *
+     * @return the map
+     */
+    private Map<String, String> identifyExistingOrganizations() {
+        BufferedReader reader;
+        Map<String, String> retMap = new HashMap<>();
+        String line = null;
+
+        try {
+            reader = new BufferedReader(new FileReader(branchToOrgFile));
+
+            // Grab Header on 2nd time through
+            line = reader.readLine();
+
+            while (line != null && !line.trim().isEmpty()) {
+                retMap.put(line.split("\t")[0], line.split("\t")[1]);
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (Exception e) {
+            logger.error("Failed on line: " + line);
+            e.printStackTrace();
+        }
+
+        return retMap;
     }
 
     /**
@@ -628,7 +834,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         String modified;
         String modifiedBy;
 
-        if (line.split(",")[1].startsWith("\"")) {
+        if (line.split(SPLIT_CHARACTER)[1].startsWith("\"")) {
             // If description has commas (and some do), can't rely on splitting
             // on comma. Must identify Description and then remove from line
             // before finding other values
@@ -636,14 +842,14 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             final int descEndIdx = line.substring(descStartIdx + 1).indexOf("\"");
 
             projectDescription = line.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
-            String[] values = line.substring(descStartIdx + descEndIdx + 3).split(",");
+            String[] values = line.substring(descStartIdx + descEndIdx + 3).split(SPLIT_CHARACTER);
 
             projectName = values[5].replaceAll("\"", "");
             organizationName = values[7].replaceAll("\"", "");
             modified = values[2];
             modifiedBy = values[3];
         } else {
-            String[] values = line.split(",");
+            String[] values = line.split(SPLIT_CHARACTER);
 
             projectDescription = values[1];
             projectName = values[7].replaceAll("\"", "");
@@ -660,7 +866,8 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         buf.append("\"organization\": {\"name\": \"" + organizationName + "\"}");
         buf.append("}");
 
-        metadataMap.put("project-" + line.split(",")[0], new Metadata(modified, modifiedBy));
+        metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0],
+                new Metadata(modified, modifiedBy));
 
         return buf.toString();
     }
@@ -673,7 +880,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      */
     private String lineToClauseJson(final String line) {
         StringBuffer buf = new StringBuffer();
-        String[] clauseValues = line.split(",");
+        String[] clauseValues = line.split(SPLIT_CHARACTER);
         buf.append("{ \"negated\":\"");
         buf.append(clauseValues[1].equals("0") ? "false" : "true");
         buf.append("\",");
@@ -695,25 +902,27 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
         try {
             // Clean up narrative if has commas which some do
-            if (updatedLine.split(",")[9].startsWith("\"")) {
+            if (updatedLine.split(SPLIT_CHARACTER)[9].startsWith("\"")) {
                 // Can't rely on splitting on comma. Must identify narrative and
                 // then remove from line before finding other values
-                final int descStartIdx = updatedLine.indexOf(updatedLine.split(",")[9]);
+                final int descStartIdx = updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[9]);
                 final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
                 narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
                 // Cleanup updateLine to remove ',' in narrative
-                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(",", "")
+                updatedLine = updatedLine.substring(0, descStartIdx)
+                        + narrative.replaceAll(SPLIT_CHARACTER, "")
                         + updatedLine.substring(descStartIdx + descEndIdx + 2);
             } else {
-                narrative = updatedLine.split(",")[9];
+                narrative = updatedLine.split(SPLIT_CHARACTER)[9];
             }
 
             // Clean up name if has commas (which some do)
-            if (updatedLine.split(",")[17].startsWith("\"")) {
+            if (updatedLine.split(SPLIT_CHARACTER)[17].startsWith("\"")) {
                 // Can't rely on splitting on comma. Must identify name portion
                 // and then remove from line before finding other values
-                final int descStartIdx = updatedLine.indexOf(updatedLine.split(",")[17]);
+                final int descStartIdx =
+                        updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[17]);
                 final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
 
                 // Cleanup line to remove ',' in narrative
@@ -722,7 +931,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
             }
 
             updatedLine = updatedLine.replace("\"", "");
-            final String values[] = updatedLine.split(",");
+            final String values[] = updatedLine.split(SPLIT_CHARACTER);
             final StringBuffer buf = new StringBuffer();
             final String rttRefsetId = values[0];
 
@@ -760,7 +969,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    private void preprocessingSupportingFiles() throws Exception {
+    private void parseRTTMetadata() throws Exception {
         populateFromFile(clausesFile, FileProcessType.CLAUSE);
         populateFromFile(projectsFile, FileProcessType.PROJECT);
         populateFromFile(allRefsetsFilePath, FileProcessType.REFSET);
