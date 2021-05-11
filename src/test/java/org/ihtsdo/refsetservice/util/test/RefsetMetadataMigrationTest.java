@@ -136,7 +136,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
     /** The clauses file. */
     private final String clausesFile = "src/test/resources/migration/refsetsToImport/clauses.txt";
 
-    /** The clauses file. */
+    /** The branch to org file. */
     private final String branchToOrgFile =
             "src/test/resources/migration/refsetsToImport/BranchToOrganizationMap.txt";
 
@@ -383,9 +383,8 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                         final ObjectMapper mapper = new ObjectMapper();
                         final JsonNode root = mapper.readTree(resultString.toString());
 
-                        // get RefSets from edition as long as a) active &
-                        // b) within
-                        // edition's module
+                        // get RefSets from edition as long as a) active & b)
+                        // within edition's module
                         final Iterator<JsonNode> refsetIterator =
                                 root.get("referenceSets").iterator();
 
@@ -704,17 +703,22 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                     String branchName = refset.getEdition().getBranch()
                             .substring(refset.getEdition().getBranch().indexOf("SNOMEDCT"));
                     String orgName = branchOrganizationMap.get(branchName);
-                    if (orgName == null) {
-                        orgName = "Organization responsible for " + refset.getEditionName();
+                    
+                    if (!organizationsAdded.containsKey(orgName)) {
+                        if (orgName == null) {
+                            orgName = "Organization responsible for " + refset.getEditionName();
+                        }
+                        org.setName(orgName);
+                        org.setDescription(
+                                "This organization was created to support non-RTT based refsets.");
+    
+                        setMetadata(org, meta);
+                        service.add(org);
+                        organizationCount++;
+                    } else {
+                        org = organizationsAdded.get(orgName);
                     }
-                    org.setName(orgName);
-                    org.setDescription(
-                            "This organization was created to support non-RTT based refsets.");
-
-                    setMetadata(org, meta);
-                    service.add(org);
-                    organizationCount++;
-
+                    
                     // Create Project for non-RTT based refsets
                     Project project = new Project();
                     project.setName("Default project for " + refset.getEditionName());
