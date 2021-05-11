@@ -65,6 +65,11 @@ public class ConceptUnitTest extends BaseTest {
         tester.include("version");
         tester.include("memberStatus");
         tester.include("memberEffectiveTime");
+        tester.include("memberOfRefset");
+        tester.include("hasChildrenRefsetMembers");
+        tester.include("hasParentsRefsetMembers");
+        tester.exclude("children");
+        tester.exclude("parents");
         tester.exclude("descriptions");
 
         assertTrue(tester.testIdentityFieldEquals());

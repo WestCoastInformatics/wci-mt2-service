@@ -86,6 +86,7 @@ public class RefsetUnitTest extends BaseTest {
         tester.exclude("organizationName");
         tester.exclude("editionName");
         tester.exclude("editionShortName");
+        tester.exclude("versionList");
         tester.test();
     }
 

@@ -23,20 +23,39 @@ nexusUsername=...nexus username...
 nexusPassword=...nexus password...
 EOF
 ```
-* Install PostgreSQL Database or run through a docker container. Configure the database to use:
-username: postgres
-password: rootpwd
-port: 5432
+
+* Set the following environment variables with appropriate values for the system the application us being run on:
+
+```
+set PG_USER=changeme
+set PG_PASSWORD=changeme
+set PG_DATABASE=changeme
+set PG_HOST=changeme
+set PG_PORT=changeme
+set INDEX_BASE=changeme #/directory for lucene indexes until we switch over to elasticsearch
+set ELASTICSEARCH_USER=changeme
+set ELASTICSEARCH_PASSWORD=changeme
+set ELASTICSEARCH_HOST=changeme
+set SNOWSTORM_USERNAME=changeme
+set SNOWSTORM_PASSWORD=changeme
+set SNOWSTORM_AUTH_URL=changeme
+set SNOWSTORM_AUTH_HEADER=changeme
+```
+
+* Install PostgreSQL Database or run through a docker container. Configure the database to use the environment values you set above:
+username: %PG_USER%
+password: %PG_PASSWORD%
+port: %PG_PORT%
 
 Make sure to have the Postgres bin folder on your path in order to run the command below:
 
-* Create a database named: rt2
+* Create a database named: %PG_DATABASE%
 
 ```
 createdb -Upostgres --encoding=UTF-8 rt2
 ```
 
-* Create the following directory structure: C:\index\data\rt2
+* Create the following directory structure for lucene indexes: %INDEX_BASE%
 
 
 ## Build, Test, Install, Release

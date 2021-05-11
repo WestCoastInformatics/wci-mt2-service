@@ -37,55 +37,61 @@ public final class DateUtility {
     }
 
     /** The Constant RFC_3339. */
-    public static final FastDateFormat RFC_3339 =
-            FastDateFormat.getInstance("yyyy-MM-dd'T'HH:mm:ssZZZZZ");
+    public static final String RFC_3339 = "yyyy-MM-dd'T'HH:mm:ssZZZZZ";
 
-    /** The Constant DATE_YYYYMMDD. */
-    public static final FastDateFormat DATE_YYYYMMDD = FastDateFormat.getInstance("yyyyMMdd");
+    /** The Constant hh:mm:ss A. */
+    public static final String TIME_FORMAT = "hh:mm:ss A";
+    
+    /** The Constant HH:mm:ss. */
+    public static final String TIME_FORMAT_24_HOUR = "HH:mm:ss";
+    
+    /** The Constant HHmmss. */
+    public static final String TIME_FORMAT_24_HOUR_ONLY_NUMBERS = "HHmmss";
+    
+    /** The Constant MM/dd/yyyy. */
+    public static final String DATE_FORMAT_US_STANDARD = "MM/dd/yyyy";
+    
+    /** The Constant MM-dd-yyyy. */
+    public static final String DATE_FORMAT_US_DASH = "MM-dd-yyyy";
 
-    /** The Constant DATE_FORMAT2. */
-    public static final FastDateFormat DATE_YYYY_MM_DD = FastDateFormat.getInstance("yyyy_MM_dd");
+    /** The Constant MMddyyyy. */
+    public static final String DATE_FORMAT_US_STANDARD_ONLY_NUMBERS = "MMddyyyy";
 
-    /** The Constant DATE_YYYY_MM_DD_DASH. */
-    public static final FastDateFormat DATE_YYYY_MM_DD_DASH =
-            FastDateFormat.getInstance("yyyy-MM-dd");
+    /** The Constant MM/dd/yyyy hh:mm:ss A. */
+    public static final String DATE_FORMAT_US_STANDARD_WITH_TIME = DATE_FORMAT_US_STANDARD + " " + TIME_FORMAT;
+    
+    /** The Constant MM-dd-yyyy hh:mm:ss A. */
+    public static final String DATE_FORMAT_US_DASH_WITH_TIME = DATE_FORMAT_US_DASH + " " + TIME_FORMAT;
 
-    /** The Constant DATE_DD_MM_YYYY. */
-    public static final FastDateFormat DATE_DD_MM_YYYY = FastDateFormat.getInstance("dd_MM_yyyy");
+    /** The Constant MM/dd/yyyy HH:mm:ss. */
+    public static final String DATE_FORMAT_US_STANDARD_WITH_24_HOUR_TIME = DATE_FORMAT_US_STANDARD + " " + TIME_FORMAT_24_HOUR;
+    
+    /** The Constant MM-dd-yyyy HH:mm:ss. */
+    public static final String DATE_FORMAT_US_DASH_WITH_24_HOUR_TIME = DATE_FORMAT_US_DASH + " " + TIME_FORMAT_24_HOUR;
 
-    /** The Constant DATE_MM_DD_YYYY. */
-    public static final FastDateFormat DATE_MM_DD_YYYY = FastDateFormat.getInstance("MM_dd_yyyy");
+    /** The Constant yyyy-MM-dd. */
+    public static final String DATE_FORMAT_REVERSE = "yyyy-MM-dd";
 
-    /** The Constant DATE_FORMAT3. */
-    public static final FastDateFormat DATE_YYYY = FastDateFormat.getInstance("yyyy");
+    /** The Constant yyyyMMdd. */
+    public static final String DATE_FORMAT_REVERSE_ONLY_NUMBERS = "yyyyMMdd";
 
-    /** The Constant DATE_FORMAT4. */
-    public static final FastDateFormat DATE_YYYY_MM_DD_X1 =
-            FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+    /** The Constant yyyy-MM-dd hh:mm:ss A. */
+    public static final String DATE_FORMAT_REVERSE_WITH_TIME = DATE_FORMAT_REVERSE + " " + TIME_FORMAT;
 
-    /** The Constant DATE_YYYY_MM_DD_X1_XXX. */
-    public static final FastDateFormat DATE_YYYY_MM_DD_X1_XXX =
-            FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ssXXX");
+    /** The Constant yyyy-MM-dd HH:mm:ss. */
+    public static final String DATE_FORMAT_REVERSE_WITH_24_HOUR_TIME = DATE_FORMAT_REVERSE + " " + TIME_FORMAT_24_HOUR;
+    
+    /** The Constant yyyyMMddHHmmss. */
+    public static final String DATE_FORMAT_REVERSE_WITH_24_HOUR_TIME_ONLY_NUMBERS = DATE_FORMAT_REVERSE_ONLY_NUMBERS + TIME_FORMAT_24_HOUR_ONLY_NUMBERS;
 
-    /** The Constant DATE_FORMAT5. */
-    public static final FastDateFormat DATE_YYYY_MM_DD_X2 =
-            FastDateFormat.getInstance("yyyy-MM-dd'T'HH:mm:ss.SSS");
+    /** The Constant yyyy. */
+    public static final String DATE_FORMAT_YEAR = "yyyy";
 
-    /** The Constant DATE_YYYY_MM_DD_X2_XXX. */
-    public static final FastDateFormat DATE_YYYY_MM_DD_X2_XXX =
-            FastDateFormat.getInstance("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+    /** The Constant XXX. */
+    public static final String DATE_FORMAT_TIMEZONE = "XXX";
 
-    /** The Constant DATE_FORMAT4. */
-    public static final FastDateFormat DATE_YYYYMMDDHHMMSS =
-            FastDateFormat.getInstance("yyyyMMddHHmmss");
-
-    /** The Constant DATE_YYYYMMDDHHMMSSXXX. */
-    public static final FastDateFormat DATE_YYYYMMDDHHMMSSXXX =
-            FastDateFormat.getInstance("yyyyMMddHHmmssXXX");
-
-    /** The Constant DATE_YYYYMMDDHHMMSSZZZZZ. */
-    public static final FastDateFormat DATE_YYYYMMDDHHMMSSZZZZZ =
-            FastDateFormat.getInstance("yyyyMMddHHmmssZZZZZ");
+    /** The Constant SSS. */
+    public static final String DATE_FORMAT_MILLISECONDS = "SSS";
 
     /** The Constant DAY. */
     public static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -99,6 +105,16 @@ public final class DateUtility {
      */
     private DateUtility() {
         // n/a
+    }
+    
+    /**
+     * Returns a FastDateFormat in the format pattern given.
+     *
+     * @param format the format patern
+     * @return the end of day
+     */
+    public static FastDateFormat getFastDateFormat(final String format) {
+        return FastDateFormat.getInstance(format);
     }
 
     /**
@@ -272,20 +288,45 @@ public final class DateUtility {
     /**
      * Returns a new date object at the specified timezone, or UTC.
      *
-     * 
      * @param timeZone the time zone
      * @return the date object
      * @throws Exception the exception
      */
     public static OffsetDateTime getNewDate(final String timeZone) throws Exception {
 
-        String newTimezone = new String(timeZone);
+        String newTimezone;
 
         if (timeZone == null) {
-            newTimezone = "UTC";
+            newTimezone = "-00:00";
+        } else {
+            newTimezone = new String(timeZone);
         }
+        
         final OffsetDateTime newDate = OffsetDateTime.now(ZoneId.of(newTimezone));
         return newDate;
+    }
+    
+    /**
+     * Returns a new date object at the specified timezone, or UTC.
+     *
+     * @param date the date to format
+     * @param format the format pattern
+     * @return the date object
+     * @throws Exception the exception
+     */
+    public static String formatDate(final Date date, final String format, final String timeZone) throws Exception {
+
+        String newTimezone;
+
+        if (timeZone == null) {
+            newTimezone = "-00:00";
+        } else {
+            newTimezone = new String(timeZone);
+        }
+        
+        final Instant instant = date.toInstant();
+        ZonedDateTime dateTime = instant.atOffset(ZoneOffset.of(newTimezone)).toZonedDateTime();
+        return dateTime.format(DateTimeFormatter.ofPattern(format));
     }
 
 }

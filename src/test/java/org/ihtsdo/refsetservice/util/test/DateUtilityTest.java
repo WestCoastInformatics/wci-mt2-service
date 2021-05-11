@@ -37,7 +37,7 @@ public class DateUtilityTest extends BaseTest {
         final Date now = new Date();
         final Date past = new Date(-1);
         final Date future = new Date(now.getTime() + 6000);
-        final Date valid = DateUtility.DATE_YYYYMMDD.parse("20171113");
+        final Date valid = DateUtility.getFastDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS).parse("20171113");
         assertFalse(DateUtility.isValidDate(now, now));
         assertFalse(DateUtility.isValidDate(now, future));
         assertFalse(DateUtility.isValidDate(now, past));
@@ -52,7 +52,7 @@ public class DateUtilityTest extends BaseTest {
     @Test
     public void testRfc3339() throws Exception {
         final Date date = new Date();
-        final String dateStr = DateUtility.RFC_3339.format(date);
+        final String dateStr = DateUtility.formatDate(date, DateUtility.RFC_3339, null);
         logger.info("  date string = " + dateStr);
         // surprisingly, this doesn't work
         // assertEquals(date, DateUtility.RFC_3339.parse(dateStr));
@@ -82,7 +82,7 @@ public class DateUtilityTest extends BaseTest {
         // assertEquals("-08:00", DateUtility.getTimeZoneOffset("PST", null));
         // This is actually PDT because it's in mid-March
         assertEquals("-07:00", DateUtility.getTimeZoneOffsetLabel("PST",
-                DateUtility.DATE_YYYYMMDD.parse("20170315")));
+                DateUtility.getFastDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS).parse("20170315")));
     }
 
     /**
@@ -109,7 +109,7 @@ public class DateUtilityTest extends BaseTest {
         assertEquals(-7000, DateUtility.getTimeZoneOffset("PDT", null) / 3600);
         // This is actually PDT because it's in mid-March
         assertEquals(-7000,
-                DateUtility.getTimeZoneOffset("PST", DateUtility.DATE_YYYYMMDD.parse("20170315"))
+                DateUtility.getTimeZoneOffset("PST", DateUtility.getFastDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS).parse("20170315"))
                         / 3600);
     }
 
@@ -160,19 +160,17 @@ public class DateUtilityTest extends BaseTest {
         final Instant now = Instant.now();
         final ZonedDateTime utcNow = now.atZone(ZoneId.of("Z"));
         final ZonedDateTime localNow = now.atZone(timeZone);
+        final String timeZoneId = String.format("%tz", localNow);
 
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
         final Date pdt = DateUtility.getDate(localNow.format(formatter), "yyyyMMddHHmmss",
-                String.format("%tz", localNow));
+                timeZoneId);
         // Expressed in local time, this date matches what's shown
-        assertEquals(localNow.format(formatter), DateUtility.DATE_YYYYMMDDHHMMSS.format(pdt));
+        assertEquals(localNow.format(formatter), DateUtility.formatDate(pdt, DateUtility.DATE_FORMAT_REVERSE_WITH_24_HOUR_TIME_ONLY_NUMBERS, timeZoneId));
+        
         final Date z = DateUtility.getDate(utcNow.format(formatter), "yyyyMMddHHmmss", "-00:00");
-        // Expressed in local time, this 7 hours earlier, because it's 10:15:15
-        // in
-        // UTC time
-        // (during pacific daylight)
-        assertEquals(localNow.format(formatter), DateUtility.DATE_YYYYMMDDHHMMSS.format(z));
+        assertEquals(localNow.format(formatter), DateUtility.formatDate(z, DateUtility.DATE_FORMAT_REVERSE_WITH_24_HOUR_TIME_ONLY_NUMBERS,timeZoneId));
     }
 
 }

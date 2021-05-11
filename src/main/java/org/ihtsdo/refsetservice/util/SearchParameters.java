@@ -260,11 +260,11 @@ public class SearchParameters {
             return false;
         }
 
-        if (activeOnly != other.activeOnly) {
+        if (!activeOnly.equals(other.activeOnly)) {
             return false;
         }
 
-        if (sortAscending != other.sortAscending) {
+        if (!sortAscending.equals(other.sortAscending)) {
             return false;
         }
 
