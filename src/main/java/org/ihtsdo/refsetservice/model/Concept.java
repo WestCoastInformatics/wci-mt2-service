@@ -44,12 +44,17 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /** The descriptions. */
     private List<Map<String, String>> descriptions = new ArrayList<>();
 
+    
+    
+    // These next two booleans are NOT needed for tree
     /** The flag for if a user can see the history for this concept. */
     private boolean historyVisible;
 
     /** The flag for if a user can see the feedback for this concept. */
     private boolean feedbackVisible;
 
+    
+    // Members below are filled in when open Concept Details screen only (for now)
     /** A list of the parents of this concept. */
     private List<Concept> parents;
 
