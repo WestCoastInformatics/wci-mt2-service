@@ -40,6 +40,8 @@ set SNOWSTORM_USERNAME=changeme
 set SNOWSTORM_PASSWORD=changeme
 set SNOWSTORM_AUTH_URL=changeme
 set SNOWSTORM_AUTH_HEADER=changeme
+set AWS_ID=changeme
+set AWS_SECRET_KEY=changeme
 ```
 
 * Install PostgreSQL Database or run through a docker container. Configure the database to use the environment values you set above:
