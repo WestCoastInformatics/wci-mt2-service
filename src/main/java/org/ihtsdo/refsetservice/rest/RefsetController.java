@@ -315,9 +315,8 @@ public class RefsetController extends BaseController {
 
         String resolvedDisplayType = displayType;
 
-        // 'list' or 'taxonomy'
         if (resolvedDisplayType == null || resolvedDisplayType.equals("")) {
-            resolvedDisplayType = "taxonomy";
+            resolvedDisplayType = "list";
         }
 
         final long start = System.currentTimeMillis();
@@ -326,8 +325,7 @@ public class RefsetController extends BaseController {
         logger.info("*********** getMembers: refsetId: " + refsetId);
 
         try {
-            taxonomyParameters.setDepth(2);
-            
+
             results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters,
                     resolvedDisplayType, taxonomyParameters);
             logger.debug("******** results: " + ModelUtility.toJson(results));
