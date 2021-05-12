@@ -3,6 +3,8 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -10,6 +12,7 @@ import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -19,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.ws.rs.core.Response;
 
@@ -807,18 +812,18 @@ public class RefsetMemberService {
         String branchPath = "";
         boolean morePages = true;
         StringBuilder fileLines = new StringBuilder();
-        String outputPath = EXPORT_FILE_DIR + "/";
+        String baseOutputPath = EXPORT_FILE_DIR + "/";
+        String sctidsOutputPath = baseOutputPath;
+        String zipOutputPath = baseOutputPath;
+        String refsetFileName = "";
         String versionDate = "";
         String pathDate = "";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-        logger.info("    output path = " + outputPath);
-
-        try (final TerminologyService service = new TerminologyService();
-                final FileOutputStream fileOutputStream = new FileOutputStream(outputPath);
-                final OutputStreamWriter outputStreamWriter =
-                        new OutputStreamWriter(fileOutputStream, "UTF-8");
-                final PrintWriter printWriter = new PrintWriter(outputStreamWriter);) {
+        // get the refset and member information
+        try (
+                final TerminologyService service = new TerminologyService()
+        ) {
 
             final Refset refset = service.get(refsetId, Refset.class);
 
@@ -830,8 +835,12 @@ public class RefsetMemberService {
                 versionDate = simpleDateFormat.format(new Date());
             }
 
-            outputPath += "refset_" + refset.getRefsetId() + "_" + versionDate + "_member_ids.txt";
+            refsetFileName = "refset_" + refset.getRefsetId() + "_" + versionDate + "_member_ids";
+            sctidsOutputPath += refsetFileName + ".txt";
+            zipOutputPath += refsetFileName + ".zip";
             branchPath = refset.getEdition().getBranch() + pathDate;
+            logger.info("SCTID txt output path = " + sctidsOutputPath);
+            logger.info("zip output path = " + zipOutputPath);
 
             while (morePages) {
 
@@ -839,7 +848,7 @@ public class RefsetMemberService {
                         getMemberSctids(refset.getRefsetId(), offset, limit, branchPath);
 
                 final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = mapper.readTree(resultString);
                 int totalPages = (root.get("totalPages")).asInt();
                 offset = (root.get("number")).asInt();
                 final JsonNode items = root.get("items");
@@ -856,17 +865,64 @@ public class RefsetMemberService {
                     fileLines.append(conceptId + "\n");
                 }
             }
-
-            printWriter.print(fileLines);
-
-            return outputPath;
-
+            
         } catch (Exception ex) {
 
-            logger.error("Could not export refset" + ex.getMessage());
+            logger.error("Could not export refset: " + ex.getMessage());
             ex.printStackTrace();
             return null;
         }
+        
+        // print the sctids file
+        try (
+                final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
+                final OutputStreamWriter sctidsOutputStreamWriter =
+                        new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
+                final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);
+        ) {
+            
+            sctidsWriter.print(fileLines);
+    
+        } catch (Exception ex) {
+        
+            logger.error("Could not export refset: " + ex.getMessage());
+            ex.printStackTrace();
+            return null;
+        }
+            
+        // zip the files together
+        try (
+            final FileOutputStream zipFileOutputStream = new FileOutputStream(zipOutputPath);
+            final ZipOutputStream zipOutputStream = new ZipOutputStream(zipFileOutputStream);
+        ) {
+               
+            List<String> sourceFiles = Arrays.asList(sctidsOutputPath);
 
+            for (String sourceFile : sourceFiles) {
+                
+                File fileToZip = new File(sourceFile);
+                
+                try (final FileInputStream zipFileInputStream = new FileInputStream(fileToZip)) {
+                    
+                    ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
+                    zipOutputStream.putNextEntry(zipEntry);
+
+                    byte[] bytes = new byte[1024];
+                    int length;
+                    
+                    while((length = zipFileInputStream.read(bytes)) >= 0) {
+                        zipOutputStream.write(bytes, 0, length);
+                    }
+                }
+            }
+
+            return zipOutputPath;
+
+        } catch (Exception ex) {
+
+            logger.error("Could not export refset: " + ex.getMessage());
+            ex.printStackTrace();
+            return null;
+        }
     }
 }

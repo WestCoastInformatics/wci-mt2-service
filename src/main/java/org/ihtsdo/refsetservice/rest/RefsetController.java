@@ -411,7 +411,9 @@ public class RefsetController extends BaseController {
                         url = "{\"url\": \"" + uri + "/archive\"}";
 
                     } else if (format.equals("sctids")) {
-
+                        
+                        String uri = RefsetMemberService.exportRefsetSctidList(refsetId);
+                        url = "{\"url\": \"" + uri + "\"}";
                     }
 
                     return url;
