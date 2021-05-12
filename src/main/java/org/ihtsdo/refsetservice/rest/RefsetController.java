@@ -57,7 +57,7 @@ public class RefsetController extends BaseController {
     /**
      * Returns the refset.
      *
-     * @param refsetId the code
+     * @param refsetInternalId the internal refset ID
      * @return the concept
      * @throws Exception the exception
      */
@@ -69,23 +69,23 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.",
+            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.",
                     required = true, dataType = "string", paramType = "path"),
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}",
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}",
             produces = "application/json")
-    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId")
-    final String refsetId) throws Exception {
+    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetInternalId")
+    final String refsetInternalId) throws Exception {
 
         try {
 
-            logger.info("*********** getRefset: refsetId: " + refsetId);
+            logger.info("*********** getRefset: refsetInternalId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
 
                 final Refset refset = service.findSingle(
-                        "id:" + QueryParserBase.escape(refsetId) + "", Refset.class, null);
+                        "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(true);
@@ -246,7 +246,7 @@ public class RefsetController extends BaseController {
     /**
      * Refset Members.
      *
-     * @param refsetId the refset ID
+     * @param refsetInternalId the internal refset ID
      * @param searchParameters the search parameters
      * @param displayType Should results be a list or hierarchical taxonomy
      * @param taxonomyParameters the taxonomy parameters
@@ -290,10 +290,10 @@ public class RefsetController extends BaseController {
     // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/members",
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members",
             produces = "application/json")
-    public @ResponseBody ConceptResultList getMembers(@PathVariable(value = "refsetId")
-    final String refsetId, final SearchParameters searchParameters, final String displayType,
+    public @ResponseBody ConceptResultList getMembers(@PathVariable(value = "refsetInternalId")
+    final String refsetInternalId, final SearchParameters searchParameters, final String displayType,
         final TaxonomyParameters taxonomyParameters, final BindingResult bindingResult)
         throws Exception {
 
@@ -325,7 +325,7 @@ public class RefsetController extends BaseController {
         final long start = System.currentTimeMillis();
         ConceptResultList results = new ConceptResultList();
 
-        logger.info("*********** getMembers: refsetId: " + refsetId);
+        logger.info("*********** getMembers: refsetInternalId: " + refsetInternalId);
 
         try {
             taxonomyParameters.setDepth(2);
@@ -334,7 +334,7 @@ public class RefsetController extends BaseController {
                 taxonomyParameters.setStartingConceptId(STARTING_CONCEPT_ID);
             }
 
-            results = RefsetMemberService.getRefsetMembers(refsetId, searchParameters,
+            results = RefsetMemberService.getRefsetMembers(refsetInternalId, searchParameters,
                     resolvedDisplayType, taxonomyParameters);
             logger.debug("******** results: " + ModelUtility.toJson(results));
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -350,7 +350,7 @@ public class RefsetController extends BaseController {
     /**
      * Export refset.
      *
-     * @param refsetId the refset id
+     * @param refsetInternalId the internal refset id
      * @param type the exportType
      * @return the uri
      * @throws Exception the exception
@@ -362,7 +362,7 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.",
+            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.",
                     required = true, dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
                     required = true, dataType = "string", paramType = "query"),
@@ -378,23 +378,23 @@ public class RefsetController extends BaseController {
             @ApiImplicitParam(name = "transientEffectiveTime",
                     value = "Format: yyyymmdd. Add a transient effectiveTime to rows of content which are not yet versioned.",
                     required = false, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "branchPath", value = "e.g.  MAIN  or MAIN/2021-01-31",
-                    required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exportMetadata", value = "e.g.  true or false",
+                    required = true, dataType = "boolean", paramType = "query"),
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetId}",
+    @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}",
             produces = "application/json")
-    public @ResponseBody String exportRefset(@PathVariable(value = "refsetId")
-    final String refsetId, final String format, final String exportType, final String fileNameDate,
-        String startEffectiveTime, final String transientEffectiveTime, final String branchPath)
+    public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId")
+    final String refsetInternalId, final String format, final String exportType, final String fileNameDate,
+        String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata)
         throws Exception {
 
         try {
 
             logger.info(
-                    "*********** exportRefset: refsetId: type: fileNameDate: startEffectiveTime: transientEffectiveTime: branchPath:"
-                            + refsetId + "," + exportType + "," + fileNameDate + ","
-                            + startEffectiveTime + "," + transientEffectiveTime + "," + branchPath);
+                    "*********** exportRefset: refsetInternalId: type: fileNameDate: startEffectiveTime: transientEffectiveTime: exportMetadata:"
+                            + refsetInternalId + "," + exportType + "," + fileNameDate + ","
+                            + startEffectiveTime + "," + transientEffectiveTime + "," + exportMetadata);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -404,15 +404,14 @@ public class RefsetController extends BaseController {
 
                     if (format.equals("rf2") || format.equals("rf2_with_names")) {
 
-                        String uri = RefsetMemberService.exportRefsetRf2(refsetId, exportType,
-                                fileNameDate, startEffectiveTime, transientEffectiveTime,
-                                branchPath);
+                        String uri = RefsetMemberService.exportRefsetRf2(refsetInternalId, exportType,
+                                fileNameDate, startEffectiveTime, transientEffectiveTime);
                         logger.debug("******** results: " + uri);
                         url = "{\"url\": \"" + uri + "/archive\"}";
 
                     } else if (format.equals("sctids")) {
                         
-                        String uri = RefsetMemberService.exportRefsetSctidList(refsetId);
+                        String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId, exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
                     }
 

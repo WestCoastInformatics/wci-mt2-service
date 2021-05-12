@@ -78,7 +78,7 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         Refset refset = null;
-        String refsetTerminologyId = getRefsetTerminologyId();
+        String refsetTerminologyId = getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId;
         logger.info("Testing url - " + url);
@@ -103,7 +103,7 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ConceptResultList members = null;
-        String refsetTerminologyId = getRefsetTerminologyId();
+        String refsetTerminologyId = getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=2"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
@@ -129,11 +129,9 @@ public class RefsetControllerTests extends BaseTest {
         String url = null;
         MvcResult result = null;
         String resultString = null;
-        Refset refset = null;
-        
-        String refsetTerminologyId = getRefsetTerminologyId();
+        final String refsetInternalId = getRefsetInternalId();
 
-        url = "/export/" + refsetTerminologyId + "/?format=sctids";
+        url = "/export/" + refsetInternalId + "/?format=sctids&exportMetadata=true";
         logger.info("Testing url - " + url);
         
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -154,7 +152,7 @@ public class RefsetControllerTests extends BaseTest {
      * @return the internal refset ID
      * @throws Exception the exception
      */
-    private String getRefsetTerminologyId() throws Exception {
+    private String getRefsetInternalId() throws Exception {
         
         try (final TerminologyService service = new TerminologyService()) {
             

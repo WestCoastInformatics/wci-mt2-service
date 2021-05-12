@@ -28,10 +28,12 @@ import java.util.zip.ZipOutputStream;
 import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
@@ -92,7 +94,7 @@ public class RefsetMemberService {
 
     static {
 
-        EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir");
+        EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + "/";
 
         // TODO: Remove once Edition updated
         refsetToLanguagesMap.put("450828004", "es");
@@ -111,14 +113,14 @@ public class RefsetMemberService {
     /**
      * Get the refset member concepts.
      *
-     * @param refsetId the refset ID
+     * @param refsetInternalId the internal refset ID
      * @param searchParameters the search parameters
      * @param displayType Should results be a list or hierarchical taxonomy
      * @param taxonomyParameters the taxonomy parameters
      * @return the refset member concepts
      * @throws Exception the exception
      */
-    public static ConceptResultList getRefsetMembers(String refsetId,
+    public static ConceptResultList getRefsetMembers(String refsetInternalId,
         final SearchParameters searchParameters, final String displayType,
         final TaxonomyParameters taxonomyParameters) throws Exception {
 
@@ -127,7 +129,7 @@ public class RefsetMemberService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            Refset refset = service.get(refsetId, Refset.class);
+            Refset refset = service.get(refsetInternalId, Refset.class);
             final Edition edition = refset.getEdition();
 
             // get the list of languages the refset supports
@@ -157,7 +159,7 @@ public class RefsetMemberService {
             final String pagingParams =
                     "offset=" + (searchParameters.getOffset() * searchParameters.getLimit())
                             + "&limit=" + searchParameters.getLimit();
-            String versionDate = "";
+            String versionDate = ""; //getRefsetAsOfDate(refset);    
 
             // if (searchParameters.getSortAscending() != null) {
             //
@@ -568,13 +570,11 @@ public class RefsetMemberService {
      * @return the string
      */
     private static String createUrl(Refset refset, boolean addBrowser) {
+        
         String versionDate = "";
-
+        
         if (refset.getVersionDate() != null) {
-
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            // versionDate = "/" +
-            // simpleDateFormat.format(refset.getVersionDate());
+            // versionDate = "/" + getRefsetAsOfDate(refset);
         }
 
         if (addBrowser) {
@@ -722,18 +722,35 @@ public class RefsetMemberService {
     /**
      * Get the refset member concepts in RF2 format.
      *
-     * @param refsetId the refset ID
+     * @param refsetInternalId the internal refset ID
      * @param type the type
      * @param fileNameDate the file name date
      * @param startEffectiveTime the start effective time
      * @param transientEffectiveTime the transient effective time
-     * @param branchPath the branch path
      * @return the refset member concepts
      * @throws Exception the exception
      */
-    public static String exportRefsetRf2(final String refsetId, final String type,
+    public static String exportRefsetRf2(final String refsetInternalId, final String type,
         final String fileNameDate, final String startEffectiveTime,
-        final String transientEffectiveTime, final String branchPath) throws Exception {
+        final String transientEffectiveTime) throws Exception {
+        
+        String branchPath = "";
+        String refsetId = "";
+        
+        try (
+                final TerminologyService service = new TerminologyService()
+        ) {
+
+            final Refset refset = service.get(refsetInternalId, Refset.class);
+            refsetId = refset.getRefsetId();
+            String pathDate = "";
+            
+            if (refset.getVersionDate() != null) {
+                // pathDate = "/" + versionDate;
+            }
+            
+            branchPath = refset.getEdition().getBranch() + pathDate;
+        }
 
         String url = SnowstormConnection.BASE_URL + "exports";
 
@@ -800,47 +817,47 @@ public class RefsetMemberService {
     /**
      * Export the refset member concept IDs in a zipped CSV format.
      *
-     * @param refsetId the refset ID
-     * @param branchPath the branch path
+     * @param refsetInternalId the internal refset ID
+     * @param exportMetadata should refset metadata be included in the export
      * @return the URL of the file containing the member list
      * @throws Exception the exception
      */
-    public static String exportRefsetSctidList(final String refsetId) throws Exception {
+    public static String exportRefsetSctidList(final String refsetInternalId, final boolean exportMetadata) throws Exception {
 
         int offset = 0;
         int limit = 10000;
         String branchPath = "";
         boolean morePages = true;
         StringBuilder fileLines = new StringBuilder();
-        String baseOutputPath = EXPORT_FILE_DIR + "/";
-        String sctidsOutputPath = baseOutputPath;
-        String zipOutputPath = baseOutputPath;
+        String sctidsOutputPath = EXPORT_FILE_DIR;
+        String zipOutputPath = EXPORT_FILE_DIR;
         String refsetFileName = "";
         String versionDate = "";
         String pathDate = "";
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        List<String> sourceFiles = new ArrayList<>();
 
         // get the refset and member information
         try (
                 final TerminologyService service = new TerminologyService()
         ) {
 
-            final Refset refset = service.get(refsetId, Refset.class);
-
+            final Refset refset = service.get(refsetInternalId, Refset.class);
+            
             if (refset.getVersionDate() != null) {
-
-                versionDate = simpleDateFormat.format(refset.getVersionDate());
                 // pathDate = "/" + versionDate;
-            } else {
-                versionDate = simpleDateFormat.format(new Date());
             }
-
+            
+            versionDate = getRefsetAsOfDate(refset);
             refsetFileName = "refset_" + refset.getRefsetId() + "_" + versionDate + "_member_ids";
             sctidsOutputPath += refsetFileName + ".txt";
             zipOutputPath += refsetFileName + ".zip";
             branchPath = refset.getEdition().getBranch() + pathDate;
             logger.info("SCTID txt output path = " + sctidsOutputPath);
             logger.info("zip output path = " + zipOutputPath);
+            
+            if (exportMetadata) {
+                sourceFiles.add(exportRefsetMetadata(refset));
+            }
 
             while (morePages) {
 
@@ -896,7 +913,7 @@ public class RefsetMemberService {
             final ZipOutputStream zipOutputStream = new ZipOutputStream(zipFileOutputStream);
         ) {
                
-            List<String> sourceFiles = Arrays.asList(sctidsOutputPath);
+            sourceFiles.add(sctidsOutputPath);
 
             for (String sourceFile : sourceFiles) {
                 
@@ -924,5 +941,110 @@ public class RefsetMemberService {
             ex.printStackTrace();
             return null;
         }
+    }
+        
+    /**
+     * Export the refset metadata in a text format.
+     *
+     * @param refset the refset
+     * @return the URL of the file containing the metadata
+     * @throws Exception the exception
+     */
+    public static String exportRefsetMetadata(final Refset refset) throws Exception {
+
+        StringBuilder fileLines = new StringBuilder();
+        String pathDate = getRefsetAsOfDate(refset);
+        String outputPath = EXPORT_FILE_DIR + "refset_" + refset.getRefsetId() + "_" + pathDate + "_metadata.txt";
+        String separator = "\t";
+        
+        fileLines.append("Refset ID" + separator + refset.getRefsetId() + "\n");
+        fileLines.append("Refset Name" + separator + refset.getName() + "\n");
+        fileLines.append("Edition Name" + separator + refset.getEditionName() + "\n");
+        fileLines.append("Edition Branch" + separator + refset.getEdition().getBranch() + "\n");
+        fileLines.append("Organization" + separator + refset.getOrganizationName() + "\n");
+        fileLines.append("Project" + separator + refset.getProject().getName() + "\n");
+        fileLines.append("Module ID" + separator + refset.getModuleId() + "\n");
+        fileLines.append("Refset Version Status" + separator + refset.getVersionStatus() + "\n");
+        fileLines.append("Refset Version Date" + separator + DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+        fileLines.append("Refset Last Modified Date" + separator + DateUtility.formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+        fileLines.append("Refset Type" + separator + refset.getType() + "\n");
+        
+        if (refset.isActive()) {
+            fileLines.append("Refset Status" + separator + "Active" + "\n");
+        } else {
+            fileLines.append("Refset Status" + separator + "Inactive" + "\n");
+        }
+        
+        if (refset.getDefinitionClauses().size() > 0) {
+            
+            final List<String> definitionList = new ArrayList<>();
+            
+            for (DefinitionClause clause : refset.getDefinitionClauses()) {
+                
+                String entry = clause.getValue();
+                
+                if (clause.getNegated()) {
+                    entry = "(-) " + entry;
+                }
+                
+                definitionList.add(entry);
+            }
+            
+            fileLines.append("Refset Definition" + separator + String.join(", ", definitionList) + "\n");
+        }
+        
+        fileLines.append("Tags" + separator + String.join(", ", refset.getTags()) + "\n");
+        
+        if (refset.getNarrative() != null && !refset.getNarrative().equals("")) {
+            fileLines.append("Refset Narrative" + separator + refset.getNarrative() + "\n");
+        }
+        
+        if (refset.getVersionNotes() != null && !refset.getVersionNotes().equals("")) {
+            fileLines.append("Refset Version Notes" + separator + refset.getVersionNotes() + "\n");
+        }
+        
+        if (refset.getExternalUrl() != null && !refset.getExternalUrl().equals("")) {
+            fileLines.append("External URL" + separator + refset.getExternalUrl() + "\n");
+        }
+        
+        // print the sctids file
+        try (
+                final FileOutputStream fileOutputStream = new FileOutputStream(outputPath);
+                final OutputStreamWriter outputStreamWriter =
+                        new OutputStreamWriter(fileOutputStream, "UTF-8");
+                final PrintWriter printWriter = new PrintWriter(outputStreamWriter);
+        ) {
+            
+            printWriter.print(fileLines);
+            return outputPath;
+    
+        } catch (Exception ex) {
+        
+            logger.error("Could not export refset metadata: " + ex.getMessage());
+            ex.printStackTrace();
+            return null;
+        }
+    }
+        
+    /**
+     * Get either the version date or the current date in yyyy-MM-dd format.
+     *
+     * @param refset the refset
+     * @return the URL of the file containing the metadata
+     * @throws Exception the exception
+     */
+    public static String getRefsetAsOfDate(final Refset refset) throws Exception {
+        
+        String asOfDate = "";
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        
+        if (refset.getVersionDate() != null) {
+
+            asOfDate = simpleDateFormat.format(refset.getVersionDate());
+        } else {
+            asOfDate = simpleDateFormat.format(new Date());
+        }
+        
+        return asOfDate;
     }
 }
