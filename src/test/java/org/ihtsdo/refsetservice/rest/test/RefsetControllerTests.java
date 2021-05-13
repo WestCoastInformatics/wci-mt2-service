@@ -36,7 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class RefsetControllerTests extends BaseTest {
 
     /** The Constant TESTING_REFSET_ID. */
-    private static final String TESTING_REFSET_ID = "551000172106"; // this code works for sure: "551000172106";
+    private static final String TESTING_REFSET_ID = "721145008"; // this code works for sure: "551000172106";
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -132,6 +132,34 @@ public class RefsetControllerTests extends BaseTest {
         final String refsetInternalId = getRefsetInternalId();
 
         url = "/export/" + refsetInternalId + "/?format=sctids&exportMetadata=true";
+        logger.info("Testing url - " + url);
+        
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        resultString = result.getResponse().getContentAsString();
+        
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode root = mapper.readTree(resultString);
+        final String fileUrl = (root.get("url")).asText();
+        logger.info("File Url: " + fileUrl);
+        
+        assertThat(fileUrl).isNotNull();
+        
+    }
+    
+    /**
+     * Test exporting a refset SCTID list.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testExportRf2() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String resultString = null;
+        final String refsetInternalId = getRefsetInternalId();
+
+        url = "/export/" + refsetInternalId + "/?format=rf2&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20210315&transientEffectiveTime=20210315";
         logger.info("Testing url - " + url);
         
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();

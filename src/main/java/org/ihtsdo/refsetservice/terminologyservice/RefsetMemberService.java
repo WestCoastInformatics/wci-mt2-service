@@ -6,13 +6,17 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
+import java.net.URLConnection;
+import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -23,10 +27,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.io.FileUtils;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -727,15 +733,18 @@ public class RefsetMemberService {
      * @param fileNameDate the file name date
      * @param startEffectiveTime the start effective time
      * @param transientEffectiveTime the transient effective time
+     * @param exportMetadata should refset metadata be included in the export
      * @return the refset member concepts
      * @throws Exception the exception
      */
     public static String exportRefsetRf2(final String refsetInternalId, final String type,
         final String fileNameDate, final String startEffectiveTime,
-        final String transientEffectiveTime) throws Exception {
+        final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
         
         String branchPath = "";
         String refsetId = "";
+        String zipFilePath = "";
+        String versionDate = "";
         
         try (
                 final TerminologyService service = new TerminologyService()
@@ -743,16 +752,18 @@ public class RefsetMemberService {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
             refsetId = refset.getRefsetId();
+            versionDate = getRefsetAsOfDate(refset);
             String pathDate = "";
             
             if (refset.getVersionDate() != null) {
                 // pathDate = "/" + versionDate;
             }
             
+            zipFilePath = EXPORT_FILE_DIR + "refset_" + refset.getRefsetId() + "_" + versionDate + ".zip";
             branchPath = refset.getEdition().getBranch() + pathDate;
         }
 
-        String url = SnowstormConnection.BASE_URL + "exports";
+        String snowstormExportApiUrl = SnowstormConnection.BASE_URL + "exports";
 
         String entity = "{\"refsetIds\": [\"" + refsetId + "\"],  \"branchPath\": \"" + branchPath
                 + "\", \"conceptsAndRelationshipsOnly\": \"false\", \"filenameEffectiveDate\": \""
@@ -764,19 +775,60 @@ public class RefsetMemberService {
                         : ",  \"transientEffectiveTime\": \"" + transientEffectiveTime + "\"")
                 + "}";
 
-        logger.info("Snowstorm URL: " + url + entity);
+        logger.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entity);
+        
+        String snowstormFileUrl = ""; //"https://www.learningcontainer.com/download/sample-zip-files/?wpdmdl=1637";
 
-        try (Response response = SnowstormConnection.postResponse(url, entity)) {
+        try (Response response = SnowstormConnection.postResponse(snowstormExportApiUrl, entity)) {
 
-            logger.info("Response location " + response.getLocation());
-            return response.getLocation().toString();
-
+            snowstormFileUrl = response.getLocation().toString() + "/archive";
+            logger.info("Response location " + snowstormFileUrl);
+            
         } catch (Exception ex) {
+            throw new Exception("Could not export refset from snowstorm: " + ex.getMessage(), ex);
 
-            logger.error("Could not export refset" + ex.getMessage());
-            ex.printStackTrace();
-            return null;
         }
+        
+        logger.debug("Snowstorm File URL: " + snowstormFileUrl);
+        
+        try {
+
+            // Open connection to the Snowstorm URL
+            URL urlObject = new URL(snowstormFileUrl);
+            URLConnection connection = urlObject.openConnection();
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            connection.setRequestProperty("Cookie", SnowstormConnection.getGenericUserCookie());
+            
+            // Download the Snowstorm file 
+            FileUtils.copyURLToFile(connection.getURL(), new File(zipFilePath));
+            
+        } catch (Exception ex) {
+            throw new Exception("Could not download export from snowstorm: " + ex.getMessage(), ex);
+
+        }
+        
+        final List<String> sourceFiles = unzipFiles(zipFilePath, EXPORT_FILE_DIR);
+        
+        logger.debug("Unzipped Files: " + sourceFiles);
+        
+        if (exportMetadata) {
+            
+            // get the refset metadata information
+            try (
+                    final TerminologyService service = new TerminologyService()
+            ) {
+
+                final Refset refset = service.get(refsetInternalId, Refset.class);
+                sourceFiles.add(exportRefsetMetadata(refset));
+            }
+            
+        }
+        
+        // zip the files together
+        zipFiles(sourceFiles, zipFilePath);
+        
+        return zipFilePath;
 
     }
 
@@ -798,7 +850,7 @@ public class RefsetMemberService {
         String url = SnowstormConnection.BASE_URL + "browser/" + branchPath
                 + "/members?referenceSet=" + refsetId + "&" + pagingParams;
 
-        logger.info("Snowstorm URL: " + url);
+        logger.debug("Snowstorm URL: " + url);
 
         try (Response response = SnowstormConnection.getResponse(url)) {
 
@@ -806,12 +858,8 @@ public class RefsetMemberService {
             return resultString;
 
         } catch (Exception ex) {
-
-            logger.error("Could not retrieve refset members" + ex.getMessage());
-            ex.printStackTrace();
-            return null;
+            throw new Exception("Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
         }
-
     }
 
     /**
@@ -852,8 +900,8 @@ public class RefsetMemberService {
             sctidsOutputPath += refsetFileName + ".txt";
             zipOutputPath += refsetFileName + ".zip";
             branchPath = refset.getEdition().getBranch() + pathDate;
-            logger.info("SCTID txt output path = " + sctidsOutputPath);
-            logger.info("zip output path = " + zipOutputPath);
+            logger.debug("SCTID txt output path = " + sctidsOutputPath);
+            logger.debug("zip output path = " + zipOutputPath);
             
             if (exportMetadata) {
                 sourceFiles.add(exportRefsetMetadata(refset));
@@ -884,10 +932,7 @@ public class RefsetMemberService {
             }
             
         } catch (Exception ex) {
-
-            logger.error("Could not export refset: " + ex.getMessage());
-            ex.printStackTrace();
-            return null;
+            throw new Exception("Could not get refset member data from snowstorm: " + ex.getMessage(), ex);
         }
         
         // print the sctids file
@@ -901,20 +946,30 @@ public class RefsetMemberService {
             sctidsWriter.print(fileLines);
     
         } catch (Exception ex) {
-        
-            logger.error("Could not export refset: " + ex.getMessage());
-            ex.printStackTrace();
-            return null;
+            throw new Exception("Could not create export txt file: " + ex.getMessage(), ex);
         }
             
         // zip the files together
+        sourceFiles.add(sctidsOutputPath);
+        zipFiles(sourceFiles, zipOutputPath);
+
+        return zipOutputPath;
+    }
+        
+    /**
+     * Zip files together.
+     *
+     * @param sourceFiles the list of files to zip together
+     * @param zipOutputPath the path and filename of the zip file to create
+     * @throws Exception the exception
+     */
+    public static void zipFiles(final List<String> sourceFiles, final String zipOutputPath) throws Exception {
+        
         try (
             final FileOutputStream zipFileOutputStream = new FileOutputStream(zipOutputPath);
             final ZipOutputStream zipOutputStream = new ZipOutputStream(zipFileOutputStream);
         ) {
                
-            sourceFiles.add(sctidsOutputPath);
-
             for (String sourceFile : sourceFiles) {
                 
                 File fileToZip = new File(sourceFile);
@@ -933,16 +988,77 @@ public class RefsetMemberService {
                 }
             }
 
-            return zipOutputPath;
-
         } catch (Exception ex) {
-
-            logger.error("Could not export refset: " + ex.getMessage());
-            ex.printStackTrace();
-            return null;
+            throw new Exception("Could not zip the files: " + ex.getMessage(), ex);
         }
     }
+    
+    /**
+     * Extract files from a zip archive
+     * 
+     * @param zipFilePath the path and filename of the zip file to create
+     * @param extractionPath the path of the directory to extract files to
+     * @return a list of file paths of the extracted files
+     * @throws Exception the exception
+     */
+    public static List<String> unzipFiles(final String zipFilePath, final String extractionPath) throws Exception {
         
+        final List<String> sourceFiles = new ArrayList<>();
+        
+        try (
+            final ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath));
+        ) {
+            
+            final File extractionDirectory = new File(extractionPath);
+            byte[] buffer = new byte[1024];
+            ZipEntry zipEntry;
+            
+            while ((zipEntry = zis.getNextEntry()) != null) {
+               
+                File newFile = new File(extractionDirectory, zipEntry.getName());
+                String extractionCanonicalPath = extractionDirectory.getCanonicalPath();
+                String fileCanonicalPath = newFile.getCanonicalPath();
+
+                if (!fileCanonicalPath.startsWith(extractionCanonicalPath + File.separator)) {
+                    throw new IOException("Entry is outside of the target directory: " + zipEntry.getName());
+                }
+                
+                if (zipEntry.isDirectory()) {
+                    
+                    if (!newFile.isDirectory() && !newFile.mkdirs()) {
+                        throw new IOException("Failed to create directory " + newFile);
+                    }
+                    
+                } else {
+                    
+                    // fix for Windows-created archives
+                    File parent = newFile.getParentFile();
+                    
+                    if (!parent.isDirectory() && !parent.mkdirs()) {
+                        throw new IOException("Failed to create directory " + parent);
+                    }
+                    
+                    // write file content
+                    try (final FileOutputStream fileOutputStream = new FileOutputStream(newFile)) {
+                        
+                        int length;
+                        
+                        while ((length = zis.read(buffer)) > 0) {
+                            fileOutputStream.write(buffer, 0, length);
+                        }
+                    }
+                    
+                    sourceFiles.add(fileCanonicalPath);
+                }
+            }
+            
+            return sourceFiles;
+
+        } catch (Exception ex) {
+            throw new Exception("Could not unzip the file: " + ex.getMessage(), ex);
+        }
+    }
+    
     /**
      * Export the refset metadata in a text format.
      *
@@ -1019,10 +1135,7 @@ public class RefsetMemberService {
             return outputPath;
     
         } catch (Exception ex) {
-        
-            logger.error("Could not export refset metadata: " + ex.getMessage());
-            ex.printStackTrace();
-            return null;
+            throw new Exception("Could not create metadata export txt file: " + ex.getMessage(), ex);
         }
     }
         

@@ -36,10 +36,10 @@ public class SnowstormConnection {
     private static String AUTH_URL;
     
     /** The user name. */
-    private static String USER_NAME;
+    public static String USER_NAME;
 
     /** The password. */
-    private static String PASSWORD;
+    public static String PASSWORD;
     
     /** The snowstorm url. */
     public static String BASE_URL;
@@ -100,7 +100,10 @@ public class SnowstormConnection {
 	public static Response postResponse(final String url, String entity) throws Exception {
 		Client client = ClientBuilder.newClient();
 		WebTarget target = client.target(url);
-		Builder builder = target.request(MediaType.APPLICATION_JSON);
+		Builder builder = target.request(MediaType.APPLICATION_JSON).header("Authorization", AUTH_HEADER)
+                .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
+                .header("Cookie",
+                        genericUserCookie != null ? genericUserCookie : getGenericUserCookie());
 
 		Response response = builder
 				.post(Entity.json(entity));
@@ -116,7 +119,7 @@ public class SnowstormConnection {
      * @return the generic user cookie
      * @throws Exception the exception
      */
-    private static String getGenericUserCookie() throws Exception {
+	public static String getGenericUserCookie() throws Exception {
 
         // Check if the generic user cookie is expired and needs to be cleared
         // and re-read

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.*;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -405,7 +406,7 @@ public class RefsetController extends BaseController {
                     if (format.equals("rf2") || format.equals("rf2_with_names")) {
 
                         String uri = RefsetMemberService.exportRefsetRf2(refsetInternalId, exportType,
-                                fileNameDate, startEffectiveTime, transientEffectiveTime);
+                                fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata);
                         logger.debug("******** results: " + uri);
                         url = "{\"url\": \"" + uri + "/archive\"}";
 
@@ -414,7 +415,7 @@ public class RefsetController extends BaseController {
                         String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId, exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
                     }
-
+                    
                     return url;
 
                 } catch (final Exception e) {
