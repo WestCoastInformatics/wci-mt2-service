@@ -41,6 +41,7 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
@@ -126,7 +127,7 @@ public class RefsetMemberService {
      * @return the refset member concepts
      * @throws Exception the exception
      */
-    public static ConceptResultList getRefsetMembers(String refsetInternalId,
+    public static ConceptResultList getRefsetMembers(final String refsetInternalId,
         final SearchParameters searchParameters, final String displayType,
         final TaxonomyParameters taxonomyParameters) throws Exception {
 
@@ -723,6 +724,64 @@ public class RefsetMemberService {
      */
     public static Map<String, String> getRefsetToLanguagesMap() {
         return refsetToLanguagesMap;
+    }
+    
+    /**
+     * Get the details of a member concept.
+     *
+     * @param conceptId the concept ID
+     * @return the member concept details
+     * @throws Exception the exception
+     */
+    public static Concept getMemberDetails(final String conceptId, final String branchPath) throws Exception {
+
+        final Concept concept = null;
+
+        String url = SnowstormConnection.BASE_URL + "" + branchPath;
+
+        logger.debug("Snowstorm URL: " + url);
+
+//        try (Response response = SnowstormConnection.getResponse(url)) {
+//
+//            final String resultString = response.readEntity(String.class);
+//
+//        } catch (Exception ex) {
+//            throw new Exception("Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
+//        }
+        
+        return concept;
+    }
+    
+    /**
+     * Get a list of refsets containing members matching the search.
+     *
+     * @param searchParameters the search parameters
+     * @return a list of refsets containing members matching the search
+     * @throws Exception the exception
+     */
+    public static ResultList<Refset> searchDirectoryMembers(final SearchParameters searchParameters) throws Exception {
+        
+        final ResultList<Refset> results = new ResultList<>();
+        
+        final int offset = searchParameters.getOffset();
+        final int limit = searchParameters.getLimit();
+        final String query = searchParameters.getQuery(); // refsetId: "12345" AND privateRefset: false AND term: "blood" AND name: "work"
+        final String sort = searchParameters.getSort();
+        final boolean sortAscending = searchParameters.getSortAscending();
+        
+        String url = SnowstormConnection.BASE_URL + "";
+
+        logger.debug("Snowstorm URL: " + url);
+
+//        try (Response response = SnowstormConnection.getResponse(url)) {
+//
+//            final String resultString = response.readEntity(String.class);
+//
+//        } catch (Exception ex) {
+//            throw new Exception("Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
+//        }
+        
+        return results;
     }
 
     /**

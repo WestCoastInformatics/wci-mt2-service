@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -123,7 +124,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    //@Test
     public void testExportSctidList() throws Exception {
 
         String url = null;
@@ -151,7 +152,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    //@Test
     public void testExportRf2() throws Exception {
 
         String url = null;
@@ -171,6 +172,31 @@ public class RefsetControllerTests extends BaseTest {
         logger.info("File Url: " + fileUrl);
         
         assertThat(fileUrl).isNotNull();
+        
+    }
+    
+    /**
+     * Test getting concept details.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testConceptDetails() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+        final String conceptId = "721145008";
+
+        url = "/concept/" + conceptId + "/?branchPath=MAIN/2021-03-15";
+        logger.info("Testing url - " + url);
+        
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        final Concept concept = new ObjectMapper().readValue(content, Concept.class);
+        assertThat(concept).isNotNull();
+        assertThat(concept.getCode()).isEqualTo(conceptId);
         
     }
     
