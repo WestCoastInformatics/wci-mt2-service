@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-// TODO: Auto-generated Javadoc
 /**
  * Represents a concept with a code from a terminology.
  * 
@@ -41,11 +40,12 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /** The member effective time. */
     private Date memberEffectiveTime;
 
+    /** The is this concept a member of the refset. */
+    private boolean hasChildren;
+
     /** The descriptions. */
     private List<Map<String, String>> descriptions = new ArrayList<>();
 
-    
-    
     // These next two booleans are NOT needed for tree
     /** The flag for if a user can see the history for this concept. */
     private boolean historyVisible;
@@ -53,8 +53,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /** The flag for if a user can see the feedback for this concept. */
     private boolean feedbackVisible;
 
-    
-    // Members below are filled in when open Concept Details screen only (for now)
+    // Members below are filled in when open Concept Details screen only (for
+    // now)
     /** A list of the parents of this concept. */
     private List<Concept> parents;
 
@@ -130,6 +130,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         children = other.getChildren();
         hasChildrenRefsetMembers = other.getHasChildrenRefsetMembers();
         memberOfRefset = other.isMemberOfRefset();
+        hasChildren = other.getHasChildren();
     }
 
     /**
@@ -295,6 +296,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Checks if is member of refset.
+     *
      * @return the memberOfRefset
      */
     public boolean isMemberOfRefset() {
@@ -302,6 +305,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Sets the member of refset.
+     *
      * @param memberOfRefset the memberOfRefset to set
      */
     public void setMemberOfRefset(boolean memberOfRefset) {
@@ -309,6 +314,26 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Gets the checks for children.
+     *
+     * @return the hasChildren
+     */
+    public boolean getHasChildren() {
+        return hasChildren;
+    }
+
+    /**
+     * Sets the checks for children.
+     *
+     * @param hasChildren the hasChildren to set
+     */
+    public void setHasChildren(boolean hasChildren) {
+        this.hasChildren = hasChildren;
+    }
+
+    /**
+     * Gets the parents.
+     *
      * @return the parents
      */
     public List<Concept> getParents() {
@@ -321,6 +346,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Sets the parents.
+     *
      * @param parents the parents to set
      */
     public void setParents(List<Concept> parents) {
@@ -328,6 +355,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Gets the checks for parents refset members.
+     *
      * @return the hasParentsRefsetMembers
      */
     public boolean getHasParentsRefsetMembers() {
@@ -335,6 +364,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Sets the checks for parents refset members.
+     *
      * @param hasParentsRefsetMembers the hasParentsRefsetMembers to set
      */
     public void setHasParentsRefsetMembers(boolean hasParentsRefsetMembers) {
@@ -342,6 +373,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Gets the children.
+     *
      * @return the children
      */
     public List<Concept> getChildren() {
@@ -354,6 +387,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Sets the children.
+     *
      * @param children the children to set
      */
     public void setChildren(List<Concept> children) {
@@ -361,6 +396,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Gets the checks for children refset members.
+     *
      * @return the hasChildrenRefsetMembers
      */
     public boolean getHasChildrenRefsetMembers() {
@@ -368,6 +405,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Sets the checks for children refset members.
+     *
      * @param hasChildrenRefsetMembers the hasChildrenRefsetMembers to set
      */
     public void setHasChildrenRefsetMembers(boolean hasChildrenRefsetMembers) {
@@ -392,6 +431,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((parents == null) ? 0 : parents.hashCode());
         result = prime * result + (memberStatus ? 1 : 0);
         result = prime * result + (memberOfRefset ? 1 : 0);
+        result = prime * result + (hasChildren ? 1 : 0);
         result = prime * result + (hasChildrenRefsetMembers ? 1 : 0);
         result = prime * result + (hasParentsRefsetMembers ? 1 : 0);
         result = prime * result
@@ -509,6 +549,10 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         }
 
         if (memberOfRefset != other.memberOfRefset) {
+            return false;
+        }
+
+        if (hasChildren != other.hasChildren) {
             return false;
         }
 
