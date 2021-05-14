@@ -242,9 +242,10 @@ public class RefsetControllerTests extends BaseTest {
         String url = null;
         MvcResult result = null;
         String content = null;
-        final String conceptId = "721145008";
+        final String conceptId = "226528004";
+        String refsetTerminologyId = getRefsetInternalId();
 
-        url = "/concept/" + conceptId + "/?branchPath=MAIN/2021-03-15";
+        url = "/concept/" + conceptId + "/?refsetInternalId=" + refsetTerminologyId;
         logger.info("Testing url - " + url);
         
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();

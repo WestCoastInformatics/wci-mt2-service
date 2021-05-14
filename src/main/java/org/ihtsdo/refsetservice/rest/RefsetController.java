@@ -442,13 +442,13 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{conceptId}",
             produces = "application/json")
     public @ResponseBody Concept getConceptDetails(@PathVariable(value = "conceptId")
-    final String conceptId, final String branchPath) throws Exception {
+    final String conceptId, final String refsetInternalId) throws Exception {
 
         try {
 
             logger.info("*********** getConceptDetails: conceptId: " + conceptId);
             
-            final Concept concept = RefsetMemberService.getMemberDetails(conceptId, branchPath);
+            final Concept concept = RefsetMemberService.getMemberDetails(conceptId, refsetInternalId);
             
             logger.info("*********** getConceptDetails: concept: " + ModelUtility.toJson(concept));
 
