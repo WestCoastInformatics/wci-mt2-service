@@ -49,6 +49,7 @@ import io.swagger.annotations.ApiResponses;
 @SuppressWarnings("javadoc")
 public class RefsetController extends BaseController {
 
+    /** The Constant STARTING_CONCEPT_ID. */
     // Setting it to blank ("") leaves value as default ConId (SNOMED_ROOT)
     private static final String STARTING_CONCEPT_ID = "35079003";
 
@@ -219,7 +220,8 @@ public class RefsetController extends BaseController {
                 pfs.setSort(searchParameters.getSort());
             }
 
-            final ResultList<Refset> memberSearchResults = RefsetMemberService.searchDirectoryMembers(searchParameters);
+            final ResultList<Refset> memberSearchResults =
+                    RefsetMemberService.searchDirectoryMembers(searchParameters);
 
             results = service.find(searchParameters.getQuery(), pfs, Refset.class, null);
 
@@ -342,7 +344,12 @@ public class RefsetController extends BaseController {
      * Export refset.
      *
      * @param refsetInternalId the internal refset id
-     * @param type the exportType
+     * @param format the format
+     * @param exportType the export type
+     * @param fileNameDate the file name date
+     * @param startEffectiveTime the start effective time
+     * @param transientEffectiveTime the transient effective time
+     * @param exportMetadata the export metadata
      * @return the uri
      * @throws Exception the exception
      */
@@ -425,7 +432,15 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-    
+
+    /**
+     * Gets the concept details.
+     *
+     * @param conceptId the concept id
+     * @param refsetInternalId the refset internal id
+     * @return the concept details
+     * @throws Exception the exception
+     */
     @ApiOperation(value = "Get the concept for the specified ID", response = Refset.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
@@ -447,9 +462,10 @@ public class RefsetController extends BaseController {
         try {
 
             logger.info("*********** getConceptDetails: conceptId: " + conceptId);
-            
-            final Concept concept = RefsetMemberService.getMemberDetails(conceptId, refsetInternalId);
-            
+
+            final Concept concept =
+                    RefsetMemberService.getMemberDetails(conceptId, refsetInternalId);
+
             logger.info("*********** getConceptDetails: concept: " + ModelUtility.toJson(concept));
 
             return concept;
