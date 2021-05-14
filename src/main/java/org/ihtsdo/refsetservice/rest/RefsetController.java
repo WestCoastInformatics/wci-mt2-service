@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -218,9 +219,7 @@ public class RefsetController extends BaseController {
                 pfs.setSort(searchParameters.getSort());
             }
 
-            // ResultList<Refset> test = service.find("id:
-            // 78659156-b6d6-4935-bcdf-c4692bcee10d", pfs, Refset.class, null);
-            // logger.debug("******** test: " + ModelUtility.toJson(test));
+            final ResultList<Refset> memberSearchResults = RefsetMemberService.searchDirectoryMembers(searchParameters);
 
             results = service.find(searchParameters.getQuery(), pfs, Refset.class, null);
 
@@ -419,6 +418,41 @@ public class RefsetController extends BaseController {
                     return null;
                 }
             }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    @ApiOperation(value = "Get the concept for the specified ID", response = Refset.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.",
+                    required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "branchPath", value = "e.g.  MAIN  or MAIN/2021-01-31",
+                    required = true, dataType = "string", paramType = "query"),
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/concept/{conceptId}",
+            produces = "application/json")
+    public @ResponseBody Concept getConceptDetails(@PathVariable(value = "conceptId")
+    final String conceptId, final String branchPath) throws Exception {
+
+        try {
+
+            logger.info("*********** getConceptDetails: conceptId: " + conceptId);
+            
+            final Concept concept = RefsetMemberService.getMemberDetails(conceptId, branchPath);
+            
+            logger.info("*********** getConceptDetails: concept: " + ModelUtility.toJson(concept));
+
+            return concept;
 
         } catch (final Exception e) {
 

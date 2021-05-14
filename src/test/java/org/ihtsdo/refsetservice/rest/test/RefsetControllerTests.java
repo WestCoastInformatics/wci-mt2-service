@@ -6,11 +6,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -89,6 +92,32 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(refset.getRefsetId()).isEqualTo(TESTING_REFSET_ID);
 
     }
+    
+    /**
+     * Test listing refsets.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testRefsetDirectory() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+        ResultList<Refset> resultList = null;
+        String refsetTerminologyId = getRefsetInternalId();
+
+        url = baseUrl + "/search?limit=10&offset=1&sort=versionDate&sortAscending=false&query=refsetId:" + TESTING_REFSET_ID;
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {/*NA*/}));
+        assertThat(resultList).isNotNull();
+        assertThat(resultList.getItems().size()).isGreaterThan(2);
+        assertThat(resultList.getItems().get(0).getRefsetId()).isEqualTo(TESTING_REFSET_ID);
+
+    }
 
     /**
      * Test getting the member concepts of a refset.
@@ -150,7 +179,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    //@Test
     public void testExportSctidList() throws Exception {
 
         String url = null;
@@ -178,7 +207,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    //@Test
     public void testExportRf2() throws Exception {
 
         String url = null;
@@ -203,8 +232,32 @@ public class RefsetControllerTests extends BaseTest {
     }
 
     /**
-     * Get the internal refset ID based on the refset's terminology specific ID
-     * .
+     * Test getting concept details.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testConceptDetails() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+        final String conceptId = "721145008";
+
+        url = "/concept/" + conceptId + "/?branchPath=MAIN/2021-03-15";
+        logger.info("Testing url - " + url);
+        
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        final Concept concept = new ObjectMapper().readValue(content, Concept.class);
+        assertThat(concept).isNotNull();
+        assertThat(concept.getCode()).isEqualTo(conceptId);
+        
+    }
+    
+    /**
+     * Get the internal refset ID based on the refset's terminology specific ID .
      *
      * @return the internal refset ID
      * @throws Exception the exception
