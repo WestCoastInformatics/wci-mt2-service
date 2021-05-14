@@ -476,7 +476,6 @@ public class RefsetMemberService {
             retList.setTotal(retList.getTotal() + 1);
 
             conceptIdMap.put(concept.getCode(), concept);
-            break;
         }
 
         populateVersionInfo(conceptIdMap, branch);
