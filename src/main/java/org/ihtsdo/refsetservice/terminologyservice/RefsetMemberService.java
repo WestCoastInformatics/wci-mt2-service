@@ -10,13 +10,11 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
-import java.net.URLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -94,9 +92,14 @@ public class RefsetMemberService {
     /** The local directory to store exported refset files. */
     private static String EXPORT_FILE_DIR;
 
+    /** The Constant membersCache. */
     private final static Map<String, Map<String, Concept>> membersCache = new HashMap<>();
 
+    /** The Constant TAXONOMY_PAGING_LIMIT. */
     private static final int TAXONOMY_PAGING_LIMIT = 1000;
+
+    /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
+    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 500;
 
     static {
 
@@ -131,7 +134,7 @@ public class RefsetMemberService {
         final TaxonomyParameters taxonomyParameters) throws Exception {
 
         final List<String> nonDefaultPreferredTerms = new ArrayList<>();
-        ConceptResultList members = new ConceptResultList();
+        ConceptResultList concepts = new ConceptResultList();
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -161,11 +164,10 @@ public class RefsetMemberService {
 
             Collections.sort(nonDefaultPreferredTerms);
 
-            // build the common terminolgy server url params
+            // build the common terminology server url params
             final String pagingParams =
                     "offset=" + (searchParameters.getOffset() * searchParameters.getLimit())
                             + "&limit=" + searchParameters.getLimit();
-            String versionDate = ""; //getRefsetAsOfDate(refset);    
 
             // if (searchParameters.getSortAscending() != null) {
             //
@@ -177,51 +179,42 @@ public class RefsetMemberService {
 
             // the next call depend if a list or taxonomy is being returned
             if (displayType.equals("list")) {
-                final String url = createBrowserUrl(refset) + "members?referenceSet="
-                        + refset.getRefsetId() + "&" + pagingParams;
+                concepts = getRefsetMemberList(refset, concepts, nonDefaultPreferredTerms,
+                        pagingParams);
 
-                members = getRefsetMemberList(refset, members, nonDefaultPreferredTerms, url);
-
-                // add the descriptions to the member concepts
-                // For each concept populated, identify all descriptions
-                members = getConceptDescriptions(refset, members, nonDefaultPreferredTerms,
-                        createBrowserUrl(refset) + "concepts?" + pagingParams + "&");
+                logger.info("Refset has " + concepts.size() + " members");
             } else {
                 // Should have 19 concepts if starting is SNOMED_ROOT
                 // A) Identify descendants & ancestors
-                // B) Populate all concepts within Depth wiht refset membership
+                // B) Populate all concepts within Depth with refset membership
                 // info
 
-                ConceptResultList children = getRefsetMemberTaxonomy(refset,
-                        nonDefaultPreferredTerms, taxonomyParameters);
+                concepts = getRefsetMemberTaxonomy(refset, nonDefaultPreferredTerms,
+                        taxonomyParameters);
 
-                // add the descriptions to the children concepts
-                // For each concept populated, identify all descriptions
-                children = getConceptDescriptions(refset, children, nonDefaultPreferredTerms,
-                        createBrowserUrl(refset) + "concepts?" + pagingParams + "&");
+                logger.info("Concept has " + concepts.size() + " children");
 
-                logger.info("Concept has " + children.size() + " children");
-                for (Concept child : children.getItems()) {
-                    ConceptResultList grandchildren =
-                            getChildren(child.getCode(), refset.getEdition().getBranch());
-
-                    child.setChildren(grandchildren.getItems());
-                    
-                    // TODO: Need to only populate hasChildren on the child... so update the getChildren() method to break after one found and return boolean
-                    
-                    /* - Not needed for 
-
-                    ConceptResultList grandparents =
-                            getParents(child.getCode(), refset.getEdition().getBranch());
-
-                    child.setParents(grandparents.getItems());
-                */
-
+                for (Concept child : concepts.getItems()) {
+                    child.setHasChildren(
+                            identifyHasChildren(child.getCode(), refset.getEdition().getBranch()));
                 }
+            }
+
+            // add the descriptions to the children concepts
+            // For each concept populated, identify all descriptions
+            // Note: Process 50 at a time
+            for (Concept concept : concepts.getItems()) {
+                final Set<Concept> conceptsToProcess = new HashSet<>();
+
+                for (int i = 0; i < CONCEPT_DESCRIPTIONS_PER_CALL; i++) {
+                    conceptsToProcess.add(concept);
+                }
+
+                populateConceptDescriptions(refset, conceptsToProcess, nonDefaultPreferredTerms);
             }
         }
 
-        return members;
+        return concepts;
     }
 
     /**
@@ -236,53 +229,43 @@ public class RefsetMemberService {
     public static ConceptResultList getRefsetMemberTaxonomy(final Refset refset,
         final List<String> nonDefaultPreferredTerms, final TaxonomyParameters taxonomyParameters)
         throws Exception {
-        Map<String, Concept> allMembersMap = null;
+        final Map<String, Concept> allMembersMap = getMembers(refset);
 
-        if (membersCache.containsKey(refset.getRefsetId())) {
-            allMembersMap = membersCache.get(refset.getRefsetId());
-        } else {
+        ConceptResultList children = getChildren(taxonomyParameters.getStartingConceptId(),
+                refset.getEdition().getBranch());
+
+        for (Concept child : children.getItems()) {
+            if (allMembersMap.containsKey(child.getId())) {
+                Concept member = allMembersMap.get(child.getId());
+                child.setMemberOfRefset(member.isMemberOfRefset());
+                child.setMemberStatus(member.isMemberStatus());
+                child.setMemberEffectiveTime(member.getMemberEffectiveTime());
+            }
+        }
+
+        return children;
+    }
+
+    /**
+     * Gets the members.
+     *
+     * @param refset the refset
+     * @return the members
+     * @throws Exception the exception
+     */
+    private static Map<String, Concept> getMembers(Refset refset) throws Exception {
+        if (!membersCache.containsKey(refset.getRefsetId())) {
             logger.info("Starting grabbing memberList");
             // Get & store all members of refset (which will give all membership
             // details)
-            allMembersMap = generateMemberIdMap(refset);
+            final Map<String, Concept> allMembersMap = generateMemberIdMap(refset);
 
             membersCache.put(refset.getRefsetId(), allMembersMap);
 
             logger.info("Finishing grabbing memberList");
         }
 
-        /*-
-        TopDownRefset.populateRefsetMembersTopDown(taxonomyParameters.getStartingConceptId(),
-                allMembersMap, populatedConcepts, taxonomyParameters.getDepth(), refset, false,
-                true);
-        
-        Map<String, Concept> processedConcepts =
-                BottomUpRefset.populateAncestorDescendantMembership(allMembersMap, refset);
-        
-        
-        
-        Concept rootConcept =
-                BottomUpRefset.getConcept(taxonomyParameters.getStartingConceptId(), refset);
-        
-        BottomUpRefset.buildTaxonomy(rootConcept, processedConcepts, taxonomyParameters.getDepth(),
-                refset);
-        */
-        try (final TerminologyService service = new TerminologyService()) {
-
-            ConceptResultList populatedConcepts = getChildren(
-                    taxonomyParameters.getStartingConceptId(), refset.getEdition().getBranch());
-
-            for (Concept child : populatedConcepts.getItems()) {
-                if (allMembersMap.containsKey(child.getId())) {
-                    Concept member = allMembersMap.get(child.getId());
-                    child.setMemberOfRefset(member.isMemberOfRefset());
-                    child.setMemberStatus(member.isMemberStatus());
-                    child.setMemberEffectiveTime(member.getMemberEffectiveTime());
-                }
-            }
-
-            return populatedConcepts;
-        }
+        return membersCache.get(refset.getRefsetId());
     }
 
     /**
@@ -291,58 +274,82 @@ public class RefsetMemberService {
      * @param refset the refset who's members are being retrieved
      * @param members the members
      * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @param url the terminology server URL
+     * @param pagingParams the paging params
      * @return the refset member concepts
      * @throws Exception the exception
      */
     public static ConceptResultList getRefsetMemberList(final Refset refset,
         final ConceptResultList members, final List<String> nonDefaultPreferredTerms,
-        final String url) throws Exception {
+        final String pagingParams) throws Exception {
+        final String url = SnowstormConnection.BASE_URL + refset.getEdition().getBranch()
+                + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams;
 
         logger.debug("Get Member List URL: " + url);
-        String branchVersion = refset.getEdition().getBranch();
-        return populateConceptsFromSnowstorm(url);
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+            final String resultString = response.readEntity(String.class);
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+            Iterator<JsonNode> iterator = root.get("items").iterator();
+
+            return populateSnowstormConcepts(iterator, refset.getEdition().getBranch());
+        }
     }
 
     /**
      * Gets the children.
      *
      * @param startingConceptId the starting concept id
-     * @param string the refset
+     * @param branch the branch
      * @return the children
      * @throws Exception the exception
      */
     protected static ConceptResultList getChildren(String startingConceptId, String branch)
         throws Exception {
-        final String baseUrl = SnowstormConnection.BASE_URL + "browser/" + branch + "/";
+        final String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/" + "concepts/"
+                + startingConceptId + "/children";
 
-        final String url = baseUrl + "concepts/" + startingConceptId + "/children";
         logger.debug("Get Children URL: " + url);
-        return populateConceptsFromSnowstorm(url);
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+            final String resultString = response.readEntity(String.class);
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+            Iterator<JsonNode> iterator = root.iterator();
+
+            return populateSnowstormConcepts(iterator, branch);
+        }
     }
 
     /**
-     * Gets the children.
+     * Identify has children.
      *
-     * @param startingConceptId the starting concept id
-     * @param string the refset
-     * @return the children
+     * @param conceptId the concept id
+     * @param branch the branch
+     * @return true, if successful
      * @throws Exception the exception
      */
-    protected static ConceptResultList getParents(String startingConceptId, String branch)
-        throws Exception {
-        final String baseUrl = SnowstormConnection.BASE_URL + "browser/" + branch + "/";
+    private static boolean identifyHasChildren(String conceptId, String branch) throws Exception {
+        final String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/" + "concepts/"
+                + conceptId + "/children";
 
-        final String url = baseUrl + "concepts/" + startingConceptId + "/parents";
-        logger.debug("Get Parents URL: " + url);
-        return populateConceptsFromSnowstorm(url);
+        logger.debug("Get Children URL: " + url);
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+            final String resultString = response.readEntity(String.class);
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+            Iterator<JsonNode> iterator = root.iterator();
+
+            return iterator.hasNext();
+        }
     }
 
     /**
      * Generate member id map.
      *
      * @param refset the refset
-     * @param url the url
      * @return the map
      * @throws Exception the exception
      */
@@ -352,8 +359,9 @@ public class RefsetMemberService {
         while (memberIdMap.size() == 0 || (memberIdMap.size() % TAXONOMY_PAGING_LIMIT == 0)) {
             // https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-BE/members?referenceSet=551000172106&offset=200&limit=100
             final String url =
-                    createBrowserUrl(refset) + "members?referenceSet=" + refset.getRefsetId()
-                            + "&limit=" + TAXONOMY_PAGING_LIMIT + "&offset=" + memberIdMap.size();
+                    SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
+                            + "/members?referenceSet=" + refset.getRefsetId() + "&limit="
+                            + TAXONOMY_PAGING_LIMIT + "&offset=" + memberIdMap.size();
             logger.debug("Get Member List URL: " + url);
 
             try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -389,31 +397,88 @@ public class RefsetMemberService {
     }
 
     /**
-     * Populate concepts from Snowstorm.
+     * Populate version info.
      *
-     * @param url the url
-     * @param innerTags the inner tags
-     * @return the concept result list
+     * @param conceptMap the concept map
+     * @param branch the branch
      * @throws Exception the exception
      */
-    private static ConceptResultList populateConceptsFromSnowstorm(String url) throws Exception {
-        final ConceptResultList retList = new ConceptResultList();
+    // populate the version with dedicated snowstorm call
+    private static void populateVersionInfo(Map<String, Concept> conceptMap, String branch)
+        throws Exception {
+        if (conceptMap.keySet().isEmpty()) {
+            return;
+        }
+
+        boolean initialEntry = true;
+        final StringBuffer buf = new StringBuffer();
+
+        for (String conId : conceptMap.keySet()) {
+            if (initialEntry) {
+                initialEntry = false;
+            } else {
+                buf.append("%2C%20");
+            }
+
+            buf.append(conId);
+        }
+
+        final String url =
+                SnowstormConnection.BASE_URL + branch + "/concepts?conceptIds=" + buf.toString();
+        logger.debug("Get Concept Version URL: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
             final String resultString = response.readEntity(String.class);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
-            Iterator<JsonNode> iterator = root.iterator();
+            final JsonNode node = root.get("items");
+            Iterator<JsonNode> iterator = node.iterator();
 
             while (iterator.hasNext()) {
                 JsonNode item = iterator.next();
-                final Concept concept = populateConcept(item);
-                retList.getItems().add(concept);
-                retList.setTotal(retList.getTotal() + 1);
 
+                // Only process Active Members
+
+                final Concept con = conceptMap.get(item.get("conceptId").asText());
+
+                con.setVersion(item.get("effectiveTime").asText());
             }
         }
+    }
+
+    /**
+     * Populate concepts from Snowstorm.
+     *
+     * @param iterator the iterator
+     * @param branch the branch
+     * @return the concept result list
+     * @throws Exception the exception
+     */
+    private static ConceptResultList populateSnowstormConcepts(Iterator<JsonNode> iterator,
+        String branch) throws Exception {
+        final ConceptResultList retList = new ConceptResultList();
+        final Map<String, Concept> conceptIdMap = new HashMap<>();
+
+        while (iterator.hasNext()) {
+            JsonNode item = iterator.next();
+            final Concept concept = new Concept();
+
+            String conId = (item.has("referencedComponentId"))
+                    ? item.get("referencedComponentId").asText() : item.get("conceptId").asText();
+            concept.setCode(conId);
+            concept.setTerminology("SNOMEDCT");
+            concept.setHistoryVisible(true);
+            concept.setFeedbackVisible(true);
+
+            retList.getItems().add(concept);
+            retList.setTotal(retList.getTotal() + 1);
+
+            conceptIdMap.put(concept.getCode(), concept);
+            break;
+        }
+
+        populateVersionInfo(conceptIdMap, branch);
 
         return retList;
     }
@@ -435,167 +500,14 @@ public class RefsetMemberService {
         concept.setHistoryVisible(true);
         concept.setFeedbackVisible(true);
 
-        // TODO: Add Version info
-
         return concept;
-    }
-
-    /**
-     * Gets the concept descriptions.
-     *
-     * @param refset the refset who's members are being retrieved
-     * @param conceptsToProcess the concepts to add descriptions to
-     * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @param url the terminology server URL
-     * @return the concept descriptions
-     * @throws MalformedURLException the malformed URL exception
-     * @throws Exception the exception
-     */
-    public static ConceptResultList getConceptDescriptions(final Refset refset,
-        final ConceptResultList conceptsToProcess, final List<String> nonDefaultPreferredTerms,
-        final String url) throws MalformedURLException, Exception {
-
-        final Edition edition = refset.getEdition();
-        final StringBuffer conceptIds = new StringBuffer();
-
-        for (int i = 0; i < conceptsToProcess.size(); i++) {
-
-            final Concept concept = (Concept) conceptsToProcess.getItems().toArray()[i];
-            conceptIds.append(concept.getCode());
-
-            if (i + 1 < conceptsToProcess.size()) {
-                conceptIds.append(",");
-            }
-        }
-
-        logger.debug("Get Member Descriptions URL: " + url + "conceptIds=" + conceptIds);
-
-        try (final Response response =
-                SnowstormConnection.getResponse(url + "conceptIds=" + conceptIds)) {
-
-            final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
-
-            final JsonNode concepts = root.get("items");
-            final Iterator<JsonNode> conceptIterator = concepts.iterator();
-            final HashMap<String, Set<Map<String, String>>> conceptDescriptions = new HashMap<>();
-
-            while (conceptIterator.hasNext()) {
-
-                final JsonNode concept = conceptIterator.next();
-                final String conceptId = concept.get("conceptId").asText();
-
-                final JsonNode descriptionNodes = concept.get("descriptions");
-                final Iterator<JsonNode> descriptionIterator = descriptionNodes.iterator();
-
-                final Set<Map<String, String>> descriptions = new HashSet<>();
-
-                while (descriptionIterator.hasNext()) {
-
-                    final Map<String, String> descriptionMap = new HashMap<>();
-                    final JsonNode descriptionNode = descriptionIterator.next();
-
-                    if (descriptionNode.get("active").asBoolean()) {
-                        final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
-                        String acceptability = null;
-                        String languageId = null;
-                        String typeName = null;
-
-                        for (String langRefsetId : edition.getDefaultLanguageRefsets()) {
-                            if (acceptabilityMap.has(langRefsetId)) {
-                                acceptability = acceptabilityMap.get(langRefsetId).asText();
-                                languageId = langRefsetId;
-                                break;
-                            }
-                        }
-
-                        if (acceptability != null && "PREFERRED".equals(acceptability)) {
-
-                            if ("900000000000003001"
-                                    .equals(descriptionNode.get("typeId").asText())) {
-                                typeName = "FSN";
-                            } else {
-                                typeName = "PT";
-                            }
-
-                            descriptionMap.put(DESCRIPTION_TERM,
-                                    descriptionNode.get("term").asText());
-                            descriptionMap.put(DESCRIPTION_TYPE, typeName);
-                            descriptionMap.put(DESCRIPTION_ID,
-                                    descriptionNode.get("descriptionId").asText());
-                            descriptionMap.put(LANGUAGE_ID, languageId + typeName);
-                            descriptionMap.put(LANGUAGE_NAME,
-                                    descriptionNode.get("lang").asText().toUpperCase() + " ("
-                                            + typeName + ")");
-                            descriptionMap.put(DESCRIPTION_LANGUAGE,
-                                    descriptionNode.get("lang").asText());
-
-                            descriptions.add(descriptionMap);
-                        }
-                    }
-                }
-                conceptDescriptions.put(conceptId, descriptions);
-            }
-
-            final Map<String, List<Map<String, String>>> sortedDescriptions =
-                    sortDescriptions(conceptDescriptions, nonDefaultPreferredTerms,
-                            edition.getDefaultLanguageCode());
-
-            for (Concept concept : conceptsToProcess.getItems()) {
-                concept.setDescriptions(sortedDescriptions.get(concept.getCode()));
-
-                List<Map<String, String>> descriptions = sortedDescriptions.get(concept.getCode());
-                concept.setName(descriptions.get(0).get(DESCRIPTION_TERM));
-            }
-
-        } catch (Exception ex) {
-
-            logger.error("Could not retrieve descriptions" + ex.getMessage());
-            ex.printStackTrace();
-        }
-
-        return conceptsToProcess;
-    }
-
-    /**
-     * Creates the base url.
-     *
-     * @param refset the refset
-     * @return the string
-     */
-    private static String createBrowserUrl(Refset refset) {
-        return createUrl(refset, true);
-    }
-
-    /**
-     * Creates the base url.
-     *
-     * @param refset the refset
-     * @param addBrowser the add browser
-     * @return the string
-     */
-    private static String createUrl(Refset refset, boolean addBrowser) {
-        
-        String versionDate = "";
-        
-        if (refset.getVersionDate() != null) {
-            // versionDate = "/" + getRefsetAsOfDate(refset);
-        }
-
-        if (addBrowser) {
-            return SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
-                    + versionDate + "/";
-        } else {
-            return SnowstormConnection.BASE_URL + refset.getEdition().getBranch() + versionDate
-                    + "/";
-        }
     }
 
     /**
      * Sort descriptions.
      *
-     * @param conceptDescriptions the con desc map
+     * @param conceptId the concept id
+     * @param descriptions the descriptions
      * @param nonDefaultPreferredTerms the non-default preferred terms
      * @param defaultLanguageCode the default language code
      * @return the map
@@ -610,79 +522,70 @@ public class RefsetMemberService {
      *      a.  Order by language code
      *      b.  If no translation, will be null
      */
-    private static Map<String, List<Map<String, String>>> sortDescriptions(
-        final HashMap<String, Set<Map<String, String>>> conceptDescriptions,
-        final List<String> nonDefaultPreferredTerms, final String defaultLanguageCode)
-        throws Exception {
+    private static List<Map<String, String>> sortConceptDescriptions(String conceptId,
+        final Set<Map<String, String>> descriptions, final List<String> nonDefaultPreferredTerms,
+        final String defaultLanguageCode) throws Exception {
 
-        final Map<String, List<Map<String, String>>> sortedMemberDescriptions = new HashMap<>();
+        // do this for each concept
+        final List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
+        final Map<String, Map<String, String>> sortingMap = new HashMap<>();
 
         // Actual code
-        for (String conceptId : conceptDescriptions.keySet()) {
+        for (Map<String, String> descriptionMap : descriptions) {
 
-            // do this for each concept
-            final List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
-            final Map<String, Map<String, String>> sortingMap = new HashMap<>();
-
-            for (Map<String, String> descriptionMap : conceptDescriptions.get(conceptId)) {
-
-                if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
-                    // Always 0
-                    if (sortingMap.containsKey(TYPE_FSN)) {
-                        displayDuplicateWarning("A FSN in the default language", conceptId,
-                                descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(TYPE_FSN),
-                                descriptionMap);
-                        continue;
-                    }
-
-                    sortingMap.put(TYPE_FSN, descriptionMap);
-                } else if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(defaultLanguageCode)) {
-                    // Always 1
-                    if (sortingMap.containsKey(TYPE_DEFAULT_PT)) {
-                        displayDuplicateWarning("A PT in the default language", conceptId,
-                                descriptionMap.get(DESCRIPTION_LANGUAGE),
-                                sortingMap.get(TYPE_DEFAULT_PT), descriptionMap);
-                        continue;
-                    }
-
-                    sortingMap.put(TYPE_DEFAULT_PT, descriptionMap);
-                } else {
-                    // Always 2 + the index in nonDefaultPreferredTerms
-                    final int index =
-                            nonDefaultPreferredTerms.indexOf(descriptionMap.get(LANGUAGE_ID));
-
-                    if (sortingMap.containsKey(TYPE_OTHER_PT + index)) {
-                        displayDuplicateWarning("A PT in the non-default language", conceptId,
-                                descriptionMap.get(DESCRIPTION_LANGUAGE),
-                                sortingMap.get(TYPE_OTHER_PT + index), descriptionMap);
-
-                        continue;
-                    }
-
-                    sortingMap.put(TYPE_OTHER_PT + index, descriptionMap);
-                }
-            }
-
-            if (sortingMap.get(TYPE_DEFAULT_PT) != null) {
-                sortedDescriptionList.add(sortingMap.get(TYPE_DEFAULT_PT));
-            }
-
-            if (sortingMap.get(TYPE_FSN) != null) {
-                sortedDescriptionList.add(sortingMap.get(TYPE_FSN));
-            }
-
-            for (int i = 0; i < nonDefaultPreferredTerms.size(); i++) {
-
-                if (sortingMap.get(TYPE_OTHER_PT + i) != null) {
-                    sortedDescriptionList.add(sortingMap.get(TYPE_OTHER_PT + i));
+            if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
+                // Always 0
+                if (sortingMap.containsKey(TYPE_FSN)) {
+                    displayDuplicateWarning("A FSN in the default language", conceptId,
+                            descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(TYPE_FSN),
+                            descriptionMap);
+                    continue;
                 }
 
-            }
+                sortingMap.put(TYPE_FSN, descriptionMap);
+            } else if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(defaultLanguageCode)) {
+                // Always 1
+                if (sortingMap.containsKey(TYPE_DEFAULT_PT)) {
+                    displayDuplicateWarning("A PT in the default language", conceptId,
+                            descriptionMap.get(DESCRIPTION_LANGUAGE),
+                            sortingMap.get(TYPE_DEFAULT_PT), descriptionMap);
+                    continue;
+                }
 
-            sortedMemberDescriptions.put(conceptId, sortedDescriptionList);
+                sortingMap.put(TYPE_DEFAULT_PT, descriptionMap);
+            } else {
+                // Always 2 + the index in nonDefaultPreferredTerms
+                final int index = nonDefaultPreferredTerms.indexOf(descriptionMap.get(LANGUAGE_ID));
+
+                if (sortingMap.containsKey(TYPE_OTHER_PT + index)) {
+                    displayDuplicateWarning("A PT in the non-default language", conceptId,
+                            descriptionMap.get(DESCRIPTION_LANGUAGE),
+                            sortingMap.get(TYPE_OTHER_PT + index), descriptionMap);
+
+                    continue;
+                }
+
+                sortingMap.put(TYPE_OTHER_PT + index, descriptionMap);
+            }
         }
 
-        return sortedMemberDescriptions;
+        if (sortingMap.get(TYPE_DEFAULT_PT) != null) {
+            sortedDescriptionList.add(sortingMap.get(TYPE_DEFAULT_PT));
+        }
+
+        if (sortingMap.get(TYPE_FSN) != null) {
+            sortedDescriptionList.add(sortingMap.get(TYPE_FSN));
+        }
+
+        for (int i = 0; i < nonDefaultPreferredTerms.size(); i++) {
+
+            if (sortingMap.get(TYPE_OTHER_PT + i) != null) {
+                sortedDescriptionList.add(sortingMap.get(TYPE_OTHER_PT + i));
+            }
+
+        }
+
+        return sortedDescriptionList;
     }
 
     /**
@@ -740,26 +643,25 @@ public class RefsetMemberService {
     public static String exportRefsetRf2(final String refsetInternalId, final String type,
         final String fileNameDate, final String startEffectiveTime,
         final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
-        
+
         String branchPath = "";
         String refsetId = "";
         String zipFilePath = "";
         String versionDate = "";
-        
-        try (
-                final TerminologyService service = new TerminologyService()
-        ) {
+
+        try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
             refsetId = refset.getRefsetId();
             versionDate = getRefsetAsOfDate(refset);
             String pathDate = "";
-            
+
             if (refset.getVersionDate() != null) {
                 // pathDate = "/" + versionDate;
             }
-            
-            zipFilePath = EXPORT_FILE_DIR + "refset_" + refset.getRefsetId() + "_" + versionDate + ".zip";
+
+            zipFilePath =
+                    EXPORT_FILE_DIR + "refset_" + refset.getRefsetId() + "_" + versionDate + ".zip";
             branchPath = refset.getEdition().getBranch() + pathDate;
         }
 
@@ -776,21 +678,21 @@ public class RefsetMemberService {
                 + "}";
 
         logger.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entity);
-        
-        String snowstormFileUrl = ""; //"https://www.learningcontainer.com/download/sample-zip-files/?wpdmdl=1637";
+
+        String snowstormFileUrl = ""; // "https://www.learningcontainer.com/download/sample-zip-files/?wpdmdl=1637";
 
         try (Response response = SnowstormConnection.postResponse(snowstormExportApiUrl, entity)) {
 
             snowstormFileUrl = response.getLocation().toString() + "/archive";
             logger.info("Response location " + snowstormFileUrl);
-            
+
         } catch (Exception ex) {
             throw new Exception("Could not export refset from snowstorm: " + ex.getMessage(), ex);
 
         }
-        
+
         logger.debug("Snowstorm File URL: " + snowstormFileUrl);
-        
+
         try {
 
             // Open connection to the Snowstorm URL
@@ -799,35 +701,33 @@ public class RefsetMemberService {
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(10000);
             connection.setRequestProperty("Cookie", SnowstormConnection.getGenericUserCookie());
-            
-            // Download the Snowstorm file 
+
+            // Download the Snowstorm file
             FileUtils.copyURLToFile(connection.getURL(), new File(zipFilePath));
-            
+
         } catch (Exception ex) {
             throw new Exception("Could not download export from snowstorm: " + ex.getMessage(), ex);
 
         }
-        
+
         final List<String> sourceFiles = unzipFiles(zipFilePath, EXPORT_FILE_DIR);
-        
+
         logger.debug("Unzipped Files: " + sourceFiles);
-        
+
         if (exportMetadata) {
-            
+
             // get the refset metadata information
-            try (
-                    final TerminologyService service = new TerminologyService()
-            ) {
+            try (final TerminologyService service = new TerminologyService()) {
 
                 final Refset refset = service.get(refsetInternalId, Refset.class);
                 sourceFiles.add(exportRefsetMetadata(refset));
             }
-            
+
         }
-        
+
         // zip the files together
         zipFiles(sourceFiles, zipFilePath);
-        
+
         return zipFilePath;
 
     }
@@ -858,7 +758,8 @@ public class RefsetMemberService {
             return resultString;
 
         } catch (Exception ex) {
-            throw new Exception("Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception(
+                    "Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
         }
     }
 
@@ -870,7 +771,8 @@ public class RefsetMemberService {
      * @return the URL of the file containing the member list
      * @throws Exception the exception
      */
-    public static String exportRefsetSctidList(final String refsetInternalId, final boolean exportMetadata) throws Exception {
+    public static String exportRefsetSctidList(final String refsetInternalId,
+        final boolean exportMetadata) throws Exception {
 
         int offset = 0;
         int limit = 10000;
@@ -885,16 +787,14 @@ public class RefsetMemberService {
         List<String> sourceFiles = new ArrayList<>();
 
         // get the refset and member information
-        try (
-                final TerminologyService service = new TerminologyService()
-        ) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
-            
+
             if (refset.getVersionDate() != null) {
                 // pathDate = "/" + versionDate;
             }
-            
+
             versionDate = getRefsetAsOfDate(refset);
             refsetFileName = "refset_" + refset.getRefsetId() + "_" + versionDate + "_member_ids";
             sctidsOutputPath += refsetFileName + ".txt";
@@ -902,7 +802,7 @@ public class RefsetMemberService {
             branchPath = refset.getEdition().getBranch() + pathDate;
             logger.debug("SCTID txt output path = " + sctidsOutputPath);
             logger.debug("zip output path = " + zipOutputPath);
-            
+
             if (exportMetadata) {
                 sourceFiles.add(exportRefsetMetadata(refset));
             }
@@ -930,32 +830,31 @@ public class RefsetMemberService {
                     fileLines.append(conceptId + "\n");
                 }
             }
-            
+
         } catch (Exception ex) {
-            throw new Exception("Could not get refset member data from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception(
+                    "Could not get refset member data from snowstorm: " + ex.getMessage(), ex);
         }
-        
+
         // print the sctids file
-        try (
-                final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
+        try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
                 final OutputStreamWriter sctidsOutputStreamWriter =
                         new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
-                final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);
-        ) {
-            
+                final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
+
             sctidsWriter.print(fileLines);
-    
+
         } catch (Exception ex) {
             throw new Exception("Could not create export txt file: " + ex.getMessage(), ex);
         }
-            
+
         // zip the files together
         sourceFiles.add(sctidsOutputPath);
         zipFiles(sourceFiles, zipOutputPath);
 
         return zipOutputPath;
     }
-        
+
     /**
      * Zip files together.
      *
@@ -963,26 +862,25 @@ public class RefsetMemberService {
      * @param zipOutputPath the path and filename of the zip file to create
      * @throws Exception the exception
      */
-    public static void zipFiles(final List<String> sourceFiles, final String zipOutputPath) throws Exception {
-        
-        try (
-            final FileOutputStream zipFileOutputStream = new FileOutputStream(zipOutputPath);
-            final ZipOutputStream zipOutputStream = new ZipOutputStream(zipFileOutputStream);
-        ) {
-               
+    public static void zipFiles(final List<String> sourceFiles, final String zipOutputPath)
+        throws Exception {
+
+        try (final FileOutputStream zipFileOutputStream = new FileOutputStream(zipOutputPath);
+                final ZipOutputStream zipOutputStream = new ZipOutputStream(zipFileOutputStream);) {
+
             for (String sourceFile : sourceFiles) {
-                
+
                 File fileToZip = new File(sourceFile);
-                
+
                 try (final FileInputStream zipFileInputStream = new FileInputStream(fileToZip)) {
-                    
+
                     ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
                     zipOutputStream.putNextEntry(zipEntry);
 
                     byte[] bytes = new byte[1024];
                     int length;
-                    
-                    while((length = zipFileInputStream.read(bytes)) >= 0) {
+
+                    while ((length = zipFileInputStream.read(bytes)) >= 0) {
                         zipOutputStream.write(bytes, 0, length);
                     }
                 }
@@ -992,73 +890,73 @@ public class RefsetMemberService {
             throw new Exception("Could not zip the files: " + ex.getMessage(), ex);
         }
     }
-    
+
     /**
-     * Extract files from a zip archive
-     * 
+     * Extract files from a zip archive.
+     *
      * @param zipFilePath the path and filename of the zip file to create
      * @param extractionPath the path of the directory to extract files to
      * @return a list of file paths of the extracted files
      * @throws Exception the exception
      */
-    public static List<String> unzipFiles(final String zipFilePath, final String extractionPath) throws Exception {
-        
+    public static List<String> unzipFiles(final String zipFilePath, final String extractionPath)
+        throws Exception {
+
         final List<String> sourceFiles = new ArrayList<>();
-        
-        try (
-            final ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath));
-        ) {
-            
+
+        try (final ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath));) {
+
             final File extractionDirectory = new File(extractionPath);
             byte[] buffer = new byte[1024];
             ZipEntry zipEntry;
-            
+
             while ((zipEntry = zis.getNextEntry()) != null) {
-               
+
                 File newFile = new File(extractionDirectory, zipEntry.getName());
                 String extractionCanonicalPath = extractionDirectory.getCanonicalPath();
                 String fileCanonicalPath = newFile.getCanonicalPath();
 
                 if (!fileCanonicalPath.startsWith(extractionCanonicalPath + File.separator)) {
-                    throw new IOException("Entry is outside of the target directory: " + zipEntry.getName());
+                    throw new IOException(
+                            "Entry is outside of the target directory: " + zipEntry.getName());
                 }
-                
+
                 if (zipEntry.isDirectory()) {
-                    
+
                     if (!newFile.isDirectory() && !newFile.mkdirs()) {
                         throw new IOException("Failed to create directory " + newFile);
                     }
-                    
+
                 } else {
-                    
+
                     // fix for Windows-created archives
                     File parent = newFile.getParentFile();
-                    
+
                     if (!parent.isDirectory() && !parent.mkdirs()) {
                         throw new IOException("Failed to create directory " + parent);
                     }
-                    
+
                     // write file content
                     try (final FileOutputStream fileOutputStream = new FileOutputStream(newFile)) {
-                        
+
                         int length;
-                        
+
                         while ((length = zis.read(buffer)) > 0) {
                             fileOutputStream.write(buffer, 0, length);
                         }
                     }
-                    
+
                     sourceFiles.add(fileCanonicalPath);
                 }
             }
-            
+
             return sourceFiles;
 
         } catch (Exception ex) {
             throw new Exception("Could not unzip the file: " + ex.getMessage(), ex);
         }
     }
-    
+
     /**
      * Export the refset metadata in a text format.
      *
@@ -1070,9 +968,10 @@ public class RefsetMemberService {
 
         StringBuilder fileLines = new StringBuilder();
         String pathDate = getRefsetAsOfDate(refset);
-        String outputPath = EXPORT_FILE_DIR + "refset_" + refset.getRefsetId() + "_" + pathDate + "_metadata.txt";
+        String outputPath = EXPORT_FILE_DIR + "refset_" + refset.getRefsetId() + "_" + pathDate
+                + "_metadata.txt";
         String separator = "\t";
-        
+
         fileLines.append("Refset ID" + separator + refset.getRefsetId() + "\n");
         fileLines.append("Refset Name" + separator + refset.getName() + "\n");
         fileLines.append("Edition Name" + separator + refset.getEditionName() + "\n");
@@ -1081,64 +980,66 @@ public class RefsetMemberService {
         fileLines.append("Project" + separator + refset.getProject().getName() + "\n");
         fileLines.append("Module ID" + separator + refset.getModuleId() + "\n");
         fileLines.append("Refset Version Status" + separator + refset.getVersionStatus() + "\n");
-        fileLines.append("Refset Version Date" + separator + DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
-        fileLines.append("Refset Last Modified Date" + separator + DateUtility.formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+        fileLines.append("Refset Version Date" + separator + DateUtility
+                .formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+        fileLines.append("Refset Last Modified Date" + separator + DateUtility
+                .formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
         fileLines.append("Refset Type" + separator + refset.getType() + "\n");
-        
+
         if (refset.isActive()) {
             fileLines.append("Refset Status" + separator + "Active" + "\n");
         } else {
             fileLines.append("Refset Status" + separator + "Inactive" + "\n");
         }
-        
+
         if (refset.getDefinitionClauses().size() > 0) {
-            
+
             final List<String> definitionList = new ArrayList<>();
-            
+
             for (DefinitionClause clause : refset.getDefinitionClauses()) {
-                
+
                 String entry = clause.getValue();
-                
+
                 if (clause.getNegated()) {
                     entry = "(-) " + entry;
                 }
-                
+
                 definitionList.add(entry);
             }
-            
-            fileLines.append("Refset Definition" + separator + String.join(", ", definitionList) + "\n");
+
+            fileLines.append(
+                    "Refset Definition" + separator + String.join(", ", definitionList) + "\n");
         }
-        
+
         fileLines.append("Tags" + separator + String.join(", ", refset.getTags()) + "\n");
-        
+
         if (refset.getNarrative() != null && !refset.getNarrative().equals("")) {
             fileLines.append("Refset Narrative" + separator + refset.getNarrative() + "\n");
         }
-        
+
         if (refset.getVersionNotes() != null && !refset.getVersionNotes().equals("")) {
             fileLines.append("Refset Version Notes" + separator + refset.getVersionNotes() + "\n");
         }
-        
+
         if (refset.getExternalUrl() != null && !refset.getExternalUrl().equals("")) {
             fileLines.append("External URL" + separator + refset.getExternalUrl() + "\n");
         }
-        
+
         // print the sctids file
-        try (
-                final FileOutputStream fileOutputStream = new FileOutputStream(outputPath);
+        try (final FileOutputStream fileOutputStream = new FileOutputStream(outputPath);
                 final OutputStreamWriter outputStreamWriter =
                         new OutputStreamWriter(fileOutputStream, "UTF-8");
-                final PrintWriter printWriter = new PrintWriter(outputStreamWriter);
-        ) {
-            
+                final PrintWriter printWriter = new PrintWriter(outputStreamWriter);) {
+
             printWriter.print(fileLines);
             return outputPath;
-    
+
         } catch (Exception ex) {
-            throw new Exception("Could not create metadata export txt file: " + ex.getMessage(), ex);
+            throw new Exception("Could not create metadata export txt file: " + ex.getMessage(),
+                    ex);
         }
     }
-        
+
     /**
      * Get either the version date or the current date in yyyy-MM-dd format.
      *
@@ -1147,17 +1048,163 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static String getRefsetAsOfDate(final Refset refset) throws Exception {
-        
+
         String asOfDate = "";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        
+
         if (refset.getVersionDate() != null) {
 
             asOfDate = simpleDateFormat.format(refset.getVersionDate());
         } else {
             asOfDate = simpleDateFormat.format(new Date());
         }
-        
+
         return asOfDate;
+    }
+
+    /**
+     * Gets the concept descriptions.
+     *
+     * @param refset the refset who's members are being retrieved
+     * @param conceptsToProcess the concepts to add descriptions to
+     * @param nonDefaultPreferredTerms the non-default preferred terms
+     * @return the concept descriptions
+     * @throws MalformedURLException the malformed URL exception
+     * @throws Exception the exception
+     */
+    public static void populateConceptDescriptions(final Refset refset,
+        final Set<Concept> conceptsToProcess, final List<String> nonDefaultPreferredTerms)
+        throws MalformedURLException, Exception {
+
+        final StringBuffer conceptIds = new StringBuffer();
+
+        // Create Snowstorm URL
+        final String url =
+                SnowstormConnection.BASE_URL + refset.getEdition().getBranch() + "/descriptions?";
+
+        boolean firstTime = true;
+        for (Concept concept : conceptsToProcess) {
+            if (firstTime) {
+                firstTime = false;
+            } else {
+                conceptIds.append(",");
+            }
+            conceptIds.append(concept.getCode());
+        }
+
+        // Call Snowstorm
+        logger.debug("Get Member Descriptions URL: " + url + "&conceptIds=" + conceptIds);
+
+        try (final Response response =
+                SnowstormConnection.getResponse(url + "conceptIds=" + conceptIds)) {
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+
+            final JsonNode allDescriptionNodes = root.get("items");
+            final Iterator<JsonNode> descriptionIterator = allDescriptionNodes.iterator();
+            final HashMap<String, Set<JsonNode>> conceptDescriptionNodes = new HashMap<>();
+
+            // Assign descriptions to proper concept
+            while (descriptionIterator.hasNext()) {
+                final JsonNode descriptionNode = descriptionIterator.next();
+
+                if (descriptionNode.get("active").asBoolean()) {
+                    String conceptId = descriptionNode.get("conceptId").asText();
+
+                    if (!conceptDescriptionNodes.containsKey(conceptId)) {
+                        conceptDescriptionNodes.put(conceptId, new HashSet<JsonNode>());
+                    }
+
+                    conceptDescriptionNodes.get(conceptId).add(descriptionNode);
+                }
+            }
+
+            // Process and sort each concept's descriptions
+            final Map<String, List<Map<String, String>>> conceptDescriptionMap = new HashMap<>();
+
+            for (String conceptId : conceptDescriptionNodes.keySet()) {
+                Set<JsonNode> descriptionNodes = conceptDescriptionNodes.get(conceptId);
+                Set<Map<String, String>> descriptions = new HashSet<>();
+
+                descriptions = processDescriptionNode(descriptionNodes,
+                        refset.getEdition().getDefaultLanguageRefsets());
+
+                final List<Map<String, String>> sortedDescriptions =
+                        sortConceptDescriptions(conceptId, descriptions, nonDefaultPreferredTerms,
+                                refset.getEdition().getDefaultLanguageCode());
+
+                conceptDescriptionMap.put(conceptId, sortedDescriptions);
+            }
+
+            // Populate concept with description-based data
+            for (Concept concept : conceptsToProcess) {
+                List<Map<String, String>> descriptions =
+                        conceptDescriptionMap.get(concept.getCode());
+
+                concept.setDescriptions(descriptions);
+
+                concept.setName(descriptions.get(0).get(DESCRIPTION_TERM));
+            }
+
+        } catch (Exception ex) {
+
+            logger.error("Could not retrieve descriptions" + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * Process description node.
+     *
+     * @param descriptionNodes the description nodes
+     * @param defaultLanguageRefsets the default language refsets
+     * @return the sets the
+     */
+    private static Set<Map<String, String>> processDescriptionNode(Set<JsonNode> descriptionNodes,
+        Set<String> defaultLanguageRefsets) {
+        final Set<Map<String, String>> descriptions = new HashSet<>();
+
+        for (JsonNode descriptionNode : descriptionNodes) {
+            final Map<String, String> descriptionAttributesMap = new HashMap<>();
+
+            final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
+            String acceptability = null;
+            String languageId = null;
+            String typeName = null;
+
+            for (String langRefsetId : defaultLanguageRefsets) {
+                if (acceptabilityMap.has(langRefsetId)) {
+                    acceptability = acceptabilityMap.get(langRefsetId).asText();
+                    languageId = langRefsetId;
+                    break;
+                }
+            }
+
+            if (acceptability != null && "PREFERRED".equals(acceptability)) {
+
+                if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
+                    typeName = "FSN";
+                } else {
+                    typeName = "PT";
+                }
+
+                descriptionAttributesMap.put(DESCRIPTION_TERM,
+                        descriptionNode.get("term").asText());
+                descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
+                descriptionAttributesMap.put(DESCRIPTION_ID,
+                        descriptionNode.get("descriptionId").asText());
+                descriptionAttributesMap.put(LANGUAGE_ID, languageId + typeName);
+                descriptionAttributesMap.put(LANGUAGE_NAME,
+                        descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
+                descriptionAttributesMap.put(DESCRIPTION_LANGUAGE,
+                        descriptionNode.get("lang").asText());
+
+                descriptions.add(descriptionAttributesMap);
+            }
+        }
+
+        return descriptions;
     }
 }

@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.*;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -70,8 +69,9 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.",
-                    required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "refsetInternalId",
+                    value = "The internal ID of the refset to return.", required = true,
+                    dataType = "string", paramType = "path"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}",
@@ -294,9 +294,9 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members",
             produces = "application/json")
     public @ResponseBody ConceptResultList getMembers(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, final SearchParameters searchParameters, final String displayType,
-        final TaxonomyParameters taxonomyParameters, final BindingResult bindingResult)
-        throws Exception {
+    final String refsetInternalId, final SearchParameters searchParameters,
+        final String displayType, final TaxonomyParameters taxonomyParameters,
+        final BindingResult bindingResult) throws Exception {
 
         // Check whether or not parameter binding was successful
         if (bindingResult.hasErrors()) {
@@ -316,27 +316,18 @@ public class RefsetController extends BaseController {
                     String.join("\n ", errorMessages));
         }
 
-        String resolvedDisplayType = displayType;
-
-        // 'list' or 'taxonomy'
-        if (resolvedDisplayType == null || resolvedDisplayType.equals("")) {
-            resolvedDisplayType = "taxonomy";
-        }
-
         final long start = System.currentTimeMillis();
         ConceptResultList results = new ConceptResultList();
 
         logger.info("*********** getMembers: refsetInternalId: " + refsetInternalId);
 
         try {
-            taxonomyParameters.setDepth(2);
-
             if (!STARTING_CONCEPT_ID.isBlank()) {
                 taxonomyParameters.setStartingConceptId(STARTING_CONCEPT_ID);
             }
 
             results = RefsetMemberService.getRefsetMembers(refsetInternalId, searchParameters,
-                    resolvedDisplayType, taxonomyParameters);
+                    displayType, taxonomyParameters);
             logger.debug("******** results: " + ModelUtility.toJson(results));
             results.setTimeTaken(System.currentTimeMillis() - start);
             return results;
@@ -363,8 +354,9 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.",
-                    required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "refsetInternalId",
+                    value = "The internal ID of the refset to return.", required = true,
+                    dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
                     required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "format",
@@ -386,16 +378,17 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}",
             produces = "application/json")
     public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, final String format, final String exportType, final String fileNameDate,
-        String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata)
-        throws Exception {
+    final String refsetInternalId, final String format, final String exportType,
+        final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime,
+        final boolean exportMetadata) throws Exception {
 
         try {
 
             logger.info(
                     "*********** exportRefset: refsetInternalId: type: fileNameDate: startEffectiveTime: transientEffectiveTime: exportMetadata:"
                             + refsetInternalId + "," + exportType + "," + fileNameDate + ","
-                            + startEffectiveTime + "," + transientEffectiveTime + "," + exportMetadata);
+                            + startEffectiveTime + "," + transientEffectiveTime + ","
+                            + exportMetadata);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -405,17 +398,19 @@ public class RefsetController extends BaseController {
 
                     if (format.equals("rf2") || format.equals("rf2_with_names")) {
 
-                        String uri = RefsetMemberService.exportRefsetRf2(refsetInternalId, exportType,
-                                fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata);
+                        String uri = RefsetMemberService.exportRefsetRf2(refsetInternalId,
+                                exportType, fileNameDate, startEffectiveTime,
+                                transientEffectiveTime, exportMetadata);
                         logger.debug("******** results: " + uri);
                         url = "{\"url\": \"" + uri + "/archive\"}";
 
                     } else if (format.equals("sctids")) {
-                        
-                        String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId, exportMetadata);
+
+                        String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId,
+                                exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
                     }
-                    
+
                     return url;
 
                 } catch (final Exception e) {

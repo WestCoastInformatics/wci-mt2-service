@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
-
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -36,7 +34,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class RefsetControllerTests extends BaseTest {
 
     /** The Constant TESTING_REFSET_ID. */
-    private static final String TESTING_REFSET_ID = "721145008"; // this code works for sure: "551000172106";
+    // this code works for sure: "551000172106";
+    private static final String TESTING_REFSET_ID = "721145008";
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -97,7 +96,7 @@ public class RefsetControllerTests extends BaseTest {
      * @throws Exception the exception
      */
     @Test
-    public void testRefsetMembers() throws Exception {
+    public void testRefsetMemberList() throws Exception {
 
         String url = null;
         MvcResult result = null;
@@ -105,7 +104,7 @@ public class RefsetControllerTests extends BaseTest {
         ConceptResultList members = null;
         String refsetTerminologyId = getRefsetInternalId();
 
-        url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=2"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
+        url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=2&displayType=list"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
@@ -117,7 +116,35 @@ public class RefsetControllerTests extends BaseTest {
 
         logger.info("Done -- Just returned refset with " + members.size() + " members.");
     }
-    
+
+    /**
+     * Test getting the member concepts of a refset.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testRefsetDetailsTaxonomy() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+        ConceptResultList children = null;
+        String refsetTerminologyId = getRefsetInternalId();
+
+        url = baseUrl + "/" + refsetTerminologyId
+                + "/members?limit=10&offset=2&displayType=taxonomy"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        children = new ObjectMapper().readValue(content, (ConceptResultList.class));
+        assertThat(children).isNotNull();
+        assertThat(children.getItems().size()).isGreaterThan(0);
+        assertThat(children.getItems().get(0).getDescriptions().size()).isGreaterThan(0);
+
+        logger.info("Done -- Just returned refset with " + children.size() + " members.");
+    }
+
     /**
      * Test exporting a refset SCTID list.
      *
@@ -133,19 +160,19 @@ public class RefsetControllerTests extends BaseTest {
 
         url = "/export/" + refsetInternalId + "/?format=sctids&exportMetadata=true";
         logger.info("Testing url - " + url);
-        
+
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         resultString = result.getResponse().getContentAsString();
-        
+
         final ObjectMapper mapper = new ObjectMapper();
         final JsonNode root = mapper.readTree(resultString);
         final String fileUrl = (root.get("url")).asText();
         logger.info("File Url: " + fileUrl);
-        
+
         assertThat(fileUrl).isNotNull();
-        
+
     }
-    
+
     /**
      * Test exporting a refset SCTID list.
      *
@@ -159,45 +186,48 @@ public class RefsetControllerTests extends BaseTest {
         String resultString = null;
         final String refsetInternalId = getRefsetInternalId();
 
-        url = "/export/" + refsetInternalId + "/?format=rf2&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20210315&transientEffectiveTime=20210315";
+        url = "/export/" + refsetInternalId
+                + "/?format=rf2&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20210315&transientEffectiveTime=20210315";
         logger.info("Testing url - " + url);
-        
+
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         resultString = result.getResponse().getContentAsString();
-        
+
         final ObjectMapper mapper = new ObjectMapper();
         final JsonNode root = mapper.readTree(resultString);
         final String fileUrl = (root.get("url")).asText();
         logger.info("File Url: " + fileUrl);
-        
+
         assertThat(fileUrl).isNotNull();
-        
+
     }
-    
+
     /**
-     * Get the internal refset ID based on the refset's terminology specific ID .
+     * Get the internal refset ID based on the refset's terminology specific ID
+     * .
      *
      * @return the internal refset ID
      * @throws Exception the exception
      */
     private String getRefsetInternalId() throws Exception {
-        
+
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             final PfsParameter pfs = new PfsParameter();
             pfs.setLimit(1);
             pfs.setSort("versionDate");
             pfs.setAscending(false);
-            
-            ResultList<Refset> refsets= service.find(
-                    "refsetId:" + QueryParserBase.escape(TESTING_REFSET_ID) + "", pfs, Refset.class, null);
-            
+
+            ResultList<Refset> refsets =
+                    service.find("refsetId:" + QueryParserBase.escape(TESTING_REFSET_ID) + "", pfs,
+                            Refset.class, null);
+
             assertThat(refsets.getItems().size()).isGreaterThan(0);
-            
+
             Refset refset = refsets.getItems().get(0);
             assertThat(refset).isNotNull();
             assertThat(refset.getRefsetId()).isEqualTo(TESTING_REFSET_ID);
-            
+
             return refset.getId();
         }
     }
