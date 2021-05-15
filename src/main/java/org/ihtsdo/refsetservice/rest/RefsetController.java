@@ -274,7 +274,7 @@ public class RefsetController extends BaseController {
             @ApiImplicitParam(name = "offset", value = "The offset for the first result",
                     required = true, dataType = "int", paramType = "query", defaultValue = "0"),
             @ApiImplicitParam(name = "displayType", value = "Should results be a list or taxonomy",
-                    required = false, dataType = "string", paramType = "query",
+                    required = true, dataType = "string", paramType = "query",
                     defaultValue = "list"),
             @ApiImplicitParam(name = "startingConceptId",
                     value = "For taxonomy calls the starting concept ID (exclusive - get the children of this concept not the concept itself)",
