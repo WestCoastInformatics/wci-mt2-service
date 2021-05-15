@@ -12,7 +12,6 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,8 +36,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class RefsetControllerTests extends BaseTest {
 
     /** The Constant TESTING_REFSET_ID. */
-    // this code works for sure: "551000172106";
-    private static final String TESTING_REFSET_ID = "721145008";
+    // Body temperature refset with 10 members
+    private static final String TESTING_REFSET_ID = "741000172102";
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -92,7 +91,7 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(refset.getRefsetId()).isEqualTo(TESTING_REFSET_ID);
 
     }
-    
+
     /**
      * Test listing refsets.
      *
@@ -107,12 +106,16 @@ public class RefsetControllerTests extends BaseTest {
         ResultList<Refset> resultList = null;
         String refsetTerminologyId = getRefsetInternalId();
 
-        url = baseUrl + "/search?limit=10&offset=1&sort=versionDate&sortAscending=false&query=refsetId:" + TESTING_REFSET_ID;
+        url = baseUrl
+                + "/search?limit=10&offset=1&sort=versionDate&sortAscending=false&query=refsetId:"
+                + refsetTerminologyId;
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {/*NA*/}));
+        resultList =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
+                    /* NA */}));
         assertThat(resultList).isNotNull();
         assertThat(resultList.getItems().size()).isGreaterThan(2);
         assertThat(resultList.getItems().get(0).getRefsetId()).isEqualTo(TESTING_REFSET_ID);
@@ -179,7 +182,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    //@Test
+    // @Test
     public void testExportSctidList() throws Exception {
 
         String url = null;
@@ -207,7 +210,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    //@Test
+    // @Test
     public void testExportRf2() throws Exception {
 
         String url = null;
@@ -242,23 +245,28 @@ public class RefsetControllerTests extends BaseTest {
         String url = null;
         MvcResult result = null;
         String content = null;
-        final String conceptId = "226528004";
+        final String conceptId = "226971001"; // with parents & children and
+                                              // descriptions in all 3 lang
         String refsetTerminologyId = getRefsetInternalId();
 
         url = "/concept/" + conceptId + "/?refsetInternalId=" + refsetTerminologyId;
         logger.info("Testing url - " + url);
-        
+
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
         final Concept concept = new ObjectMapper().readValue(content, Concept.class);
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
-        
+        assertThat(concept.getDescriptions().size()).isEqualTo(5);
+        assertThat(concept.getParents().size()).isEqualTo(1);
+        assertThat(concept.getChildren().size()).isEqualTo(7);
+
     }
-    
+
     /**
-     * Get the internal refset ID based on the refset's terminology specific ID .
+     * Get the internal refset ID based on the refset's terminology specific ID
+     * .
      *
      * @return the internal refset ID
      * @throws Exception the exception

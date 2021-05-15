@@ -12,7 +12,6 @@ import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -139,6 +138,7 @@ public class RefsetMemberService {
     public static ConceptResultList getRefsetMembers(final String refsetInternalId,
         final SearchParameters searchParameters, final String displayType,
         final TaxonomyParameters taxonomyParameters) throws Exception {
+
         ConceptResultList concepts = new ConceptResultList();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -162,8 +162,7 @@ public class RefsetMemberService {
 
             // the next call depend if a list or taxonomy is being returned
             if (displayType.equals("list")) {
-                concepts = getRefsetMemberList(refset, concepts, nonDefaultPreferredTerms,
-                        pagingParams);
+                concepts = getRefsetMemberList(refset, nonDefaultPreferredTerms);
 
                 logger.info("Refset has " + concepts.size() + " members");
             } else {
@@ -289,33 +288,50 @@ public class RefsetMemberService {
      * Get the refset member concepts as a list.
      *
      * @param refset the refset who's members are being retrieved
-     * @param members the members
      * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @param pagingParams the paging params
      * @return the refset member concepts
      * @throws Exception the exception
      */
     public static ConceptResultList getRefsetMemberList(final Refset refset,
-        final ConceptResultList members, final List<String> nonDefaultPreferredTerms,
-        final String pagingParams) throws Exception {
-        final String url = SnowstormConnection.BASE_URL + refset.getEdition().getBranch()
-                + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams;
+        final List<String> nonDefaultPreferredTerms) throws Exception {
+        int offset = 0;
+        final int limit = 1000;
+        ConceptResultList members = new ConceptResultList();
+        boolean morePages = true;
 
-        logger.debug("Get Member List URL: " + url);
+        while (morePages) {
+            final String pagingParams = "offset=" + (offset++ * limit) + "&limit=" + limit;
 
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-            final String resultString = response.readEntity(String.class);
+            final String url = SnowstormConnection.BASE_URL + refset.getEdition().getBranch()
+                    + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams;
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
-            Iterator<JsonNode> iterator = root.get("items").iterator();
+            logger.debug("Get Member List URL: " + url);
 
-            return populateSnowstormConcepts(iterator, refset.getEdition().getBranch());
+            try (final Response response = SnowstormConnection.getResponse(url)) {
+                final String resultString = response.readEntity(String.class);
 
-        } catch (Exception ex) {
-            throw new Exception("Could not get refset member list for refset "
-                    + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString.toString());
+                Iterator<JsonNode> iterator = root.get("items").iterator();
+
+                // Populate results
+                ConceptResultList currentList =
+                        populateSnowstormConcepts(iterator, refset.getEdition().getBranch());
+
+                members.getItems().addAll(currentList.getItems());
+
+                // Need another page?
+                if (root.get("total").asInt() <= (offset * limit)) {
+                    morePages = false;
+                }
+            } catch (Exception ex) {
+                throw new Exception("Could not get refset member list for refset "
+                        + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
+            }
         }
+        members.setTotal(members.getItems().size());
+
+        return members;
     }
 
     /**
@@ -384,11 +400,10 @@ public class RefsetMemberService {
         Map<String, Concept> memberIdMap = new HashMap<>();
 
         while (memberIdMap.size() == 0 || (memberIdMap.size() % TAXONOMY_PAGING_LIMIT == 0)) {
-            // https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-BE/members?referenceSet=551000172106&offset=200&limit=100
-            final String url =
-                    SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
-                            + "/members?referenceSet=" + refset.getRefsetId() + "&limit="
-                            + TAXONOMY_PAGING_LIMIT + "&offset=" + memberIdMap.size();
+            // https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-BE/members?referenceSet=741000172102&offset=0&limit=7
+            final String url = SnowstormConnection.BASE_URL + refset.getEdition().getBranch()
+                    + "/members?referenceSet=" + refset.getRefsetId() + "&limit="
+                    + TAXONOMY_PAGING_LIMIT + "&offset=" + memberIdMap.size();
             logger.debug("Get Member List URL: " + url);
 
             try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -409,10 +424,6 @@ public class RefsetMemberService {
                         // Populate Member data
                         member.setMemberOfRefset(true);
                         member.setMemberStatus(true);
-                        if (memberNode.has("releasedEffectiveTime")) {
-                            member.setMemberEffectiveTime(SIMPLE_DATE_FORMAT
-                                    .parse(memberNode.get("releasedEffectiveTime").asText()));
-                        }
 
                         memberIdMap.put(member.getCode(), member);
                     }
@@ -512,20 +523,32 @@ public class RefsetMemberService {
     /**
      * Populate concept.
      *
-     * @param item the item
+     * @param conceptNode the item
      * @return the concept
-     * @throws ParseException the parse exception
+     * @throws Exception the exception
      */
-    private static Concept populateConcept(JsonNode item) throws ParseException {
+    private static Concept populateConcept(JsonNode conceptNode) throws Exception {
         final Concept concept = new Concept();
+        String conId = null;
+        String name = null;
 
-        String conId = (item.has("referencedComponentId"))
-                ? item.get("referencedComponentId").asText() : item.get("conceptId").asText();
+        if (conceptNode.has("referencedComponentId")) {
+            conId = conceptNode.get("referencedComponentId").asText();
+            name = conceptNode.get("referencedComponent").get("pt").get("term").asText();
+            concept.setMemberEffectiveTime(
+                    SIMPLE_DATE_FORMAT.parse(conceptNode.get("releasedEffectiveTime").asText()));
+        } else if (conceptNode.has("conceptId")) {
+            conId = conceptNode.get("conceptId").asText();
+            name = conceptNode.get("pt").get("term").asText();
+        } else {
+            throw new Exception("Unable to process the conceptNode: " + conceptNode);
+        }
+
         concept.setCode(conId);
+        concept.setName(name);
         concept.setTerminology("SNOMEDCT");
         concept.setHistoryVisible(true);
         concept.setFeedbackVisible(true);
-        concept.setName(item.get("pt").get("term").asText());
 
         return concept;
     }
@@ -535,8 +558,8 @@ public class RefsetMemberService {
      *
      * @param conceptId the concept id
      * @param descriptions the descriptions
+     * @param refset the refset
      * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @param defaultLanguageCode the default language code
      * @return the map
      * @throws Exception the exception
      */
@@ -550,12 +573,14 @@ public class RefsetMemberService {
      *      b.  If no translation, will be null
      */
     private static List<Map<String, String>> sortConceptDescriptions(String conceptId,
-        final Set<Map<String, String>> descriptions, final List<String> nonDefaultPreferredTerms,
-        final String defaultLanguageCode) throws Exception {
+        final Set<Map<String, String>> descriptions, Refset refset,
+        List<String> nonDefaultPreferredTerms) throws Exception {
 
         // do this for each concept
         final List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
         final Map<String, Map<String, String>> sortingMap = new HashMap<>();
+
+        int randomIndex = 0;
 
         // Actual code
         for (Map<String, String> descriptionMap : descriptions) {
@@ -570,7 +595,8 @@ public class RefsetMemberService {
                 }
 
                 sortingMap.put(TYPE_FSN, descriptionMap);
-            } else if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(defaultLanguageCode)) {
+            } else if (descriptionMap.get(DESCRIPTION_LANGUAGE)
+                    .equals(refset.getEdition().getDefaultLanguageCode())) {
                 // Always 1
                 if (sortingMap.containsKey(TYPE_DEFAULT_PT)) {
                     displayDuplicateWarning("A PT in the default language", conceptId,
@@ -581,18 +607,23 @@ public class RefsetMemberService {
 
                 sortingMap.put(TYPE_DEFAULT_PT, descriptionMap);
             } else {
-                // Always 2 + the index in nonDefaultPreferredTerms
-                final int index = nonDefaultPreferredTerms.indexOf(descriptionMap.get(LANGUAGE_ID));
+                if (nonDefaultPreferredTerms.isEmpty()) {
+                    sortingMap.put(TYPE_OTHER_PT + randomIndex++, descriptionMap);
+                } else {
+                    // Always 2 + the index in nonDefaultPreferredTerms
+                    final int index =
+                            nonDefaultPreferredTerms.indexOf(descriptionMap.get(LANGUAGE_ID));
 
-                if (sortingMap.containsKey(TYPE_OTHER_PT + index)) {
-                    displayDuplicateWarning("A PT in the non-default language", conceptId,
-                            descriptionMap.get(DESCRIPTION_LANGUAGE),
-                            sortingMap.get(TYPE_OTHER_PT + index), descriptionMap);
+                    if (sortingMap.containsKey(TYPE_OTHER_PT + index)) {
+                        displayDuplicateWarning("A PT in the non-default language", conceptId,
+                                descriptionMap.get(DESCRIPTION_LANGUAGE),
+                                sortingMap.get(TYPE_OTHER_PT + index), descriptionMap);
 
-                    continue;
+                        continue;
+                    }
+
+                    sortingMap.put(TYPE_OTHER_PT + index, descriptionMap);
                 }
-
-                sortingMap.put(TYPE_OTHER_PT + index, descriptionMap);
             }
         }
 
@@ -604,12 +635,12 @@ public class RefsetMemberService {
             sortedDescriptionList.add(sortingMap.get(TYPE_FSN));
         }
 
-        for (int i = 0; i < nonDefaultPreferredTerms.size(); i++) {
+        for (String key : sortingMap.keySet()) {
+            Map<String, String> descriptionAttributes = sortingMap.get(key);
 
-            if (sortingMap.get(TYPE_OTHER_PT + i) != null) {
-                sortedDescriptionList.add(sortingMap.get(TYPE_OTHER_PT + i));
+            if (!sortedDescriptionList.contains(descriptionAttributes)) {
+                sortedDescriptionList.add(descriptionAttributes);
             }
-
         }
 
         return sortedDescriptionList;
@@ -670,7 +701,7 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
-
+            // https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/SNOMEDCT-BE/concepts/741000172102?descendantCountForm=true
             String url = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
                     + "/concepts/" + conceptId + "?descendantCountForm=inferred";
 
@@ -686,13 +717,11 @@ public class RefsetMemberService {
                 concept.setVersion(root.get("effectiveTime").asText());
 
                 // Populate descriptions
-                Set<Concept> conceptsToProcess = new HashSet<>();
-                conceptsToProcess.add(concept);
-                populateAllLangDescriptions(refset, conceptsToProcess);
+                concept.setDescriptions(populateAllDescriptions(concept.getCode(),
+                        root.get("descriptions"), refset));
 
                 // Populate parents
-                concept.setParents(populateParents(root.get("relationships"),
-                        refset.getEdition().getBranch()));
+                concept.setParents(populateParents(root.get("relationships")));
 
                 // Populate children
                 if (root.get("descendantCount").asInt() > 0) {
@@ -716,13 +745,39 @@ public class RefsetMemberService {
     }
 
     /**
+     * Populate all descriptions.
+     *
+     * @param conceptId the concept id
+     * @param descriptions the descriptions
+     * @param refset the refset
+     * @return the list
+     * @throws Exception the exception
+     */
+    private static List<Map<String, String>> populateAllDescriptions(String conceptId,
+        JsonNode descriptions, Refset refset) throws Exception {
+        final Iterator<JsonNode> iterator = descriptions.iterator();
+
+        Set<JsonNode> descriptionNodes = new HashSet<>();
+
+        while (iterator.hasNext()) {
+            JsonNode description = iterator.next();
+            descriptionNodes.add(description);
+        }
+
+        List<String> emptyArrayList = new ArrayList<String>();
+        Set<Map<String, String>> populatedDescriptions = processDescriptionNode(descriptionNodes,
+                refset.getEdition().getDefaultLanguageRefsets(), emptyArrayList);
+
+        return sortConceptDescriptions(conceptId, populatedDescriptions, refset, emptyArrayList);
+    }
+
+    /**
      * Populate parents.
      *
      * @param relationships the relationships
-     * @param branch the branch
      * @return the list
      */
-    private static List<Concept> populateParents(JsonNode relationships, String branch) {
+    private static List<Concept> populateParents(JsonNode relationships) {
         final List<Concept> parents = new ArrayList<>();
         final Iterator<JsonNode> iterator = relationships.iterator();
 
@@ -1226,10 +1281,7 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static void populateAllLangDescriptions(final Refset refset,
-        final Set<Concept> conceptsToProcess)
-        throws MalformedURLException, Exception {
-        final List<String> nonDefaultPreferredTerms =
-                identifyNonDefaultPreferredTerms(refset.getEdition());
+        final Set<Concept> conceptsToProcess) throws MalformedURLException, Exception {
 
         final StringBuffer conceptIds = new StringBuffer();
 
@@ -1279,16 +1331,18 @@ public class RefsetMemberService {
             // Process and sort each concept's descriptions
             final Map<String, List<Map<String, String>>> conceptDescriptionMap = new HashMap<>();
 
+            final List<String> nonDefaultPreferredTerms =
+                    identifyNonDefaultPreferredTerms(refset.getEdition());
+
             for (String conceptId : conceptDescriptionNodes.keySet()) {
                 Set<JsonNode> descriptionNodes = conceptDescriptionNodes.get(conceptId);
                 Set<Map<String, String>> descriptions = new HashSet<>();
 
                 descriptions = processDescriptionNode(descriptionNodes,
-                        refset.getEdition().getDefaultLanguageRefsets());
+                        refset.getEdition().getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
 
-                final List<Map<String, String>> sortedDescriptions =
-                        sortConceptDescriptions(conceptId, descriptions, nonDefaultPreferredTerms,
-                                refset.getEdition().getDefaultLanguageCode());
+                final List<Map<String, String>> sortedDescriptions = sortConceptDescriptions(
+                        conceptId, descriptions, refset, nonDefaultPreferredTerms);
 
                 conceptDescriptionMap.put(conceptId, sortedDescriptions);
             }
@@ -1313,10 +1367,11 @@ public class RefsetMemberService {
      *
      * @param descriptionNodes the description nodes
      * @param defaultLanguageRefsets the default language refsets
+     * @param nonDefaultPreferredTerms the non default preferred terms
      * @return the sets the
      */
     private static Set<Map<String, String>> processDescriptionNode(Set<JsonNode> descriptionNodes,
-        Set<String> defaultLanguageRefsets) {
+        Set<String> defaultLanguageRefsets, List<String> nonDefaultPreferredTerms) {
         final Set<Map<String, String>> descriptions = new HashSet<>();
 
         for (JsonNode descriptionNode : descriptionNodes) {
@@ -1335,20 +1390,23 @@ public class RefsetMemberService {
                 }
             }
 
-            if (acceptability != null && "PREFERRED".equals(acceptability)) {
-
+            if (acceptability != null
+                    && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
                 if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
                     typeName = "FSN";
                 } else {
-                    typeName = "PT";
+                    if ("PREFERRED".equals(acceptability)) {
+                        typeName = "PT";
+                    } else {
+                        typeName = "AC";
+                    }
                 }
-
                 descriptionAttributesMap.put(DESCRIPTION_TERM,
                         descriptionNode.get("term").asText());
                 descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
                 descriptionAttributesMap.put(DESCRIPTION_ID,
                         descriptionNode.get("descriptionId").asText());
-                descriptionAttributesMap.put(LANGUAGE_ID, languageId + typeName);
+                descriptionAttributesMap.put(LANGUAGE_ID, languageId);
                 descriptionAttributesMap.put(LANGUAGE_NAME,
                         descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
                 descriptionAttributesMap.put(DESCRIPTION_LANGUAGE,
