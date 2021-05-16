@@ -37,7 +37,7 @@ public class RefsetControllerTests extends BaseTest {
 
     /** The Constant TESTING_REFSET_ID. */
     // Body temperature refset with 10 members
-    private static final String TESTING_REFSET_ID = "741000172102";
+    private static final String TESTING_REFSET_ID = "741000172102"; // this code works for sure: "551000172106"
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);

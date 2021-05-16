@@ -89,6 +89,10 @@ public class RefsetController extends BaseController {
 
                 final Refset refset = service.findSingle(
                         "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+                
+                if (refset == null) {
+                    throw new Exception("Unable to retrieve refset " + refsetInternalId);
+                }
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(true);
@@ -323,9 +327,6 @@ public class RefsetController extends BaseController {
         logger.info("*********** getMembers: refsetInternalId: " + refsetInternalId);
 
         try {
-            if (!STARTING_CONCEPT_ID.isBlank()) {
-                taxonomyParameters.setStartingConceptId(STARTING_CONCEPT_ID);
-            }
 
             results = RefsetMemberService.getRefsetMembers(refsetInternalId, searchParameters,
                     displayType, taxonomyParameters);

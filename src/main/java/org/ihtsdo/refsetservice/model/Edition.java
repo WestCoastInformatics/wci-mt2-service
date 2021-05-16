@@ -212,6 +212,11 @@ public class Edition extends AbstractHasModified {
         for (final String languageRefsetCode : defaultLanguageRefsets) {
             
             final String languageCode = refsetToLanguagesMap.get(languageRefsetCode);
+            
+            if (languageCode == null) {
+                continue;
+            }
+            
             Map<String, String> languageDetails = new HashMap<>();
             languageDetails.put("languageRefset", languageRefsetCode);
             languageDetails.put("languageCode", languageCode); 
