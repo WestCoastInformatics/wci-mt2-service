@@ -451,7 +451,7 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.",
                     required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "branchPath", value = "e.g.  MAIN  or MAIN/2021-01-31",
+            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.",
                     required = true, dataType = "string", paramType = "query"),
     })
     @RecordMetric
@@ -462,7 +462,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getConceptDetails: conceptId: " + conceptId);
+            logger.info("*********** getConceptDetails: conceptId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
 
             final Concept concept =
                     RefsetMemberService.getMemberDetails(conceptId, refsetInternalId);

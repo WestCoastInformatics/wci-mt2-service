@@ -249,7 +249,7 @@ public class RefsetControllerTests extends BaseTest {
                                               // descriptions in all 3 lang
         String refsetTerminologyId = getRefsetInternalId();
 
-        url = "/concept/" + conceptId + "/?refsetInternalId=" + refsetTerminologyId;
+        url = "/concept/" + conceptId + "?refsetInternalId=" + refsetTerminologyId;
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();

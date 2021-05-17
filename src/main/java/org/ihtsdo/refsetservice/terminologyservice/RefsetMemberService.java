@@ -645,7 +645,8 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
-            // https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/SNOMEDCT-BE/concepts/741000172102?descendantCountForm=true
+            logger.debug("Get Concept Details refset: " + refset);
+            
             String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
                     + "/concepts/" + conceptId + "?descendantCountForm=inferred";
 
