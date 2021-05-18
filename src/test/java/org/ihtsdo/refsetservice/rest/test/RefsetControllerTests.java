@@ -37,7 +37,7 @@ public class RefsetControllerTests extends BaseTest {
 
     /** The Constant TESTING_REFSET_ID. */
     // Body temperature refset with 10 members
-    private static final String TESTING_REFSET_ID = "741000172102"; // this code works for sure: "551000172106"
+    private static final String TESTING_REFSET_ID = "551000172106"; // this code works for sure: "551000172106"
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -164,7 +164,7 @@ public class RefsetControllerTests extends BaseTest {
         String refsetTerminologyId = getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId
-                + "/members?limit=10&offset=2&displayType=taxonomy"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
+                + "/members?limit=10&offset=2&displayType=taxonomy&startingConceptId=404684003"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
@@ -210,7 +210,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    // @Test
+    @Test
     public void testExportRf2() throws Exception {
 
         String url = null;

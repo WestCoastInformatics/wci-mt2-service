@@ -469,30 +469,50 @@ public class RefsetMemberService {
      */
     private static Concept populateConcept(JsonNode conceptNode) throws Exception {
         final Concept concept = new Concept();
-        String conId = null;
+        String conceptId = null;
         String name = null;
+        boolean memberStatus = false;
+        boolean defined = false;
+        
 
         if (conceptNode.has("referencedComponentId")) {
-            conId = conceptNode.get("referencedComponentId").asText();
-            name = conceptNode.get("referencedComponent").get("pt").get("term").asText();
             
-            
+            conceptId = conceptNode.get("referencedComponent").get("conceptId").asText();
+            memberStatus = conceptNode.get("active").asBoolean();
             concept.setMemberEffectiveTime(
                     SIMPLE_DATE_FORMAT.parse(conceptNode.get("releasedEffectiveTime").asText()));
+            
+            if (conceptNode.get("referencedComponent").get("pt") != null) {
+                name = conceptNode.get("referencedComponent").get("pt").get("term").asText();
+            } else {
+                name = conceptNode.get("referencedComponent").get("term").asText();
+            }
+            
         } else if (conceptNode.has("conceptId")) {
             
-            conId = conceptNode.get("conceptId").asText();
-            name = conceptNode.get("pt").get("term").asText();
+            conceptId = conceptNode.get("conceptId").asText();
             concept.setHasChildren(conceptNode.get("descendantCount").asInt() > 0);
+            
+            if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                defined = true;
+            }
+            
+            if (conceptNode.get("pt") != null) {
+                name = conceptNode.get("pt").get("term").asText();
+            } else {
+                name = conceptNode.get("term").asText();
+            }
         } else {
             throw new Exception("Unable to process the conceptNode: " + conceptNode);
         }
 
-        concept.setCode(conId);
+        concept.setCode(conceptId);
         concept.setName(name);
         concept.setTerminology("SNOMEDCT");
         concept.setHistoryVisible(true);
         concept.setFeedbackVisible(true);
+        concept.setMemberStatus(memberStatus);
+        concept.setDefined(defined);
 
         return concept;
     }
@@ -727,16 +747,25 @@ public class RefsetMemberService {
         final Iterator<JsonNode> iterator = relationships.iterator();
 
         while (iterator.hasNext()) {
+            
             JsonNode relationship = iterator.next();
 
+            // Parent relationship
             if (relationship.get("active").asBoolean()
                     && INFERRED_RELATIONSHIP.equals(relationship.get("characteristicType").asText())
                     && IS_A_TYPE_ID.equals(relationship.get("typeId").asText())) {
-                // Parent relationship
+                
+                
                 Concept parent = new Concept();
+                boolean defined = false;
                 parent.setCode(relationship.get("destinationId").asText());
                 parent.setName(relationship.get("target").get("pt").get("term").asText());
-
+                
+                if (!relationship.get("target").get("definitionStatus").asText().equals("PRIMITIVE")) {
+                    defined = true;
+                }
+                
+                parent.setDefined(defined);
                 parents.add(parent);
             }
         }
@@ -811,7 +840,7 @@ public class RefsetMemberService {
                     EXPORT_FILE_DIR + "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + ".zip";
         
 
-        String snowstormExportApiUrl = SnowstormConnection.BASE_URL + "exports";
+        String snowstormExportApiUrl = SnowstormConnection.POST_URL + "exports";
 
         String entity = "{\"refsetIds\": [\"" + refsetId + "\"],  \"branchPath\": \"" + getBranchPath(refset)
                 + "\", \"conceptsAndRelationshipsOnly\": \"false\", \"filenameEffectiveDate\": \""
@@ -851,6 +880,7 @@ public class RefsetMemberService {
 
             // Download the Snowstorm file
             FileUtils.copyURLToFile(connection.getURL(), new File(zipFilePath));
+            //zipFilePath = EXPORT_FILE_DIR + "snomed-MAIN_SNOMEDCT-BE-20210315-Snapshot.zip";
 
         } catch (Exception ex) {
             throw new Exception("Could not download export from snowstorm: " + ex.getMessage(), ex);

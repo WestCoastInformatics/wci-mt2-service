@@ -52,6 +52,9 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The flag for if a user can see the feedback for this concept. */
     private boolean feedbackVisible;
+    
+    /** The flag for if concept is defined or primitive. */
+    private boolean defined;
 
     // Members below are filled in when open Concept Details screen only (for
     // now)
@@ -131,6 +134,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         hasChildrenRefsetMembers = other.getHasChildrenRefsetMembers();
         memberOfRefset = other.isMemberOfRefset();
         hasChildren = other.getHasChildren();
+        defined = other.isDefined();
     }
 
     /**
@@ -414,6 +418,20 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * @return the isDefined
+     */
+    public boolean isDefined() {
+        return defined;
+    }
+
+    /**
+     * @param isDefined the isDefined to set
+     */
+    public void setDefined(boolean isDefined) {
+        this.defined = isDefined;
+    }
+
+    /**
      * Hash code.
      *
      * @return the int
@@ -432,6 +450,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + (memberStatus ? 1 : 0);
         result = prime * result + (memberOfRefset ? 1 : 0);
         result = prime * result + (hasChildren ? 1 : 0);
+        result = prime * result + (defined ? 1 : 0);
         result = prime * result + (hasChildrenRefsetMembers ? 1 : 0);
         result = prime * result + (hasParentsRefsetMembers ? 1 : 0);
         result = prime * result
@@ -553,6 +572,10 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         }
 
         if (hasChildren != other.hasChildren) {
+            return false;
+        }
+        
+        if (defined != other.defined) {
             return false;
         }
 

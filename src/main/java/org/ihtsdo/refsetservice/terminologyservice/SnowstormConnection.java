@@ -43,6 +43,9 @@ public class SnowstormConnection {
     
     /** The snowstorm url. */
     public static String BASE_URL;
+    
+    /** The snowstorm url for performing write or update actions. */
+    public static String POST_URL;
 
     /** The accept. */
     private static final String ACCEPT = "application/json";
@@ -63,10 +66,15 @@ public class SnowstormConnection {
     static {
        
         BASE_URL = PropertyUtility.getProperty("snowstorm.baseUrl");
+        POST_URL = PropertyUtility.getProperty("snowstorm.postUrl");
         AUTH_URL = PropertyUtility.getProperty("snowstorm.authUrl");
         USER_NAME = PropertyUtility.getProperty("snowstorm.username");
         PASSWORD = PropertyUtility.getProperty("snowstorm.password");
         AUTH_HEADER = PropertyUtility.getProperty("snowstorm.authHeader");
+        
+        if (POST_URL == null) {
+            POST_URL = BASE_URL;
+        }
       }
 
     /**
