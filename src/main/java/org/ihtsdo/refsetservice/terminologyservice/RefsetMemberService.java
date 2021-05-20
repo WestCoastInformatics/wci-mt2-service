@@ -420,6 +420,7 @@ public class RefsetMemberService {
 
                 members.getItems().addAll(currentList.getItems());
                 members.setTotal(total);
+                members.setTotalKnown(true);
                 
             } catch (Exception ex) {
                 throw new Exception("Could not get refset member list for refset "

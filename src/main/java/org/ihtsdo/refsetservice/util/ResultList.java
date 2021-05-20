@@ -30,6 +30,9 @@ public class ResultList<T> implements Collection<T> {
 
     /** The offset. */
     private int offset;
+    
+    /** The offset. */
+    private boolean totalKnown;
 
     /** The score map. */
     private Map<String, Float> scoreMap = null;
@@ -83,7 +86,7 @@ public class ResultList<T> implements Collection<T> {
         scoreMap = other.getScoreMap();
         timeTaken = other.getTimeTaken();
         total = other.getTotal();
-
+        totalKnown = other.isTotalKnown();
     }
 
     /**
@@ -154,6 +157,20 @@ public class ResultList<T> implements Collection<T> {
     @Override
     public int getTotal() {
         return total;
+    }
+
+    /**
+     * @return the totalKnown
+     */
+    public boolean isTotalKnown() {
+        return totalKnown;
+    }
+
+    /**
+     * @param totalKnown the totalKnown to set
+     */
+    public void setTotalKnown(boolean totalKnown) {
+        this.totalKnown = totalKnown;
     }
 
     /* see superclass */
@@ -229,6 +246,7 @@ public class ResultList<T> implements Collection<T> {
         int result = 1;
         result = prime * result + ((items == null) ? 0 : items.hashCode());
         result = prime * result + ((parameters == null) ? 0 : parameters.hashCode());
+        result = prime * result + (totalKnown ? 1 : 0);
         result = prime * result + total;
         return result;
     }
@@ -236,17 +254,22 @@ public class ResultList<T> implements Collection<T> {
     /* see superclass */
     @Override
     public boolean equals(final Object obj) {
+        
         if (this == obj) {
             return true;
         }
+        
         if (obj == null) {
             return false;
         }
+        
         if (getClass() != obj.getClass()) {
             return false;
         }
+        
         @SuppressWarnings("unchecked")
         final ResultList<T> other = (ResultList<T>) obj;
+        
         if (items == null) {
             if (other.items != null) {
                 return false;
@@ -254,6 +277,7 @@ public class ResultList<T> implements Collection<T> {
         } else if (!items.equals(other.items)) {
             return false;
         }
+        
         if (parameters == null) {
             if (other.parameters != null) {
                 return false;
@@ -261,9 +285,15 @@ public class ResultList<T> implements Collection<T> {
         } else if (!parameters.equals(other.parameters)) {
             return false;
         }
+        
         if (total != other.total) {
             return false;
         }
+        
+        if (totalKnown != other.totalKnown) {
+            return false;
+        }
+        
         return true;
     }
 

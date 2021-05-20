@@ -235,7 +235,10 @@ public class RefsetController extends BaseController {
                 refset.setFeedbackVisible(false);
                 refset.setVersionList(getRefsetVersionList(refset.getRefsetId(), service));
             }
+            
             results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
+            
             logger.debug("******** results: " + ModelUtility.toJson(results));
             return results;
 

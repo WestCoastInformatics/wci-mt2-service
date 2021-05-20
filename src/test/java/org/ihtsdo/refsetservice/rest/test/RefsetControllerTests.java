@@ -107,8 +107,7 @@ public class RefsetControllerTests extends BaseTest {
         String refsetTerminologyId = getRefsetInternalId();
 
         url = baseUrl
-                + "/search?limit=10&offset=1&sort=versionDate&sortAscending=false&query=refsetId:"
-                + refsetTerminologyId;
+                + "/search?limit=10&offset=1&sort=versionDate&sortAscending=false&query=refsetId:" + refsetTerminologyId;
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
