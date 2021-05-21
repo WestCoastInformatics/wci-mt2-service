@@ -1,151 +1,108 @@
-drop table ${pre_if_exists} concepts ${post_if_exists};
-drop table ${pre_if_exists} users ${post_if_exists};
+drop table ${pre_if_exists} refsets_definition_clauses ${post_if_exists};
+drop table ${pre_if_exists} definition_clauses ${post_if_exists};
+drop table ${pre_if_exists} refset_tags ${post_if_exists};
+drop table ${pre_if_exists} refsets ${post_if_exists};
+drop table ${pre_if_exists} edition_defaultlanguagerefsets ${post_if_exists};
+drop table ${pre_if_exists} editions ${post_if_exists};
+drop table ${pre_if_exists} projects ${post_if_exists};
+drop table ${pre_if_exists} organizations ${post_if_exists};
    
-CREATE TABLE concepts
-(
-    id character varying(64) NOT NULL,
-    active boolean NOT NULL,
-    created timestamp without time zone NOT NULL,
-    modified timestamp without time zone NOT NULL,
-    modifiedby character varying(256) NOT NULL,
-    code character varying(255),
-    name character varying(255),
-    terminology character varying(255),
-    version character varying(255),
-    CONSTRAINT concepts_pkey PRIMARY KEY (id)
+CREATE TABLE `organizations` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `description` varchar(4000) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`)
 );
 
-CREATE TABLE organizations
-(
-    id character varying(64) NOT NULL,
-    active boolean NOT NULL,
-    created timestamp without time zone NOT NULL,
-    modified timestamp without time zone NOT NULL,
-    modifiedby character varying(256) NOT NULL,
-    description character varying(4000),
-    name character varying(255) NOT NULL,
-    CONSTRAINT organizations_pkey PRIMARY KEY (id)
-);
-
-CREATE TABLE projects
-(
-    id character varying(64) NOT NULL,
-    active boolean NOT NULL,
-    created timestamp without time zone NOT NULL,
-    modified timestamp without time zone NOT NULL,
-    modifiedby character varying(256) NOT NULL,
-    description character varying(4000),
-    name character varying(255) NOT NULL,
-    organization_id character varying(64),
-    CONSTRAINT projects_pkey PRIMARY KEY (id),
-    CONSTRAINT fk3gwrleyyq6prcnqekmkobbimd FOREIGN KEY (organization_id)
-        REFERENCES organizations (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+CREATE TABLE `projects` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `description` varchar(4000) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `organization_id` varchar(64) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK3gwrleyyq6prcnqekmkobbimd` (`organization_id`),
+  CONSTRAINT `FK3gwrleyyq6prcnqekmkobbimd` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 );
     
-CREATE TABLE editions
-(
-    id character varying(64) NOT NULL,
-    active boolean NOT NULL,
-    created timestamp without time zone NOT NULL,
-    modified timestamp without time zone NOT NULL,
-    modifiedby character varying(256) NOT NULL,
-    branch character varying(255),
-    iconuri character varying(255),
-    name character varying(4000) NOT NULL,
-    namespace character varying(255),
-    shortname character varying(255),
-    defaultLanguageCode character varying(255),
-    CONSTRAINT editions_pkey PRIMARY KEY (id)
+CREATE TABLE `editions` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `branch` varchar(255) DEFAULT NULL,
+  `defaultLanguageCode` varchar(256) DEFAULT NULL,
+  `iconUri` varchar(512) DEFAULT NULL,
+  `name` varchar(4000) NOT NULL,
+  `namespace` varchar(256) DEFAULT NULL,
+  `shortName` varchar(256) DEFAULT NULL,
+  PRIMARY KEY (`id`)
 );
 
-CREATE TABLE edition_defaultlanguagerefsets
-(
-    edition_id character varying(64) NOT NULL,
-    defaultlanguagerefsets character varying(255),
-    CONSTRAINT fksty54m8wa2yvysx49lsgdapq0 FOREIGN KEY (edition_id)
-        REFERENCES editions (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+CREATE TABLE `edition_defaultlanguagerefsets` (
+  `Edition_id` varchar(64) NOT NULL,
+  `defaultLanguageRefsets` varchar(255) DEFAULT NULL,
+  KEY `FKsty54m8wa2yvysx49lsgdapq0` (`Edition_id`),
+  CONSTRAINT `FKsty54m8wa2yvysx49lsgdapq0` FOREIGN KEY (`Edition_id`) REFERENCES `editions` (`id`)
 );
 
-CREATE TABLE refsets
-(
-    id character varying(64) NOT NULL,
-    active boolean NOT NULL,
-    created timestamp without time zone NOT NULL,
-    modified timestamp without time zone NOT NULL,
-    modifiedby character varying(256) NOT NULL,
-    externalurl character varying(4000),
-    localset boolean NOT NULL,
-    moduleid character varying(256) NOT NULL,
-    name character varying(4000) NOT NULL,
-    narrative character varying(10000),
-    privaterefset boolean NOT NULL,
-    refsetid character varying(256) NOT NULL,
-    type character varying(256) NOT NULL,
-    versiondate timestamp without time zone,
-    versionnotes character varying(10000),
-    versionstatus character varying(256) NOT NULL,
-    edition_id character varying(64),
-    project_id character varying(64),
-    CONSTRAINT refsets_pkey PRIMARY KEY (id),
-    CONSTRAINT fk4emt69axwy8ehf0vkr3t2acea FOREIGN KEY (edition_id)
-        REFERENCES editions (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION,
-    CONSTRAINT fkapij9mkufxno7uncjc6oo20en FOREIGN KEY (project_id)
-        REFERENCES projects (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+CREATE TABLE `refsets` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `externalUrl` varchar(4000) DEFAULT NULL,
+  `localSet` bit(1) NOT NULL,
+  `moduleId` varchar(256) NOT NULL,
+  `name` varchar(4000) NOT NULL,
+  `narrative` longtext,
+  `privateRefset` bit(1) NOT NULL,
+  `refsetId` varchar(256) NOT NULL,
+  `type` varchar(256) NOT NULL,
+  `versionDate` datetime(6) DEFAULT NULL,
+  `versionNotes` longtext,
+  `versionStatus` varchar(256) NOT NULL,
+  `edition_id` varchar(64) DEFAULT NULL,
+  `project_id` varchar(64) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK4emt69axwy8ehf0vkr3t2acea` (`edition_id`),
+  KEY `FKapij9mkufxno7uncjc6oo20en` (`project_id`),
+  CONSTRAINT `FK4emt69axwy8ehf0vkr3t2acea` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`),
+  CONSTRAINT `FKapij9mkufxno7uncjc6oo20en` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`)
 );
 
-CREATE TABLE refset_tags
-(
-    refset_id character varying(64) NOT NULL,
-    tags character varying(255),
-    CONSTRAINT fkhamy5caidejdqf663hp9gftu6 FOREIGN KEY (refset_id)
-        REFERENCES refsets (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+CREATE TABLE `refset_tags` (
+  `Refset_id` varchar(64) NOT NULL,
+  `tags` varchar(255) DEFAULT NULL,
+  KEY `FKhamy5caidejdqf663hp9gftu6` (`Refset_id`),
+  CONSTRAINT `FKhamy5caidejdqf663hp9gftu6` FOREIGN KEY (`Refset_id`) REFERENCES `refsets` (`id`)
 );
 
-CREATE TABLE tags
-(
-    id character varying(64) NOT NULL,
-    active boolean NOT NULL,
-    created timestamp without time zone NOT NULL,
-    modified timestamp without time zone NOT NULL,
-    modifiedby character varying(256) NOT NULL,
-    key character varying(256) NOT NULL,
-    value character varying(256) NOT NULL,
-    CONSTRAINT tags_pkey PRIMARY KEY (id)
+CREATE TABLE `definition_clauses` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `negated` bit(1) NOT NULL,
+  `value` varchar(4000) NOT NULL,
+  PRIMARY KEY (`id`)
 );
 
-CREATE TABLE definition_clauses
-(
-    id character varying(64) NOT NULL,
-    active boolean NOT NULL,
-    created timestamp without time zone NOT NULL,
-    modified timestamp without time zone NOT NULL,
-    modifiedby character varying(256) NOT NULL,
-    negated boolean NOT NULL,
-    value character varying(4000) NOT NULL,
-    CONSTRAINT definition_clauses_pkey PRIMARY KEY (id)
-);
-
-CREATE TABLE refsets_definition_clauses
-(
-    refset_id character varying(64) NOT NULL,
-    definitionclauses_id character varying(64) NOT NULL,
-    CONSTRAINT uk_93xq9bgm9nffpwt4gfjx5f548 UNIQUE (definitionclauses_id),
-    CONSTRAINT fkbxe21a6g8xufs1yh5537pya8p FOREIGN KEY (definitionclauses_id)
-        REFERENCES definition_clauses (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION,
-    CONSTRAINT fkdowc61fwiejkojh1wj7wk0mn0 FOREIGN KEY (refset_id)
-        REFERENCES refsets (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+CREATE TABLE `refsets_definition_clauses` (
+  `Refset_id` varchar(64) NOT NULL,
+  `definitionClauses_id` varchar(64) NOT NULL,
+  UNIQUE KEY `UK_93xq9bgm9nffpwt4gfjx5f548` (`definitionClauses_id`),
+  KEY `FKdowc61fwiejkojh1wj7wk0mn0` (`Refset_id`),
+  CONSTRAINT `FKbxe21a6g8xufs1yh5537pya8p` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses` (`id`),
+  CONSTRAINT `FKdowc61fwiejkojh1wj7wk0mn0` FOREIGN KEY (`Refset_id`) REFERENCES `refsets` (`id`)
 );

@@ -24,14 +24,14 @@ nexusPassword=...nexus password...
 EOF
 ```
 
-* Set the following environment variables with appropriate values for the system the application us being run on:
+* Set the following environment variables with appropriate values for the system the application us being run on. For a local install make sure to use 127.0.0.1 as the DB_HOST instead of localhost:
 
 ```
-set PG_USER=changeme
-set PG_PASSWORD=changeme
-set PG_DATABASE=changeme
-set PG_HOST=changeme
-set PG_PORT=changeme
+set DB_USER=changeme
+set DB_PASSWORD=changeme
+set DB_DATABASE=changeme
+set DB_HOST=changeme
+set DB_PORT=changeme
 set INDEX_BASE=changeme #/directory for lucene indexes until we switch over to elasticsearch
 set ELASTICSEARCH_USER=changeme
 set ELASTICSEARCH_PASSWORD=changeme
@@ -44,17 +44,19 @@ set AWS_ID=changeme
 set AWS_SECRET_KEY=changeme
 ```
 
-* Install PostgreSQL Database or run through a docker container. Configure the database to use the environment values you set above:
-username: %PG_USER%
-password: %PG_PASSWORD%
-port: %PG_PORT%
+* Install MySql Database v? or run through a docker container. Configure the database to use the environment values you set above:
+username: %DB_USER%
+password: %DB_PASSWORD%
+port: %DB_PORT%
 
-Make sure to have the Postgres bin folder on your path in order to run the command below:
+Make sure to have the MySql bin folder on your path in order to run the command below (Should be automatic if you install MySql locally):
 
-* Create a database named: %PG_DATABASE%
+* Create a database named: %DB_DATABASE%
 
 ```
-createdb -Upostgres --encoding=UTF-8 rt2
+mysql -u %DB_USER% -p -h %DB_Host%
+DROP DATABASE IF EXISTS %DB_DATABASE%;
+CREATE DATABASE %DB_DATABASE%;
 ```
 
 * Create the following directory structure for lucene indexes: %INDEX_BASE%

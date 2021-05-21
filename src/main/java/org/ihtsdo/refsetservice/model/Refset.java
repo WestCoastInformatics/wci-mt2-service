@@ -24,6 +24,7 @@ import javax.persistence.Transient;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.Type;
 import org.hibernate.search.annotations.Analyze;
 import org.hibernate.search.annotations.AnalyzerDef;
 import org.hibernate.search.annotations.DateBridge;
@@ -81,10 +82,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The version narrative. */
     @Column(nullable = true, length = 10000)
+    @Type(type="text")
     private String narrative;
 
     /** The version status. */
     @Column(nullable = true, length = 10000)
+    @Type(type="text")
     private String versionNotes;
 
     /** The private flag. */

@@ -101,7 +101,7 @@ dependencies {
   implementation "org.hibernate:hibernate-hikaricp:5.3.8.Final"
   implementation "org.reflections:reflections:0.9.11"
   implementation "javax.ws.rs:javax.ws.rs-api:2.1.1"
-  implementation "org.postgresql:postgresql:42.2.12"
+  implementation "mysql:mysql-connector-java"
   implementation "commons-cli:commons-cli:1.4"
   implementation "cglib:cglib:2.2.2"
   implementation "com.amazonaws:aws-java-sdk-s3:1.11.989"
