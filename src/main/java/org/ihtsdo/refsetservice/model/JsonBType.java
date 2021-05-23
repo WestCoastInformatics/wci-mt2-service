@@ -14,7 +14,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.SerializationException;
 import org.hibernate.usertype.UserType;
-import org.postgresql.util.PGobject;
 
 /**
  * Custom data type for postgres.
@@ -54,12 +53,6 @@ public class JsonBType implements UserType {
                 return new String(bytes, "UTF-8");
             } catch (final UnsupportedEncodingException e) {
                 return s;
-            }
-
-        } else if (rs.getObject(names[0]) instanceof PGobject) {
-            final PGobject o = (PGobject) rs.getObject(names[0]);
-            if (o != null && o.getValue() != null) {
-                return o.getValue();
             }
         }
 

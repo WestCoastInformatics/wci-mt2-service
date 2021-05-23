@@ -79,7 +79,7 @@ public class PersistenceConfiguration {
         final String location = "classpath:db/migration";
         Map<String, String> placeholders = new HashMap<>();
 
-        if (jdbcUrl.toLowerCase().startsWith("jdbc:postgresql")) {
+        if (jdbcUrl.toLowerCase().startsWith("jdbc:mysql")) {
 
             placeholders.put("pre_if_exists", "if exists");
             placeholders.put("post_if_exists", "");
