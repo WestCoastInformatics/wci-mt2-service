@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a concept with a code from a terminology.
@@ -76,6 +77,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      */
     private boolean hasDescendantRefsetMembers;
 
+	private Map<Integer, Map<String, String>> roleGroups;
+
     /**
      * Instantiates an empty {@link Concept}.
      */
@@ -134,6 +137,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         hasDescendantRefsetMembers = other.getHasDescendantRefsetMembers();
         memberOfRefset = other.isMemberOfRefset();
         hasChildren = other.getHasChildren();
+        roleGroups = other.getRoleGroups();
         defined = other.isDefined();
     }
 
@@ -417,6 +421,14 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         this.hasDescendantRefsetMembers = hasDescendantRefsetMembers;
     }
 
+    public Map<Integer, Map<String, String>> getRoleGroups() {
+        return roleGroups;
+    }
+
+	public void setRoleGroups(Map<Integer, Map<String, String>> map) {
+        this.roleGroups = map;
+	}
+
     /**
      * @return the isDefined
      */
@@ -447,6 +459,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         result = prime * result + ((children == null) ? 0 : children.hashCode());
         result = prime * result + ((parents == null) ? 0 : parents.hashCode());
+        result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
         result = prime * result + (memberStatus ? 1 : 0);
         result = prime * result + (memberOfRefset ? 1 : 0);
         result = prime * result + (hasChildren ? 1 : 0);
@@ -555,6 +568,15 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
             return false;
         }
 
+        if (roleGroups == null) {
+
+            if (other.roleGroups != null) {
+                return false;
+            }
+        } else if (!roleGroups.equals(other.roleGroups)) {
+            return false;
+        }
+
         if (memberStatus != other.memberStatus) {
             return false;
         }
@@ -603,5 +625,4 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         // TODO Auto-generated method stub
 
     }
-
 }
