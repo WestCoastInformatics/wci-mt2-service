@@ -74,7 +74,10 @@ public class RefsetMemberService {
     /** The description language. */
     private static final String DESCRIPTION_ID = "descriptionId";
 
-    /** The description language. */
+    /** The description language code. */
+    private static final String LANGUAGE_CODE = "languageCode";
+    
+    /** The description language code and type combined. */
     private static final String LANGUAGE_ID = "languageId";
 
     /** The description language. */
@@ -250,19 +253,18 @@ public class RefsetMemberService {
             
             conceptResultList = getChildren(parentId, getBranchPath(refset));
             childList = conceptResultList.getItems();
+            final Set<Concept> conceptsToProcess = new HashSet<>();
             
-            // add the descriptions to the children concepts
-            // For each concept populated, identify all descriptions
-            // Note: Process 50 at a time
-            for (Concept concept : childList) {
+            // add the descriptions to the children concepts in batches
+            for (int i = 0; i < childList.size(); i++) {
                 
-                final Set<Concept> conceptsToProcess = new HashSet<>();
-
-                for (int i = 0; i < CONCEPT_DESCRIPTIONS_PER_CALL; i++) {
-                    conceptsToProcess.add(concept);
+                conceptsToProcess.add(childList.get(i));
+                
+                if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == childList.size() - 1) {
+                    
+                    populateAllLanguageDescriptions(refset, conceptsToProcess);
+                    conceptsToProcess.clear();
                 }
-
-                populateAllLanguageDescriptions(refset, conceptsToProcess);
             }
         }
         
@@ -391,23 +393,22 @@ public class RefsetMemberService {
                 final JsonNode root = mapper.readTree(resultString.toString());
                 Iterator<JsonNode> iterator = root.get("items").iterator();
                 total = root.get("total").asInt();
-
+                final Set<Concept> conceptsToProcess = new HashSet<>();
+                
                 // Populate results
                 ConceptResultList currentList =
                         populateSnowstormConcepts(iterator);
                 
-                // add the descriptions to the children concepts
-                // For each concept populated, identify all descriptions
-                // Note: Process 50 at a time
-                for (Concept concept : currentList.getItems()) {
+                // add the descriptions to the children concepts in batches
+                for (int i = 0; i < currentList.getItems().size(); i++) {
                     
-                    final Set<Concept> conceptsToProcess = new HashSet<>();
-
-                    for (int i = 0; i < CONCEPT_DESCRIPTIONS_PER_CALL; i++) {
-                        conceptsToProcess.add(concept);
+                    conceptsToProcess.add(currentList.getItems().get(i));
+                    
+                    if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == currentList.getItems().size() - 1) {
+                        
+                        populateAllLanguageDescriptions(refset, conceptsToProcess);
+                        conceptsToProcess.clear();
                     }
-
-                    populateAllLanguageDescriptions(refset, conceptsToProcess);
                 }
                 
                 // if the memberCache doesn't have this concept already add it
@@ -577,7 +578,7 @@ public class RefsetMemberService {
                 } else {
                     // Always 2 + the index in nonDefaultPreferredTerms
                     final int index =
-                            nonDefaultPreferredTerms.indexOf(descriptionMap.get(LANGUAGE_ID));
+                            nonDefaultPreferredTerms.indexOf(descriptionMap.get(LANGUAGE_CODE));
 
                     if (sortingMap.containsKey(TYPE_OTHER_PT + index)) {
                         displayDuplicateWarning("A PT in the non-default language", conceptId,
@@ -1300,7 +1301,7 @@ public class RefsetMemberService {
 
         // Create Snowstorm URL
         final String url =
-                SnowstormConnection.BASE_URL + getBranchPath(refset) + "/descriptions?";
+                SnowstormConnection.BASE_URL + getBranchPath(refset) + "/descriptions?limit=1000";
 
         boolean firstTime = true;
         for (Concept concept : conceptsToProcess) {
@@ -1316,7 +1317,7 @@ public class RefsetMemberService {
         logger.debug("Get Member Descriptions URL: " + url + "&conceptIds=" + conceptIds);
 
         try (final Response response =
-                SnowstormConnection.getResponse(url + "conceptIds=" + conceptIds)) {
+                SnowstormConnection.getResponse(url + "&conceptIds=" + conceptIds)) {
 
             final String resultString = response.readEntity(String.class);
             final ObjectMapper mapper = new ObjectMapper();
@@ -1362,11 +1363,17 @@ public class RefsetMemberService {
 
             // Populate concept with description-based data
             for (Concept concept : conceptsToProcess) {
+                
                 List<Map<String, String>> descriptions =
                         conceptDescriptionMap.get(concept.getCode());
 
+                if (descriptions == null) {
+                    
+                    logger.debug("Description not retrieved for concept " + concept.getCode());
+                    continue;
+                }
+                
                 concept.setDescriptions(descriptions);
-
                 concept.setName(descriptions.get(0).get(DESCRIPTION_TERM));
             }
         } catch (Exception ex) {
@@ -1419,7 +1426,8 @@ public class RefsetMemberService {
                 descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
                 descriptionAttributesMap.put(DESCRIPTION_ID,
                         descriptionNode.get("descriptionId").asText());
-                descriptionAttributesMap.put(LANGUAGE_ID, languageId);
+                descriptionAttributesMap.put(LANGUAGE_CODE, languageId);
+                descriptionAttributesMap.put(LANGUAGE_ID, languageId + typeName);
                 descriptionAttributesMap.put(LANGUAGE_NAME,
                         descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
                 descriptionAttributesMap.put(DESCRIPTION_LANGUAGE,

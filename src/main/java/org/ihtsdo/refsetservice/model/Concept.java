@@ -135,6 +135,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         memberOfRefset = other.isMemberOfRefset();
         hasChildren = other.getHasChildren();
         defined = other.isDefined();
+        descriptions = other.getDescriptions();
     }
 
     /**
