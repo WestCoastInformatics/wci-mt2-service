@@ -560,7 +560,7 @@ public class RefsetMemberService {
 				}
 
 				sortingMap.put(TYPE_FSN, descriptionMap);
-			} else if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(refset.getEdition().getDefaultLanguageCode())) {
+			} else if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("PT") && descriptionMap.get(DESCRIPTION_LANGUAGE).equals(refset.getEdition().getDefaultLanguageCode())) {
 				// Always 1
 				if (sortingMap.containsKey(TYPE_DEFAULT_PT)) {
 					displayDuplicateWarning("A PT in the default language", conceptId,
@@ -1393,8 +1393,8 @@ public class RefsetMemberService {
 				descriptionAttributesMap.put(DESCRIPTION_TERM, descriptionNode.get("term").asText());
 				descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
 				descriptionAttributesMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asText());
-				descriptionAttributesMap.put(LANGUAGE_CODE, languageId);
-				descriptionAttributesMap.put(LANGUAGE_ID, languageId + typeName);
+				descriptionAttributesMap.put(LANGUAGE_ID, languageId);
+				descriptionAttributesMap.put(LANGUAGE_CODE, languageId + typeName);
 				descriptionAttributesMap.put(LANGUAGE_NAME,
 						descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
 				descriptionAttributesMap.put(DESCRIPTION_LANGUAGE, descriptionNode.get("lang").asText());
@@ -1409,7 +1409,7 @@ public class RefsetMemberService {
 	public static Concept getConceptDetails(String conceptId, Refset refset) throws Exception {
 		try {
 			final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset) + "/" + "concepts/"
-					+ conceptId + "?descendantCountForm=true";
+					+ conceptId + "?descendantCountForm=inferred";
 
 			logger.debug("Get Concept Details URL: " + url);
 
@@ -1417,10 +1417,11 @@ public class RefsetMemberService {
 			lookupParameters.setGetDescriptions(true);
 			lookupParameters.setGetParentsAndChildren(true);
 			lookupParameters.setGetRoleGroups(true);
+			lookupParameters.setSingleConceptRequest(true);
 
 			ConceptResultList retList = getConceptsFromSnowstorm(url, refset, lookupParameters);
 
-			if (retList.size() != 0) {
+			if (retList.size() != 1) {
 				throw new Exception(
 						"Unexpected number of concepts found (" + retList.size() + ") in getConceptDetails");
 			}
@@ -1482,16 +1483,15 @@ public class RefsetMemberService {
 
 			final ObjectMapper mapper = new ObjectMapper();
 			final JsonNode root = mapper.readTree(resultString.toString());
-			Iterator<JsonNode> iterator = root.iterator();
 
-			return populateConcepts(iterator, refset, lookupParameters);
+			return populateConcepts(root, refset, lookupParameters);
 		}
 	}
 
 	/**
 	 * Populate concepts from Snowstorm.
 	 *
-	 * @param iterator    the iterator
+	 * @param root        the iterator
 	 * @param branchPath
 	 * @param conceptList
 	 * @param branch      the branch
@@ -1499,14 +1499,18 @@ public class RefsetMemberService {
 	 * @return the concept result list
 	 * @throws Exception the exception
 	 */
-	private static ConceptResultList populateConcepts(Iterator<JsonNode> iterator, Refset refset,
+	private static ConceptResultList populateConcepts(JsonNode root, Refset refset,
 			ConceptLookupParameters lookupParameters) throws Exception {
 
-		final Map<String, Concept> conceptIdMap = new HashMap<>();
 		final ConceptResultList conceptList = new ConceptResultList();
 
-		while (iterator.hasNext()) {
-			JsonNode conceptNode = iterator.next();
+		JsonNode conceptNode = root;
+		Iterator<JsonNode> iterator = root.iterator();
+
+		while (lookupParameters.isSingleConceptRequest() || iterator.hasNext()) {
+			if (!lookupParameters.isSingleConceptRequest()) {
+				conceptNode = iterator.next();
+			}
 
 			final Concept concept = new Concept();
 			String conceptId = null;
@@ -1540,9 +1544,12 @@ public class RefsetMemberService {
 				}
 
 				// grab other concept information
-				concept.setHasChildren(conceptNode.get("descendantCount").asInt() > 0);
 				if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
 					defined = true;
+				}
+
+				if (conceptNode.has("descendantCount")) {
+					concept.setHasChildren(conceptNode.get("descendantCount").asInt() > 0);
 				}
 			} else {
 				throw new Exception("Unable to process the conceptNode: " + conceptNode);
@@ -1581,7 +1588,9 @@ public class RefsetMemberService {
 			conceptList.getItems().add(concept);
 			conceptList.setTotal(conceptList.getTotal() + 1);
 
-			conceptIdMap.put(concept.getCode(), concept);
+			if (lookupParameters.isSingleConceptRequest()) {
+				break;
+			}
 		}
 
 		return conceptList;
@@ -1606,12 +1615,19 @@ public class RefsetMemberService {
 				}
 
 				String type = relationship.get("type").get("pt").get("term").asText();
-				String target = relationship.get("target").get("pt").get("term").asText();
 
-				roleGroups.get(groupId).put(type, target);
+				if (!"Is a".equals(type)) {
+					String target = relationship.get("target").get("pt").get("term").asText();
+
+					roleGroups.get(groupId).put(type, target);
+				}
 			}
 		}
 
+		if (roleGroups.get(0).size() == 0) {
+			roleGroups.remove(0);
+		}
+		
 		return roleGroups;
 	}
 

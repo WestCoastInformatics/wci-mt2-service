@@ -13,6 +13,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_EMPTY)
 public class ConceptLookupParameters {
 
+	private boolean singleConceptRequest = false;
+
 	private boolean getDescriptions = false;
 
     private boolean getParentsAndChildren = false;
@@ -29,6 +31,14 @@ public class ConceptLookupParameters {
     public ConceptLookupParameters() {
         // n/a
     }
+
+    public boolean isSingleConceptRequest() {
+		return singleConceptRequest;
+	}
+
+	public void setSingleConceptRequest(boolean singleConceptRequest) {
+		this.singleConceptRequest = singleConceptRequest;
+	}
 
     public boolean isGetDescriptions() {
 		return getDescriptions;
@@ -86,6 +96,7 @@ public class ConceptLookupParameters {
      */
     public void populateFrom(final ConceptLookupParameters other) {
         
+    	singleConceptRequest = other.isSingleConceptRequest();
     	getDescriptions = other.isGetDescriptions();
     	getParentsAndChildren = other.isGetParentsAndChildren();
         getRoleGroups = other.isGetRoleGroups();
@@ -127,6 +138,10 @@ public class ConceptLookupParameters {
             return false;
         }
         
+        if (singleConceptRequest != other.singleConceptRequest) {
+        	return false;
+        }
+        
         if (getDescriptions != other.getDescriptions) {
             return false;
         }
@@ -157,6 +172,7 @@ public class ConceptLookupParameters {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((nonDefaultPreferredTerms == null) ? 0 : nonDefaultPreferredTerms.hashCode());
+        result = prime * result + (singleConceptRequest ? 1 : 0);
         result = prime * result + (getDescriptions ? 1 : 0);
         result = prime * result + (getParentsAndChildren ? 1 : 0);
         result = prime * result + (getRoleGroups ? 1 : 0);
