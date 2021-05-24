@@ -466,13 +466,23 @@ public class RefsetController extends BaseController {
         try {
 
             logger.info("*********** getConceptDetails: conceptId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
+            try (TerminologyService service = new TerminologyService()) {
 
-            final Concept concept =
-                    RefsetMemberService.getMemberDetails(conceptId, refsetInternalId);
+                final Refset refset = service.findSingle(
+                        "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+                
+                if (refset == null) {
+                    throw new Exception("Unable to retrieve refset " + refsetInternalId);
+                }
 
-            logger.info("*********** getConceptDetails: concept: " + ModelUtility.toJson(concept));
 
-            return concept;
+	            final Concept concept =
+	                    RefsetMemberService.getConceptDetails(conceptId, refset);
+
+	            logger.info("*********** getConceptDetails: concept: " + ModelUtility.toJson(concept));
+
+	            return concept;
+            }
 
         } catch (final Exception e) {
 

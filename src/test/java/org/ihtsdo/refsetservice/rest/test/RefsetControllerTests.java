@@ -258,6 +258,9 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
         assertThat(concept.getDescriptions().size()).isEqualTo(5);
+        assertThat(concept.getRoleGroups().size()).isEqualTo(1);
+        int groupId = concept.getRoleGroups().keySet().iterator().next();
+        assertThat(concept.getRoleGroups().get(groupId).keySet().size()).isEqualTo(2);
         assertThat(concept.getParents().size()).isEqualTo(1);
         assertThat(concept.getChildren().size()).isEqualTo(7);
 
