@@ -183,12 +183,14 @@ public class RefsetMemberService {
 				final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet="
 						+ refset.getRefsetId() + "&" + pagingParams;
 
-				concepts = getRefsetMemberList(refset, nonDefaultPreferredTerms, url);
+				concepts = getMemberList(refset, nonDefaultPreferredTerms, url);
+//				concepts = getRefsetMemberList(refset, nonDefaultPreferredTerms, url);
 				logger.info("Refset has " + concepts.size() + " members");
 
 			} else {
 
-				concepts = getRefsetMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
+				concepts = getMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
+//				concepts = getRefsetMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
 
 				logger.info("Concept has " + concepts.size() + " children");
 			}
@@ -560,7 +562,8 @@ public class RefsetMemberService {
 				}
 
 				sortingMap.put(TYPE_FSN, descriptionMap);
-			} else if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("PT") && descriptionMap.get(DESCRIPTION_LANGUAGE).equals(refset.getEdition().getDefaultLanguageCode())) {
+			} else if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("PT")
+					&& descriptionMap.get(DESCRIPTION_LANGUAGE).equals(refset.getEdition().getDefaultLanguageCode())) {
 				// Always 1
 				if (sortingMap.containsKey(TYPE_DEFAULT_PT)) {
 					displayDuplicateWarning("A PT in the default language", conceptId,
@@ -1393,8 +1396,8 @@ public class RefsetMemberService {
 				descriptionAttributesMap.put(DESCRIPTION_TERM, descriptionNode.get("term").asText());
 				descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
 				descriptionAttributesMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asText());
-				descriptionAttributesMap.put(LANGUAGE_ID, languageId);
-				descriptionAttributesMap.put(LANGUAGE_CODE, languageId + typeName);
+				descriptionAttributesMap.put(LANGUAGE_CODE, languageId);
+				descriptionAttributesMap.put(LANGUAGE_ID, languageId + typeName);
 				descriptionAttributesMap.put(LANGUAGE_NAME,
 						descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
 				descriptionAttributesMap.put(DESCRIPTION_LANGUAGE, descriptionNode.get("lang").asText());
@@ -1406,7 +1409,171 @@ public class RefsetMemberService {
 		return descriptions;
 	}
 
+	/**
+	 * Get the refset member concepts as a list.
+	 *
+	 * @param refset                   the refset who's members are being retrieved
+	 * @param nonDefaultPreferredTerms the non-default preferred terms
+	 * @param url                      the terminology server URL
+	 * @return the refset member concepts
+	 * @throws Exception the exception
+	 */
+	public static ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms,
+			final String url) throws Exception {
+
+		// 2 Snowstorm calls: 1) Memberlist and 2) Descriptions
+		ConceptResultList members = new ConceptResultList();
+
+		if (!memberListCallCache.containsKey(url)) {
+
+			logger.debug("Get Member List URL: " + url);
+			try {
+
+				ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
+				lookupParameters.setGetMembershipInformation(true);
+
+				final Set<Concept> conceptsToProcess = new HashSet<>();
+				final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
+
+				// Populate results for member list
+				ConceptResultList currentList = getConceptsFromSnowstorm(url, refset, lookupParameters);
+
+				// add the descriptions to the children concepts in batches
+				for (int i = 0; i < currentList.getItems().size(); i++) {
+					Concept concept = currentList.getItems().get(i);
+
+					// Only search concepts that haven't already populated
+					if (!memberIdMap.containsKey(concept.getCode()) || concept.getDescriptions().isEmpty()) {
+						conceptsToProcess.add(concept);
+
+						if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL
+								|| i == currentList.getItems().size() - 1) {
+
+							populateAllLanguageDescriptions(refset, conceptsToProcess);
+							conceptsToProcess.clear();
+						}
+					}
+				}
+
+				// if the memberCache doesn't have this concept already add it
+				int total = 0;
+
+				for (Concept concept : currentList.getItems()) {
+
+					total++;
+
+					if (!memberIdMap.containsKey(concept.getCode())) {
+						memberIdMap.put(concept.getCode(), concept);
+					}
+				}
+
+				members.getItems().addAll(currentList.getItems());
+				members.setTotal(total);
+				members.setTotalKnown(true);
+
+			} catch (Exception ex) {
+				throw new Exception("Could not get refset member list for refset " + refset.getRefsetId()
+						+ " from snowstorm: " + ex.getMessage(), ex);
+			}
+		} else {
+			members = memberListCallCache.get(url);
+		}
+
+		return members;
+	}
+
+	/**
+	 * Get the refset member concepts as a list.
+	 *
+	 * @param refset                   the refset who's members are being retrieved
+	 * @param nonDefaultPreferredTerms the non-default preferred terms
+	 * @param url                      the terminology server URL
+	 * @return the refset member concepts
+	 * @throws Exception the exception
+	 */
+	public static ConceptResultList getMemberTaxonomy(final Refset refset, final List<String> nonDefaultPreferredTerms,
+			TaxonomyParameters taxonomyParameters) throws Exception {
+
+		// 3 Snowstorm calls: 1) Children, 2) Membership info, and 3) Member Descriptions
+		final String parentId = taxonomyParameters.getStartingConceptId();
+		List<Concept> childList = new ArrayList<>();
+		final boolean childrenChecked = getCachedRefsetCheckedTreeNodes(refset.getId()).contains(parentId);
+		final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
+		final List<Concept> processedTreeNodes = new ArrayList<>();
+		ConceptResultList conceptResultList = new ConceptResultList();
+		final String branchPath = getBranchPath(refset);
+
+		if (treeCache.containsKey(parentId + branchPath)) {
+			childList = treeCache.get(parentId + branchPath);
+		} else {
+
+			conceptResultList = getChildrenUpdated(parentId, refset);
+			childList = conceptResultList.getItems();
+			final Set<Concept> conceptsToProcessDescriptions = new HashSet<>();
+			final Set<Concept> conceptsToProcessMembership = new HashSet<>();
+
+			for (Concept concept : childList) {
+				// Only search concepts that haven't already populated
+				if (memberIdMap.containsKey(concept.getCode()) || concept.getMemberEffectiveTime() == null) {
+					conceptsToProcessMembership.add(concept);
+					if (conceptsToProcessMembership.size() == CONCEPT_DESCRIPTIONS_PER_CALL) {
+						populateMembershipInformation(refset, conceptsToProcessDescriptions);
+						conceptsToProcessMembership.clear();
+					}
+				}
+
+				if (!memberIdMap.containsKey(concept.getCode()) || concept.getDescriptions().isEmpty()) {
+					// add the descriptions to the children concepts in batches
+					conceptsToProcessDescriptions.add(concept);
+
+					if (conceptsToProcessDescriptions.size() == CONCEPT_DESCRIPTIONS_PER_CALL) {
+						populateAllLanguageDescriptions(refset, conceptsToProcessDescriptions);
+						conceptsToProcessDescriptions.clear();
+					}
+				}
+			}
+
+			if (!conceptsToProcessMembership.isEmpty()) {
+				populateMembershipInformation(refset, conceptsToProcessDescriptions);
+			}
+
+			if (!conceptsToProcessDescriptions.isEmpty()) {
+				populateAllLanguageDescriptions(refset, conceptsToProcessDescriptions);
+			}
+		}
+
+		for (final Concept concept : childList) {
+
+			final String code = concept.getCode();
+
+			// Populate Member data on the tree nodes
+			if (memberIdMap.containsKey(code)) {
+				memberIdMap.get(code).populateFrom(concept);
+			} else {
+				memberIdMap.put(code, concept);
+			}
+
+			processedTreeNodes.add(concept);
+		}
+
+		if (!treeCache.containsKey(parentId + branchPath)) {
+			treeCache.put(parentId + branchPath, childList);
+		}
+
+		if (!childrenChecked) {
+
+			Set<String> checkedConcepts = getCachedRefsetCheckedTreeNodes(refset.getId());
+			checkedConcepts.add(parentId);
+			refsetTreeNodeCache.put(refset.getId(), checkedConcepts);
+		}
+
+		conceptResultList.setItems(processedTreeNodes);
+
+		return conceptResultList;
+	}
+
 	public static Concept getConceptDetails(String conceptId, Refset refset) throws Exception {
+		// 3 Snowstorm calls: 1) on concept, 2) parents, and 3) children
 		try {
 			final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset) + "/" + "concepts/"
 					+ conceptId + "?descendantCountForm=inferred";
@@ -1505,85 +1672,114 @@ public class RefsetMemberService {
 		final ConceptResultList conceptList = new ConceptResultList();
 
 		JsonNode conceptNode = root;
-		Iterator<JsonNode> iterator = root.iterator();
+		Iterator<JsonNode> iterator = null;
+
+		if (!lookupParameters.isGetMembershipInformation()) {
+			iterator = root.iterator();
+		} else {
+			iterator = root.get("items").iterator();
+		}
+
+		final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
 
 		while (lookupParameters.isSingleConceptRequest() || iterator.hasNext()) {
 			if (!lookupParameters.isSingleConceptRequest()) {
 				conceptNode = iterator.next();
 			}
 
-			final Concept concept = new Concept();
 			String conceptId = null;
-			String name = null;
-			boolean memberStatus = false;
-			boolean defined = false;
-
 			if (conceptNode.has("referencedComponentId")) {
-				// Concept is a member
-				// Read member-representation of basic concept content
 				conceptId = conceptNode.get("referencedComponent").get("conceptId").asText();
-				if (conceptNode.get("referencedComponent").get("pt") != null) {
-					name = conceptNode.get("referencedComponent").get("pt").get("term").asText();
-				} else {
-					name = conceptNode.get("referencedComponent").get("term").asText();
-				}
-
-				// grab all membership info
-				memberStatus = conceptNode.get("active").asBoolean();
-				concept.setMemberEffectiveTime(
-						SIMPLE_DATE_FORMAT.parse(conceptNode.get("releasedEffectiveTime").asText()));
 			} else if (conceptNode.has("conceptId")) {
-				// Concept is General
-				// Read general-representation of basic concept content
 				conceptId = conceptNode.get("conceptId").asText();
-
-				if (conceptNode.get("pt") != null) {
-					name = conceptNode.get("pt").get("term").asText();
-				} else {
-					name = conceptNode.get("term").asText();
-				}
-
-				// grab other concept information
-				if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
-					defined = true;
-				}
-
-				if (conceptNode.has("descendantCount")) {
-					concept.setHasChildren(conceptNode.get("descendantCount").asInt() > 0);
-				}
 			} else {
 				throw new Exception("Unable to process the conceptNode: " + conceptNode);
 			}
 
-			concept.setCode(conceptId);
-			concept.setName(name);
-			concept.setTerminology("SNOMEDCT");
-			concept.setHistoryVisible(true);
-			concept.setFeedbackVisible(true);
-			concept.setMemberStatus(memberStatus);
-			concept.setDefined(defined);
+			final Concept concept = new Concept();
+			final Concept cachedConcept = memberIdMap.get(conceptId);
 
-			// Populate descriptions
-			if (lookupParameters.isGetDescriptions()) {
-				concept.setDescriptions(populateDescriptions(concept.getCode(), conceptNode.get("descriptions"), refset,
-						lookupParameters.getNonDefaultPreferredTerms()));
+			ConceptLookupParameters missingLookupParameters = identifyContentPopulated(cachedConcept, refset,
+					lookupParameters);
+
+			if (missingLookupParameters == null) {
+				// Null means cached concept is fully populated as needed
+				concept.populateFrom(cachedConcept);
+			} else {
+
+				if (cachedConcept != null) {
+					concept.populateFrom(cachedConcept);
+				}
+
+				String name = null;
+				boolean memberStatus = false;
+				boolean defined = false;
+
+				if (conceptNode.has("referencedComponentId")) {
+					// Concept is a member
+					// Read member-representation of basic concept content
+					if (conceptNode.get("referencedComponent").get("pt") != null) {
+						name = conceptNode.get("referencedComponent").get("pt").get("term").asText();
+					} else {
+						name = conceptNode.get("referencedComponent").get("term").asText();
+					}
+
+					// grab all membership info
+					memberStatus = conceptNode.get("active").asBoolean();
+					concept.setMemberEffectiveTime(
+							SIMPLE_DATE_FORMAT.parse(conceptNode.get("releasedEffectiveTime").asText()));
+				} else if (conceptNode.has("conceptId")) {
+					// Concept is General
+					// Read general-representation of basic concept content
+					if (conceptNode.get("pt") != null) {
+						name = conceptNode.get("pt").get("term").asText();
+					} else {
+						name = conceptNode.get("term").asText();
+					}
+
+					// grab other concept information
+					if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+						defined = true;
+					}
+
+					if (conceptNode.has("descendantCount")) {
+						concept.setHasChildren(conceptNode.get("descendantCount").asInt() > 0);
+					} else if (conceptNode.has("isLeafInferred")) {
+						concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
+					}
+				}
+
+				concept.setCode(conceptId);
+				concept.setName(name);
+				concept.setTerminology("SNOMEDCT");
+				concept.setHistoryVisible(true);
+				concept.setFeedbackVisible(true);
+				concept.setMemberStatus(memberStatus);
+				concept.setDefined(defined);
+
+				// Populate descriptions
+				if (missingLookupParameters.isGetDescriptions()) {
+					concept.setDescriptions(populateDescriptions(concept.getCode(), conceptNode.get("descriptions"),
+							refset, missingLookupParameters.getNonDefaultPreferredTerms()));
+				}
+
+				if (missingLookupParameters.isGetParentsAndChildren()) {
+					concept.setParents(getParentsUpdated(conceptId, refset).getItems());
+					concept.setChildren(getChildrenUpdated(conceptId, refset).getItems());
+
+				}
+
+				if (missingLookupParameters.isGetRoleGroups()) {
+					concept.setRoleGroups(populateRoleGroups(concept.getCode(), conceptNode.get("relationships")));
+				}
+
+				if (missingLookupParameters.isGetMembershipInformation()) {
+					concept.setMemberOfRefset(true);
+					concept.setMemberStatus(conceptNode.get("active").asBoolean());
+					concept.setMemberEffectiveTime(
+							SIMPLE_DATE_FORMAT.parse(conceptNode.get("releasedEffectiveTime").asText()));
+				}
 			}
-
-			if (lookupParameters.isGetParentsAndChildren()) {
-				concept.setParents(getParentsUpdated(conceptId, refset).getItems());
-				concept.setChildren(getChildrenUpdated(conceptId, refset).getItems());
-
-			}
-
-			if (lookupParameters.isGetRoleGroups()) {
-				concept.setRoleGroups(populateRoleGroups(concept.getCode(), conceptNode.get("relationships")));
-			}
-
-			/*-
-			if (lookupParameters.isGetMembershipInformation()) {
-				populateMembershipInformation(concept.getCode(), conceptNode);
-			}
-			*/
 
 			conceptList.getItems().add(concept);
 			conceptList.setTotal(conceptList.getTotal() + 1);
@@ -1595,6 +1791,56 @@ public class RefsetMemberService {
 
 		return conceptList;
 		// populateVersionInfo(conceptIdMap, branch);
+	}
+
+	private static ConceptLookupParameters identifyContentPopulated(Concept concept, Refset refset,
+			ConceptLookupParameters lookupParameters) {
+
+		// If concept not found in cache, concept is null. Just return origianl lookup
+		// parameters
+		if (concept == null) {
+			return lookupParameters;
+		}
+
+		// Concept found in cache, so review contents to see what requires further
+		// lookup
+		ConceptLookupParameters missingConceptLookupParameters = new ConceptLookupParameters();
+		boolean missingContentFound = false;
+
+		if (lookupParameters.isGetDescriptions() && concept.getDescriptions().isEmpty()) {
+			missingConceptLookupParameters.setGetDescriptions(true);
+			missingContentFound = true;
+		}
+
+		if (lookupParameters.isGetMembershipInformation() && concept.getMemberEffectiveTime() == null) {
+			missingConceptLookupParameters.setGetMembershipInformation(true);
+			missingContentFound = true;
+		}
+
+		if (lookupParameters.isGetParentsAndChildren() && concept.getParents().isEmpty()
+				&& concept.getChildren().isEmpty()) {
+			missingConceptLookupParameters.setGetParentsAndChildren(true);
+			missingContentFound = true;
+		}
+
+		if (lookupParameters.isGetRoleGroups() && concept.getRoleGroups().isEmpty()) {
+			missingConceptLookupParameters.setGetRoleGroups(true);
+			missingContentFound = true;
+		}
+
+		if (lookupParameters.isSingleConceptRequest()) {
+			missingConceptLookupParameters.setSingleConceptRequest(true);
+			missingContentFound = true;
+		}
+
+		// Concept already contains all needed data, so no further lookup needed. Return
+		// Null
+		if (!missingContentFound) {
+			return null;
+		}
+
+		// Return required updated content
+		return missingConceptLookupParameters;
 	}
 
 	private static Map<Integer, Map<String, String>> populateRoleGroups(String conceptId, JsonNode relationshipsNode) {
@@ -1627,7 +1873,7 @@ public class RefsetMemberService {
 		if (roleGroups.get(0).size() == 0) {
 			roleGroups.remove(0);
 		}
-		
+
 		return roleGroups;
 	}
 
@@ -1656,5 +1902,34 @@ public class RefsetMemberService {
 				refset.getEdition().getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
 
 		return sortConceptDescriptions(conceptId, populatedDescriptions, refset, nonDefaultPreferredTerms);
+	}
+
+
+	private static void populateMembershipInformation(Refset refset, Set<Concept> conceptsToProcess) throws Exception {
+		final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet="
+				+ refset.getRefsetId() + "&limit=1000" + "&offset=0";
+
+		logger.debug("Get Membership URL: " + url);
+
+		ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
+		lookupParameters.setGetMembershipInformation(true);
+		ConceptResultList resultList = getConceptsFromSnowstorm(url, refset, lookupParameters);
+
+		int conceptsToBeProcessed = conceptsToProcess.size();
+		for (Concept lookupConcept : resultList.getItems()) {
+			for (Concept conceptToProcess : conceptsToProcess) {
+				if (lookupConcept.getCode().equals(conceptToProcess.getCode())) {
+					conceptToProcess.setMemberOfRefset(lookupConcept.isMemberOfRefset());
+					conceptToProcess.setMemberStatus(lookupConcept.isMemberStatus());
+					conceptToProcess.setMemberEffectiveTime(lookupConcept.getMemberEffectiveTime());
+					conceptsToBeProcessed--;
+					break;
+				}
+			}
+			
+			if (conceptsToBeProcessed == 0) {
+				break;
+			}
+		}
 	}
 }

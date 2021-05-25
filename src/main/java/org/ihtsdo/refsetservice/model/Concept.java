@@ -3,9 +3,9 @@ package org.ihtsdo.refsetservice.model;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Represents a concept with a code from a terminology.
@@ -60,7 +60,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     // Members below are filled in when open Concept Details screen only (for
     // now)
     /** A list of the parents of this concept. */
-    private List<Concept> parents;
+    private List<Concept> parents = new ArrayList<>();
 
     /**
      * Does this concept have ancestors that are members of the
@@ -69,7 +69,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     private boolean hasAncestorRefsetMembers;
 
     /** A list of the children of this concept. */
-    private List<Concept> children;
+    private List<Concept> children = new ArrayList<>();
 
     /**
      * Does this concept have descendants that are members of the
@@ -77,7 +77,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      */
     private boolean hasDescendantRefsetMembers;
 
-	private Map<Integer, Map<String, String>> roleGroups;
+	private Map<Integer, Map<String, String>> roleGroups = new HashMap<>();
 
     /**
      * Instantiates an empty {@link Concept}.
