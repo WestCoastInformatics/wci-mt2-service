@@ -1424,6 +1424,9 @@ public class RefsetMemberService {
 		// 2 Snowstorm calls: 1) Memberlist and 2) Descriptions
 		ConceptResultList members = new ConceptResultList();
 
+		// TODO: Make the memberListCallCache store a list of concept Ids, not a list of concepts.
+		// Then parse through returned list and for any conIds not in memberIdMap, populate just those concepts
+		// TODO: Also add to memberListCallCache if the url is not already a key
 		if (!memberListCallCache.containsKey(url)) {
 
 			logger.debug("Get Member List URL: " + url);
@@ -1516,10 +1519,6 @@ public class RefsetMemberService {
 				// Only search concepts that haven't already populated
 				if (memberIdMap.containsKey(concept.getCode()) || concept.getMemberEffectiveTime() == null) {
 					conceptsToProcessMembership.add(concept);
-					if (conceptsToProcessMembership.size() == CONCEPT_DESCRIPTIONS_PER_CALL) {
-						populateMembershipInformation(refset, conceptsToProcessDescriptions);
-						conceptsToProcessMembership.clear();
-					}
 				}
 
 				if (!memberIdMap.containsKey(concept.getCode()) || concept.getDescriptions().isEmpty()) {
