@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 /**
  * Entry point for webapp.
  */
-@SpringBootApplication(exclude = { FlywayAutoConfiguration.class })
+@Service
 public class GeneratorApplication {
 
 	/** The logger. */
