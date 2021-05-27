@@ -80,10 +80,7 @@ ospackage {
   version = version
 
   from('build/libs') {
-    into "/opt/${project.name}/"
-    rename { String fileName ->
-    		println '***** fileName: ' + fileName + ' :: version: ' + project.version
-            fileName.replace("-${project.version}", "")
+    into "/opt/${packageName}/"
     }
   }
   
@@ -91,7 +88,7 @@ ospackage {
     into '/DEBIAN/'
   }
   
-  link("var/log/${project.name}", "/var/opt/${project.name}/log")
+  link("var/log/${packageName}", "/var/opt/${packageName}/log")
 }
 
 // Dependencies - https://docs.gradle.org/current/userguide/declaring_dependencies.html
