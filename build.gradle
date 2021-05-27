@@ -81,7 +81,6 @@ ospackage {
 
   from('build/libs') {
     into "/opt/${packageName}/"
-    }
   }
   
   from('src/debian/control') {
