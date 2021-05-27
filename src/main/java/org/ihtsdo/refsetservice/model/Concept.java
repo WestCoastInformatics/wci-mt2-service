@@ -3,6 +3,7 @@ package org.ihtsdo.refsetservice.model;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,22 +60,24 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     // Members below are filled in when open Concept Details screen only (for
     // now)
     /** A list of the parents of this concept. */
-    private List<Concept> parents;
+    private List<Concept> parents = new ArrayList<>();
 
     /**
-     * Does this concept have parents at any level that are members of the
+     * Does this concept have ancestors that are members of the
      * refset.
      */
-    private boolean hasParentsRefsetMembers;
+    private boolean hasAncestorRefsetMembers;
 
-    /** A list of the parents of this concept. */
-    private List<Concept> children;
+    /** A list of the children of this concept. */
+    private List<Concept> children = new ArrayList<>();
 
     /**
-     * Does this concept have children at any level that are members of the
+     * Does this concept have descendants that are members of the
      * refset.
      */
-    private boolean hasChildrenRefsetMembers;
+    private boolean hasDescendantRefsetMembers;
+
+	private Map<Integer, Map<String, String>> roleGroups = new HashMap<>();
 
     /**
      * Instantiates an empty {@link Concept}.
@@ -129,11 +132,12 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         memberEffectiveTime = other.getMemberEffectiveTime();
         memberStatus = other.isMemberStatus();
         parents = other.getParents();
-        hasParentsRefsetMembers = other.getHasParentsRefsetMembers();
+        hasAncestorRefsetMembers = other.getHasAncestorRefsetMembers();
         children = other.getChildren();
-        hasChildrenRefsetMembers = other.getHasChildrenRefsetMembers();
+        hasDescendantRefsetMembers = other.getHasDescendantRefsetMembers();
         memberOfRefset = other.isMemberOfRefset();
         hasChildren = other.getHasChildren();
+        roleGroups = other.getRoleGroups();
         defined = other.isDefined();
         descriptions = other.getDescriptions();
     }
@@ -362,19 +366,19 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /**
      * Gets the checks for parents refset members.
      *
-     * @return the hasParentsRefsetMembers
+     * @return the hasAncestorRefsetMembers
      */
-    public boolean getHasParentsRefsetMembers() {
-        return hasParentsRefsetMembers;
+    public boolean getHasAncestorRefsetMembers() {
+        return hasAncestorRefsetMembers;
     }
 
     /**
      * Sets the checks for parents refset members.
      *
-     * @param hasParentsRefsetMembers the hasParentsRefsetMembers to set
+     * @param hasAncestorRefsetMembers the hasAncestorRefsetMembers to set
      */
-    public void setHasParentsRefsetMembers(boolean hasParentsRefsetMembers) {
-        this.hasParentsRefsetMembers = hasParentsRefsetMembers;
+    public void setHasAncestorRefsetMembers(boolean hasAncestorRefsetMembers) {
+        this.hasAncestorRefsetMembers = hasAncestorRefsetMembers;
     }
 
     /**
@@ -403,20 +407,28 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /**
      * Gets the checks for children refset members.
      *
-     * @return the hasChildrenRefsetMembers
+     * @return the hasDescendantRefsetMembers
      */
-    public boolean getHasChildrenRefsetMembers() {
-        return hasChildrenRefsetMembers;
+    public boolean getHasDescendantRefsetMembers() {
+        return hasDescendantRefsetMembers;
     }
 
     /**
      * Sets the checks for children refset members.
      *
-     * @param hasChildrenRefsetMembers the hasChildrenRefsetMembers to set
+     * @param hasDescendantRefsetMembers the hasDescendantRefsetMembers to set
      */
-    public void setHasChildrenRefsetMembers(boolean hasChildrenRefsetMembers) {
-        this.hasChildrenRefsetMembers = hasChildrenRefsetMembers;
+    public void setHasDescendantRefsetMembers(boolean hasDescendantRefsetMembers) {
+        this.hasDescendantRefsetMembers = hasDescendantRefsetMembers;
     }
+
+    public Map<Integer, Map<String, String>> getRoleGroups() {
+        return roleGroups;
+    }
+
+	public void setRoleGroups(Map<Integer, Map<String, String>> map) {
+        this.roleGroups = map;
+	}
 
     /**
      * @return the isDefined
@@ -448,12 +460,13 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         result = prime * result + ((children == null) ? 0 : children.hashCode());
         result = prime * result + ((parents == null) ? 0 : parents.hashCode());
+        result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
         result = prime * result + (memberStatus ? 1 : 0);
         result = prime * result + (memberOfRefset ? 1 : 0);
         result = prime * result + (hasChildren ? 1 : 0);
         result = prime * result + (defined ? 1 : 0);
-        result = prime * result + (hasChildrenRefsetMembers ? 1 : 0);
-        result = prime * result + (hasParentsRefsetMembers ? 1 : 0);
+        result = prime * result + (hasDescendantRefsetMembers ? 1 : 0);
+        result = prime * result + (hasAncestorRefsetMembers ? 1 : 0);
         result = prime * result
                 + ((memberEffectiveTime == null) ? 0 : memberEffectiveTime.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
@@ -556,15 +569,24 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
             return false;
         }
 
+        if (roleGroups == null) {
+
+            if (other.roleGroups != null) {
+                return false;
+            }
+        } else if (!roleGroups.equals(other.roleGroups)) {
+            return false;
+        }
+
         if (memberStatus != other.memberStatus) {
             return false;
         }
 
-        if (hasChildrenRefsetMembers != other.hasChildrenRefsetMembers) {
+        if (hasDescendantRefsetMembers != other.hasDescendantRefsetMembers) {
             return false;
         }
 
-        if (hasParentsRefsetMembers != other.hasParentsRefsetMembers) {
+        if (hasAncestorRefsetMembers != other.hasAncestorRefsetMembers) {
             return false;
         }
 
@@ -604,5 +626,4 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         // TODO Auto-generated method stub
 
     }
-
 }

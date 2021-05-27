@@ -24,7 +24,7 @@ clean:
 
 # Build the library without tests
 build:
-	./gradlew clean build buildDeb -x test -x spotbugsMain -x spotbugsTest
+	./gradlew clean build buildDeb -x test -x spotbugsMain -x spotbugsTest -x checkstyleTest -x checkstyleMain
 
 test:
 	./gradlew test
