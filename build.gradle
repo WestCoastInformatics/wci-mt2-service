@@ -76,13 +76,13 @@ configurations.all {
 }
 
 ospackage {
-  packageName = project.name
+  packageName = 'snomed-refset-service'
   version = version
 
   from('build/libs') {
     into "/opt/${project.name}/"
     rename { String fileName ->
-    		println '***** fileName: ' + fileName + ' :: verion: ' + project.version
+    		println '***** fileName: ' + fileName + ' :: version: ' + project.version
             fileName.replace("-${project.version}", "")
     }
   }
