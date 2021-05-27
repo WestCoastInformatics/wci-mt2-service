@@ -104,10 +104,10 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ResultList<Refset> resultList = null;
-        String refsetTerminologyId = getRefsetInternalId();
+        String refsetTerminologyId = "091f9238-3083-4e60-9e70-b011c97980c3"; //getRefsetInternalId();
 
         url = baseUrl
-                + "/search?limit=10&offset=1&sort=versionDate&sortAscending=false&query=refsetId:" + refsetTerminologyId;
+                + "/search?limit=10&offset=0&sort=versionDate&sortAscending=false&query=(refsetId:(447562003 OR 900000000000497000 OR 733073007 OR 721144007 OR 721145008))"; //id:(" + refsetTerminologyId + " OR 8357399a-f1c2-43a1-9d91-1c3fb08dd997) AND Hyperdontia"; //Hyperdontia
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
@@ -244,10 +244,10 @@ public class RefsetControllerTests extends BaseTest {
         String url = null;
         MvcResult result = null;
         String content = null;
-        final String conceptId = "226971001"; // with parents & children and
+        final String conceptId = "17505006"; // with parents & children and
                                               // descriptions in all 3 lang
-        String refsetTerminologyId = getRefsetInternalId();
-
+        String refsetTerminologyId = "58498b76-3059-4815-907d-ffbb623c1f67";//getRefsetInternalId();
+        
         url = "/concept/" + conceptId + "?refsetInternalId=" + refsetTerminologyId;
         logger.info("Testing url - " + url);
 

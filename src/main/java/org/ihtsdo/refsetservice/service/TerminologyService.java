@@ -1444,7 +1444,7 @@ public class TerminologyService implements RootService {
     public void clearLuceneIndexes() throws Exception {
         logger.info("  clearing lucene indexes");
 
-        final Reflections reflections = new Reflections(properties.getProperty("index.packages"));
+        final Reflections reflections = new Reflections(properties.getProperty("app.entity_packages"));
         final FullTextEntityManager fullTextEntityManager =
                 Search.getFullTextEntityManager(getEntityManager());
         for (final Class<?> clazz : reflections.getTypesAnnotatedWith(Indexed.class)) {

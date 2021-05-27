@@ -203,6 +203,7 @@ public class RefsetController extends BaseController {
 
             final long start = System.currentTimeMillis();
             ResultList<Refset> results = new ResultList<Refset>();
+            String query = searchParameters.getQuery();
 
             logger.debug("******** searchParameters: " + ModelUtility.toJson(searchParameters));
 
@@ -223,9 +224,15 @@ public class RefsetController extends BaseController {
             if (searchParameters.getSort() != null) {
                 pfs.setSort(searchParameters.getSort());
             }
-
-            final ResultList<Refset> memberSearchResults =
-                    RefsetMemberService.searchDirectoryMembers(searchParameters);
+            
+            String memberRefsetQuery = "";//RefsetMemberService.searchDirectoryMembers(searchParameters);
+            
+            if (query != null && !query.equals("") && !memberRefsetQuery.equals("")) {
+                query = "(" + query + ") OR (" + memberRefsetQuery + ")";
+            
+            } else if (!memberRefsetQuery.equals("")) {
+                query = memberRefsetQuery;
+            }
 
             results = service.find(searchParameters.getQuery(), pfs, Refset.class, null);
 

@@ -9,11 +9,13 @@ buildscript {
     maven { url "https://repo.spring.io/milestone" }
     maven { url "https://repo.spring.io/snapshot" }
     maven { url "https://plugins.gradle.org/m2/" }
+    jcenter()
   }
 
   dependencies {
     classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
     classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.7.0"
+    classpath 'com.netflix.nebula:gradle-ospackage-plugin:8.4.1'
   }
 }
 
@@ -51,6 +53,8 @@ apply plugin: "io.spring.dependency-management"
 apply plugin: "maven"
 apply plugin: "maven-publish"
 apply plugin: "application"
+apply plugin: 'nebula.deb'
+apply plugin: 'nebula.ospackage'
 
 mainClassName = "org.ihtsdo.refsetservice.Application"
 
@@ -69,6 +73,25 @@ springBoot {
 
 configurations.all {
    exclude group: "org.springframework.boot", module: "spring-boot-starter-logging"
+}
+
+ospackage {
+  packageName = project.name
+  version = version
+
+  from('build/libs') {
+    into "/opt/${project.name}/"
+    rename { String fileName ->
+    		println '***** fileName: ' + fileName + ' :: verion: ' + project.version
+            fileName.replace("-${project.version}", "")
+    }
+  }
+  
+  from('src/debian/control') {
+    into '/DEBIAN/'
+  }
+  
+  link("var/log/${project.name}", "/var/opt/${project.name}/log")
 }
 
 // Dependencies - https://docs.gradle.org/current/userguide/declaring_dependencies.html
