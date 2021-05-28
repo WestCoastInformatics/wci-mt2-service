@@ -62,6 +62,7 @@ CREATE TABLE `refsets` (
   `modifiedBy` varchar(256) NOT NULL,
   `externalUrl` varchar(4000) DEFAULT NULL,
   `localSet` bit(1) NOT NULL,
+  `latestVersion` bit(1) DEFAULT false,
   `moduleId` varchar(256) NOT NULL,
   `name` varchar(4000) NOT NULL,
   `narrative` longtext,

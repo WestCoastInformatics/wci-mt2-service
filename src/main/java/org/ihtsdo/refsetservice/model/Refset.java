@@ -97,6 +97,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The local set flag. */
     @Column(nullable = false)
     private boolean localSet;
+    
+    /** The latest verions flag. */
+    @Column(nullable = true)
+    private boolean latestVersion;
 
     /** The flag for if a user can download this refset. */
     @Transient
@@ -201,6 +205,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         externalUrl = other.getExternalUrl();
         moduleId = other.getModuleId();
         downloadable = other.isDownloadable();
+        latestVersion = other.isLatestVersion();
         feedbackVisible = other.isFeedbackVisible();
         versionList = other.getVersionList();
     }
@@ -658,6 +663,21 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * @return the latestVersion
+     */
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    public boolean isLatestVersion() {
+        return latestVersion;
+    }
+
+    /**
+     * @param latestVersion the latestVersion to set
+     */
+    public void setLatestVersion(boolean latestVersion) {
+        this.latestVersion = latestVersion;
+    }
+
+    /**
      * Hash code.
      *
      * @return the int
@@ -680,6 +700,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (downloadable ? 1 : 0);
         result = prime * result + (feedbackVisible ? 1 : 0);
+        result = prime * result + (latestVersion ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
     }
@@ -784,6 +805,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         }
 
         if (localSet != other.localSet) {
+            return false;
+        }
+        
+        if (latestVersion != other.latestVersion) {
             return false;
         }
 

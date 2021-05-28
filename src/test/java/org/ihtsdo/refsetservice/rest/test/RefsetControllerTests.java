@@ -107,10 +107,9 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ResultList<Refset> resultList = null;
-        String refsetTerminologyId = getRefsetInternalId(); //"091f9238-3083-4e60-9e70-b011c97980c3"
+        String refsetTerminologyId = "091f9238-3083-4e60-9e70-b011c97980c3"; //"091f9238-3083-4e60-9e70-b011c97980c3"
 
-        url = baseUrl + "/search?limit=10&offset=1&sort=versionDate&sortAscending=false&query=refsetId:"
-                + refsetTerminologyId; //(refsetId:(447562003 OR 900000000000497000 OR 733073007 OR 721144007 OR 721145008))"; //id:(" + refsetTerminologyId + " OR 8357399a-f1c2-43a1-9d91-1c3fb08dd997) AND Hyperdontia"; //Hyperdontia
+        url = baseUrl + "/search?limit=10&offset=0&sort=versionDate&sortAscending=false&query=id:(" + refsetTerminologyId + " OR 378ff7fb-0ec3-45a7-aab4-97b1ea2123cd) AND Odontogram"; //Hyperdontia
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
@@ -137,7 +136,7 @@ public class RefsetControllerTests extends BaseTest {
         ConceptResultList members = null;
         String refsetTerminologyId = getRefsetInternalId();
 
-        url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=2&displayType=list"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
+        url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=0&displayType=list"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
@@ -165,7 +164,7 @@ public class RefsetControllerTests extends BaseTest {
         String refsetTerminologyId = getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId
-                + "/members?limit=10&offset=2&displayType=taxonomy&startingConceptId=404684003"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
+                + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId=404684003"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
