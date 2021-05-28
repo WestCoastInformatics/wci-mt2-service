@@ -87,7 +87,7 @@ ospackage {
 	println '***** buildNumber: ' + buildNumber
 	
     packageName = appName
-    version = version + '~' + buildNumber
+    version = project.version + '~' + buildNumber
 	
     from('build/libs') {
 	    into "/opt/${appName}/"
