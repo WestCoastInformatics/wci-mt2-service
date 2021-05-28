@@ -32,7 +32,7 @@ repositories {
 ext {
 	
 	appName = "snomed-refset-service"
-	buildNumber = "0.0.1"
+	buildNumber = BUILD_NUMBER
 	
   // Parameters
   if (!project.hasProperty("inputName")) {
@@ -87,7 +87,7 @@ ospackage {
 	println '***** buildNumber: ' + buildNumber
 	
     packageName = appName
-    version = buildNumber + "-SNAPSHOT"
+    version = buildNumber
 	
     from('build/libs') {
 	    into "/opt/${appName}/"
