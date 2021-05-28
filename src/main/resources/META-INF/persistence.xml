@@ -14,7 +14,6 @@
     <!-- import terminology models from common -->
     <class>org.ihtsdo.refsetservice.model.Concept</class>
     <class>org.ihtsdo.refsetservice.model.Refset</class>
-    <class>org.ihtsdo.refsetservice.model.Tag</class>
     <class>org.ihtsdo.refsetservice.model.Edition</class>
     <class>org.ihtsdo.refsetservice.model.Organization</class>
     <class>org.ihtsdo.refsetservice.model.Project</class>

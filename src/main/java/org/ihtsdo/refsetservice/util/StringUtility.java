@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CaseFormat;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * Utility class for interacting with Strings.
  */
@@ -389,6 +391,17 @@ public final class StringUtility {
         } else {
             return "NOT " + fieldName + ":[* TO *]";
         }
+    }
+    
+    /**
+     * Encode a value.
+     *
+     * @param value the value to be encoded
+     * @return the encoded value
+     * @throws Exception the exception
+     */
+    public static String encodeValue(String value) throws Exception{
+        return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
     }
 
     /**

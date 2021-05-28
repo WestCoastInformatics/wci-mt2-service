@@ -16,20 +16,26 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.Arrays;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
+
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
 import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.test.BaseTest;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,7 +191,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    //@Test
     public void testAllRefsets() throws Exception {
         HashSet<String> internationalModules = createEditionsFromSnowstorm();
         Map<String, SortedMap<Date, String>> branches = identifyBranches();
@@ -210,6 +216,42 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         updateRefsets(allRefsets);
         removeUnnecessaryProjects(allRefsets);
         persistObjects(allRefsets);
+        updateLatestVersion();
+    }
+    
+    /**
+     * Sets the latestVersion flags on all refsets in the DB.
+     *
+     * @throws Exception
+     */
+    //@Test
+    public void updateLatestVersion() throws Exception {
+        
+        try (TerminologyService service = new TerminologyService()) {
+
+            ResultList<Refset> results = new ResultList<Refset>();
+            String currentRefsetId = "";
+            service.setModifiedFlag(true);
+
+            final PfsParameter pfs = new PfsParameter();
+            pfs.setSortFields(Arrays.asList("refsetId", "versionDate"));
+            pfs.setAscending(false);
+            
+            results = service.find("", pfs, Refset.class, null);
+
+            for (Refset refset : results.getItems()) {
+                
+                logger.debug("**** refsetID: " + refset.getRefsetId() + " :: Version  Date: " + DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
+
+                if (!currentRefsetId.equals(refset.getRefsetId())){
+                    
+                    currentRefsetId = refset.getRefsetId();
+                    refset.setLatestVersion(true);
+                    service.setModifiedBy(refset.getModifiedBy());
+                    service.update(refset);
+                }
+            }
+        }
     }
 
     /**
