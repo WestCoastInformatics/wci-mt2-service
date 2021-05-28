@@ -64,7 +64,7 @@ mainClassName = "org.ihtsdo.refsetservice.Application"
 
 // Version info (always use SNAPSHOT, upgrade version when needed)
 group = "org.ihtsdo.refsetservice"
-version = buildNumber + "-SNAPSHOT"
+version = "0.0.1-SNAPSHOT"
 
 sourceCompatibility = 11
 targetCompatibility = 11
@@ -87,7 +87,7 @@ ospackage {
 	println '***** buildNumber: ' + buildNumber
 	
     packageName = appName
-    version = buildNumber
+    version = version + '~' + buildNumber
 	
     from('build/libs') {
 	    into "/opt/${appName}/"
