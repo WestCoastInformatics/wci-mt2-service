@@ -221,7 +221,7 @@ task migrateRttRefset(type: JavaExec) {
    main = "org.ihtsdo.refsetservice.GeneratorApplication"
    systemProperties System.getProperties()
    // arguments to pass to the application
-   args ("reindex", filePath)
+   args ("migrateRttRefset")
    jvmArgs "-Xmx8G"
 }
 

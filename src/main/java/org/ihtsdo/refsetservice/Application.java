@@ -33,6 +33,7 @@ public class Application extends SpringBootServletInitializer {
     @Override
     protected SpringApplicationBuilder configure(final SpringApplicationBuilder application) {
         // TODO: I don't think this ever gets called..
+        logger.debug("************ Configure method called");
         return application.sources(Application.class);
     }
 
