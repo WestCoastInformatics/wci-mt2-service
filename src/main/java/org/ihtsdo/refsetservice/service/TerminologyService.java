@@ -22,6 +22,7 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.LockModeType;
 import javax.persistence.NoResultException;
 import javax.persistence.Persistence;
+import javax.persistence.metamodel.EntityType;
 
 import org.hibernate.CacheMode;
 import org.hibernate.search.annotations.Indexed;
@@ -103,7 +104,7 @@ public class TerminologyService implements RootService {
             factory = Persistence.createEntityManagerFactory("refsetservice-ds",
                     PropertyUtility.getPrefixedProperties("spring.jpa.properties.", true));
         }
-
+        
         final String key = "search.handler";
         searchHandlerMap = new HashMap<>();
 
@@ -1444,9 +1445,20 @@ public class TerminologyService implements RootService {
     public void clearLuceneIndexes() throws Exception {
         logger.info("  clearing lucene indexes");
 
+        logger.info("******** properties app.entity_packages: " + properties.getProperty("app.entity_packages"));
         final Reflections reflections = new Reflections(properties.getProperty("app.entity_packages"));
         final FullTextEntityManager fullTextEntityManager =
                 Search.getFullTextEntityManager(getEntityManager());
+        
+        Set<EntityType<?>> entities = fullTextEntityManager.getMetamodel().getEntities();
+        List<String> entityNames = new ArrayList<>();
+        
+        for (EntityType entity : entities) {
+            entityNames.add(entity.getName());
+        }
+        
+        logger.debug("!!!!!********************* Entities: " + ModelUtility.toJson(entityNames));
+        
         for (final Class<?> clazz : reflections.getTypesAnnotatedWith(Indexed.class)) {
             logger.info("    class = " + clazz.getName());
             try {
@@ -1454,6 +1466,7 @@ public class TerminologyService implements RootService {
                 fullTextEntityManager.flushToIndexes();
             } catch (final IllegalArgumentException e) {
                 logger.warn("      NOT AN ENTITY in this project");
+                e.printStackTrace();
             }
         }
         // fullTextEntityManager.close();

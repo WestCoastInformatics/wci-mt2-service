@@ -30,6 +30,10 @@ repositories {
 
 // Extra Properties
 ext {
+	
+	appName = "snomed-refset-service"
+	buildNumber = "0.0.1"
+	
   // Parameters
   if (!project.hasProperty("inputName")) {
     inputName = "na"
@@ -60,7 +64,7 @@ mainClassName = "org.ihtsdo.refsetservice.Application"
 
 // Version info (always use SNAPSHOT, upgrade version when needed)
 group = "org.ihtsdo.refsetservice"
-version = "0.0.1-SNAPSHOT"
+version = buildNumber + "-SNAPSHOT"
 
 sourceCompatibility = 11
 targetCompatibility = 11
@@ -76,22 +80,28 @@ configurations.all {
 }
 
 ospackage {
-  packageName = project.name
-  version = version
 
-  from('build/libs') {
-    into "/opt/${project.name}/"
-    rename { String fileName ->
-    		println '***** fileName: ' + fileName + ' :: verion: ' + project.version
-            fileName.replace("-${project.version}", "")
-    }
-  }
+	println '***** project.name: ' + project.name
+	println '***** project.version: ' + project.version
+	println '***** appName: ' + appName
+	println '***** buildNumber: ' + buildNumber
+	
+    packageName = appName
+    version = buildNumber
+	
+    from('build/libs') {
+	    into "/opt/${appName}/"
+	    rename { String fileName ->
+	    		println '***** fileName: ' + fileName
+	            fileName.replace("-${project.version}", "")
+    	}
+ 	}
   
-  from('src/debian/control') {
-    into '/DEBIAN/'
-  }
+	from('src/debian/control') {
+		into '/DEBIAN/'
+	}
   
-  link("var/log/${project.name}", "/var/opt/${project.name}/log")
+	link("var/log/${appName}", "/var/opt/${appName}/log")
 }
 
 // Dependencies - https://docs.gradle.org/current/userguide/declaring_dependencies.html
@@ -211,7 +221,7 @@ task migrateRttRefset(type: JavaExec) {
    main = "org.ihtsdo.refsetservice.GeneratorApplication"
    systemProperties System.getProperties()
    // arguments to pass to the application
-   args ("reindex", filePath)
+   args ("migrateRttRefset")
    jvmArgs "-Xmx8G"
 }
 

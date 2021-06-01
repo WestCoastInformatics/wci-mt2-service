@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -41,8 +42,8 @@ import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
-import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.ihtsdo.refsetservice.util.StringUtility;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -830,7 +831,7 @@ public class RefsetMemberService {
 
         String url = SnowstormConnection.BASE_URL
                 + "browser/MAIN/descriptions?active=true&conceptActive=true&groupByConcept=true&searchMode=STANDARD&offset=0&limit=1&term="
-                + snowstormQuery;
+                + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery));
 
         logger.debug("Snowstorm URL: " + url);
 
@@ -1517,11 +1518,9 @@ public class RefsetMemberService {
         ConceptResultList members = new ConceptResultList();
 
         // TODO: Make the memberListCallCache store a list of concept Ids, not a
-        // list of
-        // concepts.
+        // list of concepts.
         // Then parse through returned list and for any conIds not in
-        // memberIdMap,
-        // populate just those concepts
+        // memberIdMap, populate just those concepts
         // TODO: Also add to memberListCallCache if the url is not already a key
         if (!memberListCallCache.containsKey(url)) {
 

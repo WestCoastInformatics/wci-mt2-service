@@ -173,7 +173,7 @@ public class RefsetController extends BaseController {
                     required = false, dataType = "int", paramType = "query", defaultValue = "0"),
             @ApiImplicitParam(name = "offset", value = "The offset for the first result",
                     required = false, dataType = "int", paramType = "query", defaultValue = "0")
-    // TODO: activeOnly, sort, sortAscending
+            // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search",
@@ -225,16 +225,24 @@ public class RefsetController extends BaseController {
                 pfs.setSort(searchParameters.getSort());
             }
 
-            String memberRefsetQuery = "";// RefsetMemberService.searchDirectoryMembers(searchParameters);
+            String memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
 
-            if (query != null && !query.equals("") && !memberRefsetQuery.equals("")) {
-                query = "(" + query + ") OR (" + memberRefsetQuery + ")";
+            if (!memberRefsetQuery.equals("")) {
 
-            } else if (!memberRefsetQuery.equals("")) {
-                query = memberRefsetQuery;
+                if (query.split(" AND ").length > 1) {
+                    query = "(" + query + ")";
+                }
+
+                query = "(" + query + " OR " + memberRefsetQuery + ")";
             }
 
-            results = service.find(searchParameters.getQuery(), pfs, Refset.class, null);
+            if (query != null && !query.equals("")) {
+                query += " AND latestVersion: true";
+            } else {
+                query = "latestVersion: true";
+            }
+
+            results = service.find(query, pfs, Refset.class, null);
 
             for (Refset refset : results.getItems()) {
 
