@@ -455,9 +455,9 @@ public class RefsetController extends BaseController {
     /**
      * Gets the concept details.
      *
-     * @param conceptId the concept id
+     * @param memberId the member id
      * @param refsetInternalId the refset internal id
-     * @return the concept details
+     * @return the member history
      * @throws Exception the exception
      */
     @ApiOperation(value = "Get the concept for the specified ID", response = Refset.class)
@@ -467,22 +467,26 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.",
-                    required = true, dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "refsetInternalId",
                     value = "The internal ID of the refset to return.", required = true,
-                    dataType = "string", paramType = "query"),
+                    dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "memberId", value = "The ID of the member to return.",
+                    required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "shortName", value = "The shortName for the edition that the member must be in.",
+                    required = true, dataType = "string", paramType = "query"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/history",
             produces = "application/json")
-    public @ResponseBody Map<String, Boolean> getMemberHistory(@PathVariable(value = "conceptId")
-    final String memberId, final String refsetInternalId) throws Exception {
+    public @ResponseBody Map<String, Boolean> getMemberHistory(
+        @PathVariable(value = "refsetInternalId")
+        final String refsetInternalId, final String memberId, final String shortName)
+        throws Exception {
 
         try {
 
             logger.info("*********** getMemberHistory: memberId: " + memberId
-                    + "; refsetInternalId: " + refsetInternalId);
+                    + "; refsetInternalId: " + refsetInternalId + "; shortName: " + shortName);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -493,11 +497,19 @@ public class RefsetController extends BaseController {
                     throw new Exception("Unable to retrieve refset " + refsetInternalId);
                 }
 
-                List<Map<String, String>> versions =
+                final List<Map<String, String>> versions =
                         getRefsetVersionList(refset.getRefsetId(), service);
 
+                final List<Map<String, String>> updatedVersions = new ArrayList<>();
+                
+                for (Map<String, String> version : versions) {
+                    if (version.get("editionShortName").toLowerCase().equals(shortName.toLowerCase())) {
+                        updatedVersions.add(version);
+                    }
+                }
+                        
                 final Map<String, Boolean> memberHistory =
-                        RefsetMemberService.getMemberHistory(memberId, versions);
+                        RefsetMemberService.getMemberHistory(memberId, updatedVersions);
 
                 logger.info("*********** getMemberHistory: member: " + memberId);
 
@@ -599,6 +611,7 @@ public class RefsetController extends BaseController {
             final Map<String, String> version = new HashMap<>();
             version.put("status", refset.getVersionStatus());
             version.put("refsetInternalId", refset.getId());
+            version.put("editionShortName", refset.getEditionShortName());
 
             if (refset.getVersionStatus().toLowerCase().equals("in development")) {
 

@@ -217,7 +217,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+//    @Test
     public void testExportRf2() throws Exception {
 
         String url = null;
@@ -415,11 +415,12 @@ public class RefsetControllerTests extends BaseTest {
 
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
-        final String conceptIdToExamine = "495160018";
-        final String refsetId = "900000000000490003";
+        final String conceptIdToExamine = "771410009";
+        final String refsetId = "723264001";
+        final String shortName = "SNOMEDCT";
 
-        final String url = "/refset/" + getRefsetInternalId(refsetId) + "/history?conceptId="
-                + conceptIdToExamine;
+        final String url = "/refset/" + getRefsetInternalId(refsetId) + "/history?memberId="
+                + conceptIdToExamine + "&shortName=" + shortName;
         logger.info("Testing url - " + url);
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -431,9 +432,16 @@ public class RefsetControllerTests extends BaseTest {
                     /* NA */}));
 
         assertThat(versionedMembership).isNotNull();
+        assertThat(versionedMembership.size()).isEqualTo(2);
+        
         for (String version : versionedMembership.keySet()) {
-            logger.info(
-                    "Version: " + version + " with status: " + versionedMembership.get(version));
+            assertThat(version.equals("2021-01-31") || version.equals("2019-07-31"));
+            
+            if (version.equals("2021-01-31")) {
+                assertThat(versionedMembership.get(version) == false);
+            } else {
+                assertThat(versionedMembership.get(version) == true);
+            }
         }
     }
 

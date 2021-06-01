@@ -691,7 +691,7 @@ public class RefsetMemberService {
             String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
                     + "/concepts/" + conceptId + "?descendantCountForm=inferred";
 
-            logger.debug("Get Concept URL: " + url);
+            logger.debug("Get Member Details URL: " + url);
 
             try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -1305,7 +1305,8 @@ public class RefsetMemberService {
         String pathDate = "";
 
         if (refset.getVersionDate() != null) {
-            // pathDate = "/" + versionDate;
+            Date tmpDate = refset.getVersionDate();
+            pathDate = "/" + DateUtility.formatDate(tmpDate, DateUtility.DATE_FORMAT_REVERSE, null);
         }
 
         branchPath = refset.getEdition().getBranch() + pathDate;
@@ -1635,7 +1636,7 @@ public class RefsetMemberService {
             }
 
             if (!conceptsToProcessMembership.isEmpty()) {
-                populateMembershipInformation(refset, conceptsToProcessDescriptions);
+                populateMembershipInformation(refset, conceptsToProcessMembership);
             }
 
             if (!conceptsToProcessDescriptions.isEmpty()) {
@@ -2043,28 +2044,67 @@ public class RefsetMemberService {
         }
     }
 
-    public static Map<String, Boolean> getMemberHistory(String memberId,
+    public static Map<String, Boolean> getMemberHistory(String referencedComponentId,
         List<Map<String, String>> versions) throws Exception {
         Map<String, Boolean> memberHistory = new HashMap<>();
         Boolean latestStatus = null;
 
-        for (Map<String, String> version : versions) {
-            if ("beta, published".contains(version.get("status"))) {
-                String refsetInternalId = version.get("refsetInternalId");
-                String versionDate = version.get("date");
+        try (final TerminologyService service = new TerminologyService()) {
 
-                logger.debug("Processing history on: " + versionDate + " using internalRefsetId: "
-                        + refsetInternalId);
+            for (Map<String, String> version : versions) {
+                if ("beta, published".contains(version.get("status").toLowerCase())) {
+                    String refsetInternalId = version.get("refsetInternalId");
+                    String versionDate = version.get("date");
 
-                Concept versionedMember = getMemberDetails(memberId, refsetInternalId);
+                    logger.debug("Processing history on: " + versionDate
+                            + " using internalRefsetId: " + refsetInternalId);
 
-                if (latestStatus == null && versionedMember.isMemberStatus() != latestStatus) {
-                    latestStatus = versionedMember.isMemberStatus();
-                    memberHistory.put(versionDate, versionedMember.isMemberStatus());
-                } else if (versionedMember.isMemberOfRefset()
-                        && versionedMember.isMemberStatus() != latestStatus) {
-                    latestStatus = versionedMember.isMemberStatus();
-                    memberHistory.put(versionDate, versionedMember.isMemberStatus());
+                    final Refset refset = service.get(refsetInternalId, Refset.class);
+
+                    final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
+                            + "/members?referenceSet=" + refset.getRefsetId()
+                            + "&referencedComponentId=" + referencedComponentId;
+
+                    logger.debug("Get Membership History URL: " + url);
+
+                    try (final Response response = SnowstormConnection.getResponse(url)) {
+
+                        final String resultString = response.readEntity(String.class);
+
+                        final ObjectMapper mapper = new ObjectMapper();
+                        final JsonNode root = mapper.readTree(resultString.toString());
+                        final JsonNode node = root.get("items");
+                        Iterator<JsonNode> iterator = node.iterator();
+                        Boolean versionedMember = null;
+
+                        while (iterator.hasNext()) {
+
+                            JsonNode memberNode = iterator.next();
+
+                            if (memberNode.has("active")) {
+                                versionedMember = memberNode.get("active").asBoolean();
+                            }
+
+                            if (versionedMember != null) {
+                                if (latestStatus == null || versionedMember != latestStatus) {
+                                    latestStatus = versionedMember;
+                                    memberHistory.put(versionDate, versionedMember);
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+
+                        if (versionedMember == null) {
+                            // have reached to the point prior to the concept
+                            // becoming a member, so can cancel searching
+                            // further versions
+                            break;
+                        }
+                    } catch (Exception ex) {
+                        throw new Exception("Could not grab refset members for refset "
+                                + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
+                    }
                 }
             }
         }
