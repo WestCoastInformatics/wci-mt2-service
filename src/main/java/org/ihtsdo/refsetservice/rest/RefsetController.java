@@ -89,7 +89,7 @@ public class RefsetController extends BaseController {
 
                 final Refset refset = service.findSingle(
                         "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
-                
+
                 if (refset == null) {
                     throw new Exception("Unable to retrieve refset " + refsetInternalId);
                 }
@@ -224,12 +224,12 @@ public class RefsetController extends BaseController {
             if (searchParameters.getSort() != null) {
                 pfs.setSort(searchParameters.getSort());
             }
-            
-            String memberRefsetQuery = "";//RefsetMemberService.searchDirectoryMembers(searchParameters);
-            
+
+            String memberRefsetQuery = "";// RefsetMemberService.searchDirectoryMembers(searchParameters);
+
             if (query != null && !query.equals("") && !memberRefsetQuery.equals("")) {
                 query = "(" + query + ") OR (" + memberRefsetQuery + ")";
-            
+
             } else if (!memberRefsetQuery.equals("")) {
                 query = memberRefsetQuery;
             }
@@ -242,10 +242,10 @@ public class RefsetController extends BaseController {
                 refset.setFeedbackVisible(false);
                 refset.setVersionList(getRefsetVersionList(refset.getRefsetId(), service));
             }
-            
+
             results.setTimeTaken(System.currentTimeMillis() - start);
             results.setTotalKnown(true);
-            
+
             logger.debug("******** results: " + ModelUtility.toJson(results));
             return results;
 
@@ -303,7 +303,7 @@ public class RefsetController extends BaseController {
                     required = false, dataType = "boolean", paramType = "query",
                     defaultValue = "true"),
 
-    // TODO: activeOnly, sort, sortAscending
+            // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members",
@@ -461,8 +461,73 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.",
                     required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.",
-                    required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "refsetInternalId",
+                    value = "The internal ID of the refset to return.", required = true,
+                    dataType = "string", paramType = "query"),
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/history",
+            produces = "application/json")
+    public @ResponseBody Map<String, Boolean> getMemberHistory(@PathVariable(value = "conceptId")
+    final String memberId, final String refsetInternalId) throws Exception {
+
+        try {
+
+            logger.info("*********** getMemberHistory: memberId: " + memberId
+                    + "; refsetInternalId: " + refsetInternalId);
+
+            try (TerminologyService service = new TerminologyService()) {
+
+                final Refset refset = service.findSingle(
+                        "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+
+                if (refset == null) {
+                    throw new Exception("Unable to retrieve refset " + refsetInternalId);
+                }
+
+                List<Map<String, String>> versions =
+                        getRefsetVersionList(refset.getRefsetId(), service);
+
+                final Map<String, Boolean> memberHistory =
+                        RefsetMemberService.getMemberHistory(memberId, versions);
+
+                logger.info("*********** getMemberHistory: member: " + memberId);
+
+                for (String version : memberHistory.keySet()) {
+                    logger.info("version " + version + " has member active status: "
+                            + memberHistory.get(version));
+                }
+
+                return memberHistory;
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+
+    /**
+     * Gets the concept details.
+     *
+     * @param conceptId the concept id
+     * @param refsetInternalId the refset internal id
+     * @return the concept details
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Get the concept for the specified ID", response = Refset.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.",
+                    required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "refsetInternalId",
+                    value = "The internal ID of the refset to return.", required = true,
+                    dataType = "string", paramType = "query"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{conceptId}",
@@ -472,23 +537,23 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getConceptDetails: conceptId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
+            logger.info("*********** getConceptDetails: conceptId: " + conceptId
+                    + "; refsetInternalId: " + refsetInternalId);
             try (TerminologyService service = new TerminologyService()) {
 
                 final Refset refset = service.findSingle(
                         "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
-                
+
                 if (refset == null) {
                     throw new Exception("Unable to retrieve refset " + refsetInternalId);
                 }
 
+                final Concept concept = RefsetMemberService.getConceptDetails(conceptId, refset);
 
-	            final Concept concept =
-	                    RefsetMemberService.getConceptDetails(conceptId, refset);
+                logger.info(
+                        "*********** getConceptDetails: concept: " + ModelUtility.toJson(concept));
 
-	            logger.info("*********** getConceptDetails: concept: " + ModelUtility.toJson(concept));
-
-	            return concept;
+                return concept;
             }
 
         } catch (final Exception e) {
@@ -525,6 +590,7 @@ public class RefsetController extends BaseController {
 
             final Map<String, String> version = new HashMap<>();
             version.put("status", refset.getVersionStatus());
+            version.put("refsetInternalId", refset.getId());
 
             if (refset.getVersionStatus().toLowerCase().equals("in development")) {
 

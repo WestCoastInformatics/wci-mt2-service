@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.text.SimpleDateFormat;
+import java.util.Map;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
@@ -40,7 +41,10 @@ public class RefsetControllerTests extends BaseTest {
 
     /** The Constant TESTING_REFSET_ID. */
     // Body temperature refset with 10 members
-    private static final String TESTING_REFSET_ID = "551000172106"; // this code works for sure: "551000172106"
+    private static final String TESTING_REFSET_ID = "551000172106"; // this code
+                                                                    // works for
+                                                                    // sure:
+                                                                    // "551000172106"
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -107,16 +111,23 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ResultList<Refset> resultList = null;
-        String refsetTerminologyId = getRefsetInternalId(); //"091f9238-3083-4e60-9e70-b011c97980c3"
+        String refsetTerminologyId = getRefsetInternalId(); // "091f9238-3083-4e60-9e70-b011c97980c3"
 
-        url = baseUrl + "/search?limit=10&offset=1&sort=versionDate&sortAscending=false&query=refsetId:"
-                + refsetTerminologyId; //(refsetId:(447562003 OR 900000000000497000 OR 733073007 OR 721144007 OR 721145008))"; //id:(" + refsetTerminologyId + " OR 8357399a-f1c2-43a1-9d91-1c3fb08dd997) AND Hyperdontia"; //Hyperdontia
+        url = baseUrl
+                + "/search?limit=10&offset=1&sort=versionDate&sortAscending=false&query=refsetId:"
+                + refsetTerminologyId; // (refsetId:(447562003 OR
+                                       // 900000000000497000 OR 733073007 OR
+                                       // 721144007 OR 721145008))"; //id:(" +
+                                       // refsetTerminologyId + " OR
+                                       // 8357399a-f1c2-43a1-9d91-1c3fb08dd997)
+                                       // AND Hyperdontia"; //Hyperdontia
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
-            /* NA */}));
+        resultList =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
+                    /* NA */}));
         assertThat(resultList).isNotNull();
         assertThat(resultList.getItems().size()).isGreaterThan(2);
         assertThat(resultList.getItems().get(0).getRefsetId()).isEqualTo(TESTING_REFSET_ID);
@@ -246,8 +257,10 @@ public class RefsetControllerTests extends BaseTest {
         String url = null;
         MvcResult result = null;
         String content = null;
-        final String conceptId = "716186003"; // with 1 parent & 5 children & 1 role group of 4 rels
-                                                // descriptions in all 3 lang including Acceptable
+        final String conceptId = "716186003"; // with 1 parent & 5 children & 1
+                                              // role group of 4 rels
+                                              // descriptions in all 3 lang
+                                              // including Acceptable
         final String refsetId = "741000172102";
         url = "/concept/" + conceptId + "?refsetInternalId=" + getRefsetInternalId(refsetId);
         logger.info("Testing url - " + url);
@@ -278,20 +291,24 @@ public class RefsetControllerTests extends BaseTest {
         String url = null;
         MvcResult result = null;
         String content = null;
-        final String conceptIdToExamine = "716186003"; // with 1 parent & 5 children & 1 role group of 4 rels
+        final String conceptIdToExamine = "716186003"; // with 1 parent & 5
+                                                       // children & 1 role
+                                                       // group of 4 rels
         // descriptions in all 3 lang
         final String refsetId = "741000172102";
         final String expectedEffectiveTime = "20210315";
-        
+
         url = "/refset/" + getRefsetInternalId(refsetId)
-                + "/members?limit=10&offset=0&displayType=list&refsetInternalId=" + getRefsetInternalId(refsetId);
+                + "/members?limit=10&offset=0&displayType=list&refsetInternalId="
+                + getRefsetInternalId(refsetId);
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
-        
+        ConceptResultList members =
+                new ObjectMapper().readValue(content, (ConceptResultList.class));
+
         // Testing Results
         assertThat(members).isNotNull();
         assertThat(members.size()).isEqualTo(7);
@@ -306,22 +323,28 @@ public class RefsetControllerTests extends BaseTest {
 
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptIdToExamine);
-        
+
         final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-        assertThat(concept.getMemberEffectiveTime()).isEqualTo(SIMPLE_DATE_FORMAT.parseObject(expectedEffectiveTime));
+        assertThat(concept.getMemberEffectiveTime())
+                .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(expectedEffectiveTime));
         assertTrue(concept.isMemberOfRefset());
         assertTrue(concept.isMemberStatus());
-        assertThat(concept.getDescriptions().size()).isEqualTo(4); // The 5th active description is Acceptable, so
-                                                                    // shouldn't be returned
+        assertThat(concept.getDescriptions().size()).isEqualTo(4); // The 5th
+                                                                   // active
+                                                                   // description
+                                                                   // is
+                                                                   // Acceptable,
+                                                                   // so
+                                                                   // shouldn't
+                                                                   // be
+                                                                   // returned
         assertThat(concept.getRoleGroups().size()).isEqualTo(0);
-        
 
         // Call does not pull in parents & Children
         assertThat(concept.getParents().size()).isEqualTo(0);
         assertThat(concept.getChildren().size()).isEqualTo(0);
 
     }
-
 
     /**
      * Test getting concept details.
@@ -333,20 +356,22 @@ public class RefsetControllerTests extends BaseTest {
 
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
-        final String conceptIdToExamine = "716220001"; 
+        final String conceptIdToExamine = "716220001";
         final String refsetId = "741000172102";
         final String expectedEffectiveTime = "20210315";
         final String startingConceptId = "716186003";
-        
+
         final String url = "/refset/" + getRefsetInternalId(refsetId)
-                + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId=" + startingConceptId + "&refsetInternalId=" + getRefsetInternalId(refsetId);
+                + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId="
+                + startingConceptId + "&refsetInternalId=" + getRefsetInternalId(refsetId);
         logger.info("Testing url - " + url);
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        final ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
-        
+        final ConceptResultList members =
+                new ObjectMapper().readValue(content, (ConceptResultList.class));
+
         // Testing Results
         assertThat(members).isNotNull();
         assertThat(members.size()).isEqualTo(5);
@@ -361,13 +386,21 @@ public class RefsetControllerTests extends BaseTest {
 
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptIdToExamine);
-        
+
         final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-        assertThat(concept.getMemberEffectiveTime()).isEqualTo(SIMPLE_DATE_FORMAT.parse(expectedEffectiveTime));
+        assertThat(concept.getMemberEffectiveTime())
+                .isEqualTo(SIMPLE_DATE_FORMAT.parse(expectedEffectiveTime));
         assertTrue(concept.isMemberOfRefset());
         assertTrue(concept.isMemberStatus());
-        assertThat(concept.getDescriptions().size()).isEqualTo(4); // The 5th active description is Acceptable, so
-                                                                    // shouldn't be returned
+        assertThat(concept.getDescriptions().size()).isEqualTo(4); // The 5th
+                                                                   // active
+                                                                   // description
+                                                                   // is
+                                                                   // Acceptable,
+                                                                   // so
+                                                                   // shouldn't
+                                                                   // be
+                                                                   // returned
         assertThat(concept.getRoleGroups().size()).isEqualTo(0);
 
         // Call does not pull in parents & Children
@@ -377,9 +410,41 @@ public class RefsetControllerTests extends BaseTest {
 
     }
 
+    /**
+     * Test getting concept details.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testMemberHistory() throws Exception {
+
+        // with 1 parent & 5 children & 1 role group of 4 rels
+        // descriptions in all 3 lang
+        final String conceptIdToExamine = "495160018";
+        final String refsetId = "900000000000490003";
+
+        final String url = "/refset/" + getRefsetInternalId(refsetId) + "/history?conceptId="
+                + conceptIdToExamine;
+        logger.info("Testing url - " + url);
+
+        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        final String content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+
+        Map<String, Boolean> versionedMembership =
+                new ObjectMapper().readValue(content, (new TypeReference<Map<String, Boolean>>() {
+                    /* NA */}));
+
+        assertThat(versionedMembership).isNotNull();
+        for (String version : versionedMembership.keySet()) {
+            logger.info(
+                    "Version: " + version + " with status: " + versionedMembership.get(version));
+        }
+    }
 
     /**
-     * Get the internal refset ID based on the refset's terminology specific ID .
+     * Get the internal refset ID based on the refset's terminology specific ID
+     * .
      *
      * @return the internal refset ID
      * @throws Exception the exception
@@ -397,8 +462,9 @@ public class RefsetControllerTests extends BaseTest {
             pfs.setSort("versionDate");
             pfs.setAscending(false);
 
-            ResultList<Refset> refsets = service.find("refsetId:" + QueryParserBase.escape(requestedId) + "", pfs,
-                    Refset.class, null);
+            ResultList<Refset> refsets =
+                    service.find("refsetId:" + QueryParserBase.escape(requestedId) + "", pfs,
+                            Refset.class, null);
 
             assertThat(refsets.getItems().size()).isGreaterThan(0);
 
