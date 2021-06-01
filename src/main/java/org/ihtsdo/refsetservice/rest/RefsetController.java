@@ -472,7 +472,8 @@ public class RefsetController extends BaseController {
                     dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "memberId", value = "The ID of the member to return.",
                     required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "shortName", value = "The shortName for the edition that the member must be in.",
+            @ApiImplicitParam(name = "shortName",
+                    value = "The shortName for the edition that the member must be in.",
                     required = true, dataType = "string", paramType = "query"),
     })
     @RecordMetric
@@ -501,13 +502,14 @@ public class RefsetController extends BaseController {
                         getRefsetVersionList(refset.getRefsetId(), service);
 
                 final List<Map<String, String>> updatedVersions = new ArrayList<>();
-                
+
                 for (Map<String, String> version : versions) {
-                    if (version.get("editionShortName").toLowerCase().equals(shortName.toLowerCase())) {
+                    if (version.get("editionShortName").toLowerCase()
+                            .equals(shortName.toLowerCase())) {
                         updatedVersions.add(version);
                     }
                 }
-                        
+
                 final Map<String, Boolean> memberHistory =
                         RefsetMemberService.getMemberHistory(memberId, updatedVersions);
 

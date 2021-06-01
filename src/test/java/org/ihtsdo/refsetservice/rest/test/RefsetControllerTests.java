@@ -217,7 +217,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-//    @Test
+    // @Test
     public void testExportRf2() throws Exception {
 
         String url = null;
@@ -433,10 +433,10 @@ public class RefsetControllerTests extends BaseTest {
 
         assertThat(versionedMembership).isNotNull();
         assertThat(versionedMembership.size()).isEqualTo(2);
-        
+
         for (String version : versionedMembership.keySet()) {
             assertThat(version.equals("2021-01-31") || version.equals("2019-07-31"));
-            
+
             if (version.equals("2021-01-31")) {
                 assertThat(versionedMembership.get(version) == false);
             } else {
