@@ -20,11 +20,7 @@ import org.springframework.stereotype.Service;
 /**
  * Entry point for webapp.
  */
-@SpringBootApplication(exclude = {
-        FlywayAutoConfiguration.class
-})
-@EnableCaching
-@EnableScheduling
+@Service
 public class GeneratorApplication extends SpringBootServletInitializer {
 
     /** The logger. */
