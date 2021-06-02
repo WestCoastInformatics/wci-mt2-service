@@ -36,7 +36,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-
 public class HistoricDataMigrator {
 
     /** The formatter. */
@@ -199,7 +198,7 @@ public class HistoricDataMigrator {
         updateRefsets(allRefsets);
         removeUnnecessaryProjects(allRefsets);
         persistObjects(allRefsets);
-	}
+    }
 
     /**
      * Removes the unnecessary projects.
@@ -282,19 +281,23 @@ public class HistoricDataMigrator {
     }
 
     /**
-     * Update refsets.
+     * Update refsets with values from json and with identifying latestVersion
      *
      * @param allRefsets the all refsets
-     * @throws JsonMappingException the json mapping exception
-     * @throws JsonProcessingException the json processing exception
+     * @throws Exception
      */
-    private void updateRefsets(Set<Refset> allRefsets)
-        throws JsonMappingException, JsonProcessingException {
+    private void updateRefsets(Set<Refset> allRefsets) throws Exception {
+        Map<String, Date> latestRefsetCache = new HashMap<>();
+
         for (Refset refset : allRefsets) {
+            // No need to update refsets to be ignorred
             if (refsetsToIgnore.contains(refset.getRefsetId())) {
                 continue;
             }
 
+            // Update refset from JSON. If JSON not available to the refset, it
+            // means it resides exclusively on Snowstorm. In such a case,
+            // provide special default handling.
             if (refsetSctIdToInternalIdMap.keySet().contains(refset.getRefsetId())) {
                 final String rttId = refsetSctIdToInternalIdMap.get(refset.getRefsetId());
                 final String refsetJsonString = refsetInternalIdMap.get(rttId);
@@ -322,8 +325,27 @@ public class HistoricDataMigrator {
 
                 notFromRTTMap.put(refset.getRefsetId(), refset);
             }
+
+            // Keep track of the latest version per refsetId
+            if (!latestRefsetCache.containsKey(refset.getRefsetId()) || latestRefsetCache
+                    .get(refset.getRefsetId()).before(refset.getVersionDate())) {
+                latestRefsetCache.put(refset.getRefsetId(), refset.getVersionDate());
+            }
         }
 
+        // Have latest version per refset. Set the latestVersion flag to true
+        // for them
+        for (Refset refset : allRefsets) {
+            if (latestRefsetCache.containsKey(refset.getRefsetId())) {
+                for (String refsetId : latestRefsetCache.keySet()) {
+                    if (refset.getRefsetId().equals(refsetId)
+                            && refset.getVersionDate().equals(latestRefsetCache.get(refsetId))) {
+                        refset.setLatestVersion(true);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -692,7 +714,7 @@ public class HistoricDataMigrator {
                     String branchName = refset.getEdition().getBranch()
                             .substring(refset.getEdition().getBranch().indexOf("SNOMEDCT"));
                     String orgName = branchOrganizationMap.get(branchName);
-                    
+
                     if (!organizationsAdded.containsKey(orgName)) {
                         if (orgName == null) {
                             orgName = "Organization responsible for " + refset.getEditionName();
@@ -700,14 +722,14 @@ public class HistoricDataMigrator {
                         org.setName(orgName);
                         org.setDescription(
                                 "This organization was created to support non-RTT based refsets.");
-    
+
                         setMetadata(org, meta);
                         service.add(org);
                         organizationCount++;
                     } else {
                         org = organizationsAdded.get(orgName);
                     }
-                    
+
                     // Create Project for non-RTT based refsets
                     Project project = new Project();
                     project.setName("Default project for " + refset.getEditionName());
