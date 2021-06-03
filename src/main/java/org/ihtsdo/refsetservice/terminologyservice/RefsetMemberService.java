@@ -1368,11 +1368,7 @@ public class RefsetMemberService {
                 }
 
                 // if the memberCache doesn't have this concept already add it
-                int total = 0;
-
                 for (Concept concept : currentList.getItems()) {
-
-                    total++;
 
                     if (!memberIdMap.containsKey(concept.getCode())) {
                         memberIdMap.put(concept.getCode(), concept);
@@ -1380,7 +1376,7 @@ public class RefsetMemberService {
                 }
 
                 members.getItems().addAll(currentList.getItems());
-                members.setTotal(total);
+                members.setTotal(currentList.getTotal());
                 members.setTotalKnown(true);
 
             } catch (Exception ex) {
@@ -1585,6 +1581,7 @@ public class RefsetMemberService {
 
         JsonNode conceptNode = root;
         Iterator<JsonNode> iterator = null;
+        final int total = root.get("total").asInt();
 
         if (!lookupParameters.isGetMembershipInformation()) {
             iterator = root.iterator();
@@ -1697,13 +1694,13 @@ public class RefsetMemberService {
             }
 
             conceptList.getItems().add(concept);
-            conceptList.setTotal(conceptList.getTotal() + 1);
 
             if (lookupParameters.isSingleConceptRequest()) {
                 break;
             }
         }
 
+        conceptList.setTotal(total);
         return conceptList;
         // populateVersionInfo(conceptIdMap, branch);
     }
