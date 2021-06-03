@@ -189,15 +189,11 @@ public class RefsetMemberService {
                         + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams;
 
                 concepts = getMemberList(refset, nonDefaultPreferredTerms, url);
-                // concepts = getRefsetMemberList(refset,
-                // nonDefaultPreferredTerms, url);
                 logger.info("Refset has " + concepts.size() + " members");
 
             } else {
 
                 concepts = getMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
-                // concepts = getRefsetMemberTaxonomy(refset,
-                // nonDefaultPreferredTerms, taxonomyParameters);
 
                 logger.info("Concept has " + concepts.size() + " children");
             }
@@ -241,123 +237,6 @@ public class RefsetMemberService {
     }
 
     /**
-     * Get the refset member concepts as a hierarchical taxonomy tree.
-     *
-     * @param refset the refset who's members are being retrieved
-     * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @param taxonomyParameters the taxonomy parameters
-     * @return the refset member concepts
-     * @throws Exception the exception
-     */
-    public static ConceptResultList getRefsetMemberTaxonomy(final Refset refset,
-        final List<String> nonDefaultPreferredTerms, final TaxonomyParameters taxonomyParameters)
-        throws Exception {
-
-        final String parentId = taxonomyParameters.getStartingConceptId();
-        List<Concept> childList = new ArrayList<>();
-        final boolean childrenChecked =
-                getCachedRefsetCheckedTreeNodes(refset.getId()).contains(parentId);
-        final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
-        final List<Concept> processedTreeNodes = new ArrayList<>();
-        ConceptResultList conceptResultList = new ConceptResultList();
-        final String branchPath = getBranchPath(refset);
-
-        if (treeCache.containsKey(parentId + branchPath)) {
-            childList = treeCache.get(parentId + branchPath);
-        } else {
-
-            conceptResultList = getChildren(parentId, getBranchPath(refset));
-            childList = conceptResultList.getItems();
-            final Set<Concept> conceptsToProcess = new HashSet<>();
-
-            // add the descriptions to the children concepts in batches
-            for (int i = 0; i < childList.size(); i++) {
-
-                conceptsToProcess.add(childList.get(i));
-
-                if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL
-                        || i == childList.size() - 1) {
-
-                    populateAllLanguageDescriptions(refset, conceptsToProcess);
-                    conceptsToProcess.clear();
-                }
-            }
-        }
-
-        for (final Concept bareConcept : childList) {
-
-            final String code = bareConcept.getCode();
-            final Concept processedConcept = new Concept(bareConcept);
-
-            // if the children of this node haven't been checked and the member
-            // cache
-            // doesn't have this concept then look it up
-            if (!childrenChecked && !memberIdMap.containsKey(code)) {
-
-                final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
-                        + "/members?referenceSet=" + refset.getRefsetId()
-                        + "&referencedComponentId=" + code + "&limit=1" + "&offset=0";
-
-                try (final Response response = SnowstormConnection.getResponse(url)) {
-
-                    final String resultString = response.readEntity(String.class);
-
-                    final ObjectMapper mapper = new ObjectMapper();
-                    final JsonNode root = mapper.readTree(resultString.toString());
-                    final JsonNode node = root.get("items");
-                    Iterator<JsonNode> iterator = node.iterator();
-
-                    while (iterator.hasNext()) {
-
-                        JsonNode memberNode = iterator.next();
-
-                        // Only process Active Members
-                        if (memberNode.get("active").asBoolean()) {
-
-                            final Concept member = new Concept(bareConcept);
-
-                            // Populate Member data
-                            member.setMemberOfRefset(true);
-                            member.setMemberStatus(true);
-
-                            memberIdMap.put(member.getCode(), member);
-                        }
-                    }
-
-                    membersCache.put(refset.getId(), memberIdMap);
-
-                } catch (Exception ex) {
-                    throw new Exception("Could not grab refset members for refset "
-                            + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
-                }
-            }
-
-            // Populate Member data on the tree nodes
-            if (memberIdMap.containsKey(code)) {
-
-                processedConcept.setMemberOfRefset(true);
-                processedConcept.setMemberStatus(true);
-            }
-
-            processedTreeNodes.add(processedConcept);
-        }
-
-        if (!treeCache.containsKey(parentId + branchPath)) {
-            treeCache.put(parentId + branchPath, childList);
-        }
-
-        if (!childrenChecked) {
-
-            Set<String> checkedConcepts = getCachedRefsetCheckedTreeNodes(refset.getId());
-            checkedConcepts.add(parentId);
-            refsetTreeNodeCache.put(refset.getId(), checkedConcepts);
-        }
-
-        conceptResultList.setItems(processedTreeNodes);
-        return conceptResultList;
-    }
-
-    /**
      * Gets the children.
      *
      * @param conceptId the starting concept id
@@ -383,74 +262,6 @@ public class RefsetMemberService {
             throw new Exception("Could not get refset children for concept " + conceptId
                     + " from snowstorm: " + ex.getMessage(), ex);
         }
-    }
-
-    /**
-     * Get the refset member concepts as a list.
-     *
-     * @param refset the refset who's members are being retrieved
-     * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @param url the terminology server URL
-     * @return the refset member concepts
-     * @throws Exception the exception
-     */
-    public static ConceptResultList getRefsetMemberList(final Refset refset,
-        final List<String> nonDefaultPreferredTerms, final String url) throws Exception {
-
-        ConceptResultList members = new ConceptResultList();
-        int total = 0;
-
-        if (!memberListCallCache.containsKey(url)) {
-
-            logger.debug("Get Member List URL: " + url);
-
-            try (final Response response = SnowstormConnection.getResponse(url)) {
-
-                final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
-                final String resultString = response.readEntity(String.class);
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
-                Iterator<JsonNode> iterator = root.get("items").iterator();
-                total = root.get("total").asInt();
-                final Set<Concept> conceptsToProcess = new HashSet<>();
-
-                // Populate results
-                ConceptResultList currentList = populateSnowstormConcepts(iterator);
-
-                // add the descriptions to the children concepts in batches
-                for (int i = 0; i < currentList.getItems().size(); i++) {
-
-                    conceptsToProcess.add(currentList.getItems().get(i));
-
-                    if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL
-                            || i == currentList.getItems().size() - 1) {
-
-                        populateAllLanguageDescriptions(refset, conceptsToProcess);
-                        conceptsToProcess.clear();
-                    }
-                }
-
-                // if the memberCache doesn't have this concept already add it
-                for (Concept concept : currentList.getItems()) {
-
-                    if (!memberIdMap.containsKey(concept.getCode())) {
-                        memberIdMap.put(concept.getCode(), concept);
-                    }
-                }
-
-                members.getItems().addAll(currentList.getItems());
-                members.setTotal(total);
-                members.setTotalKnown(true);
-
-            } catch (Exception ex) {
-                throw new Exception("Could not get refset member list for refset "
-                        + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
-            }
-        } else {
-            members = memberListCallCache.get(url);
-        }
-
-        return members;
     }
 
     /**
