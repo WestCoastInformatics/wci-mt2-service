@@ -415,32 +415,35 @@ public class RefsetControllerTests extends BaseTest {
 
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
-        final String conceptIdToExamine = "771410009";
-        final String refsetId = "723264001";
-        final String shortName = "SNOMEDCT";
+        final String conceptIdToExamine = "771410009"; //"771410009";
+        final String refsetId = "723264001"; //"723264001";
 
-        final String url = "/refset/" + getRefsetInternalId(refsetId) + "/history?memberId="
-                + conceptIdToExamine + "&shortName=" + shortName;
+        final String url = "/refset/" + getRefsetInternalId(refsetId) + "/member/"
+                + conceptIdToExamine;
         logger.info("Testing url - " + url);
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
 
-        Map<String, Boolean> versionedMembership =
-                new ObjectMapper().readValue(content, (new TypeReference<Map<String, Boolean>>() {
+        ResultList<Map<String, String>> memberHistory =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Map<String, String>>>() {
                     /* NA */}));
 
-        assertThat(versionedMembership).isNotNull();
-        assertThat(versionedMembership.size()).isEqualTo(2);
+        assertThat(memberHistory).isNotNull();
+        assertThat(memberHistory.getTotal()).isEqualTo(2);
 
-        for (String version : versionedMembership.keySet()) {
+        for (final Map<String, String> historyEntry : memberHistory.getItems()) {
+            
+            final String version = historyEntry.get("version");
+            final String change = historyEntry.get("change");
+            
             assertThat(version.equals("2021-01-31") || version.equals("2019-07-31"));
 
             if (version.equals("2021-01-31")) {
-                assertThat(versionedMembership.get(version) == false);
+                assertThat(change.equals("Inactivated"));
             } else {
-                assertThat(versionedMembership.get(version) == true);
+                assertThat(change.equals("Added"));
             }
         }
     }

@@ -2044,19 +2044,24 @@ public class RefsetMemberService {
         }
     }
 
-    public static Map<String, Boolean> getMemberHistory(String referencedComponentId,
+    public static List<Map<String, String>> getMemberHistory(String referencedComponentId,
         List<Map<String, String>> versions) throws Exception {
-        Map<String, Boolean> memberHistory = new HashMap<>();
-        Boolean latestStatus = null;
+        
+        List<Map<String, String>> memberHistory = new ArrayList<>();
+        String previousStatus = null;
+        String previousVersion = null;
+        String lastAddedVersion = null;
 
         try (final TerminologyService service = new TerminologyService()) {
 
             for (Map<String, String> version : versions) {
+                
                 if ("beta, published".contains(version.get("status").toLowerCase())) {
+                    
                     String refsetInternalId = version.get("refsetInternalId");
-                    String versionDate = version.get("date");
+                    String currentVersion = version.get("date");
 
-                    logger.debug("Processing history on: " + versionDate
+                    logger.debug("Processing history on: " + currentVersion
                             + " using internalRefsetId: " + refsetInternalId);
 
                     final Refset refset = service.get(refsetInternalId, Refset.class);
@@ -2070,43 +2075,83 @@ public class RefsetMemberService {
                     try (final Response response = SnowstormConnection.getResponse(url)) {
 
                         final String resultString = response.readEntity(String.class);
-
                         final ObjectMapper mapper = new ObjectMapper();
                         final JsonNode root = mapper.readTree(resultString.toString());
                         final JsonNode node = root.get("items");
                         Iterator<JsonNode> iterator = node.iterator();
-                        Boolean versionedMember = null;
+                        String currentStatus = null;
 
-                        while (iterator.hasNext()) {
+                        if (iterator.hasNext()) {
 
                             JsonNode memberNode = iterator.next();
 
                             if (memberNode.has("active")) {
-                                versionedMember = memberNode.get("active").asBoolean();
-                            }
-
-                            if (versionedMember != null) {
-                                if (latestStatus == null || versionedMember != latestStatus) {
-                                    latestStatus = versionedMember;
-                                    memberHistory.put(versionDate, versionedMember);
+                                
+                                if (memberNode.get("active").asBoolean()) {
+                                    currentStatus = "Active";
+                                } else {
+                                    currentStatus = "Inactive";
                                 }
-                            } else {
-                                break;
                             }
                         }
-
-                        if (versionedMember == null) {
-                            // have reached to the point prior to the concept
-                            // becoming a member, so can cancel searching
-                            // further versions
+                        
+                        // have reached to the point prior to the concept becoming a member, so can cancel searching further versions
+                        if (currentStatus == null) {
                             break;
                         }
+                        
+                        // if the previous status wasn't null and the current status doesn't match it then set the last status
+                        if (previousStatus != null && !currentStatus.equals(previousStatus)) {
+                            
+                            Map<String, String> historyEntry = new HashMap<>();
+                            historyEntry.put("version", previousVersion);
+                            
+                            if (previousStatus.equals("Active")) {
+                                historyEntry.put("change", "Activated");
+                            } else {
+                                historyEntry.put("change", "Inactivated");
+                            }
+                            
+                            memberHistory.add(historyEntry);
+                            lastAddedVersion = previousVersion;
+                        }
+                        
+                        previousStatus = currentStatus;
+                        previousVersion = currentVersion;
+
                     } catch (Exception ex) {
                         throw new Exception("Could not grab refset members for refset "
                                 + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
                     }
                 }
             }
+            
+            // if the final version added to the list is the previous version
+            if (lastAddedVersion != null && lastAddedVersion.equals(previousVersion)) {
+             
+                // change the verb to indicate this was when the concept was added to the refset
+                if (previousStatus != null && previousStatus.equals("Active")) {
+                    memberHistory.get(memberHistory.size() - 1).put("change", "Added");
+                } else if (previousStatus != null && previousStatus.equals("Inactive")) {
+                    memberHistory.get(memberHistory.size() - 1).put("change", "Added as inactive");
+                }
+            }
+            
+            // since the last version added was not the previous version add that version to the list
+            else if (previousStatus != null) {
+                
+                Map<String, String> historyEntry = new HashMap<>();
+                historyEntry.put("version", previousVersion);
+                
+                if (previousStatus.equals("Active")) {
+                    historyEntry.put("change", "Added");
+                } else {
+                    historyEntry.put("change", "Added as inactive");
+                }
+                
+                memberHistory.add(historyEntry);
+            }
+            
         }
 
         return memberHistory;

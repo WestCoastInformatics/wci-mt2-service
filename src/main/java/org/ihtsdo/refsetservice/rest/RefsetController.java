@@ -455,7 +455,7 @@ public class RefsetController extends BaseController {
     /**
      * Gets the concept details.
      *
-     * @param memberId the member id
+     * @param conceptId the member id
      * @param refsetInternalId the refset internal id
      * @return the member history
      * @throws Exception the exception
@@ -472,22 +472,19 @@ public class RefsetController extends BaseController {
                     dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "memberId", value = "The ID of the member to return.",
                     required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "shortName",
-                    value = "The shortName for the edition that the member must be in.",
-                    required = true, dataType = "string", paramType = "query"),
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/history",
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}",
             produces = "application/json")
-    public @ResponseBody Map<String, Boolean> getMemberHistory(
+    public @ResponseBody ResultList<Map<String, String>> getMemberHistory(
         @PathVariable(value = "refsetInternalId")
-        final String refsetInternalId, final String memberId, final String shortName)
+        final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId)
         throws Exception {
 
         try {
 
-            logger.info("*********** getMemberHistory: memberId: " + memberId
-                    + "; refsetInternalId: " + refsetInternalId + "; shortName: " + shortName);
+            logger.info("*********** getMemberHistory: memberId: " + conceptId
+                    + "; refsetInternalId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -505,22 +502,20 @@ public class RefsetController extends BaseController {
 
                 for (Map<String, String> version : versions) {
                     if (version.get("editionShortName").toLowerCase()
-                            .equals(shortName.toLowerCase())) {
+                            .equals(refset.getEditionShortName().toLowerCase())) {
                         updatedVersions.add(version);
                     }
                 }
 
-                final Map<String, Boolean> memberHistory =
-                        RefsetMemberService.getMemberHistory(memberId, updatedVersions);
+                final List<Map<String, String>> memberHistory =
+                        RefsetMemberService.getMemberHistory(conceptId, updatedVersions);
 
-                logger.info("*********** getMemberHistory: member: " + memberId);
+                logger.info("*********** getMemberHistory: member: " + ModelUtility.toJson(memberHistory));
 
-                for (String version : memberHistory.keySet()) {
-                    logger.info("version " + version + " has member active status: "
-                            + memberHistory.get(version));
-                }
+                ResultList<Map<String, String>> results = new ResultList<>(memberHistory);
+                results.setTotalKnown(true);
 
-                return memberHistory;
+                return results;
             }
 
         } catch (final Exception e) {
