@@ -72,6 +72,7 @@ public class GeneratorApplication extends SpringBootServletInitializer {
                     e.setName("Test");
                     service.add(e);
                     logger.debug("************ Added Test Edition");
+                    service.remove(e);
                 }
                 
                 HistoricDataMigrator migrator = new HistoricDataMigrator();

@@ -21,7 +21,6 @@ import java.util.Arrays;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
-
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
@@ -191,7 +190,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    //@Test
+    // @Test
     public void testAllRefsets() throws Exception {
         HashSet<String> internationalModules = createEditionsFromSnowstorm();
         Map<String, SortedMap<Date, String>> branches = identifyBranches();
@@ -216,42 +215,6 @@ public class RefsetMetadataMigrationTest extends BaseTest {
         updateRefsets(allRefsets);
         removeUnnecessaryProjects(allRefsets);
         persistObjects(allRefsets);
-        updateLatestVersion();
-    }
-    
-    /**
-     * Sets the latestVersion flags on all refsets in the DB.
-     *
-     * @throws Exception
-     */
-    //@Test
-    public void updateLatestVersion() throws Exception {
-        
-        try (TerminologyService service = new TerminologyService()) {
-
-            ResultList<Refset> results = new ResultList<Refset>();
-            String currentRefsetId = "";
-            service.setModifiedFlag(true);
-
-            final PfsParameter pfs = new PfsParameter();
-            pfs.setSortFields(Arrays.asList("refsetId", "versionDate"));
-            pfs.setAscending(false);
-            
-            results = service.find("", pfs, Refset.class, null);
-
-            for (Refset refset : results.getItems()) {
-                
-                logger.debug("**** refsetID: " + refset.getRefsetId() + " :: Version  Date: " + DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
-
-                if (!currentRefsetId.equals(refset.getRefsetId())){
-                    
-                    currentRefsetId = refset.getRefsetId();
-                    refset.setLatestVersion(true);
-                    service.setModifiedBy(refset.getModifiedBy());
-                    service.update(refset);
-                }
-            }
-        }
     }
 
     /**
@@ -338,11 +301,11 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      * Update refsets.
      *
      * @param allRefsets the all refsets
-     * @throws JsonMappingException the json mapping exception
-     * @throws JsonProcessingException the json processing exception
+     * @throws Exception
      */
-    private void updateRefsets(Set<Refset> allRefsets)
-        throws JsonMappingException, JsonProcessingException {
+    private void updateRefsets(Set<Refset> allRefsets) throws Exception {
+        Map<String, Date> latestRefsetCache = new HashMap<>();
+
         for (Refset refset : allRefsets) {
             if (refsetsToIgnore.contains(refset.getRefsetId())) {
                 continue;
@@ -375,8 +338,24 @@ public class RefsetMetadataMigrationTest extends BaseTest {
 
                 notFromRTTMap.put(refset.getRefsetId(), refset);
             }
+
+            if (!latestRefsetCache.containsKey(refset.getRefsetId()) || latestRefsetCache
+                    .get(refset.getRefsetId()).before(refset.getVersionDate())) {
+                latestRefsetCache.put(refset.getRefsetId(), refset.getVersionDate());
+            }
         }
 
+        for (Refset refset : allRefsets) {
+            if (latestRefsetCache.containsKey(refset.getRefsetId())) {
+                for (String refsetId : latestRefsetCache.keySet()) {
+                    if (refset.getRefsetId().equals(refsetId)
+                            && refset.getVersionDate().equals(latestRefsetCache.get(refsetId))) {
+                        refset.setLatestVersion(true);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -745,7 +724,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                     String branchName = refset.getEdition().getBranch()
                             .substring(refset.getEdition().getBranch().indexOf("SNOMEDCT"));
                     String orgName = branchOrganizationMap.get(branchName);
-                    
+
                     if (!organizationsAdded.containsKey(orgName)) {
                         if (orgName == null) {
                             orgName = "Organization responsible for " + refset.getEditionName();
@@ -753,14 +732,14 @@ public class RefsetMetadataMigrationTest extends BaseTest {
                         org.setName(orgName);
                         org.setDescription(
                                 "This organization was created to support non-RTT based refsets.");
-    
+
                         setMetadata(org, meta);
                         service.add(org);
                         organizationCount++;
                     } else {
                         org = organizationsAdded.get(orgName);
                     }
-                    
+
                     // Create Project for non-RTT based refsets
                     Project project = new Project();
                     project.setName("Default project for " + refset.getEditionName());
