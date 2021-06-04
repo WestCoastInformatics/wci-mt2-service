@@ -197,7 +197,7 @@ public class RefsetMemberService {
                 final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
                         + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams;
 
-                concepts = getMemberList(refset, nonDefaultPreferredTerms, url);
+                concepts = getMemberList(refset, nonDefaultPreferredTerms, url, searchParameters);
                 logger.info("Refset has " + concepts.size() + " members");
 
             } else {
@@ -239,6 +239,12 @@ public class RefsetMemberService {
         // edition's default list
         nonDefaultPreferredTerms.removeIf(
                 languageRefset -> !edition.getDefaultLanguageRefsets().contains(languageRefset));
+        
+        // make sure every refset includes English as a fall back language 
+        if (edition.getDefaultLanguageCode() != null && !edition.getDefaultLanguageCode().equals("en") 
+                && !nonDefaultPreferredTerms.contains("en")) {
+            nonDefaultPreferredTerms.add("en");
+        }
 
         Collections.sort(nonDefaultPreferredTerms);
 
@@ -1399,7 +1405,7 @@ public class RefsetMemberService {
                 List<Map<String, String>> descriptions =
                         conceptDescriptionMap.get(concept.getCode());
 
-                if (descriptions == null) {
+                if (descriptions == null || descriptions.size() == 0) {
 
                     logger.debug("Description not retrieved for concept " + concept.getCode());
                     continue;
@@ -1415,6 +1421,78 @@ public class RefsetMemberService {
     }
 
     /**
+     * Search refset members.
+     *
+     * @param refset the refset
+     * @param searchParameters the search parameters
+     * @return the concept result list
+     * @throws MalformedURLException the malformed URL exception
+     * @throws Exception the exception
+     */
+    public static ConceptResultList searchRefsetMembers(final Refset refset,
+            final SearchParameters searchParameters) throws MalformedURLException, Exception {
+
+    		ConceptResultList members = new ConceptResultList();
+            
+            // Create Snowstorm URL
+            final String url =
+                    SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset) + "/descriptions?term=" + searchParameters.getQuery() + "&conceptRefset=" + refset.getRefsetId() + "&groupByConcept=false&searchMode=STANDARD&offset=0&limit=1000";
+            
+            // Call Snowstorm
+            logger.debug("Get Member Descriptions URL: " + url);
+
+            try (final Response response =
+                    SnowstormConnection.getResponse(url)) {
+
+                final String resultString = response.readEntity(String.class);
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString.toString());
+
+                final JsonNode allDescriptionNodes = root.get("items");
+                final Iterator<JsonNode> itemIterator = allDescriptionNodes.iterator();
+                final HashMap<String, Concept> conceptIdToConcept = new HashMap<>();
+
+                // parse items to retrieve matching concepts
+                while (itemIterator.hasNext()) {
+                    final JsonNode itemNode = itemIterator.next();
+
+                    if (itemNode.get("active").asBoolean()) {
+                    	JsonNode conceptNode = itemNode.get("concept");
+                        String conceptId = conceptNode.get("conceptId").asText();
+
+                        if (!conceptIdToConcept.containsKey(conceptId)) {
+                        	Concept cpt = new Concept();
+                        	cpt.setActive(conceptNode.get("active").asBoolean());
+                        	cpt.setId(conceptNode.get("id").asText());
+                        	cpt.setCode(conceptNode.get("id").asText());
+                        	if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                                cpt.setDefined(true);
+                            } else {
+                            	cpt.setDefined(false);
+                            }
+                        	if (conceptNode.get("pt") != null) {
+                        	  cpt.setName(conceptNode.get("pt").get("term").asText());
+                        	}
+                        	//cpt.setMemberOfRefset(true);
+                        	//cpt.setMemberStatus(true);
+                        	conceptIdToConcept.put(conceptId, cpt);
+                        }
+
+                    }
+                }
+                populateMembershipInformation(refset, new HashSet<Concept>(conceptIdToConcept.values()));
+                members.setItems(new ArrayList<Concept>(conceptIdToConcept.values()));
+                members.setTotal(conceptIdToConcept.size());
+
+                return members;
+            } catch (Exception ex) {
+                logger.error("Could not retrieve descriptions matching term" + ex.getMessage());
+                ex.printStackTrace();
+            }
+            return members;
+        }
+	
+    /**
      * Process description node.
      *
      * @param descriptionNodes the description nodes
@@ -1424,18 +1502,21 @@ public class RefsetMemberService {
      */
     private static Set<Map<String, String>> processDescriptionNodes(Set<JsonNode> descriptionNodes,
         Set<String> defaultLanguageRefsets, List<String> nonDefaultPreferredTerms) {
+        
         final Set<Map<String, String>> descriptions = new HashSet<>();
-
+        
         for (JsonNode descriptionNode : descriptionNodes) {
+            
             final Map<String, String> descriptionAttributesMap = new HashMap<>();
-
             final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
             String acceptability = null;
             String languageId = null;
             String typeName = null;
 
             for (String langRefsetId : defaultLanguageRefsets) {
+                
                 if (acceptabilityMap.has(langRefsetId)) {
+                    
                     acceptability = acceptabilityMap.get(langRefsetId).asText();
                     languageId = langRefsetId;
                     break;
@@ -1444,15 +1525,18 @@ public class RefsetMemberService {
 
             if (acceptability != null
                     && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
+                
                 if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
                     typeName = "FSN";
                 } else {
+                    
                     if ("PREFERRED".equals(acceptability)) {
                         typeName = "PT";
                     } else {
                         typeName = "AC";
                     }
                 }
+                
                 descriptionAttributesMap.put(DESCRIPTION_TERM,
                         descriptionNode.get("term").asText());
                 descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
@@ -1482,7 +1566,7 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static ConceptResultList getMemberList(final Refset refset,
-        final List<String> nonDefaultPreferredTerms, final String url) throws Exception {
+        final List<String> nonDefaultPreferredTerms, final String url, final SearchParameters searchParameters) throws Exception {
 
         // 2 Snowstorm calls: 1) Memberlist and 2) Descriptions
         ConceptResultList members = new ConceptResultList();
@@ -1503,9 +1587,15 @@ public class RefsetMemberService {
                 final Set<Concept> conceptsToProcess = new HashSet<>();
                 final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
 
-                // Populate results for member list
-                ConceptResultList currentList =
+                ConceptResultList currentList; 
+				// if search term is indicated, find members that match search term
+                if (searchParameters != null && searchParameters.getQuery() != null ) {
+                	currentList = searchRefsetMembers(refset, searchParameters);
+                } else {               
+                	// Populate results for member list
+                	currentList =
                         getConceptsFromSnowstorm(url, refset, lookupParameters);
+                }
 
                 // add the descriptions to the children concepts in batches
                 for (int i = 0; i < currentList.getItems().size(); i++) {
@@ -1739,7 +1829,11 @@ public class RefsetMemberService {
 
         JsonNode conceptNode = root;
         Iterator<JsonNode> iterator = null;
-        final int total = root.get("total").asInt();
+        int total = 0;
+        
+        if (root.get("total") != null) {
+            total = root.get("total").asInt();
+        }
 
         if (!lookupParameters.isGetMembershipInformation()) {
             iterator = root.iterator();

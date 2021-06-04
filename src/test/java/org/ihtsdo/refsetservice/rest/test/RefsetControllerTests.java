@@ -375,6 +375,63 @@ public class RefsetControllerTests extends BaseTest {
     }
 
     /**
+     * Test searching refset members
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testSearchRefsetMembers() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+        final String conceptIdToExamine = "429625007"; 
+        
+        // descriptions in all 3 lang
+        final String refsetId = "741000172102";
+        final String expectedEffectiveTime = "20210315";
+
+        url = "/refset/" + getRefsetInternalId(refsetId)
+                + "/members?limit=10&offset=0&query=food&displayType=list&refsetInternalId="
+                + getRefsetInternalId(refsetId);
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        ConceptResultList members =
+                new ObjectMapper().readValue(content, (ConceptResultList.class));
+
+        // Testing Results
+        assertThat(members).isNotNull();
+        assertThat(members.size()).isEqualTo(1);
+
+        Concept concept = null;
+        for (Concept conceptBeingTested : members.getItems()) {
+            if (conceptBeingTested.getCode().equals(conceptIdToExamine)) {
+                concept = conceptBeingTested;
+                break;
+            }
+        }
+
+        assertThat(concept).isNotNull();
+        assertThat(concept.getCode()).isEqualTo(conceptIdToExamine);
+
+        final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+        assertThat(concept.getMemberEffectiveTime())
+                .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(expectedEffectiveTime));
+        assertTrue(concept.isMemberOfRefset());
+        assertTrue(concept.isMemberStatus());
+        assertThat(concept.getDescriptions().size()).isEqualTo(4); 
+        assertThat(concept.getRoleGroups().size()).isEqualTo(0);
+
+        // Call does not pull in parents & Children
+        assertThat(concept.getParents().size()).isEqualTo(0);
+        assertThat(concept.getChildren().size()).isEqualTo(0);
+
+    }
+    
+    /**
      * Test getting concept details.
      *
      * @throws Exception the exception

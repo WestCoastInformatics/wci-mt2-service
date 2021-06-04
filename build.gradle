@@ -30,17 +30,36 @@ repositories {
 
 // Extra Properties
 ext {
+
+	versionNumber = "0.0.1"
 	
-	appName = "snomed-refset-service"
-	buildNumber = "0.0.1"
+	if (!project.hasProperty("debAppName")) {
 	
-  // Parameters
-  if (!project.hasProperty("inputName")) {
-    inputName = "na"
-  }
-  if (!project.hasProperty("filePath")) {
-    filePath = "na"
-  }
+		if (System.getenv("DEB_APP_NAME") != null) {
+			debAppName = System.getenv("DEB_APP_NAME")
+		} else {
+			debAppName = "snomed-refset-service"
+		}
+	}
+	
+	if (!project.hasProperty("buildNumber")) {
+	
+		if (System.getenv("BUILD_NUMBER") != null) {
+			buildNumber = "~" + System.getenv("BUILD_NUMBER")
+		} else {
+			buildNumber = ""
+		}
+	} else {
+		buildNumber = "~" + buildNumber
+	}
+	
+	// Parameters
+	if (!project.hasProperty("inputName")) {
+    	inputName = "na"
+	}
+	if (!project.hasProperty("filePath")) {
+    	filePath = "na"
+	}
 }
 
 // Plugins
@@ -64,7 +83,7 @@ mainClassName = "org.ihtsdo.refsetservice.Application"
 
 // Version info (always use SNAPSHOT, upgrade version when needed)
 group = "org.ihtsdo.refsetservice"
-version = buildNumber + "-SNAPSHOT"
+version = versionNumber + "-SNAPSHOT"
 
 sourceCompatibility = 11
 targetCompatibility = 11
@@ -81,16 +100,18 @@ configurations.all {
 
 ospackage {
 
+	packageName = debAppName
+    version = versionNumber + buildNumber
+    
 	println '***** project.name: ' + project.name
 	println '***** project.version: ' + project.version
-	println '***** appName: ' + appName
+	println '***** debAppName: ' + debAppName
+	println '***** versionNumber: ' + versionNumber
 	println '***** buildNumber: ' + buildNumber
-	
-    packageName = appName
-    version = buildNumber
+	println '***** ospackage version: ' + version
 	
     from('build/libs') {
-	    into "/opt/${appName}/"
+	    into "/opt/${debAppName}/"
 	    rename { String fileName ->
 	    		println '***** fileName: ' + fileName
 	            fileName.replace("-${project.version}", "")
@@ -101,7 +122,7 @@ ospackage {
 		into '/DEBIAN/'
 	}
   
-	link("var/log/${appName}", "/var/opt/${appName}/log")
+	link("var/log/${debAppName}", "/var/opt/${debAppName}/log")
 }
 
 // Dependencies - https://docs.gradle.org/current/userguide/declaring_dependencies.html
