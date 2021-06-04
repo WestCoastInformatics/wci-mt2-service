@@ -196,7 +196,17 @@ public class Edition extends AbstractHasModified {
     @Field(analyze = Analyze.NO, store = Store.YES)
     @IndexedEmbedded
     public Set<String> getDefaultLanguageRefsets() {
-        return defaultLanguageRefsets;
+        
+        Set<String> returnDefaults = new HashSet<>(defaultLanguageRefsets);
+        
+        if (!returnDefaults.contains("32570271000036106")) {
+            returnDefaults.add("32570271000036106");
+        }
+        
+        if (!returnDefaults.contains("900000000000509007")) {
+            returnDefaults.add("900000000000509007");
+        }
+        return returnDefaults;
     }
     
     /**
@@ -209,7 +219,7 @@ public class Edition extends AbstractHasModified {
         final Map<String, String> refsetToLanguagesMap = RefsetMemberService.getRefsetToLanguagesMap();
         final List<Map<String, String>> qualifiedLanguageList  = new ArrayList<>();
         
-        for (final String languageRefsetCode : defaultLanguageRefsets) {
+        for (final String languageRefsetCode : getDefaultLanguageRefsets()) {
             
             final String languageCode = refsetToLanguagesMap.get(languageRefsetCode);
             
@@ -230,12 +240,16 @@ public class Edition extends AbstractHasModified {
                 
                 languageDetails.put("default", "true");
                 qualifiedLanguageList.add(0, languageDetails);
-                qualifiedLanguageList.add(1, Map.of(
-                        "languageRefset", languageRefsetCode,
-                        "languageCode", languageCode,
-                        "qualifiedLanguageRefset", languageRefsetCode + "FSN",
-                        "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"
-                        ));
+                
+                if (languageCode.equals("en")) {
+                    
+                    qualifiedLanguageList.add(1, Map.of(
+                            "languageRefset", languageRefsetCode,
+                            "languageCode", languageCode,
+                            "qualifiedLanguageRefset", languageRefsetCode + "FSN",
+                            "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"
+                            ));
+                }
             }
         }
         
