@@ -1,7 +1,5 @@
 package org.ihtsdo.refsetservice.util.test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
