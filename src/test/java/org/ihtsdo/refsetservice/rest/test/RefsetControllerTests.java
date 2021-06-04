@@ -189,7 +189,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    // @Test
+    @Test
     public void testExportSctidList() throws Exception {
 
         String url = null;
@@ -213,12 +213,45 @@ public class RefsetControllerTests extends BaseTest {
     }
 
     /**
-     * Test exporting a refset SCTID list.
+     * Test exporting as RF2 Snapshot.
      *
      * @throws Exception the exception
      */
-    // @Test
-    public void testExportRf2() throws Exception {
+    @Test
+    public void testExportRf2Snapshot() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String resultString = null;
+        final String refsetInternalId = getRefsetInternalId();
+        url = "/export/" + refsetInternalId
+                + "/?format=rf2&withNames=true&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20200315&transientEffectiveTime=20200315";
+
+        // final String refsetInternalId = getRefsetInternalId("723264001");
+        // url = "/export/" + refsetInternalId
+        // +
+        // "/?format=rf2&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=202010131&transientEffectiveTime=20210131";
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        resultString = result.getResponse().getContentAsString();
+
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode root = mapper.readTree(resultString);
+        final String fileUrl = (root.get("url")).asText();
+        logger.info("File Url: " + fileUrl);
+
+        assertThat(fileUrl).isNotNull();
+
+    }
+
+    /**
+     * Test exporting as RF2 Delta.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testExportRf2Delta() throws Exception {
 
         String url = null;
         MvcResult result = null;
@@ -226,7 +259,7 @@ public class RefsetControllerTests extends BaseTest {
         final String refsetInternalId = getRefsetInternalId();
 
         url = "/export/" + refsetInternalId
-                + "/?format=rf2&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20210315&transientEffectiveTime=20210315";
+                + "/?format=rf2&exportMetadata=true&exportType=DELTA&fileNameDate=20210315&transientEffectiveTime=20210315";
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -472,29 +505,29 @@ public class RefsetControllerTests extends BaseTest {
 
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
-        final String conceptIdToExamine = "771410009"; //"771410009";
-        final String refsetId = "723264001"; //"723264001";
+        final String conceptIdToExamine = "771410009"; // "771410009";
+        final String refsetId = "723264001"; // "723264001";
 
-        final String url = "/refset/" + getRefsetInternalId(refsetId) + "/member/"
-                + conceptIdToExamine;
+        final String url =
+                "/refset/" + getRefsetInternalId(refsetId) + "/member/" + conceptIdToExamine;
         logger.info("Testing url - " + url);
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
 
-        ResultList<Map<String, String>> memberHistory =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Map<String, String>>>() {
+        ResultList<Map<String, String>> memberHistory = new ObjectMapper().readValue(content,
+                (new TypeReference<ResultList<Map<String, String>>>() {
                     /* NA */}));
 
         assertThat(memberHistory).isNotNull();
         assertThat(memberHistory.getTotal()).isEqualTo(2);
 
         for (final Map<String, String> historyEntry : memberHistory.getItems()) {
-            
+
             final String version = historyEntry.get("version");
             final String change = historyEntry.get("change");
-            
+
             assertThat(version.equals("2021-01-31") || version.equals("2019-07-31"));
 
             if (version.equals("2021-01-31")) {

@@ -3,15 +3,20 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +46,7 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
+import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -48,6 +54,7 @@ import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.services.s3.AmazonS3;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -129,6 +136,8 @@ public class RefsetMemberService {
 
     /** The Constant IS_A_TYPE_ID. */
     private static final String IS_A_TYPE_ID = "116680003";
+
+    private static final String TOP_LEVEL_AWS_FOLDER = "rt2/";
 
     static {
 
@@ -700,52 +709,122 @@ public class RefsetMemberService {
      */
     public static String exportRefsetRf2(final String refsetInternalId, final String type,
         final String fileNameDate, final String startEffectiveTime,
-        final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
-
-        String snowstormFileUrl = "";
-        String refsetId = "";
-        String zipFilePath = "";
+        final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames)
+        throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
-            refsetId = refset.getRefsetId();
 
-            zipFilePath = EXPORT_FILE_DIR + "refset_" + refset.getRefsetId() + "_"
-                    + getRefsetAsOfDate(refset) + ".zip";
-
-            String snowstormExportApiUrl = SnowstormConnection.POST_URL + "exports";
-
-            String entity = "{\"refsetIds\": [\"" + refsetId + "\"],  \"branchPath\": \""
-                    + getBranchPath(refset)
-                    + "\", \"conceptsAndRelationshipsOnly\": \"false\", \"filenameEffectiveDate\": \""
-                    + fileNameDate + "\", \"legacyZipNaming\": \"false\", \"type\": \"" + type
-                    + "\", \"unpromotedChangesOnly\": \"false\""
-                    + (startEffectiveTime == null ? ""
-                            : ",  \"startEffectiveTime\": \"" + startEffectiveTime + "\"")
-                    + (transientEffectiveTime == null ? ""
-                            : ",  \"transientEffectiveTime\": \"" + transientEffectiveTime + "\"")
-                    + "}";
-
-            logger.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entity);
-
-            snowstormFileUrl = ""; // "https://www.learningcontainer.com/download/sample-zip-files/?wpdmdl=1637";
-
-            try (Response response =
-                    SnowstormConnection.postResponse(snowstormExportApiUrl, entity)) {
-
-                snowstormFileUrl = response.getLocation().toString() + "/archive";
-                logger.info("Response location " + snowstormFileUrl);
-
-            } catch (Exception ex) {
-                throw new Exception("Could not export refset from snowstorm: " + ex.getMessage(),
-                        ex);
-
+            String zipFileName = "";
+            String awsPath = "";
+            String tmp = null;
+            if (("snapshot".equals(type.toLowerCase()) && tmp != null)
+                    // if (("snapshot".equals(type.toLowerCase()) &&
+                    // transientEffectiveTime != null)
+                    || ("delta".equals(type.toLowerCase()) && transientEffectiveTime == null)) {
+                throw new Exception("Have a type/transientEffectiveTime mismatch with type: " + type
+                        + " and transientEffectiveTime: " + transientEffectiveTime);
             }
 
-            logger.debug("Snowstorm File URL: " + snowstormFileUrl);
+            if ("snapshot".equals(type.toLowerCase())) {
+                zipFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset)
+                        + "_" + type + ".zip";
+                awsPath = TOP_LEVEL_AWS_FOLDER + refset.getRefsetId() + "/"
+                        + getRefsetAsOfDate(refset) + "/" + type;
+
+            } else {
+                zipFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset)
+                        + "_" + type + "_" + transientEffectiveTime + ".zip";
+                awsPath = TOP_LEVEL_AWS_FOLDER + refset.getRefsetId() + "/"
+                        + getRefsetAsOfDate(refset) + "/" + type + "/" + transientEffectiveTime;
+            }
+
+            if (withNames) {
+                awsPath = awsPath + "-withNames"; // TODO: Add Language here too
+            }
+
+            // Check S3 cache if file exists. If exists, return path to S3
+            // If doesn't, generate, upload to S3, then return path to S3
+            AmazonS3 s3Client = S3Connection.connectToAmazonS3();
+
+            String s3ZippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+
+            if (s3ZippedFileUrl == null) {
+                // File doesn't exist
+
+                /*-
+                 * Example of entity
+                 {
+                    "branchPath": "MAIN/SNOMEDCT-BE/2020-03-15",
+                    "conceptsAndRelationshipsOnly": false,
+                    "filenameEffectiveDate": "20210315",
+                    "legacyZipNaming": false,
+                    "refsetIds": [
+                        "741000172102"
+                    ],
+                    "startEffectiveTime": "20210315",
+                    "transientEffectiveTime": "20210315",
+                    "type": "SNAPSHOT",
+                    "unpromotedChangesOnly": false
+                }
+                 */
+                String entity = "{\"refsetIds\": [\"" + refset.getRefsetId()
+                        + "\"],  \"branchPath\": \"" + getBranchPath(refset)
+                        + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
+                        + fileNameDate + "\", \"legacyZipNaming\": false, \"type\": \"" + type
+                        + "\", \"unpromotedChangesOnly\": false"
+                        + (startEffectiveTime == null ? ""
+                                : ",  \"startEffectiveTime\": \"" + startEffectiveTime + "\"")
+                        + (transientEffectiveTime == null ? "" : ",  \"transientEffectiveTime\": \""
+                                + transientEffectiveTime + "\"")
+                        + "}";
+
+                logger.debug(entity);
+
+                // generate zip files including support for metadata and
+                final String zipFilePath = generateRefsetZipFile(refset, zipFileName,
+                        exportMetadata, withNames, entity);
+
+                // upload to S3
+                S3Connection.uploadToS3(s3Client, awsPath, zipFilePath, zipFileName);
+
+                // getS3 Path
+                s3ZippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+            }
+
+            return s3ZippedFileUrl;
+        } catch (Exception ex) {
+            throw new Exception("Could not extract zip file name" + ex.getMessage(), ex);
+        }
+    }
+
+    private static String generateRefsetZipFile(final Refset refset, final String zipFileName,
+        final boolean exportMetadata, final boolean appendNames, final String entityString)
+        throws Exception {
+        String zipFilePath = "";
+
+        // Call Snowstorm to create RF2 file
+        String snowstormExportApiUrl = SnowstormConnection.POST_URL + "exports";
+
+        logger.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entityString);
+
+        String snowstormFileUrl = ""; // "https://www.learningcontainer.com/download/sample-zip-files/?wpdmdl=1637";
+
+        try (Response response =
+                SnowstormConnection.postResponse(snowstormExportApiUrl, entityString)) {
+
+            snowstormFileUrl = response.getLocation().toString() + "/archive";
+            logger.info("Response location " + snowstormFileUrl);
+
+        } catch (Exception ex) {
+            throw new Exception("Could not export refset from snowstorm: " + ex.getMessage(), ex);
+
         }
 
+        logger.debug("Snowstorm File URL: " + snowstormFileUrl);
+
+        // Download generated file from Snowstorm
         try {
 
             // Open connection to the Snowstorm URL
@@ -753,38 +832,116 @@ public class RefsetMemberService {
             URLConnection connection = urlObject.openConnection();
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(10000);
-            connection.setRequestProperty("Cookie", SnowstormConnection.getGenericUserCookie());
+            connection.setRequestProperty("Set-Cookie", SnowstormConnection.getGenericUserCookie());
+
+            zipFilePath = EXPORT_FILE_DIR + zipFileName;
+            logger.debug("Zip Path is: " + zipFilePath);
 
             // Download the Snowstorm file
             FileUtils.copyURLToFile(connection.getURL(), new File(zipFilePath));
-            // zipFilePath = EXPORT_FILE_DIR +
-            // "snomed-MAIN_SNOMEDCT-BE-20210315-Snapshot.zip";
-
         } catch (Exception ex) {
-            throw new Exception("Could not download export from snowstorm: " + ex.getMessage(), ex);
-
+            throw new Exception(
+                    "Failed to download the Snowstorm generated RF2 file: " + ex.getMessage(), ex);
         }
 
-        final List<String> sourceFiles = unzipFiles(zipFilePath, EXPORT_FILE_DIR);
+        // Generate the Rt2 version of refset RF2 Zip file
+        final Path downloadDirectoryPath = Files.createTempDirectory("rt2Download-");
+        final Path toZipDirectoryPath = Files.createTempDirectory("rt2FilesToZip-");
+        final Path zippedDirectoryPath = Files.createTempDirectory("rt2Zipped-");
 
-        logger.debug("Unzipped Files: " + sourceFiles);
+        // Unzip the download
+        final List<String> sourceFiles = unzipFiles(zipFilePath, downloadDirectoryPath.toString());
 
+        if (sourceFiles.size() != 1) {
+            throw new Exception("Unexpected number of files generated by Snowstorm Export RF2: "
+                    + sourceFiles.size());
+        }
+
+        // move refset RF2 file to top level
+        final String unzippedFilePath = sourceFiles.iterator().next();
+        final String unzippedFileName =
+                unzippedFilePath.substring(unzippedFilePath.lastIndexOf("/") + 1);
+        FileUtility.move(unzippedFilePath, toZipDirectoryPath.toString() + "/" + unzippedFileName);
+        sourceFiles.clear();
+        sourceFiles.add(toZipDirectoryPath.toString() + "/" + unzippedFileName);
+
+        // Delete directory structure and original zip
+        FileUtility.deleteDirectory(downloadDirectoryPath.toFile());
+
+        // If Rf2WithNames selected, append the names to the refset file
+        if (appendNames) {
+            appendNamesToRf2(refset, sourceFiles, zipFileName);
+        }
+
+        // if exportMetadata requested, add it
         if (exportMetadata) {
-
-            // get the refset metadata information
-            try (final TerminologyService service = new TerminologyService()) {
-
-                final Refset refset = service.get(refsetInternalId, Refset.class);
-                sourceFiles.add(exportRefsetMetadata(refset));
-            }
-
+            sourceFiles.add(exportRefsetMetadata(refset, toZipDirectoryPath));
         }
 
         // zip the files together
-        zipFiles(sourceFiles, zipFilePath);
+        zipFiles(sourceFiles, zippedDirectoryPath.toString() + "/" + zipFileName);
+        FileUtility.deleteDirectory(zippedDirectoryPath.toFile());
 
-        return zipFilePath;
+        return toZipDirectoryPath.toString();
+    }
 
+    private static void appendNamesToRf2(Refset refset, List<String> sourceFiles,
+        String zipFileName) throws Exception {
+        // Move rf2 file to a tmp (as we create new one below). Update
+        // sourceFiles accordingly
+        String originalFilePath = sourceFiles.iterator().next();
+        String newFilePath = originalFilePath.substring(0, originalFilePath.indexOf(".")) + "-orig"
+                + originalFilePath.substring(originalFilePath.indexOf("."));
+        FileUtility.move(originalFilePath, newFilePath);
+        sourceFiles.clear();
+        sourceFiles.add(newFilePath);
+
+        // Get member cache
+        List<String> conceptsNotInCache = new ArrayList<>();
+        Map<String, Concept> members = getCachedRefsetMembers(refset.getId());
+
+        // Read through file and identify those concepts not in cache or don't
+        // have all requisite languages populated
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(newFilePath)))) {
+            String extractedLine = br.readLine();
+            extractedLine = br.readLine();
+
+            while (extractedLine != null && !extractedLine.trim().isEmpty()) {
+                String conceptId = extractedLine.split("\t")[0];
+
+                // TODO: Also check doesn't have all needed languages
+                if (!members.containsKey(conceptId)) {
+                    conceptsNotInCache.add(conceptId);
+                }
+
+                extractedLine = br.readLine();
+            }
+
+            br.close();
+        }
+        // Get descriptions for those not cached or not cached with all
+        // languages
+
+        // Read through file 2nd time and write each line to new file while
+        // appending selected name
+        FileWriter fw = new FileWriter(new File(originalFilePath));
+
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(newFilePath)))) {
+            String extractedLine = br.readLine();
+            extractedLine = br.readLine();
+            while (extractedLine != null) {
+                String conceptId = extractedLine.split("\t")[0];
+
+                // TODO: How to determine which langauge?
+                if (!members.containsKey(conceptId)) {
+                    throw new Exception("Didn't have concept populated with descriptions yet");
+                }
+                fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(0));
+                extractedLine = br.readLine();
+            }
+        }
+
+        fw.close();
     }
 
     /**
@@ -851,7 +1008,7 @@ public class RefsetMemberService {
             logger.debug("zip output path = " + zipOutputPath);
 
             if (exportMetadata) {
-                sourceFiles.add(exportRefsetMetadata(refset));
+                sourceFiles.add(exportRefsetMetadata(refset, null)); // JESSE
             }
 
             while (morePages) {
@@ -906,13 +1063,13 @@ public class RefsetMemberService {
      * Zip files together.
      *
      * @param sourceFiles the list of files to zip together
-     * @param zipOutputPath the path and filename of the zip file to create
+     * @param zipOutputFilePath the path and filename of the zip file to create
      * @throws Exception the exception
      */
-    public static void zipFiles(final List<String> sourceFiles, final String zipOutputPath)
+    public static void zipFiles(final List<String> sourceFiles, final String zipOutputFilePath)
         throws Exception {
 
-        try (final FileOutputStream zipFileOutputStream = new FileOutputStream(zipOutputPath);
+        try (final FileOutputStream zipFileOutputStream = new FileOutputStream(zipOutputFilePath);
                 final ZipOutputStream zipOutputStream = new ZipOutputStream(zipFileOutputStream);) {
 
             for (String sourceFile : sourceFiles) {
@@ -941,7 +1098,7 @@ public class RefsetMemberService {
     /**
      * Extract files from a zip archive.
      *
-     * @param zipFilePath the path and filename of the zip file to create
+     * @param zipFilePath the path and filename of the zip file to unzip
      * @param extractionPath the path of the directory to extract files to
      * @return a list of file paths of the extracted files
      * @throws Exception the exception
@@ -1011,12 +1168,13 @@ public class RefsetMemberService {
      * @return the URL of the file containing the metadata
      * @throws Exception the exception
      */
-    public static String exportRefsetMetadata(final Refset refset) throws Exception {
+    public static String exportRefsetMetadata(final Refset refset, Path directory)
+        throws Exception {
 
         StringBuilder fileLines = new StringBuilder();
         String pathDate = getRefsetAsOfDate(refset);
-        String outputPath = EXPORT_FILE_DIR + "refset_" + refset.getRefsetId() + "_" + pathDate
-                + "_metadata.txt";
+        String outputPath =
+                directory + "/refset_" + refset.getRefsetId() + "_" + pathDate + "_metadata.txt";
         String separator = "\t";
 
         fileLines.append("Refset ID" + separator + refset.getRefsetId() + "\n");
@@ -1948,7 +2106,7 @@ public class RefsetMemberService {
 
     public static List<Map<String, String>> getMemberHistory(String referencedComponentId,
         List<Map<String, String>> versions) throws Exception {
-        
+
         List<Map<String, String>> memberHistory = new ArrayList<>();
         String previousStatus = null;
         String previousVersion = null;
@@ -1957,9 +2115,9 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
 
             for (Map<String, String> version : versions) {
-                
+
                 if ("beta, published".contains(version.get("status").toLowerCase())) {
-                    
+
                     String refsetInternalId = version.get("refsetInternalId");
                     String currentVersion = version.get("date");
 
@@ -1988,7 +2146,7 @@ public class RefsetMemberService {
                             JsonNode memberNode = iterator.next();
 
                             if (memberNode.has("active")) {
-                                
+
                                 if (memberNode.get("active").asBoolean()) {
                                     currentStatus = "Active";
                                 } else {
@@ -1996,28 +2154,31 @@ public class RefsetMemberService {
                                 }
                             }
                         }
-                        
-                        // have reached to the point prior to the concept becoming a member, so can cancel searching further versions
+
+                        // have reached to the point prior to the concept
+                        // becoming a member, so can cancel searching further
+                        // versions
                         if (currentStatus == null) {
                             break;
                         }
-                        
-                        // if the previous status wasn't null and the current status doesn't match it then set the last status
+
+                        // if the previous status wasn't null and the current
+                        // status doesn't match it then set the last status
                         if (previousStatus != null && !currentStatus.equals(previousStatus)) {
-                            
+
                             Map<String, String> historyEntry = new HashMap<>();
                             historyEntry.put("version", previousVersion);
-                            
+
                             if (previousStatus.equals("Active")) {
                                 historyEntry.put("change", "Activated");
                             } else {
                                 historyEntry.put("change", "Inactivated");
                             }
-                            
+
                             memberHistory.add(historyEntry);
                             lastAddedVersion = previousVersion;
                         }
-                        
+
                         previousStatus = currentStatus;
                         previousVersion = currentVersion;
 
@@ -2027,33 +2188,35 @@ public class RefsetMemberService {
                     }
                 }
             }
-            
+
             // if the final version added to the list is the previous version
             if (lastAddedVersion != null && lastAddedVersion.equals(previousVersion)) {
-             
-                // change the verb to indicate this was when the concept was added to the refset
+
+                // change the verb to indicate this was when the concept was
+                // added to the refset
                 if (previousStatus != null && previousStatus.equals("Active")) {
                     memberHistory.get(memberHistory.size() - 1).put("change", "Added");
                 } else if (previousStatus != null && previousStatus.equals("Inactive")) {
                     memberHistory.get(memberHistory.size() - 1).put("change", "Added as inactive");
                 }
             }
-            
-            // since the last version added was not the previous version add that version to the list
+
+            // since the last version added was not the previous version add
+            // that version to the list
             else if (previousStatus != null) {
-                
+
                 Map<String, String> historyEntry = new HashMap<>();
                 historyEntry.put("version", previousVersion);
-                
+
                 if (previousStatus.equals("Active")) {
                     historyEntry.put("change", "Added");
                 } else {
                     historyEntry.put("change", "Added as inactive");
                 }
-                
+
                 memberHistory.add(historyEntry);
             }
-            
+
         }
 
         return memberHistory;

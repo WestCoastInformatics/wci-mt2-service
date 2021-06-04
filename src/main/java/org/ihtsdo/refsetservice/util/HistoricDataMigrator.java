@@ -31,8 +31,6 @@ import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -402,6 +400,9 @@ public class HistoricDataMigrator {
                         while (refsetIterator.hasNext()) {
                             final JsonNode refsetNode = refsetIterator.next();
 
+                            if (refsetNode.get("conceptId").asText().equals("349091000221101")) {
+                                int a = 1;
+                            }
                             if (!refsetNode.has("moduleId") || !refsetNode.has("conceptId")
                                     || !refsetNode.has("active")) {
                                 throw new Exception("Getting unexpected Refset info from node: "
@@ -513,7 +514,7 @@ public class HistoricDataMigrator {
      */
     private HashSet<String> createEditionsFromSnowstorm() throws Exception {
         // SHould have 3 results
-        String url = SnowstormConnection.BASE_URL + "/codesystems";
+        String url = SnowstormConnection.BASE_URL + "codesystems";
         HashSet<String> internationalModules = new HashSet<>();
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -578,12 +579,14 @@ public class HistoricDataMigrator {
 
                             while (moduleIterator.hasNext()) {
                                 JsonNode module = moduleIterator.next();
-                                internationalModules.add(module.asText());
+                                internationalModules.add(module.get("conceptId").asText());
                             }
                         }
                     }
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         return internationalModules;

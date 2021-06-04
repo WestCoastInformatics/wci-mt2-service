@@ -405,7 +405,7 @@ public class RefsetController extends BaseController {
     public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId")
     final String refsetInternalId, final String format, final String exportType,
         final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime,
-        final boolean exportMetadata) throws Exception {
+        final boolean exportMetadata, final boolean withNames) throws Exception {
 
         try {
 
@@ -425,7 +425,7 @@ public class RefsetController extends BaseController {
 
                         String uri = RefsetMemberService.exportRefsetRf2(refsetInternalId,
                                 exportType, fileNameDate, startEffectiveTime,
-                                transientEffectiveTime, exportMetadata);
+                                transientEffectiveTime, exportMetadata, withNames);
                         logger.debug("******** results: " + uri);
                         url = "{\"url\": \"" + uri + "/archive\"}";
 
@@ -474,12 +474,12 @@ public class RefsetController extends BaseController {
                     required = true, dataType = "string", paramType = "query"),
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}",
-            produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET,
+            value = "/refset/{refsetInternalId}/member/{conceptId}", produces = "application/json")
     public @ResponseBody ResultList<Map<String, String>> getMemberHistory(
         @PathVariable(value = "refsetInternalId")
-        final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId)
-        throws Exception {
+        final String refsetInternalId, @PathVariable(value = "conceptId")
+        final String conceptId) throws Exception {
 
         try {
 
@@ -510,7 +510,8 @@ public class RefsetController extends BaseController {
                 final List<Map<String, String>> memberHistory =
                         RefsetMemberService.getMemberHistory(conceptId, updatedVersions);
 
-                logger.info("*********** getMemberHistory: member: " + ModelUtility.toJson(memberHistory));
+                logger.info("*********** getMemberHistory: member: "
+                        + ModelUtility.toJson(memberHistory));
 
                 ResultList<Map<String, String>> results = new ResultList<>(memberHistory);
                 results.setTotalKnown(true);

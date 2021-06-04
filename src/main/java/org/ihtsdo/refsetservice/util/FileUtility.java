@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -239,6 +241,18 @@ public final class FileUtility {
         }
 
         return lineArray;
+    }
+
+    public static void move(String sourceFilePath, String targetFilePath) throws IOException {
+        Files.move(Paths.get(sourceFilePath), Paths.get(targetFilePath), StandardCopyOption.ATOMIC_MOVE);
+    }
+
+    public static void deleteDirectory(File directory) throws Exception {
+        FileUtils.deleteDirectory(directory);
+
+        if (directory.exists()) {
+            throw new Exception ("Failed to delete the temporary directory: " + directory.getAbsolutePath());
+        }
     }
 
 }
