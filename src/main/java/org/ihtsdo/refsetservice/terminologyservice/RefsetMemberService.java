@@ -1581,7 +1581,11 @@ public class RefsetMemberService {
 
         JsonNode conceptNode = root;
         Iterator<JsonNode> iterator = null;
-        final int total = root.get("total").asInt();
+        int total = 0;
+        
+        if (root.get("total") != null) {
+            total = root.get("total").asInt();
+        }
 
         if (!lookupParameters.isGetMembershipInformation()) {
             iterator = root.iterator();
