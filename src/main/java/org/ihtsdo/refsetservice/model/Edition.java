@@ -199,13 +199,11 @@ public class Edition extends AbstractHasModified {
         
         Set<String> returnDefaults = new HashSet<>(defaultLanguageRefsets);
         
-        if (!returnDefaults.contains("32570271000036106")) {
-            returnDefaults.add("32570271000036106");
-        }
-        
-        if (!returnDefaults.contains("900000000000509007")) {
+        if (!returnDefaults.contains("32570271000036106") && !returnDefaults.contains("900000000000509007")) {
+            
             returnDefaults.add("900000000000509007");
         }
+        
         return returnDefaults;
     }
     
@@ -234,11 +232,12 @@ public class Edition extends AbstractHasModified {
             languageDetails.put("qualifiedLanguageCode", languageCode.toUpperCase() + " (PT)"); 
             
             // if this is the default language code make sure it is first and add a FSN version
-            if (!languageCode.equalsIgnoreCase(defaultLanguageCode)) {
-                qualifiedLanguageList.add(languageDetails);
-            } else {
+            if (languageCode.equalsIgnoreCase(defaultLanguageCode) || languageCode.equalsIgnoreCase("en")) {
                 
-                languageDetails.put("default", "true");
+                if (languageCode.equalsIgnoreCase(defaultLanguageCode)) {
+                    languageDetails.put("default", "true");
+                }
+                
                 qualifiedLanguageList.add(0, languageDetails);
                 
                 if (languageCode.equals("en")) {
@@ -250,6 +249,10 @@ public class Edition extends AbstractHasModified {
                             "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"
                             ));
                 }
+            } else {
+                
+                qualifiedLanguageList.add(languageDetails);
+                
             }
         }
         
