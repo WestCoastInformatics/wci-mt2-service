@@ -230,6 +230,12 @@ public class RefsetMemberService {
         // edition's default list
         nonDefaultPreferredTerms.removeIf(
                 languageRefset -> !edition.getDefaultLanguageRefsets().contains(languageRefset));
+        
+        // make sure every refset includes English as a fall back language 
+        if (edition.getDefaultLanguageCode() != null && !edition.getDefaultLanguageCode().equals("en") 
+                && !nonDefaultPreferredTerms.contains("en")) {
+            nonDefaultPreferredTerms.add("en");
+        }
 
         Collections.sort(nonDefaultPreferredTerms);
 
@@ -1241,7 +1247,7 @@ public class RefsetMemberService {
                 List<Map<String, String>> descriptions =
                         conceptDescriptionMap.get(concept.getCode());
 
-                if (descriptions == null) {
+                if (descriptions == null || descriptions.size() == 0) {
 
                     logger.debug("Description not retrieved for concept " + concept.getCode());
                     continue;
@@ -1266,18 +1272,21 @@ public class RefsetMemberService {
      */
     private static Set<Map<String, String>> processDescriptionNodes(Set<JsonNode> descriptionNodes,
         Set<String> defaultLanguageRefsets, List<String> nonDefaultPreferredTerms) {
+        
         final Set<Map<String, String>> descriptions = new HashSet<>();
-
+        
         for (JsonNode descriptionNode : descriptionNodes) {
+            
             final Map<String, String> descriptionAttributesMap = new HashMap<>();
-
             final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
             String acceptability = null;
             String languageId = null;
             String typeName = null;
 
             for (String langRefsetId : defaultLanguageRefsets) {
+                
                 if (acceptabilityMap.has(langRefsetId)) {
+                    
                     acceptability = acceptabilityMap.get(langRefsetId).asText();
                     languageId = langRefsetId;
                     break;
@@ -1286,15 +1295,18 @@ public class RefsetMemberService {
 
             if (acceptability != null
                     && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
+                
                 if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
                     typeName = "FSN";
                 } else {
+                    
                     if ("PREFERRED".equals(acceptability)) {
                         typeName = "PT";
                     } else {
                         typeName = "AC";
                     }
                 }
+                
                 descriptionAttributesMap.put(DESCRIPTION_TERM,
                         descriptionNode.get("term").asText());
                 descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
