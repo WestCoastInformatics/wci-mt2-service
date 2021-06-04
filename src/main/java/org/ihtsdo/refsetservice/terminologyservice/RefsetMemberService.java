@@ -1315,14 +1315,14 @@ public class RefsetMemberService {
                         	if (conceptNode.get("pt") != null) {
                         	  cpt.setName(conceptNode.get("pt").get("term").asText());
                         	}
-                        	cpt.setMemberOfRefset(true);
-                        	cpt.setMemberStatus(true);
+                        	//cpt.setMemberOfRefset(true);
+                        	//cpt.setMemberStatus(true);
                         	conceptIdToConcept.put(conceptId, cpt);
                         }
 
                     }
                 }
-                
+                populateMembershipInformation(refset, new HashSet<Concept>(conceptIdToConcept.values()));
                 members.setItems(new ArrayList<Concept>(conceptIdToConcept.values()));
                 members.setTotal(conceptIdToConcept.size());
 

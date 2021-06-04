@@ -385,8 +385,8 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept.getCode()).isEqualTo(conceptIdToExamine);
 
         final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-        //assertThat(concept.getMemberEffectiveTime())
-        //        .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(expectedEffectiveTime));
+        assertThat(concept.getMemberEffectiveTime())
+                .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(expectedEffectiveTime));
         assertTrue(concept.isMemberOfRefset());
         assertTrue(concept.isMemberStatus());
         assertThat(concept.getDescriptions().size()).isEqualTo(4); 
