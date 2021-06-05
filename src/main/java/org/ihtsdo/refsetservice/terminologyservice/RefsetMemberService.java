@@ -391,66 +391,81 @@ public class RefsetMemberService {
         final Map<String, Map<String, String>> sortingMap = new HashMap<>();
 
         int randomIndex = 0;
-
+        
         // Actual code
         for (Map<String, String> descriptionMap : descriptions) {
+            
+            final String languageId = descriptionMap.get(LANGUAGE_ID);
 
-            if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
-                // Always 0
-                if (sortingMap.containsKey(TYPE_FSN)) {
-                    displayDuplicateWarning("A FSN in the default language", conceptId,
-                            descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(TYPE_FSN),
-                            descriptionMap);
-                    continue;
-                }
-
-                sortingMap.put(TYPE_FSN, descriptionMap);
-            } else if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("PT")
-                    && descriptionMap.get(DESCRIPTION_LANGUAGE)
-                            .equals(refset.getEdition().getDefaultLanguageCode())) {
-                // Always 1
-                if (sortingMap.containsKey(TYPE_DEFAULT_PT)) {
-                    displayDuplicateWarning("A PT in the default language", conceptId,
-                            descriptionMap.get(DESCRIPTION_LANGUAGE),
-                            sortingMap.get(TYPE_DEFAULT_PT), descriptionMap);
-                    continue;
-                }
-
-                sortingMap.put(TYPE_DEFAULT_PT, descriptionMap);
-            } else {
-                if (nonDefaultPreferredTerms.isEmpty()) {
-                    sortingMap.put(TYPE_OTHER_PT + randomIndex++, descriptionMap);
-                } else {
-                    // Always 2 + the index in nonDefaultPreferredTerms
-                    final int index =
-                            nonDefaultPreferredTerms.indexOf(descriptionMap.get(LANGUAGE_CODE));
-
-                    if (sortingMap.containsKey(TYPE_OTHER_PT + index)) {
-                        displayDuplicateWarning("A PT in the non-default language", conceptId,
-                                descriptionMap.get(DESCRIPTION_LANGUAGE),
-                                sortingMap.get(TYPE_OTHER_PT + index), descriptionMap);
-
+            // Handle the default language
+            if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(refset.getEdition().getDefaultLanguageCode())) {
+                
+                if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
+                    
+                    if (sortingMap.containsKey(languageId)) {
+                        
+                        displayDuplicateWarning("A FSN in the default language", conceptId,
+                                descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(languageId),
+                                descriptionMap);
                         continue;
                     }
 
-                    sortingMap.put(TYPE_OTHER_PT + index, descriptionMap);
+                    sortingMap.put(languageId, descriptionMap);
+                    
+                } else {
+                    
+                    if (sortingMap.containsKey(languageId)) {
+                        
+                        displayDuplicateWarning("A PT in the default language", conceptId,
+                                descriptionMap.get(DESCRIPTION_LANGUAGE),
+                                sortingMap.get(languageId), descriptionMap);
+                        continue;
+                    }
+                    
+                    sortingMap.put(languageId, descriptionMap);
+                }
+            }
+            
+            // Handle the non-default languages
+            else {
+                
+                if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
+                    
+                    if (sortingMap.containsKey(languageId)) {
+                        
+                        displayDuplicateWarning("A FSN in a non-default language", conceptId,
+                                descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(languageId),
+                                descriptionMap);
+                        continue;
+                    }
+
+                    sortingMap.put(languageId, descriptionMap);
+                    
+                } else {
+                    
+                    if (sortingMap.containsKey(languageId)) {
+                        
+                        displayDuplicateWarning("A PT in a non-default language", conceptId,
+                                descriptionMap.get(DESCRIPTION_LANGUAGE),
+                                sortingMap.get(languageId), descriptionMap);
+                        continue;
+                    }
+                    
+                    sortingMap.put(languageId, descriptionMap);
                 }
             }
         }
-
-        if (sortingMap.get(TYPE_DEFAULT_PT) != null) {
-            sortedDescriptionList.add(sortingMap.get(TYPE_DEFAULT_PT));
-        }
-
-        if (sortingMap.get(TYPE_FSN) != null) {
-            sortedDescriptionList.add(sortingMap.get(TYPE_FSN));
-        }
-
-        for (String key : sortingMap.keySet()) {
-            Map<String, String> descriptionAttributes = sortingMap.get(key);
-
-            if (!sortedDescriptionList.contains(descriptionAttributes)) {
-                sortedDescriptionList.add(descriptionAttributes);
+        
+        final List<Map<String, String>> languageRefsets = refset.getEdition().getFullyQualifiedLanguageRefsets();
+        
+        for (final Map<String, String> languageRefset : languageRefsets) {
+            
+            final String languageId = languageRefset.get("qualifiedLanguageRefset");
+            
+            if (sortingMap.get(languageId) != null) {
+                sortedDescriptionList.add(sortingMap.get(languageId));
+            } else {
+                sortedDescriptionList.add(null);
             }
         }
 
@@ -1412,7 +1427,25 @@ public class RefsetMemberService {
                 }
 
                 concept.setDescriptions(descriptions);
-                concept.setName(descriptions.get(0).get(DESCRIPTION_TERM));
+                
+                if (descriptions.get(0) != null) {
+                    concept.setName(descriptions.get(0).get(DESCRIPTION_TERM));
+                } else {
+                    
+                    for (final Map<String, String> description : descriptions) {
+                        
+                        if (description == null) {
+                            continue;
+                        }
+                        
+                        if (description.get(LANGUAGE_ID).equals("900000000000509007PT")) {
+                            
+                            concept.setName(description.get(DESCRIPTION_TERM));
+                            break;
+                        }
+                    }
+                }
+                
             }
         } catch (Exception ex) {
             logger.error("Could not retrieve descriptions" + ex.getMessage());

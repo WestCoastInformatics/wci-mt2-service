@@ -141,7 +141,7 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ConceptResultList members = null;
-        String refsetTerminologyId = getRefsetInternalId();
+        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; //getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=0&displayType=list"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
@@ -168,7 +168,7 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ConceptResultList children = null;
-        String refsetTerminologyId = getRefsetInternalId();
+        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; //getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId
                 + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId=404684003"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
