@@ -13,10 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -40,7 +37,6 @@ import java.util.zip.ZipOutputStream;
 
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
@@ -115,7 +111,7 @@ public class RefsetMemberService {
 
     /** The local directory to store exported refset files. */
     private static String EXPORT_FILE_DIR;
-    
+
     /** The local server url to download exported refset files. */
     private static String EXPORT_DOWNLOAD_URL = "/export/download/";
 
@@ -147,6 +143,8 @@ public class RefsetMemberService {
     private static final String IS_A_TYPE_ID = "116680003";
 
     private static final String TOP_LEVEL_AWS_FOLDER = "rt2/";
+
+    private static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
 
     static {
 
@@ -248,9 +246,10 @@ public class RefsetMemberService {
         // edition's default list
         nonDefaultPreferredTerms.removeIf(
                 languageRefset -> !edition.getDefaultLanguageRefsets().contains(languageRefset));
-        
-        // make sure every refset includes English as a fall back language 
-        if (edition.getDefaultLanguageCode() != null && !edition.getDefaultLanguageCode().equals("en") 
+
+        // make sure every refset includes English as a fall back language
+        if (edition.getDefaultLanguageCode() != null
+                && !edition.getDefaultLanguageCode().equals("en")
                 && !nonDefaultPreferredTerms.contains("en")) {
             nonDefaultPreferredTerms.add("en");
         }
@@ -399,78 +398,78 @@ public class RefsetMemberService {
         final List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
         final Map<String, Map<String, String>> sortingMap = new HashMap<>();
 
-        int randomIndex = 0;
-        
         // Actual code
         for (Map<String, String> descriptionMap : descriptions) {
-            
+
             final String languageId = descriptionMap.get(LANGUAGE_ID);
 
             // Handle the default language
-            if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(refset.getEdition().getDefaultLanguageCode())) {
-                
+            if (descriptionMap.get(DESCRIPTION_LANGUAGE)
+                    .equals(refset.getEdition().getDefaultLanguageCode())) {
+
                 if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
-                    
+
                     if (sortingMap.containsKey(languageId)) {
-                        
+
                         displayDuplicateWarning("A FSN in the default language", conceptId,
-                                descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(languageId),
-                                descriptionMap);
+                                descriptionMap.get(DESCRIPTION_LANGUAGE),
+                                sortingMap.get(languageId), descriptionMap);
                         continue;
                     }
 
                     sortingMap.put(languageId, descriptionMap);
-                    
+
                 } else {
-                    
+
                     if (sortingMap.containsKey(languageId)) {
-                        
+
                         displayDuplicateWarning("A PT in the default language", conceptId,
                                 descriptionMap.get(DESCRIPTION_LANGUAGE),
                                 sortingMap.get(languageId), descriptionMap);
                         continue;
                     }
-                    
+
                     sortingMap.put(languageId, descriptionMap);
                 }
             }
-            
+
             // Handle the non-default languages
             else {
-                
+
                 if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
-                    
+
                     if (sortingMap.containsKey(languageId)) {
-                        
+
                         displayDuplicateWarning("A FSN in a non-default language", conceptId,
-                                descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(languageId),
-                                descriptionMap);
+                                descriptionMap.get(DESCRIPTION_LANGUAGE),
+                                sortingMap.get(languageId), descriptionMap);
                         continue;
                     }
 
                     sortingMap.put(languageId, descriptionMap);
-                    
+
                 } else {
-                    
+
                     if (sortingMap.containsKey(languageId)) {
-                        
+
                         displayDuplicateWarning("A PT in a non-default language", conceptId,
                                 descriptionMap.get(DESCRIPTION_LANGUAGE),
                                 sortingMap.get(languageId), descriptionMap);
                         continue;
                     }
-                    
+
                     sortingMap.put(languageId, descriptionMap);
                 }
             }
         }
-        
-        final List<Map<String, String>> languageRefsets = refset.getEdition().getFullyQualifiedLanguageRefsets();
-        
+
+        final List<Map<String, String>> languageRefsets =
+                refset.getEdition().getFullyQualifiedLanguageRefsets();
+
         for (final Map<String, String> languageRefset : languageRefsets) {
-            
+
             final String languageId = languageRefset.get("qualifiedLanguageRefset");
-            
+
             if (sortingMap.get(languageId) != null) {
                 sortedDescriptionList.add(sortingMap.get(languageId));
             } else {
@@ -771,9 +770,12 @@ public class RefsetMemberService {
 
             // Check S3 cache if file exists. If exists, return path to S3
             // If doesn't, generate, upload to S3, then return path to S3
-            //AmazonS3 s3Client = S3Connection.connectToAmazonS3();
+            // AmazonS3 s3Client = S3Connection.connectToAmazonS3();
 
-            String s3ZippedFileUrl = null; //S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+            // String s3ZippedFileUrl = null; //S3Connection.getS3Path(s3Client,
+            // awsPath, zipFileName);
+            AmazonS3 s3Client = S3Connection.connectToAmazonS3();
+            String s3ZippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
 
             if (s3ZippedFileUrl == null) {
                 // File doesn't exist
@@ -805,6 +807,7 @@ public class RefsetMemberService {
                                 + transientEffectiveTime + "\"")
                         + "}";
 
+                entity = "{\"refsetIds\": [\"551000172106\"],  \"branchPath\": \"MAIN/SNOMEDCT-BE/2020-03-15\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"20200315\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false,  \"transientEffectiveTime\": \"20200315\"}";
                 logger.debug(entity);
 
                 // generate zip files including support for metadata and
@@ -812,20 +815,23 @@ public class RefsetMemberService {
                         exportMetadata, withNames, entity);
 
                 // upload to S3
-                //S3Connection.uploadToS3(s3Client, awsPath, zipFilePath, zipFileName);
+                // S3Connection.uploadToS3(s3Client, awsPath, zipFilePath,
+                // zipFileName);
 
                 // getS3 Path
-                //zippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
-                
+                // zippedFileUrl = S3Connection.getS3Path(s3Client, awsPath,
+                // zipFileName);
+
                 // if download is from RT2 server
-                ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
+                ServletUriComponentsBuilder builder =
+                        ServletUriComponentsBuilder.fromCurrentContextPath();
                 zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL + zipFileName;
             }
 
             return zippedFileUrl;
-            
+
         } catch (Exception ex) {
-            throw new Exception("Could not extract zip file name" + ex.getMessage(), ex);
+            throw new Exception("Failed to export zip file name" + ex.getMessage(), ex);
         }
     }
 
@@ -859,17 +865,17 @@ public class RefsetMemberService {
 
             zipFilePath = EXPORT_FILE_DIR + zipFileName;
             logger.debug("Zip Path is: " + zipFilePath);
-            
+
             // Download the Snowstorm file
             try (InputStream inputStream = SnowstormConnection.getFileDownload(snowstormFileUrl);
-                    ReadableByteChannel readableByteChannel = Channels.newChannel(inputStream); 
-                    FileOutputStream fileOutputStream = new FileOutputStream(zipFilePath); 
+                    ReadableByteChannel readableByteChannel = Channels.newChannel(inputStream);
+                    FileOutputStream fileOutputStream = new FileOutputStream(zipFilePath);
                     FileChannel fileChannel = fileOutputStream.getChannel()) {
-    
+
                 fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
                 fileOutputStream.close();
             }
-            
+
         } catch (Exception ex) {
             throw new Exception(
                     "Failed to download the Snowstorm generated RF2 file: " + ex.getMessage(), ex);
@@ -891,7 +897,8 @@ public class RefsetMemberService {
         // move refset RF2 file to top level
         final String unzippedFilePath = sourceFiles.iterator().next();
         final String unzippedFileName =
-                unzippedFilePath.substring(unzippedFilePath.lastIndexOf("/") + 1).substring(unzippedFilePath.lastIndexOf("\\") + 1);
+                unzippedFilePath.substring(unzippedFilePath.lastIndexOf("/") + 1)
+                        .substring(unzippedFilePath.lastIndexOf("\\") + 1);
         FileUtility.move(unzippedFilePath, toZipDirectoryPath.toString() + "/" + unzippedFileName);
         sourceFiles.clear();
         sourceFiles.add(toZipDirectoryPath.toString() + "/" + unzippedFileName);
@@ -928,7 +935,7 @@ public class RefsetMemberService {
         sourceFiles.add(newFilePath);
 
         // Get member cache
-        List<String> conceptsNotInCache = new ArrayList<>();
+        Set<Concept> conceptsNotInCache = new HashSet<>();
         Map<String, Concept> members = getCachedRefsetMembers(refset.getId());
 
         // Read through file and identify those concepts not in cache or don't
@@ -938,14 +945,34 @@ public class RefsetMemberService {
             extractedLine = br.readLine();
 
             while (extractedLine != null && !extractedLine.trim().isEmpty()) {
-                String conceptId = extractedLine.split("\t")[0];
+                String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
 
                 // TODO: Also check doesn't have all needed languages
-                if (!members.containsKey(conceptId)) {
-                    conceptsNotInCache.add(conceptId);
+                if (!members.containsKey(conceptId)
+                        || members.get(conceptId).getDescriptions().isEmpty()) {
+                    Concept concept = new Concept();
+                    concept.setCode(conceptId);
+                    conceptsNotInCache.add(concept);
                 }
 
                 extractedLine = br.readLine();
+
+                if (conceptsNotInCache.size() == CONCEPT_DESCRIPTIONS_PER_CALL
+                        || extractedLine == null) {
+
+                    populateAllLanguageDescriptions(refset, conceptsNotInCache);
+
+                    // Populate Members cache with data
+                    for (Concept concept : conceptsNotInCache) {
+                        if (!members.containsKey(concept.getCode())) {
+                            members.put(concept.getCode(), concept);
+                        } else {
+                            members.get(concept.getCode())
+                                    .setDescriptions(concept.getDescriptions());
+                        }
+                    }
+                    conceptsNotInCache.clear();
+                }
             }
 
             br.close();
@@ -961,13 +988,28 @@ public class RefsetMemberService {
             String extractedLine = br.readLine();
             extractedLine = br.readLine();
             while (extractedLine != null) {
-                String conceptId = extractedLine.split("\t")[0];
+                String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
 
-                // TODO: How to determine which langauge?
+                // TODO: How to determine which language
                 if (!members.containsKey(conceptId)) {
                     throw new Exception("Didn't have concept populated with descriptions yet");
                 }
-                fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(0));
+                if (members.get(conceptId).getDescriptions().get(1) != null) {
+                    fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(1)
+                            .get(DESCRIPTION_TERM));
+                } else if (members.get(conceptId).getDescriptions().get(0) != null) {
+                    fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(0)
+                            .get(DESCRIPTION_TERM));
+                } else if (members.get(conceptId).getDescriptions().get(2) != null) {
+                    fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(2)
+                            .get(DESCRIPTION_TERM));
+                } else {
+                    throw new Exception("Not seeing the expected descriptions for member: "
+                            + conceptId + " as have these descriptions: "
+                            + members.get(conceptId).getDescriptions());
+                }
+
+                fw.write("\n");
                 extractedLine = br.readLine();
             }
         }
@@ -1086,10 +1128,11 @@ public class RefsetMemberService {
         // zip the files together
         sourceFiles.add(sctidsOutputPath);
         zipFiles(sourceFiles, zipOutputPath);
-        
+
         // if download is from RT2 server
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-        String zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL + refsetFileName + ".zip";
+        String zippedFileUrl =
+                builder.build().toString() + EXPORT_DOWNLOAD_URL + refsetFileName + ".zip";
 
         return zippedFileUrl;
     }
@@ -1447,25 +1490,25 @@ public class RefsetMemberService {
                 }
 
                 concept.setDescriptions(descriptions);
-                
+
                 if (descriptions.get(0) != null) {
                     concept.setName(descriptions.get(0).get(DESCRIPTION_TERM));
                 } else {
-                    
+
                     for (final Map<String, String> description : descriptions) {
-                        
+
                         if (description == null) {
                             continue;
                         }
-                        
+
                         if (description.get(LANGUAGE_ID).equals("900000000000509007PT")) {
-                            
+
                             concept.setName(description.get(DESCRIPTION_TERM));
                             break;
                         }
                     }
                 }
-                
+
             }
         } catch (Exception ex) {
             logger.error("Could not retrieve descriptions" + ex.getMessage());
@@ -1483,68 +1526,70 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static ConceptResultList searchRefsetMembers(final Refset refset,
-            final SearchParameters searchParameters) throws MalformedURLException, Exception {
+        final SearchParameters searchParameters) throws MalformedURLException, Exception {
 
-    		ConceptResultList members = new ConceptResultList();
-            
-            // Create Snowstorm URL
-            final String url =
-                    SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset) + "/descriptions?term=" + searchParameters.getQuery() + "&conceptRefset=" + refset.getRefsetId() + "&groupByConcept=false&searchMode=STANDARD&offset=0&limit=1000";
-            
-            // Call Snowstorm
-            logger.debug("Get Member Descriptions URL: " + url);
+        ConceptResultList members = new ConceptResultList();
 
-            try (final Response response =
-                    SnowstormConnection.getResponse(url)) {
+        // Create Snowstorm URL
+        final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
+                + "/descriptions?term=" + searchParameters.getQuery() + "&conceptRefset="
+                + refset.getRefsetId()
+                + "&groupByConcept=false&searchMode=STANDARD&offset=0&limit=1000";
 
-                final String resultString = response.readEntity(String.class);
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
+        // Call Snowstorm
+        logger.debug("Get Member Descriptions URL: " + url);
 
-                final JsonNode allDescriptionNodes = root.get("items");
-                final Iterator<JsonNode> itemIterator = allDescriptionNodes.iterator();
-                final HashMap<String, Concept> conceptIdToConcept = new HashMap<>();
+        try (final Response response = SnowstormConnection.getResponse(url)) {
 
-                // parse items to retrieve matching concepts
-                while (itemIterator.hasNext()) {
-                    final JsonNode itemNode = itemIterator.next();
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
 
-                    if (itemNode.get("active").asBoolean()) {
-                    	JsonNode conceptNode = itemNode.get("concept");
-                        String conceptId = conceptNode.get("conceptId").asText();
+            final JsonNode allDescriptionNodes = root.get("items");
+            final Iterator<JsonNode> itemIterator = allDescriptionNodes.iterator();
+            final HashMap<String, Concept> conceptIdToConcept = new HashMap<>();
 
-                        if (!conceptIdToConcept.containsKey(conceptId)) {
-                        	Concept cpt = new Concept();
-                        	cpt.setActive(conceptNode.get("active").asBoolean());
-                        	cpt.setId(conceptNode.get("id").asText());
-                        	cpt.setCode(conceptNode.get("id").asText());
-                        	if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
-                                cpt.setDefined(true);
-                            } else {
-                            	cpt.setDefined(false);
-                            }
-                        	if (conceptNode.get("pt") != null) {
-                        	  cpt.setName(conceptNode.get("pt").get("term").asText());
-                        	}
-                        	//cpt.setMemberOfRefset(true);
-                        	//cpt.setMemberStatus(true);
-                        	conceptIdToConcept.put(conceptId, cpt);
+            // parse items to retrieve matching concepts
+            while (itemIterator.hasNext()) {
+                final JsonNode itemNode = itemIterator.next();
+
+                if (itemNode.get("active").asBoolean()) {
+                    JsonNode conceptNode = itemNode.get("concept");
+                    String conceptId = conceptNode.get("conceptId").asText();
+
+                    if (!conceptIdToConcept.containsKey(conceptId)) {
+                        Concept cpt = new Concept();
+                        cpt.setActive(conceptNode.get("active").asBoolean());
+                        cpt.setId(conceptNode.get("id").asText());
+                        cpt.setCode(conceptNode.get("id").asText());
+                        if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                            cpt.setDefined(true);
+                        } else {
+                            cpt.setDefined(false);
                         }
-
+                        if (conceptNode.get("pt") != null) {
+                            cpt.setName(conceptNode.get("pt").get("term").asText());
+                        }
+                        // cpt.setMemberOfRefset(true);
+                        // cpt.setMemberStatus(true);
+                        conceptIdToConcept.put(conceptId, cpt);
                     }
-                }
-                populateMembershipInformation(refset, new HashSet<Concept>(conceptIdToConcept.values()));
-                members.setItems(new ArrayList<Concept>(conceptIdToConcept.values()));
-                members.setTotal(conceptIdToConcept.size());
 
-                return members;
-            } catch (Exception ex) {
-                logger.error("Could not retrieve descriptions matching term" + ex.getMessage());
-                ex.printStackTrace();
+                }
             }
+            populateMembershipInformation(refset,
+                    new HashSet<Concept>(conceptIdToConcept.values()));
+            members.setItems(new ArrayList<Concept>(conceptIdToConcept.values()));
+            members.setTotal(conceptIdToConcept.size());
+
             return members;
+        } catch (Exception ex) {
+            logger.error("Could not retrieve descriptions matching term" + ex.getMessage());
+            ex.printStackTrace();
         }
-	
+        return members;
+    }
+
     /**
      * Process description node.
      *
@@ -1555,11 +1600,11 @@ public class RefsetMemberService {
      */
     private static Set<Map<String, String>> processDescriptionNodes(Set<JsonNode> descriptionNodes,
         Set<String> defaultLanguageRefsets, List<String> nonDefaultPreferredTerms) {
-        
+
         final Set<Map<String, String>> descriptions = new HashSet<>();
-        
+
         for (JsonNode descriptionNode : descriptionNodes) {
-            
+
             final Map<String, String> descriptionAttributesMap = new HashMap<>();
             final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
             String acceptability = null;
@@ -1567,9 +1612,9 @@ public class RefsetMemberService {
             String typeName = null;
 
             for (String langRefsetId : defaultLanguageRefsets) {
-                
+
                 if (acceptabilityMap.has(langRefsetId)) {
-                    
+
                     acceptability = acceptabilityMap.get(langRefsetId).asText();
                     languageId = langRefsetId;
                     break;
@@ -1578,18 +1623,18 @@ public class RefsetMemberService {
 
             if (acceptability != null
                     && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
-                
+
                 if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
                     typeName = "FSN";
                 } else {
-                    
+
                     if ("PREFERRED".equals(acceptability)) {
                         typeName = "PT";
                     } else {
                         typeName = "AC";
                     }
                 }
-                
+
                 descriptionAttributesMap.put(DESCRIPTION_TERM,
                         descriptionNode.get("term").asText());
                 descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
@@ -1619,7 +1664,8 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static ConceptResultList getMemberList(final Refset refset,
-        final List<String> nonDefaultPreferredTerms, final String url, final SearchParameters searchParameters) throws Exception {
+        final List<String> nonDefaultPreferredTerms, final String url,
+        final SearchParameters searchParameters) throws Exception {
 
         // 2 Snowstorm calls: 1) Memberlist and 2) Descriptions
         ConceptResultList members = new ConceptResultList();
@@ -1640,14 +1686,14 @@ public class RefsetMemberService {
                 final Set<Concept> conceptsToProcess = new HashSet<>();
                 final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
 
-                ConceptResultList currentList; 
-				// if search term is indicated, find members that match search term
-                if (searchParameters != null && searchParameters.getQuery() != null ) {
-                	currentList = searchRefsetMembers(refset, searchParameters);
-                } else {               
-                	// Populate results for member list
-                	currentList =
-                        getConceptsFromSnowstorm(url, refset, lookupParameters);
+                ConceptResultList currentList;
+                // if search term is indicated, find members that match search
+                // term
+                if (searchParameters != null && searchParameters.getQuery() != null) {
+                    currentList = searchRefsetMembers(refset, searchParameters);
+                } else {
+                    // Populate results for member list
+                    currentList = getConceptsFromSnowstorm(url, refset, lookupParameters);
                 }
 
                 // add the descriptions to the children concepts in batches
@@ -1883,7 +1929,7 @@ public class RefsetMemberService {
         JsonNode conceptNode = root;
         Iterator<JsonNode> iterator = null;
         int total = 0;
-        
+
         if (root.get("total") != null) {
             total = root.get("total").asInt();
         }
