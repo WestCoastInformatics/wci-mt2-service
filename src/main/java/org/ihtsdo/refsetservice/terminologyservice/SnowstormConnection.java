@@ -185,9 +185,8 @@ public class SnowstormConnection {
 
             for (String key : genericUserCookies.keySet()) {
 
-                String authCookie = genericUserCookies.get(key).toString().split(";")[0];
-                sb.append(authCookie);
-                break;
+                sb.append(genericUserCookies.get(key));
+                sb.append(";");
             }
 
             genericUserCookie = sb.toString();
