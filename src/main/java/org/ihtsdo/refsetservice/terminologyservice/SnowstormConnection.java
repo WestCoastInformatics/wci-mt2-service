@@ -1,6 +1,9 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.io.InputStream;
+import java.net.Authenticator;
 import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.util.Calendar;
 import java.util.Date;
@@ -90,9 +93,27 @@ public class SnowstormConnection {
         final WebTarget target = client.target(url);
         final Response response = target.request(ACCEPT).header("Authorization", AUTH_HEADER)
                 .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
-                .header("Cookie",
-                        genericUserCookie != null ? genericUserCookie : getGenericUserCookie())
+                .header("Cookie", getGenericUserCookie())
                 .get();
+
+        return response;
+    }
+    
+    /**
+     * Calls a Snowstorm URL and returns the response.
+     *
+     * @param url The Snowstorm URL to call
+     * @return The Snowstorm response
+     * @throws Exception the exception
+     */
+    public static InputStream getFileDownload(final String url) throws Exception {
+        
+        final Client client = ClientBuilder.newClient();
+        final WebTarget target = client.target(url);
+        final InputStream response = target.request("application/zip").header("Authorization", AUTH_HEADER)
+                .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
+                .header("Cookie", getGenericUserCookie())
+                .get(InputStream.class);
 
         return response;
     }
@@ -111,9 +132,8 @@ public class SnowstormConnection {
         Builder builder = target.request(MediaType.APPLICATION_JSON)
                 .header("Authorization", AUTH_HEADER)
                 .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
-                .header("Cookie",
-                        genericUserCookie != null ? genericUserCookie : getGenericUserCookie());
-
+                .header("Cookie", getGenericUserCookie());
+        
         Response response = builder.post(Entity.json(entity));
         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
             throw new LocalException(
@@ -165,8 +185,9 @@ public class SnowstormConnection {
 
             for (String key : genericUserCookies.keySet()) {
 
-                sb.append(genericUserCookies.get(key));
-                sb.append(";");
+                String authCookie = genericUserCookies.get(key).toString().split(";")[0];
+                sb.append(authCookie);
+                break;
             }
 
             genericUserCookie = sb.toString();
@@ -174,25 +195,6 @@ public class SnowstormConnection {
 
         return genericUserCookie;
     }
-
-    /**
-     * Returns the cookie header.
-     *
-     * @return the cookie header
-     * @throws MalformedURLException the malformed URL exception
-     */
-    private static String getCookieHeader() throws MalformedURLException {
-
-        CharSequence domain =
-                InternetDomainName.from(new URL(BASE_URL).getHost()).topPrivateDomain().toString();
-        final String referer = headers.get("Referer");
-
-        if (referer.contains(domain)) {
-            return headers.get("Cookie");
-        } else {
-            logger.warn("UNEXPECTED referer not matching url domain = " + referer);
-        }
-
-        return "";
-    }
 }
+
+

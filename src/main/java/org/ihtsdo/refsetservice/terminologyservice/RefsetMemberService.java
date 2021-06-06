@@ -10,11 +10,15 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -842,18 +846,19 @@ public class RefsetMemberService {
         // Download generated file from Snowstorm
         try {
 
-            // Open connection to the Snowstorm URL
-            URL urlObject = new URL(snowstormFileUrl);
-            URLConnection connection = urlObject.openConnection();
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            connection.setRequestProperty("Set-Cookie", SnowstormConnection.getGenericUserCookie());
-
             zipFilePath = EXPORT_FILE_DIR + zipFileName;
             logger.debug("Zip Path is: " + zipFilePath);
-
+            
             // Download the Snowstorm file
-            FileUtils.copyURLToFile(connection.getURL(), new File(zipFilePath));
+            try (InputStream inputStream = SnowstormConnection.getFileDownload(snowstormFileUrl);
+                    ReadableByteChannel readableByteChannel = Channels.newChannel(inputStream); 
+                    FileOutputStream fileOutputStream = new FileOutputStream(zipFilePath); 
+                    FileChannel fileChannel = fileOutputStream.getChannel()) {
+    
+                fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+                fileOutputStream.close();
+            }
+            
         } catch (Exception ex) {
             throw new Exception(
                     "Failed to download the Snowstorm generated RF2 file: " + ex.getMessage(), ex);
