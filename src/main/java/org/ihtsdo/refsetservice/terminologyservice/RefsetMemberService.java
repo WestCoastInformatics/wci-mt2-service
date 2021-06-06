@@ -876,9 +876,7 @@ public class RefsetMemberService {
         }
 
         // Generate the Rt2 version of refset RF2 Zip file
-        final Path downloadDirectoryPath = Files.createTempDirectory("rt2Download-");
-        final Path toZipDirectoryPath = Files.createTempDirectory("rt2FilesToZip-");
-        final Path zippedDirectoryPath = Files.createTempDirectory("rt2Zipped-");
+        final Path downloadDirectoryPath = Files.createTempDirectory("rt2Download-" + zipFileName.replace(".zip", ""));
 
         // Unzip the download
         final List<String> sourceFiles = unzipFiles(zipFilePath, downloadDirectoryPath.toString());
@@ -888,17 +886,6 @@ public class RefsetMemberService {
                     + sourceFiles.size());
         }
 
-        // move refset RF2 file to top level
-        final String unzippedFilePath = sourceFiles.iterator().next();
-        final String unzippedFileName =
-                unzippedFilePath.substring(unzippedFilePath.lastIndexOf("/") + 1).substring(unzippedFilePath.lastIndexOf("\\") + 1);
-        FileUtility.move(unzippedFilePath, toZipDirectoryPath.toString() + "/" + unzippedFileName);
-        sourceFiles.clear();
-        sourceFiles.add(toZipDirectoryPath.toString() + "/" + unzippedFileName);
-
-        // Delete directory structure and original zip
-        FileUtility.deleteDirectory(downloadDirectoryPath.toFile());
-
         // If Rf2WithNames selected, append the names to the refset file
         if (appendNames) {
             appendNamesToRf2(refset, sourceFiles, zipFileName);
@@ -906,14 +893,16 @@ public class RefsetMemberService {
 
         // if exportMetadata requested, add it
         if (exportMetadata) {
-            sourceFiles.add(exportRefsetMetadata(refset, toZipDirectoryPath));
+            sourceFiles.add(exportRefsetMetadata(refset, downloadDirectoryPath));
         }
 
         // zip the files together
-        zipFiles(sourceFiles, zippedDirectoryPath.toString() + "/" + zipFileName);
-        FileUtility.deleteDirectory(zippedDirectoryPath.toFile());
+        zipFiles(sourceFiles, EXPORT_FILE_DIR + zipFileName);
+        
+        // Delete directory structure and original zip
+        FileUtility.deleteDirectory(downloadDirectoryPath.toFile());
 
-        return toZipDirectoryPath.toString();
+        return EXPORT_FILE_DIR;
     }
 
     private static void appendNamesToRf2(Refset refset, List<String> sourceFiles,
