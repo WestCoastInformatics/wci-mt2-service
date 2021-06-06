@@ -1010,10 +1010,11 @@ public class RefsetMemberService {
         int limit = 10000;
         boolean morePages = true;
         StringBuilder fileLines = new StringBuilder();
-        String sctidsOutputPath = EXPORT_FILE_DIR;
         String zipOutputPath = EXPORT_FILE_DIR;
         String refsetFileName = "";
+        String sctidsFilePath = "";
         List<String> sourceFiles = new ArrayList<>();
+        Path tempDirectoryPath = null;
 
         // get the refset and member information
         try (final TerminologyService service = new TerminologyService()) {
@@ -1021,14 +1022,16 @@ public class RefsetMemberService {
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
             refsetFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset)
-                    + "_member_ids";
-            sctidsOutputPath += refsetFileName + ".txt";
-            zipOutputPath += refsetFileName + ".zip";
-            logger.debug("SCTID txt output path = " + sctidsOutputPath);
+                    + "_member_ids.txt";
+            zipOutputPath += refsetFileName.replace(".txt", ".zip");
+            tempDirectoryPath = Files.createTempDirectory("sctidList-" + refsetFileName.replace(".txt", ""));
+            sctidsFilePath = tempDirectoryPath.toString() + "/" + refsetFileName;
+            
+            logger.debug("SCTID txt output path = " + sctidsFilePath);
             logger.debug("zip output path = " + zipOutputPath);
 
             if (exportMetadata) {
-                sourceFiles.add(exportRefsetMetadata(refset, Path.of(EXPORT_FILE_DIR)));
+                sourceFiles.add(exportRefsetMetadata(refset, tempDirectoryPath));
             }
 
             while (morePages) {
@@ -1061,7 +1064,7 @@ public class RefsetMemberService {
         }
 
         // print the sctids file
-        try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
+        try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsFilePath);
                 final OutputStreamWriter sctidsOutputStreamWriter =
                         new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
                 final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
@@ -1073,12 +1076,15 @@ public class RefsetMemberService {
         }
 
         // zip the files together
-        sourceFiles.add(sctidsOutputPath);
+        sourceFiles.add(sctidsFilePath);
         zipFiles(sourceFiles, zipOutputPath);
+        
+        // Delete temp directory structure and files
+        FileUtility.deleteDirectory(tempDirectoryPath.toFile());
         
         // if download is from RT2 server
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-        String zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL + refsetFileName + ".zip";
+        String zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL + refsetFileName.replace(".txt", ".zip");
 
         return zippedFileUrl;
     }
