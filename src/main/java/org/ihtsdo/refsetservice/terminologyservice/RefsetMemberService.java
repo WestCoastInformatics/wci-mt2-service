@@ -100,15 +100,6 @@ public class RefsetMemberService {
     /** The description language. */
     private static final String LANGUAGE_NAME = "languageName";
 
-    /** The fully specified name description type. */
-    private static final String TYPE_FSN = "FSN";
-
-    /** The preferred term description type. */
-    private static final String TYPE_DEFAULT_PT = "PT";
-
-    /** The other description type. */
-    private static final String TYPE_OTHER_PT = "OTHER";
-
     /** The local directory to store exported refset files. */
     private static String EXPORT_FILE_DIR;
 
@@ -129,9 +120,6 @@ public class RefsetMemberService {
      * checked for refset members.
      */
     private final static Map<String, Set<String>> refsetTreeNodeCache = new HashMap<>();
-
-    /** The Constant TAXONOMY_PAGING_LIMIT. */
-    private static final int TAXONOMY_PAGING_LIMIT = 1000;
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 500;
@@ -882,9 +870,8 @@ public class RefsetMemberService {
         }
 
         // Generate the Rt2 version of refset RF2 Zip file
-        final Path downloadDirectoryPath = Files.createTempDirectory("rt2Download-");
-        final Path toZipDirectoryPath = Files.createTempDirectory("rt2FilesToZip-");
-        final Path zippedDirectoryPath = Files.createTempDirectory("rt2Zipped-");
+        final Path downloadDirectoryPath =
+                Files.createTempDirectory("rt2Download-" + zipFileName.replace(".zip", ""));
 
         // Unzip the download
         final List<String> sourceFiles = unzipFiles(zipFilePath, downloadDirectoryPath.toString());
@@ -894,6 +881,8 @@ public class RefsetMemberService {
                     + sourceFiles.size());
         }
 
+        /*-
+         * Jesse
         // move refset RF2 file to top level
         final String unzippedFilePath = sourceFiles.iterator().next();
         final String unzippedFileName =
@@ -902,10 +891,11 @@ public class RefsetMemberService {
         FileUtility.move(unzippedFilePath, toZipDirectoryPath.toString() + "/" + unzippedFileName);
         sourceFiles.clear();
         sourceFiles.add(toZipDirectoryPath.toString() + "/" + unzippedFileName);
-
+        
         // Delete directory structure and original zip
         FileUtility.deleteDirectory(downloadDirectoryPath.toFile());
-
+        
+         */
         // If Rf2WithNames selected, append the names to the refset file
         if (appendNames) {
             appendNamesToRf2(refset, sourceFiles, zipFileName);
@@ -913,14 +903,16 @@ public class RefsetMemberService {
 
         // if exportMetadata requested, add it
         if (exportMetadata) {
-            sourceFiles.add(exportRefsetMetadata(refset, toZipDirectoryPath));
+            sourceFiles.add(exportRefsetMetadata(refset, downloadDirectoryPath));
         }
 
         // zip the files together
-        zipFiles(sourceFiles, zippedDirectoryPath.toString() + "/" + zipFileName);
-        FileUtility.deleteDirectory(zippedDirectoryPath.toFile());
+        zipFiles(sourceFiles, EXPORT_FILE_DIR + zipFileName);
 
-        return toZipDirectoryPath.toString();
+        // Delete directory structure and original zip
+        FileUtility.deleteDirectory(downloadDirectoryPath.toFile());
+
+        return EXPORT_FILE_DIR;
     }
 
     private static void appendNamesToRf2(Refset refset, List<String> sourceFiles,
@@ -1063,10 +1055,11 @@ public class RefsetMemberService {
         int limit = 10000;
         boolean morePages = true;
         StringBuilder fileLines = new StringBuilder();
-        String sctidsOutputPath = EXPORT_FILE_DIR;
         String zipOutputPath = EXPORT_FILE_DIR;
         String refsetFileName = "";
+        String sctidsFilePath = "";
         List<String> sourceFiles = new ArrayList<>();
+        Path tempDirectoryPath = null;
 
         // get the refset and member information
         try (final TerminologyService service = new TerminologyService()) {
@@ -1074,14 +1067,17 @@ public class RefsetMemberService {
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
             refsetFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset)
-                    + "_member_ids";
-            sctidsOutputPath += refsetFileName + ".txt";
-            zipOutputPath += refsetFileName + ".zip";
-            logger.debug("SCTID txt output path = " + sctidsOutputPath);
+                    + "_member_ids.txt";
+            zipOutputPath += refsetFileName.replace(".txt", ".zip");
+            tempDirectoryPath =
+                    Files.createTempDirectory("sctidList-" + refsetFileName.replace(".txt", ""));
+            sctidsFilePath = tempDirectoryPath.toString() + "/" + refsetFileName;
+
+            logger.debug("SCTID txt output path = " + sctidsFilePath);
             logger.debug("zip output path = " + zipOutputPath);
 
             if (exportMetadata) {
-                sourceFiles.add(exportRefsetMetadata(refset, Path.of(EXPORT_FILE_DIR)));
+                sourceFiles.add(exportRefsetMetadata(refset, tempDirectoryPath));
             }
 
             while (morePages) {
@@ -1114,7 +1110,7 @@ public class RefsetMemberService {
         }
 
         // print the sctids file
-        try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
+        try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsFilePath);
                 final OutputStreamWriter sctidsOutputStreamWriter =
                         new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
                 final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
@@ -1126,13 +1122,16 @@ public class RefsetMemberService {
         }
 
         // zip the files together
-        sourceFiles.add(sctidsOutputPath);
+        sourceFiles.add(sctidsFilePath);
         zipFiles(sourceFiles, zipOutputPath);
+
+        // Delete temp directory structure and files
+        FileUtility.deleteDirectory(tempDirectoryPath.toFile());
 
         // if download is from RT2 server
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-        String zippedFileUrl =
-                builder.build().toString() + EXPORT_DOWNLOAD_URL + refsetFileName + ".zip";
+        String zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL
+                + refsetFileName.replace(".txt", ".zip");
 
         return zippedFileUrl;
     }
