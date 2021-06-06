@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -57,6 +58,7 @@ import org.ihtsdo.refsetservice.util.StringUtility;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -113,6 +115,9 @@ public class RefsetMemberService {
 
     /** The local directory to store exported refset files. */
     private static String EXPORT_FILE_DIR;
+    
+    /** The local server url to download exported refset files. */
+    private static String EXPORT_DOWNLOAD_URL = "/export/download/";
 
     /** A cache of the all the member concepts for each refset. */
     private final static Map<String, Map<String, Concept>> membersCache = new HashMap<>();
@@ -735,6 +740,7 @@ public class RefsetMemberService {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
+            String zippedFileUrl = "";
             String zipFileName = "";
             String awsPath = "";
             String tmp = null;
@@ -765,9 +771,9 @@ public class RefsetMemberService {
 
             // Check S3 cache if file exists. If exists, return path to S3
             // If doesn't, generate, upload to S3, then return path to S3
-            AmazonS3 s3Client = S3Connection.connectToAmazonS3();
+            //AmazonS3 s3Client = S3Connection.connectToAmazonS3();
 
-            String s3ZippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+            String s3ZippedFileUrl = null; //S3Connection.getS3Path(s3Client, awsPath, zipFileName);
 
             if (s3ZippedFileUrl == null) {
                 // File doesn't exist
@@ -806,13 +812,18 @@ public class RefsetMemberService {
                         exportMetadata, withNames, entity);
 
                 // upload to S3
-                S3Connection.uploadToS3(s3Client, awsPath, zipFilePath, zipFileName);
+                //S3Connection.uploadToS3(s3Client, awsPath, zipFilePath, zipFileName);
 
                 // getS3 Path
-                s3ZippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+                //zippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+                
+                // if download is from RT2 server
+                ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
+                zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL + zipFileName;
             }
 
-            return s3ZippedFileUrl;
+            return zippedFileUrl;
+            
         } catch (Exception ex) {
             throw new Exception("Could not extract zip file name" + ex.getMessage(), ex);
         }
@@ -880,7 +891,7 @@ public class RefsetMemberService {
         // move refset RF2 file to top level
         final String unzippedFilePath = sourceFiles.iterator().next();
         final String unzippedFileName =
-                unzippedFilePath.substring(unzippedFilePath.lastIndexOf("/") + 1);
+                unzippedFilePath.substring(unzippedFilePath.lastIndexOf("/") + 1).substring(unzippedFilePath.lastIndexOf("\\") + 1);
         FileUtility.move(unzippedFilePath, toZipDirectoryPath.toString() + "/" + unzippedFileName);
         sourceFiles.clear();
         sourceFiles.add(toZipDirectoryPath.toString() + "/" + unzippedFileName);
@@ -1028,7 +1039,7 @@ public class RefsetMemberService {
             logger.debug("zip output path = " + zipOutputPath);
 
             if (exportMetadata) {
-                sourceFiles.add(exportRefsetMetadata(refset, null)); // JESSE
+                sourceFiles.add(exportRefsetMetadata(refset, Path.of(EXPORT_FILE_DIR)));
             }
 
             while (morePages) {
@@ -1075,8 +1086,12 @@ public class RefsetMemberService {
         // zip the files together
         sourceFiles.add(sctidsOutputPath);
         zipFiles(sourceFiles, zipOutputPath);
+        
+        // if download is from RT2 server
+        ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
+        String zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL + refsetFileName + ".zip";
 
-        return zipOutputPath;
+        return zippedFileUrl;
     }
 
     /**

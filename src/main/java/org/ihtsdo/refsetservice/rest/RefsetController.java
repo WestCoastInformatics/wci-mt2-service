@@ -1,11 +1,18 @@
 
 package org.ihtsdo.refsetservice.rest;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -17,12 +24,19 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,6 +69,14 @@ public class RefsetController extends BaseController {
 
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetController.class);
+    
+    /** The local directory to store exported refset files. */
+    private static String EXPORT_FILE_DIR;
+    
+    /** Static initialization. */
+    static {
+        EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + "/";
+    }
 
     /**
      * Returns the refset.
@@ -427,7 +449,7 @@ public class RefsetController extends BaseController {
                                 exportType, fileNameDate, startEffectiveTime,
                                 transientEffectiveTime, exportMetadata, withNames);
                         logger.debug("******** results: " + uri);
-                        url = "{\"url\": \"" + uri + "/archive\"}";
+                        url = "{\"url\": \"" + uri + "\"}";
 
                     } else if (format.equals("sctids")) {
 
@@ -444,6 +466,58 @@ public class RefsetController extends BaseController {
                     return null;
                 }
             }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Download an exported refset.
+     *
+     * @param fileName the file name
+     * @return the file
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Download the specified refset export file", response = Refset.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "fileName",
+                    value = "The name of the file to download.", required = true,
+                    dataType = "string", paramType = "path"),
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}",
+            produces = "application/json")
+    public @ResponseBody ResponseEntity<Resource> downloadExport(@PathVariable(value = "fileName")
+        final String fileName) throws Exception {
+
+        try {
+
+            logger.info("****** downloadExport: fileName: " + fileName);
+            
+            ContentDisposition contentDisposition = ContentDisposition.builder("inline")
+                    .filename(fileName)
+                    .build();
+
+            File file = new File(EXPORT_FILE_DIR + fileName);
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+            headers.add("Pragma", "no-cache");
+            headers.add("Expires", "0");
+            headers.add("Content-Length", file.length() + "");
+            headers.setContentDisposition(contentDisposition);
+            Path path = Paths.get(file.getAbsolutePath());
+            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
+
+            return ResponseEntity.ok().headers(headers).contentLength(file.length())
+                    .contentType(MediaType.parseMediaType("application/octet-stream")).body(resource);
 
         } catch (final Exception e) {
 
