@@ -784,7 +784,7 @@ public class RefsetMemberService {
                     "unpromotedChangesOnly": false
                 }
                  */
-                String entity = "{\"refsetIds\": [\"" + refset.getRefsetId()
+                String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId()
                         + "\"],  \"branchPath\": \"" + getBranchPath(refset)
                         + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
                         + fileNameDate + "\", \"legacyZipNaming\": false, \"type\": \"" + type
@@ -795,20 +795,22 @@ public class RefsetMemberService {
                                 + transientEffectiveTime + "\"")
                         + "}";
 
-                entity = "{\"refsetIds\": [\"551000172106\"],  \"branchPath\": \"MAIN/SNOMEDCT-BE/2020-03-15\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"20200315\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false,  \"transientEffectiveTime\": \"20200315\"}";
-                logger.debug(entity);
+//                entityString = "{\"refsetIds\": [\"551000172106\"],  \"branchPath\": \"MAIN/SNOMEDCT-BE/2020-03-15\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"20200315\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false,  \"transientEffectiveTime\": \"20200315\"}";
+                logger.debug(entityString);
 
                 // generate zip files including support for metadata and
                 final String zipFilePath = generateRefsetZipFile(refset, zipFileName,
-                        exportMetadata, withNames, entity);
+                        exportMetadata, withNames, entityString);
 
                 // upload to S3
-                // S3Connection.uploadToS3(s3Client, awsPath, zipFilePath,
-                // zipFileName);
+                S3Connection.uploadToS3(s3Client, awsPath, zipFilePath, zipFileName);
 
+                /*
+                 *- 
+                 * TODO: Do this if you want to pull from S3
                 // getS3 Path
-                // zippedFileUrl = S3Connection.getS3Path(s3Client, awsPath,
-                // zipFileName);
+                zippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+                 */
 
                 // if download is from RT2 server
                 ServletUriComponentsBuilder builder =

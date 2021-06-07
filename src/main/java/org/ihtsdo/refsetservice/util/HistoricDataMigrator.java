@@ -400,7 +400,7 @@ public class HistoricDataMigrator {
                         while (refsetIterator.hasNext()) {
                             final JsonNode refsetNode = refsetIterator.next();
 
-                            if (refsetNode.get("conceptId").asText().equals("349091000221101")) {
+                            if (refsetNode.get("conceptId").asText().equals("15551000146102")) {
                                 int a = 1;
                             }
                             if (!refsetNode.has("moduleId") || !refsetNode.has("conceptId")
@@ -440,7 +440,7 @@ public class HistoricDataMigrator {
 
                                     writer.write("\n");
                                 } catch (Exception e) {
-                                    logger.error("Failed with refsetNode: " + refsetNode);
+                                    logger.error("Failed with message: " + e.getMessage() + " for refsetNode: " + refsetNode);
                                 }
                             }
                             if (edition.getName().equals("International Edition")) {
