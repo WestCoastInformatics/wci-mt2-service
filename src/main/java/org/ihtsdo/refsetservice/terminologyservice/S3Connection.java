@@ -14,6 +14,7 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 
@@ -48,6 +49,7 @@ public class S3Connection {
      * @return the amazon S 3
      */
     static public AmazonS3 connectToAmazonS3() {
+        
         // Connect to server using instance profile credentials
         AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withRegion(REGION)
                 .withCredentials(new InstanceProfileCredentialsProvider(false)).build();
@@ -83,8 +85,6 @@ public class S3Connection {
         metadata.addUserMetadata("title", fileName);
         request.setMetadata(metadata);
         s3Client.putObject(request);
-
-        FileUtility.deleteDirectory(new File(localFilePath));
     }
 
     public static String getS3Path(AmazonS3 s3Client, String awsFilePath, String fileName) {

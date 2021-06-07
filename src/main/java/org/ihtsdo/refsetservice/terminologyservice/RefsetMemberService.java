@@ -718,6 +718,9 @@ public class RefsetMemberService {
      * @return the refset member concepts
      * @throws Exception the exception
      */
+    @SuppressWarnings({
+            "null", "unused"
+    })
     public static String exportRefsetRf2(final String refsetInternalId, final String type,
         final String fileNameDate, final String startEffectiveTime,
         final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames)
@@ -727,10 +730,14 @@ public class RefsetMemberService {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
+            final boolean serveFromS3 = false;
             String zippedFileUrl = "";
             String zipFileName = "";
             String awsPath = "";
             String tmp = null;
+            String s3ZippedFileUrl = null;
+            AmazonS3 s3Client = null;
+            
             if (("snapshot".equals(type.toLowerCase()) && tmp != null)
                     // if (("snapshot".equals(type.toLowerCase()) &&
                     // transientEffectiveTime != null)
@@ -756,18 +763,25 @@ public class RefsetMemberService {
                 awsPath = awsPath + "-withNames"; // TODO: Add Language here too
             }
 
-            // Check S3 cache if file exists. If exists, return path to S3
-            // If doesn't, generate, upload to S3, then return path to S3
-            // AmazonS3 s3Client = S3Connection.connectToAmazonS3();
+            try {
+                
+                // Check S3 cache if file exists. If exists, return path to S3
+                // If doesn't, generate, upload to S3, then return path to S3
+                // AmazonS3 s3Client = S3Connection.connectToAmazonS3();
 
-            // String s3ZippedFileUrl = null; //S3Connection.getS3Path(s3Client,
-            // awsPath, zipFileName);
-            AmazonS3 s3Client = S3Connection.connectToAmazonS3();
-            String s3ZippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+                // String s3ZippedFileUrl = null; //S3Connection.getS3Path(s3Client,
+                // awsPath, zipFileName);
+                s3Client = S3Connection.connectToAmazonS3();
+                s3ZippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+                
+            } catch (Exception ex) {
+                logger.error("Couldn't connect to AWS S3", ex);
+            }
+            
 
-            if (s3ZippedFileUrl == null) {
-                // File doesn't exist
-
+            // if the zip file doesn't exist on S3 already then generate it
+            if (!serveFromS3 || s3ZippedFileUrl == null) {
+                
                 /*-
                  * Example of entity
                  {
@@ -782,8 +796,8 @@ public class RefsetMemberService {
                     "transientEffectiveTime": "20210315",
                     "type": "SNAPSHOT",
                     "unpromotedChangesOnly": false
-                }
-                 */
+                } */
+                 
                 String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId()
                         + "\"],  \"branchPath\": \"" + getBranchPath(refset)
                         + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
@@ -795,29 +809,32 @@ public class RefsetMemberService {
                                 + transientEffectiveTime + "\"")
                         + "}";
 
-//                entityString = "{\"refsetIds\": [\"551000172106\"],  \"branchPath\": \"MAIN/SNOMEDCT-BE/2020-03-15\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"20200315\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false,  \"transientEffectiveTime\": \"20200315\"}";
+                // entityString = "{\"refsetIds\": [\"551000172106\"],  \"branchPath\": \"MAIN/SNOMEDCT-BE/2020-03-15\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"20200315\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false,  \"transientEffectiveTime\": \"20200315\"}";
                 logger.debug(entityString);
 
                 // generate zip files including support for metadata and
-                final String zipFilePath = generateRefsetZipFile(refset, zipFileName,
+                generateRefsetZipFile(refset, zipFileName,
                         exportMetadata, withNames, entityString);
-
-                // upload to S3
-                S3Connection.uploadToS3(s3Client, awsPath, zipFilePath, zipFileName);
-
+            }
+            
+            // upload to S3
+            if (s3ZippedFileUrl != null) {
+                
+                S3Connection.uploadToS3(s3Client, awsPath, EXPORT_FILE_DIR, zipFileName);
+                
                 /*
                  *- 
                  * TODO: Do this if you want to pull from S3
                 // getS3 Path
                 zippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
                  */
-
-                // if download is from RT2 server
-                ServletUriComponentsBuilder builder =
-                        ServletUriComponentsBuilder.fromCurrentContextPath();
-                zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL + zipFileName;
             }
 
+            // if download is from RT2 server
+            ServletUriComponentsBuilder builder =
+                    ServletUriComponentsBuilder.fromCurrentContextPath();
+            zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL + zipFileName;
+            
             return zippedFileUrl;
 
         } catch (Exception ex) {
@@ -991,16 +1008,23 @@ public class RefsetMemberService {
                 if (!members.containsKey(conceptId)) {
                     throw new Exception("Didn't have concept populated with descriptions yet");
                 }
-                if (members.get(conceptId).getDescriptions().get(1) != null) {
-                    fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(1)
-                            .get(DESCRIPTION_TERM));
-                } else if (members.get(conceptId).getDescriptions().get(0) != null) {
-                    fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(0)
-                            .get(DESCRIPTION_TERM));
-                } else if (members.get(conceptId).getDescriptions().get(2) != null) {
-                    fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(2)
-                            .get(DESCRIPTION_TERM));
-                } else {
+                boolean written = false;
+                int i = 1;
+                
+                while (i < members.get(conceptId).getDescriptions().size()) {
+                    
+                    if (members.get(conceptId).getDescriptions().get(i) != null) {
+                        
+                        fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(i)
+                                .get(DESCRIPTION_TERM));
+                        written = true;
+                        break;
+                    }
+                    
+                    i++;
+                }
+                
+                if (!written) {
                     throw new Exception("Not seeing the expected descriptions for member: "
                             + conceptId + " as have these descriptions: "
                             + members.get(conceptId).getDescriptions());
@@ -1422,7 +1446,7 @@ public class RefsetMemberService {
 
         // Create Snowstorm URL
         final String url =
-                SnowstormConnection.BASE_URL + getBranchPath(refset) + "/descriptions?limit=1000";
+                SnowstormConnection.BASE_URL + getBranchPath(refset) + "/descriptions?limit=3000";
 
         boolean firstTime = true;
         for (Concept concept : conceptsToProcess) {
