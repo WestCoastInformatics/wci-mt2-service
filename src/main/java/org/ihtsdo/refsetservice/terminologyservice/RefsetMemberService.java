@@ -919,12 +919,15 @@ public class RefsetMemberService {
         String zipFileName) throws Exception {
         // Move rf2 file to a tmp (as we create new one below). Update
         // sourceFiles accordingly
+        
+        logger.debug("**** Appending descriptions to RF2 file");
+        
         String originalFilePath = sourceFiles.iterator().next();
         String newFilePath = originalFilePath.substring(0, originalFilePath.indexOf(".")) + "-orig"
                 + originalFilePath.substring(originalFilePath.indexOf("."));
         FileUtility.move(originalFilePath, newFilePath);
-        sourceFiles.clear();
-        sourceFiles.add(newFilePath);
+        //sourceFiles.clear();
+        //sourceFiles.add(newFilePath);
 
         // Get member cache
         Set<Concept> conceptsNotInCache = new HashSet<>();

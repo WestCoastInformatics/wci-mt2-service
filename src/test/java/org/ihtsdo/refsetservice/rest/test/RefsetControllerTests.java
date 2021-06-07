@@ -224,8 +224,9 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String resultString = null;
         final String refsetInternalId = getRefsetInternalId();
+        final String format = "rf2_with_names";
         url = "/export/" + refsetInternalId
-                + "/?format=rf2&withNames=true&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20200315&transientEffectiveTime=20200315";
+                + "/?format=" + format + "&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20200315&transientEffectiveTime=20200315";
 
         // final String refsetInternalId = getRefsetInternalId("723264001");
         // url = "/export/" + refsetInternalId
