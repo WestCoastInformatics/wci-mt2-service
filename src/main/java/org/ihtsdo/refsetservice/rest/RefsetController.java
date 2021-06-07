@@ -427,15 +427,18 @@ public class RefsetController extends BaseController {
     public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId")
     final String refsetInternalId, final String format, final String exportType,
         final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime,
-        final boolean exportMetadata, final boolean withNames) throws Exception {
+        final boolean exportMetadata) throws Exception {
 
         try {
 
             logger.info(
-                    "*********** exportRefset: refsetInternalId: type: fileNameDate: startEffectiveTime: transientEffectiveTime: exportMetadata:"
-                            + refsetInternalId + "," + exportType + "," + fileNameDate + ","
-                            + startEffectiveTime + "," + transientEffectiveTime + ","
-                            + exportMetadata);
+                    "*********** exportRefset: refsetInternalId: " + refsetInternalId
+                    + " ; format: " + format
+                    + " ; type: " + exportType
+                    + " ; fileNameDate: " + fileNameDate
+                    + " ; startEffectiveTime: " + startEffectiveTime
+                    + " ; transientEffectiveTime: " + transientEffectiveTime
+                    + " ; exportMetadata: " + exportMetadata);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -444,6 +447,12 @@ public class RefsetController extends BaseController {
                     String url = null;
 
                     if (format.equals("rf2") || format.equals("rf2_with_names")) {
+                        
+                        boolean withNames = false;
+                        
+                        if (format.equals("rf2_with_names")) {
+                            withNames = true;
+                        }
 
                         String uri = RefsetMemberService.exportRefsetRf2(refsetInternalId,
                                 exportType, fileNameDate, startEffectiveTime,
