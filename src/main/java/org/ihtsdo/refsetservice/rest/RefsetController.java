@@ -247,17 +247,20 @@ public class RefsetController extends BaseController {
                 pfs.setSort(searchParameters.getSort());
             }
 
-            String memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
+            if (query != null && !query.equals("")) {
+                
+                String memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
+                
+                if (!memberRefsetQuery.equals("")) {
 
-            if (!memberRefsetQuery.equals("")) {
+                    if (query.split(" AND ").length > 1) {
+                        query = "(" + query + ")";
+                    }
 
-                if (query.split(" AND ").length > 1) {
-                    query = "(" + query + ")";
+                    query = "(" + query + " OR " + memberRefsetQuery + ")";
                 }
-
-                query = "(" + query + " OR " + memberRefsetQuery + ")";
             }
-
+            
             if (query != null && !query.equals("")) {
                 query += " AND latestVersion: true";
             } else {
