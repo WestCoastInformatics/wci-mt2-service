@@ -219,6 +219,11 @@ public class Edition extends AbstractHasModified {
     @Field(analyze = Analyze.NO, store = Store.YES)
     @IndexedEmbedded
     public Set<String> getDefaultLanguageRefsets() {
+        
+        if (defaultLanguageRefsets == null) {
+            defaultLanguageRefsets = new HashSet<>();
+        }
+        
         return defaultLanguageRefsets;
     }
 
