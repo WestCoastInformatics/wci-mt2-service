@@ -36,6 +36,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class HistoricDataMigrator {
 
+    private static final String SIMPLE_TYPE_REFSET_SCTID = "446609009";
+
+    private static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
+
     /** The formatter. */
     private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -166,14 +170,8 @@ public class HistoricDataMigrator {
     /** The testing. */
     private boolean testing = false;
 
-    /** The Constant TESTING_EDITION. */
-    private final String TESTING_EDITION = "Swed";
-
-    /** The Constant TESTING_REFSET. */
-    private final String TESTING_REFSET = "46011000052107";
-
     public void migrate() throws Exception {
-        HashSet<String> internationalModules = createEditionsFromSnowstorm();
+        Set<String> internationalModules = createEditionsFromSnowstorm();
         Map<String, SortedMap<Date, String>> branches = identifyBranches();
 
         Set<Refset> allRefsets = createRefsetsFromSnowstorm(branches, internationalModules);
@@ -239,7 +237,8 @@ public class HistoricDataMigrator {
             List<Edition> editions = service.getAll(Edition.class);
 
             for (Edition edition : editions) {
-                if (testing && !edition.getName().contains(TESTING_EDITION)) {
+                if (testing && !edition.getName().contains("Belg")
+                        && !edition.getName().contains("Inter")) {
                     continue;
                 }
                 SortedMap<Date, String> children = new TreeMap<>();
@@ -355,17 +354,16 @@ public class HistoricDataMigrator {
      * @throws Exception the exception
      */
     private Set<Refset> createRefsetsFromSnowstorm(
-        Map<String, SortedMap<Date, String>> branchChildren, HashSet<String> internationalModules)
+        Map<String, SortedMap<Date, String>> branchChildren, Set<String> internationalModules)
         throws Exception {
         Set<Refset> allRefsets = new HashSet<>();
-
-        String url = SnowstormConnection.BASE_URL + "browser/{branch}/members";
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
             BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsAdded.txt"));
+            logger.info("Starting processing Refsets");
 
             for (String editionId : branchChildren.keySet()) {
                 final Edition edition = service.get(editionId, Edition.class);
@@ -373,8 +371,19 @@ public class HistoricDataMigrator {
                 logger.info("Processing Edition: " + edition.getName());
                 writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
 
+                String url = SnowstormConnection.BASE_URL
+                        + "browser/{branch}/members?active=true&referenceSet=%3C"
+                        + SIMPLE_TYPE_REFSET_SCTID + "&module=%3C%3C" + edition.getTopLevelModule();
+                logger.debug("Identifying refsets in Snowstorm for " + edition.getName()
+                        + "'s branches via URL " + url);
+
+                boolean isInternationalEdition =
+                        ("international edition".equals(edition.getName().toLowerCase())) ? true
+                                : false;
+
                 for (Date branchDate : branchChildren.get(editionId).keySet()) {
                     final String childBranch = branchChildren.get(editionId).get(branchDate);
+                    logger.debug("   using ChildBranch: " + childBranch);
                     writer.append("\n\n\nProcessing Branch: " + branchDate + "\n");
 
                     try (final Response response =
@@ -393,16 +402,19 @@ public class HistoricDataMigrator {
                         final JsonNode root = mapper.readTree(resultString.toString());
 
                         // get RefSets from edition as long as a) active & b)
-                        // within edition's module
+                        // within edition's moduleˇ
                         final Iterator<JsonNode> refsetIterator =
                                 root.get("referenceSets").iterator();
 
                         while (refsetIterator.hasNext()) {
                             final JsonNode refsetNode = refsetIterator.next();
-
-                            if (refsetNode.get("conceptId").asText().equals("15551000146102")) {
-                                int a = 1;
-                            }
+                            /*
+                             * if (testing &&
+                             * !refsetNode.get("conceptId").asText().equals(
+                             * "561000172108") &&
+                             * !refsetNode.get("conceptId").asText().equals(
+                             * "721143001")) { continue; }
+                             */
                             if (!refsetNode.has("moduleId") || !refsetNode.has("conceptId")
                                     || !refsetNode.has("active")) {
                                 throw new Exception("Getting unexpected Refset info from node: "
@@ -410,13 +422,9 @@ public class HistoricDataMigrator {
                             }
                             final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
-                            final Boolean isActive = refsetNode.get("active").asBoolean();
 
-                            if (testing && !refsetId.equals(TESTING_REFSET)) {
-                                continue;
-                            }
-
-                            if (!internationalModules.contains(moduleId) && isActive) {
+                            if (isInternationalEdition
+                                    || !internationalModules.contains(moduleId)) {
                                 // Process Valid Refset
                                 try {
                                     Refset refset = new Refset();
@@ -435,15 +443,20 @@ public class HistoricDataMigrator {
                                                 lookupRefsetName(refsetId, edition, childBranch));
                                     }
 
-                                    writer.write("Adding refset: " + refsetId);
+                                    writer.write("Adding refset(" + refsetId + ") - "
+                                            + refset.getName());
+                                    // logger.debug("Adding refset(" + refsetId
+                                    // + ") - "
+                                    // + refset.getName());
                                     allRefsets.add(refset);
 
                                     writer.write("\n");
                                 } catch (Exception e) {
-                                    logger.error("Failed with message: " + e.getMessage() + " for refsetNode: " + refsetNode);
+                                    logger.error("Failed with message: " + e.getMessage()
+                                            + " for refsetNode: " + refsetNode);
                                 }
                             }
-                            if (edition.getName().equals("International Edition")) {
+                            if (isInternationalEdition) {
                                 internationalRefsets.add(refsetId);
                             }
                         }
@@ -508,20 +521,22 @@ public class HistoricDataMigrator {
 
     /**
      * Populate editions.
+     * @param codeSystemsNode
      *
      * @return the sets the
      * @throws Exception the exception
      */
-    private HashSet<String> createEditionsFromSnowstorm() throws Exception {
-        // SHould have 3 results
+    private Set<String> createEditionsFromSnowstorm() throws Exception {
+        final Set<String> internationalModules = new HashSet<>();
         String url = SnowstormConnection.BASE_URL + "codesystems";
-        HashSet<String> internationalModules = new HashSet<>();
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = response.readEntity(String.class);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
+
+            identifyInternationalModules(root, internationalModules);
 
             try (final TerminologyService service = new TerminologyService()) {
                 service.setModifiedBy("Migration");
@@ -535,6 +550,11 @@ public class HistoricDataMigrator {
 
                     while (codeSystems.hasNext()) {
                         JsonNode codeSystem = codeSystems.next();
+
+                        if (testing && !codeSystem.get("name").asText().contains("Belg")
+                                && !codeSystem.get("name").asText().contains("Inter")) {
+                            continue;
+                        }
 
                         // Process Edition
                         Edition edition = new Edition();
@@ -571,17 +591,10 @@ public class HistoricDataMigrator {
                             throw new Exception("No langauages for edition: " + edition.toString());
                         }
 
+                        // Identify Top Level Module
+                        identifyTopLevelModule(edition, codeSystem, internationalModules);
+
                         service.add(edition);
-
-                        if (edition.getName().equals("International Edition")) {
-                            Iterator<JsonNode> moduleIterator =
-                                    codeSystem.get("modules").iterator();
-
-                            while (moduleIterator.hasNext()) {
-                                JsonNode module = moduleIterator.next();
-                                internationalModules.add(module.get("conceptId").asText());
-                            }
-                        }
                     }
                 }
             }
@@ -590,6 +603,98 @@ public class HistoricDataMigrator {
         }
 
         return internationalModules;
+    }
+
+    private void identifyTopLevelModule(Edition edition, JsonNode codeSystem,
+        Set<String> internationalModules) throws Exception {
+        if ("international edition".equals(edition.getName().toLowerCase())) {
+            edition.setTopLevelModule(MODULE_ANCESTOR_CONCEPT_SCTID);
+        } else {
+            Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+
+            Set<String> editionModules = new HashSet<>();
+            while (moduleIterator.hasNext()) {
+                JsonNode module = moduleIterator.next();
+                if (!internationalModules.contains(module.get("conceptId").asText())) {
+                    editionModules.add(module.get("conceptId").asText());
+                }
+            }
+
+            if (editionModules.size() == 0) {
+                edition.setTopLevelModule(MODULE_ANCESTOR_CONCEPT_SCTID);
+                logger.info("Seeing odd number of modules for " + edition.getName() + ": "
+                        + editionModules.toString());
+            } else if (editionModules.size() > 1) {
+                Set<String> childrenModules = new HashSet<>();
+
+                Set<String> children = getModuleChildren(edition);
+                for (String moduleId : editionModules) {
+                    if (children.contains(moduleId)) {
+                        childrenModules.add(moduleId);
+                    }
+                }
+
+                if (childrenModules.size() == 0 || childrenModules.size() > 1) {
+                    logger.info("Seeing odd number of modules during secondary analysis for "
+                            + edition.getName() + ": " + childrenModules.toString());
+                } else {
+                    edition.setTopLevelModule(childrenModules.iterator().next());
+                }
+            } else {
+                edition.setTopLevelModule(editionModules.iterator().next());
+            }
+        }
+    }
+
+    private Set<String> getModuleChildren(Edition edition) throws Exception {
+        String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch() + "/concepts/"
+                + MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
+        Set<String> childrenSctIds = new HashSet<>();
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(resultString.toString());
+
+            Iterator<JsonNode> conceptIterator = root.iterator();
+
+            while (conceptIterator.hasNext()) {
+                JsonNode node = conceptIterator.next();
+                childrenSctIds.add(node.get("conceptId").asText());
+            }
+        } catch (Exception e) {
+            throw new Exception("Failed in getting code systems (first call to Snowstorm) with: "
+                    + e.getMessage(), e);
+        }
+
+        return childrenSctIds;
+    }
+
+    private void identifyInternationalModules(JsonNode root, Set<String> internationalModules) {
+
+        final Iterator<JsonNode> responseIterator = root.iterator();
+
+        while (responseIterator.hasNext()) {
+
+            final Iterator<JsonNode> codeSystems = responseIterator.next().iterator();
+
+            while (codeSystems.hasNext()) {
+                JsonNode codeSystem = codeSystems.next();
+
+                if ("international edition".equals(codeSystem.get("name").asText().toLowerCase())) {
+
+                    // At international Edition
+                    Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+
+                    while (moduleIterator.hasNext()) {
+                        JsonNode module = moduleIterator.next();
+                        internationalModules.add(module.get("conceptId").asText());
+                    }
+
+                    return;
+                }
+            }
+        }
     }
 
     /**

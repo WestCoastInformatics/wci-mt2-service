@@ -282,7 +282,7 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testConceptDetails() throws Exception {
-
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev instance
         String url = null;
         MvcResult result = null;
         String content = null;
@@ -290,7 +290,7 @@ public class RefsetControllerTests extends BaseTest {
                                               // role group of 4 rels
                                               // descriptions in all 3 lang
                                               // including Acceptable
-        final String refsetId = "741000172102";
+        final String refsetId = "561000172108";
         url = "/concept/" + conceptId + "?refsetInternalId=" + getRefsetInternalId(refsetId);
         logger.info("Testing url - " + url);
 
@@ -316,6 +316,7 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testMemberList() throws Exception {
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev instance
 
         String url = null;
         MvcResult result = null;
@@ -324,7 +325,7 @@ public class RefsetControllerTests extends BaseTest {
                                                        // children & 1 role
                                                        // group of 4 rels
         // descriptions in all 3 lang
-        final String refsetId = "741000172102";
+        final String refsetId = "561000172108";
         final String expectedEffectiveTime = "20210315";
 
         url = "/refset/" + getRefsetInternalId(refsetId)
@@ -382,6 +383,7 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testSearchRefsetMembers() throws Exception {
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev instance
 
         String url = null;
         MvcResult result = null;
@@ -389,7 +391,7 @@ public class RefsetControllerTests extends BaseTest {
         final String conceptIdToExamine = "429625007"; 
         
         // descriptions in all 3 lang
-        final String refsetId = "741000172102";
+        final String refsetId = "561000172108";
         final String expectedEffectiveTime = "20210315";
 
         url = "/refset/" + getRefsetInternalId(refsetId)
@@ -439,11 +441,12 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testMemberTaxonomy() throws Exception {
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev instance
 
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
         final String conceptIdToExamine = "716220001";
-        final String refsetId = "741000172102";
+        final String refsetId = "h";
         final String expectedEffectiveTime = "20210315";
         final String startingConceptId = "716186003";
 
