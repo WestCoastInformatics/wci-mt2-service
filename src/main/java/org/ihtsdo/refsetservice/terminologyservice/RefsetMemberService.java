@@ -1002,7 +1002,12 @@ public class RefsetMemberService {
         FileWriter fw = new FileWriter(new File(originalFilePath));
 
         try (BufferedReader br = new BufferedReader(new FileReader(new File(newFilePath)))) {
+            // Read/write the header
             String extractedLine = br.readLine();
+            fw.write(extractedLine); // TODO: Add appended Lang/type of the
+                                     // addedName to the header
+
+            // Start processing each concept
             extractedLine = br.readLine();
             while (extractedLine != null) {
                 String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
