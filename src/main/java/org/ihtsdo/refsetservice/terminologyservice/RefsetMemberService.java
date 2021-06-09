@@ -2138,30 +2138,32 @@ public class RefsetMemberService {
         return missingConceptLookupParameters;
     }
 
-    private static Map<Integer, Map<String, String>> populateRoleGroups(String conceptId,
+    private static Map<Integer, List<String>> populateRoleGroups(String conceptId,
         JsonNode relationshipsNode) {
-        Map<Integer, Map<String, String>> roleGroups = new HashMap<>();
-
+        
+        Map<Integer, List<String>> roleGroups = new HashMap<>();
         final Iterator<JsonNode> iterator = relationshipsNode.iterator();
 
         while (iterator.hasNext()) {
+            
             JsonNode relationship = iterator.next();
 
             if (relationship.get("active").asBoolean() && "INFERRED_RELATIONSHIP"
                     .equals(relationship.get("characteristicType").asText()))
-
             {
+                
                 int groupId = relationship.get("groupId").asInt();
+                
                 if (!roleGroups.containsKey(groupId)) {
-                    roleGroups.put(groupId, new HashMap<String, String>());
+                    roleGroups.put(groupId, new ArrayList<String>());
                 }
 
                 String type = relationship.get("type").get("pt").get("term").asText();
 
                 if (!"Is a".equals(type)) {
+                    
                     String target = relationship.get("target").get("pt").get("term").asText();
-
-                    roleGroups.get(groupId).put(type, target);
+                    roleGroups.get(groupId).add(type + " -> " + target);
                 }
             }
         }
