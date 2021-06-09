@@ -141,7 +141,7 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ConceptResultList members = null;
-        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; //getRefsetInternalId();
+        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; // getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=0&displayType=list"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
@@ -168,7 +168,7 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ConceptResultList children = null;
-        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; //getRefsetInternalId();
+        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; // getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId
                 + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId=404684003"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
@@ -225,8 +225,8 @@ public class RefsetControllerTests extends BaseTest {
         String resultString = null;
         final String refsetInternalId = getRefsetInternalId();
         final String format = "rf2_with_names";
-        url = "/export/" + refsetInternalId
-                + "/?format=" + format + "&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20200315&transientEffectiveTime=20200315";
+        url = "/export/" + refsetInternalId + "/?format=" + format
+                + "&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20200315&transientEffectiveTime=20200315";
 
         // final String refsetInternalId = getRefsetInternalId("723264001");
         // url = "/export/" + refsetInternalId
@@ -282,7 +282,8 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testConceptDetails() throws Exception {
-        // TODO: Update test as was based on PROD-Snowstorm, not our dev instance
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev
+        // instance
         String url = null;
         MvcResult result = null;
         String content = null;
@@ -316,7 +317,8 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testMemberList() throws Exception {
-        // TODO: Update test as was based on PROD-Snowstorm, not our dev instance
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev
+        // instance
 
         String url = null;
         MvcResult result = null;
@@ -383,13 +385,14 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testSearchRefsetMembers() throws Exception {
-        // TODO: Update test as was based on PROD-Snowstorm, not our dev instance
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev
+        // instance
 
         String url = null;
         MvcResult result = null;
         String content = null;
-        final String conceptIdToExamine = "429625007"; 
-        
+        final String conceptIdToExamine = "429625007";
+
         // descriptions in all 3 lang
         final String refsetId = "561000172108";
         final String expectedEffectiveTime = "20210315";
@@ -425,7 +428,7 @@ public class RefsetControllerTests extends BaseTest {
                 .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(expectedEffectiveTime));
         assertTrue(concept.isMemberOfRefset());
         assertTrue(concept.isMemberStatus());
-        assertThat(concept.getDescriptions().size()).isEqualTo(4); 
+        assertThat(concept.getDescriptions().size()).isEqualTo(4);
         assertThat(concept.getRoleGroups().size()).isEqualTo(0);
 
         // Call does not pull in parents & Children
@@ -433,7 +436,7 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept.getChildren().size()).isEqualTo(0);
 
     }
-    
+
     /**
      * Test getting concept details.
      *
@@ -441,7 +444,8 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testMemberTaxonomy() throws Exception {
-        // TODO: Update test as was based on PROD-Snowstorm, not our dev instance
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev
+        // instance
 
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
@@ -509,7 +513,7 @@ public class RefsetControllerTests extends BaseTest {
 
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
-        final String conceptIdToExamine = "771410009"; // "771410009";
+        final String conceptIdToExamine = "727156001"; // "771410009";
         final String refsetId = "723264001"; // "723264001";
 
         final String url =
@@ -532,9 +536,9 @@ public class RefsetControllerTests extends BaseTest {
             final String version = historyEntry.get("version");
             final String change = historyEntry.get("change");
 
-            assertThat(version.equals("2021-01-31") || version.equals("2019-07-31"));
+            assertThat(version.equals("2017-07-31") || version.equals("2018-07-31"));
 
-            if (version.equals("2021-01-31")) {
+            if (version.equals("2018-07-31")) {
                 assertThat(change.equals("Inactivated"));
             } else {
                 assertThat(change.equals("Added"));

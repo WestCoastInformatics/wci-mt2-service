@@ -5,14 +5,12 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -69,10 +67,10 @@ public class RefsetController extends BaseController {
 
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetController.class);
-    
+
     /** The local directory to store exported refset files. */
     private static String EXPORT_FILE_DIR;
-    
+
     /** Static initialization. */
     static {
         EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + "/";
@@ -118,7 +116,7 @@ public class RefsetController extends BaseController {
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(true);
-                refset.setVersionList(getRefsetVersionList(refset.getRefsetId(), service));
+                refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
 
                 logger.info("*********** getRefset: refset: " + ModelUtility.toJson(refset));
 
@@ -248,9 +246,10 @@ public class RefsetController extends BaseController {
             }
 
             if (query != null && !query.equals("")) {
-                
-                String memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
-                
+
+                String memberRefsetQuery =
+                        RefsetMemberService.searchDirectoryMembers(searchParameters);
+
                 if (!memberRefsetQuery.equals("")) {
 
                     if (query.split(" AND ").length > 1) {
@@ -260,7 +259,7 @@ public class RefsetController extends BaseController {
                     query = "(" + query + " OR " + memberRefsetQuery + ")";
                 }
             }
-            
+
             if (query != null && !query.equals("")) {
                 query += " AND latestVersion: true";
             } else {
@@ -273,7 +272,7 @@ public class RefsetController extends BaseController {
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(false);
-                refset.setVersionList(getRefsetVersionList(refset.getRefsetId(), service));
+                refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
             }
 
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -434,14 +433,11 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info(
-                    "*********** exportRefset: refsetInternalId: " + refsetInternalId
-                    + " ; format: " + format
-                    + " ; type: " + exportType
-                    + " ; fileNameDate: " + fileNameDate
-                    + " ; startEffectiveTime: " + startEffectiveTime
-                    + " ; transientEffectiveTime: " + transientEffectiveTime
-                    + " ; exportMetadata: " + exportMetadata);
+            logger.info("*********** exportRefset: refsetInternalId: " + refsetInternalId
+                    + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: "
+                    + fileNameDate + " ; startEffectiveTime: " + startEffectiveTime
+                    + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: "
+                    + exportMetadata);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -450,9 +446,9 @@ public class RefsetController extends BaseController {
                     String url = null;
 
                     if (format.equals("rf2") || format.equals("rf2_with_names")) {
-                        
+
                         boolean withNames = false;
-                        
+
                         if (format.equals("rf2_with_names")) {
                             withNames = true;
                         }
@@ -485,7 +481,7 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-    
+
     /**
      * Download an exported refset.
      *
@@ -500,23 +496,21 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "fileName",
-                    value = "The name of the file to download.", required = true,
-                    dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "fileName", value = "The name of the file to download.",
+                    required = true, dataType = "string", paramType = "path"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}",
             produces = "application/json")
     public @ResponseBody ResponseEntity<Resource> downloadExport(@PathVariable(value = "fileName")
-        final String fileName) throws Exception {
+    final String fileName) throws Exception {
 
         try {
 
             logger.info("****** downloadExport: fileName: " + fileName);
-            
-            ContentDisposition contentDisposition = ContentDisposition.builder("inline")
-                    .filename(fileName)
-                    .build();
+
+            ContentDisposition contentDisposition =
+                    ContentDisposition.builder("inline").filename(fileName).build();
 
             File file = new File(EXPORT_FILE_DIR + fileName);
             HttpHeaders headers = new HttpHeaders();
@@ -529,7 +523,8 @@ public class RefsetController extends BaseController {
             ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
             return ResponseEntity.ok().headers(headers).contentLength(file.length())
-                    .contentType(MediaType.parseMediaType("application/octet-stream")).body(resource);
+                    .contentType(MediaType.parseMediaType("application/octet-stream"))
+                    .body(resource);
 
         } catch (final Exception e) {
 
@@ -582,19 +577,10 @@ public class RefsetController extends BaseController {
                 }
 
                 final List<Map<String, String>> versions =
-                        getRefsetVersionList(refset.getRefsetId(), service);
-
-                final List<Map<String, String>> updatedVersions = new ArrayList<>();
-
-                for (Map<String, String> version : versions) {
-                    if (version.get("editionShortName").toLowerCase()
-                            .equals(refset.getEditionShortName().toLowerCase())) {
-                        updatedVersions.add(version);
-                    }
-                }
+                        getSortedRefsetVersionList(refset.getRefsetId(), service);
 
                 final List<Map<String, String>> memberHistory =
-                        RefsetMemberService.getMemberHistory(conceptId, updatedVersions);
+                        RefsetMemberService.getMemberHistory(conceptId, versions);
 
                 logger.info("*********** getMemberHistory: member: "
                         + ModelUtility.toJson(memberHistory));
@@ -668,15 +654,17 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Get the full list of versions for a refset.
+     * Get the full list of versions for a refset from oldest first to newest
+     * last.
      *
      * @param refsetId the refset id
      * @param service the Terminology Service
      * @return the list of refset versions
      * @throws Exception the exception
      */
-    private List<Map<String, String>> getRefsetVersionList(final String refsetId,
+    private List<Map<String, String>> getSortedRefsetVersionList(final String refsetId,
         final TerminologyService service) throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
         final List<Map<String, String>> versionList = new ArrayList<>();
         final PfsParameter pfs = new PfsParameter();
@@ -695,19 +683,47 @@ public class RefsetController extends BaseController {
             final Map<String, String> version = new HashMap<>();
             version.put("status", refset.getVersionStatus());
             version.put("refsetInternalId", refset.getId());
-            version.put("editionShortName", refset.getEditionShortName());
 
+            boolean inDevelopmentVersionFound = false;
             if (refset.getVersionStatus().toLowerCase().equals("in development")) {
+
+                if (inDevelopmentVersionFound) {
+                    throw new Exception(
+                            "May only have a single version at 'in development' at any given time, and we found 2nd for refsetId: "
+                                    + refset.getRefsetId());
+                }
 
                 version.put("date",
                         DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
+
                 versionList.add(0, version);
 
+                inDevelopmentVersionFound = true;
             } else if ("beta, published".contains(refset.getVersionStatus().toLowerCase())) {
 
                 version.put("date", DateUtility.formatDate(refset.getVersionDate(),
                         DateUtility.DATE_FORMAT_REVERSE, null));
-                versionList.add(version);
+
+                if (versionList.isEmpty()) {
+                    versionList.add(version);
+                } else {
+
+                    final Date dateToInsert = refset.getVersionDate();
+                    int versionIndex = (inDevelopmentVersionFound) ? 1 : 0;
+
+                    for (Map<String, String> currentVersion : versionList) {
+
+                        final Date dateInspecting = sdf.parse(currentVersion.get("date"));
+
+                        if (dateToInsert.before(dateInspecting)) {
+                            break;
+                        }
+
+                        versionIndex++;
+                    }
+
+                    versionList.add(versionIndex, version);
+                }
             }
         }
 

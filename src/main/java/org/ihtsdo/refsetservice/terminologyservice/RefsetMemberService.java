@@ -737,7 +737,7 @@ public class RefsetMemberService {
             String tmp = null;
             String s3ZippedFileUrl = null;
             AmazonS3 s3Client = null;
-            
+
             if (("snapshot".equals(type.toLowerCase()) && tmp != null)
                     // if (("snapshot".equals(type.toLowerCase()) &&
                     // transientEffectiveTime != null)
@@ -764,24 +764,24 @@ public class RefsetMemberService {
             }
 
             try {
-                
+
                 // Check S3 cache if file exists. If exists, return path to S3
                 // If doesn't, generate, upload to S3, then return path to S3
                 // AmazonS3 s3Client = S3Connection.connectToAmazonS3();
 
-                // String s3ZippedFileUrl = null; //S3Connection.getS3Path(s3Client,
+                // String s3ZippedFileUrl = null;
+                // //S3Connection.getS3Path(s3Client,
                 // awsPath, zipFileName);
                 s3Client = S3Connection.connectToAmazonS3();
                 s3ZippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
-                
+
             } catch (Exception ex) {
                 logger.error("Couldn't connect to AWS S3", ex);
             }
-            
 
             // if the zip file doesn't exist on S3 already then generate it
             if (!serveFromS3 || s3ZippedFileUrl == null) {
-                
+
                 /*-
                  * Example of entity
                  {
@@ -797,7 +797,7 @@ public class RefsetMemberService {
                     "type": "SNAPSHOT",
                     "unpromotedChangesOnly": false
                 } */
-                 
+
                 String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId()
                         + "\"],  \"branchPath\": \"" + getBranchPath(refset)
                         + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
@@ -809,24 +809,27 @@ public class RefsetMemberService {
                                 + transientEffectiveTime + "\"")
                         + "}";
 
-                // entityString = "{\"refsetIds\": [\"551000172106\"],  \"branchPath\": \"MAIN/SNOMEDCT-BE/2020-03-15\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"20200315\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false,  \"transientEffectiveTime\": \"20200315\"}";
+                // entityString = "{\"refsetIds\": [\"551000172106\"],
+                // \"branchPath\": \"MAIN/SNOMEDCT-BE/2020-03-15\",
+                // \"conceptsAndRelationshipsOnly\": false,
+                // \"filenameEffectiveDate\": \"20200315\", \"legacyZipNaming\":
+                // false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\":
+                // false, \"transientEffectiveTime\": \"20200315\"}";
                 logger.debug(entityString);
 
                 // generate zip files including support for metadata and
-                generateRefsetZipFile(refset, zipFileName,
-                        exportMetadata, withNames, entityString);
+                generateRefsetZipFile(refset, zipFileName, exportMetadata, withNames, entityString);
             }
-            
+
             // upload to S3
             if (s3ZippedFileUrl != null) {
-                
+
                 S3Connection.uploadToS3(s3Client, awsPath, EXPORT_FILE_DIR, zipFileName);
-                
+
                 /*
-                 *- 
-                 * TODO: Do this if you want to pull from S3
-                // getS3 Path
-                zippedFileUrl = S3Connection.getS3Path(s3Client, awsPath, zipFileName);
+                 * - TODO: Do this if you want to pull from S3 // getS3 Path
+                 * zippedFileUrl = S3Connection.getS3Path(s3Client, awsPath,
+                 * zipFileName);
                  */
             }
 
@@ -834,7 +837,7 @@ public class RefsetMemberService {
             ServletUriComponentsBuilder builder =
                     ServletUriComponentsBuilder.fromCurrentContextPath();
             zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL + zipFileName;
-            
+
             return zippedFileUrl;
 
         } catch (Exception ex) {
@@ -938,15 +941,15 @@ public class RefsetMemberService {
         String zipFileName) throws Exception {
         // Move rf2 file to a tmp (as we create new one below). Update
         // sourceFiles accordingly
-        
+
         logger.debug("**** Appending descriptions to RF2 file");
-        
+
         String originalFilePath = sourceFiles.iterator().next();
         String newFilePath = originalFilePath.substring(0, originalFilePath.indexOf(".")) + "-orig"
                 + originalFilePath.substring(originalFilePath.indexOf("."));
         FileUtility.move(originalFilePath, newFilePath);
-        //sourceFiles.clear();
-        //sourceFiles.add(newFilePath);
+        // sourceFiles.clear();
+        // sourceFiles.add(newFilePath);
 
         // Get member cache
         Set<Concept> conceptsNotInCache = new HashSet<>();
@@ -1010,20 +1013,20 @@ public class RefsetMemberService {
                 }
                 boolean written = false;
                 int i = 1;
-                
+
                 while (i < members.get(conceptId).getDescriptions().size()) {
-                    
+
                     if (members.get(conceptId).getDescriptions().get(i) != null) {
-                        
-                        fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions().get(i)
-                                .get(DESCRIPTION_TERM));
+
+                        fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions()
+                                .get(i).get(DESCRIPTION_TERM));
                         written = true;
                         break;
                     }
-                    
+
                     i++;
                 }
-                
+
                 if (!written) {
                     throw new Exception("Not seeing the expected descriptions for member: "
                             + conceptId + " as have these descriptions: "
@@ -1560,10 +1563,9 @@ public class RefsetMemberService {
 
         // Create Snowstorm URL
         final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
-                + "/descriptions?term=" 
-                + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery())) 
-                + "&conceptRefset="
-                + refset.getRefsetId()
+                + "/descriptions?term="
+                + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery()))
+                + "&conceptRefset=" + refset.getRefsetId()
                 + "&groupByConcept=false&searchMode=STANDARD&offset=0&limit=1000";
 
         // Call Snowstorm
@@ -2142,20 +2144,19 @@ public class RefsetMemberService {
 
     private static Map<Integer, List<String>> populateRoleGroups(String conceptId,
         JsonNode relationshipsNode) {
-        
+
         Map<Integer, List<String>> roleGroups = new HashMap<>();
         final Iterator<JsonNode> iterator = relationshipsNode.iterator();
 
         while (iterator.hasNext()) {
-            
+
             JsonNode relationship = iterator.next();
 
             if (relationship.get("active").asBoolean() && "INFERRED_RELATIONSHIP"
-                    .equals(relationship.get("characteristicType").asText()))
-            {
-                
+                    .equals(relationship.get("characteristicType").asText())) {
+
                 int groupId = relationship.get("groupId").asInt();
-                
+
                 if (!roleGroups.containsKey(groupId)) {
                     roleGroups.put(groupId, new ArrayList<String>());
                 }
@@ -2163,7 +2164,7 @@ public class RefsetMemberService {
                 String type = relationship.get("type").get("pt").get("term").asText();
 
                 if (!"Is a".equals(type)) {
-                    
+
                     String target = relationship.get("target").get("pt").get("term").asText();
                     roleGroups.get(groupId).add(type + " -> " + target);
                 }
@@ -2238,21 +2239,23 @@ public class RefsetMemberService {
     public static List<Map<String, String>> getMemberHistory(String referencedComponentId,
         List<Map<String, String>> versions) throws Exception {
 
+        // Note, the system expects that versions are ordered from oldest first
+        // to newest last. Failure to adhere to this convention will break the
+        // algorithm.
         List<Map<String, String>> memberHistory = new ArrayList<>();
         String previousStatus = null;
-        String previousVersion = null;
-        String lastAddedVersion = null;
 
         try (final TerminologyService service = new TerminologyService()) {
 
             for (Map<String, String> version : versions) {
 
-                if ("beta, published".contains(version.get("status").toLowerCase())) {
+                if ("beta, published, ind development"
+                        .contains(version.get("status").toLowerCase())) {
 
                     String refsetInternalId = version.get("refsetInternalId");
-                    String currentVersion = version.get("date");
+                    String currentVersionDate = version.get("date");
 
-                    logger.debug("Processing history on: " + currentVersion
+                    logger.debug("Processing history on: " + currentVersionDate
                             + " using internalRefsetId: " + refsetInternalId);
 
                     final Refset refset = service.get(refsetInternalId, Refset.class);
@@ -2290,28 +2293,43 @@ public class RefsetMemberService {
                         // becoming a member, so can cancel searching further
                         // versions
                         if (currentStatus == null) {
-                            break;
+                            continue;
                         }
 
-                        // if the previous status wasn't null and the current
-                        // status doesn't match it then set the last status
-                        if (previousStatus != null && !currentStatus.equals(previousStatus)) {
+                        if (previousStatus == null) {
+                            // First time encountering a membership status, thus
+                            // first time added
 
                             Map<String, String> historyEntry = new HashMap<>();
-                            historyEntry.put("version", previousVersion);
 
-                            if (previousStatus.equals("Active")) {
+                            historyEntry.put("version", currentVersionDate);
+
+                            if ("active".equals(currentStatus.toLowerCase())) {
+                                historyEntry.put("change", "Added");
+                            } else {
+                                historyEntry.put("change", "Added as Inactive");
+                            }
+
+                            memberHistory.add(historyEntry);
+
+                        } else if (!currentStatus.equals(previousStatus)) {
+                            // if the previous status wasn't null and the
+                            // current
+                            // status doesn't match it, then set the last status
+
+                            Map<String, String> historyEntry = new HashMap<>();
+                            historyEntry.put("version", currentVersionDate);
+
+                            if (currentStatus.equals("Active")) {
                                 historyEntry.put("change", "Activated");
                             } else {
                                 historyEntry.put("change", "Inactivated");
                             }
 
                             memberHistory.add(historyEntry);
-                            lastAddedVersion = previousVersion;
                         }
 
                         previousStatus = currentStatus;
-                        previousVersion = currentVersion;
 
                     } catch (Exception ex) {
                         throw new Exception("Could not grab refset members for refset "
@@ -2319,35 +2337,6 @@ public class RefsetMemberService {
                     }
                 }
             }
-
-            // if the final version added to the list is the previous version
-            if (lastAddedVersion != null && lastAddedVersion.equals(previousVersion)) {
-
-                // change the verb to indicate this was when the concept was
-                // added to the refset
-                if (previousStatus != null && previousStatus.equals("Active")) {
-                    memberHistory.get(memberHistory.size() - 1).put("change", "Added");
-                } else if (previousStatus != null && previousStatus.equals("Inactive")) {
-                    memberHistory.get(memberHistory.size() - 1).put("change", "Added as inactive");
-                }
-            }
-
-            // since the last version added was not the previous version add
-            // that version to the list
-            else if (previousStatus != null) {
-
-                Map<String, String> historyEntry = new HashMap<>();
-                historyEntry.put("version", previousVersion);
-
-                if (previousStatus.equals("Active")) {
-                    historyEntry.put("change", "Added");
-                } else {
-                    historyEntry.put("change", "Added as inactive");
-                }
-
-                memberHistory.add(historyEntry);
-            }
-
         }
 
         return memberHistory;
