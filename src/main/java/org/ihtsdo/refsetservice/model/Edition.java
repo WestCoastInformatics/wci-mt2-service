@@ -219,16 +219,7 @@ public class Edition extends AbstractHasModified {
     @Field(analyze = Analyze.NO, store = Store.YES)
     @IndexedEmbedded
     public Set<String> getDefaultLanguageRefsets() {
-
-        Set<String> returnDefaults = new HashSet<>(defaultLanguageRefsets);
-
-        if (!returnDefaults.contains("32570271000036106")
-                && !returnDefaults.contains("900000000000509007")) {
-
-            returnDefaults.add("900000000000509007");
-        }
-
-        return returnDefaults;
+        return defaultLanguageRefsets;
     }
 
     /**

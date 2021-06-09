@@ -40,6 +40,8 @@ public class HistoricDataMigrator {
 
     private static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
+    private static final Object UK_LANGUAGE_REFSET_ID = "900000000000508004";
+
     /** The formatter. */
     private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -577,7 +579,11 @@ public class HistoricDataMigrator {
                             edition.getDefaultLanguageRefsets().add(CFR_LANGUAGE_REFSET_ID);
                         } else if (edition.getName().equals("Netherlands Edition")) {
                             edition.getDefaultLanguageRefsets().add(NL_LANGUAGE_REFSET_ID);
-                        } else {
+                        }
+
+                        // Add the US English as default in all cases except
+                        // where candian or UK is used
+                        if (!edition.getDefaultLanguageRefsets().contains(UK_LANGUAGE_REFSET_ID)) {
                             edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET_ID);
                         }
 
