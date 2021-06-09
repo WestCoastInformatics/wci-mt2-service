@@ -226,7 +226,7 @@ public class RefsetControllerTests extends BaseTest {
         final String refsetInternalId = getRefsetInternalId();
         final String format = "rf2_with_names";
         url = "/export/" + refsetInternalId + "/?format=" + format
-                + "&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20200315&transientEffectiveTime=20200315";
+                + "&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20200315&transientEffectiveTime=20200315&languageId=900000000000509007FSN";
 
         // final String refsetInternalId = getRefsetInternalId("723264001");
         // url = "/export/" + refsetInternalId
