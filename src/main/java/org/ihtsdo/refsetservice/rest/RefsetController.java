@@ -389,6 +389,7 @@ public class RefsetController extends BaseController {
      * @param refsetInternalId the internal refset id
      * @param format the format
      * @param exportType the export type
+     * @param languageId the language to display names in
      * @param fileNameDate the file name date
      * @param startEffectiveTime the start effective time
      * @param transientEffectiveTime the transient effective time
@@ -408,6 +409,8 @@ public class RefsetController extends BaseController {
                     dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
                     required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "languageId", value = "For formats with names which language to display the name in.",
+            required = false, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "format",
                     value = "The type of export: 'rf2', 'rf2_with_names', 'free_set', or 'sctids'.",
                     required = true, dataType = "string", paramType = "query"),
@@ -427,7 +430,7 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}",
             produces = "application/json")
     public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, final String format, final String exportType,
+    final String refsetInternalId, final String format, final String exportType, final String languageId,
         final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime,
         final boolean exportMetadata) throws Exception {
 
@@ -454,7 +457,7 @@ public class RefsetController extends BaseController {
                         }
 
                         String uri = RefsetMemberService.exportRefsetRf2(refsetInternalId,
-                                exportType, fileNameDate, startEffectiveTime,
+                                exportType, languageId, fileNameDate, startEffectiveTime,
                                 transientEffectiveTime, exportMetadata, withNames);
                         logger.debug("******** results: " + uri);
                         url = "{\"url\": \"" + uri + "\"}";

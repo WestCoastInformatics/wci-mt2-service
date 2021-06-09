@@ -711,6 +711,7 @@ public class RefsetMemberService {
      *
      * @param refsetInternalId the internal refset ID
      * @param type the type
+     * @param languageId the language to display names in
      * @param fileNameDate the file name date
      * @param startEffectiveTime the start effective time
      * @param transientEffectiveTime the transient effective time
@@ -722,7 +723,7 @@ public class RefsetMemberService {
             "null", "unused"
     })
     public static String exportRefsetRf2(final String refsetInternalId, final String type,
-        final String fileNameDate, final String startEffectiveTime,
+        final String languageId, final String fileNameDate, final String startEffectiveTime,
         final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames)
         throws Exception {
 
@@ -818,7 +819,7 @@ public class RefsetMemberService {
                 logger.debug(entityString);
 
                 // generate zip files including support for metadata and
-                generateRefsetZipFile(refset, zipFileName, exportMetadata, withNames, entityString);
+                generateRefsetZipFile(refset, zipFileName, exportMetadata, withNames, entityString, languageId);
             }
 
             // upload to S3
@@ -846,7 +847,7 @@ public class RefsetMemberService {
     }
 
     private static String generateRefsetZipFile(final Refset refset, final String zipFileName,
-        final boolean exportMetadata, final boolean appendNames, final String entityString)
+        final boolean exportMetadata, final boolean appendNames, final String entityString, final String languageId)
         throws Exception {
         String zipFilePath = "";
 
@@ -920,7 +921,7 @@ public class RefsetMemberService {
          */
         // If Rf2WithNames selected, append the names to the refset file
         if (appendNames) {
-            appendNamesToRf2(refset, sourceFiles, zipFileName);
+            appendNamesToRf2(refset, sourceFiles, zipFileName, languageId);
         }
 
         // if exportMetadata requested, add it
@@ -937,8 +938,9 @@ public class RefsetMemberService {
         return EXPORT_FILE_DIR;
     }
 
-    private static void appendNamesToRf2(Refset refset, List<String> sourceFiles,
-        String zipFileName) throws Exception {
+    private static void appendNamesToRf2(final Refset refset, final List<String> sourceFiles,
+        final String zipFileName, final String languageId) throws Exception {
+        
         // Move rf2 file to a tmp (as we create new one below). Update
         // sourceFiles accordingly
 
@@ -958,10 +960,12 @@ public class RefsetMemberService {
         // Read through file and identify those concepts not in cache or don't
         // have all requisite languages populated
         try (BufferedReader br = new BufferedReader(new FileReader(new File(newFilePath)))) {
+            
             String extractedLine = br.readLine();
             extractedLine = br.readLine();
 
             while (extractedLine != null && !extractedLine.trim().isEmpty()) {
+                
                 String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
 
                 // TODO: Also check doesn't have all needed languages
@@ -981,19 +985,23 @@ public class RefsetMemberService {
 
                     // Populate Members cache with data
                     for (Concept concept : conceptsNotInCache) {
+                        
                         if (!members.containsKey(concept.getCode())) {
                             members.put(concept.getCode(), concept);
                         } else {
+                            
                             members.get(concept.getCode())
                                     .setDescriptions(concept.getDescriptions());
                         }
                     }
+                    
                     conceptsNotInCache.clear();
                 }
             }
 
             br.close();
         }
+        
         // Get descriptions for those not cached or not cached with all
         // languages
 
@@ -1009,17 +1017,28 @@ public class RefsetMemberService {
 
             // Start processing each concept
             extractedLine = br.readLine();
+            
             while (extractedLine != null) {
+                
                 String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
 
                 // TODO: How to determine which language
                 if (!members.containsKey(conceptId)) {
                     throw new Exception("Didn't have concept populated with descriptions yet");
                 }
+                
                 boolean written = false;
-                int i = 1;
+                int i = 0;
 
                 while (i < members.get(conceptId).getDescriptions().size()) {
+                    
+                    final Map<String, String> description = members.get(conceptId).getDescriptions().get(i);
+                    
+                    if (!languageId.equals(description.get(LANGUAGE_ID))) {
+                        
+                        i++;
+                        continue;
+                    }
 
                     if (members.get(conceptId).getDescriptions().get(i) != null) {
 
@@ -1028,8 +1047,6 @@ public class RefsetMemberService {
                         written = true;
                         break;
                     }
-
-                    i++;
                 }
 
                 if (!written) {
