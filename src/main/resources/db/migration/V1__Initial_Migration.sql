@@ -44,6 +44,7 @@ CREATE TABLE `editions` (
   `name` varchar(4000) NOT NULL,
   `namespace` varchar(256) DEFAULT NULL,
   `shortName` varchar(256) DEFAULT NULL,
+  `topLevelModule` varchar(256) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
 

@@ -1560,7 +1560,9 @@ public class RefsetMemberService {
 
         // Create Snowstorm URL
         final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
-                + "/descriptions?term=" + searchParameters.getQuery() + "&conceptRefset="
+                + "/descriptions?term=" 
+                + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery())) 
+                + "&conceptRefset="
                 + refset.getRefsetId()
                 + "&groupByConcept=false&searchMode=STANDARD&offset=0&limit=1000";
 
