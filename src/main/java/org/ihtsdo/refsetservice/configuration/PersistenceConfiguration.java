@@ -81,6 +81,8 @@ public class PersistenceConfiguration {
 
         if (jdbcUrl.toLowerCase().startsWith("jdbc:mysql")) {
 
+            placeholders.put("schema_name", properties
+                    .getProperty("app.db_name"));
             placeholders.put("pre_if_exists", "if exists");
             placeholders.put("post_if_exists", "");
             placeholders.put("create_mapping_events_seq",
@@ -91,6 +93,7 @@ public class PersistenceConfiguration {
 
         } else if (jdbcUrl.toLowerCase().startsWith("jdbc:h2")) {
 
+            placeholders.put("schema_name", "");
             placeholders.put("pre_if_exists", "");
             placeholders.put("post_if_exists", "if exists");
             placeholders.put("create_mapping_events_seq", "");
