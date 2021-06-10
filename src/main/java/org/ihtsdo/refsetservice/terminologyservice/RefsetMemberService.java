@@ -856,7 +856,7 @@ public class RefsetMemberService {
 
         logger.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entityString);
 
-        String snowstormFileUrl = ""; // "https://www.learningcontainer.com/download/sample-zip-files/?wpdmdl=1637";
+        String snowstormFileUrl = "";
 
         try (Response response =
                 SnowstormConnection.postResponse(snowstormExportApiUrl, entityString)) {
@@ -1011,7 +1011,16 @@ public class RefsetMemberService {
 
         try (BufferedReader br = new BufferedReader(new FileReader(new File(newFilePath)))) {
             
+            // get the header line so we can add the new description header
             String extractedLine = br.readLine();
+            
+            for (Map<String, String> defaultLanguages : refset.getEdition().getFullyQualifiedLanguageRefsets()) {
+                
+                if (languageId.equals(defaultLanguages.get("qualifiedLanguageRefset"))) {
+                    fw.write(extractedLine + "\t" + defaultLanguages.get("qualifiedLanguageCode") + " Description" + "\n");
+                }
+            }
+            // get the first line of concepts
             extractedLine = br.readLine();
             
             while (extractedLine != null) {
@@ -1025,27 +1034,36 @@ public class RefsetMemberService {
                 
                 boolean written = false;
                 int i = 0;
+                String fallbackDescription = null;
 
                 while (i < members.get(conceptId).getDescriptions().size()) {
                     
                     final Map<String, String> description = members.get(conceptId).getDescriptions().get(i);
                     
-                    if (!languageId.equals(description.get(LANGUAGE_ID))) {
+                    // if this isn't the description we want
+                    if (description == null || !languageId.equals(description.get(LANGUAGE_ID))) {
+                        
+                        // If this is the English PT add it as a fallback to use if the language we want isn't on this concept
+                        if (description != null && description.get(LANGUAGE_ID).equals("900000000000509007PT")) {
+                            fallbackDescription = extractedLine + "\t" + description.get(DESCRIPTION_TERM);
+                        }
                         
                         i++;
                         continue;
                     }
 
-                    if (members.get(conceptId).getDescriptions().get(i) != null) {
-
-                        fw.write(extractedLine + "\t" + members.get(conceptId).getDescriptions()
-                                .get(i).get(DESCRIPTION_TERM));
-                        written = true;
-                        break;
-                    }
+                    fw.write(extractedLine + "\t" + description.get(DESCRIPTION_TERM));
+                    written = true;
+                    break;
                 }
 
-                if (!written) {
+                // If the language we want isn't on this concept try to use the English fallback
+                if (!written && fallbackDescription != null) {
+                    
+                    fw.write(fallbackDescription);
+                    written = true;
+                    
+                } else if (!written) {
                     throw new Exception("Not seeing the expected descriptions for member: "
                             + conceptId + " as have these descriptions: "
                             + members.get(conceptId).getDescriptions());
