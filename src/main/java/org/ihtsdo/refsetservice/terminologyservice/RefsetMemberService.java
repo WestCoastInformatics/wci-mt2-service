@@ -1533,7 +1533,42 @@ public class RefsetMemberService {
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
-            final JsonNode allDescriptionNodes = root.get("items");
+            JsonNode allDescriptionNodes = root.get("items");
+            
+            // if the search found nothing try doing a description ID search
+            if (allDescriptionNodes.size() == 0) {
+                
+                final String descriptionUrl = SnowstormConnection.BASE_URL + getBranchPath(refset)
+                    + "/descriptions/"
+                    + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery()));
+                String descriptionResult = "";
+                
+                try (final Response descriptionResponse = SnowstormConnection.getResponse(descriptionUrl)) {
+
+                    descriptionResult = descriptionResponse.readEntity(String.class);
+                    descriptionResult = "[" + descriptionResult + "]";
+                    final ObjectMapper descriptionMapper = new ObjectMapper();
+                    allDescriptionNodes = descriptionMapper.readTree(descriptionResult.toString());
+                }
+                
+                // if the search found nothing try doing a description ID search
+                if (allDescriptionNodes.size() != 0 && allDescriptionNodes.get(0).get("error") == null) {
+                    
+                    final String conceptUrl = SnowstormConnection.BASE_URL + getBranchPath(refset)
+                    + "/concepts/"
+                    + allDescriptionNodes.get(0).get("conceptId").asText();
+                    
+                    // if there is a description then populate the basic concept information
+                    try (final Response conceptResponse = SnowstormConnection.getResponse(conceptUrl)) {
+
+                        String conceptResult = conceptResponse.readEntity(String.class);
+                        descriptionResult = descriptionResult.replace("}]", ",\"concept\": " + conceptResult + "}]");
+                        final ObjectMapper descriptionMapper = new ObjectMapper();
+                        allDescriptionNodes = descriptionMapper.readTree(descriptionResult.toString());
+                    }
+                }
+            }
+            
             final Iterator<JsonNode> itemIterator = allDescriptionNodes.iterator();
             final HashMap<String, Concept> conceptIdToConcept = new HashMap<>();
 
