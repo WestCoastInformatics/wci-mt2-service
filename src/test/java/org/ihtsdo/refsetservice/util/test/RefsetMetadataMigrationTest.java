@@ -20,7 +20,7 @@ public class RefsetMetadataMigrationTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+//    @Test
     public void testAllRefsets() throws Exception {
         HistoricDataMigrator migrator = new HistoricDataMigrator();
         migrator.migrate();
