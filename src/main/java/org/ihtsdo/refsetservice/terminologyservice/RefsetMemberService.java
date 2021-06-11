@@ -933,7 +933,7 @@ public class RefsetMemberService {
 
                 if (languageId.equals(defaultLanguages.get("qualifiedLanguageRefset"))) {
                     fw.write(extractedLine + "\t" + defaultLanguages.get("qualifiedLanguageCode")
-                            + " Description" + "\n");
+                            + "\n");
                 }
             }
             // get the first line of concepts
@@ -1697,6 +1697,8 @@ public class RefsetMemberService {
                         if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL
                                 || i == currentList.getItems().size() - 1) {
 
+                            // TODO Jan 10- Why getting descriptions a second
+                            // time?
                             populateAllLanguageDescriptions(refset, conceptsToProcess);
                             conceptsToProcess.clear();
                         }
@@ -2166,8 +2168,13 @@ public class RefsetMemberService {
 
     private static void populateMembershipInformation(Refset refset, Set<Concept> conceptsToProcess)
         throws Exception {
-        final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
-                + "/members?referenceSet=" + refset.getRefsetId() + "&limit=1000" + "&offset=0";
+
+        String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet="
+                + refset.getRefsetId() + "&limit=1000" + "&offset=0";
+
+        if (conceptsToProcess.size() == 1) {
+            url = url + "&referencedComponentId=" + conceptsToProcess.iterator().next().getCode();
+        }
 
         logger.debug("Get Membership URL: " + url);
 
