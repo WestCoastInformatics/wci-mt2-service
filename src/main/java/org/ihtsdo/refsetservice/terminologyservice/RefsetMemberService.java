@@ -345,10 +345,9 @@ public class RefsetMemberService {
         concept.setCode(conceptId);
         concept.setName(name);
         concept.setTerminology("SNOMEDCT");
-        concept.setHistoryVisible(true);
-        concept.setFeedbackVisible(true);
         concept.setMemberStatus(memberStatus);
         concept.setDefined(defined);
+        setConceptPermissions(concept);
 
         return concept;
     }
@@ -1551,14 +1550,18 @@ public class RefsetMemberService {
                         cpt.setActive(conceptNode.get("active").asBoolean());
                         cpt.setId(conceptNode.get("id").asText());
                         cpt.setCode(conceptNode.get("id").asText());
+                        
                         if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
                             cpt.setDefined(true);
                         } else {
                             cpt.setDefined(false);
                         }
+                        
                         if (conceptNode.get("pt") != null) {
                             cpt.setName(conceptNode.get("pt").get("term").asText());
                         }
+                        
+                        setConceptPermissions(cpt);
                         // cpt.setMemberOfRefset(true);
                         // cpt.setMemberStatus(true);
                         conceptIdToConcept.put(conceptId, cpt);
@@ -2002,10 +2005,9 @@ public class RefsetMemberService {
                 concept.setCode(conceptId);
                 concept.setName(name);
                 concept.setTerminology("SNOMEDCT");
-                concept.setHistoryVisible(true);
-                concept.setFeedbackVisible(true);
                 concept.setMemberStatus(memberStatus);
                 concept.setDefined(defined);
+                setConceptPermissions(concept);
 
                 // Populate descriptions
                 if (missingLookupParameters.isGetDescriptions()) {
@@ -2297,5 +2299,17 @@ public class RefsetMemberService {
         }
 
         return memberHistory;
+    }
+    
+    /**
+     * Populate the user permissions properties on a concept.
+     *
+     * @param concept The concept to set properties on
+     * @param user The user object to determine permissions from
+     */
+    private static void setConceptPermissions(Concept concept) {
+        
+        concept.setHistoryVisible(true);
+        concept.setFeedbackVisible(true);
     }
 }
