@@ -345,10 +345,9 @@ public class RefsetMemberService {
         concept.setCode(conceptId);
         concept.setName(name);
         concept.setTerminology("SNOMEDCT");
-        concept.setHistoryVisible(true);
-        concept.setFeedbackVisible(true);
         concept.setMemberStatus(memberStatus);
         concept.setDefined(defined);
+        setConceptPermissions(concept);
 
         return concept;
     }
@@ -1534,7 +1533,42 @@ public class RefsetMemberService {
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
-            final JsonNode allDescriptionNodes = root.get("items");
+            JsonNode allDescriptionNodes = root.get("items");
+            
+            // if the search found nothing try doing a description ID search
+            if (allDescriptionNodes.size() == 0) {
+                
+                final String descriptionUrl = SnowstormConnection.BASE_URL + getBranchPath(refset)
+                    + "/descriptions/"
+                    + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery()));
+                String descriptionResult = "";
+                
+                try (final Response descriptionResponse = SnowstormConnection.getResponse(descriptionUrl)) {
+
+                    descriptionResult = descriptionResponse.readEntity(String.class);
+                    descriptionResult = "[" + descriptionResult + "]";
+                    final ObjectMapper descriptionMapper = new ObjectMapper();
+                    allDescriptionNodes = descriptionMapper.readTree(descriptionResult.toString());
+                }
+                
+                // if the search found nothing try doing a description ID search
+                if (allDescriptionNodes.size() != 0 && allDescriptionNodes.get(0).get("error") == null) {
+                    
+                    final String conceptUrl = SnowstormConnection.BASE_URL + getBranchPath(refset)
+                    + "/concepts/"
+                    + allDescriptionNodes.get(0).get("conceptId").asText();
+                    
+                    // if there is a description then populate the basic concept information
+                    try (final Response conceptResponse = SnowstormConnection.getResponse(conceptUrl)) {
+
+                        String conceptResult = conceptResponse.readEntity(String.class);
+                        descriptionResult = descriptionResult.replace("}]", ",\"concept\": " + conceptResult + "}]");
+                        final ObjectMapper descriptionMapper = new ObjectMapper();
+                        allDescriptionNodes = descriptionMapper.readTree(descriptionResult.toString());
+                    }
+                }
+            }
+            
             final Iterator<JsonNode> itemIterator = allDescriptionNodes.iterator();
             final HashMap<String, Concept> conceptIdToConcept = new HashMap<>();
 
@@ -1551,14 +1585,18 @@ public class RefsetMemberService {
                         cpt.setActive(conceptNode.get("active").asBoolean());
                         cpt.setId(conceptNode.get("id").asText());
                         cpt.setCode(conceptNode.get("id").asText());
+                        
                         if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
                             cpt.setDefined(true);
                         } else {
                             cpt.setDefined(false);
                         }
+                        
                         if (conceptNode.get("pt") != null) {
                             cpt.setName(conceptNode.get("pt").get("term").asText());
                         }
+                        
+                        setConceptPermissions(cpt);
                         // cpt.setMemberOfRefset(true);
                         // cpt.setMemberStatus(true);
                         conceptIdToConcept.put(conceptId, cpt);
@@ -2004,10 +2042,9 @@ public class RefsetMemberService {
                 concept.setCode(conceptId);
                 concept.setName(name);
                 concept.setTerminology("SNOMEDCT");
-                concept.setHistoryVisible(true);
-                concept.setFeedbackVisible(true);
                 concept.setMemberStatus(memberStatus);
                 concept.setDefined(defined);
+                setConceptPermissions(concept);
 
                 // Populate descriptions
                 if (missingLookupParameters.isGetDescriptions()) {
@@ -2304,5 +2341,17 @@ public class RefsetMemberService {
         }
 
         return memberHistory;
+    }
+    
+    /**
+     * Populate the user permissions properties on a concept.
+     *
+     * @param concept The concept to set properties on
+     * @param user The user object to determine permissions from
+     */
+    private static void setConceptPermissions(Concept concept) {
+        
+        concept.setHistoryVisible(true);
+        concept.setFeedbackVisible(true);
     }
 }
