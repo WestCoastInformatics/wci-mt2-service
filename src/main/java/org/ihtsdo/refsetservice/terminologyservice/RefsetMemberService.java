@@ -130,7 +130,7 @@ public class RefsetMemberService {
 
     static {
 
-        EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + "/";
+        EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + File.separator;
 
         // TODO: Remove once Edition updated
         refsetToLanguagesMap.put("450828004", "es");
@@ -796,6 +796,12 @@ public class RefsetMemberService {
 
                 FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
+            } else {
+                
+                if (!Files.exists(Path.of(EXPORT_FILE_DIR + rt2VersionFileName))) {
+                    S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath, rt2VersionFileName,
+                            EXPORT_FILE_DIR + rt2VersionFileName);
+                }
             }
 
             // if download is from RT2 server
@@ -832,9 +838,8 @@ public class RefsetMemberService {
         final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
 
         final String rf2FileName =
-                snowGeneratedRf2FilePath.substring(snowGeneratedRf2FilePath.lastIndexOf("/") + 1)
-                        .substring(snowGeneratedRf2FilePath.lastIndexOf("\\") + 1);
-        final String builderRf2FilePath = builderDirectoryTempDir.toString() + "/" + rf2FileName;
+                snowGeneratedRf2FilePath.substring(snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
+        final String builderRf2FilePath = builderDirectoryTempDir.toString() + File.separator + rf2FileName;
 
         // If Rf2WithNames selected, append the names to the refset file
         if (appendNames) {
@@ -1059,7 +1064,7 @@ public class RefsetMemberService {
             zipOutputPath += refsetFileName.replace(".txt", ".zip");
             tempDirectoryPath =
                     Files.createTempDirectory("sctidList-" + refsetFileName.replace(".txt", ""));
-            sctidsFilePath = tempDirectoryPath.toString() + "/" + refsetFileName;
+            sctidsFilePath = tempDirectoryPath.toString() + File.separator + refsetFileName;
 
             logger.debug("SCTID txt output path = " + sctidsFilePath);
             logger.debug("zip output path = " + zipOutputPath);
@@ -1140,7 +1145,7 @@ public class RefsetMemberService {
             for (String sourceFile : sourceFiles) {
 
                 File fileToZip = new File(sourceFile);
-
+                logger.debug("^^^^^^^ sourceFile: " + sourceFile);
                 try (final FileInputStream zipFileInputStream = new FileInputStream(fileToZip)) {
 
                     ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
