@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -503,6 +505,7 @@ public class RefsetController extends BaseController {
                     required = true, dataType = "string", paramType = "path"),
     })
     @RecordMetric
+    @CrossOrigin(origins = "http://localhost:4200")
     @RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}",
             produces = "application/json")
     public @ResponseBody ResponseEntity<Resource> downloadExport(@PathVariable(value = "fileName")
@@ -512,22 +515,39 @@ public class RefsetController extends BaseController {
 
             logger.info("****** downloadExport: fileName: " + fileName);
 
-            ContentDisposition contentDisposition =
-                    ContentDisposition.builder("inline").filename(fileName).build();
-
-            File file = new File(EXPORT_FILE_DIR + fileName);
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
-            headers.add("Pragma", "no-cache");
-            headers.add("Expires", "0");
-            headers.add("Content-Length", file.length() + "");
-            headers.setContentDisposition(contentDisposition);
-            Path path = Paths.get(file.getAbsolutePath());
-            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
-
-            return ResponseEntity.ok().headers(headers).contentLength(file.length())
-                    .contentType(MediaType.parseMediaType("application/octet-stream"))
-                    .body(resource);
+            Path filePath = Paths.get(EXPORT_FILE_DIR + fileName);
+            Resource file = new UrlResource(filePath.toUri());
+            
+            if (!file.exists() || !file.isReadable()) {
+                throw new RuntimeException("Could not read the file!");
+            }
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                    .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
+                    .contentLength(file.contentLength())
+                    .body(file);
+            
+//            ContentDisposition contentDisposition =
+//                    ContentDisposition.builder("inline").filename(fileName).build();
+//
+//            File file = new File(EXPORT_FILE_DIR + fileName);
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+//            headers.add("Pragma", "no-cache");
+//            headers.add("Expires", "0");
+//            headers.add("Content-Length", file.length() + "");
+//            headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION);
+//            headers.add("Content-disposition", "attachment; filename=\"" + fileName + "\"");
+//            headers.add("Content-Type", "application/octet-stream");
+//            //headers.setContentDisposition(contentDisposition);
+//            Path path = Paths.get(file.getAbsolutePath());
+//            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
+//
+//            return ResponseEntity.ok().headers(headers).contentLength(file.length())
+//                    .contentType(MediaType.parseMediaType("application/octet-stream"))
+//                    .body(resource);
 
         } catch (final Exception e) {
 
