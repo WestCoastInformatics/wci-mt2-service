@@ -1,4 +1,3 @@
-
 drop table ${pre_if_exists} refsets_definition_clauses ${post_if_exists};
 drop table ${pre_if_exists} definition_clauses ${post_if_exists};
 drop table ${pre_if_exists} refset_tags ${post_if_exists};

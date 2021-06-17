@@ -70,8 +70,10 @@ public class PersistenceConfiguration {
         final Properties config = PropertyUtility.getProperties();
         logger.debug("******* customFlyway config: ", config);
 
+        final String dbName = properties
+                .getProperty("app.db_name");
         final String jdbcUrl = properties
-                .getProperty("spring.jpa.properties.hibernate.connection.url");
+                .getProperty("flyway.url");
         final String user = properties.getProperty(
                 "spring.jpa.properties.hibernate.connection.username");
         final String pwd = properties.getProperty(
@@ -81,8 +83,6 @@ public class PersistenceConfiguration {
 
         if (jdbcUrl.toLowerCase().startsWith("jdbc:mysql")) {
 
-            placeholders.put("schema_name", properties
-                    .getProperty("app.db_name"));
             placeholders.put("pre_if_exists", "if exists");
             placeholders.put("post_if_exists", "");
             placeholders.put("create_mapping_events_seq",
@@ -93,7 +93,6 @@ public class PersistenceConfiguration {
 
         } else if (jdbcUrl.toLowerCase().startsWith("jdbc:h2")) {
 
-            placeholders.put("schema_name", "");
             placeholders.put("pre_if_exists", "");
             placeholders.put("post_if_exists", "if exists");
             placeholders.put("create_mapping_events_seq", "");
@@ -103,9 +102,11 @@ public class PersistenceConfiguration {
             throw new RuntimeException("Unhandled database url: " + jdbcUrl);
         }
 
-        return Flyway.configure().dataSource(jdbcUrl, user, pwd)
+        return Flyway.configure()
+                .createSchemas(true)
+                .schemas(dbName)
+                .dataSource(jdbcUrl, user, pwd)
                 .locations(location).placeholders(placeholders)
-                // .schemas("MAPPING")
                 .load();
     }
 
