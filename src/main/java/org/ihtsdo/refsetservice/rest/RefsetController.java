@@ -17,10 +17,12 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
+import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -673,6 +675,46 @@ public class RefsetController extends BaseController {
 
             handleException(e);
             return null;
+        }
+    }
+    
+    /**
+     * Migrates RTT data into the database but only if the database is empty.
+     *
+     * @return the status of the migration
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/rtt",
+            produces = "application/json")
+    public @ResponseBody String migrateRttData() throws Exception {
+
+        try {
+
+            
+            try (TerminologyService service = new TerminologyService()) {
+
+                final ResultList<String> editions = service.findIds("", null, Edition.class, null);
+
+                if (editions.size() > 0) {
+                    
+                    logger.info("RTT data migration: Database not empty, migration cancelled");
+                    return "Database not empty, migration cancelled";
+                }
+                
+                logger.info("*********** Starting RTT data migration");
+                
+                HistoricDataMigrator migrator = new HistoricDataMigrator();
+                migrator.migrate();
+
+                logger.info("*********** Finished RTT data migration");
+
+                return "RTT data migration completed successfully";
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return "Errors occurred, check with the system administrator";
         }
     }
 
