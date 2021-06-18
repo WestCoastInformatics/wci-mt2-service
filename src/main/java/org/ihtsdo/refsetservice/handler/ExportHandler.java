@@ -117,7 +117,7 @@ public class ExportHandler {
         logger.debug(entityString);
 
         // Call Snowstorm to create RF2 file
-        String snowstormExportApiUrl = SnowstormConnection.POST_URL + "exports";
+        String snowstormExportApiUrl = SnowstormConnection.BASE_URL + "exports";
 
         logger.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entityString);
 
