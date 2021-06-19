@@ -2065,9 +2065,15 @@ public class RefsetMemberService {
 
                 // Populate descriptions
                 if (missingLookupParameters.isGetDescriptions()) {
-                    concept.setDescriptions(
-                            populateDescriptions(concept.getCode(), conceptNode.get("descriptions"),
-                                    refset, missingLookupParameters.getNonDefaultPreferredTerms()));
+                    
+                    // because this may come from a children call the node may not have descriptions
+                    if (conceptNode.get("descriptions") == null) {
+                        populateAllLanguageDescriptions(refset, new HashSet<>(Arrays.asList(concept)));
+                    } else {
+                        concept.setDescriptions(
+                                populateDescriptions(concept.getCode(), conceptNode.get("descriptions"),
+                                        refset, missingLookupParameters.getNonDefaultPreferredTerms()));
+                    }
                 }
 
                 if (missingLookupParameters.isGetParentsAndChildren()) {
@@ -2184,7 +2190,7 @@ public class RefsetMemberService {
             }
         }
 
-        if (roleGroups.get(0).size() == 0) {
+        if (roleGroups.size() > 0 && roleGroups.get(0).size() == 0) {
             roleGroups.remove(0);
         }
 
