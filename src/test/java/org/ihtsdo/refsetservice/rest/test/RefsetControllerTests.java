@@ -45,6 +45,9 @@ public class RefsetControllerTests extends BaseTest {
                                                                     // works for
                                                                     // sure:
                                                                     // "551000172106"
+    private static final String INACTIVE_CONCEPT_ID = "727156001";
+    private static final String REFSET_WITH_INACTIVE_CONCEPT = "723264001";
+
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -289,11 +292,8 @@ public class RefsetControllerTests extends BaseTest {
         String content = null;
 
         // Test no failure when calling conceptDetails on inactive concept
-        final String inactiveConceptId = "727156001";
-        final String refsetWithInactiveConcept = "723264001";
-
-        url = "/concept/" + inactiveConceptId + "?refsetInternalId="
-                + getRefsetInternalId(refsetWithInactiveConcept);
+        url = "/concept/" + INACTIVE_CONCEPT_ID + "?refsetInternalId="
+                + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT);
         logger.info("Inactive Concept Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -301,7 +301,7 @@ public class RefsetControllerTests extends BaseTest {
         logger.info(" content = " + content);
         final Concept inactiveConcept = new ObjectMapper().readValue(content, Concept.class);
         assertThat(inactiveConcept).isNotNull();
-        assertThat(inactiveConcept.getCode()).isEqualTo(inactiveConceptId);
+        assertThat(inactiveConcept.getCode()).isEqualTo(INACTIVE_CONCEPT_ID);
         assertThat(inactiveConcept.getDescriptions().size()).isEqualTo(2);
         assertThat(inactiveConcept.getParents().size()).isEqualTo(0);
         assertThat(inactiveConcept.getChildren().size()).isEqualTo(0);
@@ -321,7 +321,7 @@ public class RefsetControllerTests extends BaseTest {
         final Concept concept = new ObjectMapper().readValue(content, Concept.class);
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
-        assertThat(concept.getDescriptions().size()).isEqualTo(5);
+        assertThat(concept.getDescriptions().size()).isEqualTo(4);
         assertThat(concept.getRoleGroups().size()).isEqualTo(1);
         int groupId = concept.getRoleGroups().keySet().iterator().next();
         assertThat(concept.getRoleGroups().get(groupId).size()).isEqualTo(4);
@@ -464,9 +464,28 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testMemberTaxonomy() throws Exception {
+        
+        
+        final String inactiveTestUrl = "/refset/" + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT)
+                + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId="
+                + INACTIVE_CONCEPT_ID + "&refsetInternalId=" + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT);
+        logger.info("Testing url - " + inactiveTestUrl);
+
+        final MvcResult inactiveResult = mvc.perform(get(inactiveTestUrl)).andExpect(status().isOk()).andReturn();
+        final String inactiveContent = inactiveResult.getResponse().getContentAsString();
+        logger.info(" content = " + inactiveContent);
+        final ConceptResultList inactiveMembers =
+                new ObjectMapper().readValue(inactiveContent, (ConceptResultList.class));
+
+        // Testing Results
+        assertThat(inactiveMembers).isNotNull();
+        assertThat(inactiveMembers.size()).isEqualTo(0);
+
+        
         // TODO: Update test as was based on PROD-Snowstorm, not our dev
         // instance
-
+        
+        
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
         final String conceptIdToExamine = "716220001";
