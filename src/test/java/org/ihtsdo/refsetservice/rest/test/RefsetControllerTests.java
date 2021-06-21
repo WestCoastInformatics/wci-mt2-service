@@ -287,6 +287,26 @@ public class RefsetControllerTests extends BaseTest {
         String url = null;
         MvcResult result = null;
         String content = null;
+
+        // Test no failure when calling conceptDetails on inactive concept
+        final String inactiveConceptId = "727156001";
+        final String refsetWithInactiveConcept = "723264001";
+
+        url = "/concept/" + inactiveConceptId + "?refsetInternalId="
+                + getRefsetInternalId(refsetWithInactiveConcept);
+        logger.info("Inactive Concept Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        final Concept inactiveConcept = new ObjectMapper().readValue(content, Concept.class);
+        assertThat(inactiveConcept).isNotNull();
+        assertThat(inactiveConcept.getCode()).isEqualTo(inactiveConceptId);
+        assertThat(inactiveConcept.getDescriptions().size()).isEqualTo(2);
+        assertThat(inactiveConcept.getParents().size()).isEqualTo(0);
+        assertThat(inactiveConcept.getChildren().size()).isEqualTo(0);
+
+        // Test normal concept Details Call
         final String conceptId = "716186003"; // with 1 parent & 5 children & 1
                                               // role group of 4 rels
                                               // descriptions in all 3 lang

@@ -785,7 +785,7 @@ public class RefsetMemberService {
                     S3ConnectionWrapper.uploadToS3(awsVersionedPath,
                             localSnowGeneratedTempDir.toString(), snowGeneratedFileName);
                 } else {
-                    
+
                     logger.debug("Downloading snowstorm genned file from S3");
                     S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath, snowGeneratedFileName,
                             localSnowGeneratedFilePath);
@@ -804,7 +804,7 @@ public class RefsetMemberService {
                 FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
             } else {
-                
+
                 if (!Files.exists(Path.of(EXPORT_FILE_DIR + rt2VersionFileName))) {
                     logger.debug("Downloading RT2 genned file from S3");
                     S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath, rt2VersionFileName,
@@ -831,13 +831,13 @@ public class RefsetMemberService {
 
         // Generate the Rt2 version of refset RF2 Zip file
         final Path builderDirectoryTempDir = Files.createTempDirectory("rt2Builder-");
-        
+
         logger.debug("creating builder temp dir: " + builderDirectoryTempDir.toString());
 
         // Unzip the download
         final List<String> sourceFiles =
                 unzipFiles(localSnowGeneratedFilePath, builderDirectoryTempDir.toString());
-        
+
         logger.debug("unzipped source files: " + ModelUtility.toJson(sourceFiles));
 
         if (sourceFiles.size() != 1) {
@@ -847,25 +847,26 @@ public class RefsetMemberService {
 
         // If Rf2WithNames selected, append the names to the refset file
         if (appendNames) {
-            
+
             final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
-            final String rf2FileName =
-                    snowGeneratedRf2FilePath.substring(snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
-            final String builderRf2FilePath = builderDirectoryTempDir.toString() + File.separator + rf2FileName;
-            
+            final String rf2FileName = snowGeneratedRf2FilePath
+                    .substring(snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
+            final String builderRf2FilePath =
+                    builderDirectoryTempDir.toString() + File.separator + rf2FileName;
+
             appendNamesToRf2(refset, snowGeneratedRf2FilePath, builderRf2FilePath, languageId);
-            
+
             sourceFiles.clear();
             sourceFiles.add(builderRf2FilePath);
         }
-        
+
         // if exportMetadata requested, add it
         if (exportMetadata) {
             sourceFiles.add(exportRefsetMetadata(refset, builderDirectoryTempDir));
         }
 
         logger.debug("ready to be zipped source files: " + ModelUtility.toJson(sourceFiles));
-        
+
         // zip the files together
         zipFiles(sourceFiles, EXPORT_FILE_DIR + rt2VersionFileName);
 
@@ -1157,7 +1158,7 @@ public class RefsetMemberService {
             for (String sourceFile : sourceFiles) {
 
                 File fileToZip = new File(sourceFile);
-                
+
                 try (final FileInputStream zipFileInputStream = new FileInputStream(fileToZip)) {
 
                     ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
@@ -1551,41 +1552,46 @@ public class RefsetMemberService {
             final JsonNode root = mapper.readTree(resultString.toString());
 
             JsonNode allDescriptionNodes = root.get("items");
-            
+
             // if the search found nothing try doing a description ID search
             if (allDescriptionNodes.size() == 0) {
-                
+
                 final String descriptionUrl = SnowstormConnection.BASE_URL + getBranchPath(refset)
-                    + "/descriptions/"
-                    + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery()));
+                        + "/descriptions/" + StringUtility
+                                .encodeValue(QueryParserBase.escape(searchParameters.getQuery()));
                 String descriptionResult = "";
-                
-                try (final Response descriptionResponse = SnowstormConnection.getResponse(descriptionUrl)) {
+
+                try (final Response descriptionResponse =
+                        SnowstormConnection.getResponse(descriptionUrl)) {
 
                     descriptionResult = descriptionResponse.readEntity(String.class);
                     descriptionResult = "[" + descriptionResult + "]";
                     final ObjectMapper descriptionMapper = new ObjectMapper();
                     allDescriptionNodes = descriptionMapper.readTree(descriptionResult.toString());
                 }
-                
+
                 // if the search found nothing try doing a description ID search
-                if (allDescriptionNodes.size() != 0 && allDescriptionNodes.get(0).get("error") == null) {
-                    
+                if (allDescriptionNodes.size() != 0
+                        && allDescriptionNodes.get(0).get("error") == null) {
+
                     final String conceptUrl = SnowstormConnection.BASE_URL + getBranchPath(refset)
-                    + "/concepts/"
-                    + allDescriptionNodes.get(0).get("conceptId").asText();
-                    
-                    // if there is a description then populate the basic concept information
-                    try (final Response conceptResponse = SnowstormConnection.getResponse(conceptUrl)) {
+                            + "/concepts/" + allDescriptionNodes.get(0).get("conceptId").asText();
+
+                    // if there is a description then populate the basic concept
+                    // information
+                    try (final Response conceptResponse =
+                            SnowstormConnection.getResponse(conceptUrl)) {
 
                         String conceptResult = conceptResponse.readEntity(String.class);
-                        descriptionResult = descriptionResult.replace("}]", ",\"concept\": " + conceptResult + "}]");
+                        descriptionResult = descriptionResult.replace("}]",
+                                ",\"concept\": " + conceptResult + "}]");
                         final ObjectMapper descriptionMapper = new ObjectMapper();
-                        allDescriptionNodes = descriptionMapper.readTree(descriptionResult.toString());
+                        allDescriptionNodes =
+                                descriptionMapper.readTree(descriptionResult.toString());
                     }
                 }
             }
-            
+
             final Iterator<JsonNode> itemIterator = allDescriptionNodes.iterator();
             final HashMap<String, Concept> conceptIdToConcept = new HashMap<>();
 
@@ -1602,17 +1608,17 @@ public class RefsetMemberService {
                         cpt.setActive(conceptNode.get("active").asBoolean());
                         cpt.setId(conceptNode.get("id").asText());
                         cpt.setCode(conceptNode.get("id").asText());
-                        
+
                         if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
                             cpt.setDefined(true);
                         } else {
                             cpt.setDefined(false);
                         }
-                        
+
                         if (conceptNode.get("pt") != null) {
                             cpt.setName(conceptNode.get("pt").get("term").asText());
                         }
-                        
+
                         setConceptPermissions(cpt);
                         // cpt.setMemberOfRefset(true);
                         // cpt.setMemberStatus(true);
@@ -1811,7 +1817,18 @@ public class RefsetMemberService {
             childList = treeCache.get(parentId + branchPath);
         } else {
 
-            conceptResultList = getChildrenUpdated(parentId, refset);
+            // If parent concept is inactive, getChildren() will return a 400
+            // error. While shouldn't happen within taxonomy, putting check in
+            // place to future-proof the system
+            try {
+                conceptResultList = getChildren(parentId, refset);
+            } catch (Exception e) {
+                if (!"400".equals(e.getMessage())) {
+                    // Only throw exception if the rest status code is something
+                    // other than 400
+                    throw e;
+                }
+            }
             childList = conceptResultList.getItems();
             final Set<Concept> conceptsToProcessDescriptions = new HashSet<>();
             final Set<Concept> conceptsToProcessMembership = new HashSet<>();
@@ -1902,7 +1919,7 @@ public class RefsetMemberService {
         }
     }
 
-    protected static ConceptResultList getParentsUpdated(String conceptId, Refset refset)
+    protected static ConceptResultList getParents(String conceptId, Refset refset)
         throws Exception {
         try {
             final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
@@ -1913,12 +1930,15 @@ public class RefsetMemberService {
             ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
             return getConceptsFromSnowstorm(url, refset, lookupParameters);
         } catch (Exception ex) {
+            if ("400".equals(ex.getMessage())) {
+                throw ex;
+            }
             throw new Exception("Could not get refset parents for concept " + conceptId
                     + " from snowstorm: " + ex.getMessage(), ex);
         }
     }
 
-    protected static ConceptResultList getChildrenUpdated(String conceptId, Refset refset)
+    protected static ConceptResultList getChildren(String conceptId, Refset refset)
         throws Exception {
         try {
             final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
@@ -1929,6 +1949,9 @@ public class RefsetMemberService {
             ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
             return getConceptsFromSnowstorm(url, refset, lookupParameters);
         } catch (Exception ex) {
+            if ("400".equals(ex.getMessage())) {
+                throw ex;
+            }
             throw new Exception("Could not get refset children for concept " + conceptId
                     + " from snowstorm: " + ex.getMessage(), ex);
         }
@@ -1948,6 +1971,11 @@ public class RefsetMemberService {
         ConceptLookupParameters lookupParameters) throws Exception {
         try (final Response response = SnowstormConnection.getResponse(url)) {
             final String resultString = response.readEntity(String.class);
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                throw new Exception(Integer.toString(response.getStatus()));
+            }
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
@@ -2031,6 +2059,9 @@ public class RefsetMemberService {
                         name = conceptNode.get("referencedComponent").get("term").asText();
                     }
 
+                    concept.setActive(
+                            conceptNode.get("referencedComponent").get("active").asBoolean());
+
                     // grab all membership info
                     memberStatus = conceptNode.get("active").asBoolean();
                     concept.setMemberEffectiveTime(SIMPLE_DATE_FORMAT
@@ -2054,6 +2085,9 @@ public class RefsetMemberService {
                     } else if (conceptNode.has("isLeafInferred")) {
                         concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
                     }
+
+                    // Concept status
+                    concept.setActive(conceptNode.get("active").asBoolean());
                 }
 
                 concept.setCode(conceptId);
@@ -2065,20 +2099,24 @@ public class RefsetMemberService {
 
                 // Populate descriptions
                 if (missingLookupParameters.isGetDescriptions()) {
-                    
-                    // because this may come from a children call the node may not have descriptions
+
+                    // because this may come from a children call the node may
+                    // not have descriptions
                     if (conceptNode.get("descriptions") == null) {
-                        populateAllLanguageDescriptions(refset, new HashSet<>(Arrays.asList(concept)));
+                        populateAllLanguageDescriptions(refset,
+                                new HashSet<>(Arrays.asList(concept)));
                     } else {
-                        concept.setDescriptions(
-                                populateDescriptions(concept.getCode(), conceptNode.get("descriptions"),
-                                        refset, missingLookupParameters.getNonDefaultPreferredTerms()));
+                        concept.setDescriptions(populateDescriptions(concept.getCode(),
+                                conceptNode.get("descriptions"), refset,
+                                missingLookupParameters.getNonDefaultPreferredTerms()));
                     }
                 }
 
-                if (missingLookupParameters.isGetParentsAndChildren()) {
-                    concept.setParents(getParentsUpdated(conceptId, refset).getItems());
-                    concept.setChildren(getChildrenUpdated(conceptId, refset).getItems());
+                if (missingLookupParameters.isGetParentsAndChildren() && concept.isActive()) {
+                    // Snowstorm throws a 400-Exception when children/parents of
+                    // an inactive concepts are requested
+                    concept.setParents(getParents(conceptId, refset).getItems());
+                    concept.setChildren(getChildren(conceptId, refset).getItems());
 
                 }
 
@@ -2365,7 +2403,7 @@ public class RefsetMemberService {
 
         return memberHistory;
     }
-    
+
     /**
      * Populate the user permissions properties on a concept.
      *
@@ -2373,7 +2411,7 @@ public class RefsetMemberService {
      * @param user The user object to determine permissions from
      */
     private static void setConceptPermissions(Concept concept) {
-        
+
         concept.setHistoryVisible(true);
         concept.setFeedbackVisible(true);
     }
