@@ -448,15 +448,37 @@ public class RefsetMemberService {
         final List<Map<String, String>> languageRefsets =
                 refset.getEdition().getFullyQualifiedLanguageRefsets();
 
+        Set<String> languageIdsProcessed = new HashSet<>();
+
         for (final Map<String, String> languageRefset : languageRefsets) {
 
             final String languageId = languageRefset.get("qualifiedLanguageRefset");
 
             if (sortingMap.get(languageId) != null) {
                 sortedDescriptionList.add(sortingMap.get(languageId));
+                languageIdsProcessed.add(languageId);
             } else {
                 sortedDescriptionList.add(null);
             }
+        }
+
+        // Add non-FSN & Default Language PTs... but defer the Text Definitions
+        // to end
+        Set<String> textDescriptionLanguageIds = new HashSet<>();
+
+        for (final String languageId : sortingMap.keySet()) {
+            if (!languageIdsProcessed.contains(languageId)) {
+                if (languageId.toLowerCase().endsWith("def")) {
+                    textDescriptionLanguageIds.add(languageId);
+                } else {
+                    sortedDescriptionList.add(sortingMap.get(languageId));
+                }
+            }
+        }
+
+        // Finally, add Text Definitions
+        for (final String languageId : textDescriptionLanguageIds) {
+            sortedDescriptionList.add(sortingMap.get(languageId));
         }
 
         return sortedDescriptionList;
@@ -1676,6 +1698,8 @@ public class RefsetMemberService {
 
                 if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
                     typeName = "FSN";
+                } else if ("900000000000550004".equals(descriptionNode.get("typeId").asText())) {
+                    typeName = "DEF";
                 } else {
 
                     if ("PREFERRED".equals(acceptability)) {
