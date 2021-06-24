@@ -41,13 +41,11 @@ public class RefsetControllerTests extends BaseTest {
 
     /** The Constant TESTING_REFSET_ID. */
     // Body temperature refset with 10 members
-    private static final String TESTING_REFSET_ID = "551000172106"; // this code
-                                                                    // works for
-                                                                    // sure:
-                                                                    // "551000172106"
-    private static final String INACTIVE_CONCEPT_ID = "727156001";
-    private static final String REFSET_WITH_INACTIVE_CONCEPT = "723264001";
+    private static final String TESTING_REFSET_ID = "551000172106"; // Belgian
 
+    private static final String INACTIVE_CONCEPT_ID = "727156001";
+
+    private static final String REFSET_WITH_INACTIVE_CONCEPT = "723264001";
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -256,14 +254,15 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testExportRf2Delta() throws Exception {
-
+        final String refsetId = "723264001"; // Lateralizable body refset
         String url = null;
         MvcResult result = null;
         String resultString = null;
-        final String refsetInternalId = getRefsetInternalId();
+        // Will default to the latest version of the refset (2021-07-31 for now)
+        final String refsetInternalId = getRefsetInternalId(refsetId);
 
         url = "/export/" + refsetInternalId
-                + "/?format=rf2&exportMetadata=true&exportType=DELTA&fileNameDate=20210315&transientEffectiveTime=20210315";
+                + "/?format=rf2&exportMetadata=true&exportType=DELTA&fileNameDate=20210131&transientEffectiveTime=20210731&startEffectiveTime=20200131";
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -307,11 +306,11 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(inactiveConcept.getChildren().size()).isEqualTo(0);
 
         // Test normal concept Details Call
-        final String conceptId = "716186003"; // with 1 parent & 5 children & 1
+        final String conceptId = "123976001"; // with 1 parent & 5 children & 1
                                               // role group of 4 rels
                                               // descriptions in all 3 lang
                                               // including Acceptable
-        final String refsetId = "561000172108";
+        final String refsetId = "723264001";
         url = "/concept/" + conceptId + "?refsetInternalId=" + getRefsetInternalId(refsetId);
         logger.info("Testing url - " + url);
 
@@ -327,6 +326,32 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept.getRoleGroups().get(groupId).size()).isEqualTo(4);
         assertThat(concept.getParents().size()).isEqualTo(1);
         assertThat(concept.getChildren().size()).isEqualTo(5);
+
+        // Test descriptions working as expected
+        final String descriptionTestingConceptId = "276310004";
+        final String descriptionTestingRefsetId = "787778008"; // Refset invalid
+                                                               // as just need
+                                                               // branch path
+                                                               // for it
+        url = "/concept/" + descriptionTestingConceptId + "?refsetInternalId="
+                + getRefsetInternalId(descriptionTestingRefsetId);
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        final Concept descriptionTestingConcept =
+                new ObjectMapper().readValue(content, Concept.class);
+        assertThat(descriptionTestingConcept).isNotNull();
+        assertThat(descriptionTestingConcept.getCode()).isEqualTo(descriptionTestingConceptId);
+        assertThat(descriptionTestingConcept.getDescriptions().size()).isEqualTo(4);
+        assertThat(descriptionTestingConcept.getRoleGroups().size()).isEqualTo(1);
+        int descriptionTestingGroupId =
+                descriptionTestingConcept.getRoleGroups().keySet().iterator().next();
+        assertThat(descriptionTestingConcept.getRoleGroups().get(descriptionTestingGroupId).size())
+                .isEqualTo(4);
+        assertThat(descriptionTestingConcept.getParents().size()).isEqualTo(1);
+        assertThat(descriptionTestingConcept.getChildren().size()).isEqualTo(5);
 
     }
 
@@ -464,14 +489,16 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testMemberTaxonomy() throws Exception {
-        
-        
-        final String inactiveTestUrl = "/refset/" + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT)
-                + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId="
-                + INACTIVE_CONCEPT_ID + "&refsetInternalId=" + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT);
+
+        final String inactiveTestUrl =
+                "/refset/" + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT)
+                        + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId="
+                        + INACTIVE_CONCEPT_ID + "&refsetInternalId="
+                        + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT);
         logger.info("Testing url - " + inactiveTestUrl);
 
-        final MvcResult inactiveResult = mvc.perform(get(inactiveTestUrl)).andExpect(status().isOk()).andReturn();
+        final MvcResult inactiveResult =
+                mvc.perform(get(inactiveTestUrl)).andExpect(status().isOk()).andReturn();
         final String inactiveContent = inactiveResult.getResponse().getContentAsString();
         logger.info(" content = " + inactiveContent);
         final ConceptResultList inactiveMembers =
@@ -481,11 +508,9 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(inactiveMembers).isNotNull();
         assertThat(inactiveMembers.size()).isEqualTo(0);
 
-        
         // TODO: Update test as was based on PROD-Snowstorm, not our dev
         // instance
-        
-        
+
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
         final String conceptIdToExamine = "716220001";

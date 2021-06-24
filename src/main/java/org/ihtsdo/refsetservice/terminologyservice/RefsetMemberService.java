@@ -746,6 +746,9 @@ public class RefsetMemberService {
         final Set<String> dates = new HashSet<>();
 
         dates.add(transientEffectiveTime);
+        if (startEffectiveTime != null) {
+            dates.add(startEffectiveTime);
+        }
         ExportHandler exporter = new ExportHandler();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -774,7 +777,8 @@ public class RefsetMemberService {
                 final String localSnowGeneratedFilePath =
                         localSnowGeneratedTempDir + File.separator + snowGeneratedFileName;
 
-                // Check if SnowS version file name does
+                // Check if SnowS version file name does already exist in S3
+                // Cache
                 if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
                     // Base-SnowVersion file is not on S3, so generate it, and
                     // after downloading it, store it on S3
@@ -783,8 +787,8 @@ public class RefsetMemberService {
                     final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId()
                             + "\"],  \"branchPath\": \"" + getBranchPath(refset)
                             + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
-                            + fileNameDate + "\", \"legacyZipNaming\": false, \"type\": \"" + type
-                            + "\", \"unpromotedChangesOnly\": false"
+                            + fileNameDate
+                            + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
                             + (startEffectiveTime == null ? ""
                                     : ",  \"startEffectiveTime\": \"" + startEffectiveTime + "\"")
                             + (transientEffectiveTime == null ? ""
