@@ -275,6 +275,29 @@ public class RefsetControllerTests extends BaseTest {
 
     }
 
+    @Test
+    public void testExportFreeset() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String resultString = null;
+        final String refsetId = "787778008";
+        final String refsetInternalId = getRefsetInternalId(refsetId);
+
+        url = "/export/" + refsetInternalId + "/?format=free_set";
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        resultString = result.getResponse().getContentAsString();
+
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode root = mapper.readTree(resultString);
+        final String fileUrl = (root.get("url")).asText();
+        logger.info("File Url: " + fileUrl);
+
+        assertThat(fileUrl).isNotNull();
+    }
+    
     /**
      * Test getting concept details.
      *
@@ -472,8 +495,8 @@ public class RefsetControllerTests extends BaseTest {
 
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
-        final String conceptIdToExamine = "771410009"; //"771410009";
-        final String refsetId = "723264001"; //"723264001";
+        final String conceptIdToExamine = "53661000052105"; //"771410009";
+        final String refsetId = "53611000052108"; //"723264001";
 
         final String url = "/refset/" + getRefsetInternalId(refsetId) + "/member/"
                 + conceptIdToExamine;
