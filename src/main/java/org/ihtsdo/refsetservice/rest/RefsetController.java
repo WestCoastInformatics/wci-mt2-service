@@ -413,8 +413,9 @@ public class RefsetController extends BaseController {
                     dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
                     required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "languageId", value = "For formats with names which language to display the name in.",
-            required = false, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "languageId",
+                    value = "For formats with names which language to display the name in.",
+                    required = false, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "format",
                     value = "The type of export: 'rf2', 'rf2_with_names', 'free_set', or 'sctids'.",
                     required = true, dataType = "string", paramType = "query"),
@@ -434,9 +435,9 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}",
             produces = "application/json")
     public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, final String format, final String exportType, final String languageId,
-        final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime,
-        final boolean exportMetadata) throws Exception {
+    final String refsetInternalId, final String format, final String exportType,
+        final String languageId, final String fileNameDate, String startEffectiveTime,
+        final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
 
         try {
 
@@ -523,37 +524,43 @@ public class RefsetController extends BaseController {
 
             Path filePath = Paths.get(EXPORT_FILE_DIR + fileName);
             Resource file = new UrlResource(filePath.toUri());
-            
+
             if (!file.exists() || !file.isReadable()) {
                 throw new RuntimeException("Could not read the file!");
             }
-            
+
             return ResponseEntity.ok()
-                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
+                            HttpHeaders.CONTENT_DISPOSITION)
                     .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
-                    .contentLength(file.contentLength())
-                    .body(file);
-            
-//            ContentDisposition contentDisposition =
-//                    ContentDisposition.builder("inline").filename(fileName).build();
-//
-//            File file = new File(EXPORT_FILE_DIR + fileName);
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
-//            headers.add("Pragma", "no-cache");
-//            headers.add("Expires", "0");
-//            headers.add("Content-Length", file.length() + "");
-//            headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION);
-//            headers.add("Content-disposition", "attachment; filename=\"" + fileName + "\"");
-//            headers.add("Content-Type", "application/octet-stream");
-//            //headers.setContentDisposition(contentDisposition);
-//            Path path = Paths.get(file.getAbsolutePath());
-//            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
-//
-//            return ResponseEntity.ok().headers(headers).contentLength(file.length())
-//                    .contentType(MediaType.parseMediaType("application/octet-stream"))
-//                    .body(resource);
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + file.getFilename() + "\"")
+                    .contentLength(file.contentLength()).body(file);
+
+            // ContentDisposition contentDisposition =
+            // ContentDisposition.builder("inline").filename(fileName).build();
+            //
+            // File file = new File(EXPORT_FILE_DIR + fileName);
+            // HttpHeaders headers = new HttpHeaders();
+            // headers.add("Cache-Control", "no-cache, no-store,
+            // must-revalidate");
+            // headers.add("Pragma", "no-cache");
+            // headers.add("Expires", "0");
+            // headers.add("Content-Length", file.length() + "");
+            // headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
+            // HttpHeaders.CONTENT_DISPOSITION);
+            // headers.add("Content-disposition", "attachment; filename=\"" +
+            // fileName + "\"");
+            // headers.add("Content-Type", "application/octet-stream");
+            // //headers.setContentDisposition(contentDisposition);
+            // Path path = Paths.get(file.getAbsolutePath());
+            // ByteArrayResource resource = new
+            // ByteArrayResource(Files.readAllBytes(path));
+            //
+            // return
+            // ResponseEntity.ok().headers(headers).contentLength(file.length())
+            // .contentType(MediaType.parseMediaType("application/octet-stream"))
+            // .body(resource);
 
         } catch (final Exception e) {
 
@@ -681,7 +688,7 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-    
+
     /**
      * Migrates RTT data into the database but only if the database is empty.
      *
@@ -694,19 +701,18 @@ public class RefsetController extends BaseController {
 
         try {
 
-            
             try (TerminologyService service = new TerminologyService()) {
 
                 final ResultList<String> editions = service.findIds("", null, Edition.class, null);
 
                 if (editions.size() > 0) {
-                    
+
                     logger.info("RTT data migration: Database not empty, migration cancelled");
                     return "Database not empty, migration cancelled";
                 }
-                
+
                 logger.info("*********** Starting RTT data migration");
-                
+
                 HistoricDataMigrator migrator = new HistoricDataMigrator();
                 migrator.migrate();
 
