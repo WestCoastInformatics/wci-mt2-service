@@ -45,6 +45,9 @@ public class RefsetControllerTests extends BaseTest {
                                                                     // works for
                                                                     // sure:
                                                                     // "551000172106"
+    private static final String INACTIVE_CONCEPT_ID = "727156001";
+    private static final String REFSET_WITH_INACTIVE_CONCEPT = "723264001";
+
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -141,7 +144,7 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ConceptResultList members = null;
-        String refsetTerminologyId = getRefsetInternalId();
+        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; // getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=0&displayType=list"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
@@ -168,7 +171,7 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
         ConceptResultList children = null;
-        String refsetTerminologyId = getRefsetInternalId();
+        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; // getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId
                 + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId=404684003"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
@@ -189,7 +192,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    // @Test
+    @Test
     public void testExportSctidList() throws Exception {
 
         String url = null;
@@ -213,12 +216,46 @@ public class RefsetControllerTests extends BaseTest {
     }
 
     /**
-     * Test exporting a refset SCTID list.
+     * Test exporting as RF2 Snapshot.
      *
      * @throws Exception the exception
      */
-    // @Test
-    public void testExportRf2() throws Exception {
+    @Test
+    public void testExportRf2Snapshot() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String resultString = null;
+        final String refsetInternalId = getRefsetInternalId();
+        final String format = "rf2_with_names";
+        url = "/export/" + refsetInternalId + "/?format=" + format
+                + "&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20200315&transientEffectiveTime=20200315&languageId=900000000000509007FSN";
+
+        // final String refsetInternalId = getRefsetInternalId("723264001");
+        // url = "/export/" + refsetInternalId
+        // +
+        // "/?format=rf2&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=202010131&transientEffectiveTime=20210131";
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        resultString = result.getResponse().getContentAsString();
+
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode root = mapper.readTree(resultString);
+        final String fileUrl = (root.get("url")).asText();
+        logger.info("File Url: " + fileUrl);
+
+        assertThat(fileUrl).isNotNull();
+
+    }
+
+    /**
+     * Test exporting as RF2 Delta.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testExportRf2Delta() throws Exception {
 
         String url = null;
         MvcResult result = null;
@@ -226,7 +263,7 @@ public class RefsetControllerTests extends BaseTest {
         final String refsetInternalId = getRefsetInternalId();
 
         url = "/export/" + refsetInternalId
-                + "/?format=rf2&exportMetadata=true&exportType=SNAPSHOT&fileNameDate=20210315&transientEffectiveTime=20210315";
+                + "/?format=rf2&exportMetadata=true&exportType=DELTA&fileNameDate=20210315&transientEffectiveTime=20210315";
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -248,15 +285,33 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testConceptDetails() throws Exception {
-
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev
+        // instance
         String url = null;
         MvcResult result = null;
         String content = null;
+
+        // Test no failure when calling conceptDetails on inactive concept
+        url = "/concept/" + INACTIVE_CONCEPT_ID + "?refsetInternalId="
+                + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT);
+        logger.info("Inactive Concept Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        final Concept inactiveConcept = new ObjectMapper().readValue(content, Concept.class);
+        assertThat(inactiveConcept).isNotNull();
+        assertThat(inactiveConcept.getCode()).isEqualTo(INACTIVE_CONCEPT_ID);
+        assertThat(inactiveConcept.getDescriptions().size()).isEqualTo(2);
+        assertThat(inactiveConcept.getParents().size()).isEqualTo(0);
+        assertThat(inactiveConcept.getChildren().size()).isEqualTo(0);
+
+        // Test normal concept Details Call
         final String conceptId = "716186003"; // with 1 parent & 5 children & 1
                                               // role group of 4 rels
                                               // descriptions in all 3 lang
                                               // including Acceptable
-        final String refsetId = "741000172102";
+        final String refsetId = "561000172108";
         url = "/concept/" + conceptId + "?refsetInternalId=" + getRefsetInternalId(refsetId);
         logger.info("Testing url - " + url);
 
@@ -266,10 +321,10 @@ public class RefsetControllerTests extends BaseTest {
         final Concept concept = new ObjectMapper().readValue(content, Concept.class);
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
-        assertThat(concept.getDescriptions().size()).isEqualTo(5);
+        assertThat(concept.getDescriptions().size()).isEqualTo(4);
         assertThat(concept.getRoleGroups().size()).isEqualTo(1);
         int groupId = concept.getRoleGroups().keySet().iterator().next();
-        assertThat(concept.getRoleGroups().get(groupId).keySet().size()).isEqualTo(4);
+        assertThat(concept.getRoleGroups().get(groupId).size()).isEqualTo(4);
         assertThat(concept.getParents().size()).isEqualTo(1);
         assertThat(concept.getChildren().size()).isEqualTo(5);
 
@@ -305,6 +360,8 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testMemberList() throws Exception {
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev
+        // instance
 
         String url = null;
         MvcResult result = null;
@@ -313,7 +370,7 @@ public class RefsetControllerTests extends BaseTest {
                                                        // children & 1 role
                                                        // group of 4 rels
         // descriptions in all 3 lang
-        final String refsetId = "741000172102";
+        final String refsetId = "561000172108";
         final String expectedEffectiveTime = "20210315";
 
         url = "/refset/" + getRefsetInternalId(refsetId)
@@ -371,14 +428,16 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testSearchRefsetMembers() throws Exception {
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev
+        // instance
 
         String url = null;
         MvcResult result = null;
         String content = null;
-        final String conceptIdToExamine = "429625007"; 
-        
+        final String conceptIdToExamine = "429625007";
+
         // descriptions in all 3 lang
-        final String refsetId = "741000172102";
+        final String refsetId = "561000172108";
         final String expectedEffectiveTime = "20210315";
 
         url = "/refset/" + getRefsetInternalId(refsetId)
@@ -412,7 +471,7 @@ public class RefsetControllerTests extends BaseTest {
                 .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(expectedEffectiveTime));
         assertTrue(concept.isMemberOfRefset());
         assertTrue(concept.isMemberStatus());
-        assertThat(concept.getDescriptions().size()).isEqualTo(4); 
+        assertThat(concept.getDescriptions().size()).isEqualTo(4);
         assertThat(concept.getRoleGroups().size()).isEqualTo(0);
 
         // Call does not pull in parents & Children
@@ -420,7 +479,7 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept.getChildren().size()).isEqualTo(0);
 
     }
-    
+
     /**
      * Test getting concept details.
      *
@@ -428,11 +487,32 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testMemberTaxonomy() throws Exception {
+        
+        
+        final String inactiveTestUrl = "/refset/" + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT)
+                + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId="
+                + INACTIVE_CONCEPT_ID + "&refsetInternalId=" + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT);
+        logger.info("Testing url - " + inactiveTestUrl);
 
+        final MvcResult inactiveResult = mvc.perform(get(inactiveTestUrl)).andExpect(status().isOk()).andReturn();
+        final String inactiveContent = inactiveResult.getResponse().getContentAsString();
+        logger.info(" content = " + inactiveContent);
+        final ConceptResultList inactiveMembers =
+                new ObjectMapper().readValue(inactiveContent, (ConceptResultList.class));
+
+        // Testing Results
+        assertThat(inactiveMembers).isNotNull();
+        assertThat(inactiveMembers.size()).isEqualTo(0);
+
+        
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev
+        // instance
+        
+        
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
         final String conceptIdToExamine = "716220001";
-        final String refsetId = "741000172102";
+        final String refsetId = "h";
         final String expectedEffectiveTime = "20210315";
         final String startingConceptId = "716186003";
 
@@ -495,32 +575,32 @@ public class RefsetControllerTests extends BaseTest {
 
         // with 1 parent & 5 children & 1 role group of 4 rels
         // descriptions in all 3 lang
-        final String conceptIdToExamine = "53661000052105"; //"771410009";
-        final String refsetId = "53611000052108"; //"723264001";
+        final String conceptIdToExamine = "727156001"; // "771410009";
+        final String refsetId = "723264001"; // "723264001";
 
-        final String url = "/refset/" + getRefsetInternalId(refsetId) + "/member/"
-                + conceptIdToExamine;
+        final String url =
+                "/refset/" + getRefsetInternalId(refsetId) + "/member/" + conceptIdToExamine;
         logger.info("Testing url - " + url);
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
 
-        ResultList<Map<String, String>> memberHistory =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Map<String, String>>>() {
+        ResultList<Map<String, String>> memberHistory = new ObjectMapper().readValue(content,
+                (new TypeReference<ResultList<Map<String, String>>>() {
                     /* NA */}));
 
         assertThat(memberHistory).isNotNull();
         assertThat(memberHistory.getTotal()).isEqualTo(2);
 
         for (final Map<String, String> historyEntry : memberHistory.getItems()) {
-            
+
             final String version = historyEntry.get("version");
             final String change = historyEntry.get("change");
-            
-            assertThat(version.equals("2021-01-31") || version.equals("2019-07-31"));
 
-            if (version.equals("2021-01-31")) {
+            assertThat(version.equals("2017-07-31") || version.equals("2018-07-31"));
+
+            if (version.equals("2018-07-31")) {
                 assertThat(change.equals("Inactivated"));
             } else {
                 assertThat(change.equals("Added"));

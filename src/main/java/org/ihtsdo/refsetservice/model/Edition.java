@@ -59,7 +59,11 @@ public class Edition extends AbstractHasModified {
     /** The branch to use when retrieving from a terminology server. */
     @Column(nullable = true)
     private String branch;
-    
+
+    /** The ancestor module concept to the edition's modules. */
+    @Column(nullable = true)
+    private String topLevelModule;
+
     /** The default language code. */
     @Column(nullable = true, length = 256)
     private String defaultLanguageCode;
@@ -105,6 +109,7 @@ public class Edition extends AbstractHasModified {
         defaultLanguageRefsets = other.getDefaultLanguageRefsets();
         defaultLanguageCode = other.getDefaultLanguageCode();
         branch = other.getBranch();
+        topLevelModule = other.getTopLevelModule();
         iconUri = other.getIconUri();
         shortName = other.getShortName();
     }
@@ -189,6 +194,24 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
+     * Gets the top level module.
+     *
+     * @return the top level module
+     */
+    public String getTopLevelModule() {
+        return topLevelModule;
+    }
+
+    /**
+     * Sets the top level module.
+     *
+     * @param topLevelModule the top level module to set
+     */
+    public void setTopLevelModule(final String topLevelModule) {
+        this.topLevelModule = topLevelModule;
+    }
+
+    /**
      * Gets the default language refsets.
      *
      * @return the default language refsets
@@ -197,71 +220,76 @@ public class Edition extends AbstractHasModified {
     @IndexedEmbedded
     public Set<String> getDefaultLanguageRefsets() {
         
-        Set<String> returnDefaults = new HashSet<>(defaultLanguageRefsets);
-        
-        if (!returnDefaults.contains("32570271000036106")) {
-            returnDefaults.add("32570271000036106");
+        if (defaultLanguageRefsets == null) {
+            defaultLanguageRefsets = new HashSet<>();
         }
         
-        if (!returnDefaults.contains("900000000000509007")) {
-            returnDefaults.add("900000000000509007");
-        }
-        return returnDefaults;
+        return defaultLanguageRefsets;
     }
-    
+
     /**
-     * Gets the default language refsets qualified with the language code and types.
+     * Gets the default language refsets qualified with the language code and
+     * types.
      *
-     * @return the default language refsets qualified with the language code and types.
+     * @return the default language refsets qualified with the language code and
+     *         types.
      */
     public List<Map<String, String>> getFullyQualifiedLanguageRefsets() {
-        
-        final Map<String, String> refsetToLanguagesMap = RefsetMemberService.getRefsetToLanguagesMap();
-        final List<Map<String, String>> qualifiedLanguageList  = new ArrayList<>();
-        
+
+        final Map<String, String> refsetToLanguagesMap =
+                RefsetMemberService.getRefsetToLanguagesMap();
+        final List<Map<String, String>> qualifiedLanguageList = new ArrayList<>();
+
         for (final String languageRefsetCode : getDefaultLanguageRefsets()) {
-            
+
             final String languageCode = refsetToLanguagesMap.get(languageRefsetCode);
-            
+
             if (languageCode == null) {
                 continue;
             }
-            
+
             Map<String, String> languageDetails = new HashMap<>();
             languageDetails.put("languageRefset", languageRefsetCode);
-            languageDetails.put("languageCode", languageCode); 
-            languageDetails.put("qualifiedLanguageRefset", languageRefsetCode + "PT"); 
-            languageDetails.put("qualifiedLanguageCode", languageCode.toUpperCase() + " (PT)"); 
-            
-            // if this is the default language code make sure it is first and add a FSN version
-            if (!languageCode.equalsIgnoreCase(defaultLanguageCode)) {
-                qualifiedLanguageList.add(languageDetails);
-            } else {
-                
-                languageDetails.put("default", "true");
-                qualifiedLanguageList.add(0, languageDetails);
-                
-                if (languageCode.equals("en")) {
-                    
-                    qualifiedLanguageList.add(1, Map.of(
-                            "languageRefset", languageRefsetCode,
-                            "languageCode", languageCode,
-                            "qualifiedLanguageRefset", languageRefsetCode + "FSN",
-                            "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"
-                            ));
+            languageDetails.put("languageCode", languageCode);
+            languageDetails.put("qualifiedLanguageRefset", languageRefsetCode + "PT");
+            languageDetails.put("qualifiedLanguageCode", languageCode.toUpperCase() + " (PT)");
+
+            // if this is the default language code make sure it is first and
+            // add a FSN version
+            if (languageCode.equalsIgnoreCase(defaultLanguageCode)
+                    || languageCode.equalsIgnoreCase("en")) {
+
+                if (languageCode.equalsIgnoreCase(defaultLanguageCode)) {
+                    languageDetails.put("default", "true");
                 }
+
+                qualifiedLanguageList.add(0, languageDetails);
+
+                if (languageCode.equals("en")) {
+
+                    qualifiedLanguageList.add(1,
+                            Map.of("languageRefset", languageRefsetCode, "languageCode",
+                                    languageCode, "qualifiedLanguageRefset",
+                                    languageRefsetCode + "FSN", "qualifiedLanguageCode",
+                                    languageCode.toUpperCase() + " (FSN)"));
+                }
+            } else {
+
+                qualifiedLanguageList.add(languageDetails);
+
             }
         }
-        
+
         return qualifiedLanguageList;
     }
-    
+
     /**
      * This is solely for bean validation, method does nothing.
      *
-     ** @param qualifiedLanguageList 
+     ** @param qualifiedLanguageList
      */
-    public void setFullyQualifiedLanguageRefsets(List<Map<String, String>> qualifiedLanguageList) { /*NA */}
+    public void setFullyQualifiedLanguageRefsets(List<Map<String, String>> qualifiedLanguageList) {
+        /* NA */}
 
     /**
      * Sets the default language refsets.
@@ -327,6 +355,7 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((namespace == null) ? 0 : namespace.hashCode());
         result = prime * result + ((branch == null) ? 0 : branch.hashCode());
+        result = prime * result + ((topLevelModule == null) ? 0 : topLevelModule.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         result = prime * result
                 + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
@@ -380,6 +409,14 @@ public class Edition extends AbstractHasModified {
                 return false;
             }
         } else if (!branch.equals(other.branch)) {
+            return false;
+        }
+
+        if (topLevelModule == null) {
+            if (other.topLevelModule != null) {
+                return false;
+            }
+        } else if (!topLevelModule.equals(other.topLevelModule)) {
             return false;
         }
 

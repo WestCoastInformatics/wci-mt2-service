@@ -77,7 +77,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      */
     private boolean hasDescendantRefsetMembers;
 
-	private Map<Integer, Map<String, String>> roleGroups = new HashMap<>();
+	private Map<Integer, List<String>> roleGroups = new HashMap<>();
 
     /**
      * Instantiates an empty {@link Concept}.
@@ -422,11 +422,11 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         this.hasDescendantRefsetMembers = hasDescendantRefsetMembers;
     }
 
-    public Map<Integer, Map<String, String>> getRoleGroups() {
+    public Map<Integer, List<String>> getRoleGroups() {
         return roleGroups;
     }
 
-	public void setRoleGroups(Map<Integer, Map<String, String>> map) {
+	public void setRoleGroups(Map<Integer, List<String>> map) {
         this.roleGroups = map;
 	}
 

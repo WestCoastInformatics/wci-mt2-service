@@ -1,6 +1,11 @@
 
 package org.ihtsdo.refsetservice.rest;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -12,19 +17,30 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
+import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,6 +71,14 @@ public class RefsetController extends BaseController {
 
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetController.class);
+
+    /** The local directory to store exported refset files. */
+    private static String EXPORT_FILE_DIR;
+
+    /** Static initialization. */
+    static {
+        EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + "/";
+    }
 
     /**
      * Returns the refset.
@@ -96,7 +120,7 @@ public class RefsetController extends BaseController {
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(true);
-                refset.setVersionList(getRefsetVersionList(refset.getRefsetId(), service));
+                refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
 
                 logger.info("*********** getRefset: refset: " + ModelUtility.toJson(refset));
 
@@ -225,15 +249,19 @@ public class RefsetController extends BaseController {
                 pfs.setSort(searchParameters.getSort());
             }
 
-            String memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
+            if (query != null && !query.equals("")) {
 
-            if (!memberRefsetQuery.equals("")) {
+                String memberRefsetQuery =
+                        RefsetMemberService.searchDirectoryMembers(searchParameters);
 
-                if (query.split(" AND ").length > 1) {
-                    query = "(" + query + ")";
+                if (!memberRefsetQuery.equals("")) {
+
+                    if (query.split(" AND ").length > 1) {
+                        query = "(" + query + ")";
+                    }
+
+                    query = "(" + query + " OR " + memberRefsetQuery + ")";
                 }
-
-                query = "(" + query + " OR " + memberRefsetQuery + ")";
             }
 
             if (query != null && !query.equals("")) {
@@ -248,7 +276,7 @@ public class RefsetController extends BaseController {
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(false);
-                refset.setVersionList(getRefsetVersionList(refset.getRefsetId(), service));
+                refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
             }
 
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -365,6 +393,7 @@ public class RefsetController extends BaseController {
      * @param refsetInternalId the internal refset id
      * @param format the format
      * @param exportType the export type
+     * @param languageId the language to display names in
      * @param fileNameDate the file name date
      * @param startEffectiveTime the start effective time
      * @param transientEffectiveTime the transient effective time
@@ -384,6 +413,8 @@ public class RefsetController extends BaseController {
                     dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
                     required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "languageId", value = "For formats with names which language to display the name in.",
+            required = false, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "format",
                     value = "The type of export: 'rf2', 'rf2_with_names', 'free_set', or 'sctids'.",
                     required = true, dataType = "string", paramType = "query"),
@@ -403,17 +434,17 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}",
             produces = "application/json")
     public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, final String format, final String exportType,
+    final String refsetInternalId, final String format, final String exportType, final String languageId,
         final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime,
         final boolean exportMetadata) throws Exception {
 
         try {
 
-            logger.info(
-                    "*********** exportRefset: refsetInternalId: type: fileNameDate: startEffectiveTime: transientEffectiveTime: exportMetadata:"
-                            + refsetInternalId + "," + exportType + "," + fileNameDate + ","
-                            + startEffectiveTime + "," + transientEffectiveTime + ","
-                            + exportMetadata);
+            logger.info("*********** exportRefset: refsetInternalId: " + refsetInternalId
+                    + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: "
+                    + fileNameDate + " ; startEffectiveTime: " + startEffectiveTime
+                    + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: "
+                    + exportMetadata);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -423,16 +454,26 @@ public class RefsetController extends BaseController {
 
                     if (format.equals("rf2") || format.equals("rf2_with_names")) {
 
+                        boolean withNames = false;
+
+                        if (format.equals("rf2_with_names")) {
+                            withNames = true;
+                        }
+
                         String uri = RefsetMemberService.exportRefsetRf2(refsetInternalId,
-                                exportType, fileNameDate, startEffectiveTime,
-                                transientEffectiveTime, exportMetadata);
+                                exportType, languageId, fileNameDate, startEffectiveTime,
+                                transientEffectiveTime, exportMetadata, withNames);
                         logger.debug("******** results: " + uri);
-                        url = "{\"url\": \"" + uri + "/archive\"}";
+                        url = "{\"url\": \"" + uri + "\"}";
 
                     } else if (format.equals("sctids")) {
 
                         String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId,
                                 exportMetadata);
+                        url = "{\"url\": \"" + uri + "\"}";
+                    } else if (format.equals("free_set")) {
+
+                        String uri = RefsetMemberService.exportFreeset(refsetInternalId);
                         url = "{\"url\": \"" + uri + "\"}";
                     }
 
@@ -444,6 +485,75 @@ public class RefsetController extends BaseController {
                     return null;
                 }
             }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+
+    /**
+     * Download an exported refset.
+     *
+     * @param fileName the file name
+     * @return the file
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Download the specified refset export file", response = Refset.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "fileName", value = "The name of the file to download.",
+                    required = true, dataType = "string", paramType = "path"),
+    })
+    @RecordMetric
+    @CrossOrigin(origins = "http://localhost:4200")
+    @RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}",
+            produces = "application/json")
+    public @ResponseBody ResponseEntity<Resource> downloadExport(@PathVariable(value = "fileName")
+    final String fileName) throws Exception {
+
+        try {
+
+            logger.info("****** downloadExport: fileName: " + fileName);
+
+            Path filePath = Paths.get(EXPORT_FILE_DIR + fileName);
+            Resource file = new UrlResource(filePath.toUri());
+            
+            if (!file.exists() || !file.isReadable()) {
+                throw new RuntimeException("Could not read the file!");
+            }
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                    .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
+                    .contentLength(file.contentLength())
+                    .body(file);
+            
+//            ContentDisposition contentDisposition =
+//                    ContentDisposition.builder("inline").filename(fileName).build();
+//
+//            File file = new File(EXPORT_FILE_DIR + fileName);
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+//            headers.add("Pragma", "no-cache");
+//            headers.add("Expires", "0");
+//            headers.add("Content-Length", file.length() + "");
+//            headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION);
+//            headers.add("Content-disposition", "attachment; filename=\"" + fileName + "\"");
+//            headers.add("Content-Type", "application/octet-stream");
+//            //headers.setContentDisposition(contentDisposition);
+//            Path path = Paths.get(file.getAbsolutePath());
+//            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
+//
+//            return ResponseEntity.ok().headers(headers).contentLength(file.length())
+//                    .contentType(MediaType.parseMediaType("application/octet-stream"))
+//                    .body(resource);
 
         } catch (final Exception e) {
 
@@ -474,12 +584,12 @@ public class RefsetController extends BaseController {
                     required = true, dataType = "string", paramType = "query"),
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}",
-            produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET,
+            value = "/refset/{refsetInternalId}/member/{conceptId}", produces = "application/json")
     public @ResponseBody ResultList<Map<String, String>> getMemberHistory(
         @PathVariable(value = "refsetInternalId")
-        final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId)
-        throws Exception {
+        final String refsetInternalId, @PathVariable(value = "conceptId")
+        final String conceptId) throws Exception {
 
         try {
 
@@ -496,21 +606,13 @@ public class RefsetController extends BaseController {
                 }
 
                 final List<Map<String, String>> versions =
-                        getRefsetVersionList(refset.getRefsetId(), service);
-
-                final List<Map<String, String>> updatedVersions = new ArrayList<>();
-
-                for (Map<String, String> version : versions) {
-                    if (version.get("editionShortName").toLowerCase()
-                            .equals(refset.getEditionShortName().toLowerCase())) {
-                        updatedVersions.add(version);
-                    }
-                }
+                        getSortedRefsetVersionList(refset.getRefsetId(), service);
 
                 final List<Map<String, String>> memberHistory =
-                        RefsetMemberService.getMemberHistory(conceptId, updatedVersions);
+                        RefsetMemberService.getMemberHistory(conceptId, versions);
 
-                logger.info("*********** getMemberHistory: member: " + ModelUtility.toJson(memberHistory));
+                logger.info("*********** getMemberHistory: member: "
+                        + ModelUtility.toJson(memberHistory));
 
                 ResultList<Map<String, String>> results = new ResultList<>(memberHistory);
                 results.setTotalKnown(true);
@@ -579,17 +681,59 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
+    
+    /**
+     * Migrates RTT data into the database but only if the database is empty.
+     *
+     * @return the status of the migration
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/rtt",
+            produces = "application/json")
+    public @ResponseBody String migrateRttData() throws Exception {
+
+        try {
+
+            
+            try (TerminologyService service = new TerminologyService()) {
+
+                final ResultList<String> editions = service.findIds("", null, Edition.class, null);
+
+                if (editions.size() > 0) {
+                    
+                    logger.info("RTT data migration: Database not empty, migration cancelled");
+                    return "Database not empty, migration cancelled";
+                }
+                
+                logger.info("*********** Starting RTT data migration");
+                
+                HistoricDataMigrator migrator = new HistoricDataMigrator();
+                migrator.migrate();
+
+                logger.info("*********** Finished RTT data migration");
+
+                return "RTT data migration completed successfully";
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return "Errors occurred, check with the system administrator";
+        }
+    }
 
     /**
-     * Get the full list of versions for a refset.
+     * Get the full list of versions for a refset from oldest first to newest
+     * last.
      *
      * @param refsetId the refset id
      * @param service the Terminology Service
      * @return the list of refset versions
      * @throws Exception the exception
      */
-    private List<Map<String, String>> getRefsetVersionList(final String refsetId,
+    private List<Map<String, String>> getSortedRefsetVersionList(final String refsetId,
         final TerminologyService service) throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
         final List<Map<String, String>> versionList = new ArrayList<>();
         final PfsParameter pfs = new PfsParameter();
@@ -608,19 +752,47 @@ public class RefsetController extends BaseController {
             final Map<String, String> version = new HashMap<>();
             version.put("status", refset.getVersionStatus());
             version.put("refsetInternalId", refset.getId());
-            version.put("editionShortName", refset.getEditionShortName());
 
+            boolean inDevelopmentVersionFound = false;
             if (refset.getVersionStatus().toLowerCase().equals("in development")) {
+
+                if (inDevelopmentVersionFound) {
+                    throw new Exception(
+                            "May only have a single version at 'in development' at any given time, and we found 2nd for refsetId: "
+                                    + refset.getRefsetId());
+                }
 
                 version.put("date",
                         DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
+
                 versionList.add(0, version);
 
+                inDevelopmentVersionFound = true;
             } else if ("beta, published".contains(refset.getVersionStatus().toLowerCase())) {
 
                 version.put("date", DateUtility.formatDate(refset.getVersionDate(),
                         DateUtility.DATE_FORMAT_REVERSE, null));
-                versionList.add(version);
+
+                if (versionList.isEmpty()) {
+                    versionList.add(version);
+                } else {
+
+                    final Date dateToInsert = refset.getVersionDate();
+                    int versionIndex = (inDevelopmentVersionFound) ? 1 : 0;
+
+                    for (Map<String, String> currentVersion : versionList) {
+
+                        final Date dateInspecting = sdf.parse(currentVersion.get("date"));
+
+                        if (dateToInsert.before(dateInspecting)) {
+                            break;
+                        }
+
+                        versionIndex++;
+                    }
+
+                    versionList.add(versionIndex, version);
+                }
             }
         }
 
