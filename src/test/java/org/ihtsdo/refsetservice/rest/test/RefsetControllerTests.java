@@ -356,6 +356,29 @@ public class RefsetControllerTests extends BaseTest {
 
     }
 
+    @Test
+    public void testExportFreeset() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String resultString = null;
+        final String refsetId = "787778008";
+        final String refsetInternalId = getRefsetInternalId(refsetId);
+
+        url = "/export/" + refsetInternalId + "/?format=free_set";
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        resultString = result.getResponse().getContentAsString();
+
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode root = mapper.readTree(resultString);
+        final String fileUrl = (root.get("url")).asText();
+        logger.info("File Url: " + fileUrl);
+
+        assertThat(fileUrl).isNotNull();
+    }
+    
     /**
      * Test getting concept details.
      *

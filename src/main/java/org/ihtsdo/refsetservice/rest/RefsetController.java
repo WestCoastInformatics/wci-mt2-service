@@ -471,6 +471,10 @@ public class RefsetController extends BaseController {
                         String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId,
                                 exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
+                    } else if (format.equals("free_set")) {
+
+                        String uri = RefsetMemberService.exportFreeset(refsetInternalId);
+                        url = "{\"url\": \"" + uri + "\"}";
                     }
 
                     return url;

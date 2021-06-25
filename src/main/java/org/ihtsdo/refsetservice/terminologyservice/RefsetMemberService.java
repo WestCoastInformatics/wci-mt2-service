@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -200,6 +201,44 @@ public class RefsetMemberService {
 
         return concepts;
     }
+    
+	// called recursively to accumulate all refset members in order to compose a
+	// freeset
+	// uses the searchAfter mechanism rather than paging
+	public static List<Concept> getAllRefsetMembers(final String refsetInternalId, String searchAfter,
+			List<Concept> concepts) throws Exception {
+
+		try (final TerminologyService service = new TerminologyService()) {
+			Refset refset = service.get(refsetInternalId, Refset.class);
+
+			final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?statedEcl=%5E%20"
+					+ refset.getRefsetId() + "&offset=0&limit=10000"
+					+ (searchAfter.contentEquals("") ? "" : "&searchAfter=" + searchAfter);
+
+			ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
+			lookupParameters.setGetMembershipInformation(true);
+			lookupParameters.setGetDescriptions(true);
+
+			try (final Response response = SnowstormConnection.getResponse(url)) {
+				final String resultString = response.readEntity(String.class);
+
+				final ObjectMapper mapper = new ObjectMapper();
+				final JsonNode root = mapper.readTree(resultString.toString());
+
+				ConceptResultList conceptList = populateConcepts(root, refset, lookupParameters);
+				concepts.addAll(conceptList.getItems());
+
+				searchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asText() : "");
+				if (!searchAfter.isEmpty()) {
+					getAllRefsetMembers(refsetInternalId, searchAfter, concepts);
+				}
+			}
+		}
+
+		logger.info("Refset has " + concepts.size() + " members");
+
+		return concepts;
+	}
 
     /**
      * Identify non default preferred terms.
@@ -1182,6 +1221,75 @@ public class RefsetMemberService {
         return zippedFileUrl;
     }
 
+    public static String exportFreeset(final String refsetInternalId) throws Exception {
+
+            StringBuilder fileLines = new StringBuilder();
+            String sctidsOutputPath = EXPORT_FILE_DIR;
+            String zipOutputPath = EXPORT_FILE_DIR;
+            String refsetFileName = "";
+            List<String> sourceFiles = new ArrayList<>();
+            try  {
+            final TerminologyService service = new TerminologyService();
+            
+            final Refset refset = service.get(refsetInternalId, Refset.class);
+            service.close();
+            
+                refsetFileName = "freeset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset);
+                sctidsOutputPath += refsetFileName + ".txt";
+                zipOutputPath += refsetFileName + ".zip";
+                logger.debug("SCTID freeset txt output path = " + sctidsOutputPath);
+                logger.debug("zip freeset output path = " + zipOutputPath);
+
+        		logger.info("*********** exportFreeset: refsetInternalId: " + refsetInternalId);
+
+        		final long start = System.currentTimeMillis();
+        		ConceptResultList results = new ConceptResultList();
+
+        			List<Concept> concepts = getAllRefsetMembers(refsetInternalId, "",
+        					new ArrayList<Concept>());
+        			Collections.sort(concepts, Comparator.comparing((Concept concept) -> Long.parseLong(concept.getCode())));
+        			
+        			results.setTimeTaken(System.currentTimeMillis() - start);
+        			results.setItems(concepts);
+
+        			fileLines.append("ConceptID").append("\t");
+        			fileLines.append("Active").append("\t");
+        			fileLines.append("FSN").append("\t");
+        			fileLines.append("USPreferredTerm").append("\t");
+        			fileLines.append("\r\n");
+
+        			for (Concept cpt : results.getItems()) {
+
+        				String fsn = "";
+        				for (Map<String, String> entry : cpt.getDescriptions()) {
+        					fsn = entry.get("fsn");
+        				}
+
+        				fileLines.append(cpt.getCode()).append("\t");
+        				fileLines.append(cpt.isActive() ? "1" : "0").append("\t");
+        				fileLines.append(fsn).append("\t");
+        				fileLines.append(cpt.getName());
+        				fileLines.append("\r\n");
+        			}
+
+            // print the sctids file
+            final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
+                    final OutputStreamWriter sctidsOutputStreamWriter =
+                            new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
+                    final PrintWriter freesetWriter = new PrintWriter(sctidsOutputStreamWriter); 
+
+                freesetWriter.print(fileLines);
+
+            } catch (Exception ex) {
+                throw new Exception("Could not create freeset txt file: " + ex.getMessage(), ex);
+            } 
+            // zip the files together
+            sourceFiles.add(sctidsOutputPath);
+            zipFiles(sourceFiles, zipOutputPath);
+
+            return zipOutputPath;
+        }
+
     /**
      * Zip files together.
      *
@@ -2144,14 +2252,22 @@ public class RefsetMemberService {
 
                     // because this may come from a children call the node may
                     // not have descriptions
-                    if (conceptNode.get("descriptions") == null) {
-                        populateAllLanguageDescriptions(refset,
-                                new HashSet<>(Arrays.asList(concept)));
-                    } else {
-                        concept.setDescriptions(populateDescriptions(concept.getCode(),
+                    if (conceptNode.get("descriptions") != null) {
+                    	concept.setDescriptions(populateDescriptions(concept.getCode(),
                                 conceptNode.get("descriptions"), refset,
                                 missingLookupParameters.getNonDefaultPreferredTerms()));
+                    } else if (conceptNode.get("fsn") != null) {
+                		String fsn = conceptNode.get("fsn").get("term").asText();
+                		Map<String, String> descMap = new HashMap<>();
+                		descMap.put("fsn", fsn);
+                		List<Map<String, String>> list = new ArrayList<>();
+                		list.add(descMap);
+                		concept.setDescriptions(list);
+                	} else {                   
+                        populateAllLanguageDescriptions(refset,
+                                new HashSet<>(Arrays.asList(concept)));
                     }
+                	
                 }
 
                 if (missingLookupParameters.isGetParentsAndChildren() && concept.isActive()) {
@@ -2170,8 +2286,10 @@ public class RefsetMemberService {
                 if (missingLookupParameters.isGetMembershipInformation()) {
                     concept.setMemberOfRefset(true);
                     concept.setMemberStatus(conceptNode.get("active").asBoolean());
-                    concept.setMemberEffectiveTime(SIMPLE_DATE_FORMAT
+                    if (conceptNode.get("releasedEffectiveTime") != null) {
+                    	concept.setMemberEffectiveTime(SIMPLE_DATE_FORMAT
                             .parse(conceptNode.get("releasedEffectiveTime").asText()));
+                    }
                 }
             }
 
