@@ -378,20 +378,24 @@ public class RefsetMemberService {
 
         // do this for each concept
         final List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
-        final Map<String, Map<String, String>> sortingMap = new HashMap<>();
+        final Map<String, Set<Map<String, String>>> sortingMap = new HashMap<>();
 
         // Actual code
         for (Map<String, String> descriptionMap : descriptions) {
 
             final String languageId = descriptionMap.get(LANGUAGE_ID);
 
+            if (!sortingMap.containsKey(languageId)) {
+                sortingMap.put(languageId, new HashSet<Map<String, String>>());
+            }
             // Handle the default language
             if (descriptionMap.get(DESCRIPTION_LANGUAGE)
                     .equals(refset.getEdition().getDefaultLanguageCode())) {
 
                 if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
 
-                    if (sortingMap.containsKey(languageId)) {
+                    if (sortingMap.containsKey(languageId)
+                            && !sortingMap.get(languageId).isEmpty()) {
 
                         displayDuplicateWarning("A FSN in the default language", conceptId,
                                 descriptionMap.get(DESCRIPTION_LANGUAGE),
@@ -399,11 +403,13 @@ public class RefsetMemberService {
                         continue;
                     }
 
-                    sortingMap.put(languageId, descriptionMap);
+                    sortingMap.get(languageId).add(descriptionMap);
 
                 } else {
 
-                    if (sortingMap.containsKey(languageId)) {
+                    if ("pt".equalsIgnoreCase(descriptionMap.get(DESCRIPTION_TYPE))
+                            && sortingMap.containsKey(languageId)
+                            && !sortingMap.get(languageId).isEmpty()) {
 
                         displayDuplicateWarning("A PT in the default language", conceptId,
                                 descriptionMap.get(DESCRIPTION_LANGUAGE),
@@ -411,7 +417,7 @@ public class RefsetMemberService {
                         continue;
                     }
 
-                    sortingMap.put(languageId, descriptionMap);
+                    sortingMap.get(languageId).add(descriptionMap);
                 }
             }
 
@@ -420,7 +426,8 @@ public class RefsetMemberService {
 
                 if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
 
-                    if (sortingMap.containsKey(languageId)) {
+                    if (sortingMap.containsKey(languageId)
+                            && !sortingMap.get(languageId).isEmpty()) {
 
                         displayDuplicateWarning("A FSN in a non-default language", conceptId,
                                 descriptionMap.get(DESCRIPTION_LANGUAGE),
@@ -428,11 +435,13 @@ public class RefsetMemberService {
                         continue;
                     }
 
-                    sortingMap.put(languageId, descriptionMap);
+                    sortingMap.get(languageId).add(descriptionMap);
 
                 } else {
 
-                    if (sortingMap.containsKey(languageId)) {
+                    if ("pt".equalsIgnoreCase(descriptionMap.get(DESCRIPTION_TYPE))
+                            && sortingMap.containsKey(languageId)
+                            && !sortingMap.get(languageId).isEmpty()) {
 
                         displayDuplicateWarning("A PT in a non-default language", conceptId,
                                 descriptionMap.get(DESCRIPTION_LANGUAGE),
@@ -440,7 +449,7 @@ public class RefsetMemberService {
                         continue;
                     }
 
-                    sortingMap.put(languageId, descriptionMap);
+                    sortingMap.get(languageId).add(descriptionMap);
                 }
             }
         }
@@ -451,11 +460,10 @@ public class RefsetMemberService {
         Set<String> languageIdsProcessed = new HashSet<>();
 
         for (final Map<String, String> languageRefset : languageRefsets) {
-
             final String languageId = languageRefset.get("qualifiedLanguageRefset");
 
             if (sortingMap.get(languageId) != null) {
-                sortedDescriptionList.add(sortingMap.get(languageId));
+                sortedDescriptionList.addAll(sortingMap.get(languageId));
                 languageIdsProcessed.add(languageId);
             } else {
                 sortedDescriptionList.add(null);
@@ -471,14 +479,14 @@ public class RefsetMemberService {
                 if (languageId.toLowerCase().endsWith("def")) {
                     textDescriptionLanguageIds.add(languageId);
                 } else {
-                    sortedDescriptionList.add(sortingMap.get(languageId));
+                    sortedDescriptionList.addAll(sortingMap.get(languageId));
                 }
             }
         }
 
         // Finally, add Text Definitions
         for (final String languageId : textDescriptionLanguageIds) {
-            sortedDescriptionList.add(sortingMap.get(languageId));
+            sortedDescriptionList.addAll(sortingMap.get(languageId));
         }
 
         return sortedDescriptionList;
@@ -490,17 +498,23 @@ public class RefsetMemberService {
      * @param errorMessage the error msg
      * @param conceptId the con id
      * @param language the language
-     * @param firstFoundMap the orig map
+     * @param set the orig map
      * @param descriptionMap the desc map
      */
     private static void displayDuplicateWarning(final String errorMessage, final String conceptId,
-        final String language, final Map<String, String> firstFoundMap,
+        final String language, final Set<Map<String, String>> existingDescriptions,
         final Map<String, String> descriptionMap) {
 
         logger.warn(errorMessage + "(" + language + ") has already been identified for conceptId: "
                 + conceptId);
-        logger.warn("Original one identified. " + printDescription(firstFoundMap));
-        logger.warn("New one encountered: " + printDescription(descriptionMap));
+
+        logger.warn("Original ones identified:");
+
+        for (Map<String, String> set : existingDescriptions) {
+            printDescription(set);
+        }
+
+        logger.warn("\nNew one encountered: " + printDescription(descriptionMap));
     }
 
     /**

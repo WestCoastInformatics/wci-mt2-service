@@ -327,9 +327,9 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept.getParents().size()).isEqualTo(1);
         assertThat(concept.getChildren().size()).isEqualTo(5);
 
-        // Test descriptions working as expected
+        // Test multiple descriptions of same type across 3 languages
         final String descriptionTestingConceptId = "276310004";
-        final String descriptionTestingRefsetId = "787778008"; // Refset invalid
+        final String descriptionTestingRefsetId = "561000172108"; // Belgian Refset to get all the translations as well
                                                                // as just need
                                                                // branch path
                                                                // for it
@@ -344,7 +344,8 @@ public class RefsetControllerTests extends BaseTest {
                 new ObjectMapper().readValue(content, Concept.class);
         assertThat(descriptionTestingConcept).isNotNull();
         assertThat(descriptionTestingConcept.getCode()).isEqualTo(descriptionTestingConceptId);
-        assertThat(descriptionTestingConcept.getDescriptions().size()).isEqualTo(4);
+        logger.debug(descriptionTestingConcept.getDescriptions().toString());
+        assertThat(descriptionTestingConcept.getDescriptions().size()).isEqualTo(7);
         assertThat(descriptionTestingConcept.getRoleGroups().size()).isEqualTo(1);
         int descriptionTestingGroupId =
                 descriptionTestingConcept.getRoleGroups().keySet().iterator().next();
