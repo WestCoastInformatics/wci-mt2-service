@@ -2107,7 +2107,7 @@ public class RefsetMemberService {
         throws Exception {
         try {
             final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
-                    + "/" + "concepts/" + conceptId + "/children?form=inferred";
+                    + "/" + "concepts/" + conceptId + "/children?form=inferred&refsetId=" + refset.getRefsetId();
 
             logger.debug("Get Children URL: " + url);
 
@@ -2245,6 +2245,10 @@ public class RefsetMemberService {
                         defined = true;
                     }
 
+                    if (conceptNode.has("descendantsAreMemberOfRefset")) {
+                        concept.setHasDescendantRefsetMembers(conceptNode.get("descendantsAreMemberOfRefset").asBoolean());
+                    }
+                    
                     if (conceptNode.has("descendantCount")) {
                         concept.setHasChildren(conceptNode.get("descendantCount").asInt() > 0);
                     } else if (conceptNode.has("isLeafInferred")) {
