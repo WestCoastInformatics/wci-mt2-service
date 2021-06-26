@@ -109,6 +109,9 @@ public class RefsetMemberService {
 
     /** A cache of the members returned for a specific URL. */
     private final static Map<String, ConceptResultList> memberListCallCache = new HashMap<>();
+    
+    /** A cache of the details for any concept. */
+    private final static Map<String, Concept> conceptDetailsCache = new HashMap<>();
 
     /** A cache of the children for each tree node. */
     private final static Map<String, List<Concept>> treeCache = new HashMap<>();
@@ -280,34 +283,6 @@ public class RefsetMemberService {
         Collections.sort(nonDefaultPreferredTerms);
 
         return nonDefaultPreferredTerms;
-    }
-
-    /**
-     * Gets the children.
-     *
-     * @param conceptId the starting concept id
-     * @param branchPath the branch
-     * @return the children
-     * @throws Exception the exception
-     */
-    protected static ConceptResultList getChildren(String conceptId, String branchPath)
-        throws Exception {
-        final String url = SnowstormConnection.BASE_URL + "browser/" + branchPath + "/"
-                + "concepts/" + conceptId + "/children?includeDescendantCount=true";
-
-        logger.debug("Get Children URL: " + url);
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-            final String resultString = response.readEntity(String.class);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
-            Iterator<JsonNode> iterator = root.iterator();
-
-            return populateSnowstormConcepts(iterator);
-        } catch (Exception ex) {
-            throw new Exception("Could not get refset children for concept " + conceptId
-                    + " from snowstorm: " + ex.getMessage(), ex);
-        }
     }
 
     /**
@@ -590,50 +565,63 @@ public class RefsetMemberService {
         throws Exception {
         Concept concept = null;
 
-        try (final TerminologyService service = new TerminologyService()) {
+        if (conceptDetailsCache.containsKey(refsetInternalId + conceptId)) {
+            logger.debug("Using cached concept details refsetInternalId: " + refsetInternalId + " ; conceptId: " + conceptId);
+            concept = conceptDetailsCache.get(refsetInternalId + conceptId);
+        } else {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
-            logger.debug("Get Concept Details refset: " + refset);
-
-            String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
-                    + "/concepts/" + conceptId + "?descendantCountForm=inferred";
-
-            logger.debug("Get Member Details URL: " + url);
-
-            try (final Response response = SnowstormConnection.getResponse(url)) {
-
-                final String resultString = response.readEntity(String.class);
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
-
-                concept = populateConcept(root);
-                concept.setVersion(root.get("effectiveTime").asText());
-
-                // Populate descriptions
-                concept.setDescriptions(populateAllDescriptions(concept.getCode(),
-                        root.get("descriptions"), refset));
-
-                // Populate parents
-                concept.setParents(populateParents(root.get("relationships")));
-
-                // Populate children
-                if (root.get("descendantCount").asInt() > 0) {
-                    concept.setHasChildren(true);
-                    ConceptResultList children =
-                            getChildren(concept.getCode(), getBranchPath(refset));
-
-                    for (Concept child : children.getItems()) {
-                        concept.getChildren().add(child);
+            try (final TerminologyService service = new TerminologyService()) {
+    
+                final Refset refset = service.get(refsetInternalId, Refset.class);
+                logger.debug("Get Concept Details refset: " + refset);
+    
+                String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
+                        + "/concepts/" + conceptId + "?descendantCountForm=inferred";
+    
+                logger.debug("Get Member Details URL: " + url);
+                
+                
+    
+                try (final Response response = SnowstormConnection.getResponse(url)) {
+    
+                    final String resultString = response.readEntity(String.class);
+                    final ObjectMapper mapper = new ObjectMapper();
+                    final JsonNode root = mapper.readTree(resultString.toString());
+    
+                    concept = populateConcept(root);
+                    concept.setVersion(root.get("effectiveTime").asText());
+    
+                    // Populate descriptions
+                    concept.setDescriptions(populateAllDescriptions(concept.getCode(),
+                            root.get("descriptions"), refset));
+    
+                    // Populate parents
+                    concept.setParents(populateParents(root.get("relationships")));
+    
+                    // Populate children
+                    if (root.get("descendantCount").asInt() > 0) {
+                        concept.setHasChildren(true);
+                        ConceptResultList children =
+                                getChildren(concept.getCode(), refset);
+    
+                        for (Concept child : children.getItems()) {
+                            concept.getChildren().add(child);
+                        }
                     }
+                    
+                    conceptDetailsCache.put(refsetInternalId + conceptId, concept);
+                    
+                } catch (Exception ex) {
+                    throw new Exception("Could not get concept " + conceptId + " from snowstorm: "
+                            + ex.getMessage(), ex);
                 }
+                
             } catch (Exception ex) {
-                throw new Exception("Could not get concept " + conceptId + " from snowstorm: "
-                        + ex.getMessage(), ex);
+                throw new Exception(
+                        "Could not find refset in database for internalId " + refsetInternalId, ex);
             }
-        } catch (Exception ex) {
-            throw new Exception(
-                    "Could not find refset in database for internalId " + refsetInternalId, ex);
         }
+        
         return concept;
     }
 
@@ -2106,8 +2094,10 @@ public class RefsetMemberService {
     protected static ConceptResultList getChildren(String conceptId, Refset refset)
         throws Exception {
         try {
-            final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
-                    + "/" + "concepts/" + conceptId + "/children?form=inferred&refsetId=" + refset.getRefsetId();
+            
+            final String branchPath = getBranchPath(refset);
+            final String url = SnowstormConnection.BASE_URL + "browser/" + branchPath
+                    + "/" + "concepts/" + conceptId + "/children?form=inferred&includeDescendantCount=true&refsetId=" + refset.getRefsetId();
 
             logger.debug("Get Children URL: " + url);
 
@@ -2449,8 +2439,13 @@ public class RefsetMemberService {
         String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet="
                 + refset.getRefsetId() + "&limit=1000" + "&offset=0";
 
-        if (conceptsToProcess.size() == 1) {
-            url = url + "&referencedComponentId=" + conceptsToProcess.iterator().next().getCode();
+        if (conceptsToProcess.size() > 0 && conceptsToProcess.size() <= 500) {
+            
+            url += "&referencedComponentId=";
+            
+            for (final Concept concept : conceptsToProcess) {
+                url += concept.getCode() + ",";
+            }
         }
 
         logger.debug("Get Membership URL: " + url);
