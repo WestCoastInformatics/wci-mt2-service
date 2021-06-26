@@ -1225,19 +1225,23 @@ public class RefsetMemberService {
     public static String exportFreeset(final String refsetInternalId) throws Exception {
 
         StringBuilder fileLines = new StringBuilder();
-        String sctidsOutputPath = EXPORT_FILE_DIR;
+        String sctidsOutputPath = "";
         String zipOutputPath = EXPORT_FILE_DIR;
         String refsetFileName = "";
         List<String> sourceFiles = new ArrayList<>();
-        try {
-            final TerminologyService service = new TerminologyService();
+        Path tempDirectoryPath = null;
+        
+        try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
             service.close();
 
-            refsetFileName = "freeset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset);
-            sctidsOutputPath += refsetFileName + ".txt";
-            zipOutputPath += refsetFileName + ".zip";
+            refsetFileName = "freeset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + ".txt";
+            tempDirectoryPath =
+                    Files.createTempDirectory("freeset-" + refsetFileName.replace(".txt", ""));
+            zipOutputPath += refsetFileName.replace(".txt", ".zip");
+            sctidsOutputPath = tempDirectoryPath.toString() + File.separator + refsetFileName;
+            
             logger.debug("SCTID freeset txt output path = " + sctidsOutputPath);
             logger.debug("zip freeset output path = " + zipOutputPath);
 
@@ -1275,21 +1279,30 @@ public class RefsetMemberService {
             }
 
             // print the sctids file
-            final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
-            final OutputStreamWriter sctidsOutputStreamWriter =
-                    new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
-            final PrintWriter freesetWriter = new PrintWriter(sctidsOutputStreamWriter);
-
-            freesetWriter.print(fileLines);
+            try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
+                    final OutputStreamWriter sctidsOutputStreamWriter =
+                            new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
+                    final PrintWriter freesetWriter = new PrintWriter(sctidsOutputStreamWriter);) {
+                freesetWriter.print(fileLines);
+            }
 
         } catch (Exception ex) {
             throw new Exception("Could not create freeset txt file: " + ex.getMessage(), ex);
         }
+        
         // zip the files together
         sourceFiles.add(sctidsOutputPath);
         zipFiles(sourceFiles, zipOutputPath);
+        
+        // Delete temp directory structure and files
+        FileUtility.deleteDirectory(tempDirectoryPath.toFile());
+        
+        // if download is from RT2 server
+        ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
+        String zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL
+                + refsetFileName.replace(".txt", ".zip");
 
-        return zipOutputPath;
+        return zippedFileUrl;
     }
 
     /**
