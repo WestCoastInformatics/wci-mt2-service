@@ -42,9 +42,10 @@ public class PropertyUtility {
      */
     @SuppressWarnings("rawtypes")
     @PostConstruct
-    private void init() {
+    private void init() throws Exception{
 
         final MutablePropertySources sources = ((AbstractEnvironment) env).getPropertySources();
+        logger.info("Property Sources: " + sources.toString());
         StreamSupport.stream(sources.spliterator(), false)
                 .filter(ps -> ps instanceof EnumerablePropertySource)
                 .map(ps -> ((EnumerablePropertySource) ps).getPropertyNames())
