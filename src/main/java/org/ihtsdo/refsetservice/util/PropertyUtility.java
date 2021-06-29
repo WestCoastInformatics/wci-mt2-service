@@ -3,7 +3,10 @@ package org.ihtsdo.refsetservice.util;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.StreamSupport;
 
 import javax.annotation.PostConstruct;
@@ -52,6 +55,11 @@ public class PropertyUtility {
                 .flatMap(Arrays::stream).distinct()
                 .forEach(prop -> properties.setProperty(prop, env.getProperty(prop)));
         ready = true;
+        
+        TreeSet<Object> sortedPropertyNames = new TreeSet<>(properties.keySet());
+        for (Object propertyName : sortedPropertyNames) {
+            logger.info("Property: " + propertyName  + " = " + properties.get(propertyName));
+        }
     }
 
     /**
