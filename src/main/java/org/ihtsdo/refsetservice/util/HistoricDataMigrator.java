@@ -866,14 +866,14 @@ public class HistoricDataMigrator {
             logger.info("About to import " + allRefsets.size()
                     + " refsets (which list multiple versions separately) and their respsective clauses");
 
-            BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsIgnored.txt"));
+            //BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsIgnored.txt"));
             int ignoreCounter = 0;
 
             for (Refset refset : allRefsets) {
                 if (refsetsToIgnore.contains(refset.getRefsetId())) {
                     ignoreCounter++;
-                    writer.append("From " + refset.getEditionName() + " ignoring refset:\t"
-                            + refset.getName() + "\t(" + refset.getRefsetId() + ")\n");
+                    //writer.append("From " + refset.getEditionName() + " ignoring refset:\t"
+                    //        + refset.getName() + "\t(" + refset.getRefsetId() + ")\n");
                     continue;
                 } else if (notFromRTTMap.keySet().contains(refset.getRefsetId())) {
                     // Handle refsets not in RTT
@@ -910,7 +910,7 @@ public class HistoricDataMigrator {
                 }
             }
 
-            writer.close();
+            //writer.close();
             logger.info("Total of " + count + " refsets successfully added and " + ignoreCounter
                     + " refsets ignored");
         } catch (Exception e) {
