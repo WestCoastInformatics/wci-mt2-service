@@ -364,14 +364,14 @@ public class HistoricDataMigrator {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
-            BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsAdded.txt"));
+            //BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsAdded.txt"));
             logger.info("Starting processing Refsets");
 
             for (String editionId : branchChildren.keySet()) {
                 final Edition edition = service.get(editionId, Edition.class);
 
                 logger.info("Processing Edition: " + edition.getName());
-                writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
+                //writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
 
                 String url = SnowstormConnection.BASE_URL
                         + "browser/{branch}/members?active=true&referenceSet=%3C"
@@ -386,7 +386,7 @@ public class HistoricDataMigrator {
                 for (Date branchDate : branchChildren.get(editionId).keySet()) {
                     final String childBranch = branchChildren.get(editionId).get(branchDate);
                     logger.debug("   using ChildBranch: " + childBranch);
-                    writer.append("\n\n\nProcessing Branch: " + branchDate + "\n");
+                    //writer.append("\n\n\nProcessing Branch: " + branchDate + "\n");
 
                     try (final Response response =
                             SnowstormConnection.getResponse(url.replace("{branch}", childBranch))) {
@@ -445,14 +445,14 @@ public class HistoricDataMigrator {
                                                 lookupRefsetName(refsetId, edition, childBranch));
                                     }
 
-                                    writer.write("Adding refset(" + refsetId + ") - "
-                                            + refset.getName());
+                                    //writer.write("Adding refset(" + refsetId + ") - "
+                                    //        + refset.getName());
                                     // logger.debug("Adding refset(" + refsetId
                                     // + ") - "
                                     // + refset.getName());
                                     allRefsets.add(refset);
 
-                                    writer.write("\n");
+                                    //writer.write("\n");
                                 } catch (Exception e) {
                                     logger.error("Failed with message: " + e.getMessage()
                                             + " for refsetNode: " + refsetNode);
@@ -466,7 +466,7 @@ public class HistoricDataMigrator {
                     }
                 }
             }
-            writer.close();
+            //writer.close();
         }
 
         return allRefsets;

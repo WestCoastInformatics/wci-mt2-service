@@ -704,11 +704,13 @@ public class RefsetController extends BaseController {
             try (TerminologyService service = new TerminologyService()) {
 
                 final ResultList<String> editions = service.findIds("", null, Edition.class, null);
+                String message = "";
 
                 if (editions.size() > 0) {
 
-                    logger.info("RTT data migration: Database not empty, migration cancelled");
-                    return "Database not empty, migration cancelled";
+                    message = "RTT data migration: Database not empty, migration WOULD NORMALLY BE cancelled. ";
+                    logger.info(message);
+                    //return "Database not empty, migration cancelled";
                 }
 
                 logger.info("*********** Starting RTT data migration");
@@ -718,7 +720,7 @@ public class RefsetController extends BaseController {
 
                 logger.info("*********** Finished RTT data migration");
 
-                return "RTT data migration completed successfully";
+                return message + "RTT data migration completed successfully";
             }
 
         } catch (final Exception e) {
