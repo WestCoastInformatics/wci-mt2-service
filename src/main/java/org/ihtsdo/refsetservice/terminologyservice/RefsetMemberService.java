@@ -653,7 +653,7 @@ public class RefsetMemberService {
         snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
 
         String url = SnowstormConnection.BASE_URL
-                + "browser/MAIN/descriptions?active=true&conceptActive=true&groupByConcept=true&searchMode=STANDARD&offset=0&limit=1&term="
+                + "multisearch/descriptions/referencesets?active=true&conceptActive=true&offset=0&limit=1&term="
                 + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery));
 
         logger.debug("Snowstorm URL: " + url);
