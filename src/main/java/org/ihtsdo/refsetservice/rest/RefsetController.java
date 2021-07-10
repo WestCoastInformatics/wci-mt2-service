@@ -1,7 +1,6 @@
 
 package org.ihtsdo.refsetservice.rest;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,9 +14,9 @@ import java.util.Map;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
@@ -30,13 +29,10 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -388,6 +384,64 @@ public class RefsetController extends BaseController {
     }
 
     /**
+     * Cache all ancestors for all members of a refset.
+     *
+     * @param refsetInternalId the internal refset id
+     * @return the success/failure
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Cache the ancestors of the refset members for the specified refset ID", response = Refset.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200,
+                    message = "Successfully populated the refset's ancestor cache"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "refsetInternalId",
+                    value = "The internal ID of the refset for which ancestors are to be identified.",
+                    required = true, dataType = "string", paramType = "path"),
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetInternalId}",
+            produces = "application/json")
+    public @ResponseBody String cacheMemberAncestors(@PathVariable(value = "refsetInternalId")
+    final String refsetInternalId) throws Exception {
+
+        try {
+
+            logger.info("*********** cacheMemberAncestors: refsetInternalId: " + refsetInternalId);
+
+            try (TerminologyService service = new TerminologyService()) {
+
+                try {
+
+                    String returnJson = "{\"success\": \"<RESULT>\"}";
+
+                    final boolean success =
+                            RefsetMemberService.cacheMemberAncestors(refsetInternalId);
+
+                    if (success) {
+                        return returnJson.replace("<RESULT>", "true");
+                    } else {
+                        return returnJson.replace("<RESULT>", "false");
+                    }
+
+                } catch (final Exception e) {
+
+                    handleException(e);
+                    return null;
+                }
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+
+    /**
      * Export refset.
      *
      * @param refsetInternalId the internal refset id
@@ -708,9 +762,10 @@ public class RefsetController extends BaseController {
 
                 if (editions.size() > 0) {
 
-                    message = "RTT data migration: Database not empty, migration WOULD NORMALLY BE cancelled. ";
+                    message =
+                            "RTT data migration: Database not empty, migration WOULD NORMALLY BE cancelled. ";
                     logger.info(message);
-                    //return "Database not empty, migration cancelled";
+                    // return "Database not empty, migration cancelled";
                 }
 
                 logger.info("*********** Starting RTT data migration");
