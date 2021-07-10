@@ -32,10 +32,10 @@ set DB_PASSWORD=changeme
 set DB_DATABASE=changeme
 set DB_HOST=changeme
 set DB_PORT=changeme
-set INDEX_BASE=changeme #/directory for lucene indexes until we switch over to elasticsearch
 set ELASTICSEARCH_USER=changeme
 set ELASTICSEARCH_PASSWORD=changeme
-set ELASTICSEARCH_HOST=changeme
+set ELASTICSEARCH_PROTOCOL=http
+set ELASTICSEARCH_HOST=localhost:9200
 set SNOWSTORM_USERNAME=changeme
 set SNOWSTORM_PASSWORD=changeme
 set SNOWSTORM_AUTH_URL=changeme
@@ -59,7 +59,14 @@ DROP DATABASE IF EXISTS %DB_DATABASE%;
 CREATE DATABASE %DB_DATABASE%;
 ```
 
-* Create the following directory structure for lucene indexes: %INDEX_BASE%
+* Create the following directory structure for local elasticsearch indexes: %INDEX_BASE%
+
+Download and install the latest version of Docker. 
+Download and run elasticsearch in a Docker container, pointing to the directory you created above:
+
+```
+docker run -d --name=es_evs --rm -p 9200:9200 -v %INDEX_BASE%:/usr/share/elasticsearch/data  -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms1g -Xmx3g"  docker.elastic.co/elasticsearch/elasticsearch:7.1.0
+```
 
 
 ## Build, Test, Install, Release
