@@ -8,16 +8,10 @@ import javax.persistence.MappedSuperclass;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.DateBridge;
-import org.hibernate.search.annotations.EncodingType;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.FieldBridge;
-import org.hibernate.search.annotations.Index;
-import org.hibernate.search.annotations.Resolution;
-import org.hibernate.search.annotations.SortableField;
-import org.hibernate.search.annotations.Store;
-import org.hibernate.search.bridge.builtin.BooleanBridge;
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,9 +77,7 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
 
     /* see superclass */
     @Override
-    @FieldBridge(impl = BooleanBridge.class)
-    @SortableField
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public boolean isActive() {
         return active;
     }
@@ -98,9 +90,8 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
 
     /* see superclass */
     @Override
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    @DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    //@DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
     public Date getModified() {
         return modified;
     }
@@ -125,8 +116,7 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
 
     /* see superclass */
     @Override
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getModifiedBy() {
         return modifiedBy;
     }

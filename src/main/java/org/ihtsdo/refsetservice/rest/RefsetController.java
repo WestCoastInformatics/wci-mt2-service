@@ -67,7 +67,7 @@ public class RefsetController extends BaseController {
 
     /** The Constant STARTING_CONCEPT_ID. */
     // Setting it to blank ("") leaves value as default ConId (SNOMED_ROOT)
-    private static final String STARTING_CONCEPT_ID = "35079003";
+    private static final String STARTING_CONCEPT_ID = "787778008";
 
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetController.class);

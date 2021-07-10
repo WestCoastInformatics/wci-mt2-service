@@ -8,7 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
-import org.hibernate.search.annotations.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.model.HasId;
 import org.ihtsdo.refsetservice.model.HasJsonData;
 import org.ihtsdo.refsetservice.model.HasModified;

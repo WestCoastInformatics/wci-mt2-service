@@ -65,8 +65,8 @@ public interface SearchHandler extends Configurable {
      * @return the id results
      * @throws Exception the exception
      */
-    public List<String> getIdResults(String query, Map<String, String> fieldedClauses,
-        Set<String> additionalClauses, Class<?> clazz, PfsParameter pfs, int[] totalCt,
+    public <T> List<String> getIdResults(String query, Map<String, String> fieldedClauses,
+        Set<String> additionalClauses, Class<T> clazz, PfsParameter pfs, int[] totalCt,
         EntityManager manager) throws Exception;
 
     /**

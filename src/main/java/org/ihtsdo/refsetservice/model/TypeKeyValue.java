@@ -4,11 +4,10 @@ package org.ihtsdo.refsetservice.model;
 import javax.persistence.Column;
 import javax.persistence.Table;
 
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Index;
-import org.hibernate.search.annotations.SortableField;
-import org.hibernate.search.annotations.Store;
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 /**
@@ -77,8 +76,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      *
      * @return the type
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getType() {
         return type;
     }
@@ -97,8 +95,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      *
      * @return the key
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getKey() {
         return key;
     }
@@ -117,8 +114,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      *
      * @return the value
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getValue() {
         return value;
     }

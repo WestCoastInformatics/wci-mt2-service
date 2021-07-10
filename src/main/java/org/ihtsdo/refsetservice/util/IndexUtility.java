@@ -1,6 +1,7 @@
 
 package org.ihtsdo.refsetservice.util;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,31 +26,39 @@ import javax.ws.rs.core.Response.Status.Family;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.FieldComparatorSource;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.hibernate.search.SearchFactory;
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Fields;
-import org.hibernate.search.annotations.Indexed;
-import org.hibernate.search.annotations.IndexedEmbedded;
-import org.hibernate.search.elasticsearch.ElasticsearchQueries;
-import org.hibernate.search.jpa.FullTextEntityManager;
-import org.hibernate.search.jpa.FullTextQuery;
-import org.hibernate.search.jpa.Search;
-import org.hibernate.search.query.engine.spi.QueryDescriptor;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.hibernate.search.backend.elasticsearch.ElasticsearchExtension;
+import org.hibernate.search.backend.elasticsearch.index.ElasticsearchIndexManager;
+import org.hibernate.search.backend.elasticsearch.metamodel.ElasticsearchIndexDescriptor;
+import org.hibernate.search.backend.lucene.LuceneExtension;
+import org.hibernate.search.backend.lucene.index.LuceneIndexManager;
+import org.hibernate.search.engine.backend.index.IndexManager;
+import org.hibernate.search.engine.search.predicate.SearchPredicate;
+import org.hibernate.search.engine.search.predicate.dsl.SearchPredicateFactory;
+import org.hibernate.search.engine.search.projection.SearchProjection;
+import org.hibernate.search.engine.search.query.SearchQuery;
+import org.hibernate.search.engine.search.query.SearchResult;
+import org.hibernate.search.engine.search.sort.SearchSort;
+import org.hibernate.search.mapper.orm.Search;
+import org.hibernate.search.mapper.orm.mapping.SearchMapping;
+import org.hibernate.search.mapper.orm.scope.SearchScope;
+import org.hibernate.search.mapper.orm.session.SearchSession;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 
 /**
  * Performs utility functions relating to Lucene indexes and Hibernate Search.
@@ -150,24 +159,35 @@ public final class IndexUtility {
 
             // check for @IndexedEmbedded
             if (m.isAnnotationPresent(IndexedEmbedded.class)) {
+                
                 final IndexedEmbedded annotation = m.getAnnotation(IndexedEmbedded.class);
-                final Class<?> jpaType = annotation.targetElement();
+                final Class<?> jpaType = annotation.targetType();
+                
                 if (jpaType == null) {
                     throw new Exception("Unable to determine jpa type, @IndexedEmbedded must use "
-                            + "targetElement");
+                            + "targetType");
                 }
+                
                 for (final String embeddedField : getIndexedFieldNames(jpaType, stringOnly)) {
-                    fieldNames.add(annotation.prefix() + embeddedField);
+                    fieldNames.add(embeddedField);
                 }
             }
 
             // determine if there's a fieldBridge (which converts the field)
             boolean hasFieldBridge = false;
-            if (m.isAnnotationPresent(Field.class)) {
-                if (!m.getAnnotation(Field.class).bridge().impl().toString().equals("void")) {
-                    hasFieldBridge = true;
-                }
-            }
+            
+//            if (doesMethodHaveFieldAnnotation(m)) {
+//
+//             // check all field annotations
+//                for (final Object annotationField : getMethodAnnotations(m)) {
+//                    
+//                    if (doesAnnotationFieldHaveBridge(annotationField)) {
+//                        
+//                        hasFieldBridge = true;
+//                        break;
+//                    }
+//                }
+//            }
 
             // for non-embedded fields, only process strings
             // This is because we're handling string based query here
@@ -175,25 +195,21 @@ public final class IndexUtility {
             if (stringOnly && !hasFieldBridge && !m.getReturnType().equals(String.class)) {
                 continue;
             }
-
-            // check for @Field annotation
-            if (m.isAnnotationPresent(Field.class)) {
-                final String fieldName = getFieldNameFromMethod(m, m.getAnnotation(Field.class));
-                fieldNames.add(fieldName);
-            }
-
-            // check for @Fields annotation
-            if (m.isAnnotationPresent(Fields.class)) {
-                for (final Field field : m.getAnnotation(Fields.class).value()) {
-                    final String fieldName = getFieldNameFromMethod(m, field);
-
+            
+            // check for Fields annotation
+            if (doesMethodHaveFieldAnnotation(m)) {
+                
+                // add all specified fields
+                for (final Object annotationField : getMethodAnnotations(m)) {
+                    
+                    final String fieldName = getFieldNameFromMethod(m, annotationField);
                     fieldNames.add(fieldName);
                 }
             }
         }
 
         // second cycle over all fields
-        for (final java.lang.reflect.Field f : getAllFields(clazz)) {
+        for (final Field f : getAllFields(clazz)) {
             // check for @IndexedEmbedded
             if (f.isAnnotationPresent(IndexedEmbedded.class)) {
 
@@ -213,7 +229,7 @@ public final class IndexUtility {
                 } else if (List.class.isAssignableFrom(f.getType())
                         || Set.class.isAssignableFrom(f.getType())) {
 
-                    final String fieldName = getFieldNameFromField(f, f.getAnnotation(Field.class));
+                    final String fieldName = getFieldNameFromField(f, getFieldAnnotation(f));
                     fieldNames.add(fieldName);
                     continue;
                 } else {
@@ -230,31 +246,35 @@ public final class IndexUtility {
 
             // determine if there's a fieldBridge (which converts the field)
             boolean hasFieldBridge = false;
-            if (f.isAnnotationPresent(Field.class)) {
-                if (f.getAnnotation(Field.class).bridge().impl().toString().equals("void")) {
-                    hasFieldBridge = true;
-                }
-            }
+            
+//            if (doesFieldHaveFieldAnnotation(f)) {
+//                
+//                // check all field annotations
+//                for (final Object annotationField : getFieldAnnotations(f)) {
+//                    
+//                    if (doesAnnotationFieldHaveBridge(annotationField)) {
+//                        
+//                        hasFieldBridge = true;
+//                        break;
+//                    }
+//                }
+//            }
 
             // for non-embedded fields, only process strings
             if (stringOnly && !hasFieldBridge && !f.getType().equals(String.class)) {
                 continue;
             }
 
-            // check for @Field annotation
-            if (f.isAnnotationPresent(Field.class)) {
-                final String fieldName = getFieldNameFromField(f, f.getAnnotation(Field.class));
-                fieldNames.add(fieldName);
-            }
-
-            // check for @Fields annotation
-            if (f.isAnnotationPresent(Fields.class)) {
-                for (final Field field : f.getAnnotation(Fields.class).value()) {
-                    final String fieldName = getFieldNameFromField(f, field);
+            // check for Fields annotation
+            if (doesFieldHaveFieldAnnotation(f)) {
+                
+                // add all specified fields
+                for (final Object annotationField : getFieldAnnotations(f)) {
+                    
+                    final String fieldName = getFieldNameFromField(f, annotationField);
                     fieldNames.add(fieldName);
                 }
             }
-
         }
 
         // Apply filters
@@ -281,30 +301,30 @@ public final class IndexUtility {
     /**
      * Helper function to get a field name from a method and annotation.
      *
-     * @param m the reflected, annotated method, assumed to be of form
+     * @param method the reflected, annotated method, assumed to be of form
      *            getFieldName()
      * @param annotationField the annotation field
      * @return the indexed field name
      */
-    public static String getFieldNameFromMethod(final Method m, final Field annotationField) {
-        // iannotationField annotationFieldield has a speciannotationFieldied
-        // name,
-        // use that
-        if (annotationField != null && annotationField.name() != null
-                && !annotationField.name().isEmpty()) {
-            return annotationField.name();
+    public static String getFieldNameFromMethod(final Method method, final Object annotationField) {
+        
+        String annotationName = getFieldName(annotationField);
+        
+        // first see if the annotationField has a name
+        if (annotationName != null && !annotationName.isEmpty()) {
+            return annotationName;
         }
 
         // otherwise, assume method name of form getannotationFieldName
         // where the desired value is annotationFieldName
-        if (m.getName().startsWith("get")) {
-            return StringUtils.uncapitalize(m.getName().substring(3));
-        } else if (m.getName().startsWith("is")) {
-            return StringUtils.uncapitalize(m.getName().substring(2));
-        } else if (m.getName().startsWith("set")) {
-            return StringUtils.uncapitalize(m.getName().substring(3));
+        if (method.getName().startsWith("get")) {
+            return StringUtils.uncapitalize(method.getName().substring(3));
+        } else if (method.getName().startsWith("is")) {
+            return StringUtils.uncapitalize(method.getName().substring(2));
+        } else if (method.getName().startsWith("set")) {
+            return StringUtils.uncapitalize(method.getName().substring(3));
         } else {
-            return m.getName();
+            return method.getName();
         }
 
     }
@@ -316,10 +336,13 @@ public final class IndexUtility {
      * @param annotationField the field annotation
      * @return the indexed field name
      */
-    private static String getFieldNameFromField(final java.lang.reflect.Field annotatedField,
-        final Field annotationField) {
-        if (annotationField.name() != null && !annotationField.name().isEmpty()) {
-            return annotationField.name();
+    private static String getFieldNameFromField(final Field annotatedField,
+        final Object annotationField) {
+        
+        String annotationName = getFieldName(annotationField);
+        
+        if (annotationName != null && !annotationName.isEmpty()) {
+            return annotationName;
         }
 
         return annotatedField.getName();
@@ -396,30 +419,227 @@ public final class IndexUtility {
                 "get" + sortField.substring(0, 1).toUpperCase() + sortField.substring(1),
                 new Class<?>[] {});
 
-        final Set<org.hibernate.search.annotations.Field> annotationFields = new HashSet<>();
-
-        // check for Field annotation
-        if (m.isAnnotationPresent(org.hibernate.search.annotations.Field.class)) {
-            annotationFields.add(m.getAnnotation(org.hibernate.search.annotations.Field.class));
-        }
+        final Set<Object> annotationFields = new HashSet<>();
 
         // check for Fields annotation
-        if (m.isAnnotationPresent(org.hibernate.search.annotations.Fields.class)) {
+        if (doesMethodHaveFieldAnnotation(m)) {
+            
             // add all specified fields
-            for (final org.hibernate.search.annotations.Field f : m
-                    .getAnnotation(org.hibernate.search.annotations.Fields.class).value()) {
+            for (final Object f : getMethodAnnotations(m)) {
                 annotationFields.add(f);
             }
         }
 
         // cycle over discovered fields and put name and analyze == YES into map
-        for (final org.hibernate.search.annotations.Field f : annotationFields) {
-            nameAnalyzedPairs.put(f.name(), f.analyze().equals(Analyze.YES) ? true : false);
+        for (final Object annotationField : annotationFields) {
+            nameAnalyzedPairs.put(getFieldName(annotationField), isFieldAnalyzed(annotationField));
         }
 
         sortFieldAnalyzedMap.put(key, nameAnalyzedPairs);
 
         return nameAnalyzedPairs;
+    }
+    
+    /**
+     * Returns if a method has a field annotation.
+     *
+     * @param method the method to check
+     * @return if the method has a field annotation
+     */
+    private static boolean doesMethodHaveFieldAnnotation(final Method method) {
+        
+        if (method.isAnnotationPresent(FullTextField.class) 
+                || method.isAnnotationPresent(GenericField.class)
+                || method.isAnnotationPresent(KeywordField.class)
+        ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    /**
+     * Returns if a field has a field annotation.
+     *
+     * @param field the field to check
+     * @return if the field has a field annotation
+     */
+    private static boolean doesFieldHaveFieldAnnotation(final Field field) {
+        
+        if (field.isAnnotationPresent(FullTextField.class) 
+                || field.isAnnotationPresent(GenericField.class)
+                || field.isAnnotationPresent(KeywordField.class)
+        ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    /**
+     * Returns if a field is set to be analyzed.
+     *
+     * @param field the field to check
+     * @return if a field is set to be analyzed
+     */
+    private static boolean isFieldAnalyzed(final Object field) {
+        
+        if (field.getClass() == FullTextField.class) {
+            
+            FullTextField castedField = (FullTextField) field;
+            
+            if (castedField.analyzer() != null && !castedField.analyzer().equals("") && !castedField.analyzer().equals("default")) {
+                return true;
+            } else {
+                return false;
+            }
+            
+        } else {
+            return false;
+        }
+    }
+    
+    /**
+     * Returns the name of a field annotation.
+     *
+     * @param field the field to get the name of
+     * @return the field name
+     */
+    private static String getFieldName(final Object field) {
+        
+        if (field instanceof FullTextField) {
+            return ((FullTextField) field).name();
+            
+        } else if (field instanceof KeywordField) {
+            return ((KeywordField) field).name();
+            
+        } else {
+            return ((GenericField) field).name();
+        }
+    }
+    
+    
+    
+    /**
+     * Returns the name of a field annotation.
+     *
+     * @param field the field to get the name of
+     * @return the field name
+     */
+    private static boolean doesAnnotationFieldHaveBridge(final Object field) {
+        
+        if (field instanceof FullTextField) {
+            
+            if (((FullTextField) field).valueBridge().toString().equals("void")) {
+                return true;  
+            } else {
+                return false;
+            }
+            
+        } else if (field instanceof KeywordField) {
+            
+            if (((KeywordField) field).valueBridge().toString().equals("void")) {
+                return true;  
+            } else {
+                return false;
+            }
+            
+        } else {
+            
+            if (((GenericField) field).valueBridge().toString().equals("void")) {
+                return true;  
+            } else {
+                return false;
+            }
+        }
+    }
+    
+    /**
+     * Returns the field annotation from a method.
+     *
+     * @param method the method to get annotation from
+     * @return the field annotation
+     */
+    private static Object getMethodAnnotation(final Method method) {
+        
+        if (method.isAnnotationPresent(FullTextField.class)) {
+            return method.getAnnotation(FullTextField.class);
+            
+        } else if (method.isAnnotationPresent(KeywordField.class)) {
+            return method.getAnnotation(KeywordField.class);
+            
+        } else {
+            return method.getAnnotation(GenericField.class);
+        }
+    }
+    
+    /**
+     * Returns all the field annotations from a method.
+     *
+     * @param method the method to get annotations from
+     * @return a set of field annotations
+     */
+    private static Set<Object> getMethodAnnotations(final Method method) {
+        
+        final Set<Object> annotations = new HashSet<>();
+        
+        if (method.isAnnotationPresent(FullTextField.class)) {
+            annotations.add(method.getAnnotation(FullTextField.class));  
+        } 
+        
+        if (method.isAnnotationPresent(KeywordField.class)) {
+            annotations.add(method.getAnnotation(KeywordField.class));
+        }
+        
+        if (method.isAnnotationPresent(GenericField.class)) {
+            annotations.add(method.getAnnotation(GenericField.class));
+        }
+        
+        return annotations;
+    }
+    
+    /**
+     * Returns the field annotation from a field.
+     *
+     * @param field the field to get annotation from
+     * @return the field annotation
+     */
+    private static Object getFieldAnnotation(final Field field) {
+        
+        if (field.isAnnotationPresent(FullTextField.class)) {
+            return field.getAnnotation(FullTextField.class);
+            
+        } else if (field.isAnnotationPresent(KeywordField.class)) {
+            return field.getAnnotation(KeywordField.class);
+            
+        } else {
+            return field.getAnnotation(GenericField.class);
+        }
+    }
+    
+    /**
+     * Returns all the field annotations from a field.
+     *
+     * @param field the field to get annotations from
+     * @return a set of field annotations
+     */
+    private static Set<Object> getFieldAnnotations(final Field field) {
+        
+        final Set<Object> annotations = new HashSet<>();
+        
+        if (field.isAnnotationPresent(FullTextField.class)) {
+            annotations.add(field.getAnnotation(FullTextField.class));  
+        } 
+        
+        if (field.isAnnotationPresent(KeywordField.class)) {
+            annotations.add(field.getAnnotation(KeywordField.class));
+        }
+        
+        if (field.isAnnotationPresent(GenericField.class)) {
+            annotations.add(field.getAnnotation(GenericField.class));
+        }
+        
+        return annotations;
     }
 
     /**
@@ -429,114 +649,76 @@ public final class IndexUtility {
      * @param query the query
      * @param pfs the pfs
      * @param manager the manager
+     * @param projections the names of projections to use
      * @return the full text query
      * @throws Exception the exception
      */
-    public static FullTextQuery applyPfsToLuceneQuery(final Class<?> clazz, final String query,
-        final PfsParameter pfs, final EntityManager manager) throws Exception {
-
-        FullTextQuery fullTextQuery = null;
+    @SuppressWarnings("unchecked")
+    public static <T> SearchResult<T> applyPfsToLuceneQuery(final Class<T> clazz, final String query,
+        final PfsParameter pfs, final EntityManager manager, final List<String> projections) throws Exception {
+        
+        SearchSession searchSession = Search.session(manager);
+        SearchMapping mapping = Search.mapping(manager.getEntityManagerFactory());
 
         // Build up the query
         final StringBuilder pfsQuery = new StringBuilder();
         pfsQuery.append(StringUtility.isEmpty(query) ? "*:*" : query);
+        
         // Set up the "full text query"
-        final FullTextEntityManager fullTextEntityManager =
-                Search.getFullTextEntityManager(manager);
 
         // construct the query
         final String finalQuery = (pfsQuery.toString().startsWith(" AND "))
                 ? pfsQuery.toString().substring(5) : pfsQuery.toString();
+                
+        SearchResult<T> result;
+        SearchScope<T> scope = searchSession.scope(clazz);
+        SearchPredicateFactory predicateFactory = scope.predicate();
+        SearchPredicate predicate;
+        
+        logger.debug("    query = " + finalQuery + ", " + pfs);
 
         // Directory indexmanager
         if (!PropertyUtility.getProperties()
-                .getProperty("spring.jpa.properties.hibernate.search.default.indexmanager").trim()
+                .getProperty("spring.jpa.properties.hibernate.search.backend.type").trim()
                 .equals("elasticsearch")) {
 
-            final SearchFactory searchFactory = fullTextEntityManager.getSearchFactory();
-            Query luceneQuery;
-            @SuppressWarnings("resource")
             final QueryParser queryParser = new MultiFieldQueryParser(
                     IndexUtility.getIndexedFieldNames(clazz, true).toArray(new String[] {}),
-                    searchFactory.getAnalyzer(clazz));
+                    mapping.indexedEntity(clazz).indexManager().unwrap(LuceneIndexManager.class).searchAnalyzer());
 
-            logger.debug("    query = " + finalQuery + ", " + pfs);
-            BooleanQuery.setMaxClauseCount(200000);
-            try {
-                luceneQuery = queryParser.parse(finalQuery);
-            } catch (final ParseException e) {
-                throw new LocalException("Unable to parse query = " + finalQuery + ", " + pfs, e);
-            }
-
-            // CONSIDER: re-enable this at some point
-            // // Validate query terms
-            // luceneQuery = luceneQuery
-            // .rewrite(fullTextEntityManager.getSearchFactory().getIndexReaderAccessor()
-            // .open(clazz));
-            // final Set<Term> terms = new HashSet<>();
-            // luceneQuery.extractTerms(terms);
-            // for (final Term t : terms) {
-            // if (t.field() != null && !t.field().isEmpty()
-            // && !IndexUtility.getIndexedFieldNames(clazz,
-            // false).contains(t.field()))
-            // {
-            // throw new ParseException("Query references invalid field name " +
-            // t.field() + ", "
-            // + IndexUtility.getIndexedFieldNames(clazz, false));
-            // }
-            // }
-
-            fullTextQuery = fullTextEntityManager.createFullTextQuery(luceneQuery, clazz);
+            predicate = predicateFactory
+                    .extension(LuceneExtension.get())
+                    .fromLuceneQuery(queryParser.parse(finalQuery)).toPredicate();
         }
 
         // elasticsearch index manager
         else if (PropertyUtility.getProperties()
-                .getProperty("spring.jpa.properties.hibernate.search.default.indexmanager").trim()
+                .getProperty("spring.jpa.properties.hibernate.search.backend.type").trim()
                 .equals("elasticsearch")) {
 
             // Need to escape double-quotes for the json
-            final String json = "{\"query\": {\"query_string\" : { " + "\"query\" : \""
-                    + StringEscapeUtils.escapeJson(finalQuery) + "\"} } }";
-            final QueryDescriptor qd = ElasticsearchQueries.fromJson(json);
-            logger.debug("    query = " + finalQuery + ", " + pfs);
-            fullTextQuery = fullTextEntityManager.createFullTextQuery(qd, clazz);
+            predicate = predicateFactory
+                    .extension(ElasticsearchExtension.get())
+                    .fromJson(
+                            "{\"bool\":{\"must\":[{\"query_string\":{\"query\":\"" + StringEscapeUtils.escapeJson(finalQuery) + "\"}}]}}"
+                     ).toPredicate();
         }
 
         // Unknown indexmanager type
         else {
             throw new Exception(
-                    "Unsupported spring.jpa.properties.hibernate.search.default.indexmanager = "
+                    "Unsupported spring.jpa.properties.hibernate.search.backend.type = "
                             + PropertyUtility.getProperties().getProperty(
-                                    "spring.jpa.properties.hibernate.search.default.indexmanager"));
+                                    "spring.jpa.properties.hibernate.search.backend.type"));
         }
+        
+        // the constructed sort fields to sort on
+        final List<SearchSort> sortFields = new ArrayList<>();
 
         // Handle sort and paging parameters
         if (pfs != null) {
-            // if start index and max results are set, set paging
-            if (pfs.getOffset() >= 0 && pfs.getLimit() >= 0) {
-                fullTextQuery.setFirstResult(pfs.getOffset());
-                fullTextQuery.setMaxResults(pfs.getLimit());
-            }
 
-            if (pfs.getSort() != null && !pfs.getSort().isEmpty()
-                    && pfs.getSort().equals("RANDOM")) {
-
-                // Randomly sort
-                final Sort sort = new Sort(new SortField("", new FieldComparatorSource() {
-
-                    /* see superclass */
-                    @Override
-                    public FieldComparator<Long> newComparator(final String fieldname,
-                        final int numHits, final int sortPos, final boolean reversed) {
-                        return new RandomOrderFieldComparator(numHits, fieldname, null);
-                    }
-
-                }));
-
-                fullTextQuery.setSort(sort);
-
-                // if sort specified (single or multi-field sort), set sorting
-            } else if ((pfs.getSortFields() != null && !pfs.getSortFields().isEmpty())
+            if ((pfs.getSortFields() != null && !pfs.getSortFields().isEmpty())
                     || (pfs.getSort() != null && !pfs.getSort().isEmpty())) {
 
                 // convenience container for sort field names (from either
@@ -551,15 +733,13 @@ public final class IndexUtility {
                     sortFieldNames = new ArrayList<>();
                     sortFieldNames.add(pfs.getSort());
                 }
-
-                // the constructed sort fields to sort on
-                final List<SortField> sortFields = new ArrayList<>();
-
+                
                 for (final String sortFieldName : sortFieldNames) {
 
                     // the computed string name of the indexed field to sort by
                     String sortFieldStr = null;
-
+                    SearchSort searchSort;
+                    
                     // if a subfield search (e.g. FIELD1.FIELD2) skip
                     // preconditions
                     if (sortFieldName.contains(".")) {
@@ -603,33 +783,52 @@ public final class IndexUtility {
                                     + sortFieldName);
                         }
                     }
-
-                    // construct the sort field object
-                    SortField sortField = null;
-
-                    // check for LONG fields
-                    if (sortFieldStr.toLowerCase().endsWith("longsort")) {
-                        sortField = new SortField(sortFieldStr, SortField.Type.LONG,
-                                !pfs.isAscending());
-                    }
-
-                    // otherwise, sort by STRING value
-                    else {
-                        sortField = new SortField(sortFieldStr, SortField.Type.STRING,
-                                !pfs.isAscending());
+  
+                    if (pfs.isAscending()) {
+                        searchSort = scope.sort().field(sortFieldStr).asc().toSort();
+                    } else {
+                        searchSort = scope.sort().field(sortFieldStr).desc().toSort();
                     }
 
                     // add the field
-                    sortFields.add(sortField);
+                    sortFields.add(searchSort);
                 }
-
-                final SortField[] sfs = sortFields.toArray(new SortField[] {});
-                fullTextQuery.setSort(new Sort(sfs));
-
             }
-
         }
-        return fullTextQuery;
+        
+        // the constructed projections
+        SearchProjection<T> projectionSelect = null;
+        
+        projectionSelect = (SearchProjection<T>) scope.projection().score().toProjection();
+        
+        if (projections.contains("score")) {
+            projectionSelect = (SearchProjection<T>) scope.projection().score().toProjection();
+            
+        } else if (projections.contains("entity")) {
+            projectionSelect = scope.projection().entity().toProjection();
+            
+        } else if (projections.contains("id")) {
+            projectionSelect = (SearchProjection<T>) scope.projection().entityReference().toProjection();
+        }
+        
+        SearchQuery<T> searchQuery = searchSession.search(scope)
+            //.select(projectionSelect)
+            .where(predicate)
+            .sort( f -> f.composite( sortBuilder -> { 
+                for (final SearchSort sortField : sortFields) {
+                    sortBuilder.add(sortField);
+                }
+            }))
+            .toQuery();
+        
+        // if start index and max results are set, set paging
+        if (pfs != null && pfs.getOffset() >= 0 && pfs.getLimit() >= 0) {
+            result = searchQuery.fetch(pfs.getOffset(), pfs.getLimit());
+        } else {
+            result = searchQuery.fetch(0, 200000);
+        }
+        
+        return result;
     }
 
     /**
@@ -639,17 +838,26 @@ public final class IndexUtility {
      * @param index the elasticsearch index
      * @throws Exception the exception
      */
-    public static void setMaxWindowSize(final String index) throws Exception {
+    public static void setMaxWindowSize(final String index, final EntityManager manager) throws Exception {
 
         // Only do this if indexs use elasticsearch
         if (PropertyUtility.getProperties()
-                .getProperty("spring.jpa.properties.hibernate.search.default.indexmanager").trim()
+                .getProperty("spring.jpa.properties.hibernate.search.backend.type").trim()
                 .equals("elasticsearch")) {
+            
+            SearchMapping mapping = Search.mapping(manager.getEntityManagerFactory()); 
+            IndexManager indexManager = mapping.indexManager(index); 
+            ElasticsearchIndexManager esIndexManager = indexManager.unwrap( ElasticsearchIndexManager.class ); 
+            ElasticsearchIndexDescriptor descriptor = esIndexManager.descriptor();
+            String indexReadName = descriptor.readName();
+            String indexWriteName = descriptor.writeName();
 
             // First call and verify the index exists
+            final String esProtocol = PropertyUtility.getProperties()
+                    .getProperty("spring.jpa.properties.hibernate.search.backend.protocol");
             final String esHost = PropertyUtility.getProperties()
-                    .getProperty("hibernate.search.default.elasticsearch.host");
-            final String esUrl = esHost + "/" + index + "/_search";
+                    .getProperty("spring.jpa.properties.hibernate.search.backend.hosts");
+            final String esUrl = esProtocol + "://" + esHost + "/" + indexReadName + "/_search";
             final Client client = ClientBuilder.newClient();
             WebTarget target = client.target(esUrl);
             try (Response response = target.request().get()) {
@@ -670,7 +878,7 @@ public final class IndexUtility {
             }
 
             // Then, POST to make the max result window change
-            final String postUrl = esHost + "/" + index + "/_settings";
+            final String postUrl = esProtocol + "://" + esHost + "/" + indexWriteName + "/_settings";
             final String requestBody = "{\"index\" : {\"max_result_window\" : 2500000}}";
             target = client.target(postUrl);
 

@@ -14,12 +14,11 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Index;
-import org.hibernate.search.annotations.Indexed;
-import org.hibernate.search.annotations.SortableField;
-import org.hibernate.search.annotations.Store;
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 /**
  * Represents an Organization.
@@ -31,8 +30,6 @@ public class Organization extends AbstractHasModified {
 
     /** The name. */
     @Column(nullable = false)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
     private String name;
 
     /** The description. */
@@ -80,6 +77,7 @@ public class Organization extends AbstractHasModified {
      *
      * @return the name
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
         return name;
     }

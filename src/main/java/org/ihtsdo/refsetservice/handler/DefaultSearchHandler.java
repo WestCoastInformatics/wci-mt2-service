@@ -2,6 +2,7 @@
 package org.ihtsdo.refsetservice.handler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,8 +14,7 @@ import javax.persistence.EntityManager;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
-import org.hibernate.search.engine.ProjectionConstants;
-import org.hibernate.search.jpa.FullTextQuery;
+import org.hibernate.search.engine.search.query.SearchResult;
 import org.ihtsdo.refsetservice.model.HasId;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.util.IndexUtility;
@@ -72,21 +72,20 @@ public class DefaultSearchHandler implements SearchHandler {
         final PfsParameter pfs, final int[] totalCt,
         final EntityManager manager) throws Exception {
 
-        final FullTextQuery fullTextQuery = helper(query, fieldedClauses,
-                additionalClauses, clazz, pfs, manager);
-        // Perform the final query and save score values
-        fullTextQuery.setProjection(ProjectionConstants.SCORE,
-                ProjectionConstants.THIS);
-        totalCt[0] = fullTextQuery.getResultSize();
+        final SearchResult<T> searchResult = helper(query, fieldedClauses,
+                additionalClauses, clazz, pfs, manager, Arrays.asList("score", "entity"));
+
+        totalCt[0] = Math.toIntExact(searchResult.total().hitCount());
 
         final List<T> classes = new ArrayList<>();
 
         @SuppressWarnings("unchecked")
-        final List<Object[]> results = fullTextQuery.getResultList();
-        for (final Object[] result : results) {
-            final Object score = result[0];
+        final List<T> results = searchResult.hits();
+        
+        for (final T result : results) {
+            final Object score = result;
             @SuppressWarnings("unchecked")
-            final T t = (T) result[1];
+            final T t = result;
 
             // skip any bad entries from the index.
             if (t == null) {
@@ -134,9 +133,10 @@ public class DefaultSearchHandler implements SearchHandler {
         final Set<String> additionalClauses, final Class<T> clazz,
         final PfsParameter pfs, final EntityManager manager) throws Exception {
 
-        final FullTextQuery fullTextQuery = helper(query, fieldedClauses,
-                additionalClauses, clazz, pfs, manager);
-        return fullTextQuery.getResultSize();
+        final SearchResult<T> searchResult = helper(query, fieldedClauses,
+                additionalClauses, clazz, pfs, manager, new ArrayList<String>());
+        
+        return Math.toIntExact(searchResult.total().hitCount());
 
     }
 
@@ -154,23 +154,23 @@ public class DefaultSearchHandler implements SearchHandler {
      * @throws Exception the exception
      */
     @Override
-    public List<String> getIdResults(final String query,
+    public <T> List<String> getIdResults(final String query,
         final Map<String, String> fieldedClauses,
-        final Set<String> additionalClauses, final Class<?> clazz,
+        final Set<String> additionalClauses, final Class<T> clazz,
         final PfsParameter pfs, final int[] totalCt,
         final EntityManager manager) throws Exception {
 
-        final FullTextQuery fullTextQuery = helper(query, fieldedClauses,
-                additionalClauses, clazz, pfs, manager);
-        totalCt[0] = fullTextQuery.getResultSize();
+        final SearchResult<T> searchResult = helper(query, fieldedClauses,
+                additionalClauses, clazz, pfs, manager, Arrays.asList("id"));
+        
+        totalCt[0] = Math.toIntExact(searchResult.total().hitCount());
 
-        // Perform the final query and save score values
-        fullTextQuery.setProjection(ProjectionConstants.ID);
         final List<String> ids = new ArrayList<>();
         @SuppressWarnings("unchecked")
-        final List<Object[]> results = fullTextQuery.getResultList();
-        for (final Object[] result : results) {
-            final String id = (String) result[0];
+        final List<T> results = searchResult.hits();
+        
+        for (final T result : results) {
+            final String id = (String) result;
             ids.add(id);
         }
 
@@ -186,14 +186,16 @@ public class DefaultSearchHandler implements SearchHandler {
      * @param clazz the clazz
      * @param pfs the pfs
      * @param manager the manager
+     * @param projections the names of projections to use
      * @return the full text query
      * @throws Exception the exception
      */
     @SuppressWarnings("null")
-    public FullTextQuery helper(final String query,
+    public <T> SearchResult<T> helper(final String query,
         final Map<String, String> fieldedClauses,
-        final Set<String> additionalClauses, final Class<?> clazz,
-        final PfsParameter pfs, final EntityManager manager) throws Exception {
+        final Set<String> additionalClauses, final Class<T> clazz,
+        final PfsParameter pfs, final EntityManager manager, 
+        final List<String> projections) throws Exception {
         // Default Search Handler algorithm: run the query "as-is"
         // with fielded or additional clauses
 
@@ -232,10 +234,10 @@ public class DefaultSearchHandler implements SearchHandler {
         final String finalQuery =
                 StringUtility.composeQuery("AND", part3, part1, part2);
 
-        FullTextQuery fullTextQuery = null;
+        SearchResult<T> searchResult = null;
         try {
-            fullTextQuery = IndexUtility.applyPfsToLuceneQuery(clazz,
-                    finalQuery.toString(), pfs, manager);
+            searchResult = IndexUtility.applyPfsToLuceneQuery(clazz,
+                    finalQuery.toString(), pfs, manager, projections);
         } catch (ParseException | IllegalArgumentException | LocalException e) {
             // If a "local parse exception", just try again
             if (!(e instanceof LocalException)
@@ -243,11 +245,11 @@ public class DefaultSearchHandler implements SearchHandler {
                 e.printStackTrace();
             }
             // If there's a parse exception, try the literal query
-            fullTextQuery = IndexUtility.applyPfsToLuceneQuery(clazz,
-                    escapedQuery, pfs, manager);
+            searchResult = IndexUtility.applyPfsToLuceneQuery(clazz,
+                    escapedQuery, pfs, manager, projections);
         }
 
-        return fullTextQuery;
+        return searchResult;
 
     }
 

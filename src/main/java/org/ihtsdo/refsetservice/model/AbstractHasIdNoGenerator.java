@@ -5,6 +5,10 @@ import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 /**
@@ -51,8 +55,7 @@ public abstract class AbstractHasIdNoGenerator implements HasId {
      * @return the id
      */
     @Override
-    // @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    // @SortableField
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getId() {
         return id;
     }

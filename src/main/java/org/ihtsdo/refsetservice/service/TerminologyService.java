@@ -25,9 +25,9 @@ import javax.persistence.Persistence;
 import javax.persistence.metamodel.EntityType;
 
 import org.hibernate.CacheMode;
-import org.hibernate.search.annotations.Indexed;
-import org.hibernate.search.jpa.FullTextEntityManager;
-import org.hibernate.search.jpa.Search;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.orm.Search;
+import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.ihtsdo.refsetservice.handler.SearchHandler;
 import org.ihtsdo.refsetservice.model.HasId;
 import org.ihtsdo.refsetservice.model.HasModified;
@@ -1394,19 +1394,19 @@ public class TerminologyService implements RootService {
         for (final String objectToReindex : objectsToReindex) {
             logger.info("  " + objectToReindex);
         }
+        
+        final SearchSession searchSession = Search.session(getEntityManager());
 
         // Reindex each object
         for (final String key : reindexMap.keySet()) {
             // Concepts
             if (objectsToReindex.contains(key)) {
                 logger.info("  creating indexes for " + key);
-                final FullTextEntityManager fullTextEntityManager =
-                        Search.getFullTextEntityManager(getEntityManager());
-
+                
                 try {
-                    fullTextEntityManager.purgeAll(reindexMap.get(key));
-                    fullTextEntityManager.flushToIndexes();
-                    fullTextEntityManager.createIndexer(reindexMap.get(key))
+                    searchSession.workspace(reindexMap.get(key)).purge();
+                    searchSession.indexingPlan().execute(); // may not need anymore
+                    searchSession.massIndexer(reindexMap.get(key))
                             .batchSizeToLoadObjects(100).cacheMode(CacheMode.IGNORE)
                             .idFetchSize(100).threadsToLoadObjects(10).startAndWait();
                 } catch (final IllegalArgumentException e) {
@@ -1417,10 +1417,10 @@ public class TerminologyService implements RootService {
                 // if using elasticsearch the max result window size must be
                 // increased
                 if (properties
-                        .getProperty("spring.jpa.properties.hibernate.search.default.indexmanager")
+                        .getProperty("spring.jpa.properties.hibernate.search.backend.type")
                         .trim().equals("elasticsearch")) {
                     IndexUtility.setMaxWindowSize(
-                            reindexMap.get(key).toString().toLowerCase().replace("class ", ""));
+                            key, getEntityManager());
                 }
 
                 // optimize flags are default true.
@@ -1447,10 +1447,9 @@ public class TerminologyService implements RootService {
 
         logger.info("******** properties app.entity_packages: " + properties.getProperty("app.entity_packages"));
         final Reflections reflections = new Reflections(properties.getProperty("app.entity_packages"));
-        final FullTextEntityManager fullTextEntityManager =
-                Search.getFullTextEntityManager(getEntityManager());
+        final SearchSession searchSession = Search.session(getEntityManager());
         
-        Set<EntityType<?>> entities = fullTextEntityManager.getMetamodel().getEntities();
+        Set<EntityType<?>> entities = getEntityManager().getMetamodel().getEntities();
         List<String> entityNames = new ArrayList<>();
         
         for (EntityType entity : entities) {
@@ -1462,8 +1461,8 @@ public class TerminologyService implements RootService {
         for (final Class<?> clazz : reflections.getTypesAnnotatedWith(Indexed.class)) {
             logger.info("    class = " + clazz.getName());
             try {
-                fullTextEntityManager.purgeAll(clazz);
-                fullTextEntityManager.flushToIndexes();
+                searchSession.workspace(clazz).purge();
+                searchSession.indexingPlan().execute(); // may not need anymore
             } catch (final IllegalArgumentException e) {
                 logger.warn("      NOT AN ENTITY in this project");
                 e.printStackTrace();

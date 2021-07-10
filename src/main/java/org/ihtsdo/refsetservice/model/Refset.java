@@ -21,25 +21,23 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 
-import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Type;
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.AnalyzerDef;
-import org.hibernate.search.annotations.DateBridge;
-import org.hibernate.search.annotations.EncodingType;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.FieldBridge;
-import org.hibernate.search.annotations.Fields;
-import org.hibernate.search.annotations.Index;
-import org.hibernate.search.annotations.Indexed;
-import org.hibernate.search.annotations.IndexedEmbedded;
-import org.hibernate.search.annotations.Resolution;
-import org.hibernate.search.annotations.SortableField;
-import org.hibernate.search.annotations.Store;
-import org.hibernate.search.annotations.TokenizerDef;
-import org.hibernate.search.bridge.builtin.BooleanBridge;
+
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.AssociationInverseSide;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -51,10 +49,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  * 
  */
 @Entity
-// @JsonInclude(Include.NON_EMPTY)
-// @JsonIgnoreProperties(ignoreUnknown = true)
-@AnalyzerDef(name = "whitespace",
-        tokenizer = @TokenizerDef(factory = WhitespaceTokenizerFactory.class))
 @Table(name = "refsets")
 @Indexed
 public class Refset extends AbstractHasModified implements Comparable<Refset> {
@@ -139,7 +133,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     private Set<String> tags = new HashSet<String>();
 
     /** The definition clauses. */
-    @IndexedEmbedded(targetElement = DefinitionClause.class)
     // @Fetch(FetchMode.JOIN)
     @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class,
             orphanRemoval = true, fetch = FetchType.LAZY)
@@ -215,8 +208,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the refset ID
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getRefsetId() {
         return refsetId;
     }
@@ -235,11 +227,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the name
      */
-    @Fields({
-            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "nameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    })
-    @SortableField(forField = "nameSort")
+    @FullTextField(analyzer = "whitespace")
+    @KeywordField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
         return name;
     }
@@ -258,8 +247,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the type
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getType() {
         return type;
     }
@@ -278,8 +266,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the version status
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getVersionStatus() {
         return versionStatus;
     }
@@ -298,9 +285,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the versionDate
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
-    @DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    //@DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
     public Date getVersionDate() {
         return versionDate;
     }
@@ -355,8 +341,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the isPrivateRefset
      */
-    @FieldBridge(impl = BooleanBridge.class)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean isPrivateRefset() {
         return privateRefset;
     }
@@ -395,8 +380,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the tags
      */
-    @Field(analyze = Analyze.NO, store = Store.NO)
-    @IndexedEmbedded
+    @GenericField(searchable = Searchable.NO, projectable = Projectable.NO, sortable = Sortable.NO)
+    //@IndexedEmbedded
     public Set<String> getTags() {
 
         if (tags == null) {
@@ -440,12 +425,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the edition name
      */
-    @Fields({
-            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "editionNameSort", index = Index.YES, analyze = Analyze.NO,
-                    store = Store.NO)
-    })
-    @SortableField(forField = "editionNameSort")
+    @FullTextField(analyzer = "whitespace")
+    @KeywordField(name = "editionNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @IndexingDependency(derivedFrom = @ObjectPath( @PropertyValue(propertyName = "edition")))
     public String getEditionName() {
         return edition == null ? null : edition.getName();
     }
@@ -467,12 +449,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the edition short name
      */
-    @Fields({
-            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "editionShortNameSort", index = Index.YES, analyze = Analyze.NO,
-                    store = Store.NO)
-    })
-    @SortableField(forField = "editionShortNameSort")
+    @FullTextField(analyzer = "whitespace")
+    @KeywordField(name = "editionShortNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @IndexingDependency(derivedFrom = @ObjectPath( @PropertyValue(propertyName = "edition")))
     public String getEditionShortName() {
         return edition == null ? null : edition.getShortName();
     }
@@ -494,8 +473,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the localSet
      */
-    @FieldBridge(impl = BooleanBridge.class)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean isLocalSet() {
         return localSet;
     }
@@ -514,7 +492,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the moduleId
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getModuleId() {
         return moduleId;
     }
@@ -551,6 +529,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the definitionClauses
      */
+    @IndexedEmbedded(targetType = DefinitionClause.class)
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public List<DefinitionClause> getDefinitionClauses() {
 
         if (definitionClauses == null) {
@@ -575,8 +555,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the downloadable
      */
     @JsonGetter()
-    @FieldBridge(impl = BooleanBridge.class)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public boolean isDownloadable() {
         return downloadable;
     }
@@ -596,8 +574,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the feedbackVisible
      */
     @JsonGetter()
-    @FieldBridge(impl = BooleanBridge.class)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
     public boolean isFeedbackVisible() {
         return feedbackVisible;
     }
@@ -625,12 +601,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the organization name
      */
-    @Fields({
-            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "organizationNameSort", index = Index.YES, analyze = Analyze.NO,
-                    store = Store.NO)
-    })
-    @SortableField(forField = "organizationNameSort")
+    @FullTextField(analyzer = "whitespace")
+    @KeywordField(name = "organizationNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @IndexingDependency(derivedFrom = @ObjectPath( {@PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization")}))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationName() {
 
         if (project == null || project.getOrganization() == null) {
@@ -665,7 +639,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /**
      * @return the latestVersion
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean isLatestVersion() {
         return latestVersion;
     }

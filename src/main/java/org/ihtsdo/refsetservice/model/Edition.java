@@ -22,14 +22,14 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Fields;
-import org.hibernate.search.annotations.Index;
-import org.hibernate.search.annotations.Indexed;
-import org.hibernate.search.annotations.IndexedEmbedded;
-import org.hibernate.search.annotations.SortableField;
-import org.hibernate.search.annotations.Store;
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 
 /**
@@ -119,11 +119,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the name
      */
-    @Fields({
-            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "nameSort", index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    })
-    @SortableField(forField = "nameSort")
+    @FullTextField(analyzer = "whitespace")
+    @KeywordField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
         return name;
     }
@@ -142,8 +139,7 @@ public class Edition extends AbstractHasModified {
      *
      * @return the namespace
      */
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.NO)
-    @SortableField
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getNamespace() {
         return namespace;
     }
@@ -216,8 +212,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the default language refsets
      */
-    @Field(analyze = Analyze.NO, store = Store.YES)
-    @IndexedEmbedded
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    //@IndexedEmbedded
     public Set<String> getDefaultLanguageRefsets() {
         
         if (defaultLanguageRefsets == null) {
@@ -323,12 +319,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the country
      */
-    @Fields({
-            @Field(index = Index.YES, analyze = Analyze.YES, store = Store.NO),
-            @Field(name = "shortNameSort", index = Index.YES, analyze = Analyze.NO,
-                    store = Store.NO)
-    })
-    @SortableField(forField = "shortNameSort")
+    @FullTextField(analyzer = "whitespace")
+    @KeywordField(name = "shortNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getShortName() {
         return shortName;
     }

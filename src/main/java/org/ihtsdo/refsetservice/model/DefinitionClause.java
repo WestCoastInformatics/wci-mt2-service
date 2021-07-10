@@ -5,6 +5,11 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+
 /**
  * Represents the ECL definition clauses for an intensional refset.
  */
@@ -63,6 +68,7 @@ public class DefinitionClause extends AbstractHasModified {
      *
      * @return the value
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getValue() {
         return value;
     }
@@ -81,6 +87,7 @@ public class DefinitionClause extends AbstractHasModified {
      *
      * @return the negated
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean getNegated() {
         return negated;
     }
