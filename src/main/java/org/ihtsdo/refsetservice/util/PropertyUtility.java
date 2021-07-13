@@ -56,10 +56,12 @@ public class PropertyUtility {
                 .forEach(prop -> properties.setProperty(prop, env.getProperty(prop)));
         ready = true;
         
+        /* // only uncomment for testing - do not print out properties in Production environments
         TreeSet<Object> sortedPropertyNames = new TreeSet<>(properties.keySet());
         for (Object propertyName : sortedPropertyNames) {
             logger.info("Property: " + propertyName  + " = " + properties.get(propertyName));
         }
+        */
     }
 
     /**

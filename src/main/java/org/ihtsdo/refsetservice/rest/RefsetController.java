@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -751,7 +752,8 @@ public class RefsetController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/rtt",
             produces = "application/json")
-    public @ResponseBody String migrateRttData() throws Exception {
+    public @ResponseBody String migrateRttData(@RequestParam(required = false)
+    final String force) throws Exception {
 
         try {
 
@@ -760,12 +762,16 @@ public class RefsetController extends BaseController {
                 final ResultList<String> editions = service.findIds("", null, Edition.class, null);
                 String message = "";
 
-                if (editions.size() > 0) {
+                if (editions.size() > 2) {
 
-                    message =
-                            "RTT data migration: Database not empty, migration WOULD NORMALLY BE cancelled. ";
-                    logger.info(message);
-                    // return "Database not empty, migration cancelled";
+                    if (force == null || !force.equals("true")) {
+                        return "Database not empty, migration cancelled";
+                    } else {
+                        
+                        message =
+                                "RTT data migration: Database not empty, migration WOULD NORMALLY BE cancelled. ";
+                        logger.info(message);
+                    }
                 }
 
                 logger.info("*********** Starting RTT data migration");

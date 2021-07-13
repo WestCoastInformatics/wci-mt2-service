@@ -633,6 +633,28 @@ public class RefsetControllerTests extends BaseTest {
             }
         }
     }
+    
+    /**
+     * Test the RTT Migration **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED.
+     *
+     * @throws Exception the exception
+     */
+    // **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED ****
+    //@Test
+    public void testRttMigration() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+
+        url = "/admin/migration/rtt";
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        
+        assertThat(content).isEqualTo("RTT data migration completed successfully");
+    }
 
     /**
      * Get the internal refset ID based on the refset's terminology specific ID

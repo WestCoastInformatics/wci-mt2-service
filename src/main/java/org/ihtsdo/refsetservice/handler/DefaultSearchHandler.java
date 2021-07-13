@@ -170,7 +170,7 @@ public class DefaultSearchHandler implements SearchHandler {
         final List<T> results = searchResult.hits();
         
         for (final T result : results) {
-            final String id = (String) result;
+            final String id = ((HasId)result).getId();
             ids.add(id);
         }
 
