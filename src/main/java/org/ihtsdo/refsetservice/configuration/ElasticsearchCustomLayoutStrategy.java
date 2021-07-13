@@ -22,19 +22,19 @@ public class ElasticsearchCustomLayoutStrategy implements IndexLayoutStrategy {
     @Override
     public String createInitialElasticsearchIndexName(String hibernateSearchIndexName) {
 
-        return properties.getProperty("app.elasticsearch_index_prefix") 
+        return properties.getProperty("app.elasticsearch.index.prefix") 
                 + hibernateSearchIndexName;
     }
 
     @Override
     public String createWriteAlias(String hibernateSearchIndexName) {
-        return properties.getProperty("app.elasticsearch_index_prefix") 
+        return properties.getProperty("app.elasticsearch.index.prefix") 
                 + hibernateSearchIndexName + "-write";
     }
 
     @Override
     public String createReadAlias(String hibernateSearchIndexName) {
-        return properties.getProperty("app.elasticsearch_index_prefix") 
+        return properties.getProperty("app.elasticsearch.index.prefix") 
                 + hibernateSearchIndexName + "-read";
     }
 
