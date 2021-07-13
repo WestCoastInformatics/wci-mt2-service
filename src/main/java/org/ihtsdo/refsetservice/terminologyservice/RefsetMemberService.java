@@ -505,6 +505,11 @@ public class RefsetMemberService {
                 snowstormQuery += queryPart + " AND ";
             }
         }
+        
+        // if there are no query terms just exit the method
+        if (snowstormQuery.equals("")) {
+            return refsetQuery;
+        }
 
         snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
 
