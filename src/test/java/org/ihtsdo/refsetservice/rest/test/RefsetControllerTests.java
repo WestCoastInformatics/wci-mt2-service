@@ -11,8 +11,11 @@ import java.util.Map;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.TypeKeyValue;
+import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
@@ -689,4 +692,81 @@ public class RefsetControllerTests extends BaseTest {
             return refset.getId();
         }
     }
+    
+    /**
+     * Test getting list of version statuses.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testVersionStatuses() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+        Refset refset = null;
+
+        url = baseUrl + "/versionStatuses";
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        ResultList<TypeKeyValue> versionStatuses = new ObjectMapper().readValue(content,
+                (new TypeReference<ResultList<TypeKeyValue>>() {
+                    /* NA */}));
+        assertThat(versionStatuses).isNotNull();
+        assertThat(versionStatuses.getTotal()).isEqualTo(VersionStatus.values().length);
+
+    }
+    
+    /**
+     * Test getting list of version statuses.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testVersions() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+
+        url = baseUrl + "/versions";
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        ResultList<TypeKeyValue> versions = new ObjectMapper().readValue(content,
+                (new TypeReference<ResultList<TypeKeyValue>>() {
+                    /* NA */}));
+        assertThat(versions).isNotNull();
+        assertThat(versions.getTotal()).isGreaterThan(5);
+
+    }
+    
+    /**
+     * Test getting editions.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testEditions() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+
+        url = baseUrl + "/editions";
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        ResultList<TypeKeyValue> editions = new ObjectMapper().readValue(content,
+                (new TypeReference<ResultList<TypeKeyValue>>() {
+                    /* NA */}));
+        assertThat(editions).isNotNull();
+        assertThat(editions.getItems().size()).isGreaterThan(8);
+
+    }
+
 }
