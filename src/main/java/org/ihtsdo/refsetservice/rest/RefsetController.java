@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +17,10 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
+import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.TypeKeyValue;
+import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
@@ -867,5 +871,170 @@ public class RefsetController extends BaseController {
 
         return versionList;
     }
+    /**
+     * Gets the version statuses.
+     *
+     * @return the version statuses
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Gets the version statuses", response = ResultList.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET,
+            value = "/refset/versionStatuses", produces = "application/json")
+    public @ResponseBody ResultList<TypeKeyValue> getVersionStatuses() throws Exception {
 
+        try {
+
+            logger.info("*********** getVersionStatuses ");
+
+            try (TerminologyService service = new TerminologyService()) {
+
+                final List<TypeKeyValue> versionStatuses = new ArrayList<>();
+                
+                for(VersionStatus value : VersionStatus.values()) {
+                	TypeKeyValue typeKeyValue = new TypeKeyValue("status", value.toString(), value.toString());
+                	versionStatuses.add(typeKeyValue);
+                }
+
+                ResultList<TypeKeyValue> results = new ResultList<>(versionStatuses);
+                results.setTotalKnown(true);
+
+                return results;
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Gets the versions.
+     *
+     * @return the versions
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Gets the versions", response = ResultList.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET,
+            value = "/refset/versions", produces = "application/json")
+    public @ResponseBody ResultList<TypeKeyValue> getVersions() throws Exception {
+
+        try {
+
+            logger.info("*********** getVersions ");
+
+            try (TerminologyService service = new TerminologyService()) {
+
+            	ResultList<Refset> refsets = new ResultList<Refset>();
+                final PfsParameter pfs = new PfsParameter();
+                final QueryParameter query = new QueryParameter();
+
+                refsets = service.find(query, pfs, Refset.class, null);
+                
+                ResultList<TypeKeyValue> results = new ResultList<>();
+                List<TypeKeyValue> resultItems = new ArrayList<>();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                for (Refset refset : refsets.getItems()) {
+                	String version = sdf.format(refset.getVersionDate());
+                	TypeKeyValue entry = new TypeKeyValue("version", version, version);
+                	if (!resultItems.contains(entry)) {
+                		resultItems.add(entry);
+                	}
+                }
+                resultItems.sort(new Comparator<TypeKeyValue>() {
+
+					@Override
+					public int compare(TypeKeyValue o1, TypeKeyValue o2) {
+						return o2.getValue().compareTo(o1.getValue());
+					}
+                		
+                });
+                results.setItems(resultItems);
+                results.setTotalKnown(true);
+
+                return results;
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+
+    /**
+     * Gets the editions.
+     *
+     * @return the editions
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Gets the editions", response = ResultList.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET,
+            value = "/refset/editions", produces = "application/json")
+    public @ResponseBody ResultList<TypeKeyValue> getEditions() throws Exception {
+
+        try {
+
+            logger.info("*********** getEditions ");
+
+			try (TerminologyService service = new TerminologyService()) {
+
+				final long start = System.currentTimeMillis();
+				ResultList<Edition> results = new ResultList<Edition>();
+				final PfsParameter pfs = new PfsParameter();
+				final QueryParameter query = new QueryParameter();
+
+				results = service.find(query, pfs, Edition.class, null);
+
+				results.setTimeTaken(System.currentTimeMillis() - start);
+				results.setTotalKnown(true);
+
+				logger.debug("******** results: " + ModelUtility.toJson(results));
+				List<Edition> editionList = results.getItems();
+				editionList.sort(new Comparator<Edition>() {
+
+					@Override
+					public int compare(Edition o1, Edition o2) {
+						return o1.getName().compareTo(o2.getName());
+					}
+				});
+				List<TypeKeyValue> entryList = new ArrayList<>();
+				ResultList<TypeKeyValue> entryResults = new ResultList<>();
+				for (Edition edition : editionList) {
+					TypeKeyValue tkv = new TypeKeyValue("edition", edition.getName(), edition.getName());
+				    entryList.add(tkv);
+				}
+				entryResults.setItems(entryList);
+				entryResults.setTotalKnown(true);
+
+				return entryResults;
+			}
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+
+    
 }
