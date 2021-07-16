@@ -77,9 +77,16 @@ public class S3ConnectionWrapper {
                 s3Client.listBuckets();
             } catch (SdkClientException e) {
                 // Connect to server with static keys
-                BasicAWSCredentials awsCreds = new BasicAWSCredentials(ID, KEY);
-                s3Client = AmazonS3ClientBuilder.standard().withRegion(REGION)
-                        .withCredentials(new AWSStaticCredentialsProvider(awsCreds)).build();
+                
+                AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().withRegion(REGION);
+                
+                if (ID != null && !ID.equals("") && !ID.equals("none") && !ID.equals("change_me")) {
+                    
+                    BasicAWSCredentials awsCreds = new BasicAWSCredentials(ID, KEY);
+                    clientBuilder = clientBuilder.withCredentials(new AWSStaticCredentialsProvider(awsCreds));
+                }
+                
+                s3Client = clientBuilder.build();
 
                 // Check connection again. If this fails as well, it will throw
                 // the
