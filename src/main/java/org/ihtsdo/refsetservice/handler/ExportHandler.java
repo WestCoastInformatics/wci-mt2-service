@@ -11,6 +11,7 @@ import java.util.Set;
 import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,7 @@ import com.amazonaws.services.s3.AmazonS3;
  */
 public class ExportHandler {
 
-    private static final String TOP_LEVEL_AWS_FOLDER = "rt2/";
+    private static final String TOP_LEVEL_AWS_FOLDER = S3ConnectionWrapper.FOLDER_DIRECTORY + "/";
 
     /** The logger. */
     @SuppressWarnings("unused")
