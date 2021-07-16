@@ -40,7 +40,9 @@ set ELASTICSEARCH_INDEX_PREFIX=local_
 set SNOWSTORM_USERNAME=changeme
 set SNOWSTORM_PASSWORD=changeme
 set SNOWSTORM_AUTH_URL=changeme
-set SNOWSTORM_AUTH_HEADER=changeme
+set AWS_BUCKET=wci2
+set AWS_REGION=us-east-1
+set AWS_FOLDER_DIRECTORY=rt2
 set AWS_ID=changeme
 set AWS_SECRET_KEY=changeme
 ```

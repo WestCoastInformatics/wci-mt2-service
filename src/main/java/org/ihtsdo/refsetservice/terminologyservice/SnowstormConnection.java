@@ -26,9 +26,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SnowstormConnection {
 
-    /** The auth header. */
-    private static String AUTH_HEADER;
-
     /** The authentication url. */
     private static String AUTH_URL;
 
@@ -63,7 +60,6 @@ public class SnowstormConnection {
         AUTH_URL = PropertyUtility.getProperty("snowstorm.authUrl");
         USER_NAME = PropertyUtility.getProperty("snowstorm.username");
         PASSWORD = PropertyUtility.getProperty("snowstorm.password");
-        AUTH_HEADER = PropertyUtility.getProperty("snowstorm.authHeader");
     }
 
     /**
@@ -77,7 +73,7 @@ public class SnowstormConnection {
 
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
-        final Response response = target.request(ACCEPT).header("Authorization", AUTH_HEADER)
+        final Response response = target.request(ACCEPT)
                 .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
                 .header("Cookie", getGenericUserCookie())
                 .get();
@@ -96,7 +92,7 @@ public class SnowstormConnection {
         
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
-        final InputStream response = target.request("application/zip").header("Authorization", AUTH_HEADER)
+        final InputStream response = target.request("application/zip")
                 .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
                 .header("Cookie", getGenericUserCookie())
                 .get(InputStream.class);
@@ -116,7 +112,6 @@ public class SnowstormConnection {
         Client client = ClientBuilder.newClient();
         WebTarget target = client.target(url);
         Builder builder = target.request(MediaType.APPLICATION_JSON)
-                .header("Authorization", AUTH_HEADER)
                 .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
                 .header("Cookie", getGenericUserCookie());
         

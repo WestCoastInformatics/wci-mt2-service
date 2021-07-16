@@ -2,6 +2,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.Properties;
 
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
@@ -24,15 +25,20 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
  */
 public class S3ConnectionWrapper {
 
+    /** The config properties. */
+    private final Properties properties = PropertyUtility.getProperties();
+    
     /** The snowstorm url. */
     public static String ID;
 
     /** The snowstorm url for performing write or update actions. */
     public static String KEY;
 
-    public static String BUCKET = "wci2";
+    public static String BUCKET;
 
-    public static Regions REGION = Regions.US_EAST_1;
+    public static Regions REGION;
+    
+    public static String FOLDER_DIRECTORY;
 
     private static AmazonS3 s3Client;
 
@@ -42,6 +48,9 @@ public class S3ConnectionWrapper {
     /** Static initialization. */
     static {
 
+        BUCKET = PropertyUtility.getProperty("aws.bucket");
+        REGION = Regions.fromName(PropertyUtility.getProperty("aws.region"));
+        FOLDER_DIRECTORY = PropertyUtility.getProperty("aws.folder_directory");
         ID = PropertyUtility.getProperty("aws.access.key.id");
         KEY = PropertyUtility.getProperty("aws.secret.access.key");
     }
@@ -68,9 +77,16 @@ public class S3ConnectionWrapper {
                 s3Client.listBuckets();
             } catch (SdkClientException e) {
                 // Connect to server with static keys
-                BasicAWSCredentials awsCreds = new BasicAWSCredentials(ID, KEY);
-                s3Client = AmazonS3ClientBuilder.standard().withRegion(REGION)
-                        .withCredentials(new AWSStaticCredentialsProvider(awsCreds)).build();
+                
+                AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().withRegion(REGION);
+                
+                if (ID != null && !ID.equals("") && !ID.equals("none") && !ID.equals("change_me")) {
+                    
+                    BasicAWSCredentials awsCreds = new BasicAWSCredentials(ID, KEY);
+                    clientBuilder = clientBuilder.withCredentials(new AWSStaticCredentialsProvider(awsCreds));
+                }
+                
+                s3Client = clientBuilder.build();
 
                 // Check connection again. If this fails as well, it will throw
                 // the

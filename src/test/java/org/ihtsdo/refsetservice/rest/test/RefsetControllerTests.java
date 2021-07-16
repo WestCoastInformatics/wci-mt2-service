@@ -643,7 +643,7 @@ public class RefsetControllerTests extends BaseTest {
      * @throws Exception the exception
      */
     // **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED ****
-    //@Test
+    @Test
     public void testRttMigration() throws Exception {
 
         String url = null;
