@@ -16,6 +16,7 @@ import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -1035,6 +1036,65 @@ public class RefsetController extends BaseController {
         }
     }
     
+    /**
+     * Gets the Organizations.
+     *
+     * @return the organizations
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Gets the organizations", response = ResultList.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET,
+            value = "/refset/organizations", produces = "application/json")
+    public @ResponseBody ResultList<TypeKeyValue> getOrganizations() throws Exception {
 
+        try {
+
+            logger.info("*********** getOrganizations ");
+
+			try (TerminologyService service = new TerminologyService()) {
+
+				final long start = System.currentTimeMillis();
+				ResultList<Organization> results = new ResultList<Organization>();
+				final PfsParameter pfs = new PfsParameter();
+				final QueryParameter query = new QueryParameter();
+
+				results = service.find(query, pfs, Organization.class, null);
+
+				results.setTimeTaken(System.currentTimeMillis() - start);
+				results.setTotalKnown(true);
+
+				logger.debug("******** results: " + ModelUtility.toJson(results));
+				List<Organization> organizationList = results.getItems();
+				organizationList.sort(new Comparator<Organization>() {
+
+					@Override
+					public int compare(Organization o1, Organization o2) {
+						return o1.getName().compareTo(o2.getName());
+					}
+				});
+				List<TypeKeyValue> entryList = new ArrayList<>();
+				ResultList<TypeKeyValue> entryResults = new ResultList<>();
+				for (Organization organization : organizationList) {
+					TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(), organization.getName());
+				    entryList.add(tkv);
+				}
+				entryResults.setItems(entryList);
+				entryResults.setTotalKnown(true);
+
+				return entryResults;
+			}
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
     
 }
