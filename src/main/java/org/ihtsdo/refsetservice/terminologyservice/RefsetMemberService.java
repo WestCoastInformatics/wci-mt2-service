@@ -113,6 +113,9 @@ public class RefsetMemberService {
 
     /** A cache of the details for any concept. */
     private final static Map<String, Concept> conceptDetailsCache = new HashMap<>();
+    
+    /** A cache of the taxonomy ancestor path for concepts. */
+    private final static Map<String, List<Concept>> taxonomyAncestorCache = new HashMap<>();
 
     /** A cache of the children for each tree node. */
     private final static Map<String, List<Concept>> treeCache = new HashMap<>();
@@ -747,7 +750,7 @@ public class RefsetMemberService {
         logger.debug("Appending descriptions to RF2 file");
 
         // Get member cache
-        Set<Concept> conceptsNotInCache = new HashSet<>();
+        List<Concept> conceptsNotInCache = new ArrayList<>();
         Map<String, Concept> members = getCachedRefsetMembers(refset.getId());
 
         // Read through file and identify those concepts not in cache or don't
@@ -1369,7 +1372,7 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static void populateAllLanguageDescriptions(final Refset refset,
-        final Set<Concept> conceptsToProcess) throws MalformedURLException, Exception {
+        final List<Concept> conceptsToProcess) throws MalformedURLException, Exception {
 
         final StringBuffer conceptIds = new StringBuffer();
 
@@ -1477,6 +1480,129 @@ public class RefsetMemberService {
             ex.printStackTrace();
         }
     }
+    
+    /**
+     * Search refset taxonomy members.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param searchParameters the search parameters
+     * @return the concept result list
+     * @throws MalformedURLException the malformed URL exception
+     * @throws Exception the exception
+     */
+    public static ConceptResultList searchTaxonomyMembers(final String refsetInternalId,
+        final SearchParameters searchParameters) throws MalformedURLException, Exception {
+        
+        ConceptResultList members = new ConceptResultList();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            final Refset refset = service.get(refsetInternalId, Refset.class);
+            members = searchRefsetMembers(refset, searchParameters);
+            populateAllLanguageDescriptions(refset, members.getItems());
+            
+            getConceptAncestors(refset, members.getItems());
+        }
+        
+        return members;
+        
+    }
+    
+    /**
+     * Get the ancestor path for a list of conceptIDs.
+     *
+     * @param refset the refset
+     * @param concepts the list of concepts ancestor paths are being generated for
+     * @return the concept result list
+     * @throws MalformedURLException the malformed URL exception
+     * @throws Exception the exception
+     */
+    public static List<Concept> getConceptAncestors(final Refset refset, final List<Concept> concepts) throws MalformedURLException, Exception {
+        
+        String conceptIds = "";
+        final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
+        lookupParameters.setNonDefaultPreferredTerms(identifyNonDefaultPreferredTerms(refset.getEdition()));
+        lookupParameters.setGetDescriptions(true);
+        final String branchPath = getBranchPath(refset);
+        Map<String, List<Concept>> cachedPaths = new HashMap<>();
+        
+        for (Concept concept : concepts) {
+            
+            if (taxonomyAncestorCache.containsKey(branchPath + concept.getCode())) {
+                cachedPaths.put(concept.getCode(), taxonomyAncestorCache.get(branchPath + concept.getCode()));
+            } else {
+                conceptIds += concept.getCode() + ",";
+            }
+        }
+        
+        conceptIds = StringUtils.removeEnd(conceptIds, ",");
+        
+        // Create Snowstorm URL
+        final String url =
+                SnowstormConnection.BASE_URL + "browser/" + branchPath + "/concepts/ancestorPaths?conceptIds=" + conceptIds;
+        
+        // Call Snowstorm
+        logger.debug("Get Concept Ancestors URL: " + url);
+
+        try (final Response response =
+                SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception(
+                        "call to url '" + url + "' wasn't successful. " + response.toString());
+            }
+
+            // read the results of the call for ancestors for many concepts
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+            Iterator<JsonNode> iterator = root.iterator();
+            
+            // loop thru each concept to get the ancestor path for it
+            while (iterator.hasNext()) {
+                
+                final JsonNode conceptNode = iterator.next();
+                final String nodeConceptId = conceptNode.get("conceptId").asText();
+                final JsonNode ancestorPathNode = conceptNode.get("ancestorPath");
+                
+                // get the ancestor list and reverse the order so the taxonomy root is first
+                final ConceptResultList ancestorList = populateConcepts(ancestorPathNode, refset, lookupParameters);
+                final List<Concept> parents = ancestorList.getItems();
+                Collections.reverse(parents);
+                
+                // add the ancestor path to the cache
+                taxonomyAncestorCache.put(branchPath + nodeConceptId, parents);
+                
+                // pick out the concept that we are going to load the ancestors into
+                final Concept concept = concepts.stream().filter(filterConcept -> nodeConceptId.equals(filterConcept.getCode())).findFirst().orElse(null);
+                
+                // load the ancestors into the concept
+                if (concept != null) {
+                    concept.setParents(parents);
+                } else {
+                    logger.info("Couldn't find concept " + nodeConceptId + " to load ancestors into.");
+                }
+            }
+        }
+        
+        // add the cached ancestors into the concept list
+        for (Map.Entry<String, List<Concept>> cachedPath : cachedPaths.entrySet()) {
+            
+            logger.debug("Using cached ancestors for concept: " + cachedPath.getKey());
+            
+            // pick out the concept that we are going to load the ancestors into
+            final Concept concept = concepts.stream().filter(filterConcept -> cachedPath.getKey().equals(filterConcept.getCode())).findFirst().orElse(null);
+            
+            // load the ancestors into the concept
+            if (concept != null) {
+                concept.setParents(cachedPath.getValue());
+            } else {
+                logger.info("Couldn't find concept " + cachedPath.getKey() + " to load ancestors into.");
+            }
+        }
+        
+        return concepts;
+    }
 
     /**
      * Search refset members.
@@ -1493,11 +1619,13 @@ public class RefsetMemberService {
         ConceptResultList members = new ConceptResultList();
 
         // Create Snowstorm URL
-        final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
+        String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
                 + "/descriptions?term="
                 + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery()))
                 + "&conceptRefset=" + refset.getRefsetId()
-                + "&groupByConcept=false&searchMode=STANDARD&offset=0&limit=1000";
+                + "&groupByConcept=false&searchMode=STANDARD"
+                + "&offset=" + (searchParameters.getOffset() * searchParameters.getLimit())
+                + "&limit=" + searchParameters.getLimit();
 
         // Call Snowstorm
         logger.debug("Get Member Descriptions URL: " + url);
@@ -1605,7 +1733,7 @@ public class RefsetMemberService {
 
                 // Only populated if search results exist
                 populateMembershipInformation(refset,
-                        new HashSet<Concept>(conceptIdToConcept.values()));
+                        new ArrayList<Concept>(conceptIdToConcept.values()));
                 members.setItems(new ArrayList<Concept>(conceptIdToConcept.values()));
                 members.setTotal(conceptIdToConcept.size());
             }
@@ -1713,7 +1841,7 @@ public class RefsetMemberService {
                 ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
                 lookupParameters.setGetMembershipInformation(true);
 
-                final Set<Concept> conceptsToProcess = new HashSet<>();
+                final List<Concept> conceptsToProcess = new ArrayList<>();
                 final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
 
                 ConceptResultList currentList;
@@ -1810,8 +1938,8 @@ public class RefsetMemberService {
                 }
             }
             childList = conceptResultList.getItems();
-            final Set<Concept> conceptsToProcessDescriptions = new HashSet<>();
-            final Set<Concept> conceptsToProcessMembership = new HashSet<>();
+            final List<Concept> conceptsToProcessDescriptions = new ArrayList<>();
+            final List<Concept> conceptsToProcessMembership = new ArrayList<>();
 
             for (Concept concept : childList) {
                 // Only search concepts that haven't already populated
@@ -2128,7 +2256,7 @@ public class RefsetMemberService {
                         concept.setDescriptions(list);
                     } else {
                         populateAllLanguageDescriptions(refset,
-                                new HashSet<>(Arrays.asList(concept)));
+                                new ArrayList<>(Arrays.asList(concept)));
                     }
 
                 }
@@ -2287,7 +2415,7 @@ public class RefsetMemberService {
                 nonDefaultPreferredTerms);
     }
 
-    private static void populateMembershipInformation(Refset refset, Set<Concept> conceptsToProcess)
+    private static void populateMembershipInformation(Refset refset, List<Concept> conceptsToProcess)
         throws Exception {
 
         String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet="

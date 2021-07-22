@@ -204,7 +204,7 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search",
             produces = "application/json")
-    public @ResponseBody ResultList<Refset> search(final SearchParameters searchParameters,
+    public @ResponseBody ResultList<Refset> searchDirectory(final SearchParameters searchParameters,
         final BindingResult bindingResult) throws Exception {
 
         // Check whether or not parameter binding was successful
@@ -285,6 +285,88 @@ public class RefsetController extends BaseController {
             results.setTotalKnown(true);
 
             logger.debug("******** results: " + ModelUtility.toJson(results));
+            return results;
+
+        } catch (final ResponseStatusException rse) {
+            throw rse;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Search Taxonomy for members.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the string
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Search the taxonomy for refset members", response = ResultList.class,
+            notes = "Use cases for search range from very simple term searches, use of paging "
+                    + "parameters, additional filters, searches properties, and so on.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "refsetInternalId",
+                    value = "the internal refset ID", required = true,
+                    dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query",
+                    value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
+                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return",
+                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result",
+                    required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            // TODO: activeOnly, sort, sortAscending
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/taxonomySearch",
+            produces = "application/json")
+    public @ResponseBody ConceptResultList searchTaxonomy(@PathVariable(value = "refsetInternalId")
+    final String refsetInternalId, final SearchParameters searchParameters,
+        final BindingResult bindingResult) throws Exception {
+
+        // Check whether or not parameter binding was successful
+        if (bindingResult.hasErrors()) {
+
+            final List<FieldError> errors = bindingResult.getFieldErrors();
+            final List<String> errorMessages = new ArrayList<>();
+
+            for (final FieldError error : errors) {
+
+                final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = "
+                        + error.getField() + ", " + error.getCode();
+                logger.error(errorMessage);
+                errorMessages.add(errorMessage);
+            }
+
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.join("\n ", errorMessages));
+        }
+
+        try {
+
+            final long start = System.currentTimeMillis();
+            ConceptResultList results = new ConceptResultList();
+            String query = searchParameters.getQuery();
+
+            logger.info("*********** taxonomySearch: refsetInternalId: " + refsetInternalId);
+            logger.debug("******** taxonomySearch: searchParameters: " + ModelUtility.toJson(searchParameters));
+
+            if (query != null && !query.equals("")) {
+
+                results = RefsetMemberService.searchTaxonomyMembers(refsetInternalId, searchParameters);
+            }
+
+            logger.debug("******** taxonomySearch: results: " + ModelUtility.toJson(results));
             return results;
 
         } catch (final ResponseStatusException rse) {

@@ -508,6 +508,53 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept.getChildren().size()).isEqualTo(0);
 
     }
+    
+    /**
+     * Test searching refset members taxonomy
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testSearchRefsetTaxonomy() throws Exception {
+        // TODO: Update test as was based on PROD-Snowstorm, not our dev
+        // instance
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+        final String conceptIdToExamine = "256248008";
+
+        url = "/refset/" + getRefsetInternalId()
+                + "/taxonomySearch?limit=10&offset=0&query=plant";
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        ConceptResultList members =
+                new ObjectMapper().readValue(content, (ConceptResultList.class));
+
+        // Testing Results
+        assertThat(members).isNotNull();
+        //assertThat(members.size()).isEqualTo(1);
+
+        Concept concept = null;
+        for (Concept conceptBeingTested : members.getItems()) {
+            if (conceptBeingTested.getCode().equals(conceptIdToExamine)) {
+                concept = conceptBeingTested;
+                break;
+            }
+        }
+
+        assertThat(concept).isNotNull();
+        assertThat(concept.getCode()).isEqualTo(conceptIdToExamine);
+        assertTrue(concept.isMemberOfRefset());
+        assertTrue(concept.isMemberStatus());
+        assertThat(concept.getDescriptions().size()).isEqualTo(4);
+
+        assertThat(concept.getParents().size()).isGreaterThan(2);
+
+    }
 
     /**
      * Test getting concept details.
