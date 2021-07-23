@@ -118,7 +118,7 @@ public class RefsetControllerTests extends BaseTest {
 
         String refsetTerminologyId = getRefsetInternalId(); // "091f9238-3083-4e60-9e70-b011c97980c3"
 
-        url = baseUrl + "/search?limit=10&offset=0&sort=versionDate&sortAscending=false&query=id:("
+        url = baseUrl + "˙?limit=10&offset=0&sort=versionDate&sortAscending=false&query=id:("
                 + refsetTerminologyId + " OR 378ff7fb-0ec3-45a7-aab4-97b1ea2123cd)"; // Hyperdontia
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
