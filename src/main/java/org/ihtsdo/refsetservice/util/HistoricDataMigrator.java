@@ -376,8 +376,6 @@ public class HistoricDataMigrator {
                 String url = SnowstormConnection.BASE_URL
                         + "browser/{branch}/members?active=true&referenceSet=%3C"
                         + SIMPLE_TYPE_REFSET_SCTID + "&module=%3C%3C" + edition.getTopLevelModule();
-                logger.debug("Identifying refsets in Snowstorm for " + edition.getName()
-                        + "'s branches via URL " + url);
 
                 boolean isInternationalEdition =
                         ("international edition".equals(edition.getName().toLowerCase())) ? true
@@ -385,7 +383,8 @@ public class HistoricDataMigrator {
 
                 for (Date branchDate : branchChildren.get(editionId).keySet()) {
                     final String childBranch = branchChildren.get(editionId).get(branchDate);
-                    logger.debug("   using ChildBranch: " + childBranch);
+                    logger.info("Identifying refsets in Snowstorm for " + edition.getName() + " for version " + childBranch);
+                    logger.debug("   with url: " + url.replace("{branch}", childBranch));
                     //writer.append("\n\n\nProcessing Branch: " + branchDate + "\n");
 
                     try (final Response response =
@@ -410,13 +409,6 @@ public class HistoricDataMigrator {
 
                         while (refsetIterator.hasNext()) {
                             final JsonNode refsetNode = refsetIterator.next();
-                            /*
-                             * if (testing &&
-                             * !refsetNode.get("conceptId").asText().equals(
-                             * "561000172108") &&
-                             * !refsetNode.get("conceptId").asText().equals(
-                             * "721143001")) { continue; }
-                             */
                             if (!refsetNode.has("moduleId") || !refsetNode.has("conceptId")
                                     || !refsetNode.has("active")) {
                                 throw new Exception("Getting unexpected Refset info from node: "
