@@ -383,7 +383,7 @@ public class RefsetControllerTests extends BaseTest {
     }
     
     /**
-     * Test getting concept details.
+     * Test getting concept list.
      *
      * @throws Exception the exception
      */
