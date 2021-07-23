@@ -2591,9 +2591,12 @@ public class RefsetMemberService {
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
             try {
+                
                 // Get ancestors of all members via ecl e.g. >(^723264001)
                 final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
-                        + "/concepts?ecl=%3E(%5E" + refset.getRefsetId() + ")";
+                        + "/concepts?ecl=%3E(%5E" + refset.getRefsetId() + ")&limit=1000";
+                
+                logger.debug("******** cacheMemberAncestors URL: " + url);
 
                 try (final Response response = SnowstormConnection.getResponse(url)) {
                     if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
