@@ -231,7 +231,7 @@ public class RefsetController extends BaseController {
             ResultList<Refset> results = new ResultList<Refset>();
             String query = searchParameters.getQuery();
 
-            logger.debug("******** searchParameters: " + ModelUtility.toJson(searchParameters));
+            logger.debug("******** searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters));
 
             final PfsParameter pfs = new PfsParameter();
 
@@ -284,7 +284,7 @@ public class RefsetController extends BaseController {
             results.setTimeTaken(System.currentTimeMillis() - start);
             results.setTotalKnown(true);
 
-            logger.debug("******** results: " + ModelUtility.toJson(results));
+            logger.debug("******** searchDirectory results: " + ModelUtility.toJson(results));
             return results;
 
         } catch (final ResponseStatusException rse) {
@@ -460,7 +460,7 @@ public class RefsetController extends BaseController {
 
             results = RefsetMemberService.getRefsetMembers(refsetInternalId, searchParameters,
                     displayType, taxonomyParameters);
-            logger.debug("******** results: " + ModelUtility.toJson(results));
+            logger.debug("******** getMembers results: " + ModelUtility.toJson(results));
             results.setTimeTaken(System.currentTimeMillis() - start);
             return results;
 
@@ -510,10 +510,14 @@ public class RefsetController extends BaseController {
                             RefsetMemberService.cacheMemberAncestors(refsetInternalId);
 
                     if (success) {
-                        return returnJson.replace("<RESULT>", "true");
+                        returnJson = returnJson.replace("<RESULT>", "true");
                     } else {
-                        return returnJson.replace("<RESULT>", "false");
+                        returnJson = returnJson.replace("<RESULT>", "false");
                     }
+                    
+                    logger.debug("******** cacheMemberAncestors results: " + returnJson);
+                    
+                    return returnJson;
 
                 } catch (final Exception e) {
 
