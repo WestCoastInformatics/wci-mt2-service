@@ -517,7 +517,7 @@ public class RefsetMemberService {
         snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
 
         String url = SnowstormConnection.BASE_URL
-                + "multisearch/descriptions/referencesets?active=true&conceptActive=true&offset=0&limit=1&term="
+                + "multisearch/descriptions/referencesets?active=true&offset=0&limit=1&term="
                 + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery));
 
         logger.debug("Snowstorm URL: " + url);
@@ -1525,14 +1525,27 @@ public class RefsetMemberService {
         lookupParameters.setGetDescriptions(true);
         final String branchPath = getBranchPath(refset);
         Map<String, List<Concept>> cachedPaths = new HashMap<>();
+        final List<Concept> inactiveConcepts = new ArrayList<>();
         
         for (Concept concept : concepts) {
+            
+            // snowstorm does not allow searching for inactive concepts so remove them from the results.
+            if (!concept.isActive()) {
+                
+                logger.debug("Inactive concept in taxonomy search: " + concept.getCode());
+                inactiveConcepts.add(concept);
+                continue;
+            }
             
             if (taxonomyAncestorCache.containsKey(branchPath + concept.getCode())) {
                 cachedPaths.put(concept.getCode(), taxonomyAncestorCache.get(branchPath + concept.getCode()));
             } else {
                 conceptIds += concept.getCode() + ",";
             }
+        }
+        
+        for (Concept inactiveConcept : inactiveConcepts) {
+            concepts.remove(inactiveConcept);
         }
         
         conceptIds = StringUtils.removeEnd(conceptIds, ",");
@@ -1724,7 +1737,6 @@ public class RefsetMemberService {
 
                             setConceptPermissions(cpt);
                             // cpt.setMemberOfRefset(true);
-                            // cpt.setMemberStatus(true);
                             conceptIdToConcept.put(conceptId, cpt);
                         }
 
@@ -2217,6 +2229,7 @@ public class RefsetMemberService {
                     }
                     // As this method is used for more than just taxonomy, don't
                     // assume cache set for refset version by checking for key.
+                    
                     if (ancestorsCache.containsKey(refset.getId()) && ancestorsCache
                             .get(refset.getId()).contains(conceptNode.get("conceptId").asText())) {
                         concept.setHasDescendantRefsetMembers(true);
@@ -2234,7 +2247,7 @@ public class RefsetMemberService {
                 concept.setCode(conceptId);
                 concept.setName(name);
                 concept.setTerminology("SNOMEDCT");
-                concept.setMemberStatus(memberStatus);
+                concept.setMemberOfRefset(memberStatus);
                 concept.setDefined(defined);
                 setConceptPermissions(concept);
 
@@ -2276,7 +2289,6 @@ public class RefsetMemberService {
 
                 if (missingLookupParameters.isGetMembershipInformation()) {
                     concept.setMemberOfRefset(true);
-                    concept.setMemberStatus(conceptNode.get("active").asBoolean());
                     if (conceptNode.get("releasedEffectiveTime") != null) {
                         concept.setMemberEffectiveTime(SIMPLE_DATE_FORMAT
                                 .parse(conceptNode.get("releasedEffectiveTime").asText()));
@@ -2441,7 +2453,6 @@ public class RefsetMemberService {
             for (Concept conceptToProcess : conceptsToProcess) {
                 if (lookupConcept.getCode().equals(conceptToProcess.getCode())) {
                     conceptToProcess.setMemberOfRefset(lookupConcept.isMemberOfRefset());
-                    conceptToProcess.setMemberStatus(lookupConcept.isMemberStatus());
                     conceptToProcess.setMemberEffectiveTime(lookupConcept.getMemberEffectiveTime());
                     conceptsToBeProcessed--;
                     break;
@@ -2589,6 +2600,13 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
+            
+            // if ancestors are already cached no need to repeat
+            if (ancestorsCache.containsKey(refsetInternalId)) {
+                
+                logger.debug("Ancestors for refset " + refset.getRefsetId() + " already cached, " + ancestorsCache.get(refsetInternalId).size() + " members.");
+                return true;
+            }
 
             try {
                 
