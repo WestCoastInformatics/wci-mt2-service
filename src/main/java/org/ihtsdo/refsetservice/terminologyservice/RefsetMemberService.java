@@ -676,6 +676,8 @@ public class RefsetMemberService {
                             EXPORT_FILE_DIR + rt2VersionFileName);
                 }
             }
+            
+            logger.debug("Final Export File Path: " + EXPORT_FILE_DIR + rt2VersionFileName);
 
             // if download is from RT2 server
             ServletUriComponentsBuilder builder =

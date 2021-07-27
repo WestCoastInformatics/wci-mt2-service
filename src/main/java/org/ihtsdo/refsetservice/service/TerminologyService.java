@@ -107,9 +107,10 @@ public class TerminologyService implements RootService {
         
         final String key = "search.handler";
         searchHandlerMap = new HashMap<>();
-
+        logger.debug(">>>>>> handler property: " + PropertyUtility.getProperty(key));
+        
         for (final String handlerName : PropertyUtility.getProperty(key).split(",")) {
-
+            logger.debug(">>>>>> handler name: " + handlerName);
             if (handlerName.isEmpty()) {
                 continue;
             }
@@ -120,6 +121,8 @@ public class TerminologyService implements RootService {
                             SearchHandler.class);
             searchHandlerMap.put(handlerName, handlerService);
         }
+        
+        logger.debug(">>>>>> searchHandlerMap: " + ModelUtility.toJson(searchHandlerMap));
 
         if (!searchHandlerMap.containsKey(ModelUtility.DEFAULT)) {
             throw new Exception(
