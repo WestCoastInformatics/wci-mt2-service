@@ -189,6 +189,8 @@ public class HistoricDataMigrator {
 
 	private Set<Refset> snowstormRefsets = new HashSet<>();
 
+	private final Map<String, Organization> organizationsAdded = new HashMap<>();
+
 	public void migrate() throws Exception {
 		Set<String> internationalModules = createEditionsFromSnowstorm();
 		Map<String, SortedMap<Date, String>> branches = identifyBranches();
@@ -616,6 +618,8 @@ public class HistoricDataMigrator {
 						// Identify Top Level Module
 						identifyTopLevelModule(edition, codeSystem, internationalModules);
 
+						addOrganziation(editionOwnerMap.get(edition.getName()), defaultMeta);
+
 						setMetadata(edition, defaultMeta);
 						service.add(edition);
 					}
@@ -794,7 +798,6 @@ public class HistoricDataMigrator {
 			Map<String, Project> defaultEditionProjects = new HashMap<>();
 			int projectCount = 0;
 			int organizationCount = 0;
-			final Map<String, Organization> organizationsAdded = new HashMap<>();
 			final Map<String, Project> projectsAdded = new HashMap<>();
 			int count = 0;
 			int ignoreCounter = 0;
@@ -809,30 +812,21 @@ public class HistoricDataMigrator {
 					final String shortName = refset.getEdition().getShortName();
 
 					// Identify Org Name
-					String orgName = null;
-					if (!editionOwnerMap.containsKey(name) && !editionOwnerMap.containsKey(shortName)) {
-						orgName = "Owner Organization (second wave) of " + refset.getEdition().getName();
-						editionOwnerMap.put(name, orgName);
-						editionOwnerMap.put(shortName, orgName);
-					} else {
-						if (editionOwnerMap.containsKey(name)) {
-							orgName = editionOwnerMap.get(name);
-						} else {
-							orgName = editionOwnerMap.get(shortName);
-						}
+					if (!editionOwnerMap.containsKey(name) && !editionOwnerMap.containsKey(shortName) || !organizationsAdded.containsKey(editionOwnerMap.get(name))) {
+						throw new Exception("Orgnaization based on edition '" + refset.getEdition() + "' should have been created already");
 					}
+					
+					final String orgName = editionOwnerMap.get(name) != null ? editionOwnerMap.get(name) : editionOwnerMap.get(shortName);
+					
+					// Create edition
+					final Organization org = organizationsAdded.get(orgName);
 
-					// If first time seeing orgName
-					if (!organizationsAdded.containsKey(orgName)) {
-
-						// Create edition
-						final Organization org = addOrganziation(orgName, defaultMeta);
-						organizationCount++;
-						organizationsAdded.put(orgName, org);
-
+					if (!defaultEditionProjects.containsKey(refset.getEdition().getId())) {
 						// Create default project
 						final String projectName = "Default project for " + refset.getEditionName();
-						final String projectDescription = "This project was created to support non-RTT based refsets for " + refset.getEditionName() + ".";
+						final String projectDescription = "This project was created to support non-RTT based refsets for "
+								+ refset.getEditionName() + ".";
+
 						final Project project = addProject(org, projectName, projectDescription, defaultMeta);
 						projectCount++;
 
@@ -858,6 +852,7 @@ public class HistoricDataMigrator {
 
 					Organization org = null;
 					if (!organizationsAdded.containsKey(translatedOrgName)) {
+						logger.info("    ****   Warning - Ran across an organization that doesn't reside in Snowstorm!");
 						org = addOrganziation(translatedOrgName, defaultMeta);
 						organizationCount++;
 						organizationsAdded.put(translatedOrgName, org);
@@ -911,19 +906,23 @@ public class HistoricDataMigrator {
 	private String translateRttOrg(String name) {
 		logger.info("Here with " + name);
 		String shortName = null;
-		
+
 		if (name.equals("Swedish NRC")) {
-			return "Swedish Edition";
+			shortName = "SNOMEDCT-SE";
 		} else if (name.equals("New Zealand Ministry of Health")) {
-			shortName = "New Zealand Edition";
+			shortName = "SNOMEDCT-NZ";
 		} else if (name.equals("BE NRC")) {
 			shortName = "SNOMEDCT-BE";
+		} else if (name.equals("IHTSDO")) {
+			shortName = "SNOMEDCT";
+		} else if (name.equals("TEHIK")) {
+			shortName = "SNOMEDCT-EE";
 		}
-		
+
 		if (shortName != null) {
 			return editionOwnerMap.get(shortName);
 		} else {
-			return name + " (third wave)";
+			return name + " (second wave)";
 		}
 	}
 
@@ -957,8 +956,11 @@ public class HistoricDataMigrator {
 
 			setMetadata(org, meta);
 
-			return service.add(org);
+			org = service.add(org);
 
+			organizationsAdded.put(orgName, org);
+
+			return org;
 		}
 	}
 
