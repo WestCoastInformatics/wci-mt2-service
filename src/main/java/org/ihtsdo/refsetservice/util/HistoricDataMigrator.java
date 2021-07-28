@@ -1,7 +1,9 @@
 package org.ihtsdo.refsetservice.util;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -115,6 +117,82 @@ public class HistoricDataMigrator {
 	}
 
 	/**
+	 * The Class Metadata.
+	 */
+	public class Counts {
+
+		private int refsetsVersionPairsOnSnowstorm;
+
+		private int uniquRefsetsOnSnowstorm;
+
+		private int rttMetadataRefsets;
+
+		private int uniqueRttMetadataRefsets;
+
+		private int noMetadataRefsets;
+
+		private int uniqueNoMetadataRefsets;
+		
+		private int orgsImported;
+
+		public void incrementRefsetVersionPairsCounts() {
+			refsetsVersionPairsOnSnowstorm++;
+		}
+
+		public void incrementUniqueRefsetsCounts() {
+			uniquRefsetsOnSnowstorm++;
+		}
+
+		public void incrementRttMetadataCount() {
+			rttMetadataRefsets++;
+		}
+
+		public void incrementUniqueRttMetadataCount() {
+			uniqueRttMetadataRefsets++;
+		}
+
+		public void incrementNoMetadataCount() {
+			noMetadataRefsets++;
+		}
+
+		public void incrementUniqueNoMetadataCount() {
+			uniqueNoMetadataRefsets++;
+		}
+
+		public void incrementOrgsImportedCount() {
+			orgsImported++;
+		}
+
+		public int getRefsetVersionPairsCounts() {
+			return refsetsVersionPairsOnSnowstorm;
+		}
+
+		public int getUniqueRefsetsCounts() {
+			return uniquRefsetsOnSnowstorm;
+		}
+
+		public int getRttMetadataCreatedCount() {
+			return rttMetadataRefsets;
+		}
+
+		public int getUniqueRttMetadataCreatedCount() {
+			return uniqueRttMetadataRefsets;
+		}
+
+		public int getNoMetadataCreatedCount() {
+			return noMetadataRefsets;
+		}
+
+		public int getUniqueNoMetadataCreatedCount() {
+			return uniqueNoMetadataRefsets;
+		}
+
+		public int getOrgsImportedCount() {
+			return orgsImported;
+		}
+	}
+
+	/**
 	 * The Enum FileProcessType.
 	 */
 	public enum FileProcessType {
@@ -187,9 +265,13 @@ public class HistoricDataMigrator {
 
 	private Set<String> rttRefsetIds = null;
 
-	private Set<Refset> snowstormRefsets = new HashSet<>();
+	private final Set<Refset> snowstormRefsets = new HashSet<>();
+
+	private final Set<String> uniqueRefsetIds = new HashSet<>();
 
 	private final Map<String, Organization> organizationsAdded = new HashMap<>();
+
+	private final Counts counts = new Counts();
 
 	public void migrate() throws Exception {
 		Set<String> internationalModules = createEditionsFromSnowstorm();
@@ -380,15 +462,14 @@ public class HistoricDataMigrator {
 			service.setModifiedBy("Migration");
 			service.setModifiedFlag(true);
 
-			// BufferedWriter writer = new BufferedWriter(new
-			// FileWriter("RefsetsAdded.txt"));
+			BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsFound.txt"));
 			logger.info("Starting processing Refsets");
 
 			for (String editionId : branchChildrenByEdition.keySet()) {
 				final Edition edition = service.get(editionId, Edition.class);
 
 				logger.info("Processing Edition: " + edition.getName());
-				// writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
+				writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
 
 				String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C"
 						+ SIMPLE_TYPE_REFSET_SCTID + "&module=%3C%3C" + edition.getTopLevelModule();
@@ -407,7 +488,6 @@ public class HistoricDataMigrator {
 					logger.info("Identifying refsets in Snowstorm for " + edition.getName() + " for version "
 							+ childBranch);
 					logger.debug("   with url: " + url.replace("{branch}", childBranch));
-					// writer.append("\n\n\nProcessing Branch: " + branchDate + "\n");
 
 					try (final Response response = SnowstormConnection
 							.getResponse(url.replace("{branch}", childBranch))) {
@@ -457,14 +537,14 @@ public class HistoricDataMigrator {
 										refset.setName(lookupRefsetName(refsetId, edition, childBranch));
 									}
 
-									// writer.write("Adding refset(" + refsetId + ") - "
-									// + refset.getName());
-									// logger.debug("Adding refset(" + refsetId
-									// + ") - "
-									// + refset.getName());
 									snowstormRefsets.add(refset);
+									counts.incrementRefsetVersionPairsCounts();
 
-									// writer.write("\n");
+									if (!uniqueRefsetIds.contains(refsetId)) {
+										writer.write("Adding unique refset(" + refsetId + ") - " + refset.getName() + "\n");
+										uniqueRefsetIds.add(refsetId);
+										counts.incrementUniqueRefsetsCounts();
+									}
 								} catch (Exception e) {
 									logger.error("Failed with message: " + e.getMessage() + " for refsetNode: "
 											+ refsetNode);
@@ -478,7 +558,8 @@ public class HistoricDataMigrator {
 					}
 				}
 			}
-			// writer.close();
+			
+			writer.close();
 		}
 
 		return snowstormRefsets;
@@ -797,11 +878,13 @@ public class HistoricDataMigrator {
 			// Persist Projects and Organizations from Snowstorm
 			Map<String, Project> defaultEditionProjects = new HashMap<>();
 			int projectCount = 0;
-			int organizationCount = 0;
+			final Set<String> refsetsAdded = new HashSet<>();
 			final Map<String, Project> projectsAdded = new HashMap<>();
 			int count = 0;
 			int ignoreCounter = 0;
 
+			BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsCreated.txt"));
+			
 			for (Refset refset : snowstormRefsets) {
 				if (refsetsToIgnore.contains(refset.getRefsetId())) {
 					ignoreCounter++;
@@ -812,12 +895,15 @@ public class HistoricDataMigrator {
 					final String shortName = refset.getEdition().getShortName();
 
 					// Identify Org Name
-					if (!editionOwnerMap.containsKey(name) && !editionOwnerMap.containsKey(shortName) || !organizationsAdded.containsKey(editionOwnerMap.get(name))) {
-						throw new Exception("Orgnaization based on edition '" + refset.getEdition() + "' should have been created already");
+					if (!editionOwnerMap.containsKey(name) && !editionOwnerMap.containsKey(shortName)
+							|| !organizationsAdded.containsKey(editionOwnerMap.get(name))) {
+						throw new Exception("Orgnaization based on edition '" + refset.getEdition()
+								+ "' should have been created already");
 					}
-					
-					final String orgName = editionOwnerMap.get(name) != null ? editionOwnerMap.get(name) : editionOwnerMap.get(shortName);
-					
+
+					final String orgName = editionOwnerMap.get(name) != null ? editionOwnerMap.get(name)
+							: editionOwnerMap.get(shortName);
+
 					// Create edition
 					final Organization org = organizationsAdded.get(orgName);
 
@@ -833,7 +919,14 @@ public class HistoricDataMigrator {
 						defaultEditionProjects.put(refset.getEdition().getId(), project);
 						projectsAdded.put(project.getName(), project);
 					}
-
+					
+					if (!refsetsAdded.contains(refset.getRefsetId())) {
+						refsetsAdded.add(refset.getRefsetId());
+						writer.write(refset.getRefsetId() + "\t0\n");
+						counts.incrementUniqueNoMetadataCount();
+					} 
+					
+					counts.incrementNoMetadataCount();
 					refset.setProject(defaultEditionProjects.get(refset.getEdition().getId()));
 					setMetadata(refset, defaultMeta);
 				} else {
@@ -852,9 +945,9 @@ public class HistoricDataMigrator {
 
 					Organization org = null;
 					if (!organizationsAdded.containsKey(translatedOrgName)) {
-						logger.info("    ****   Warning - Ran across an organization that doesn't reside in Snowstorm!");
+						logger.info(
+								"    ****   Warning - Ran across an organization that doesn't reside in Snowstorm!");
 						org = addOrganziation(translatedOrgName, defaultMeta);
-						organizationCount++;
 						organizationsAdded.put(translatedOrgName, org);
 					} else {
 						org = organizationsAdded.get(translatedOrgName);
@@ -878,7 +971,14 @@ public class HistoricDataMigrator {
 							refset.getDefinitionClauses().add(clause);
 						}
 					}
+					
+					if (!refsetsAdded.contains(refset.getRefsetId())) {
+						refsetsAdded.add(refset.getRefsetId());
+						writer.write(refset.getRefsetId() + "\t1\n");
+						counts.incrementUniqueRttMetadataCount();
+					} 
 
+					counts.incrementRttMetadataCount();
 					refset.setProject(projectsAdded.get(rttProject.getName()));
 					setMetadata(refset, metadataMap.get("refset-" + rttId));
 				}
@@ -891,12 +991,25 @@ public class HistoricDataMigrator {
 
 			}
 
-			logger.info("Have imported " + projectCount + " projects and " + organizationCount + " organizations");
+			writer.close();
+			
+			logger.info("Have imported " + projectCount + " projects and " + counts.getOrgsImportedCount() + " organizations");
+			
+			// Unique Counts
+			logger.info("\n*** Unique Refsets Count ***");
+			logger.info("Have identified " + counts.getUniqueRefsetsCounts() + " unique refsets on Snowstorm");
+			logger.info(
+					"Have imported " + counts.getUniqueRttMetadataCreatedCount() + " unique refsets with metadata pulled from RTT");
+			logger.info("Have imported " + counts.getUniqueNoMetadataCreatedCount() + " unique refsets with no metadata at all");
+			
+			// Refset/Verfsion Pair Counts
+			logger.info("\n*** Refsets/Version Pair Count ***");
+			logger.info("Have identified " + counts.getRefsetVersionPairsCounts() + " refset/version pairs on Snowstorm");
+			logger.info(
+					"Have imported " + counts.getRttMetadataCreatedCount() + " refset/version pairs with metadata pulled from RTT");
+			logger.info("Have imported " + counts.getNoMetadataCreatedCount() + " refset/version pairs with no metadata at all");
 
-			logger.info("About to persist " + snowstormRefsets.size()
-					+ " refsets (which list multiple versions separately) and their respsective clauses");
-
-			logger.info("Total of " + count + " refsets successfully added and " + ignoreCounter + " refsets ignored");
+			logger.info("Total of " + ignoreCounter + " refsets ignored");
 		} catch (Exception e) {
 			logger.error("Have issue with: " + e.getMessage());
 			e.printStackTrace();
@@ -904,7 +1017,7 @@ public class HistoricDataMigrator {
 	}
 
 	private String translateRttOrg(String name) {
-		logger.info("Here with " + name);
+		logger.debug("Here with " + name);
 		String shortName = null;
 
 		if (name.equals("Swedish NRC")) {
@@ -959,6 +1072,8 @@ public class HistoricDataMigrator {
 			org = service.add(org);
 
 			organizationsAdded.put(orgName, org);
+
+			counts.incrementOrgsImportedCount();
 
 			return org;
 		}
