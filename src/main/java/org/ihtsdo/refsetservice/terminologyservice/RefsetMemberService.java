@@ -105,7 +105,7 @@ public class RefsetMemberService {
     private static String EXPORT_FILE_DIR;
 
     /** The local server url to download exported refset files. */
-    private static String EXPORT_DOWNLOAD_URL = "/export/download/";
+    private static String EXPORT_DOWNLOAD_URL = "export/download/";
 
     /** A cache of the all the member concepts for each refset. */
     private final static Map<String, Map<String, Concept>> membersCache = new HashMap<>();
@@ -682,11 +682,13 @@ public class RefsetMemberService {
                             EXPORT_FILE_DIR + rt2VersionFileName);
                 }
             }
+            
+            logger.debug("Final Export File Path: " + EXPORT_FILE_DIR + rt2VersionFileName);
 
             // if download is from RT2 server
             ServletUriComponentsBuilder builder =
                     ServletUriComponentsBuilder.fromCurrentContextPath();
-            return builder.build().toString() + EXPORT_DOWNLOAD_URL + rt2VersionFileName;
+            return EXPORT_DOWNLOAD_URL + rt2VersionFileName; //builder.build().toString() + 
 
         } catch (
 
@@ -1213,7 +1215,7 @@ public class RefsetMemberService {
 
         // if download is from RT2 server
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-        String zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL
+        String zippedFileUrl = EXPORT_DOWNLOAD_URL
                 + refsetFileName.replace(".txt", ".zip");
 
         return zippedFileUrl;
@@ -1298,7 +1300,7 @@ public class RefsetMemberService {
 
         // if download is from RT2 server
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-        String zippedFileUrl = builder.build().toString() + EXPORT_DOWNLOAD_URL
+        String zippedFileUrl = EXPORT_DOWNLOAD_URL
                 + refsetFileName.replace(".txt", ".zip");
 
         return zippedFileUrl;

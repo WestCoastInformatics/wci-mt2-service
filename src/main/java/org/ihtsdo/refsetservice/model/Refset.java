@@ -208,7 +208,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the refset ID
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "refsetIdSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getRefsetId() {
         return refsetId;
     }
@@ -227,8 +228,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the name
      */
-    @FullTextField(analyzer = "whitespace")
-    @KeywordField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
         return name;
     }
@@ -380,7 +381,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the tags
      */
-    @GenericField(searchable = Searchable.NO, projectable = Projectable.NO, sortable = Sortable.NO)
+    @FullTextField(analyzer = "standard")
     //@IndexedEmbedded
     public Set<String> getTags() {
 
@@ -425,8 +426,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the edition name
      */
-    @FullTextField(analyzer = "whitespace")
-    @KeywordField(name = "editionNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "editionNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(derivedFrom = @ObjectPath( @PropertyValue(propertyName = "edition")))
     public String getEditionName() {
         return edition == null ? null : edition.getName();
@@ -449,8 +450,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the edition short name
      */
-    @FullTextField(analyzer = "whitespace")
-    @KeywordField(name = "editionShortNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "editionShortNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(derivedFrom = @ObjectPath( @PropertyValue(propertyName = "edition")))
     public String getEditionShortName() {
         return edition == null ? null : edition.getShortName();
@@ -492,7 +493,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the moduleId
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @FullTextField(analyzer = "standard")
     public String getModuleId() {
         return moduleId;
     }
@@ -601,8 +602,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the organization name
      */
-    @FullTextField(analyzer = "whitespace")
-    @KeywordField(name = "organizationNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "organizationNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(derivedFrom = @ObjectPath( {@PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization")}))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationName() {
