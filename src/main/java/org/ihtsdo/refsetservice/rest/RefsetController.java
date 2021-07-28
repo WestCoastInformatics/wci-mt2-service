@@ -27,6 +27,7 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
+import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -265,6 +266,8 @@ public class RefsetController extends BaseController {
                     query = "(" + query + " OR " + memberRefsetQuery + ")";
                 }
             }
+            
+            query = IndexUtility.addWildcardsToQuery(query);
 
             if (query != null && !query.equals("")) {
                 query += " AND latestVersion: true";
