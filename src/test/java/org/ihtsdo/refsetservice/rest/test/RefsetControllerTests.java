@@ -11,7 +11,6 @@ import java.util.Map;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
@@ -258,16 +257,19 @@ public class RefsetControllerTests extends BaseTest {
     @Test
     public void testExportRf2Delta() throws Exception {
         final String refsetId = "723264001"; // Lateralizable body refset
+       // final String refsetId = this.TESTING_REFSET_ID;
         String url = null;
         MvcResult result = null;
         String resultString = null;
         // Will default to the latest version of the refset (2021-07-31 for now)
         final String refsetInternalId = getRefsetInternalId(refsetId);
-
+        
+        
+        //url = "/export/"+ refsetInternalId + "/?format=rf2_with_names&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210731&transientEffectiveTime=20210731&exportMetadata=false&startEffectiveTime=20190131";
+            
         url = "/export/" + refsetInternalId
-                + "/?format=rf2&exportMetadata=true&exportType=DELTA&fileNameDate=20210131&transientEffectiveTime=20210731&startEffectiveTime=20200131";
+               + "/?format=rf2_with_names&exportMetadata=true&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210131&transientEffectiveTime=20210731&startEffectiveTime=20180131";
         logger.info("Testing url - " + url);
-
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         resultString = result.getResponse().getContentAsString();
 

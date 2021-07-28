@@ -41,7 +41,7 @@ public class ExportHandler {
 
     public String generateRt2VersionFileName(Refset refset, String type, String languageId,
         Set<String> dates, boolean exportMetadata, boolean withNames) throws Exception {
-        if (("snapshot".equals(type.toLowerCase()) && dates.size() != 1)
+        if ((type.toLowerCase().contains("snapshot") && dates.size() != 1)
                 // if (("snapshot".equals(type.toLowerCase()) &&
                 // transientEffectiveTime != null)
                 || ("delta".equals(type.toLowerCase()) && dates.size() != 2)) {
@@ -51,7 +51,7 @@ public class ExportHandler {
 
         String name;
 
-        if ("snapshot".equals(type.toLowerCase())) {
+        if (type.toLowerCase().contains("snapshot")) {
             name = "refset_" + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" + type;
         } else {
             name = "refset_" + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" + type + "_"
@@ -77,8 +77,8 @@ public class ExportHandler {
                     + type;
 
         } else {
-            return TOP_LEVEL_AWS_FOLDER + refset.getRefsetId() + "/" + dates.toArray()[0] + "/"
-                    + type + "/" + dates.toArray()[1];
+            return TOP_LEVEL_AWS_FOLDER + refset.getRefsetId() + "/" + dates.toArray()[0] + "/" + type + "/"
+                    +  (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0])  ;
         }
     }
 
@@ -90,7 +90,7 @@ public class ExportHandler {
         } else {
             return "der2_Refset_Simple" + refset.getRefsetId() + type + "_"
                     + refset.getEditionShortName() + "_" + dates.toArray()[0] + "_"
-                    + dates.toArray()[1] + ".zip";
+                    + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]) + ".txt";
         }
     }
 
