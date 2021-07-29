@@ -107,34 +107,38 @@ public class TerminologyService implements RootService {
                     PropertyUtility.getPrefixedProperties("spring.jpa.properties.", true));
         }
         
-        final String key = "search.handler";
-        searchHandlerMap = new HashMap<>();
-        logger.debug(">>>>>> handler property: " + PropertyUtility.getProperty(key));
-        
-        for (final String handlerName : PropertyUtility.getProperty(key).split(",")) {
-            logger.debug(">>>>>> handler name: " + handlerName);
-            if (handlerName.isEmpty()) {
-                continue;
-            }
+        if (searchHandlerMap == null) {
+	        final String key = "search.handler";
+	        searchHandlerMap = new HashMap<>();
+	        logger.debug(">>>>>> handler property: " + PropertyUtility.getProperty(key));
+	        
+	        for (final String handlerName : PropertyUtility.getProperty(key).split(",")) {
+	            logger.debug(">>>>>> handler name: " + handlerName);
+	            if (handlerName.isEmpty()) {
+	                continue;
+	            }
+	
+	            // Add handlers to map
+	            final SearchHandler handlerService =
+	                    HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
+	                            SearchHandler.class);
+	            searchHandlerMap.put(handlerName, handlerService);
+	        }
+	        
+	        logger.debug(">>>>>> searchHandlerMap: " + ModelUtility.toJson(searchHandlerMap));
+	
+	        if (!searchHandlerMap.containsKey(ModelUtility.DEFAULT)) {
+	            throw new Exception(
+	                    "search.handler." + ModelUtility.DEFAULT + " expected and does not exist.");
+	        }
+	
+	        logger.debug("  initialize search handler = " + searchHandlerMap.values().stream()
+	                .map(f -> f.getName()).collect(Collectors.toSet()));
 
-            // Add handlers to map
-            final SearchHandler handlerService =
-                    HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
-                            SearchHandler.class);
-            searchHandlerMap.put(handlerName, handlerService);
+	        // Validate the search handler map was initialized successfuly
+	        validateInit();
         }
         
-        logger.debug(">>>>>> searchHandlerMap: " + ModelUtility.toJson(searchHandlerMap));
-
-        if (!searchHandlerMap.containsKey(ModelUtility.DEFAULT)) {
-            throw new Exception(
-                    "search.handler." + ModelUtility.DEFAULT + " expected and does not exist.");
-        }
-
-        logger.debug("  initialize search handler = " + searchHandlerMap.values().stream()
-                .map(f -> f.getName()).collect(Collectors.toSet()));
-
-        validateInit();
 
         // created on each instantiation
         manager = factory.createEntityManager();
