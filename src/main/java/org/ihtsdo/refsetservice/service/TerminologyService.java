@@ -3,6 +3,7 @@ package org.ihtsdo.refsetservice.service;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.Module;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -27,6 +28,7 @@ import javax.persistence.metamodel.EntityType;
 import org.hibernate.CacheMode;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.orm.Search;
+import org.hibernate.search.mapper.orm.schema.management.SearchSchemaManager;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.ihtsdo.refsetservice.handler.SearchHandler;
 import org.ihtsdo.refsetservice.model.HasId;
@@ -1452,26 +1454,9 @@ public class TerminologyService implements RootService {
         final Reflections reflections = new Reflections(properties.getProperty("app.entity_packages"));
         final SearchSession searchSession = Search.session(getEntityManager());
         
-        Set<EntityType<?>> entities = getEntityManager().getMetamodel().getEntities();
-        List<String> entityNames = new ArrayList<>();
-        
-        for (EntityType entity : entities) {
-            entityNames.add(entity.getName());
-        }
-        
-        logger.debug("!!!!!********************* Entities: " + ModelUtility.toJson(entityNames));
-        
-        for (final Class<?> clazz : reflections.getTypesAnnotatedWith(Indexed.class)) {
-            logger.info("    class = " + clazz.getName());
-            try {
-                searchSession.workspace(clazz).purge();
-                searchSession.indexingPlan().execute(); // may not need anymore
-            } catch (final IllegalArgumentException e) {
-                logger.warn("      NOT AN ENTITY in this project");
-                e.printStackTrace();
-            }
-        }
-        // fullTextEntityManager.close();
+        SearchSchemaManager schemaManager = searchSession.schemaManager(); 
+        schemaManager.dropAndCreate();
+       
     }
 
     /**

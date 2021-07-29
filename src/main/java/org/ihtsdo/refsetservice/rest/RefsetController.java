@@ -7,8 +7,6 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,10 +23,12 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.DateUtility;
+import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
+import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.RefsetUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
@@ -122,7 +122,7 @@ public class RefsetController extends BaseController {
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(true);
-                refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
+                refset.setVersionList(RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
 
                 logger.info("*********** getRefset: refset: " + ModelUtility.toJson(refset));
 
@@ -265,6 +265,8 @@ public class RefsetController extends BaseController {
                     query = "(" + query + " OR " + memberRefsetQuery + ")";
                 }
             }
+            
+            query = IndexUtility.addWildcardsToQuery(query);
 
             if (query != null && !query.equals("")) {
                 query += " AND latestVersion: true";
@@ -278,7 +280,7 @@ public class RefsetController extends BaseController {
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(false);
-                refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
+                refset.setVersionList(RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
             }
 
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -607,9 +609,17 @@ public class RefsetController extends BaseController {
                             withNames = true;
                         }
 
-                        String uri = RefsetMemberService.exportRefsetRf2(refsetInternalId,
+                        String uri = "";
+                        
+                        if (exportType.contentEquals("SNAPSHOT")) {
+                        	uri = RefsetMemberService.exportRefsetRf2(refsetInternalId,
                                 exportType, languageId, fileNameDate, startEffectiveTime,
                                 transientEffectiveTime, exportMetadata, withNames);
+                        } else {
+                        	uri = RefsetMemberService.exportDeltaRefsetRf2(refsetInternalId,
+                                    exportType, languageId, fileNameDate, startEffectiveTime,
+                                    transientEffectiveTime, exportMetadata, withNames);                        	
+                        }
                         logger.debug("******** results: " + uri);
                         url = "{\"url\": \"" + uri + "\"}";
 
@@ -619,9 +629,23 @@ public class RefsetController extends BaseController {
                                 exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
                     } else if (format.equals("free_set")) {
+                    	final Refset refset = service.get(refsetInternalId, Refset.class);
+                        String uri = "";
+                        String freesetExceptions = PropertyUtility.getProperty("freeset.exceptions");
+                        if (freesetExceptions == null || !freesetExceptions.contains(refset.getRefsetId())) {
+                        	uri = RefsetMemberService.exportFreeset(refsetInternalId);
+                        	url = "{\"url\": \"" + uri + "\", \"redirect\": false}";
+                        } else {
 
-                        String uri = RefsetMemberService.exportFreeset(refsetInternalId);
-                        url = "{\"url\": \"" + uri + "\"}";
+                            String[] tokens = FieldedStringTokenizer.split(freesetExceptions, "|");
+                        	for (int i = 0; i<tokens.length - 1; i++) {
+                        		if (tokens[i].contentEquals(refset.getRefsetId())) {
+                        			uri = tokens[i+1];
+                        		}
+                        	}
+                        	url = "{\"url\": \"" + uri + "\", \"redirect\": true}";
+                        }
+                        
                     }
 
                     return url;
@@ -759,7 +783,7 @@ public class RefsetController extends BaseController {
                 }
 
                 final List<Map<String, String>> versions =
-                        getSortedRefsetVersionList(refset.getRefsetId(), service);
+                        RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service);
 
                 final List<Map<String, String>> memberHistory =
                         RefsetMemberService.getMemberHistory(conceptId, versions);
@@ -882,82 +906,7 @@ public class RefsetController extends BaseController {
         }
     }
 
-    /**
-     * Get the full list of versions for a refset from oldest first to newest
-     * last.
-     *
-     * @param refsetId the refset id
-     * @param service the Terminology Service
-     * @return the list of refset versions
-     * @throws Exception the exception
-     */
-    private List<Map<String, String>> getSortedRefsetVersionList(final String refsetId,
-        final TerminologyService service) throws Exception {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-
-        final List<Map<String, String>> versionList = new ArrayList<>();
-        final PfsParameter pfs = new PfsParameter();
-        pfs.setSort("versionDate");
-        pfs.setAscending(false);
-
-        // ResultList<Refset> test = service.find("id:
-        // 78659156-b6d6-4935-bcdf-c4692bcee10d", pfs, Refset.class, null);
-        // logger.debug("******** test: " + ModelUtility.toJson(test));
-
-        final ResultList<Refset> results = service
-                .find("refsetId: " + QueryParserBase.escape(refsetId), pfs, Refset.class, null);
-
-        for (Refset refset : results.getItems()) {
-
-            final Map<String, String> version = new HashMap<>();
-            version.put("status", refset.getVersionStatus());
-            version.put("refsetInternalId", refset.getId());
-
-            boolean inDevelopmentVersionFound = false;
-            if (refset.getVersionStatus().toLowerCase().equals("in development")) {
-
-                if (inDevelopmentVersionFound) {
-                    throw new Exception(
-                            "May only have a single version at 'in development' at any given time, and we found 2nd for refsetId: "
-                                    + refset.getRefsetId());
-                }
-
-                version.put("date",
-                        DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
-
-                versionList.add(0, version);
-
-                inDevelopmentVersionFound = true;
-            } else if ("beta, published".contains(refset.getVersionStatus().toLowerCase())) {
-
-                version.put("date", DateUtility.formatDate(refset.getVersionDate(),
-                        DateUtility.DATE_FORMAT_REVERSE, null));
-
-                if (versionList.isEmpty()) {
-                    versionList.add(version);
-                } else {
-
-                    final Date dateToInsert = refset.getVersionDate();
-                    int versionIndex = (inDevelopmentVersionFound) ? 1 : 0;
-
-                    for (Map<String, String> currentVersion : versionList) {
-
-                        final Date dateInspecting = sdf.parse(currentVersion.get("date"));
-
-                        if (dateToInsert.before(dateInspecting)) {
-                            break;
-                        }
-
-                        versionIndex++;
-                    }
-
-                    versionList.add(versionIndex, version);
-                }
-            }
-        }
-
-        return versionList;
-    }
+ 
     /**
      * Gets the version statuses.
      *

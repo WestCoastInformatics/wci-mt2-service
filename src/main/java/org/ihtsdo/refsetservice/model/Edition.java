@@ -119,8 +119,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the name
      */
-    @FullTextField(analyzer = "whitespace")
-    @KeywordField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
         return name;
     }
@@ -139,7 +139,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the namespace
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "namespaceSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getNamespace() {
         return namespace;
     }
@@ -176,6 +177,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the branch
      */
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "branchSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getBranch() {
         return branch;
     }
@@ -319,8 +322,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the country
      */
-    @FullTextField(analyzer = "whitespace")
-    @KeywordField(name = "shortNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "shortNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getShortName() {
         return shortName;
     }

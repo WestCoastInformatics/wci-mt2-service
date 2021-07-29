@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
 import javax.persistence.ManyToMany;
@@ -667,9 +669,9 @@ public final class IndexUtility {
         // Set up the "full text query"
 
         // construct the query
-        final String finalQuery = (pfsQuery.toString().startsWith(" AND "))
-                ? pfsQuery.toString().substring(5) : pfsQuery.toString();
-                
+        String finalQuery = (pfsQuery.toString().startsWith(" AND "))
+            ? pfsQuery.toString().substring(5) : pfsQuery.toString();
+              
         SearchResult<T> result;
         SearchScope<T> scope = searchSession.scope(clazz);
         SearchPredicateFactory predicateFactory = scope.predicate();
@@ -695,13 +697,15 @@ public final class IndexUtility {
         else if (PropertyUtility.getProperties()
                 .getProperty("spring.jpa.properties.hibernate.search.backend.type").trim()
                 .equals("elasticsearch")) {
-
+            
+            final String fullQueryString = "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\"" + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
+            logger.debug("********* elasticsearch fullQueryString: " + fullQueryString);
+            
             // Need to escape double-quotes for the json
             predicate = predicateFactory
                     .extension(ElasticsearchExtension.get())
-                    .fromJson(
-                            "{\"bool\":{\"must\":[{\"query_string\":{\"query\":\"" + StringEscapeUtils.escapeJson(finalQuery) + "\"}}]}}"
-                     ).toPredicate();
+                    .fromJson(fullQueryString)
+                    .toPredicate();
         }
 
         // Unknown indexmanager type
@@ -831,6 +835,33 @@ public final class IndexUtility {
         return result;
     }
 
+    /**
+     * Add wildcard suffixes to a query
+     *
+     * @param query the query to modify
+     * @return the modified query
+     * @throws Exception the exception
+     */
+    public static String addWildcardsToQuery(final String query) throws Exception {
+        
+        if (query == null || query.equals("")) {
+            return query;
+        }
+        
+        String wildcardQuery = query;
+        Pattern regex = Pattern.compile("[a-zA-Z0-9_]+:[\"\\s]*([-a-zA-Z0-9_\\s]*)(?:\\sAND?|\\sOR|\"|$)");
+        Matcher regexMatcher = regex.matcher(wildcardQuery);
+        
+        while (regexMatcher.find()) {
+            
+            //if (!regexMatcher.group(1).equals("true") && !regexMatcher.group(1).equals("false")) {
+                wildcardQuery = wildcardQuery.replace(regexMatcher.group(1), regexMatcher.group(1) + "*");
+            //}
+        }
+        
+        return wildcardQuery;
+    }
+    
     /**
      * Sets the max window size on an index for returning large elasticsearch
      * queries.

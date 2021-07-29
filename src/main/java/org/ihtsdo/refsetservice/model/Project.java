@@ -21,6 +21,7 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
@@ -91,7 +92,8 @@ public class Project extends AbstractHasModified {
      *
      * @return the name
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
         return name;
     }
