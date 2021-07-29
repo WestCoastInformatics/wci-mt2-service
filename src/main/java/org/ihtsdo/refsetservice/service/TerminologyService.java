@@ -3,6 +3,7 @@ package org.ihtsdo.refsetservice.service;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.Module;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

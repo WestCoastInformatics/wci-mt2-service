@@ -23,6 +23,7 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -628,9 +629,23 @@ public class RefsetController extends BaseController {
                                 exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
                     } else if (format.equals("free_set")) {
+                    	final Refset refset = service.get(refsetInternalId, Refset.class);
+                        String uri = "";
+                        String freesetExceptions = PropertyUtility.getProperty("freeset.exceptions");
+                        if (freesetExceptions == null || !freesetExceptions.contains(refset.getRefsetId())) {
+                        	uri = RefsetMemberService.exportFreeset(refsetInternalId);
+                        	url = "{\"url\": \"" + uri + "\", \"redirect\": false}";
+                        } else {
 
-                        String uri = RefsetMemberService.exportFreeset(refsetInternalId);
-                        url = "{\"url\": \"" + uri + "\"}";
+                            String[] tokens = FieldedStringTokenizer.split(freesetExceptions, "|");
+                        	for (int i = 0; i<tokens.length - 1; i++) {
+                        		if (tokens[i].contentEquals(refset.getRefsetId())) {
+                        			uri = tokens[i+1];
+                        		}
+                        	}
+                        	url = "{\"url\": \"" + uri + "\", \"redirect\": true}";
+                        }
+                        
                     }
 
                     return url;

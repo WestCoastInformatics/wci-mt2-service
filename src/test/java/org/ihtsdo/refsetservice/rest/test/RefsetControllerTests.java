@@ -382,7 +382,7 @@ public class RefsetControllerTests extends BaseTest {
         final String fileUrl = (root.get("url")).asText();
         logger.info("File Url: " + fileUrl);
 
-        assertThat(fileUrl).isNotNull();
+        assertThat(fileUrl.contentEquals("https://gps.snomed.org/"));
     }
     
     /**
