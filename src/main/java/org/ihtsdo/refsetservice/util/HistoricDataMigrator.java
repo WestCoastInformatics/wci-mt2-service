@@ -422,11 +422,16 @@ public class HistoricDataMigrator {
                     }
                 }
             } else {
-                // Refsets in Snowstorm but not RTT
+                /* Refsets in Snowstorm but not RTT */
+
+                // Defaults for type & narrative
                 refset.setType("EXTENSIONAL");
                 refset.setNarrative("None as not from RTT");
-                refset.setPrivateRefset(true);
+
+                // TODO: Better handling for this use case? Perhaps move to
+                // persistObjects()?
                 refset.getEdition().setDefaultLanguageRefsets(new HashSet<String>());
+                refset.getEdition().getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET_ID);
             }
 
             // Keep track of the latest version per refsetId
