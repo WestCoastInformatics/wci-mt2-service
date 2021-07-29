@@ -612,11 +612,11 @@ public class RefsetController extends BaseController {
                         String uri = "";
                         
                         if (exportType.contentEquals("SNAPSHOT")) {
-                        	RefsetMemberService.exportRefsetRf2(refsetInternalId,
+                        	uri = RefsetMemberService.exportRefsetRf2(refsetInternalId,
                                 exportType, languageId, fileNameDate, startEffectiveTime,
                                 transientEffectiveTime, exportMetadata, withNames);
                         } else {
-                        	RefsetMemberService.exportDeltaRefsetRf2(refsetInternalId,
+                        	uri = RefsetMemberService.exportDeltaRefsetRf2(refsetInternalId,
                                     exportType, languageId, fileNameDate, startEffectiveTime,
                                     transientEffectiveTime, exportMetadata, withNames);                        	
                         }

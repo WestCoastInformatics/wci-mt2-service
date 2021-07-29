@@ -873,7 +873,7 @@ public class RefsetMemberService {
 				S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, EXPORT_FILE_DIR,
 				    deltaRt2VersionFileName);
 
-				//FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
+				FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
 			} else {
 
@@ -886,7 +886,7 @@ public class RefsetMemberService {
 			}
 			// if download is from RT2 server
 			ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-			return builder.build().toString() + EXPORT_DOWNLOAD_URL + deltaRt2VersionFileName;
+			return EXPORT_DOWNLOAD_URL + deltaRt2VersionFileName;
 
 		} catch (Exception ex) {
 			throw new Exception("Failed to export delta zip file name" + ex.getMessage(), ex);
