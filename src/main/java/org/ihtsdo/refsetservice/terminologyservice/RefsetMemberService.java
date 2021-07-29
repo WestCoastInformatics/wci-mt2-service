@@ -115,7 +115,7 @@ public class RefsetMemberService {
 
     /** A cache of the details for any concept. */
     private final static Map<String, Concept> conceptDetailsCache = new HashMap<>();
-    
+
     /** A cache of the taxonomy ancestor path for concepts. */
     private final static Map<String, List<Concept>> taxonomyAncestorCache = new HashMap<>();
 
@@ -510,7 +510,7 @@ public class RefsetMemberService {
                 snowstormQuery += queryPart + " AND ";
             }
         }
-        
+
         // if there are no query terms just exit the method
         if (snowstormQuery.equals("")) {
             return refsetQuery;
@@ -596,9 +596,9 @@ public class RefsetMemberService {
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
             try {
-            S3ConnectionWrapper.connectToAmazonS3();
+                S3ConnectionWrapper.connectToAmazonS3();
             } catch (Exception e) {
-            	// do nothing
+                // do nothing
             }
             final String awsVersionedPath =
                     exporter.generateAwsBaseVersionPath(refset, type, dates);
@@ -682,13 +682,14 @@ public class RefsetMemberService {
                             EXPORT_FILE_DIR + rt2VersionFileName);
                 }
             }
-            
+
             logger.debug("Final Export File Path: " + EXPORT_FILE_DIR + rt2VersionFileName);
 
             // if download is from RT2 server
             ServletUriComponentsBuilder builder =
                     ServletUriComponentsBuilder.fromCurrentContextPath();
-            return EXPORT_DOWNLOAD_URL + rt2VersionFileName; //builder.build().toString() + 
+            return EXPORT_DOWNLOAD_URL + rt2VersionFileName; // builder.build().toString()
+                                                             // +
 
         } catch (
 
@@ -696,202 +697,227 @@ public class RefsetMemberService {
             throw new Exception("Failed to export zip file name" + ex.getMessage(), ex);
         }
     }
-    
-	@SuppressWarnings({ "null", "unused" })
-	public static String exportDeltaRefsetRf2(final String refsetInternalId, final String type, final String languageId,
-			final String fileNameDate, final String startEffectiveTime, final String transientEffectiveTime,
-			final boolean exportMetadata, boolean withNames) throws Exception {
-		// TODO: Turn this into a method variable
-		final Set<String> dates = new HashSet<>();
 
-		dates.add(transientEffectiveTime);
-		if (startEffectiveTime != null) {
-			dates.add(startEffectiveTime);
-		}
-		ExportHandler exporter = new ExportHandler();
+    @SuppressWarnings({
+            "null", "unused"
+    })
+    public static String exportDeltaRefsetRf2(final String refsetInternalId, final String type,
+        final String languageId, final String fileNameDate, final String startEffectiveTime,
+        final String transientEffectiveTime, final boolean exportMetadata, boolean withNames)
+        throws Exception {
+        // TODO: Turn this into a method variable
+        final Set<String> dates = new HashSet<>();
 
-		try (final TerminologyService service = new TerminologyService()) {
-			final Refset refset = service.get(refsetInternalId, Refset.class);
+        dates.add(transientEffectiveTime);
+        if (startEffectiveTime != null) {
+            dates.add(startEffectiveTime);
+        }
+        ExportHandler exporter = new ExportHandler();
 
-			S3ConnectionWrapper.connectToAmazonS3();
+        try (final TerminologyService service = new TerminologyService()) {
+            final Refset refset = service.get(refsetInternalId, Refset.class);
 
-			String deltaAwsVersionedPath = exporter.generateAwsBaseVersionPath(refset, type, dates);
+            S3ConnectionWrapper.connectToAmazonS3();
 
-			String deltaRt2VersionFileName = exporter.generateRt2VersionFileName(refset, type, languageId, dates,
-					exportMetadata, withNames);
-			
-			String deltaSnowGeneratedFileName = exporter.generateSnowVersionFileName(refset, "DELTA",
-					dates);
+            String deltaAwsVersionedPath = exporter.generateAwsBaseVersionPath(refset, type, dates);
 
-			// Check if delta file already exists
-			if (!S3ConnectionWrapper.isInS3Cache(deltaAwsVersionedPath, deltaRt2VersionFileName)) {
+            String deltaRt2VersionFileName = exporter.generateRt2VersionFileName(refset, type,
+                    languageId, dates, exportMetadata, withNames);
 
-				// determine all snapshot versions that will contribute to the delta
-				List<Map<String, String>> versionMap = RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(),
-						service);
-				Map<String, String> versionToRefsetInternalId = new HashMap<>();
-				List<String> versionsInScope = new ArrayList<>();
-				for (Map<String, String> entry : versionMap) {
-					String candidateVersion = entry.get("date");
-					if (candidateVersion != null
-							&& candidateVersion.replaceAll("-", "").compareTo(startEffectiveTime) >= 0
-							&& candidateVersion.replaceAll("-", "").compareTo(transientEffectiveTime) <= 0) {
-						versionsInScope.add(candidateVersion);
-						versionToRefsetInternalId.put(candidateVersion, entry.get("refsetInternalId"));
-					}
-				}
-				logger.debug("versionsInScope " + versionsInScope);
+            String deltaSnowGeneratedFileName =
+                    exporter.generateSnowVersionFileName(refset, "DELTA", dates);
 
-				// Local place to store snowBaseVersionFileName
-				final Path localSnowGeneratedTempDir = Files.createTempDirectory("rt2LocalSnowGenerated-");
+            // Check if delta file already exists
+            if (!S3ConnectionWrapper.isInS3Cache(deltaAwsVersionedPath, deltaRt2VersionFileName)) {
 
-				// build fileContentsArray with contents from each snapshot version
-				List<String> fileContentsArray = new ArrayList<>();
-				for (String versionInScope : versionsInScope) {
-					dates.clear();
-					dates.add(versionInScope.replaceAll("-", ""));
+                // determine all snapshot versions that will contribute to the
+                // delta
+                List<Map<String, String>> versionMap =
+                        RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service);
+                Map<String, String> versionToRefsetInternalId = new HashMap<>();
+                List<String> versionsInScope = new ArrayList<>();
+                for (Map<String, String> entry : versionMap) {
+                    String candidateVersion = entry.get("date");
+                    if (candidateVersion != null
+                            && candidateVersion.replaceAll("-", "")
+                                    .compareTo(startEffectiveTime) >= 0
+                            && candidateVersion.replaceAll("-", "")
+                                    .compareTo(transientEffectiveTime) <= 0) {
+                        versionsInScope.add(candidateVersion);
+                        versionToRefsetInternalId.put(candidateVersion,
+                                entry.get("refsetInternalId"));
+                    }
+                }
+                logger.debug("versionsInScope " + versionsInScope);
 
-					String awsVersionedPath = exporter.generateAwsBaseVersionPath(refset, "DELTA-SNAPSHOT", dates);
+                // Local place to store snowBaseVersionFileName
+                final Path localSnowGeneratedTempDir =
+                        Files.createTempDirectory("rt2LocalSnowGenerated-");
 
-					String rt2VersionFileName = exporter.generateRt2VersionFileName(refset, "SNAPSHOT", languageId,
-							dates, exportMetadata, withNames);
+                // build fileContentsArray with contents from each snapshot
+                // version
+                List<String> fileContentsArray = new ArrayList<>();
+                for (String versionInScope : versionsInScope) {
+                    dates.clear();
+                    dates.add(versionInScope.replaceAll("-", ""));
 
-					// Snowstorm generated RF2 file
-					final String snowGeneratedFileName = exporter.generateSnowVersionFileName(refset, "SNAPSHOT",
-							dates);
+                    String awsVersionedPath =
+                            exporter.generateAwsBaseVersionPath(refset, "DELTA-SNAPSHOT", dates);
 
-					// Local Snowstorm generated Rf2 file name
-					final String localSnowGeneratedFilePath = localSnowGeneratedTempDir + File.separator
-							+ snowGeneratedFileName;
+                    String rt2VersionFileName = exporter.generateRt2VersionFileName(refset,
+                            "SNAPSHOT", languageId, dates, exportMetadata, withNames);
 
-					// Check if SnowS version file name does already exist in S3
-					// Cache
-					if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
-						// Base-SnowVersion file is not on S3, so generate it, and
-						// after downloading it, store it on S3
+                    // Snowstorm generated RF2 file
+                    final String snowGeneratedFileName =
+                            exporter.generateSnowVersionFileName(refset, "SNAPSHOT", dates);
 
-						// Generate file on SnowS
-						final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId()
-								+ "\"],  \"branchPath\": \"" + refset.getEdition().getBranch() + "/" + versionInScope
-								+ "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
-								+ versionInScope.replaceAll("-", "")
-								+ "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
-								+ (versionInScope == null ? ""
-										: ",  \"startEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"")
-								+ (versionInScope == null ? ""
-										: ",  \"transientEffectiveTime\": \"" + versionInScope.replaceAll("-", "")
-												+ "\"")
-								+ "}";
+                    // Local Snowstorm generated Rf2 file name
+                    final String localSnowGeneratedFilePath =
+                            localSnowGeneratedTempDir + File.separator + snowGeneratedFileName;
 
-						logger.info("generating file from snowstorm" + entityString);
-						// Generate on SnowS
-						final String snowGeneratedFileUrl = exporter.generateSnowVersionFile(entityString);
+                    // Check if SnowS version file name does already exist in S3
+                    // Cache
+                    if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
+                        // Base-SnowVersion file is not on S3, so generate it,
+                        // and
+                        // after downloading it, store it on S3
 
-						logger.debug("Downloading file from snowstorm, " + localSnowGeneratedFilePath);
-						// Download file from SnowS
-						exporter.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
+                        // Generate file on SnowS
+                        final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId()
+                                + "\"],  \"branchPath\": \"" + refset.getEdition().getBranch() + "/"
+                                + versionInScope
+                                + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
+                                + versionInScope.replaceAll("-", "")
+                                + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
+                                + (versionInScope == null ? ""
+                                        : ",  \"startEffectiveTime\": \""
+                                                + versionInScope.replaceAll("-", "") + "\"")
+                                + (versionInScope == null ? "" : ",  \"transientEffectiveTime\": \""
+                                        + versionInScope.replaceAll("-", "") + "\"")
+                                + "}";
 
-						logger.debug("uploading snowstorm genned file to S3");
-		                // store file one s3
-		                S3ConnectionWrapper.uploadToS3(awsVersionedPath,
-		                            localSnowGeneratedTempDir.toString(), snowGeneratedFileName);
-					} else {
+                        logger.info("generating file from snowstorm" + entityString);
+                        // Generate on SnowS
+                        final String snowGeneratedFileUrl =
+                                exporter.generateSnowVersionFile(entityString);
 
-						logger.info("Downloading snowstorm genned file from S3, " + snowGeneratedFileName);
-						S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath, snowGeneratedFileName,
-								localSnowGeneratedFilePath);
+                        logger.debug(
+                                "Downloading file from snowstorm, " + localSnowGeneratedFilePath);
+                        // Download file from SnowS
+                        exporter.downloadSnowGeneratedFile(snowGeneratedFileUrl,
+                                localSnowGeneratedFilePath);
 
-					}
-					
-					// append the contents of this snapshot file to the fileContentsArray
-					FileUtility.unzip(localSnowGeneratedFilePath, localSnowGeneratedFilePath.replace(".zip", ""));
-					String fileNamePath = localSnowGeneratedFilePath.replace(".zip", "")
-							+ File.separator + "SnomedCT_Export" + File.separator + "Snapshot" + File.separator
-							+ "Refset" + File.separator + "Content"+ File.separator;
-					String[] files = new File(fileNamePath).list();
-					
-					if (withNames) {
-						final String snowGeneratedRf2FilePath = fileNamePath + files[0];
-						final String rf2FileName = snowGeneratedRf2FilePath
-								.substring(snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
-						final String builderRf2FilePath = fileNamePath + files[0] + ".names";
+                        logger.debug("uploading snowstorm genned file to S3");
+                        // store file one s3
+                        S3ConnectionWrapper.uploadToS3(awsVersionedPath,
+                                localSnowGeneratedTempDir.toString(), snowGeneratedFileName);
+                    } else {
 
-						Refset specificRefset = service.findSingle("id:" + versionToRefsetInternalId.get(versionInScope), Refset.class,
-								null);
-						appendNamesToRf2(specificRefset, snowGeneratedRf2FilePath, builderRf2FilePath, languageId);
-						
-						File origFile = new File(snowGeneratedRf2FilePath);
-						if (origFile.exists()) {
-							origFile.delete();
-						}
-						File namesFile = new File(builderRf2FilePath);
-						if (namesFile.exists()) {
-							namesFile.renameTo(origFile);
-						}
-						withNames = false;
-					}
-		            
-					if (files != null) {
-						fileContentsArray.addAll(FileUtility.readFileToArray(fileNamePath + files[0]));
-					}
-					logger.debug("fileContentsArray after versionInScope " + fileContentsArray.size() + " "
-							+ versionInScope);
-				}
+                        logger.info("Downloading snowstorm genned file from S3, "
+                                + snowGeneratedFileName);
+                        S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath,
+                                snowGeneratedFileName, localSnowGeneratedFilePath);
 
-				// put in a set to remove duplicates from fileContents
-				Set<String> fileContentsSet = new HashSet<>(fileContentsArray);
-				// sort fileContents
-				List<String> fileContentsArrayList = new ArrayList<>(fileContentsSet);
-				Collections.sort(fileContentsArrayList);
+                    }
 
-				// write fileContents to file
-				try {
-					FileOutputStream fos = new FileOutputStream(
-							localSnowGeneratedTempDir.toString() + File.separator + deltaSnowGeneratedFileName);
-					BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+                    // append the contents of this snapshot file to the
+                    // fileContentsArray
+                    FileUtility.unzip(localSnowGeneratedFilePath,
+                            localSnowGeneratedFilePath.replace(".zip", ""));
+                    String fileNamePath = localSnowGeneratedFilePath.replace(".zip", "")
+                            + File.separator + "SnomedCT_Export" + File.separator + "Snapshot"
+                            + File.separator + "Refset" + File.separator + "Content"
+                            + File.separator;
+                    String[] files = new File(fileNamePath).list();
 
-					for (String line : fileContentsArrayList) {
-						bw.write(line);
-						bw.newLine();
-					}
+                    if (withNames) {
+                        final String snowGeneratedRf2FilePath = fileNamePath + files[0];
+                        final String rf2FileName = snowGeneratedRf2FilePath.substring(
+                                snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
+                        final String builderRf2FilePath = fileNamePath + files[0] + ".names";
 
-					bw.close();
-					fos.close();
+                        Refset specificRefset = service.findSingle(
+                                "id:" + versionToRefsetInternalId.get(versionInScope), Refset.class,
+                                null);
+                        appendNamesToRf2(specificRefset, snowGeneratedRf2FilePath,
+                                builderRf2FilePath, languageId);
 
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+                        File origFile = new File(snowGeneratedRf2FilePath);
+                        if (origFile.exists()) {
+                            origFile.delete();
+                        }
+                        File namesFile = new File(builderRf2FilePath);
+                        if (namesFile.exists()) {
+                            namesFile.renameTo(origFile);
+                        }
+                        withNames = false;
+                    }
 
-				logger.debug("converting snowstorm genned file to RT2 format");
-				// Have access to localSnowGeneratedFilePath from which rt2 will
-				// generate the export file
-				generateRt2ExportFile(refset, localSnowGeneratedTempDir.toString() + File.separator + deltaSnowGeneratedFileName,
-						deltaRt2VersionFileName, exportMetadata, withNames, languageId);
+                    if (files != null) {
+                        fileContentsArray
+                                .addAll(FileUtility.readFileToArray(fileNamePath + files[0]));
+                    }
+                    logger.debug("fileContentsArray after versionInScope "
+                            + fileContentsArray.size() + " " + versionInScope);
+                }
 
-				logger.debug("uploading snowstorm genned file to S3");
-				// store file on s3
-				S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, EXPORT_FILE_DIR,
-				    deltaRt2VersionFileName);
+                // put in a set to remove duplicates from fileContents
+                Set<String> fileContentsSet = new HashSet<>(fileContentsArray);
+                // sort fileContents
+                List<String> fileContentsArrayList = new ArrayList<>(fileContentsSet);
+                Collections.sort(fileContentsArrayList);
 
-				FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
+                // write fileContents to file
+                try {
+                    FileOutputStream fos = new FileOutputStream(localSnowGeneratedTempDir.toString()
+                            + File.separator + deltaSnowGeneratedFileName);
+                    BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 
-			} else {
+                    for (String line : fileContentsArrayList) {
+                        bw.write(line);
+                        bw.newLine();
+                    }
 
-				if (!Files.exists(Path.of(EXPORT_FILE_DIR + deltaRt2VersionFileName))) {
-					logger.debug("Downloading RT2 snapshot genned file from S3");
-					S3ConnectionWrapper.downloadSnowFromS3(deltaAwsVersionedPath, deltaRt2VersionFileName,
-							EXPORT_FILE_DIR + deltaRt2VersionFileName);
+                    bw.close();
+                    fos.close();
 
-				}
-			}
-			// if download is from RT2 server
-			ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-			return EXPORT_DOWNLOAD_URL + deltaRt2VersionFileName;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
-		} catch (Exception ex) {
-			throw new Exception("Failed to export delta zip file name" + ex.getMessage(), ex);
-		}
-	}
+                logger.debug("converting snowstorm genned file to RT2 format");
+                // Have access to localSnowGeneratedFilePath from which rt2 will
+                // generate the export file
+                generateRt2ExportFile(refset,
+                        localSnowGeneratedTempDir.toString() + File.separator
+                                + deltaSnowGeneratedFileName,
+                        deltaRt2VersionFileName, exportMetadata, withNames, languageId);
+
+                logger.debug("uploading snowstorm genned file to S3");
+                // store file on s3
+                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, EXPORT_FILE_DIR,
+                        deltaRt2VersionFileName);
+
+                FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
+
+            } else {
+
+                if (!Files.exists(Path.of(EXPORT_FILE_DIR + deltaRt2VersionFileName))) {
+                    logger.debug("Downloading RT2 snapshot genned file from S3");
+                    S3ConnectionWrapper.downloadSnowFromS3(deltaAwsVersionedPath,
+                            deltaRt2VersionFileName, EXPORT_FILE_DIR + deltaRt2VersionFileName);
+
+                }
+            }
+            // if download is from RT2 server
+            ServletUriComponentsBuilder builder =
+                    ServletUriComponentsBuilder.fromCurrentContextPath();
+            return EXPORT_DOWNLOAD_URL + deltaRt2VersionFileName;
+
+        } catch (Exception ex) {
+            throw new Exception("Failed to export delta zip file name" + ex.getMessage(), ex);
+        }
+    }
 
     private static String generateRt2ExportFile(final Refset refset,
         final String localSnowGeneratedFilePath, final String rt2VersionFileName,
@@ -906,12 +932,12 @@ public class RefsetMemberService {
         // Unzip the download if snapshot
         List<String> sourceFiles = new ArrayList<>();
         if (!localSnowGeneratedFilePath.contains("DELTA")) {
-        	sourceFiles =
-                unzipFiles(localSnowGeneratedFilePath, builderDirectoryTempDir.toString());
+            sourceFiles =
+                    unzipFiles(localSnowGeneratedFilePath, builderDirectoryTempDir.toString());
         } else {
-        	sourceFiles.add(localSnowGeneratedFilePath);
+            sourceFiles.add(localSnowGeneratedFilePath);
         }
-        
+
         logger.debug("unzipped source files: " + ModelUtility.toJson(sourceFiles));
 
         if (sourceFiles.size() != 1) {
@@ -1215,8 +1241,7 @@ public class RefsetMemberService {
 
         // if download is from RT2 server
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-        String zippedFileUrl = EXPORT_DOWNLOAD_URL
-                + refsetFileName.replace(".txt", ".zip");
+        String zippedFileUrl = EXPORT_DOWNLOAD_URL + refsetFileName.replace(".txt", ".zip");
 
         return zippedFileUrl;
     }
@@ -1300,8 +1325,7 @@ public class RefsetMemberService {
 
         // if download is from RT2 server
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-        String zippedFileUrl = EXPORT_DOWNLOAD_URL
-                + refsetFileName.replace(".txt", ".zip");
+        String zippedFileUrl = EXPORT_DOWNLOAD_URL + refsetFileName.replace(".txt", ".zip");
 
         return zippedFileUrl;
     }
@@ -1689,7 +1713,7 @@ public class RefsetMemberService {
             ex.printStackTrace();
         }
     }
-    
+
     /**
      * Search refset taxonomy members.
      *
@@ -1701,73 +1725,77 @@ public class RefsetMemberService {
      */
     public static ConceptResultList searchTaxonomyMembers(final String refsetInternalId,
         final SearchParameters searchParameters) throws MalformedURLException, Exception {
-        
+
         ConceptResultList members = new ConceptResultList();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             final Refset refset = service.get(refsetInternalId, Refset.class);
             members = searchRefsetMembers(refset, searchParameters);
             populateAllLanguageDescriptions(refset, members.getItems());
-            
+
             getConceptAncestors(refset, members.getItems());
         }
-        
+
         return members;
-        
+
     }
-    
+
     /**
      * Get the ancestor path for a list of conceptIDs.
      *
      * @param refset the refset
-     * @param concepts the list of concepts ancestor paths are being generated for
+     * @param concepts the list of concepts ancestor paths are being generated
+     *            for
      * @return the concept result list
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static List<Concept> getConceptAncestors(final Refset refset, final List<Concept> concepts) throws MalformedURLException, Exception {
-        
+    public static List<Concept> getConceptAncestors(final Refset refset,
+        final List<Concept> concepts) throws MalformedURLException, Exception {
+
         String conceptIds = "";
         final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
-        lookupParameters.setNonDefaultPreferredTerms(identifyNonDefaultPreferredTerms(refset.getEdition()));
+        lookupParameters
+                .setNonDefaultPreferredTerms(identifyNonDefaultPreferredTerms(refset.getEdition()));
         lookupParameters.setGetDescriptions(true);
         final String branchPath = getBranchPath(refset);
         Map<String, List<Concept>> cachedPaths = new HashMap<>();
         final List<Concept> inactiveConcepts = new ArrayList<>();
-        
+
         for (Concept concept : concepts) {
-            
-            // snowstorm does not allow searching for inactive concepts so remove them from the results.
+
+            // snowstorm does not allow searching for inactive concepts so
+            // remove them from the results.
             if (!concept.isActive()) {
-                
+
                 logger.debug("Inactive concept in taxonomy search: " + concept.getCode());
                 inactiveConcepts.add(concept);
                 continue;
             }
-            
+
             if (taxonomyAncestorCache.containsKey(branchPath + concept.getCode())) {
-                cachedPaths.put(concept.getCode(), taxonomyAncestorCache.get(branchPath + concept.getCode()));
+                cachedPaths.put(concept.getCode(),
+                        taxonomyAncestorCache.get(branchPath + concept.getCode()));
             } else {
                 conceptIds += concept.getCode() + ",";
             }
         }
-        
+
         for (Concept inactiveConcept : inactiveConcepts) {
             concepts.remove(inactiveConcept);
         }
-        
+
         conceptIds = StringUtils.removeEnd(conceptIds, ",");
-        
+
         // Create Snowstorm URL
-        final String url =
-                SnowstormConnection.BASE_URL + "browser/" + branchPath + "/concepts/ancestorPaths?conceptIds=" + conceptIds;
-        
+        final String url = SnowstormConnection.BASE_URL + "browser/" + branchPath
+                + "/concepts/ancestorPaths?conceptIds=" + conceptIds;
+
         // Call Snowstorm
         logger.debug("Get Concept Ancestors URL: " + url);
 
-        try (final Response response =
-                SnowstormConnection.getResponse(url)) {
+        try (final Response response = SnowstormConnection.getResponse(url)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                 throw new Exception(
@@ -1779,50 +1807,59 @@ public class RefsetMemberService {
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
             Iterator<JsonNode> iterator = root.iterator();
-            
+
             // loop thru each concept to get the ancestor path for it
             while (iterator.hasNext()) {
-                
+
                 final JsonNode conceptNode = iterator.next();
                 final String nodeConceptId = conceptNode.get("conceptId").asText();
                 final JsonNode ancestorPathNode = conceptNode.get("ancestorPath");
-                
-                // get the ancestor list and reverse the order so the taxonomy root is first
-                final ConceptResultList ancestorList = populateConcepts(ancestorPathNode, refset, lookupParameters);
+
+                // get the ancestor list and reverse the order so the taxonomy
+                // root is first
+                final ConceptResultList ancestorList =
+                        populateConcepts(ancestorPathNode, refset, lookupParameters);
                 final List<Concept> parents = ancestorList.getItems();
                 Collections.reverse(parents);
-                
+
                 // add the ancestor path to the cache
                 taxonomyAncestorCache.put(branchPath + nodeConceptId, parents);
-                
-                // pick out the concept that we are going to load the ancestors into
-                final Concept concept = concepts.stream().filter(filterConcept -> nodeConceptId.equals(filterConcept.getCode())).findFirst().orElse(null);
-                
+
+                // pick out the concept that we are going to load the ancestors
+                // into
+                final Concept concept = concepts.stream()
+                        .filter(filterConcept -> nodeConceptId.equals(filterConcept.getCode()))
+                        .findFirst().orElse(null);
+
                 // load the ancestors into the concept
                 if (concept != null) {
                     concept.setParents(parents);
                 } else {
-                    logger.info("Couldn't find concept " + nodeConceptId + " to load ancestors into.");
+                    logger.info(
+                            "Couldn't find concept " + nodeConceptId + " to load ancestors into.");
                 }
             }
         }
-        
+
         // add the cached ancestors into the concept list
         for (Map.Entry<String, List<Concept>> cachedPath : cachedPaths.entrySet()) {
-            
+
             logger.debug("Using cached ancestors for concept: " + cachedPath.getKey());
-            
+
             // pick out the concept that we are going to load the ancestors into
-            final Concept concept = concepts.stream().filter(filterConcept -> cachedPath.getKey().equals(filterConcept.getCode())).findFirst().orElse(null);
-            
+            final Concept concept = concepts.stream()
+                    .filter(filterConcept -> cachedPath.getKey().equals(filterConcept.getCode()))
+                    .findFirst().orElse(null);
+
             // load the ancestors into the concept
             if (concept != null) {
                 concept.setParents(cachedPath.getValue());
             } else {
-                logger.info("Couldn't find concept " + cachedPath.getKey() + " to load ancestors into.");
+                logger.info("Couldn't find concept " + cachedPath.getKey()
+                        + " to load ancestors into.");
             }
         }
-        
+
         return concepts;
     }
 
@@ -1845,9 +1882,9 @@ public class RefsetMemberService {
                 + "/descriptions?term="
                 + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery()))
                 + "&conceptRefset=" + refset.getRefsetId()
-                + "&groupByConcept=false&searchMode=STANDARD"
-                + "&offset=" + (searchParameters.getOffset() * searchParameters.getLimit())
-                + "&limit=" + searchParameters.getLimit();
+                + "&groupByConcept=false&searchMode=STANDARD" + "&offset="
+                + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit="
+                + searchParameters.getLimit();
 
         // Call Snowstorm
         logger.debug("Get Member Descriptions URL: " + url);
@@ -2438,7 +2475,7 @@ public class RefsetMemberService {
                     }
                     // As this method is used for more than just taxonomy, don't
                     // assume cache set for refset version by checking for key.
-                    
+
                     if (ancestorsCache.containsKey(refset.getId()) && ancestorsCache
                             .get(refset.getId()).contains(conceptNode.get("conceptId").asText())) {
                         concept.setHasDescendantRefsetMembers(true);
@@ -2636,8 +2673,8 @@ public class RefsetMemberService {
                 nonDefaultPreferredTerms);
     }
 
-    private static void populateMembershipInformation(Refset refset, List<Concept> conceptsToProcess)
-        throws Exception {
+    private static void populateMembershipInformation(Refset refset,
+        List<Concept> conceptsToProcess) throws Exception {
 
         String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet="
                 + refset.getRefsetId() + "&limit=1000" + "&offset=0";
@@ -2809,20 +2846,21 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
-            
+
             // if ancestors are already cached no need to repeat
             if (ancestorsCache.containsKey(refsetInternalId)) {
-                
-                logger.debug("Ancestors for refset " + refset.getRefsetId() + " already cached, " + ancestorsCache.get(refsetInternalId).size() + " members.");
+
+                logger.debug("Ancestors for refset " + refset.getRefsetId() + " already cached, "
+                        + ancestorsCache.get(refsetInternalId).size() + " members.");
                 return true;
             }
 
             try {
-                
+
                 // Get ancestors of all members via ecl e.g. >(^723264001)
                 final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
                         + "/concepts?ecl=%3E(%5E" + refset.getRefsetId() + ")&limit=1000";
-                
+
                 logger.debug("******** cacheMemberAncestors URL: " + url);
 
                 try (final Response response = SnowstormConnection.getResponse(url)) {

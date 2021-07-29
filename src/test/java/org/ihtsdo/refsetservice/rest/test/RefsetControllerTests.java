@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.core.env.Environment;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -61,10 +60,6 @@ public class RefsetControllerTests extends BaseTest {
 
     /** The base url. */
     private String baseUrl = "";
-
-    /** The env. */
-    @Autowired
-    private Environment env;
 
     /**
      * Sets the up.
@@ -115,11 +110,9 @@ public class RefsetControllerTests extends BaseTest {
         String content = null;
         ResultList<Refset> resultList = null;
 
-        String refsetTerminologyId = getRefsetInternalId(); // "091f9238-3083-4e60-9e70-b011c97980c3"
+        url = baseUrl
+                + "/search?limit=10&offset=0&sort=versionDate&sortAscending=false&query=name:activ AND editionName:Swedish Edition"; // Hyperdontia
 
-        url = baseUrl + "/search?limit=10&offset=0&sort=versionDate&sortAscending=false&query=name:activ AND editionName:Swedish Edition"; // Hyperdontia
-        
-        
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
@@ -258,18 +251,18 @@ public class RefsetControllerTests extends BaseTest {
     @Test
     public void testExportRf2Delta() throws Exception {
         final String refsetId = "723264001"; // Lateralizable body refset
-       // final String refsetId = this.TESTING_REFSET_ID;
+        // final String refsetId = this.TESTING_REFSET_ID;
         String url = null;
         MvcResult result = null;
         String resultString = null;
         // Will default to the latest version of the refset (2021-07-31 for now)
         final String refsetInternalId = getRefsetInternalId(refsetId);
-        
-        
-        //url = "/export/"+ refsetInternalId + "/?format=rf2_with_names&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210731&transientEffectiveTime=20210731&exportMetadata=false&startEffectiveTime=20190131";
-            
+
+        // url = "/export/"+ refsetInternalId +
+        // "/?format=rf2_with_names&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210731&transientEffectiveTime=20210731&exportMetadata=false&startEffectiveTime=20190131";
+
         url = "/export/" + refsetInternalId
-               + "/?format=rf2_with_names&exportMetadata=true&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210131&transientEffectiveTime=20210731&startEffectiveTime=20180131";
+                + "/?format=rf2_with_names&exportMetadata=true&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210131&transientEffectiveTime=20210731&startEffectiveTime=20180131";
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         resultString = result.getResponse().getContentAsString();
@@ -335,10 +328,15 @@ public class RefsetControllerTests extends BaseTest {
 
         // Test multiple descriptions of same type across 3 languages
         final String descriptionTestingConceptId = "276310004";
-        final String descriptionTestingRefsetId = "561000172108"; // Belgian Refset to get all the translations as well
-                                                               // as just need
-                                                               // branch path
-                                                               // for it
+        final String descriptionTestingRefsetId = "561000172108"; // Belgian
+                                                                  // Refset to
+                                                                  // get all the
+                                                                  // translations
+                                                                  // as well
+                                                                  // as just
+                                                                  // need
+                                                                  // branch path
+                                                                  // for it
         url = "/concept/" + descriptionTestingConceptId + "?refsetInternalId="
                 + getRefsetInternalId(descriptionTestingRefsetId);
         logger.info("Testing url - " + url);
@@ -384,7 +382,7 @@ public class RefsetControllerTests extends BaseTest {
 
         assertThat(fileUrl.contentEquals("https://gps.snomed.org/"));
     }
-    
+
     /**
      * Test getting concept list.
      *
@@ -511,7 +509,7 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept.getChildren().size()).isEqualTo(0);
 
     }
-    
+
     /**
      * Test searching refset members taxonomy
      *
@@ -527,8 +525,7 @@ public class RefsetControllerTests extends BaseTest {
         String content = null;
         final String conceptIdToExamine = "256248008";
 
-        url = "/refset/" + getRefsetInternalId()
-                + "/taxonomySearch?limit=10&offset=0&query=plant";
+        url = "/refset/" + getRefsetInternalId() + "/taxonomySearch?limit=10&offset=0&query=plant";
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -539,7 +536,7 @@ public class RefsetControllerTests extends BaseTest {
 
         // Testing Results
         assertThat(members).isNotNull();
-        //assertThat(members.size()).isEqualTo(1);
+        // assertThat(members.size()).isEqualTo(1);
 
         Concept concept = null;
         for (Concept conceptBeingTested : members.getItems()) {
@@ -686,7 +683,7 @@ public class RefsetControllerTests extends BaseTest {
             }
         }
     }
-    
+
     /**
      * Test the RTT Migration **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED.
      *
@@ -705,7 +702,7 @@ public class RefsetControllerTests extends BaseTest {
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        
+
         assertThat(content).isEqualTo("RTT data migration completed successfully");
     }
 
@@ -742,7 +739,7 @@ public class RefsetControllerTests extends BaseTest {
             return refset.getId();
         }
     }
-    
+
     /**
      * Test getting list of version statuses.
      *
@@ -754,7 +751,6 @@ public class RefsetControllerTests extends BaseTest {
         String url = null;
         MvcResult result = null;
         String content = null;
-        Refset refset = null;
 
         url = baseUrl + "/versionStatuses";
         logger.info("Testing url - " + url);
@@ -768,7 +764,7 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(versionStatuses.getTotal()).isEqualTo(VersionStatus.values().length);
 
     }
-    
+
     /**
      * Test getting list of version statuses.
      *
@@ -793,7 +789,7 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(versions.getTotal()).isGreaterThan(5);
 
     }
-    
+
     /**
      * Test getting editions.
      *

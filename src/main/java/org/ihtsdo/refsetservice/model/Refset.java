@@ -24,20 +24,17 @@ import javax.persistence.Transient;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Type;
-
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.AssociationInverseSide;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -76,12 +73,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The version narrative. */
     @Column(nullable = true, length = 10000)
-    @Type(type="text")
+    @Type(type = "text")
     private String narrative;
 
     /** The version status. */
     @Column(nullable = true, length = 10000)
-    @Type(type="text")
+    @Type(type = "text")
     private String versionNotes;
 
     /** The private flag. */
@@ -91,7 +88,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The local set flag. */
     @Column(nullable = false)
     private boolean localSet;
-    
+
     /** The latest verions flag. */
     @Column(nullable = true)
     private boolean latestVersion;
@@ -103,7 +100,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
     private boolean feedbackVisible;
-    
+
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
     private List<Map<String, String>> versionList;
@@ -209,7 +206,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the refset ID
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "refsetIdSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @GenericField(name = "refsetIdSort", searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
     public String getRefsetId() {
         return refsetId;
     }
@@ -229,7 +227,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the name
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
     public String getName() {
         return name;
     }
@@ -248,7 +247,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the type
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
     public String getType() {
         return type;
     }
@@ -267,7 +267,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the version status
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
     public String getVersionStatus() {
         return versionStatus;
     }
@@ -286,8 +287,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the versionDate
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    //@DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
+    // @DateBridge(resolution = Resolution.SECOND, encoding =
+    // EncodingType.STRING)
     public Date getVersionDate() {
         return versionDate;
     }
@@ -355,17 +358,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setPrivateRefset(final boolean privateRefset) {
         this.privateRefset = privateRefset;
     }
-    
+
     /**
      * @return the versionList
      */
     @JsonGetter()
     public List<Map<String, String>> getVersionList() {
-        
+
         if (versionList == null) {
             versionList = new ArrayList<>();
         }
-        
+
         return versionList;
     }
 
@@ -382,7 +385,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the tags
      */
     @FullTextField(analyzer = "standard")
-    //@IndexedEmbedded
+    // @IndexedEmbedded
     public Set<String> getTags() {
 
         if (tags == null) {
@@ -427,8 +430,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the edition name
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "editionNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    @IndexingDependency(derivedFrom = @ObjectPath( @PropertyValue(propertyName = "edition")))
+    @GenericField(name = "editionNameSort", searchable = Searchable.YES,
+            projectable = Projectable.NO, sortable = Sortable.YES)
+    @IndexingDependency(derivedFrom = @ObjectPath(@PropertyValue(propertyName = "edition")))
     public String getEditionName() {
         return edition == null ? null : edition.getName();
     }
@@ -451,8 +455,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the edition short name
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "editionShortNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    @IndexingDependency(derivedFrom = @ObjectPath( @PropertyValue(propertyName = "edition")))
+    @GenericField(name = "editionShortNameSort", searchable = Searchable.YES,
+            projectable = Projectable.NO, sortable = Sortable.YES)
+    @IndexingDependency(derivedFrom = @ObjectPath(@PropertyValue(propertyName = "edition")))
     public String getEditionShortName() {
         return edition == null ? null : edition.getShortName();
     }
@@ -603,8 +608,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the organization name
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "organizationNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    @IndexingDependency(derivedFrom = @ObjectPath( {@PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization")}))
+    @GenericField(name = "organizationNameSort", searchable = Searchable.YES,
+            projectable = Projectable.NO, sortable = Sortable.YES)
+    @IndexingDependency(derivedFrom = @ObjectPath({
+            @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization")
+    }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationName() {
 
@@ -782,7 +790,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         if (localSet != other.localSet) {
             return false;
         }
-        
+
         if (latestVersion != other.latestVersion) {
             return false;
         }
