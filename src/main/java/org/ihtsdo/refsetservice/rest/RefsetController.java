@@ -67,10 +67,6 @@ import io.swagger.annotations.ApiResponses;
 @SuppressWarnings("javadoc")
 public class RefsetController extends BaseController {
 
-    /** The Constant STARTING_CONCEPT_ID. */
-    // Setting it to blank ("") leaves value as default ConId (SNOMED_ROOT)
-    private static final String STARTING_CONCEPT_ID = "787778008";
-
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetController.class);
 
@@ -122,7 +118,8 @@ public class RefsetController extends BaseController {
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(true);
-                refset.setVersionList(RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
+                refset.setVersionList(
+                        RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
 
                 logger.info("*********** getRefset: refset: " + ModelUtility.toJson(refset));
 
@@ -231,7 +228,8 @@ public class RefsetController extends BaseController {
             ResultList<Refset> results = new ResultList<Refset>();
             String query = searchParameters.getQuery();
 
-            logger.debug("******** searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters));
+            logger.debug("******** searchDirectory searchParameters: "
+                    + ModelUtility.toJson(searchParameters));
 
             final PfsParameter pfs = new PfsParameter();
 
@@ -265,7 +263,7 @@ public class RefsetController extends BaseController {
                     query = "(" + query + " OR " + memberRefsetQuery + ")";
                 }
             }
-            
+
             query = IndexUtility.addWildcardsToQuery(query, Refset.class);
 
             if (query != null && !query.equals("")) {
@@ -280,7 +278,8 @@ public class RefsetController extends BaseController {
 
                 refset.setDownloadable(true);
                 refset.setFeedbackVisible(false);
-                refset.setVersionList(RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
+                refset.setVersionList(
+                        RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
             }
 
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -298,7 +297,7 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-    
+
     /**
      * Search Taxonomy for members.
      *
@@ -317,9 +316,9 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId",
-                    value = "the internal refset ID", required = true,
-                    dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID",
+                    required = true, dataType = "string", paramType = "query",
+                    defaultValue = "ncit"),
             @ApiImplicitParam(name = "query",
                     value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
                     required = false, dataType = "string", paramType = "query", defaultValue = ""),
@@ -356,16 +355,17 @@ public class RefsetController extends BaseController {
 
         try {
 
-            final long start = System.currentTimeMillis();
             ConceptResultList results = new ConceptResultList();
             String query = searchParameters.getQuery();
 
             logger.info("*********** taxonomySearch: refsetInternalId: " + refsetInternalId);
-            logger.debug("******** taxonomySearch: searchParameters: " + ModelUtility.toJson(searchParameters));
+            logger.debug("******** taxonomySearch: searchParameters: "
+                    + ModelUtility.toJson(searchParameters));
 
             if (query != null && !query.equals("")) {
 
-                results = RefsetMemberService.searchTaxonomyMembers(refsetInternalId, searchParameters);
+                results = RefsetMemberService.searchTaxonomyMembers(refsetInternalId,
+                        searchParameters);
             }
 
             logger.debug("******** taxonomySearch: results: " + ModelUtility.toJson(results));
@@ -480,7 +480,8 @@ public class RefsetController extends BaseController {
      * @return the success/failure
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Cache the ancestors of the refset members for the specified refset ID", response = Refset.class)
+    @ApiOperation(value = "Cache the ancestors of the refset members for the specified refset ID",
+            response = Refset.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200,
                     message = "Successfully populated the refset's ancestor cache"),
@@ -516,9 +517,9 @@ public class RefsetController extends BaseController {
                     } else {
                         returnJson = returnJson.replace("<RESULT>", "false");
                     }
-                    
+
                     logger.debug("******** cacheMemberAncestors results: " + returnJson);
-                    
+
                     return returnJson;
 
                 } catch (final Exception e) {
@@ -610,15 +611,15 @@ public class RefsetController extends BaseController {
                         }
 
                         String uri = "";
-                        
+
                         if (exportType.contentEquals("SNAPSHOT")) {
-                        	uri = RefsetMemberService.exportRefsetRf2(refsetInternalId,
-                                exportType, languageId, fileNameDate, startEffectiveTime,
-                                transientEffectiveTime, exportMetadata, withNames);
+                            uri = RefsetMemberService.exportRefsetRf2(refsetInternalId, exportType,
+                                    languageId, fileNameDate, startEffectiveTime,
+                                    transientEffectiveTime, exportMetadata, withNames);
                         } else {
-                        	uri = RefsetMemberService.exportDeltaRefsetRf2(refsetInternalId,
+                            uri = RefsetMemberService.exportDeltaRefsetRf2(refsetInternalId,
                                     exportType, languageId, fileNameDate, startEffectiveTime,
-                                    transientEffectiveTime, exportMetadata, withNames);                        	
+                                    transientEffectiveTime, exportMetadata, withNames);
                         }
                         logger.debug("******** results: " + uri);
                         url = "{\"url\": \"" + uri + "\"}";
@@ -629,23 +630,25 @@ public class RefsetController extends BaseController {
                                 exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
                     } else if (format.equals("free_set")) {
-                    	final Refset refset = service.get(refsetInternalId, Refset.class);
+                        final Refset refset = service.get(refsetInternalId, Refset.class);
                         String uri = "";
-                        String freesetExceptions = PropertyUtility.getProperty("freeset.exceptions");
-                        if (freesetExceptions == null || !freesetExceptions.contains(refset.getRefsetId())) {
-                        	uri = RefsetMemberService.exportFreeset(refsetInternalId);
-                        	url = "{\"url\": \"" + uri + "\", \"redirect\": false}";
+                        String freesetExceptions =
+                                PropertyUtility.getProperty("freeset.exceptions");
+                        if (freesetExceptions == null
+                                || !freesetExceptions.contains(refset.getRefsetId())) {
+                            uri = RefsetMemberService.exportFreeset(refsetInternalId);
+                            url = "{\"url\": \"" + uri + "\", \"redirect\": false}";
                         } else {
 
                             String[] tokens = FieldedStringTokenizer.split(freesetExceptions, "|");
-                        	for (int i = 0; i<tokens.length - 1; i++) {
-                        		if (tokens[i].contentEquals(refset.getRefsetId())) {
-                        			uri = tokens[i+1];
-                        		}
-                        	}
-                        	url = "{\"url\": \"" + uri + "\", \"redirect\": true}";
+                            for (int i = 0; i < tokens.length - 1; i++) {
+                                if (tokens[i].contentEquals(refset.getRefsetId())) {
+                                    uri = tokens[i + 1];
+                                }
+                            }
+                            url = "{\"url\": \"" + uri + "\", \"redirect\": true}";
                         }
-                        
+
                     }
 
                     return url;
@@ -882,7 +885,7 @@ public class RefsetController extends BaseController {
                     if (force == null || !force.equals("true")) {
                         return "Database not empty, migration cancelled";
                     } else {
-                        
+
                         message =
                                 "RTT data migration: Database not empty, migration WOULD NORMALLY BE cancelled. ";
                         logger.info(message);
@@ -906,7 +909,6 @@ public class RefsetController extends BaseController {
         }
     }
 
- 
     /**
      * Gets the version statuses.
      *
@@ -920,8 +922,8 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET,
-            value = "/refset/versionStatuses", produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/versionStatuses",
+            produces = "application/json")
     public @ResponseBody ResultList<TypeKeyValue> getVersionStatuses() throws Exception {
 
         try {
@@ -931,10 +933,11 @@ public class RefsetController extends BaseController {
             try (TerminologyService service = new TerminologyService()) {
 
                 final List<TypeKeyValue> versionStatuses = new ArrayList<>();
-                
-                for(VersionStatus value : VersionStatus.values()) {
-                	TypeKeyValue typeKeyValue = new TypeKeyValue("status", value.toString(), value.toString());
-                	versionStatuses.add(typeKeyValue);
+
+                for (VersionStatus value : VersionStatus.values()) {
+                    TypeKeyValue typeKeyValue =
+                            new TypeKeyValue("status", value.toString(), value.toString());
+                    versionStatuses.add(typeKeyValue);
                 }
 
                 ResultList<TypeKeyValue> results = new ResultList<>(versionStatuses);
@@ -949,7 +952,7 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-    
+
     /**
      * Gets the versions.
      *
@@ -963,8 +966,8 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET,
-            value = "/refset/versions", produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/versions",
+            produces = "application/json")
     public @ResponseBody ResultList<TypeKeyValue> getVersions() throws Exception {
 
         try {
@@ -973,29 +976,29 @@ public class RefsetController extends BaseController {
 
             try (TerminologyService service = new TerminologyService()) {
 
-            	ResultList<Refset> refsets = new ResultList<Refset>();
+                ResultList<Refset> refsets = new ResultList<Refset>();
                 final PfsParameter pfs = new PfsParameter();
                 final QueryParameter query = new QueryParameter();
 
                 refsets = service.find(query, pfs, Refset.class, null);
-                
+
                 ResultList<TypeKeyValue> results = new ResultList<>();
                 List<TypeKeyValue> resultItems = new ArrayList<>();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 for (Refset refset : refsets.getItems()) {
-                	String version = sdf.format(refset.getVersionDate());
-                	TypeKeyValue entry = new TypeKeyValue("version", version, version);
-                	if (!resultItems.contains(entry)) {
-                		resultItems.add(entry);
-                	}
+                    String version = sdf.format(refset.getVersionDate());
+                    TypeKeyValue entry = new TypeKeyValue("version", version, version);
+                    if (!resultItems.contains(entry)) {
+                        resultItems.add(entry);
+                    }
                 }
                 resultItems.sort(new Comparator<TypeKeyValue>() {
 
-					@Override
-					public int compare(TypeKeyValue o1, TypeKeyValue o2) {
-						return o2.getValue().compareTo(o1.getValue());
-					}
-                		
+                    @Override
+                    public int compare(TypeKeyValue o1, TypeKeyValue o2) {
+                        return o2.getValue().compareTo(o1.getValue());
+                    }
+
                 });
                 results.setItems(resultItems);
                 results.setTotalKnown(true);
@@ -1023,46 +1026,47 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET,
-            value = "/refset/editions", produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/editions",
+            produces = "application/json")
     public @ResponseBody ResultList<TypeKeyValue> getEditions() throws Exception {
 
         try {
 
             logger.info("*********** getEditions ");
 
-			try (TerminologyService service = new TerminologyService()) {
+            try (TerminologyService service = new TerminologyService()) {
 
-				final long start = System.currentTimeMillis();
-				ResultList<Edition> results = new ResultList<Edition>();
-				final PfsParameter pfs = new PfsParameter();
-				final QueryParameter query = new QueryParameter();
+                final long start = System.currentTimeMillis();
+                ResultList<Edition> results = new ResultList<Edition>();
+                final PfsParameter pfs = new PfsParameter();
+                final QueryParameter query = new QueryParameter();
 
-				results = service.find(query, pfs, Edition.class, null);
+                results = service.find(query, pfs, Edition.class, null);
 
-				results.setTimeTaken(System.currentTimeMillis() - start);
-				results.setTotalKnown(true);
+                results.setTimeTaken(System.currentTimeMillis() - start);
+                results.setTotalKnown(true);
 
-				logger.debug("******** results: " + ModelUtility.toJson(results));
-				List<Edition> editionList = results.getItems();
-				editionList.sort(new Comparator<Edition>() {
+                logger.debug("******** results: " + ModelUtility.toJson(results));
+                List<Edition> editionList = results.getItems();
+                editionList.sort(new Comparator<Edition>() {
 
-					@Override
-					public int compare(Edition o1, Edition o2) {
-						return o1.getName().compareTo(o2.getName());
-					}
-				});
-				List<TypeKeyValue> entryList = new ArrayList<>();
-				ResultList<TypeKeyValue> entryResults = new ResultList<>();
-				for (Edition edition : editionList) {
-					TypeKeyValue tkv = new TypeKeyValue("edition", edition.getName(), edition.getName());
-				    entryList.add(tkv);
-				}
-				entryResults.setItems(entryList);
-				entryResults.setTotalKnown(true);
+                    @Override
+                    public int compare(Edition o1, Edition o2) {
+                        return o1.getName().compareTo(o2.getName());
+                    }
+                });
+                List<TypeKeyValue> entryList = new ArrayList<>();
+                ResultList<TypeKeyValue> entryResults = new ResultList<>();
+                for (Edition edition : editionList) {
+                    TypeKeyValue tkv =
+                            new TypeKeyValue("edition", edition.getName(), edition.getName());
+                    entryList.add(tkv);
+                }
+                entryResults.setItems(entryList);
+                entryResults.setTotalKnown(true);
 
-				return entryResults;
-			}
+                return entryResults;
+            }
 
         } catch (final Exception e) {
 
@@ -1070,7 +1074,7 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-    
+
     /**
      * Gets the Organizations.
      *
@@ -1084,46 +1088,47 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET,
-            value = "/refset/organizations", produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/organizations",
+            produces = "application/json")
     public @ResponseBody ResultList<TypeKeyValue> getOrganizations() throws Exception {
 
         try {
 
             logger.info("*********** getOrganizations ");
 
-			try (TerminologyService service = new TerminologyService()) {
+            try (TerminologyService service = new TerminologyService()) {
 
-				final long start = System.currentTimeMillis();
-				ResultList<Organization> results = new ResultList<Organization>();
-				final PfsParameter pfs = new PfsParameter();
-				final QueryParameter query = new QueryParameter();
+                final long start = System.currentTimeMillis();
+                ResultList<Organization> results = new ResultList<Organization>();
+                final PfsParameter pfs = new PfsParameter();
+                final QueryParameter query = new QueryParameter();
 
-				results = service.find(query, pfs, Organization.class, null);
+                results = service.find(query, pfs, Organization.class, null);
 
-				results.setTimeTaken(System.currentTimeMillis() - start);
-				results.setTotalKnown(true);
+                results.setTimeTaken(System.currentTimeMillis() - start);
+                results.setTotalKnown(true);
 
-				logger.debug("******** results: " + ModelUtility.toJson(results));
-				List<Organization> organizationList = results.getItems();
-				organizationList.sort(new Comparator<Organization>() {
+                logger.debug("******** results: " + ModelUtility.toJson(results));
+                List<Organization> organizationList = results.getItems();
+                organizationList.sort(new Comparator<Organization>() {
 
-					@Override
-					public int compare(Organization o1, Organization o2) {
-						return o1.getName().compareTo(o2.getName());
-					}
-				});
-				List<TypeKeyValue> entryList = new ArrayList<>();
-				ResultList<TypeKeyValue> entryResults = new ResultList<>();
-				for (Organization organization : organizationList) {
-					TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(), organization.getName());
-				    entryList.add(tkv);
-				}
-				entryResults.setItems(entryList);
-				entryResults.setTotalKnown(true);
+                    @Override
+                    public int compare(Organization o1, Organization o2) {
+                        return o1.getName().compareTo(o2.getName());
+                    }
+                });
+                List<TypeKeyValue> entryList = new ArrayList<>();
+                ResultList<TypeKeyValue> entryResults = new ResultList<>();
+                for (Organization organization : organizationList) {
+                    TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(),
+                            organization.getName());
+                    entryList.add(tkv);
+                }
+                entryResults.setItems(entryList);
+                entryResults.setTotalKnown(true);
 
-				return entryResults;
-			}
+                return entryResults;
+            }
 
         } catch (final Exception e) {
 
@@ -1131,5 +1136,5 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-    
+
 }

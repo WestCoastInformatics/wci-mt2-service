@@ -3,7 +3,6 @@ package org.ihtsdo.refsetservice.service;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.lang.Module;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,13 +22,12 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.LockModeType;
 import javax.persistence.NoResultException;
 import javax.persistence.Persistence;
-import javax.persistence.metamodel.EntityType;
 
 import org.hibernate.CacheMode;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.schema.management.SearchSchemaManager;
 import org.hibernate.search.mapper.orm.session.SearchSession;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.handler.SearchHandler;
 import org.ihtsdo.refsetservice.model.HasId;
 import org.ihtsdo.refsetservice.model.HasModified;
@@ -45,7 +43,6 @@ import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: Auto-generated Javadoc
 /**
  * JPA implementation of the root services.
  */
@@ -106,35 +103,38 @@ public class TerminologyService implements RootService {
             factory = Persistence.createEntityManagerFactory("refsetservice-ds",
                     PropertyUtility.getPrefixedProperties("spring.jpa.properties.", true));
         }
-        
-        final String key = "search.handler";
-        searchHandlerMap = new HashMap<>();
-        logger.debug(">>>>>> handler property: " + PropertyUtility.getProperty(key));
-        
-        for (final String handlerName : PropertyUtility.getProperty(key).split(",")) {
-            logger.debug(">>>>>> handler name: " + handlerName);
-            if (handlerName.isEmpty()) {
-                continue;
+
+        if (searchHandlerMap == null) {
+            final String key = "search.handler";
+            searchHandlerMap = new HashMap<>();
+            logger.debug(">>>>>> handler property: " + PropertyUtility.getProperty(key));
+
+            for (final String handlerName : PropertyUtility.getProperty(key).split(",")) {
+                logger.debug(">>>>>> handler name: " + handlerName);
+                if (handlerName.isEmpty()) {
+                    continue;
+                }
+
+                // Add handlers to map
+                final SearchHandler handlerService =
+                        HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
+                                SearchHandler.class);
+                searchHandlerMap.put(handlerName, handlerService);
             }
 
-            // Add handlers to map
-            final SearchHandler handlerService =
-                    HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
-                            SearchHandler.class);
-            searchHandlerMap.put(handlerName, handlerService);
+            logger.debug(">>>>>> searchHandlerMap: " + ModelUtility.toJson(searchHandlerMap));
+
+            if (!searchHandlerMap.containsKey(ModelUtility.DEFAULT)) {
+                throw new Exception(
+                        "search.handler." + ModelUtility.DEFAULT + " expected and does not exist.");
+            }
+
+            logger.debug("  initialize search handler = " + searchHandlerMap.values().stream()
+                    .map(f -> f.getName()).collect(Collectors.toSet()));
+
+            // Validate the search handler map was initialized successfuly
+            validateInit();
         }
-        
-        logger.debug(">>>>>> searchHandlerMap: " + ModelUtility.toJson(searchHandlerMap));
-
-        if (!searchHandlerMap.containsKey(ModelUtility.DEFAULT)) {
-            throw new Exception(
-                    "search.handler." + ModelUtility.DEFAULT + " expected and does not exist.");
-        }
-
-        logger.debug("  initialize search handler = " + searchHandlerMap.values().stream()
-                .map(f -> f.getName()).collect(Collectors.toSet()));
-
-        validateInit();
 
         // created on each instantiation
         manager = factory.createEntityManager();
@@ -1399,7 +1399,7 @@ public class TerminologyService implements RootService {
         for (final String objectToReindex : objectsToReindex) {
             logger.info("  " + objectToReindex);
         }
-        
+
         final SearchSession searchSession = Search.session(getEntityManager());
 
         // Reindex each object
@@ -1407,13 +1407,14 @@ public class TerminologyService implements RootService {
             // Concepts
             if (objectsToReindex.contains(key)) {
                 logger.info("  creating indexes for " + key);
-                
+
                 try {
                     searchSession.workspace(reindexMap.get(key)).purge();
-                    searchSession.indexingPlan().execute(); // may not need anymore
-                    searchSession.massIndexer(reindexMap.get(key))
-                            .batchSizeToLoadObjects(100).cacheMode(CacheMode.IGNORE)
-                            .idFetchSize(100).threadsToLoadObjects(10).startAndWait();
+                    searchSession.indexingPlan().execute(); // may not need
+                                                            // anymore
+                    searchSession.massIndexer(reindexMap.get(key)).batchSizeToLoadObjects(100)
+                            .cacheMode(CacheMode.IGNORE).idFetchSize(100).threadsToLoadObjects(10)
+                            .startAndWait();
                 } catch (final IllegalArgumentException e) {
                     logger.warn("      NOT AN ENTITY in this project");
                     // throw new Exception (e);
@@ -1421,11 +1422,9 @@ public class TerminologyService implements RootService {
 
                 // if using elasticsearch the max result window size must be
                 // increased
-                if (properties
-                        .getProperty("spring.jpa.properties.hibernate.search.backend.type")
+                if (properties.getProperty("spring.jpa.properties.hibernate.search.backend.type")
                         .trim().equals("elasticsearch")) {
-                    IndexUtility.setMaxWindowSize(
-                            key, getEntityManager());
+                    IndexUtility.setMaxWindowSize(key, getEntityManager());
                 }
 
                 // optimize flags are default true.
@@ -1450,13 +1449,15 @@ public class TerminologyService implements RootService {
     public void clearLuceneIndexes() throws Exception {
         logger.info("  clearing lucene indexes");
 
-        logger.info("******** properties app.entity_packages: " + properties.getProperty("app.entity_packages"));
-        final Reflections reflections = new Reflections(properties.getProperty("app.entity_packages"));
+        logger.info("******** properties app.entity_packages: "
+                + properties.getProperty("app.entity_packages"));
+        final Reflections reflections =
+                new Reflections(properties.getProperty("app.entity_packages"));
         final SearchSession searchSession = Search.session(getEntityManager());
-        
-        SearchSchemaManager schemaManager = searchSession.schemaManager(); 
+
+        SearchSchemaManager schemaManager = searchSession.schemaManager();
         schemaManager.dropAndCreate();
-       
+
     }
 
     /**
