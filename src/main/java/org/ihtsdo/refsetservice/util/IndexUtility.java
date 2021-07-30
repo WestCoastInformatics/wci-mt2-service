@@ -3,7 +3,14 @@ package org.ihtsdo.refsetservice.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.ManyToMany;
@@ -85,16 +93,23 @@ public final class IndexUtility {
 
     /** The field names map. */
     private static Map<Class<?>, Set<String>> allFieldNames = new HashMap<>();
+    
+    /** The date field names map. */
+    private static Map<Class<?>, Set<String>> dateFieldNames = new HashMap<>();
 
     /** The all fields map. */
     private static Map<Class<?>, java.lang.reflect.Field[]> allFields = new HashMap<>();
 
     /** The all fields map. */
     private static Map<Class<?>, java.lang.reflect.Method[]> allMethods = new HashMap<>();
+    
+    /** The all fields map. */
+    private static List<Class<?>> dateClasses = Arrays.asList(Date.class, LocalDate.class, LocalDateTime.class, ZonedDateTime.class, Instant.class, OffsetDateTime.class);
 
     // Initialize the field names maps
     static {
         try {
+            
             final Map<String, Class<?>> reindexMap = new HashMap<>();
             final String indexProp =
                     PropertyUtility.getProperties().getProperty("app.entity_packages");
@@ -111,8 +126,9 @@ public final class IndexUtility {
             final Class<?>[] classes = reindexMap.values().toArray(new Class<?>[0]);
 
             for (final Class<?> clazz : classes) {
-                stringFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, true));
-                allFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, false));
+                stringFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, "string"));
+                allFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, "all"));
+                dateFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, "date"));
             }
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -127,15 +143,20 @@ public final class IndexUtility {
      * @return the indexed field names
      * @throws Exception the exception
      */
-    public static Set<String> getIndexedFieldNames(final Class<?> clazz, final boolean stringOnly)
+    public static Set<String> getIndexedFieldNames(final Class<?> clazz, final String returnOnly)
         throws Exception {
 
         // If already initialized, return computed values
-        if (stringOnly && stringFieldNames.containsKey(clazz)) {
+        if (returnOnly.equals("string") && stringFieldNames.containsKey(clazz)) {
             return stringFieldNames.get(clazz);
         }
-        if (!stringOnly && allFieldNames.containsKey(clazz)) {
+        
+        else if (returnOnly.equals("all") && allFieldNames.containsKey(clazz)) {
             return allFieldNames.get(clazz);
+        }
+        
+        else if (returnOnly.equals("date") && dateFieldNames.containsKey(clazz)) {
+            return dateFieldNames.get(clazz);
         }
 
         // Avoid ngram and sort fields (these have special uses)
@@ -170,7 +191,7 @@ public final class IndexUtility {
                             + "targetType");
                 }
                 
-                for (final String embeddedField : getIndexedFieldNames(jpaType, stringOnly)) {
+                for (final String embeddedField : getIndexedFieldNames(jpaType, returnOnly)) {
                     fieldNames.add(embeddedField);
                 }
             }
@@ -194,7 +215,10 @@ public final class IndexUtility {
             // for non-embedded fields, only process strings
             // This is because we're handling string based query here
             // Other fields can always be used with fielded query clauses
-            if (stringOnly && !hasFieldBridge && !m.getReturnType().equals(String.class)) {
+            if (returnOnly.equals("string") && !hasFieldBridge && !m.getReturnType().equals(String.class)) {
+                continue;
+                
+            } else if (returnOnly.equals("date") && !hasFieldBridge && !dateClasses.contains(m.getReturnType())) {
                 continue;
             }
             
@@ -241,7 +265,7 @@ public final class IndexUtility {
 
                 }
 
-                for (final String embeddedField : getIndexedFieldNames(jpaType, stringOnly)) {
+                for (final String embeddedField : getIndexedFieldNames(jpaType, returnOnly)) {
                     fieldNames.add(f.getName() + "." + embeddedField);
                 }
             }
@@ -263,7 +287,10 @@ public final class IndexUtility {
 //            }
 
             // for non-embedded fields, only process strings
-            if (stringOnly && !hasFieldBridge && !f.getType().equals(String.class)) {
+            if (returnOnly.equals("string") && !hasFieldBridge && !f.getType().equals(String.class)) {
+                continue;
+                
+            } else if (returnOnly.equals("date") && !hasFieldBridge && !dateClasses.contains(f.getType())) {
                 continue;
             }
 
@@ -288,15 +315,18 @@ public final class IndexUtility {
                 }
             }
             for (final String exclusion : stringExclusions) {
-                if (stringOnly && fieldName.contains(exclusion)) {
+                if (returnOnly.equals("string") && fieldName.contains(exclusion)) {
                     continue OUTER;
                 }
             }
             filteredFieldNames.add(fieldName);
         }
 
-        // Always add "id"
-        filteredFieldNames.add("id");
+        // Always add "id" unless looking for only dates
+        if (!returnOnly.equals("date")) {
+            filteredFieldNames.add("id");
+        }
+        
         return filteredFieldNames;
     }
 
@@ -678,6 +708,9 @@ public final class IndexUtility {
         SearchPredicate predicate;
         
         logger.debug("    query = " + finalQuery + ", " + pfs);
+        
+        // Set<String> fieldNames = IndexUtility.getIndexedFieldNames(clazz, "date");
+        // logger.debug("    indexedDateFieldNames: " + fieldNames);
 
         // Directory indexmanager
         if (!PropertyUtility.getProperties()
@@ -685,7 +718,7 @@ public final class IndexUtility {
                 .equals("elasticsearch")) {
 
             final QueryParser queryParser = new MultiFieldQueryParser(
-                    IndexUtility.getIndexedFieldNames(clazz, true).toArray(new String[] {}),
+                    IndexUtility.getIndexedFieldNames(clazz, "string").toArray(new String[] {}),
                     mapping.indexedEntity(clazz).indexManager().unwrap(LuceneIndexManager.class).searchAnalyzer());
 
             predicate = predicateFactory
@@ -698,7 +731,12 @@ public final class IndexUtility {
                 .getProperty("spring.jpa.properties.hibernate.search.backend.type").trim()
                 .equals("elasticsearch")) {
             
-            final String fullQueryString = "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\"" + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
+            String fullQueryString = "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\"" + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
+            
+//            if (finalQuery.contains("versionDate")) {
+//                fullQueryString = "{\"range\":{\"versionDate\": {\"gt\": \"2020-11-30\", \"lt\": \"2020-11-30\"} }}";
+//            }
+            
             logger.debug("********* elasticsearch fullQueryString: " + fullQueryString);
             
             // Need to escape double-quotes for the json
@@ -842,7 +880,7 @@ public final class IndexUtility {
      * @return the modified query
      * @throws Exception the exception
      */
-    public static String addWildcardsToQuery(final String query) throws Exception {
+    public static <T> String addWildcardsToQuery(final String query, final Class<T> clazz) throws Exception {
         
         if (query == null || query.equals("")) {
             return query;
@@ -851,12 +889,16 @@ public final class IndexUtility {
         String wildcardQuery = query;
         Pattern regex = Pattern.compile("[a-zA-Z0-9_]+:[\"\\s]*([-a-zA-Z0-9_\\s]*)(?:\\sAND?|\\sOR|\"|$)");
         Matcher regexMatcher = regex.matcher(wildcardQuery);
+        Set<String> fieldNames = IndexUtility.getIndexedFieldNames(clazz, "date");
         
         while (regexMatcher.find()) {
             
-            //if (!regexMatcher.group(1).equals("true") && !regexMatcher.group(1).equals("false")) {
+            
+            if (!fieldNames.stream().anyMatch(field -> {
+                return regexMatcher.group(0).contains(field + ":");
+            })) {
                 wildcardQuery = wildcardQuery.replace(regexMatcher.group(1), regexMatcher.group(1) + "*");
-            //}
+            }
         }
         
         return wildcardQuery;
