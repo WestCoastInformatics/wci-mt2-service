@@ -173,7 +173,7 @@ public class PersistenceTester extends ProxyTester {
         // Check indexed fields
         if (indexedFlag) {
             final Set<String> fieldNames =
-                    IndexUtility.getIndexedFieldNames(object.getClass(), false);
+                    IndexUtility.getIndexedFieldNames(object.getClass(), "all");
             logger.info("  field names = " + fieldNames);
             if (fieldNames.size() <= 4) {
                 throw new Exception(

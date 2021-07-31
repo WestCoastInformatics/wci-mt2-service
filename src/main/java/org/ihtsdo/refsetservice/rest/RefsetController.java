@@ -264,7 +264,7 @@ public class RefsetController extends BaseController {
                 }
             }
 
-            query = IndexUtility.addWildcardsToQuery(query);
+            query = IndexUtility.addWildcardsToQuery(query, Refset.class);
 
             if (query != null && !query.equals("")) {
                 query += " AND latestVersion: true";
