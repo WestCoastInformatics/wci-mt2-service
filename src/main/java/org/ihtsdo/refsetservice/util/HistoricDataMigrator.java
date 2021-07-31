@@ -230,7 +230,7 @@ public class HistoricDataMigrator {
 
     /** The all refsets file path. */
     private final String allRefsetsFilePath =
-            "src/test/resources/migration/refsetsToImport/AllFromRTT.txt";
+            "src/test/resources/migration/refsetsToImport/refsets.txt";
 
     /** The metadata map. */
     private final Map<String, Metadata> metadataMap = new HashMap<>();
