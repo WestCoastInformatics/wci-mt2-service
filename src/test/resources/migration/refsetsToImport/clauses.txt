@@ -836,7 +836,7 @@ OR << 275887009 |Scaly scalp (finding)| )"
 64469615	1	"<< 366649008 |Finding of thickness of skin (finding)|"
 64469615	0	"< 185823004 |Finding of skin texture (finding)|: {363698007 |Finding site (attribute)| = (20795001 |Structure of skin region (body structure)| OR 39937001 |Skin structure (body structure)|) }"
 64483505	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
-64483506	0	"< 185823004 |Finding of skin texture (finding)| MINUS (< 366649008 |Finding of thickness of skin (finding)|OR < 297947008 |Finding of consistency of skin (finding)|)"
+64483506	0	"< 185823004 |Finding of skin texture (finding)| MINUS (<< 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)|)"
 64489504	0	"< 410720000 |Pain by sensation quality (finding)|"
 64489504	0	"< 410720000 |Pain by sensation quality (finding)| MINUS < 301857004 |Finding of body region (finding)|"
 64493204	0	"< 410720000 | Pain by sensation quality (finding) |:[0..0] 363698007 |Finding site (attribute)| =<<123037004 |Body structure (body structure)|"
@@ -864,3 +864,132 @@ OR << 275887009 |Scaly scalp (finding)| )"
 64731457	0	"(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)"
 64793603	0	"< 185823004 |Finding of skin texture (finding)| minus ( <<20795001 OR <<  366649008 OR <<297947008 OR <<276323006 OR <<297971001)"
 64793605	0	"< 185823004 |Finding of skin texture (finding)| minus (< 20795001 or << 366649008 or << 297947008 or << 276323006 or << 297971001 or  < 247434009 or < 271761007)"
+65006605	0	"< 410720000 | Pain by sensation quality (finding) |:
+( [0..0] 363698007 |Finding site| = * )"
+65008754	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65008756	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65010654	0	"< 410720000 : [0..0]363698007 |Finding site|=*"
+65010655	0	"((<185823004 |Finding of skin texture|:[0..0]363698007 |Finding site|=<20795001) MINUS <<366649008) MINUS <<297947008"
+65010657	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65010659	0	"< 185823004 |Finding of skin texture (finding)|"
+65010660	0	"< 410720000 | Pain by sensation quality (finding) |"
+65010661	0	"<410720000 |Pain by sensation quality (finding)|"
+65010661	1	"<410720000 |Pain by sensation quality (finding)|:363698007 |Finding site|=*"
+65010662	0	"<185823004 |Finding of skin texture|"
+65010662	1	"<185823004 |Finding of skin texture| : 363698007 |Finding site| =<20795001 |Structure of skin region|"
+65010662	1	"<< 366649008 |Finding of thickness of skin (finding)|"
+65010662	1	"<< 297947008 |Finding of consistency of skin (finding)|"
+65010663	0	"<< 410607006 |Organism (organism)|"
+65010664	0	"(816995008 |Rough skin (finding)| OR <185823004 |Finding of skin texture (finding)|) MINUS (<<366649008 |Finding of thickness of skin (finding)| OR <<297947008 |Finding of consistency of skin (finding)| OR <<95320005 |Disorder of skin (disorder)| OR <271761007 |Scaly skin (finding)| OR <247434009 |Wrinkled skin (finding)| OR <<827180003 |Dry skin of abdomen (finding)|)"
+65010669	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65010670	0	"<185823004 |Finding of skin texture (finding)|"
+65010671	0	"<185823004 |Finding of skin texture| MINUS (<<366649008 |Thickness of skin - finding| OR <<297947008 |Finding of consistency of skin| OR <<406122000 |Head finding (finding)|)"
+65479555	0	"< 410720000 | Pain by sensation quality (finding) |"
+65479556	0	"< 185823004 |Finding of skin texture (finding)| MINUS (<< 366649008 |Finding of thickness of skin (finding)|OR << 297947008 |Finding of consistency of skin (finding)|)"
+65479559	0	"<185823004 |Finding of skin texture (finding)| MINUS (<< 366649008 |Finding of thickness of skin (finding)| OR <<297947008 |Finding of consistency of skin (finding)| OR << 275887009 |Scaly scalp (finding)| OR <<248194004 |Wrinkled face (finding)|)"
+65482053	0	"<<56265001 | Heart disease (disorder) |"
+65482057	0	"< 410720000 | Pain by sensation quality (finding) |"
+65482058	0	"< 185823004 |Finding of skin texture (finding)| MINUS (< 185823004 |Finding of skin texture (finding)|: 363698007 |Finding site (attribute)| = < 20795001 |Structure of skin region (body structure)|)"
+65482058	1	"<<366649008 | Thickness of skin - finding |"
+65482058	1	"<<297948003 | Normal skin consistency |"
+65482058	1	"<<297947008 | Finding of consistency of skin |"
+65482058	1	"<<403197009 | Sun-induced wrinkles |"
+65482058	0	"<<403197009 | Sun-induced wrinkles (disorder) |"
+65482058	1	"<<247434009 | Wrinkled skin |"
+65545954	0	"<410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65545955	0	"< 185823004 |Finding of skin texture (finding)|"
+65545961	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65545965	0	"<185823004 |Finding of skin texture|"
+65551157	0	"< 410720000 | Pain by sensation quality (finding) | : [0..0] {363698007 |Finding site (attribute)| = *}"
+65555403	0	"< 410720000 | Pain by sensation quality (finding) |"
+65555403	1	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65555404	0	"<185823004 |Finding of skin texture|
+MINUS (<<366649008 |Thickness of skin - finding|
+OR <<297947008 |Finding of consistency of skin| 
+OR <<248194004 |Wrinkled face| 
+OR << 275887009 |Scaly scalp|)"
+65555406	0	"( < 185823004 |Finding of skin texture (finding)| :
+( 363698007 |Finding site| = 39937001 |Skin structure| 
+or 363698007 |Finding site| = 20795001 |Structure of skin region|
+) ) 
+MINUS 
+( 
+<< 366649008 |Finding of thickness of skin (finding)|
+or 
+<< 297947008 |Finding of consistency of skin (finding)|
+)"
+65555408	0	"< 185823004 |Finding of skin texture (finding)| MINUS ( << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)| OR <<248194004 |Wrinkled face (finding)| OR << 275887009 |Scaly scalp (finding)|)"
+65555410	0	"< 410720000 | Pain by sensation quality (finding) |"
+65555410	0	"< 410720000"
+65555410	1	"< 410720000: 363698007=*"
+65555411	0	<185823004
+65555411	1	<<297947008
+65555411	1	<<366649008
+65561354	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65561355	0	"<185823004 |Finding of skin texture|"
+65561355	1	"<<366649008 | Thickness of skin - finding |"
+65561355	1	"<<297947008 | Finding of consistency of skin |"
+65561355	1	"<<429193009 | Rhytide of forehead |"
+65561355	1	"<<10360000 | Crow's feet |"
+65561355	1	"<<9368001 | Circumoral rhytides |"
+65561355	1	"<<248194004 | Wrinkled face |"
+65561355	1	"<<403197009 | Sun-induced wrinkles |"
+65561355	1	"<<275887009 | Scaly scalp |"
+65562454	0	"< 410720000 | Pain by sensation quality (finding) |"
+65562455	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65562457	0	"< 106076001 |Skin finding (finding)| : [1..1]  363714003 |Interprets (attribute)| =<< 364530004 |Skin texture (observable entity)|"
+65562458	0	"< 106076001 |Skin finding (finding)| : [1..1]  363714003 |Interprets (attribute)| =<< 364530004 |Skin texture (observable entity)|"
+65562459	0	"< 185823004 |Finding of skin texture (finding)| 
+MINUS (
+          << 20795001 |Structure of skin region (body structure)| 
+    OR << 366649008 |Finding of thickness of skin (finding)| 
+    OR << 297947008 |Finding of consistency of skin (finding)|
+    OR << 276323006 |Finding of color of skin (finding)|
+    OR (* : 363698007 |Finding site (attribute)| = << 38866009 |Body part structure (body structure)|)
+)"
+65562460	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65569854	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+65575203	0	"< 61167004 |Thyroid stimulating hormone measurement (procedure)|"
+65575203	0	"117942008 |Measurement of thyroxine antibody (procedure)|"
+65645931	0	"(< 185823004 |Finding of skin texture (finding)| MINUS << 366649008 |Finding of thickness of skin (finding)|) MINUS << 297947008 |Finding of consistency of skin (finding)|"
+65645932	0	"(< 185823004 |Finding of skin texture (finding)|) MINUS (429356007 OR 429193009  OR 275887009  OR 248194004  OR 248195003  OR 10360000 OR 9368001 OR 85345005 OR << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)|)"
+65645933	0	"< 410720000 |Pain by sensation quality (finding)|"
+65645933	1	"<< 29695002 |Throbbing pain (finding)|"
+66498703	0	"<185823004 |Finding of skin texture (finding)| MINUS ( << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)| OR << 248194004 |Wrinkled face (finding)| OR << 275887009 |Scaly scalp (finding)| or 274672009 |Changes in skin texture (finding)| OR 403197009 |Sun-induced wrinkles (disorder)| )"
+66498752	0	"<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|"
+66604112	0	"(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)"
+66632903	0	"(<185823004 | Finding of skin texture (finding) | MINUS <366649008 |Finding of thickness of skin (finding)|) MINUS (<297947008 OR <276323006)"
+66632906	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+66660003	0	"< 185823004 |Finding of skin texture (finding)|:  363698007 |Finding site (attribute)| != < 39937001 |Skin structure (body structure)|"
+66660003	1	"<< 366649008 |Finding of thickness of skin (finding)|"
+66660003	1	"<< 297947008 |Finding of consistency of skin (finding)|"
+66660003	1	"<< 276323006 |Finding of color of skin (finding)|"
+66660003	1	"<< 297971001 |Finding of sensation of skin (finding)|"
+66728657	0	"< 410720000 | Pain by sensation quality (finding) |"
+66728658	0	"<185823004 |Finding of skin texture (finding)|"
+66741404	0	"< 80146002 |Excision of appendix (procedure)|: 260870009 |Priority (attribute)| != 416774000 |Scheduled - priority (qualifier value)|"
+66741405	0	<88937006
+66741407	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+66741409	0	"< 185823004 | Finding of skin texture (finding) | : [0..0] 363698007 | Finding site | = < 20795001 | Structure of skin region (body structure) |"
+66741409	1	"<< 297947008 | Finding of consistency of skin (finding) |"
+66741409	1	"<< 366649008 | Finding of thickness of skin (finding) |"
+66839006	0	"<106098005 |Urinary system finding (finding)|"
+66839006	0	"(<71388002 |Procedure (procedure)|:*=<<122489005 |Urinary system structure (body structure)|)"
+68239904	0	"(<404684003 |Clinical finding (finding)|:*=<<122489005 |Urinary system structure (body structure)|) OR (<71388002 |Procedure (procedure)|:*=<<122489005 |Urinary system structure (body structure)|) OR (<<122489005 |Urinary system structure (body structure)|)"
+69160703	0	"<128927009 AND <362958002"
+69383003	0	"< 430925007 |Measurement of substance (procedure)|"
+69383004	0	"< 185823004 |Finding of skin texture (finding)| MINUS ( << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)| OR << 248194004 |Wrinkled face (finding)| OR << 275887009 |Scaly scalp (finding)| )"
+70418653	0	"< 118598001 |Property (qualifier value)|"
+70418654	0	"<767524001 |Unit of measure (qualifier value)|"
+70800803	0	"< 105590001 |Substance|"
+70800804	0	"< 105590001 |Substance|"
+71676304	0	"<<12738006 | Brain structure (body structure) |"
+72261005	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+72261006	0	"< 185823004 |Finding of skin texture (finding)|
+MINUS ( << 366649008 |Finding of thickness of skin (finding)| 
+OR << 297947008 |Finding of consistency of skin (finding)|
+OR << 248194004 |Wrinkled face (finding)| 
+OR << 275887009 |Scaly scalp (finding)| )"
+72391753	0	"<< 84757009 |Epilepsy|"
+72589654	0	"<< 414545008 |Ischemic heart disease|"
+72712155	0	"<<247441003 |Erythema (finding)|"
