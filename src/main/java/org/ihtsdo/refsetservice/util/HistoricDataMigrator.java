@@ -472,14 +472,14 @@ public class HistoricDataMigrator {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
-            BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsFound.txt"));
+            //BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsFound.txt"));
             logger.info("Starting processing Refsets");
 
             for (String editionId : branchChildrenByEdition.keySet()) {
                 final Edition edition = service.get(editionId, Edition.class);
 
                 logger.info("Processing Edition: " + edition.getName());
-                writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
+                //writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
 
                 String url = SnowstormConnection.BASE_URL
                         + "browser/{branch}/members?active=true&referenceSet=%3C"
@@ -557,8 +557,8 @@ public class HistoricDataMigrator {
                                     counts.incrementRefsetVersionPairsCounts();
 
                                     if (!uniqueRefsetIds.contains(refsetId)) {
-                                        writer.write("Adding unique refset(" + refsetId + ") - "
-                                                + refset.getName() + "\n");
+//                                        writer.write("Adding unique refset(" + refsetId + ") - "
+//                                                + refset.getName() + "\n");
                                         uniqueRefsetIds.add(refsetId);
                                         counts.incrementUniqueRefsetsCounts();
                                     }
@@ -576,7 +576,7 @@ public class HistoricDataMigrator {
                 }
             }
 
-            writer.close();
+            //writer.close();
         }
 
         return snowstormRefsets;
