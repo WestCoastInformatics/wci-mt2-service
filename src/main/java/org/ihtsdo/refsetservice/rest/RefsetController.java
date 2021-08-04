@@ -6,10 +6,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
@@ -251,20 +253,52 @@ public class RefsetController extends BaseController {
 
             if (query != null && !query.equals("")) {
 
-                String memberRefsetQuery =
-                        RefsetMemberService.searchDirectoryMembers(searchParameters);
+                final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
+                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
+                String[] queryParts = query.split(" AND ");
+                String filterQuery = "";
+                String termQuery = "";
 
-                if (!memberRefsetQuery.equals("")) {
+                for (final String queryPart : queryParts) {
 
-                    if (query.split(" AND ").length > 1) {
-                        query = "(" + query + ")";
+                    String[] keyValue = queryPart.split(":");
+
+                    if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
+                        filterQuery += queryPart + " AND ";
+                    } else {
+                        termQuery += queryPart + "* AND ";
                     }
-
-                    query = "(" + query + " OR " + memberRefsetQuery + ")";
                 }
-            }
 
-            query = IndexUtility.addWildcardsToQuery(query, Refset.class);
+                // if the term query isn't empty then search members and build the full term query string
+                if (!termQuery.equals("")) {
+                    
+                    termQuery = StringUtils.removeEnd(termQuery, " AND ");
+                    
+                    String memberRefsetQuery =
+                            RefsetMemberService.searchDirectoryMembers(searchParameters);
+                    
+                    if (!memberRefsetQuery.equals("")) {
+                        termQuery = "((" + termQuery + ") OR " + memberRefsetQuery + ")";
+                    } else {
+                        termQuery = "(" + termQuery + ")";
+                    }
+                }
+                
+                // if the filter query isn't empty then prepare the query with wildcards
+                if (!filterQuery.equals("")) {
+                    
+                    filterQuery = "(" + StringUtils.removeEnd(filterQuery, " AND ") + ")";
+                    filterQuery = IndexUtility.addWildcardsToQuery(filterQuery, Refset.class);
+                    
+                    // if the term query isn't empty then append an 'AND' to the filter query
+                    if (!termQuery.equals("")) {
+                        filterQuery += " AND ";
+                    }
+                }
+                
+                query = filterQuery + termQuery;
+            }
 
             if (query != null && !query.equals("")) {
                 query += " AND latestVersion: true";
