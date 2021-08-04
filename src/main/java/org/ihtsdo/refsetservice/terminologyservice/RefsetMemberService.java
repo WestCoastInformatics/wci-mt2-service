@@ -1794,7 +1794,7 @@ public class RefsetMemberService {
 
         // Create Snowstorm URL
         final String url = SnowstormConnection.BASE_URL + "browser/" + branchPath
-                + "/concepts/ancestorPaths?conceptIds=" + conceptIds;
+                + "/concepts/ancestor-paths?conceptIds=" + conceptIds;
 
         // Call Snowstorm
         logger.debug("Get Concept Ancestors URL: " + url);
