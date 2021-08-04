@@ -58,6 +58,8 @@ public class PropertyUtility {
                 .forEach(prop -> properties.setProperty(prop, env.getProperty(prop)));
         ready = true;
         
+        properties.setProperty("springProfiles", Arrays.toString(env.getActiveProfiles()));
+        
         /* // only uncomment for testing - do not print out properties in Production environments
         TreeSet<Object> sortedPropertyNames = new TreeSet<>(properties.keySet());
         for (Object propertyName : sortedPropertyNames) {

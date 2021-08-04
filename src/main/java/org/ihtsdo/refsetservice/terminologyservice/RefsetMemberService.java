@@ -42,6 +42,7 @@ import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
@@ -51,11 +52,14 @@ import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.RefsetUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -135,7 +139,7 @@ public class RefsetMemberService {
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 500;
 
     private static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
-
+    
     static {
 
         EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + File.separator;
@@ -2839,6 +2843,30 @@ public class RefsetMemberService {
 
         concept.setHistoryVisible(true);
         concept.setFeedbackVisible(true);
+    }
+    
+    /**
+     * Populate the user permissions properties on a concept.
+     *
+     */
+    public static void cacheAllMemberAncestors() {
+
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            final PfsParameter pfs = new PfsParameter();
+            pfs.setAscending(false);
+            pfs.setSort("latestVersion");
+            
+            final ResultList<String> refsetIds = service.findIds("", null, Refset.class, null);
+            logger.info("Starting to cache member ancestors for all " + refsetIds.getItems().size() + " refsets");
+            
+            for (final String refsetId: refsetIds.getItems()) {
+                cacheMemberAncestors(refsetId);
+            }
+            
+        } catch (Exception e) {
+            logger.error("Could not cache all member ancestors", e);
+        }
     }
 
     public static boolean cacheMemberAncestors(String refsetInternalId) throws Exception {
