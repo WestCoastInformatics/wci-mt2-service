@@ -898,7 +898,7 @@ public class HistoricDataMigrator {
      * @throws Exception the exception
      */
     private void persistObjects() throws Exception {
-        final BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsCreated.txt"));
+        //final BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsCreated.txt"));
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy("Migration");
@@ -952,7 +952,7 @@ public class HistoricDataMigrator {
 
                     if (!refsetsAdded.contains(refset.getRefsetId())) {
                         refsetsAdded.add(refset.getRefsetId());
-                        writer.write(refset.getRefsetId() + "\t0\n");
+                        //writer.write(refset.getRefsetId() + "\t0\n");
                         counts.incrementUniqueNoMetadataCount();
                     }
 
@@ -1007,9 +1007,9 @@ public class HistoricDataMigrator {
                     if (!refsetsAdded.contains(refset.getRefsetId())) {
                         refsetsAdded.add(refset.getRefsetId());
                         if (refset.isPrivateRefset()) {
-                            writer.write(refset.getRefsetId() + "\t1\tprivate\n");
+                            //writer.write(refset.getRefsetId() + "\t1\tprivate\n");
                         } else {
-                            writer.write(refset.getRefsetId() + "\t1\n");
+                            //writer.write(refset.getRefsetId() + "\t1\n");
                         }
                         counts.incrementUniqueRttMetadataCount();
                     }
@@ -1027,7 +1027,7 @@ public class HistoricDataMigrator {
 
             }
 
-            writer.close();
+            //writer.close();
 
             logger.info("Have imported " + projectCount + " projects and "
                     + counts.getOrgsImportedCount() + " organizations");
@@ -1052,7 +1052,7 @@ public class HistoricDataMigrator {
 
             logger.info("Total of " + ignoreCounter + " refsets ignored");
         } catch (Exception e) {
-            writer.close();
+            //writer.close();
             logger.error("Have issue with: " + e.getMessage());
             e.printStackTrace();
         }
