@@ -714,10 +714,8 @@ public class HistoricDataMigrator {
                             editionOwnerMap.put(edition.getName(),
                                     codeSystem.get("owner").asText());
                         } else {
-                            editionOwnerMap.put(edition.getShortName(),
-                                    "Owner Organization (first wave) of " + edition.getName());
-                            editionOwnerMap.put(edition.getName(),
-                                    "Owner Organization (first wave) of " + edition.getName());
+                            editionOwnerMap.put(edition.getShortName(), edition.getName());
+                            editionOwnerMap.put(edition.getName(), edition.getName());
                         }
 
                         // Identify Top Level Module
@@ -754,7 +752,7 @@ public class HistoricDataMigrator {
 
             if (editionModules.size() == 0) {
                 edition.setTopLevelModule(MODULE_ANCESTOR_CONCEPT_SCTID);
-                logger.info("Seeing odd number of modules for " + edition.getName() + ": "
+                logger.info("No dedicated modules identified for " + edition.getName() + ": "
                         + editionModules.toString());
             } else if (editionModules.size() > 1) {
                 Set<String> childrenModules = new HashSet<>();
@@ -1108,9 +1106,6 @@ public class HistoricDataMigrator {
 
             Organization org = new Organization();
             org.setName(orgName);
-
-            // TODO: Define better wording unless supplied by orgs
-            org.setDescription("This organization is responsible for modeling refsets.");
 
             setMetadata(org, meta);
 
