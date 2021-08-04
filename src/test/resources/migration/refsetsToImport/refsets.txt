@@ -72,8 +72,7 @@ id	active	effectiveTime	lastModified	lastModifiedBy	moduleId	publishable	publish
 5510657	1	NULL	"2020-09-30 05:38:08"	jven	0	1	0	TMP-cqw66j	"Overordnet refset for anatomisk lokalisasjon for grov angivelse av sted for symptom, problem, tilstand mv"	NULL	NULL	rda@ihtsdo.org	0	0	0	0	"Anatomisk lokalisasjon PTERM"	1000202	0	a743abcf-77d5-401b-aadd-114c313e39ba	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	EDITING_IN_PROGRESS	552	NULL	0	0	NULL
 5562851	1	NULL	"2020-09-30 01:42:39"	dmarkwell	0	1	0	TMP-vgoa0a	"Demo to Peter"	NULL	NULL	NULL	0	0	0	0	"Demo to Peter"	NULL	0	d6da3854-1d2c-47d5-b7e6-e58648eb1e5f	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	EDITING_IN_PROGRESS	102	NULL	0	0	NULL
 5562855	1	NULL	"2020-09-29 23:33:29"	jgnaegi	900000000000207008	1	0	TMP-biazc1	"All Organisms"	NULL	NULL	johannes.gnaegi@e-health-suisse.ch	0	0	0	0	Organisms	1000195	0	f031890c-e8a8-4475-863c-48c76be65b75	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2017-01-31	NEW	53	NULL	0	0	NULL
-5562857	1	NULL	"2020-09-29 22:48:17"	tshird	722133002	1	0	TMP-xes4n6	"SNOMED CT Starter set used to create the starter set translations
-Concept additions based on usage"	NULL	NULL	NULL	0	0	0	0	"SNOMED CT Starter Set"	NULL	0	2135d4fc-06b5-4dc6-af0e-2469a6b592aa	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	NEW	51	Anatomy	0	0	NULL
+5562857	1	NULL	"2020-09-29 22:48:17"	tshird	722133002	1	0	TMP-xes4n6	"SNOMED CT Starter set used to create the starter set translations Concept additions based on usage"	NULL	NULL	NULL	0	0	0	0	"SNOMED CT Starter Set"	NULL	0	2135d4fc-06b5-4dc6-af0e-2469a6b592aa	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	NEW	51	Anatomy	0	0	NULL
 5639504	1	NULL	"2020-09-30 05:38:13"	jajorgensen	0	1	0	11000202100	"Basisregistrering av tobakksvaner"	NULL	NULL	jaj@tkm-n.no	0	0	0	0	Tobakk	1000202	0	aba3f472-8ec0-4a70-8fcd-75ba781a97b1	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	EDITING_DONE	552	NO	0	0	NULL
 5639514	1	"2017-01-31 00:00:00"	"2020-09-29 21:26:10"	bcarlsen	718292005	1	0	721144007	"General Dentistry Refset"	NULL	NULL	NULL	0	0	0	0	"General Dentistry Diagnostic Refset"	NULL	0	38e60c0f-235a-444a-b1a0-54f5ea91d715	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	PUBLISHED	1	Dentistry	0	0	NULL
 5746703	1	NULL	"2020-09-30 05:35:09"	rdavidson	722133002	1	0	733876003	"SNOMED International Starter set"	NULL	NULL	igr@ihtsdo.org	0	0	0	0	"Starter Set"	NULL	0	e729906d-f45b-45a2-9562-8bec2aa9fb0b	1	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2018-01-31	EDITING_IN_PROGRESS	501	NULL	0	0	NULL
@@ -81,8 +80,7 @@ Concept additions based on usage"	NULL	NULL	NULL	0	0	0	0	"SNOMED CT Starter Set"
 5746735	1	NULL	"2020-09-30 04:51:36"	akenworthy	21000210109	1	0	91000210107	"Cardiology subset has been developed to support reporting to National Patient Flow. This does not limit the use of this subset elsewhere in a clinical record"	NULL	NULL	SNOMED_CT@moh.govt.nz	0	0	0	0	"Cardiology subset"	1000210	0	c280f6ba-6107-40ab-a393-40a1a0032f51	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2019-07-31	READY_FOR_PUBLICATION	303	NA	0	0	NULL
 5746736	1	"2016-07-31 00:00:00"	"2020-09-29 21:26:34"	dshapiro	715152001	1	0	450970008	"Description of refset General Practice / Family Practice reference set"	NULL	NULL	techsupport@ihtsdo.org	0	0	0	0	"General Practice / Family Practice reference set"	NULL	0	cbb8a75e-c205-48be-9d3a-a54ebe861a98	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	PUBLISHED	1	NULL	0	0	NULL
 5746737	1	"2017-01-31 00:00:00"	"2020-09-29 21:28:19"	dshapiro	715152001	1	0	450970008	"Description of refset General Practice / Family Practice reference set"	NULL	NULL	techsupport@ihtsdo.org	0	0	0	0	"General Practice / Family Practice reference set"	NULL	0	cbb8a75e-c205-48be-9d3a-a54ebe861a98	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	PUBLISHED	1	NULL	0	0	NULL
-5942202	1	NULL	"2020-09-29 22:49:44"	mharry	900000000000207008	1	0	TMP-jv126p	"Starter set based on the July 2017 ICNP Equivalence table.
-Nursing Activities are intended directly or indirectly to improve or maintain a health state; this includes healthcare investigation and healthcare treatment. (ISO 13940)"	NULL	NULL	mha@snomed.org	0	0	0	0	"IHTSDO Nursing Activities Reference Set"	1000003	0	ad45f1ea-e8a6-451e-afe9-11cc7e271054	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	EDITING_IN_PROGRESS	51	NULL	0	0	NULL
+5942202	1	NULL	"2020-09-29 22:49:44"	mharry	900000000000207008	1	0	TMP-jv126p	"Starter set based on the July 2017 ICNP Equivalence table. Nursing Activities are intended directly or indirectly to improve or maintain a health state; this includes healthcare investigation and healthcare treatment. (ISO 13940)"	NULL	NULL	mha@snomed.org	0	0	0	0	"IHTSDO Nursing Activities Reference Set"	1000003	0	ad45f1ea-e8a6-451e-afe9-11cc7e271054	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	EDITING_IN_PROGRESS	51	NULL	0	0	NULL
 5942203	1	NULL	"2019-11-25 18:46:08"	zwhitewood	999000021000000109	1	0	TMP-f4yog6	test	NULL	NULL	NULL	0	0	0	0	Test	1000000	0	0e33e947-f151-42c8-a3c2-451f5a6e3ebf	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2016-04-01	EDITING_IN_PROGRESS	152	NULL	0	0	NULL
 5942209	1	NULL	"2020-09-29 22:49:54"	mharry	900000000000207008	1	0	TMP-l5aupz	"An issue related to the health of a subject of care as identified by one or more healthcare actors According to this defintion, a health issue corresponds to a health problem, an illness, disease or other kind of health condition."	NULL	NULL	info@snomed.org	0	0	0	0	"Nursing Health Issues reference set"	1000003	0	07fc7b00-432a-4fdb-84c9-182f5d61608d	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2017-01-31	EDITING_IN_PROGRESS	51	Nursing	0	0	NULL
 5942210	1	NULL	"2020-09-29 23:41:13"	jgnaegi	900000000000207008	1	0	TMP-o412dw	"All Findings and Diagnoses"	NULL	NULL	johannes.gnaegi@e-health-suisse.ch	0	0	0	0	Findings	1000195	0	1cb4132e-98cc-444f-90c1-6f3fc7db2505	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2017-01-31	NEW	53	NULL	0	0	NULL
@@ -401,45 +399,6 @@ Nursing Activities are intended directly or indirectly to improve or maintain a 
 9726351	1	NULL	"2020-09-30 12:50:35"	mlambot	0	1	0	TMP-g1kdi7	"List of all concepts cited and/or used in the belgian editorial guides Fr and/or Nl"	NULL	NULL	info@csct.be	0	0	0	0	"Editorial guide BE"		0	7e6e96bf-9ee9-4b68-b3f2-6f3bde8df2ef	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2018-07-31	EDITING_IN_PROGRESS	1203	NULL	1	0	NULL
 9728956	1	NULL	"2020-09-30 12:36:41"	tshird	0	1	0	TMP-ifign5	"Termporary refset for Gender and sex finding"	NULL	NULL	snomedct@ehelse.no	0	0	0	0	"TMP-Gender and sex finding"	1000202	0	4503a2f7-22b4-447f-95f6-d5e0afac0526	1	NULL	SNOMEDCT-NO	EXTENSIONAL	MAIN/SNOMEDCT-NO	READY_FOR_PUBLICATION	1151	NULL	1	0	NULL
 9728957	1	NULL	"2020-09-30 12:36:42"	kharsaker	51000202101	1	0	TMP-mpwfx5	"refset karol test 2 for sammensetning av lokale termer"	NULL	NULL	snomed@ehelse.no	0	0	0	0	"refset karol test 2"	1000202	0	b8f44585-7aee-45d0-9567-91149e20cd73	0	NULL	SNOMEDCT-NO	EXTENSIONAL	MAIN/SNOMEDCT-NO	EDITING_IN_PROGRESS	1151	NULL	0	0	NULL
-9728969	1	NULL	"2020-09-30 12:50:45"	mlambot	0	1	0	TMP-s7h9oo	"This subset contains the list of concepts that will be translated as a proof of concept by the CSCT consortium. 
-
-The purpose is to:
-
-- test the translation ability  of the CSCT as a group
-- to test the translation supporting softwares
-- to validate the translation methodology
-- to validate and test live the belgian draft editorial guidelines and eventually thus enrich them though experience before their final first release
-- to deliver the translated concepts to the Belgian NRC for inclusion in the 2019 Belgian release
-
-The data gathered from the POC will serve to create real estimates on the resources needed for the global translation of SNOMED CT in Belgium. 
-
-This project is undergone in collaboration with the Belgian NRC."	NULL	NULL	info@csct.be	0	1	0	0	"POC CSCT 20181001"		0	31448945-9b43-4158-a783-f24482bc0a73	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2018-07-31	READY_FOR_PUBLICATION	1203	NULL	1	0	NULL
-9793601	1	"2018-09-07 00:00:00"	"2020-09-30 12:51:35"	mlambot	0	1	0	TMP-s7h9oo	"This subset contains the list of concepts that will be translated as a proof of concept by the CSCT consortium. 
-
-The purpose is to:
-
-- test the translation ability  of the CSCT as a group
-- to test the translation supporting softwares
-- to validate the translation methodology
-- to validate and test live the belgian draft editorial guidelines and eventually thus enrich them though experience before their final first release
-- to deliver the translated concepts to the Belgian NRC for inclusion in the 2019 Belgian release
-
-The data gathered from the POC will serve to create real estimates on the resources needed for the global translation of SNOMED CT in Belgium. 
-
-This project is undergone in collaboration with the Belgian NRC."	NULL	NULL	info@csct.be	0	0	0	0	"POC CSCT 20181001"		0	31448945-9b43-4158-a783-f24482bc0a73	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2018-07-31	PUBLISHED	1203	NULL	1	0	NULL
-9793602	1	"2018-07-31 00:00:00"	"2020-09-30 12:52:23"	mlambot	0	1	0	TMP-s7h9oo	"This subset contains the list of concepts that will be translated as a proof of concept by the CSCT consortium. 
-
-The purpose is to:
-
-- test the translation ability  of the CSCT as a group
-- to test the translation supporting softwares
-- to validate the translation methodology
-- to validate and test live the belgian draft editorial guidelines and eventually thus enrich them though experience before their final first release
-- to deliver the translated concepts to the Belgian NRC for inclusion in the 2019 Belgian release
-
-The data gathered from the POC will serve to create real estimates on the resources needed for the global translation of SNOMED CT in Belgium. 
-
-This project is undergone in collaboration with the Belgian NRC."	NULL	NULL	info@csct.be	0	0	0	0	"POC CSCT 20181001"		0	31448945-9b43-4158-a783-f24482bc0a73	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2018-07-31	PUBLISHED	1203	NULL	1	0	NULL
 9793612	1	NULL	"2020-09-29 22:57:59"	rwood	11000188109	1	0	TMP-zi57by	"Test French Translation"	NULL	NULL	NULL	0	0	0	0	"Test French Translation"	1000188	0	2d4be88a-8d1a-416b-8fd3-7b8a6b201664	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2018-07-31	NEW	52	French	0	0	NULL
 9822201	1	"2018-09-14 00:00:00"	"2020-09-29 21:50:22"	aatkinson	718292005	1	0	721144007	"General Dentistry Refset"	NULL	NULL	NULL	0	0	0	0	"General Dentistry Diagnostic Refset"	721144007	0	38e60c0f-235a-444a-b1a0-54f5ea91d715	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2018-07-31	PUBLISHED	1	Dentistry	0	0	NULL
 9822203	1	"2018-09-14 00:00:00"	"2020-09-29 21:50:26"	aatkinson	721230008	1	0	721145008	"Concepts to populate an odontogram"	NULL	NULL	NULL	0	0	0	0	"Odontogram reference set"	NULL	0	0a93c92b-a3ae-465f-b5ce-42ab4c61a790	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2018-07-31	PUBLISHED	1	NULL	0	0	NULL
@@ -1001,16 +960,13 @@ This project is undergone in collaboration with the Belgian NRC."	NULL	NULL	info
 23914220	1	NULL	"2021-02-02 08:44:27"	ahojen	0	1	0	TMP-kykvu3	"Members of CV19-ASS-ClinicalMeasurement with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-ASS-ClinicalMeasurements-withSubtypes	1000003	0	475ecc76-a6b4-4b43-8cbf-c3a5b97bba03	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Clinical assessment"	1	0	NULL
 23914221	1	NULL	"2021-02-02 08:44:27"	ahojen	0	1	0	TMP-pqqd1o	"Members of CV19-ASS-ClinicalFindings with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-ASS-ClinicalExaminationFindings-withSubtypes	1000003	0	db98a435-4c29-41d0-aff7-da8869a5c96d	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Clinical assessment"	1	0	NULL
 23914222	1	NULL	"2021-02-02 08:44:53"	ahojen	0	1	0	TMP-ddplt4	"Members of CV19-ASS-SecondaryConditionsAndComplications with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-ASS-SecondaryConditionsAndComplications-withSubtypes	1000003	0	49aa3840-9677-456b-8e87-29665094cb4b	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Clinical assessment"	1	0	0
-23914224	1	NULL	"2021-02-02 08:44:27"	ahojen	0	1	0	TMP-tdl0wg	"Members of CV19-ASS-ProcedureRiskFactors
-with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-ASS-ProcedureRiskFactors-withSubtypes	1000003	0	dbbab172-3995-497c-85f8-e521a274de1e	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Clinical assessment"	1	0	NULL
-23914226	1	NULL	"2021-02-02 08:44:27"	ahojen	0	1	0	TMP-39jbld	"Members of CV19-INV-LaboratoryTests
-with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-INV-LaboratoryTests-withSubtypes	1000003	0	49b7dca5-ee90-43f3-8fd6-6fdc74b73ecb	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Tests and investigations"	1	0	NULL
+23914224	1	NULL	"2021-02-02 08:44:27"	ahojen	0	1	0	TMP-tdl0wg	"Members of CV19-ASS-ProcedureRiskFactors with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-ASS-ProcedureRiskFactors-withSubtypes	1000003	0	dbbab172-3995-497c-85f8-e521a274de1e	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Clinical assessment"	1	0	NULL
+23914226	1	NULL	"2021-02-02 08:44:27"	ahojen	0	1	0	TMP-39jbld	"Members of CV19-INV-LaboratoryTests with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-INV-LaboratoryTests-withSubtypes	1000003	0	49b7dca5-ee90-43f3-8fd6-6fdc74b73ecb	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Tests and investigations"	1	0	NULL
 23914227	1	NULL	"2021-02-02 08:44:28"	ahojen	0	1	0	TMP-5bcx6f	"Members of CV19-INV-SubstancesAndVirus with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-INV-SubstancesAndVirus-withSubtypes	1000003	0	afd19e3c-f7d0-4b92-bb58-6af6faec6e03	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Tests and investigations"	1	0	NULL
 23914228	1	NULL	"2021-02-02 08:44:28"	ahojen	0	1	0	TMP-vhxgf8	"Members of CV19-PTE-PreventionProcedures with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-PTE-PreventionProcedures-withSubtypes	1000003	0	ccb5f24b-d3af-4106-b5eb-fb464867e3d8	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Prevention, treatment and education"	1	0	NULL
 23914229	1	NULL	"2021-02-02 08:44:28"	ahojen	0	1	0	TMP-jx5fdq	"Members of CV19-PTE-Education with their subtypes."	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-PTE-Education-withSubtypes	1000003	0	87636b57-e1bb-4e53-95c2-07e3111315fc	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Prevention, treatment and education"	1	0	NULL
 23914230	1	NULL	"2021-02-02 08:44:28"	ahojen	0	1	0	TMP-imcxaj	"Members of CV19-PTE-AdministrativeProcedures with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-PTE-AdministrativeProcedures-withSubtypes	1000003	0	13b8e11d-59a8-4432-9b2c-c1b0f5b1a7b6	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Prevention, treatment and education"	1	0	NULL
-23914231	1	NULL	"2021-02-02 08:44:29"	ahojen	0	1	0	TMP-swq8u1	"Members of CV19-PTE-TherapeuticProcedures
-with their subtypes."	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-PTE-TherapeuticProcedures-withSubtypes	1000003	0	4f139ea1-f2f4-42ea-8b6d-ca9f161a604e	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Prevention, treatment and education"	1	0	NULL
+23914231	1	NULL	"2021-02-02 08:44:29"	ahojen	0	1	0	TMP-swq8u1	"Members of CV19-PTE-TherapeuticProcedures with their subtypes."	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-PTE-TherapeuticProcedures-withSubtypes	1000003	0	4f139ea1-f2f4-42ea-8b6d-ca9f161a604e	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Prevention, treatment and education"	1	0	NULL
 23914232	1	NULL	"2021-02-02 08:44:29"	ahojen	0	1	0	TMP-k8c44f	"Members of CV19-PTE-TreatmentFindings with their subtypes."	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-PTE-TreatmentFindings-withSubtypes	1000003	0	35a2c778-e2fe-4876-881c-d294654ef4a7	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Prevention, treatment and education"	1	0	NULL
 23914244	1	NULL	"2021-02-02 08:44:30"	ahojen	0	1	0	TMP-a7eonx	"Members of CV19-ASS-Symptoms with their subtypes."	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-ASS-Symptoms-withSubtypes	1000003	0	381cb029-8dc2-4d0e-98bc-35f62c37a790	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Clinical assessment"	1	0	NULL
 23914245	1	NULL	"2021-02-02 09:41:23"	ahojen	0	1	0	TMP-wsbyub	"Members of CV19-INV-LabTestResults with their subtypes"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-INV-LabTestResults-withSubtypes	1000003	0	dba70fd8-4129-4b4e-87c1-af7a6a518800	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	2853	"Tests and investigations"	1	0	NULL
@@ -1788,8 +1744,7 @@ with their subtypes."	NULL	NULL	arh@ihtsdo.org	0	0	0	0	CV19-PTE-TherapeuticProce
 65010657	1	NULL	"2021-04-25 19:02:02"	mfodor	900000000000445007	1	0	TMP-ue7lgh	"Module D Exercise 2"	NULL	NULL	fodorm123@gmail.com	0	0	0	0	"Maria - Pain Quality Subset"	1000003	0	afacb0b7-3835-4321-ab02-1a34104df66a	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	EDITING_IN_PROGRESS	302	"implementation education"	0	0	NULL
 65010658	1	NULL	"2021-04-25 19:05:52"	ehulten	900000000000445007	1	0	TMP-8pjcfk	"Module D Exercise 1"	NULL	NULL	emma.hulten@socialstyrelsen.se	0	0	0	0	"Emma Hultén - Common Cardiac Conditions"	1000003	0	a559d695-af1e-447c-88ba-4a50e35b1488	0	NULL	SNOMEDCT	EXTENSIONAL	MAIN/2019-01-31	EDITING_IN_PROGRESS	302	"Cardiac conditions subset"	0	0	NULL
 65010659	1	NULL	"2021-04-26 18:30:41"	mfodor	900000000000207008	1	0	TMP-b9b339	"Module D Assignment - Maria Fodor"	NULL	NULL	fodorm123@gmail.com	0	0	0	0	"Skin Texture Subset"	1000003	0	f339e289-5e24-4a1b-8f8a-b768fe3ebdeb	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	EDITING_IN_PROGRESS	302	NULL	0	0	NULL
-65010660	1	NULL	"2021-04-25 19:17:47"	mfodor	900000000000445007	1	0	TMP-9y2x4i	"Module D Exercise 2
-Intensional query type"	NULL	NULL	fodorm123@gmail.com	0	0	0	0	"Maria - Pain Quality Subset (original query)"	1000003	0	ed440e00-19d2-4466-997e-9059607eb87f	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	302	"implementation education"	0	0	NULL
+65010660	1	NULL	"2021-04-25 19:17:47"	mfodor	900000000000445007	1	0	TMP-9y2x4i	"Module D Exercise 2 Intensional query type"	NULL	NULL	fodorm123@gmail.com	0	0	0	0	"Maria - Pain Quality Subset (original query)"	1000003	0	ed440e00-19d2-4466-997e-9059607eb87f	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	302	"implementation education"	0	0	NULL
 65010661	1	NULL	"2021-04-25 19:52:48"	ehulten	900000000000445007	1	0	TMP-yf3sgm	"Module D Exercise 2"	NULL	NULL	arh@ihtsdo.org	0	0	0	0	"Emma Hultén - Pain Quality Subset"	1000003	0	34ef6d84-738e-44bd-95c3-ee7cccdbb804	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	EDITING_IN_PROGRESS	302	"Pain Quality Subset"	0	0	NULL
 65010662	1	NULL	"2021-04-27 12:50:52"	ehulten	900000000000445007	1	0	TMP-ze0i2n	"Module D Assignment - Emma Hultén"	NULL	NULL	emma.hulten@socialstyrelsen.se	0	0	0	0	"Skin Texture Subset"	1000003	0	12c50db7-e889-4061-92d4-2f86b6911502	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	EDITING_IN_PROGRESS	302	NULL	0	0	NULL
 65010663	1	NULL	"2021-04-25 22:54:30"	mfodor	900000000000445007	1	0	TMP-6cy8vf	"Organisms that can be found in microbiology"	NULL	NULL	fodorm123@gmail.com	0	0	0	0	"Maria - organisms"	1000003	0	780cbbd9-b65e-4c93-8cc6-b05aa672635b	0	NULL	SNOMEDCT	INTENSIONAL	MAIN/2021-01-31	NEW	302	NULL	0	0	NULL
