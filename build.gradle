@@ -31,7 +31,7 @@ repositories {
 // Extra Properties
 ext {
 
-	versionNumber = "0.0.1"
+	versionNumber = "0.1.0"
 	
 	if (!project.hasProperty("debAppName")) {
 	
