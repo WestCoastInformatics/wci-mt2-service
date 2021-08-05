@@ -887,14 +887,14 @@ public final class IndexUtility {
         }
         
         String wildcardQuery = query;
-        Pattern regex = Pattern.compile("[a-zA-Z0-9_]+:[\"\\s]*([-a-zA-Z0-9_\\s]*)(?:\\sAND?|\\sOR|\"|$)");
+        Pattern regex = Pattern.compile("[a-zA-Z0-9_]+:[\"\\s]*([-a-zA-Z0-9_\\s]*)(?:\\)|\\sAND?|\\sOR|\"|$)");
         Matcher regexMatcher = regex.matcher(wildcardQuery);
-        Set<String> fieldNames = IndexUtility.getIndexedFieldNames(clazz, "date");
+        Set<String> dateFieldNames = IndexUtility.getIndexedFieldNames(clazz, "date");
         
         while (regexMatcher.find()) {
             
-            
-            if (!fieldNames.stream().anyMatch(field -> {
+            // do not replace date fields
+            if (!dateFieldNames.stream().anyMatch(field -> {
                 return regexMatcher.group(0).contains(field + ":");
             })) {
                 wildcardQuery = wildcardQuery.replace(regexMatcher.group(1), regexMatcher.group(1) + "*");
