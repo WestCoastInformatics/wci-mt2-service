@@ -27,14 +27,15 @@ repositories {
   maven { url "https://repo.spring.io/snapshot" }
 }
 
-// Project.version info (always use SNAPSHOT except for release commits, upgrade version when needed)
+// Project.version info (upgrade version when needed)
 group = "org.ihtsdo.refsetservice"
 version = "0.1.0" 
-versionTag = "-SNAPSHOT"
 
 // Extra Properties
 ext {
 
+	// always use SNAPSHOT except for release commits
+	versionTag = "-SNAPSHOT"
 	versionNumber = version
 	
 	if (!project.hasProperty("debAppName")) {
