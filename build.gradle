@@ -81,9 +81,9 @@ apply plugin: 'nebula.ospackage'
 
 mainClassName = "org.ihtsdo.refsetservice.Application"
 
-// Version info (always use SNAPSHOT, upgrade version when needed)
+// Version info (upgrade version when needed)
 group = "org.ihtsdo.refsetservice"
-version = versionNumber + "-SNAPSHOT"
+version = versionNumber
 
 sourceCompatibility = 11
 targetCompatibility = 11
