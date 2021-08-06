@@ -34,8 +34,8 @@ version = "0.1.0"
 // Extra Properties
 ext {
 
-	// always use SNAPSHOT except for release commits
-	versionTag = "-SNAPSHOT"
+	// always use "-SNAPSHOT" for versionTag except for release commits
+	versionTag = ""
 	versionNumber = version
 	
 	if (!project.hasProperty("debAppName")) {
