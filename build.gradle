@@ -27,11 +27,15 @@ repositories {
   maven { url "https://repo.spring.io/snapshot" }
 }
 
+// Project.version info (always use SNAPSHOT except for release commits, upgrade version when needed)
+group = "org.ihtsdo.refsetservice"
+version = "0.1.0" 
+versionTag = "-SNAPSHOT"
 
 // Extra Properties
 ext {
 
-	versionNumber = "0.1.0"
+	versionNumber = version
 	
 	if (!project.hasProperty("debAppName")) {
 	
@@ -51,6 +55,11 @@ ext {
 		}
 	} else {
 		buildNumber = "~" + buildNumber
+	}
+	
+	// ignore the build number if this is not a Snapshot version
+	if (versionTag != "-SNAPSHOT") {
+		buildNumber = ""
 	}
 	
 	// Parameters
@@ -81,9 +90,8 @@ apply plugin: 'nebula.ospackage'
 
 mainClassName = "org.ihtsdo.refsetservice.Application"
 
-// Version info (upgrade version when needed)
-group = "org.ihtsdo.refsetservice"
-version = versionNumber
+// apply the version tag to the project.version
+version = version + versionTag
 
 sourceCompatibility = 11
 targetCompatibility = 11
@@ -101,6 +109,7 @@ configurations.all {
 ospackage {
 
 	packageName = debAppName
+	// apply the build number to the ospackage.version
     version = versionNumber + buildNumber
     
 	println '***** project.name: ' + project.name
