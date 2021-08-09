@@ -6,8 +6,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
@@ -18,6 +30,8 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.FileUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,13 +54,39 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AutoConfigureMockMvc
 public class RefsetControllerTests extends BaseTest {
 
+    /** The config properties. */
+    private final Properties properties = PropertyUtility.getProperties();
+
     /** The Constant TESTING_REFSET_ID. */
-    // Body temperature refset with 10 members
-    private static final String TESTING_REFSET_ID = "551000172106"; // Belgian
+    // Belgian simple reference set for translated animal materials w/101
+    // members
+    // Resides with 101 members on wci-snowstorm, dev-integration, UAT, and
+    // production
+    private static final String TESTING_REFSET_ID = "561000172108"; // Belgian
+
+    private static final String TESTING_REFSET_BRANCH = "MAIN/SNOMEDCT-BE/2020-09-15"; // Belgian
 
     private static final String INACTIVE_CONCEPT_ID = "727156001";
 
     private static final String REFSET_WITH_INACTIVE_CONCEPT = "723264001";
+
+    private static final String DESCRIPTION_TERM = "term";
+
+    private static final String firstConIdToExamine = "37663002"; // With 2
+                                                                  // par,
+    // 6 child, 0
+    // def rel
+
+    private static final String secondConIdToExamine = "710038002"; // with 2
+                                                                    // par, 0
+                                                                    // child, 1
+                                                                    // def rel
+
+    private static final String expectedEffectiveTime = "20210315";
+
+    private static final String INVALID_REFSET_ID = "12345678901234567890";
+
+    private static final String SNOMED_ROOT = "138875005";
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -61,6 +101,14 @@ public class RefsetControllerTests extends BaseTest {
     /** The base url. */
     private String baseUrl = "";
 
+    /** The projects file. */
+    private final String DELTA_FILE_PATH =
+            "src/test/resources/refsetService/Lateralizable Delta 201801 to 201901.txt";
+
+    private static final List<String> firstConceptDescList = new ArrayList<>();
+
+    private static final List<String> secondConceptDescList = new ArrayList<>();
+
     /**
      * Sets the up.
      */
@@ -70,6 +118,19 @@ public class RefsetControllerTests extends BaseTest {
         objectMapper = new ObjectMapper();
         JacksonTester.initFields(this, objectMapper);
         baseUrl = "/refset";
+
+        firstConceptDescList.add("Venom (substance)");
+        firstConceptDescList.add("Venom");
+        firstConceptDescList.add("venin");
+        firstConceptDescList.add("gif");
+
+        secondConceptDescList.add("Anhydrous lanolin (substance)");
+        secondConceptDescList.add("Anhydrous lanolin");
+        secondConceptDescList.add("Wool fat");
+        secondConceptDescList.add("wolvet");
+        secondConceptDescList.add("lanoline anhydre");
+        secondConceptDescList.add("watervrije lanoline");
+
     }
 
     /**
@@ -80,21 +141,53 @@ public class RefsetControllerTests extends BaseTest {
     @Test
     public void testRefset() throws Exception {
 
+        final String refsetTerminologyId = getRefsetInternalId();
+
+        final String url = baseUrl + "/" + refsetTerminologyId;
+        logger.info("Testing url - " + url);
+
+        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        final String content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+
+        final Refset refset = new ObjectMapper().readValue(content, Refset.class);
+
+        testRefsetMetadata(refset);
+    }
+
+    /**
+     * Test getting editions.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testEditions() throws Exception {
+
         String url = null;
         MvcResult result = null;
         String content = null;
-        Refset refset = null;
-        String refsetTerminologyId = getRefsetInternalId();
 
-        url = baseUrl + "/" + refsetTerminologyId;
+        url = baseUrl + "/editions";
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        refset = new ObjectMapper().readValue(content, Refset.class);
-        assertThat(refset).isNotNull();
-        assertThat(refset.getRefsetId()).isEqualTo(TESTING_REFSET_ID);
+        ResultList<TypeKeyValue> editions = new ObjectMapper().readValue(content,
+                (new TypeReference<ResultList<TypeKeyValue>>() {
+                    /* NA */}));
+        assertThat(editions).isNotNull();
+        assertThat(editions.getItems().size()).isGreaterThan(8);
 
+        boolean editionFound = false;
+
+        for (TypeKeyValue keyValue : editions.getItems()) {
+            if ("belgian edition".equalsIgnoreCase(keyValue.getKey())) {
+                editionFound = true;
+                break;
+            }
+        }
+
+        assertThat(editionFound).isTrue();
     }
 
     /**
@@ -103,15 +196,41 @@ public class RefsetControllerTests extends BaseTest {
      * @throws Exception the exception
      */
     @Test
-    public void testRefsetDirectory() throws Exception {
+    public void testDirectorySearch() throws Exception {
 
         String url = null;
         MvcResult result = null;
         String content = null;
         ResultList<Refset> resultList = null;
 
+        // Test by name
         url = baseUrl
-                + "/search?limit=10&offset=0&sort=versionDate&sortAscending=false&query=name:activ AND editionName:Swedish Edition"; // Hyperdontia
+
+                + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal";
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        resultList =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
+                    /* NA */}));
+        assertThat(resultList).isNotNull();
+        assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
+
+        boolean refsetFound = false;
+        for (Refset r : resultList.getItems()) {
+            if (r.getRefsetId().equals(TESTING_REFSET_ID)) {
+                refsetFound = true;
+                testRefsetMetadata(r);
+                break;
+            }
+        }
+
+        assertThat(refsetFound).isTrue();
+
+        // Test by edition name
+        url = baseUrl
+                + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query=editionName:Belgian Edition";
 
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -121,36 +240,100 @@ public class RefsetControllerTests extends BaseTest {
                 new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
                     /* NA */}));
         assertThat(resultList).isNotNull();
-        assertThat(resultList.getItems().size()).isGreaterThan(2);
-        assertThat(resultList.getItems().get(0).getRefsetId()).isEqualTo(TESTING_REFSET_ID);
+        assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
 
-    }
+        refsetFound = false;
+        for (Refset r : resultList.getItems()) {
+            if (r.getRefsetId().equals(TESTING_REFSET_ID)) {
+                refsetFound = true;
+                testRefsetMetadata(r);
+                break;
+            }
+        }
 
-    /**
-     * Test getting the member concepts of a refset.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testRefsetMemberList() throws Exception {
+        assertThat(refsetFound).isTrue();
 
-        String url = null;
-        MvcResult result = null;
-        String content = null;
-        ConceptResultList members = null;
-        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; // getRefsetInternalId();
+        // Test by combination
+        url = baseUrl
+                + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal AND editionName:Belgian Edition"; // Hyperdontia
 
-        url = baseUrl + "/" + refsetTerminologyId + "/members?limit=10&offset=0&displayType=list"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        members = new ObjectMapper().readValue(content, (ConceptResultList.class));
-        assertThat(members).isNotNull();
-        assertThat(members.getItems().size()).isGreaterThan(0);
-        assertThat(members.getItems().get(0).getDescriptions().size()).isGreaterThan(0);
+        resultList =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
+                    /* NA */}));
+        assertThat(resultList).isNotNull();
+        assertThat(resultList.getItems().size()).isEqualTo(1);
+        testRefsetMetadata(resultList.getItems().get(0));
 
-        logger.info("Done -- Just returned refset with " + members.size() + " members.");
+        // Test by term per language (at least on non-pt)
+        // Test by concept Id
+        // by term id
+        // by refset id
+        // By narrative
+        // by tags
+        String searchTerms[] = new String[] {
+                "Dog", "squame", "huidschilfer",
+                // TODO: Add '"olie uit lever van vis"' back when know about
+                // acceptable term searching
+                "260154005", "999861000172117", "561000172108", "General"
+        };
+        for (int i = 0; i < searchTerms.length; i++) {
+            url = baseUrl + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query="
+                    + searchTerms[i];
+
+            logger.info("Testing term - " + searchTerms[i]);
+            logger.info("Testing url - " + url);
+            result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            resultList =
+                    new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
+                        /* NA */}));
+
+            // Check results
+            refsetFound = false;
+            for (Refset r : resultList.getItems()) {
+                logger.info(r.getName());
+
+                if (r.getRefsetId().equals(TESTING_REFSET_ID)) {
+                    refsetFound = true;
+                    testRefsetMetadata(r);
+                    break;
+                }
+            }
+
+            assertThat(refsetFound).isTrue();
+        }
+
+        // Test graceful handling of zero results
+        url = baseUrl
+                + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query=1234567890";
+
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        resultList =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
+                    /* NA */}));
+
+        // Check results
+        refsetFound = false;
+        for (Refset r : resultList.getItems()) {
+            logger.info(r.getName());
+
+            if (r.getRefsetId().equals(TESTING_REFSET_ID)) {
+                refsetFound = true;
+                testRefsetMetadata(r);
+                break;
+            }
+        }
+
+        assertThat(refsetFound).isTrue();
+
     }
 
     /**
@@ -168,7 +351,7 @@ public class RefsetControllerTests extends BaseTest {
         String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; // getRefsetInternalId();
 
         url = baseUrl + "/" + refsetTerminologyId
-                + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId=404684003"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
+                + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId=404684003"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
@@ -186,7 +369,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    // @Test
     public void testExportSctidList() throws Exception {
 
         String url = null;
@@ -214,7 +397,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    // @Test
     public void testExportRf2Snapshot() throws Exception {
 
         String url = null;
@@ -250,30 +433,89 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testExportRf2Delta() throws Exception {
-        final String refsetId = "723264001"; // Lateralizable body refset
-        // final String refsetId = this.TESTING_REFSET_ID;
-        String url = null;
-        MvcResult result = null;
-        String resultString = null;
-        // Will default to the latest version of the refset (2021-07-31 for now)
+        // TODO: Only possible when testing against wci-Swagger or
+        // uat/prod-Swaggers unless this refset is migrated to
+        // dev-integration-swagger
+
+        final String refsetId = "723264001"; // Lateralizable body refset (has
+                                             // more than 2 versions)
+        
         final String refsetInternalId = getRefsetInternalId(refsetId);
 
-        // url = "/export/"+ refsetInternalId +
-        // "/?format=rf2_with_names&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210731&transientEffectiveTime=20210731&exportMetadata=false&startEffectiveTime=20190131";
+        Path unzippedPath = null;
+        BufferedReader correctDelta = null;
+        BufferedReader generatedDeltaFile = null;
 
-        url = "/export/" + refsetInternalId
-                + "/?format=rf2_with_names&exportMetadata=true&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210131&transientEffectiveTime=20210731&startEffectiveTime=20180131";
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        resultString = result.getResponse().getContentAsString();
+        try {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        final JsonNode root = mapper.readTree(resultString);
-        final String fileUrl = (root.get("url")).asText();
-        logger.info("File Url: " + fileUrl);
+            // v1 (20180131) & v3 (20190131)
+            final String url = "/export/" + refsetInternalId
+                    + "/?format=rf2&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210806&transientEffectiveTime=20190131&startEffectiveTime=20180131";
+            logger.info("Testing url - " + url);
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String resultString = result.getResponse().getContentAsString();
 
-        assertThat(fileUrl).isNotNull();
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString);
 
+            // Get Zipped File
+            final String fileUrl = (root.get("url")).asText();
+            logger.info("File Url: " + fileUrl);
+            final String zipFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+            final String exportRefsetPath = properties.getProperty("REFSET_EXPORT_DIR");
+            logger.info("Refset Directory: " + exportRefsetPath);
+            final String downloadedZipFile = exportRefsetPath + "/" + zipFileName;
+            logger.info("Zip File Path: " + downloadedZipFile);
+            unzippedPath = Files.createTempDirectory("exportDeltaTest-");
+            FileUtility.unzip(downloadedZipFile, unzippedPath.toFile().getAbsolutePath());
+
+            assertThat(1).isEqualTo(unzippedPath.toFile().list().length);
+
+            // Get generated File
+            File generatedFile = unzippedPath.toFile().listFiles()[0];
+
+            final SortedSet<String> generatedLines = new TreeSet<>();
+            final SortedSet<String> testFileLines = new TreeSet<>();
+            generatedDeltaFile = new BufferedReader(new FileReader(generatedFile));
+
+            String st;
+            while ((st = generatedDeltaFile.readLine()) != null) {
+                generatedLines.add(st);
+            }
+
+            // Get test file
+            correctDelta = new BufferedReader(new FileReader(DELTA_FILE_PATH));
+            while ((st = correctDelta.readLine()) != null) {
+                testFileLines.add(st);
+            }
+            // Compare two but first disregard the header for the generated
+            // contents.
+            int j = 0;
+            for (int i = 0; i < generatedLines.size(); i++) {
+                String generatedLine = (String) generatedLines.toArray()[i];
+
+                // If header line, just ignore altogether
+                if (!generatedLine.startsWith("id\teffectiveTime")) {
+                    String testLine = (String) testFileLines.toArray()[j++];
+
+                    assertThat(testLine).isEqualTo(generatedLine);
+                }
+            }
+
+            assertThat(testFileLines.size()).isEqualTo(j);
+        } finally {
+            if (correctDelta != null) {
+                correctDelta.close();
+            }
+
+            if (generatedDeltaFile != null) {
+                generatedDeltaFile.close();
+            }
+
+            if (unzippedPath != null) {
+                FileUtility.deleteDirectory(unzippedPath.toFile());
+            }
+        }
     }
 
     /**
@@ -389,22 +631,15 @@ public class RefsetControllerTests extends BaseTest {
      * @throws Exception the exception
      */
     @Test
-    public void testMemberList() throws Exception {
-        // TODO: Update test as was based on PROD-Snowstorm, not our dev
-        // instance
-
+    public void testMemberTable() throws Exception {
         String url = null;
         MvcResult result = null;
         String content = null;
-        final String conceptIdToExamine = "716186003"; // with 1 parent & 5
-                                                       // children & 1 role
-                                                       // group of 4 rels
-        // descriptions in all 3 lang
-        final String refsetId = "561000172108";
-        final String expectedEffectiveTime = "20210315";
+
+        final String refsetId = TESTING_REFSET_ID;
 
         url = "/refset/" + getRefsetInternalId(refsetId)
-                + "/members?limit=10&offset=0&displayType=list&refsetInternalId="
+                + "/members?limit=500&offset=0&displayType=list&refsetInternalId="
                 + getRefsetInternalId(refsetId);
         logger.info("Testing url - " + url);
 
@@ -416,39 +651,44 @@ public class RefsetControllerTests extends BaseTest {
 
         // Testing Results
         assertThat(members).isNotNull();
-        assertThat(members.size()).isEqualTo(7);
+        assertThat(members.size()).isEqualTo(101);
 
+        // Test first concept
         Concept concept = null;
         for (Concept conceptBeingTested : members.getItems()) {
-            if (conceptBeingTested.getCode().equals(conceptIdToExamine)) {
+            if (conceptBeingTested.getCode().equals(firstConIdToExamine)) {
                 concept = conceptBeingTested;
                 break;
             }
         }
 
-        assertThat(concept).isNotNull();
-        assertThat(concept.getCode()).isEqualTo(conceptIdToExamine);
+        validateConcept(concept, firstConIdToExamine, "20200131", true, firstConceptDescList, 1, 2,
+                6);
 
-        final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-        assertThat(concept.getMemberEffectiveTime())
-                .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(expectedEffectiveTime));
-        assertTrue(concept.isMemberOfRefset());
-        assertTrue(concept.isMemberStatus());
-        assertThat(concept.getDescriptions().size()).isEqualTo(4); // The 5th
-                                                                   // active
-                                                                   // description
-                                                                   // is
-                                                                   // Acceptable,
-                                                                   // so
-                                                                   // shouldn't
-                                                                   // be
-                                                                   // returned
-        assertThat(concept.getRoleGroups().size()).isEqualTo(0);
+        // Test second concept
+        concept = null;
+        for (Concept conceptBeingTested : members.getItems()) {
+            if (conceptBeingTested.getCode().equals(secondConIdToExamine)) {
+                concept = conceptBeingTested;
+                break;
+            }
+        }
 
-        // Call does not pull in parents & Children
-        assertThat(concept.getParents().size()).isEqualTo(0);
-        assertThat(concept.getChildren().size()).isEqualTo(0);
+        validateConcept(concept, secondConIdToExamine, "20170131", true, secondConceptDescList, 2,
+                2, 0);
 
+        // Test invalid refset is handled gracefully
+        url = "/refset/" + INVALID_REFSET_ID
+                + "/members?limit=500&offset=0&displayType=list&refsetInternalId="
+                + INVALID_REFSET_ID;
+
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+
+        assertThat(content).isEmpty();
     }
 
     /**
@@ -456,7 +696,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    // @Test
     public void testSearchRefsetMembers() throws Exception {
         // TODO: Update test as was based on PROD-Snowstorm, not our dev
         // instance
@@ -471,7 +711,7 @@ public class RefsetControllerTests extends BaseTest {
         final String expectedEffectiveTime = "20210315";
 
         url = "/refset/" + getRefsetInternalId(refsetId)
-                + "/members?limit=10&offset=0&query=food&displayType=list&refsetInternalId="
+                + "/members?limit=500&offset=0&query=food&displayType=list&refsetInternalId="
                 + getRefsetInternalId(refsetId);
         logger.info("Testing url - " + url);
 
@@ -500,7 +740,6 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept.getMemberEffectiveTime())
                 .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(expectedEffectiveTime));
         assertTrue(concept.isMemberOfRefset());
-        assertTrue(concept.isMemberStatus());
         assertThat(concept.getDescriptions().size()).isEqualTo(4);
         assertThat(concept.getRoleGroups().size()).isEqualTo(0);
 
@@ -515,7 +754,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    // @Test
     public void testSearchRefsetTaxonomy() throws Exception {
         // TODO: Update test as was based on PROD-Snowstorm, not our dev
         // instance
@@ -525,7 +764,7 @@ public class RefsetControllerTests extends BaseTest {
         String content = null;
         final String conceptIdToExamine = "256248008";
 
-        url = "/refset/" + getRefsetInternalId() + "/taxonomySearch?limit=10&offset=0&query=plant";
+        url = "/refset/" + getRefsetInternalId() + "/taxonomySearch?limit=500&offset=0&query=plant";
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -549,7 +788,6 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptIdToExamine);
         assertTrue(concept.isMemberOfRefset());
-        assertTrue(concept.isMemberStatus());
         assertThat(concept.getDescriptions().size()).isEqualTo(4);
 
         assertThat(concept.getParents().size()).isGreaterThan(2);
@@ -561,12 +799,13 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
-    public void testMemberTaxonomy() throws Exception {
+    // @Test
+    public void testInactiveMembers() throws Exception {
 
+        // TAXONOMY
         final String inactiveTestUrl =
                 "/refset/" + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT)
-                        + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId="
+                        + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId="
                         + INACTIVE_CONCEPT_ID + "&refsetInternalId="
                         + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT);
         logger.info("Testing url - " + inactiveTestUrl);
@@ -581,64 +820,82 @@ public class RefsetControllerTests extends BaseTest {
         // Testing Results
         assertThat(inactiveMembers).isNotNull();
         assertThat(inactiveMembers.size()).isEqualTo(0);
+    }
 
-        // TODO: Update test as was based on PROD-Snowstorm, not our dev
-        // instance
+    /**
+     * Test getting concept details.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testMemberTaxonomy() throws Exception {
 
-        // with 1 parent & 5 children & 1 role group of 4 rels
-        // descriptions in all 3 lang
-        final String conceptIdToExamine = "716220001";
-        final String refsetId = "h";
-        final String expectedEffectiveTime = "20210315";
-        final String startingConceptId = "716186003";
+        // First concept with grandparent with: Animal Material (256363008) is
+        // parent of
+        // Animal Agent (105899005) which is a parent to firstConIdToExamine
+        // (Venon)
 
-        final String url = "/refset/" + getRefsetInternalId(refsetId)
-                + "/members?limit=10&offset=0&displayType=taxonomy&startingConceptId="
-                + startingConceptId + "&refsetInternalId=" + getRefsetInternalId(refsetId);
+        // Must first cache the ancestors for the refset
+        String url = "/ancestors/" + getRefsetInternalId(TESTING_REFSET_ID);
         logger.info("Testing url - " + url);
+        MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
 
-        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        final String content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        final ConceptResultList members =
-                new ObjectMapper().readValue(content, (ConceptResultList.class));
+        // Search on grandparent
+        final Map<String, String> parChildMap = new HashMap<>();
+        parChildMap.put(SNOMED_ROOT, "105590001");
+        parChildMap.put("105590001", "115668003");
+        parChildMap.put("115668003", "289958009");
+        parChildMap.put("289958009", "256363008");
+        parChildMap.put("256363008", "105899005");
+        parChildMap.put("105899005", firstConIdToExamine);
 
-        // Testing Results
-        assertThat(members).isNotNull();
-        assertThat(members.size()).isEqualTo(5);
+        Concept childConcept = null;
 
-        Concept concept = null;
-        for (Concept conceptBeingTested : members.getItems()) {
-            logger.info("Concept: " + conceptBeingTested.getName());
-            if (conceptBeingTested.getCode().equals(conceptIdToExamine)) {
-                concept = conceptBeingTested;
+        String parentId = SNOMED_ROOT;
+        while (childConcept == null || !firstConIdToExamine.equals(childConcept.getCode())) {
+            final String childId = parChildMap.get(parentId);
+            logger.info("Testing parentID: " + parentId + " and childId: " + childId);
+
+            url = "/refset/" + getRefsetInternalId(TESTING_REFSET_ID)
+                    + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId="
+                    + parentId + "&refsetInternalId=" + getRefsetInternalId(TESTING_REFSET_ID);
+            logger.info("Testing url - " + url);
+
+            result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            ConceptResultList children =
+                    new ObjectMapper().readValue(content, (ConceptResultList.class));
+
+            // Find Child
+            childConcept = null;
+            for (Concept child : children.getItems()) {
+                if (child.getCode().equals(childId)) {
+                    assertThat(child.getHasDescendantRefsetMembers()).isTrue();
+                    childConcept = child;
+                    break;
+                }
             }
+
+            assertThat(childConcept).isNotNull();
+            parentId = childId;
         }
 
-        assertThat(concept).isNotNull();
-        assertThat(concept.getCode()).isEqualTo(conceptIdToExamine);
+        // Expected concept found
+        validateConcept(childConcept, firstConIdToExamine, "20200315", true, firstConceptDescList,
+                0, 0, 0);
 
-        final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-        assertThat(concept.getMemberEffectiveTime())
-                .isEqualTo(SIMPLE_DATE_FORMAT.parse(expectedEffectiveTime));
-        assertTrue(concept.isMemberOfRefset());
-        assertTrue(concept.isMemberStatus());
-        assertThat(concept.getDescriptions().size()).isEqualTo(4); // The 5th
-                                                                   // active
-                                                                   // description
-                                                                   // is
-                                                                   // Acceptable,
-                                                                   // so
-                                                                   // shouldn't
-                                                                   // be
-                                                                   // returned
-        assertThat(concept.getRoleGroups().size()).isEqualTo(0);
+        // Test bad root
+        url = "/refset/" + INVALID_REFSET_ID
+                + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId="
+                + SNOMED_ROOT + "&refsetInternalId=" + INVALID_REFSET_ID;
+        logger.info("Testing url - " + url);
 
-        // Call does not pull in parents & Children
-        assertTrue(concept.getHasChildren());
-        assertThat(concept.getParents().size()).isEqualTo(0);
-        assertThat(concept.getChildren().size()).isEqualTo(0);
+        result = mvc.perform(get(url)).andExpect(status().is5xxServerError()).andReturn();
+        String content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
 
+        assertThat(content).isEmpty();
     }
 
     /**
@@ -733,6 +990,12 @@ public class RefsetControllerTests extends BaseTest {
             assertThat(refsets.getItems().size()).isGreaterThan(0);
 
             Refset refset = refsets.getItems().get(0);
+
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + requestedId
+                        + " does not exist in the RT2 database");
+            }
+
             assertThat(refset).isNotNull();
             assertThat(refset.getRefsetId()).isEqualTo(requestedId);
 
@@ -767,6 +1030,7 @@ public class RefsetControllerTests extends BaseTest {
 
     /**
      * Test getting list of version statuses.
+     * @return
      *
      * @throws Exception the exception
      */
@@ -790,29 +1054,67 @@ public class RefsetControllerTests extends BaseTest {
 
     }
 
-    /**
-     * Test getting editions.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testEditions() throws Exception {
+    private void testRefsetMetadata(Refset refset) {
+        assertThat(refset).isNotNull();
+        assertThat(refset.getRefsetId()).isEqualTo(TESTING_REFSET_ID);
 
-        String url = null;
-        MvcResult result = null;
-        String content = null;
+        assertThat(refset.getName()).isEqualToIgnoringCase(
+                "Belgian simple reference set for translated animal materials");
+        assertThat(refset.getNarrative()).isEqualToIgnoringCase(
+                "descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
+        assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
+        assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
+        assertThat(refset.getModuleId()).isEqualTo("11000172109");
+        assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("Belgian Edition");
+        assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
+        assertThat(refset.getVersionStatus()).isEqualToIgnoringCase("published");
+        assertThat(refset.getVersionNotes()).isNull();
+        assertThat(refset.getProject().getName()).isEqualTo("Belgian Extension Project");
 
-        url = baseUrl + "/editions";
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        ResultList<TypeKeyValue> editions = new ObjectMapper().readValue(content,
-                (new TypeReference<ResultList<TypeKeyValue>>() {
-                    /* NA */}));
-        assertThat(editions).isNotNull();
-        assertThat(editions.getItems().size()).isGreaterThan(8);
+        assertThat(refset.isActive()).isTrue();
+        assertThat(refset.isLocalSet()).isFalse();
+        assertThat(refset.isPrivateRefset()).isFalse();
+
+        // Collection - Tags
+        assertThat(refset.getTags().size()).isEqualTo(1);
+        assertThat(refset.getTags().iterator().next()).isEqualTo("General / Allergies");
+
+        // Version Date
+        assertThat(refset.getVersionDate()).isEqualToIgnoringHours("2020-09-15");
+    }
+
+    private void validateConcept(Concept concept, String conId, String effectiveTime,
+        boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize,
+        int childSize) throws ParseException {
+
+        assertThat(concept).isNotNull();
+        assertThat(concept.getCode()).isEqualTo(conId);
+
+        final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+        assertThat(concept.getMemberEffectiveTime())
+                .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(effectiveTime));
+        assertThat(concept.isMemberOfRefset()).isEqualTo(isRefsetMember);
+        assertThat(concept.getDescriptions().size()).isEqualTo(descriptionList.size());
+        for (String matchingDesc : descriptionList) {
+            verifyDescExist(concept.getDescriptions(), matchingDesc);
+        }
+        assertThat(concept.getRoleGroups().size()).isEqualTo(roleGroupSize);
+
+        assertThat(concept.getParents().size()).isEqualTo(parentSize);
+        assertThat(concept.getChildren().size()).isEqualTo(childSize);
 
     }
 
+    private void verifyDescExist(List<Map<String, String>> descriptions, String matchingTerm) {
+        boolean descFound = false;
+
+        for (Map<String, String> descriptionGroup : descriptions) {
+            if (descriptionGroup.get(DESCRIPTION_TERM).equalsIgnoreCase(matchingTerm)) {
+                descFound = true;
+                break;
+            }
+        }
+
+        assertTrue(descFound);
+    }
 }
