@@ -32,9 +32,6 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /** The version. */
     private String version;
 
-    /** Is this concept's membership status in the refset active. */
-    private boolean memberStatus;
-
     /** The is this concept a member of the refset. */
     private boolean memberOfRefset;
 
@@ -53,7 +50,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The flag for if a user can see the feedback for this concept. */
     private boolean feedbackVisible;
-    
+
     /** The flag for if concept is defined or primitive. */
     private boolean defined;
 
@@ -63,8 +60,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     private List<Concept> parents = new ArrayList<>();
 
     /**
-     * Does this concept have ancestors that are members of the
-     * refset.
+     * Does this concept have ancestors that are members of the refset.
      */
     private boolean hasAncestorRefsetMembers;
 
@@ -72,12 +68,11 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     private List<Concept> children = new ArrayList<>();
 
     /**
-     * Does this concept have descendants that are members of the
-     * refset.
+     * Does this concept have descendants that are members of the refset.
      */
     private boolean hasDescendantRefsetMembers;
 
-	private Map<Integer, List<String>> roleGroups = new HashMap<>();
+    private Map<Integer, List<String>> roleGroups = new HashMap<>();
 
     /**
      * Instantiates an empty {@link Concept}.
@@ -130,7 +125,6 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         terminology = other.getTerminology();
         version = other.getVersion();
         memberEffectiveTime = other.getMemberEffectiveTime();
-        memberStatus = other.isMemberStatus();
         parents = other.getParents();
         hasAncestorRefsetMembers = other.getHasAncestorRefsetMembers();
         children = other.getChildren();
@@ -212,24 +206,6 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      */
     public void setVersion(final String version) {
         this.version = version;
-    }
-
-    /**
-     * Checks if is member status.
-     *
-     * @return true, if is member status
-     */
-    public boolean isMemberStatus() {
-        return memberStatus;
-    }
-
-    /**
-     * Sets the member status.
-     *
-     * @param memberStatus the new member status
-     */
-    public void setMemberStatus(boolean memberStatus) {
-        this.memberStatus = memberStatus;
     }
 
     /**
@@ -426,9 +402,9 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         return roleGroups;
     }
 
-	public void setRoleGroups(Map<Integer, List<String>> map) {
+    public void setRoleGroups(Map<Integer, List<String>> map) {
         this.roleGroups = map;
-	}
+    }
 
     /**
      * @return the isDefined
@@ -461,7 +437,6 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((children == null) ? 0 : children.hashCode());
         result = prime * result + ((parents == null) ? 0 : parents.hashCode());
         result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
-        result = prime * result + (memberStatus ? 1 : 0);
         result = prime * result + (memberOfRefset ? 1 : 0);
         result = prime * result + (hasChildren ? 1 : 0);
         result = prime * result + (defined ? 1 : 0);
@@ -578,10 +553,6 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
             return false;
         }
 
-        if (memberStatus != other.memberStatus) {
-            return false;
-        }
-
         if (hasDescendantRefsetMembers != other.hasDescendantRefsetMembers) {
             return false;
         }
@@ -597,7 +568,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         if (hasChildren != other.hasChildren) {
             return false;
         }
-        
+
         if (defined != other.defined) {
             return false;
         }
