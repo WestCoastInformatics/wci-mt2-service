@@ -139,7 +139,7 @@ public class RefsetMemberService {
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 500;
 
     private static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
-    
+
     static {
 
         EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + File.separator;
@@ -176,6 +176,11 @@ public class RefsetMemberService {
 
         try (final TerminologyService service = new TerminologyService()) {
             Refset refset = service.get(refsetInternalId, Refset.class);
+
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
 
             final List<String> nonDefaultPreferredTerms =
                     identifyNonDefaultPreferredTerms(refset.getEdition());
@@ -220,6 +225,11 @@ public class RefsetMemberService {
 
         try (final TerminologyService service = new TerminologyService()) {
             Refset refset = service.get(refsetInternalId, Refset.class);
+
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
 
             final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
                     + "/concepts?ecl=%5E%20" + refset.getRefsetId() + "&offset=0&limit=10000"
@@ -599,6 +609,11 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
+
             try {
                 S3ConnectionWrapper.connectToAmazonS3();
             } catch (Exception e) {
@@ -720,6 +735,11 @@ public class RefsetMemberService {
 
         try (final TerminologyService service = new TerminologyService()) {
             final Refset refset = service.get(refsetInternalId, Refset.class);
+
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
 
             S3ConnectionWrapper.connectToAmazonS3();
 
@@ -1181,6 +1201,11 @@ public class RefsetMemberService {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
+
             refsetFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset)
                     + "_member_ids.txt";
             zipOutputPath += refsetFileName.replace(".txt", ".zip");
@@ -1262,6 +1287,12 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
+
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
+
             service.close();
 
             refsetFileName =
@@ -1735,6 +1766,12 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
+
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
+
             members = searchRefsetMembers(refset, searchParameters);
             populateAllLanguageDescriptions(refset, members.getItems());
 
@@ -2128,8 +2165,6 @@ public class RefsetMemberService {
                         if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL
                                 || i == currentList.getItems().size() - 1) {
 
-                            // TODO Jan 10- Why getting descriptions a second
-                            // time?
                             populateAllLanguageDescriptions(refset, conceptsToProcess);
                             conceptsToProcess.clear();
                         }
@@ -2739,6 +2774,11 @@ public class RefsetMemberService {
 
                     final Refset refset = service.get(refsetInternalId, Refset.class);
 
+                    if (refset == null) {
+                        throw new Exception("Refset Internal Id: " + refsetInternalId
+                                + " does not exist in the RT2 database");
+                    }
+
                     final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
                             + "/members?referenceSet=" + refset.getRefsetId()
                             + "&referencedComponentId=" + referencedComponentId;
@@ -2844,7 +2884,7 @@ public class RefsetMemberService {
         concept.setHistoryVisible(true);
         concept.setFeedbackVisible(true);
     }
-    
+
     /**
      * Populate the user permissions properties on a concept.
      *
@@ -2852,18 +2892,19 @@ public class RefsetMemberService {
     public static void cacheAllMemberAncestors() {
 
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             final PfsParameter pfs = new PfsParameter();
             pfs.setAscending(false);
             pfs.setSort("latestVersion");
-            
+
             final ResultList<String> refsetIds = service.findIds("", null, Refset.class, null);
-            logger.info("Starting to cache member ancestors for all " + refsetIds.getItems().size() + " refsets");
-            
-            for (final String refsetId: refsetIds.getItems()) {
+            logger.info("Starting to cache member ancestors for all " + refsetIds.getItems().size()
+                    + " refsets");
+
+            for (final String refsetId : refsetIds.getItems()) {
                 cacheMemberAncestors(refsetId);
             }
-            
+
         } catch (Exception e) {
             logger.error("Could not cache all member ancestors", e);
         }
@@ -2874,6 +2915,11 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
+
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
 
             // if ancestors are already cached no need to repeat
             if (ancestorsCache.containsKey(refsetInternalId)) {
