@@ -764,7 +764,7 @@ public class RefsetMemberService {
                     String candidateVersion = entry.get("date");
                     if (candidateVersion != null
                             && candidateVersion.replaceAll("-", "")
-                                    .compareTo(startEffectiveTime) >= 0
+                                    .compareTo(startEffectiveTime) > 0
                             && candidateVersion.replaceAll("-", "")
                                     .compareTo(transientEffectiveTime) <= 0) {
                         versionsInScope.add(candidateVersion);
