@@ -65,9 +65,11 @@ public class RefsetControllerTests extends BaseTest {
     // production
     private static final String TESTING_REFSET_ID = "561000172108"; // Belgian
 
-    private static final String INACTIVE_CONCEPT_ID = "727156001";
+    private static final String INACTIVE_CONCEPT_ID = "727156001"; // Was active in Lateralizable (723264001)
 
-    private static final String REFSET_WITH_INACTIVE_CONCEPT = "723264001";
+    private static final String MEMBER_WITH_HX_CONCEPT_ID = "120572007"; // Inactived in Lateralizable (723264001) on 20190131
+
+    private static final String REFSET_WITH_INACTIVE_CONCEPT = "723264001"; 
 
     private static final String DESCRIPTION_TERM = "term";
 
@@ -344,34 +346,6 @@ public class RefsetControllerTests extends BaseTest {
     }
 
     /**
-     * Test getting the member concepts of a refset.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testRefsetDetailsTaxonomy() throws Exception {
-
-        String url = null;
-        MvcResult result = null;
-        String content = null;
-        ConceptResultList children = null;
-        String refsetTerminologyId = "0b3133c4-7e27-4a12-88c2-58d2f5d612ee"; // getRefsetInternalId();
-
-        url = baseUrl + "/" + refsetTerminologyId
-                + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId=404684003"; // 5a2f0f94-da88-4b20-a6b5-ca9990fbbc1f
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        children = new ObjectMapper().readValue(content, (ConceptResultList.class));
-        assertThat(children).isNotNull();
-        assertThat(children.getItems().size()).isGreaterThan(0);
-        assertThat(children.getItems().get(0).getDescriptions().size()).isGreaterThan(0);
-
-        logger.info("Done -- Just returned refset with " + children.size() + " members.");
-    }
-
-    /**
      * Test exporting a refset SCTID list.
      *
      * @throws Exception the exception
@@ -568,6 +542,7 @@ public class RefsetControllerTests extends BaseTest {
         logger.info("File Url: " + fileUrl);
 
         assertThat(fileUrl.contentEquals("https://gps.snomed.org/"));
+        assertThat(1).isEqualTo(2);
     }
 
     /**
@@ -848,16 +823,13 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    // je @Test
     public void testMemberHistory() throws Exception {
 
-        // with 1 parent & 5 children & 1 role group of 4 rels
-        // descriptions in all 3 lang
-        final String conceptIdToExamine = "727156001"; // "771410009";
-        final String refsetId = "723264001"; // "723264001";
+        // MEMBER_WITH_HX_CONCEPT_ID activated in Jan 31 2017 and inactivated in Jan 31 2019
 
         final String url =
-                "/refset/" + getRefsetInternalId(refsetId) + "/member/" + conceptIdToExamine;
+                "/refset/" + getRefsetInternalId(REFSET_WITH_INACTIVE_CONCEPT) + "/member/" + MEMBER_WITH_HX_CONCEPT_ID;
         logger.info("Testing url - " + url);
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -876,9 +848,9 @@ public class RefsetControllerTests extends BaseTest {
             final String version = historyEntry.get("version");
             final String change = historyEntry.get("change");
 
-            assertThat(version.equals("2017-07-31") || version.equals("2018-07-31"));
+            assertThat(version.equals("2017-01-31") || version.equals("2019-01-31"));
 
-            if (version.equals("2018-07-31")) {
+            if (version.equals("2019-01-31")) {
                 assertThat(change.equals("Inactivated"));
             } else {
                 assertThat(change.equals("Added"));
@@ -914,7 +886,7 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    // je @Test
     public void testVersionStatuses() throws Exception {
 
         String url = null;
@@ -940,8 +912,8 @@ public class RefsetControllerTests extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
-    public void testVersions() throws Exception {
+    // je @Test
+    public void testNumberOfVersionsAcrossRefsets() throws Exception {
 
         String url = null;
         MvcResult result = null;
@@ -956,7 +928,7 @@ public class RefsetControllerTests extends BaseTest {
                 (new TypeReference<ResultList<TypeKeyValue>>() {
                     /* NA */}));
         assertThat(versions).isNotNull();
-        assertThat(versions.getTotal()).isGreaterThan(5);
+        assertThat(versions.getTotal()).isGreaterThan(20);
 
     }
 

@@ -1035,7 +1035,7 @@ public class RefsetController extends BaseController {
 
                 });
                 results.setItems(resultItems);
-                results.setTotalKnown(true);
+                results.setTotal(resultItems.size());
 
                 return results;
             }
