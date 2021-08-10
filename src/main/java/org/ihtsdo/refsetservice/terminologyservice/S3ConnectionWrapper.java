@@ -2,12 +2,14 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -15,10 +17,20 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.internal.Constants;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
+import com.amazonaws.services.s3.model.DeleteObjectsResult;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 /**
  * Class to handle making calls to Snowstorm.
@@ -27,7 +39,7 @@ public class S3ConnectionWrapper {
 
     /** The config properties. */
     private final Properties properties = PropertyUtility.getProperties();
-    
+
     /** The snowstorm url. */
     public static String ID;
 
@@ -37,7 +49,7 @@ public class S3ConnectionWrapper {
     public static String BUCKET;
 
     public static Regions REGION;
-    
+
     public static String FOLDER_DIRECTORY;
 
     private static AmazonS3 s3Client;
@@ -77,15 +89,17 @@ public class S3ConnectionWrapper {
                 s3Client.listBuckets();
             } catch (SdkClientException e) {
                 // Connect to server with static keys
-                
-                AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().withRegion(REGION);
-                
+
+                AmazonS3ClientBuilder clientBuilder =
+                        AmazonS3ClientBuilder.standard().withRegion(REGION);
+
                 if (ID != null && !ID.equals("") && !ID.equals("none") && !ID.equals("change_me")) {
-                    
+
                     BasicAWSCredentials awsCreds = new BasicAWSCredentials(ID, KEY);
-                    clientBuilder = clientBuilder.withCredentials(new AWSStaticCredentialsProvider(awsCreds));
+                    clientBuilder = clientBuilder
+                            .withCredentials(new AWSStaticCredentialsProvider(awsCreds));
                 }
-                
+
                 s3Client = clientBuilder.build();
 
                 // Check connection again. If this fails as well, it will throw
@@ -151,6 +165,32 @@ public class S3ConnectionWrapper {
         }
         s3is.close();
         fos.close();
+    }
+
+    public static boolean deleteRefsetFromAws(String awsPath) {
+        ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(BUCKET).withPrefix(awsPath);
+        ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
+        
+        ArrayList<KeyVersion> keys = new ArrayList<KeyVersion>();
+        for (S3ObjectSummary obj : listing.getObjectSummaries()) {
+            keys.add(new KeyVersion(obj.getKey()));
+        }
+        
+        if (keys.isEmpty()) {
+            return true;
+        }
+        DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(BUCKET)
+                .withKeys(keys)
+                .withQuiet(false);
+
+        s3Client.deleteObjects(deleteRequest);
+        DeleteObjectsResult delObjRes = s3Client.deleteObjects(deleteRequest);
+        
+        
+        int successfulDeletes = delObjRes.getDeletedObjects().size();
+        System.out.println(successfulDeletes + " objects successfully deleted.");
+        
+        return successfulDeletes > 0;
     }
 
 }
