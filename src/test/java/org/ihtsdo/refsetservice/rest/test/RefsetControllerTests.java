@@ -38,6 +38,7 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,9 @@ public class RefsetControllerTests extends BaseTest {
 
     /** The config properties. */
     private final Properties properties = PropertyUtility.getProperties();
+
+    /** The logger. */
+    private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
 
     /** The Constant TESTING_REFSET_ID. */
     // Belgian simple reference set for translated animal materials w/101
@@ -97,18 +101,13 @@ public class RefsetControllerTests extends BaseTest {
 
     private static final String SNOMED_ROOT = "138875005";
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
+    private static final List<String> firstConceptDescList = new ArrayList<>();
 
-    /** The mvc. */
-    @Autowired
-    private MockMvc mvc;
+    private static final List<String> secondConceptDescList = new ArrayList<>();
 
-    /** The object mapper. */
-    private ObjectMapper objectMapper;
+    private static final List<String> inactiveConceptDescList = new ArrayList<>();
 
-    /** The base url. */
-    private String baseUrl = "";
+    private static final List<String> detailSearchNonAcceptableConceptDescList = new ArrayList<>();
 
     private static final String TWO_VERSION_DELTA_FILE_PATH =
             "src/test/resources/refsetService/Lateralizable Delta 201801 to 201807.txt";
@@ -122,19 +121,25 @@ public class RefsetControllerTests extends BaseTest {
     private static final String LIST_OF_SCTIDS_FILE_PATH =
             "src/test/resources/refsetService/561000172108 ListOfSctIds 20200315.txt";
 
-    private static final List<String> firstConceptDescList = new ArrayList<>();
+    /** The mvc. */
+    @Autowired
+    private MockMvc mvc;
 
-    private static final List<String> secondConceptDescList = new ArrayList<>();
+    /** The object mapper. */
+    private ObjectMapper objectMapper;
 
-    private static final List<String> inactiveConceptDescList = new ArrayList<>();
-
-    private static final List<String> detailSearchNonAcceptableConceptDescList = new ArrayList<>();
+    /** The base url. */
+    private String baseUrl = "";
 
     /**
      * Sets the up.
      */
     @BeforeEach
-    public void setUp() {
+    public void setUp(TestInfo info) {
+        // skip @BeforeEach in testRttMigration
+        if (info.getDisplayName().equals("testRttMigration()")) {
+            return;
+        }
 
         objectMapper = new ObjectMapper();
         JacksonTester.initFields(this, objectMapper);
