@@ -538,62 +538,6 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(content).isEmpty();
     }
 
-    @Test
-    public void testExportFreeset() throws Exception {
-
-        String url = null;
-        MvcResult result = null;
-        String resultString = null;
-
-        /* Valid Freeset Refset */
-        url = "/export/" + gpsRefsetInternalId + "/?format=free_set";
-        logger.info("Testing url - " + url);
-
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        resultString = result.getResponse().getContentAsString();
-
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(resultString);
-        String fileUrl = (root.get("url")).asText();
-        boolean redirect = (root.get("redirect")).asBoolean();
-        logger.info("File Url: " + fileUrl);
-
-        assertThat(fileUrl.contentEquals("https://gps.snomed.org/"));
-        assertThat(redirect).isTrue();
-
-        /* Non-Freeset Refset */
-        url = "/export/" + mainTestingRefsetInternalId + "/?format=free_set";
-        logger.info("Testing url - " + url);
-
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        resultString = result.getResponse().getContentAsString();
-        mapper = new ObjectMapper();
-        root = mapper.readTree(resultString);
-        fileUrl = (root.get("url")).asText();
-        redirect = (root.get("redirect")).asBoolean();
-        logger.info("File Url: " + fileUrl);
-
-        assertThat(fileUrl).contains("Requested refset " + mainTestingRefsetInternalId
-                + " does not support exporting as a freeset");
-        assertThat(redirect).isFalse();
-
-        /* Invalid Refset */
-        url = "/export/" + INVALID_INTERNAL_REFSET_ID + "/?format=free_set";
-        logger.info("Testing url - " + url);
-
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        resultString = result.getResponse().getContentAsString();
-        mapper = new ObjectMapper();
-        root = mapper.readTree(resultString);
-        fileUrl = (root.get("url")).asText();
-        redirect = (root.get("redirect")).asBoolean();
-        logger.info("File Url: " + fileUrl);
-
-        assertThat(fileUrl).contains("Requested refset " + INVALID_INTERNAL_REFSET_ID
-                + " does not support exporting as a freeset");
-        assertThat(redirect).isFalse();
-    }
-
     /**
      * Test getting concept list.
      *
