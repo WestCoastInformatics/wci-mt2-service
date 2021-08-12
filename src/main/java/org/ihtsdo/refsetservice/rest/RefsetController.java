@@ -600,7 +600,7 @@ public class RefsetController extends BaseController {
                     value = "For formats with names which language to display the name in.",
                     required = false, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "format",
-                    value = "The type of export: 'rf2', 'rf2_with_names', 'free_set', or 'sctids'.",
+                    value = "The type of export: 'rf2', 'rf2_with_names', ' or 'sctids'.",
                     required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "fileNameDate",
                     value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.",
@@ -663,27 +663,7 @@ public class RefsetController extends BaseController {
                         String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId,
                                 exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
-                    } else if (format.equals("free_set")) {
-                        final Refset refset = service.get(refsetInternalId, Refset.class);
-                        String uri = "";
-                        String freesetExceptions =
-                                PropertyUtility.getProperty("freeset.exceptions");
-                        if (freesetExceptions == null
-                                || !freesetExceptions.contains(refset.getRefsetId())) {
-                            uri = RefsetMemberService.exportFreeset(refsetInternalId);
-                            url = "{\"url\": \"" + uri + "\", \"redirect\": false}";
-                        } else {
-
-                            String[] tokens = FieldedStringTokenizer.split(freesetExceptions, "|");
-                            for (int i = 0; i < tokens.length - 1; i++) {
-                                if (tokens[i].contentEquals(refset.getRefsetId())) {
-                                    uri = tokens[i + 1];
-                                }
-                            }
-                            url = "{\"url\": \"" + uri + "\", \"redirect\": true}";
-                        }
-
-                    }
+                    } 
 
                     return url;
 
