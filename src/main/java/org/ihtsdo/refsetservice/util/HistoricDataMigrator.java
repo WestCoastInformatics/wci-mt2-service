@@ -1,9 +1,7 @@
 package org.ihtsdo.refsetservice.util;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -274,11 +272,14 @@ public class HistoricDataMigrator {
 
     private final Counts counts = new Counts();
 
-    private boolean runLocally = false;
+    private final Set<String> debugRttOrgTranslations = new HashSet<>();
 
     public void migrate() throws Exception {
         Set<String> internationalModules = createEditionsFromSnowstorm();
+        logger.debug("Num internationalModules: " + internationalModules.size());
+
         Map<String, SortedMap<Date, String>> branches = identifyBranches();
+        logger.debug("Num branches: " + branches.size());
 
         createRefsetsFromSnowstorm(branches, internationalModules);
 
@@ -286,8 +287,7 @@ public class HistoricDataMigrator {
         parseRttData();
 
         // Skip those refsets that live on SnowS, but are not yet in RTT DB dmp
-        // file
-        // that we are using
+        // file that we are using
         for (Refset refset : snowstormRefsets) {
             if (!rttRefsetSctIdToRttIdMap.keySet().contains(refset.getRefsetId())) {
                 if (internationalRefsets.contains(refset.getRefsetId())) {
@@ -470,30 +470,26 @@ public class HistoricDataMigrator {
     private Set<Refset> createRefsetsFromSnowstorm(
         Map<String, SortedMap<Date, String>> branchChildrenByEdition,
         Set<String> internationalModules) throws Exception {
-        BufferedWriter writer = null;
-
-        if (runLocally) {
-            writer = new BufferedWriter(new FileWriter("RefsetsDiscoveredOnSnowstorm.txt"));
-        }
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
-            logger.info("Starting processing Refsets");
+            logger.info("---> Starting to identify Refsets on Snowstorm by edition/version pair");
 
             for (String editionId : branchChildrenByEdition.keySet()) {
                 final Edition edition = service.get(editionId, Edition.class);
 
-                logger.info("Processing Edition: " + edition.getName());
-
-                if (runLocally) {
-                    writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
-                }
-
                 String url = SnowstormConnection.BASE_URL
                         + "browser/{branch}/members?active=true&referenceSet=%3C"
                         + SIMPLE_TYPE_REFSET_SCTID + "&module=%3C%3C" + edition.getTopLevelModule();
+
+                if (editionId.equals(branchChildrenByEdition.keySet().iterator().next())) {
+                    logger.debug("   URL to identify refsets and the way updated per branch: " + url
+                            + " with following code: <<url.replace(\"{branch}\", childBranch)>>\n");
+                }
+
+                logger.info("\t*** Processing Edition: " + edition.getName());
 
                 boolean isInternationalEdition =
                         ("international edition".equals(edition.getName().toLowerCase())) ? true
@@ -508,9 +504,8 @@ public class HistoricDataMigrator {
                         continue;
                     }
 
-                    logger.info("Identifying refsets in Snowstorm for " + edition.getName()
-                            + " for version " + childBranch);
-                    logger.debug("   with url: " + url.replace("{branch}", childBranch));
+                    logger.debug("Identifying Snowstorm refsets in version " + childBranch + " of "
+                            + edition.getName());
 
                     try (final Response response =
                             SnowstormConnection.getResponse(url.replace("{branch}", childBranch))) {
@@ -541,11 +536,15 @@ public class HistoricDataMigrator {
                             }
                             final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
-                            logger.debug("RefsetId: " + refsetId);
 
+                            /*-
+                             *  Only process refset are either
+                             *  a) Listed in international edition or 
+                             *  b) In a non-international module
+                            
+                             */
                             if (isInternationalEdition
                                     || !internationalModules.contains(moduleId)) {
-                                // Process Valid Refset
                                 try {
                                     Refset refset = new Refset();
 
@@ -567,13 +566,15 @@ public class HistoricDataMigrator {
                                     counts.incrementRefsetVersionPairsCounts();
 
                                     if (!uniqueRefsetIds.contains(refsetId)) {
-                                        if (runLocally) {
-                                            writer.write("Adding unique refset(" + refsetId + ") - "
-                                                    + refset.getName() + "\n");
-                                        }
+                                        logger.debug("Identifying refset (" + refsetId
+                                                + ") for first time in this version - "
+                                                + branchDateFormatter
+                                                        .format(refset.getVersionDate()));
 
                                         uniqueRefsetIds.add(refsetId);
                                         counts.incrementUniqueRefsetsCounts();
+                                    } else {
+                                        logger.debug("Again seeing: " + refsetId);
                                     }
                                 } catch (Exception e) {
                                     logger.error("Failed with message: " + e.getMessage()
@@ -587,10 +588,6 @@ public class HistoricDataMigrator {
 
                     }
                 }
-            }
-
-            if (runLocally) {
-                writer.close();
             }
         }
 
@@ -916,12 +913,6 @@ public class HistoricDataMigrator {
      * @throws Exception the exception
      */
     private void persistObjects() throws Exception {
-        BufferedWriter writer = null;
-
-        if (runLocally) {
-            writer = new BufferedWriter(new FileWriter("RefsetsAddedToRt2.txt"));
-        }
-
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
@@ -974,10 +965,11 @@ public class HistoricDataMigrator {
 
                     if (!refsetsAdded.contains(refset.getRefsetId())) {
                         refsetsAdded.add(refset.getRefsetId());
-                        if (runLocally) {
-                            writer.write(refset.getRefsetId() + "\t0\n");
-                        }
                         counts.incrementUniqueNoMetadataCount();
+
+                        logger.debug("Persisting " + refset.getRefsetId() + " in "
+                                + branchDateFormatter.format(refset.getVersionDate()) + " in "
+                                + refset.getEdition().getName());
                     }
 
                     counts.incrementNoMetadataCount();
@@ -1000,7 +992,7 @@ public class HistoricDataMigrator {
 
                     Organization org = null;
                     if (!organizationsAdded.containsKey(translatedOrgName)) {
-                        logger.info(
+                        logger.debug(
                                 "    ****   Warning - Ran across an organization that doesn't reside in Snowstorm!");
                         org = addOrganziation(translatedOrgName, defaultMeta);
                         organizationsAdded.put(translatedOrgName, org);
@@ -1032,13 +1024,9 @@ public class HistoricDataMigrator {
                         refsetsAdded.add(refset.getRefsetId());
                         counts.incrementUniqueRttMetadataCount();
 
-                        if (runLocally) {
-                            if (refset.isPrivateRefset()) {
-                                writer.write(refset.getRefsetId() + "\t1\tprivate\n");
-                            } else {
-                                writer.write(refset.getRefsetId() + "\t1\n");
-                            }
-                        }
+                        logger.debug("Persisting " + refset.getRefsetId() + " in "
+                                + branchDateFormatter.format(refset.getVersionDate()) + " in "
+                                + refset.getEdition().getName());
                     }
 
                     counts.incrementRttMetadataCount();
@@ -1052,10 +1040,6 @@ public class HistoricDataMigrator {
                     logger.info("Imported + " + count + " refsets thus far");
                 }
 
-            }
-
-            if (runLocally) {
-                writer.close();
             }
 
             logger.info("Have imported " + projectCount + " projects and "
@@ -1081,16 +1065,18 @@ public class HistoricDataMigrator {
 
             logger.info("Total of " + ignoreCounter + " refsets ignored");
         } catch (Exception e) {
-            writer.close();
             logger.error("Have issue with: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private String translateRttOrg(String name) {
-        logger.debug("Here with " + name);
-        String shortName = null;
+        if (!debugRttOrgTranslations.contains(name)) {
+            debugRttOrgTranslations.add(name);
+            logger.debug("First time seeing: " + name);
+        }
 
+        String shortName = null;
         if (name.equals("Swedish NRC")) {
             shortName = "SNOMEDCT-SE";
         } else if (name.equals("New Zealand Ministry of Health")) {
@@ -1106,7 +1092,7 @@ public class HistoricDataMigrator {
         if (shortName != null) {
             return editionOwnerMap.get(shortName);
         } else {
-            return name + " (second wave)";
+            return name;
         }
     }
 
