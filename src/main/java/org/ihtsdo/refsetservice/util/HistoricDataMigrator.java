@@ -222,11 +222,11 @@ public class HistoricDataMigrator {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(HistoricDataMigrator.class);
 
-    ClassPathResource projectsResource = new ClassPathResource("projects.txt");
+    ClassPathResource projectsResource = new ClassPathResource("service/rtt-migration/projects.txt");
 
-    ClassPathResource clausesResource = new ClassPathResource("clauses.txt");
+    ClassPathResource clausesResource = new ClassPathResource("service/rtt-migration/clauses.txt");
 
-    ClassPathResource refsetsResource = new ClassPathResource("refsets.txt");
+    ClassPathResource refsetsResource = new ClassPathResource("service/rtt-migration/refsets.txt");
 
     /** The metadata map. */
     private final Map<String, Metadata> metadataMap = new HashMap<>();
