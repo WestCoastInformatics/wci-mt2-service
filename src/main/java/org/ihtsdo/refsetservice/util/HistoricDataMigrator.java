@@ -1,8 +1,8 @@
 package org.ihtsdo.refsetservice.util;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,6 +28,7 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -221,15 +222,11 @@ public class HistoricDataMigrator {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(HistoricDataMigrator.class);
 
-    /** The projects file. */
-    private final String projectsFile = "src/test/resources/migration/refsetsToImport/projects.txt";
+    ClassPathResource projectsResource = new ClassPathResource("projects.txt");
 
-    /** The clauses file. */
-    private final String clausesFile = "src/test/resources/migration/refsetsToImport/clauses.txt";
+    ClassPathResource clausesResource = new ClassPathResource("clauses.txt");
 
-    /** The all refsets file path. */
-    private final String allRefsetsFilePath =
-            "src/test/resources/migration/refsetsToImport/refsets.txt";
+    ClassPathResource refsetsResource = new ClassPathResource("refsets.txt");
 
     /** The metadata map. */
     private final Map<String, Metadata> metadataMap = new HashMap<>();
@@ -296,7 +293,7 @@ public class HistoricDataMigrator {
                     logger.debug(
                             "Going to ignore Int'l refsets supported in " + refset.getEditionName()
                                     + " - " + refset.getRefsetId() + " - " + refset.getName());
-                 }
+                }
             }
         }
 
@@ -846,17 +843,16 @@ public class HistoricDataMigrator {
     /**
      * Generate json from sql file.
      *
-     * @param inputFile the input file
+     * @param classPathResource the input resource
      * @param processType the process type
      * @throws Exception the exception
      */
-    private void populateFromFile(final String inputFile, final FileProcessType processType)
-        throws Exception {
+    private void populateFromFile(final ClassPathResource classPathResource,
+        final FileProcessType processType) throws Exception {
         BufferedReader reader;
 
         try {
-            reader = new BufferedReader(new FileReader(inputFile));
-            logger.debug("Reading RTT File: " + inputFile);
+            reader = new BufferedReader(new InputStreamReader(classPathResource.getInputStream()));
 
             // Grab Header on 2nd time through
             String line = reader.readLine();
@@ -1291,9 +1287,9 @@ public class HistoricDataMigrator {
      * @throws Exception the exception
      */
     private void parseRttData() throws Exception {
-        populateFromFile(clausesFile, FileProcessType.CLAUSE);
-        populateFromFile(projectsFile, FileProcessType.PROJECT);
-        populateFromFile(allRefsetsFilePath, FileProcessType.REFSET);
+        populateFromFile(clausesResource, FileProcessType.CLAUSE);
+        populateFromFile(projectsResource, FileProcessType.PROJECT);
+        populateFromFile(refsetsResource, FileProcessType.REFSET);
 
         // Based on findings, define the list of refsets in RTT
         rttRefsetIds = rttRefsetSctIdToRttIdMap.keySet();
