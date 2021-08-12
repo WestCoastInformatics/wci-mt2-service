@@ -292,10 +292,11 @@ public class HistoricDataMigrator {
             if (!rttRefsetSctIdToRttIdMap.keySet().contains(refset.getRefsetId())) {
                 if (internationalRefsets.contains(refset.getRefsetId())) {
                     refsetsToIgnore.add(refset.getRefsetId());
-                    logger.debug("Int'l refsets supported by extensions for: "
-                            + refset.getEditionName() + " refset: " + refset.getName() + " ("
-                            + refset.getRefsetId() + ")");
-                }
+
+                    logger.debug(
+                            "Going to ignore Int'l refsets supported in " + refset.getEditionName()
+                                    + " - " + refset.getRefsetId() + " - " + refset.getName());
+                 }
             }
         }
 
@@ -855,10 +856,14 @@ public class HistoricDataMigrator {
 
         try {
             reader = new BufferedReader(new FileReader(inputFile));
+            logger.debug("Reading RTT File: " + inputFile);
 
             // Grab Header on 2nd time through
             String line = reader.readLine();
+            logger.debug("FIRST LINE OF FILE: " + line);
+
             line = reader.readLine();
+            logger.debug("Second LINE OF FILE: " + line);
 
             while (line != null) {
                 switch (processType) {
