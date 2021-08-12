@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
@@ -273,6 +274,8 @@ public class HistoricDataMigrator {
 
     private final Counts counts = new Counts();
 
+    private boolean runLocally = false;
+
     public void migrate() throws Exception {
         Set<String> internationalModules = createEditionsFromSnowstorm();
         Map<String, SortedMap<Date, String>> branches = identifyBranches();
@@ -467,19 +470,26 @@ public class HistoricDataMigrator {
     private Set<Refset> createRefsetsFromSnowstorm(
         Map<String, SortedMap<Date, String>> branchChildrenByEdition,
         Set<String> internationalModules) throws Exception {
+        BufferedWriter writer = null;
+
+        if (runLocally) {
+            writer = new BufferedWriter(new FileWriter("RefsetsDiscoveredOnSnowstorm.txt"));
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
-            //BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsFound.txt"));
             logger.info("Starting processing Refsets");
 
             for (String editionId : branchChildrenByEdition.keySet()) {
                 final Edition edition = service.get(editionId, Edition.class);
 
                 logger.info("Processing Edition: " + edition.getName());
-                //writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
+
+                if (runLocally) {
+                    writer.append("\n\n\nProcessing Edition: " + edition.getName() + "\n");
+                }
 
                 String url = SnowstormConnection.BASE_URL
                         + "browser/{branch}/members?active=true&referenceSet=%3C"
@@ -557,8 +567,11 @@ public class HistoricDataMigrator {
                                     counts.incrementRefsetVersionPairsCounts();
 
                                     if (!uniqueRefsetIds.contains(refsetId)) {
-//                                        writer.write("Adding unique refset(" + refsetId + ") - "
-//                                                + refset.getName() + "\n");
+                                        if (runLocally) {
+                                            writer.write("Adding unique refset(" + refsetId + ") - "
+                                                    + refset.getName() + "\n");
+                                        }
+
                                         uniqueRefsetIds.add(refsetId);
                                         counts.incrementUniqueRefsetsCounts();
                                     }
@@ -576,7 +589,9 @@ public class HistoricDataMigrator {
                 }
             }
 
-            //writer.close();
+            if (runLocally) {
+                writer.close();
+            }
         }
 
         return snowstormRefsets;
@@ -640,8 +655,8 @@ public class HistoricDataMigrator {
      * @throws Exception the exception
      */
     private Set<String> createEditionsFromSnowstorm() throws Exception {
-        final Set<String> internationalModules = new HashSet<>();
-        String url = SnowstormConnection.BASE_URL + "codesystems";
+        Set<String> internationalModules = null;
+        final String url = SnowstormConnection.BASE_URL + "codesystems";
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -649,7 +664,7 @@ public class HistoricDataMigrator {
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
-            identifyInternationalModules(root, internationalModules);
+            internationalModules = identifyInternationalModules(root);
 
             try (final TerminologyService service = new TerminologyService()) {
                 service.setModifiedBy("Migration");
@@ -800,7 +815,8 @@ public class HistoricDataMigrator {
         return childrenSctIds;
     }
 
-    private void identifyInternationalModules(JsonNode root, Set<String> internationalModules) {
+    private Set<String> identifyInternationalModules(JsonNode root) throws Exception {
+        Set<String> retSet = new HashSet<>();
 
         final Iterator<JsonNode> responseIterator = root.iterator();
 
@@ -818,13 +834,15 @@ public class HistoricDataMigrator {
 
                     while (moduleIterator.hasNext()) {
                         JsonNode module = moduleIterator.next();
-                        internationalModules.add(module.get("conceptId").asText());
+                        retSet.add(module.get("conceptId").asText());
                     }
 
-                    return;
+                    return retSet;
                 }
             }
         }
+
+        throw new Exception("Didn't find the international modules as anticipated");
     }
 
     /**
@@ -898,7 +916,11 @@ public class HistoricDataMigrator {
      * @throws Exception the exception
      */
     private void persistObjects() throws Exception {
-        //final BufferedWriter writer = new BufferedWriter(new FileWriter("RefsetsCreated.txt"));
+        BufferedWriter writer = null;
+
+        if (runLocally) {
+            writer = new BufferedWriter(new FileWriter("RefsetsAddedToRt2.txt"));
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy("Migration");
@@ -952,7 +974,9 @@ public class HistoricDataMigrator {
 
                     if (!refsetsAdded.contains(refset.getRefsetId())) {
                         refsetsAdded.add(refset.getRefsetId());
-                        //writer.write(refset.getRefsetId() + "\t0\n");
+                        if (runLocally) {
+                            writer.write(refset.getRefsetId() + "\t0\n");
+                        }
                         counts.incrementUniqueNoMetadataCount();
                     }
 
@@ -1006,12 +1030,15 @@ public class HistoricDataMigrator {
 
                     if (!refsetsAdded.contains(refset.getRefsetId())) {
                         refsetsAdded.add(refset.getRefsetId());
-                        if (refset.isPrivateRefset()) {
-                            //writer.write(refset.getRefsetId() + "\t1\tprivate\n");
-                        } else {
-                            //writer.write(refset.getRefsetId() + "\t1\n");
-                        }
                         counts.incrementUniqueRttMetadataCount();
+
+                        if (runLocally) {
+                            if (refset.isPrivateRefset()) {
+                                writer.write(refset.getRefsetId() + "\t1\tprivate\n");
+                            } else {
+                                writer.write(refset.getRefsetId() + "\t1\n");
+                            }
+                        }
                     }
 
                     counts.incrementRttMetadataCount();
@@ -1027,7 +1054,9 @@ public class HistoricDataMigrator {
 
             }
 
-            //writer.close();
+            if (runLocally) {
+                writer.close();
+            }
 
             logger.info("Have imported " + projectCount + " projects and "
                     + counts.getOrgsImportedCount() + " organizations");
@@ -1052,7 +1081,7 @@ public class HistoricDataMigrator {
 
             logger.info("Total of " + ignoreCounter + " refsets ignored");
         } catch (Exception e) {
-            //writer.close();
+            writer.close();
             logger.error("Have issue with: " + e.getMessage());
             e.printStackTrace();
         }
