@@ -80,12 +80,6 @@ public class RefsetControllerTests extends BaseTest {
 
     private static final String DETAILS_SEARCH_CONCEPT_ID = "276310004";
 
-    private static String gpsRefsetInternalId;
-
-    private static final String GPS_REFSET_ID = "787778008";
-
-    private static final String GPS_REFSET_VERSION = "20210131";
-
     private static String inactiveConceptRefsetInternalId;
 
     private static final String INACTIVE_REFSET_ID = "723264001";
@@ -179,8 +173,6 @@ public class RefsetControllerTests extends BaseTest {
                 ;
                 inactiveConceptRefsetInternalId =
                         getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
-                gpsRefsetInternalId = getRefsetInternalId(GPS_REFSET_ID, GPS_REFSET_VERSION);
-                ;
             } catch (Exception e) {
                 e.printStackTrace();
             }
