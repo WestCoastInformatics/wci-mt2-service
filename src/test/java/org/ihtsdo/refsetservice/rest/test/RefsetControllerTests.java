@@ -4,6 +4,7 @@ package org.ihtsdo.refsetservice.rest.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.BufferedReader;
@@ -50,6 +51,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Integration tests for MetadataController.
@@ -202,6 +204,36 @@ public class RefsetControllerTests extends BaseTest {
         final Refset refset = new ObjectMapper().readValue(content, Refset.class);
 
         validateRefsetMetadata(refset);
+    }
+    
+    /**
+     * Test creating a refset.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testCreateRefset() throws Exception {
+
+        final ObjectMapper mapper = new ObjectMapper();
+        
+        final ObjectNode body = mapper.createObjectNode()
+                .put("name", "ZZZ Tim Test Refset 1")
+                .put("parentConceptId", "446609009")
+                .put("editionId", "8fb553f8-bb72-4df3-a620-a493f87d69c3")
+                .put("projectId", "cdadc210-32b2-477f-a6f3-c6bc806b8355")
+                .put("narrative", "Test.")
+                .put("type", "EXTENSIONAL")
+                .put("privateRefset", false);
+
+        final MvcResult result = mvc.perform(
+                post(baseUrl).content(body.toString())
+            ).andExpect(status().isOk()).andReturn();
+        final String content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+
+        //final Refset refset = new ObjectMapper().readValue(content, Refset.class);
+
+        //validateRefsetMetadata(refset);
     }
 
     /**

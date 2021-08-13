@@ -24,6 +24,7 @@ import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
@@ -45,6 +46,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -143,8 +145,8 @@ public class RefsetController extends BaseController {
      * @return the updated refset
      * @throws Exception the exception
      */
-    @PutMapping("/refset/{refsetId}")
-    Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetId)
+    @PutMapping("/refset/{refsetId}/changeStatus")
+    public Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetId)
         throws Exception {
 
         try {
@@ -163,6 +165,37 @@ public class RefsetController extends BaseController {
 
                 return refset;
             }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Create a new refset.
+     *
+     * @param active the active status
+     * @param refsetId The refset ID
+     * @return the updated refset
+     * @throws Exception the exception
+     */
+    @PostMapping("/refset")
+    public @ResponseBody String createRefset(final @RequestBody Refset refsetParameters,
+        final BindingResult bindingResult)
+        throws Exception {
+        
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+
+        try {
+
+            logger.info("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
+            
+            final String refsetInternalId = RefsetService.createRefset(refsetParameters);
+
+            return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
 
         } catch (final Exception e) {
 
