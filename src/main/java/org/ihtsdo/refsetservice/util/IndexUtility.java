@@ -881,7 +881,7 @@ public final class IndexUtility {
      * @throws Exception the exception
      */
     public static <T> String addWildcardsToQuery(final String query, final Class<T> clazz) throws Exception {
-        
+           
         if (query == null || query.equals("")) {
             return query;
         }
@@ -889,12 +889,12 @@ public final class IndexUtility {
         String wildcardQuery = query;
         Pattern regex = Pattern.compile("[a-zA-Z0-9_]+:[\"\\s]*([-a-zA-Z0-9_\\s]*)(?:\\)|\\sAND?|\\sOR|\"|$)");
         Matcher regexMatcher = regex.matcher(wildcardQuery);
-        Set<String> dateFieldNames = IndexUtility.getIndexedFieldNames(clazz, "date");
+        Set<String> stringFieldNames = IndexUtility.getIndexedFieldNames(clazz, "string");
         
         while (regexMatcher.find()) {
             
-            // do not replace date fields
-            if (!dateFieldNames.stream().anyMatch(field -> {
+            // only add wildcards to String fields
+            if (stringFieldNames.stream().anyMatch(field -> {
                 return regexMatcher.group(0).contains(field + ":");
             })) {
                 wildcardQuery = wildcardQuery.replace(regexMatcher.group(1), regexMatcher.group(1) + "*");
