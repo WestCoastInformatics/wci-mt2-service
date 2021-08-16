@@ -22,6 +22,8 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
@@ -70,6 +72,7 @@ public class Edition extends AbstractHasModified {
 
     /** The default language refsets. */
     @ElementCollection
+    @Fetch(FetchMode.JOIN)
     private Set<String> defaultLanguageRefsets = new HashSet<String>();
 
     /**

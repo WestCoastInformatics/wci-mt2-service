@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.json.JacksonTester;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -215,25 +216,53 @@ public class RefsetControllerTests extends BaseTest {
     public void testCreateRefset() throws Exception {
 
         final ObjectMapper mapper = new ObjectMapper();
+        final String refsetOneName = "ZZZ Tim Test Refset 1";
+        final String refsetOneParentConceptId = "446609009";
+        final String refsetOneEditionId = "8fb553f8-bb72-4df3-a620-a493f87d69c3";
+        final String refsetOneProjectId = "cdadc210-32b2-477f-a6f3-c6bc806b8355";
+        final String refsetOneNarrative = "Test.";
+        final String refsetOneType = "EXTENSIONAL";
+        final boolean refsetOnePrivateRefset = false;
+        final boolean refsetOneLocalSet = false;
         
         final ObjectNode body = mapper.createObjectNode()
-                .put("name", "ZZZ Tim Test Refset 1")
-                .put("parentConceptId", "446609009")
-                .put("editionId", "8fb553f8-bb72-4df3-a620-a493f87d69c3")
-                .put("projectId", "cdadc210-32b2-477f-a6f3-c6bc806b8355")
-                .put("narrative", "Test.")
-                .put("type", "EXTENSIONAL")
-                .put("privateRefset", false);
+                .put("name", refsetOneName)
+                .put("parentConceptId", refsetOneParentConceptId)
+                .put("editionId", refsetOneEditionId)
+                .put("projectId", refsetOneProjectId)
+                .put("narrative", refsetOneNarrative)
+                .put("type", refsetOneType)
+                .put("privateRefset", refsetOnePrivateRefset)
+                .put("localSet", refsetOneLocalSet);
 
         final MvcResult result = mvc.perform(
                 post(baseUrl).content(body.toString())
-            ).andExpect(status().isOk()).andReturn();
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
+        
+        final JsonNode root = mapper.readTree(content);
+        JsonNode refsetNode = root;
+        
+        assertTrue(refsetNode.has("refsetInternalId")); 
+        final String refsetInternalId = refsetNode.get("refsetInternalId").asText();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            Refset refset = service.get(refsetInternalId, Refset.class);
+            assertThat(refset).isNotNull();
+            assertThat(refset.getName()).isEqualTo(refsetOneName);
+            assertThat(refset.getParentConceptId()).isEqualTo(refsetOneParentConceptId);
+            assertThat(refset.getEditionId()).isEqualTo(refsetOneEditionId);
+            assertThat(refset.getProjectId()).isEqualTo(refsetOneProjectId);
+            assertThat(refset.getNarrative()).isEqualTo(refsetOneNarrative);
+            assertThat(refset.getType()).isEqualTo(refsetOneType);
+            assertThat(refset.isPrivateRefset()).isEqualTo(refsetOnePrivateRefset);
+            assertThat(refset.isLocalSet()).isEqualTo(refsetOneLocalSet);
+        }
 
-        //final Refset refset = new ObjectMapper().readValue(content, Refset.class);
-
-        //validateRefsetMetadata(refset);
     }
 
     /**

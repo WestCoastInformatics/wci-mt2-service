@@ -45,6 +45,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -178,7 +179,7 @@ public class RefsetController extends BaseController {
      *
      * @param active the active status
      * @param refsetId The refset ID
-     * @return the updated refset
+     * @return the new internal refset ID
      * @throws Exception the exception
      */
     @PostMapping("/refset")
@@ -194,6 +195,32 @@ public class RefsetController extends BaseController {
             logger.info("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
             final String refsetInternalId = RefsetService.createRefset(refsetParameters);
+
+            return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Delete or inactivate a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */ 
+    @DeleteMapping("/refset/{refsetId}")
+    public @ResponseBody String deleteRefset(final @PathVariable String refsetInternalId)
+        throws Exception {
+        
+        try {
+
+            logger.info("*********** deleteRefset: refsetInternalId: " + refsetInternalId);
+            
+            final String status = RefsetService.deleteRefset(refsetInternalId);
 
             return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
 

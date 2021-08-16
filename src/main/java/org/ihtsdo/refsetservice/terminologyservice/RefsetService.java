@@ -1,6 +1,9 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.io.File;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -11,7 +14,9 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.RefsetEditParameters;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +32,25 @@ public class RefsetService {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetService.class);
     
+    /** The refset to language map. */
+    private static final Map<String, String> refsetToLanguagesMap = new HashMap<>();
+    
+    static {
+
+        // TODO: Remove once Edition updated
+        refsetToLanguagesMap.put("450828004", "es");
+        refsetToLanguagesMap.put("32570271000036106", "en");
+        refsetToLanguagesMap.put("900000000000509007", "en");
+        refsetToLanguagesMap.put("21000172104", "fr");
+        refsetToLanguagesMap.put("31000172101", "nl");
+        refsetToLanguagesMap.put("554461000005103", "da");
+        refsetToLanguagesMap.put("71000181105", "et");
+        refsetToLanguagesMap.put("5641000179103", "es");
+        refsetToLanguagesMap.put("21000220103", "en");
+        refsetToLanguagesMap.put("61000202103", "no");
+        refsetToLanguagesMap.put("46011000052107", "sv");
+    }
+    
     /**
      * Create a refset with the given parameters .
      *
@@ -34,12 +58,13 @@ public class RefsetService {
      * @return the new refset's internal ID
      * @throws Exception the exception
      */
-    public static String createRefset(Refset refsetEditParameters) throws Exception {
+    public static String createRefset(final Refset refsetEditParameters) throws Exception {
         
         //refsetEditParameters.setName("ZZZ Tim Test Refset 1");
         String newInternalRefsetId = null;
         String refsetConceptId = refsetEditParameters.getRefsetId();
         String parentConceptId = refsetEditParameters.getParentConceptId();
+        String moduleId = null;
         Edition edition = null;
         Project project = null;
         
@@ -123,18 +148,21 @@ public class RefsetService {
                             "call to url '" + url + "' wasn't successful. " + response.toString());
                 }
 
-                final String resultString = response.readEntity(String.class);
-
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                     throw new Exception(Integer.toString(response.getStatus()));
                 }
                 
+                final String resultString = response.readEntity(String.class);
+                
                 final JsonNode root = mapper.readTree(resultString.toString());
                 JsonNode conceptNode = root;
                 
                 if (conceptNode.has("conceptId")) {
+                    
                     refsetConceptId = conceptNode.get("conceptId").asText();
+                    moduleId = conceptNode.get("moduleId").asText();
+                    
                 } else {
                     throw new Exception("Unable to create new refset concept.");
                 }
@@ -151,6 +179,8 @@ public class RefsetService {
 
             Refset refset = new Refset(refsetEditParameters);
             refset.setRefsetId(refsetConceptId);
+            refset.setModuleId(moduleId);
+            refset.setLatestVersion(true);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
             refset.setProject(project);
             refset.setEdition(edition);
@@ -168,5 +198,91 @@ public class RefsetService {
         
         return newInternalRefsetId;
         
+    }
+    
+    /**
+     * Delete or inactivate a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String deleteRefset(final String refsetInternalId) throws Exception {
+        
+        String status = "";
+        String refsetId = "";
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            boolean canDelete = false;
+            final Refset refset = service.get(refsetInternalId, Refset.class);
+            
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
+            
+            refsetId = refset.getRefsetId();
+            
+            // find out if the refset has been versioned before
+            final ResultList<Refset> results = service.find("refsetId: " + refsetId + " AND (versionStatus: PUBISHED OR versionStatus: BETA)", null, Refset.class, null);
+            
+            if (results.getItems().isEmpty()) {
+                canDelete = true;
+            }
+            
+            // if the refset can be deleted try to delete the underlying concept
+            if (canDelete) {
+                
+                final String url = SnowstormConnection.BASE_URL + "" + refset.getEdition().getBranch()
+                        + "/" + "concepts/" + refsetId;
+                
+                try (final Response response = SnowstormConnection.deleteResponse(url)) {
+
+                    // Only process payload if Rest call is successful
+                    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL || response.getStatus() != Response.Status.OK.getStatusCode()) {
+                        
+                        logger.info("Unable to delete refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                        status = "inactivate";
+                        canDelete = false;
+                    }
+                }
+                
+                // if the refset can still be deleted remove it from the database
+                if (canDelete) {
+                    
+                    service.remove(refset);
+                    
+                    if (refset != null) {
+                        
+                        canDelete = false;
+                        status = "inactivate refset";
+                    }
+                }
+            }
+            
+            if (!canDelete) {
+                
+                if (!status.equals("inactivate refset")) {
+                    
+                    final String url = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
+                            + "/" + "concepts/" + refsetId;
+                            
+                    try (final Response response = SnowstormConnection.postResponse(url, "{\"active\":false}")) {
+
+                        // Only process payload if Rest call is successful
+                        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL || response.getStatus() != Response.Status.OK.getStatusCode()) {
+                            
+                            throw new Exception("Unable to inactivate refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                        }
+                    }
+                }
+                
+                refset.setActive(false);
+                service.update(refset);
+            }
+        }
+        
+        return status;
     }
 }
