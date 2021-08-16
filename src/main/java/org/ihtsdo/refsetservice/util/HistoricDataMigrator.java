@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -18,6 +20,7 @@ import java.util.TreeMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
+import org.h2.util.json.JSONObject;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
@@ -26,6 +29,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -222,7 +226,8 @@ public class HistoricDataMigrator {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(HistoricDataMigrator.class);
 
-    ClassPathResource projectsResource = new ClassPathResource("service/rtt-migration/projects.txt");
+    ClassPathResource projectsResource =
+            new ClassPathResource("service/rtt-migration/projects.txt");
 
     ClassPathResource clausesResource = new ClassPathResource("service/rtt-migration/clauses.txt");
 
@@ -299,36 +304,7 @@ public class HistoricDataMigrator {
 
         // With metadata from RTT project (defined in parseRTTMetadata())
         updateRefsets();
-        removeUnnecessaryProjects();
         persistObjects();
-    }
-
-    /**
-     * Removes the unnecessary projects.
-     *
-     * @param allRefsets the all refsets
-     */
-    private void removeUnnecessaryProjects() {
-        Set<String> projectsWithRefsets = new HashSet<>();
-        Set<String> projectsToRemove = new HashSet<>();
-
-        // For each refset found, find corresponding project
-        for (Refset refset : snowstormRefsets) {
-            final String rttId = rttRefsetSctIdToRttIdMap.get(refset.getRefsetId());
-            String projectId = rttIdToRttProjectIdMap.get(rttId);
-
-            projectsWithRefsets.add(projectId);
-        }
-
-        for (String projectId : rttIdToProjectsJsonMap.keySet()) {
-            if (!projectsWithRefsets.contains(projectId)) {
-                projectsToRemove.add(projectId);
-            }
-        }
-
-        for (String projectId : projectsToRemove) {
-            rttIdToProjectsJsonMap.remove(projectId);
-        }
     }
 
     /**
@@ -428,11 +404,6 @@ public class HistoricDataMigrator {
                 // Defaults for type & narrative
                 refset.setType("EXTENSIONAL");
                 refset.setNarrative("None as not from RTT");
-
-                // TODO: Better handling for this use case? Perhaps move to
-                // persistObjects()?
-                refset.getEdition().setDefaultLanguageRefsets(new HashSet<String>());
-                refset.getEdition().getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET_ID);
             }
 
             // Keep track of the latest version per refsetId
@@ -708,16 +679,20 @@ public class HistoricDataMigrator {
                             edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET_ID);
                         }
 
-                        if (codeSystem.has("defaultLanguageCode")) {
-                            edition.setDefaultLanguageCode(
-                                    codeSystem.get("defaultLanguageCode").asText());
-                        } else if (codeSystem.has("languages")) {
-                            edition.setDefaultLanguageCode(
-                                    codeSystem.get("languages").fieldNames().next());
-                        } else {
-                            throw new Exception("No langauages for edition: " + edition.toString());
+                        // Identify Edition's defaultLanguageCode - Per Kai,
+                        // transform
+                        // first language in set as defaultLangCode
+                        if (!codeSystem.has("languages")) {
+                            throw new Exception(
+                                    "All Code Systems must have lanaguages set filled in. "
+                                            + edition.toString() + " does not");
                         }
 
+                        Iterator<String> languages = codeSystem.get("languages").fieldNames();
+                        String defaultLanguage = languages.next();
+                        edition.setDefaultLanguageCode(defaultLanguage);
+
+                        // Identify Code System Owner
                         if (codeSystem.has("owner")) {
                             editionOwnerMap.put(edition.getShortName(),
                                     codeSystem.get("owner").asText());
@@ -992,7 +967,8 @@ public class HistoricDataMigrator {
                     final String translatedOrgName = translateRttOrg(rttOrg.getName());
 
                     Organization org = null;
-                    if (!organizationsAdded.containsKey(translatedOrgName)) {
+                    if (translatedOrgName == null
+                            || !organizationsAdded.containsKey(translatedOrgName)) {
                         logger.debug(
                                 "    ****   Warning - Ran across an organization that doesn't reside in Snowstorm!");
                         org = addOrganziation(translatedOrgName, defaultMeta);
