@@ -191,7 +191,7 @@ public class RefsetService {
 
             // Add an object
             service.add(refset);
-            newInternalRefsetId = refset.getRefsetId();
+            newInternalRefsetId = refset.getId();
             logger.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added");
             logger.debug("Create Refset: Refset: " + ModelUtility.toJson(refset));
         }
@@ -243,43 +243,40 @@ public class RefsetService {
                     if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL || response.getStatus() != Response.Status.OK.getStatusCode()) {
                         
                         logger.info("Unable to delete refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
-                        status = "inactivate";
+                        status = "inactivated";
                         canDelete = false;
                     }
+                    
+                    logger.info("Deleted refset concept: " + refsetId);
                 }
                 
                 // if the refset can still be deleted remove it from the database
                 if (canDelete) {
                     
                     service.remove(refset);
-                    
-                    if (refset != null) {
-                        
-                        canDelete = false;
-                        status = "inactivate refset";
-                    }
+                    logger.info("Deleted refset from database: " + refsetInternalId);
+                    status = "deleted";
                 }
             }
             
             if (!canDelete) {
-                
-                if (!status.equals("inactivate refset")) {
-                    
-                    final String url = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
-                            + "/" + "concepts/" + refsetId;
-                            
-                    try (final Response response = SnowstormConnection.postResponse(url, "{\"active\":false}")) {
+               
+                final String url = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
+                        + "/" + "concepts/" + refsetId;
+                        
+                try (final Response response = SnowstormConnection.postResponse(url, "{\"active\":false}")) {
 
-                        // Only process payload if Rest call is successful
-                        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL || response.getStatus() != Response.Status.OK.getStatusCode()) {
-                            
-                            throw new Exception("Unable to inactivate refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
-                        }
+                    // Only process payload if Rest call is successful
+                    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL || response.getStatus() != Response.Status.OK.getStatusCode()) {
+                        throw new Exception("Unable to inactivate refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
                     }
+                    
+                    logger.info("Inactivated refset concept: " + refsetId);
                 }
                 
                 refset.setActive(false);
                 service.update(refset);
+                logger.info("Inactivated refset in database: " + refsetInternalId);
             }
         }
         

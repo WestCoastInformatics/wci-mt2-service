@@ -146,18 +146,18 @@ public class RefsetController extends BaseController {
      * @return the updated refset
      * @throws Exception the exception
      */
-    @PutMapping("/refset/{refsetId}/changeStatus")
-    public Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetId)
+    @PutMapping("/refset/{refsetInternalId}/changeStatus")
+    public Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetInternalId)
         throws Exception {
 
         try {
 
-            logger.info("*********** updateActive: active: " + active + " ; refsetId: " + refsetId);
+            logger.info("*********** updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
 
                 final Refset refset = service.findSingle(
-                        "refsetId:" + QueryParserBase.escape(refsetId) + "", Refset.class, null);
+                        "refsetId:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
                 refset.setActive(active);
                 service.setModifiedBy("restApi");
                 service.update(refset);
@@ -212,7 +212,7 @@ public class RefsetController extends BaseController {
      * @return the status of the operation
      * @throws Exception the exception
      */ 
-    @DeleteMapping("/refset/{refsetId}")
+    @DeleteMapping("/refset/{refsetInternalId}")
     public @ResponseBody String deleteRefset(final @PathVariable String refsetInternalId)
         throws Exception {
         
@@ -222,7 +222,7 @@ public class RefsetController extends BaseController {
             
             final String status = RefsetService.deleteRefset(refsetInternalId);
 
-            return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
+            return "{\"status\": \"" + status + "\"}";
 
         } catch (final Exception e) {
 

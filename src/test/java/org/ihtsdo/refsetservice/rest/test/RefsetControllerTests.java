@@ -3,6 +3,7 @@ package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -227,7 +228,6 @@ public class RefsetControllerTests extends BaseTest {
         
         final ObjectNode body = mapper.createObjectNode()
                 .put("name", refsetOneName)
-                .put("parentConceptId", refsetOneParentConceptId)
                 .put("editionId", refsetOneEditionId)
                 .put("projectId", refsetOneProjectId)
                 .put("narrative", refsetOneNarrative)
@@ -244,7 +244,7 @@ public class RefsetControllerTests extends BaseTest {
         logger.info(" content = " + content);
         
         final JsonNode root = mapper.readTree(content);
-        JsonNode refsetNode = root;
+        final JsonNode refsetNode = root;
         
         assertTrue(refsetNode.has("refsetInternalId")); 
         final String refsetInternalId = refsetNode.get("refsetInternalId").asText();
@@ -254,7 +254,6 @@ public class RefsetControllerTests extends BaseTest {
             Refset refset = service.get(refsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
             assertThat(refset.getName()).isEqualTo(refsetOneName);
-            assertThat(refset.getParentConceptId()).isEqualTo(refsetOneParentConceptId);
             assertThat(refset.getEditionId()).isEqualTo(refsetOneEditionId);
             assertThat(refset.getProjectId()).isEqualTo(refsetOneProjectId);
             assertThat(refset.getNarrative()).isEqualTo(refsetOneNarrative);
@@ -262,7 +261,20 @@ public class RefsetControllerTests extends BaseTest {
             assertThat(refset.isPrivateRefset()).isEqualTo(refsetOnePrivateRefset);
             assertThat(refset.isLocalSet()).isEqualTo(refsetOneLocalSet);
         }
-
+        
+        if (refsetInternalId != null && !refsetInternalId.equals("")) {
+            
+            final String deleteUrl = baseUrl + "/" + refsetInternalId;
+            final MvcResult deleteResult = mvc.perform(
+                    delete(deleteUrl))
+                .andExpect(status().isOk()).andReturn();
+            final String deleteContent = deleteResult.getResponse().getContentAsString();
+            final JsonNode deleteRoot = mapper.readTree(deleteContent);
+            final JsonNode deleteNode = deleteRoot;
+            
+            assertTrue(deleteNode.has("status"));
+            assertTrue(deleteNode.get("status").asText().equals("deleted"));
+        }
     }
 
     /**
