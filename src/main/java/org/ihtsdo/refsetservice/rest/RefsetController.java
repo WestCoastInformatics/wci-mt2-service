@@ -24,6 +24,7 @@ import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
@@ -44,7 +45,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -143,18 +146,18 @@ public class RefsetController extends BaseController {
      * @return the updated refset
      * @throws Exception the exception
      */
-    @PutMapping("/refset/{refsetId}")
-    Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetId)
+    @PutMapping("/refset/{refsetInternalId}/changeStatus")
+    public Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetInternalId)
         throws Exception {
 
         try {
 
-            logger.info("*********** updateActive: active: " + active + " ; refsetId: " + refsetId);
+            logger.info("*********** updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
 
                 final Refset refset = service.findSingle(
-                        "refsetId:" + QueryParserBase.escape(refsetId) + "", Refset.class, null);
+                        "refsetId:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
                 refset.setActive(active);
                 service.setModifiedBy("restApi");
                 service.update(refset);
@@ -163,6 +166,63 @@ public class RefsetController extends BaseController {
 
                 return refset;
             }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Create a new refset.
+     *
+     * @param active the active status
+     * @param refsetId The refset ID
+     * @return the new internal refset ID
+     * @throws Exception the exception
+     */
+    @PostMapping("/refset")
+    public @ResponseBody String createRefset(final @RequestBody Refset refsetParameters,
+        final BindingResult bindingResult)
+        throws Exception {
+        
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+
+        try {
+
+            logger.info("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
+            
+            final String refsetInternalId = RefsetService.createRefset(refsetParameters);
+
+            return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Delete or inactivate a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */ 
+    @DeleteMapping("/refset/{refsetInternalId}")
+    public @ResponseBody String deleteRefset(final @PathVariable String refsetInternalId)
+        throws Exception {
+        
+        try {
+
+            logger.info("*********** deleteRefset: refsetInternalId: " + refsetInternalId);
+            
+            final String status = RefsetService.deleteRefset(refsetInternalId);
+
+            return "{\"status\": \"" + status + "\"}";
 
         } catch (final Exception e) {
 

@@ -100,6 +100,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
     private boolean feedbackVisible;
+    
+    /** The ID of the parent of the underlying refset concept. */
+    @Transient
+    private String parentConceptId;
 
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
@@ -134,6 +138,26 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class,
             orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DefinitionClause> definitionClauses = new ArrayList<>();
+    
+    /** The value to use for the 'published' version status. */
+    @Transient
+    public static final String PUBLISHED = "PUBLISHED";
+    
+    /** The value to use for the 'beta' version status. */
+    @Transient
+    public static final String BETA = "BETA";
+    
+    /** The value to use for the 'in development' version status. */
+    @Transient
+    public static final String IN_DEVELOPMENT = "IN DEVELOPMENT";
+    
+    /** The value to use for the 'INTENSIONAL' refset type. */
+    @Transient
+    public static final String INTENSIONAL = "INTENSIONAL";
+    
+    /** The value to use for the 'EXTENSIONAL' refset type. */
+    @Transient
+    public static final String EXTENSIONAL = "EXTENSIONAL";
 
     /**
      * Instantiates an empty {@link Refset}.
@@ -423,6 +447,31 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setEdition(final Edition edition) {
         this.edition = edition;
     }
+    
+    /**
+     * Returns the edition ID.
+     *
+     * @return the edition ID
+     */
+    public String getEditionId() {
+        return edition == null ? null : edition.getId();
+    }
+
+    /**
+     * Sets the edition ID.
+     *
+     * @param editionId the edition ID to set
+     */
+    public void setEditionId(final String editionId) {
+
+        if (edition != null) {
+            this.edition.setId(editionId);
+        } else {
+            
+            this.edition = new Edition();
+            this.edition.setId(editionId);
+        }
+    }
 
     /**
      * Returns the edition name.
@@ -592,6 +641,25 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setFeedbackVisible(final boolean feedbackVisible) {
         this.feedbackVisible = feedbackVisible;
     }
+    
+    /**
+     * Returns the ID of the parent of the underlying refset concept.
+     *
+     * @return the parent concept ID
+     */
+    @JsonGetter()
+    public String getParentConceptId() {
+        return parentConceptId;
+    }
+
+    /**
+     * Sets the ID of the parent of the underlying refset concept.
+     *
+     * @param parentConceptId the parent concept ID to set
+     */
+    public void setParentConceptId(final String parentConceptId) {
+        this.parentConceptId = parentConceptId;
+    }
 
     /**
      * Gets the project.
@@ -600,6 +668,40 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public Project getProject() {
         return project;
+    }
+    
+    /**
+     * Sets the project.
+     *
+     * @param project the project to set
+     */
+    public void setProject(final Project project) {
+        this.project = project;
+    }
+    
+    /**
+     * Returns the project ID.
+     *
+     * @return the project ID
+     */
+    public String getProjectId() {
+        return project == null ? null : project.getId();
+    }
+
+    /**
+     * Sets the project ID.
+     *
+     * @param projectId the project ID to set
+     */
+    public void setProjectId(final String projectId) {
+
+        if (project != null) {
+            this.project.setId(projectId);
+        } else {
+            
+            this.project = new Project();
+            this.project.setId(projectId);
+        }
     }
 
     /**
@@ -635,16 +737,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         }
 
     }
-
-    /**
-     * Sets the project.
-     *
-     * @param project the project to set
-     */
-    public void setProject(final Project project) {
-        this.project = project;
-    }
-
+    
     /**
      * @return the latestVersion
      */

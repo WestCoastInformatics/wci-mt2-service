@@ -109,6 +109,7 @@ public class SnowstormConnection {
      * @throws Exception the exception
      */
     public static Response postResponse(final String url, String entity) throws Exception {
+        
         Client client = ClientBuilder.newClient();
         WebTarget target = client.target(url);
         Builder builder = target.request(MediaType.APPLICATION_JSON)
@@ -116,10 +117,57 @@ public class SnowstormConnection {
                 .header("Cookie", getGenericUserCookie());
         
         Response response = builder.post(Entity.json(entity));
+        
         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
             throw new LocalException(
                     "Authentication of generic user failed. " + response.toString());
         }
+        
+        return response;
+    }
+    
+    /**
+     * Post response.
+     *
+     * @param url the url
+     * @param entity the entity
+     * @return the response
+     * @throws Exception the exception
+     */
+    public static Response putResponse(final String url, String entity) throws Exception {
+        
+        Client client = ClientBuilder.newClient();
+        WebTarget target = client.target(url);
+        Builder builder = target.request(MediaType.APPLICATION_JSON)
+                .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
+                .header("Cookie", getGenericUserCookie());
+        
+        Response response = builder.post(Entity.json(entity));
+        
+        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+            throw new LocalException(
+                    "Authentication of generic user failed. " + response.toString());
+        }
+        
+        return response;
+    }
+    
+    /**
+     * Calls a Snowstorm DELETE URL and returns the response.
+     *
+     * @param url The Snowstorm URL to call
+     * @return The Snowstorm response
+     * @throws Exception the exception
+     */
+    public static Response deleteResponse(final String url) throws Exception {
+
+        final Client client = ClientBuilder.newClient();
+        final WebTarget target = client.target(url);
+        final Response response = target.request(ACCEPT)
+                .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
+                .header("Cookie", getGenericUserCookie())
+                .delete();
+
         return response;
     }
 

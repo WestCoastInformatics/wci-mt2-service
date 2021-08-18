@@ -3,7 +3,9 @@ package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.BufferedReader;
@@ -44,12 +46,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.json.JacksonTester;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Integration tests for MetadataController.
@@ -202,6 +206,75 @@ public class RefsetControllerTests extends BaseTest {
         final Refset refset = new ObjectMapper().readValue(content, Refset.class);
 
         validateRefsetMetadata(refset);
+    }
+    
+    /**
+     * Test creating a refset.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testCreateRefset() throws Exception {
+
+        final ObjectMapper mapper = new ObjectMapper();
+        final String refsetOneName = "ZZZ Tim Test Refset 1";
+        final String refsetOneParentConceptId = "446609009";
+        final String refsetOneEditionId = "8fb553f8-bb72-4df3-a620-a493f87d69c3";
+        final String refsetOneProjectId = "cdadc210-32b2-477f-a6f3-c6bc806b8355";
+        final String refsetOneNarrative = "Test.";
+        final String refsetOneType = "EXTENSIONAL";
+        final boolean refsetOnePrivateRefset = false;
+        final boolean refsetOneLocalSet = false;
+        
+        final ObjectNode body = mapper.createObjectNode()
+                .put("name", refsetOneName)
+                .put("editionId", refsetOneEditionId)
+                .put("projectId", refsetOneProjectId)
+                .put("narrative", refsetOneNarrative)
+                .put("type", refsetOneType)
+                .put("privateRefset", refsetOnePrivateRefset)
+                .put("localSet", refsetOneLocalSet);
+
+        final MvcResult result = mvc.perform(
+                post(baseUrl).content(body.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk()).andReturn();
+        final String content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        
+        final JsonNode root = mapper.readTree(content);
+        final JsonNode refsetNode = root;
+        
+        assertTrue(refsetNode.has("refsetInternalId")); 
+        final String refsetInternalId = refsetNode.get("refsetInternalId").asText();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            Refset refset = service.get(refsetInternalId, Refset.class);
+            assertThat(refset).isNotNull();
+            assertThat(refset.getName()).isEqualTo(refsetOneName);
+            assertThat(refset.getEditionId()).isEqualTo(refsetOneEditionId);
+            assertThat(refset.getProjectId()).isEqualTo(refsetOneProjectId);
+            assertThat(refset.getNarrative()).isEqualTo(refsetOneNarrative);
+            assertThat(refset.getType()).isEqualTo(refsetOneType);
+            assertThat(refset.isPrivateRefset()).isEqualTo(refsetOnePrivateRefset);
+            assertThat(refset.isLocalSet()).isEqualTo(refsetOneLocalSet);
+        }
+        
+        if (refsetInternalId != null && !refsetInternalId.equals("")) {
+            
+            final String deleteUrl = baseUrl + "/" + refsetInternalId;
+            final MvcResult deleteResult = mvc.perform(
+                    delete(deleteUrl))
+                .andExpect(status().isOk()).andReturn();
+            final String deleteContent = deleteResult.getResponse().getContentAsString();
+            final JsonNode deleteRoot = mapper.readTree(deleteContent);
+            final JsonNode deleteNode = deleteRoot;
+            
+            assertTrue(deleteNode.has("status"));
+            assertTrue(deleteNode.get("status").asText().equals("deleted"));
+        }
     }
 
     /**
