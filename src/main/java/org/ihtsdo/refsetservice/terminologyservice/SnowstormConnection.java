@@ -120,7 +120,7 @@ public class SnowstormConnection {
         
         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
             throw new LocalException(
-                    "Authentication of generic user failed. " + response.toString());
+                    "Snowstorm Error: " + response.toString());
         }
         
         return response;
@@ -142,11 +142,11 @@ public class SnowstormConnection {
                 .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
                 .header("Cookie", getGenericUserCookie());
         
-        Response response = builder.post(Entity.json(entity));
+        Response response = builder.put(Entity.json(entity));
         
         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
             throw new LocalException(
-                    "Authentication of generic user failed. " + response.toString());
+                    "Snowstorm Error: " + response.toString());
         }
         
         return response;

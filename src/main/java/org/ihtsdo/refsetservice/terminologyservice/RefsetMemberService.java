@@ -64,6 +64,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Service class to get refset member concept information from a terminology
@@ -200,8 +201,9 @@ public class RefsetMemberService {
                         "offset=" + (searchParameters.getOffset() * searchParameters.getLimit())
                                 + "&limit=" + searchParameters.getLimit();
 
+                // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
                 final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
-                        + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams;
+                        + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams + "active=true";
 
                 concepts = getMemberList(refset, nonDefaultPreferredTerms, url, searchParameters);
                 logger.info("Refset has " + concepts.size() + " members");
@@ -2482,8 +2484,9 @@ public class RefsetMemberService {
                 boolean memberStatus = false;
                 boolean defined = false;
 
+                // if this has a referenced component it is an active refset member, otherwise it at this point it is not known if it is a member
                 if (conceptNode.has("referencedComponentId")) {
-                    // Concept is a member
+                    
                     // Read member-representation of basic concept content
                     if (conceptNode.get("referencedComponent").get("pt") != null) {
                         name = conceptNode.get("referencedComponent").get("pt").get("term")
@@ -2492,6 +2495,7 @@ public class RefsetMemberService {
                         name = conceptNode.get("referencedComponent").get("term").asText();
                     }
 
+                    // concept status - not membership status
                     concept.setActive(
                             conceptNode.get("referencedComponent").get("active").asBoolean());
 
@@ -2499,7 +2503,9 @@ public class RefsetMemberService {
                     memberStatus = conceptNode.get("active").asBoolean();
                     concept.setMemberEffectiveTime(SIMPLE_DATE_FORMAT
                             .parse(conceptNode.get("releasedEffectiveTime").asText()));
+                    
                 } else if (conceptNode.has("conceptId")) {
+                    
                     // Concept is General (and is a child of the node opened)
                     // Read general-representation of basic concept content
                     if (conceptNode.get("pt") != null) {
@@ -2525,7 +2531,7 @@ public class RefsetMemberService {
                         concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
                     }
 
-                    // Concept status
+                    // This is retrieving concept details so get concept status
                     concept.setActive(conceptNode.get("active").asBoolean());
                 }
 
@@ -3001,4 +3007,165 @@ public class RefsetMemberService {
         }
     }
 
+    /**
+     * Add a list of concepts as members to a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param conceptIds a list of concept IDs to make members
+     * @return A list of concepts that were unable to be added
+     * @throws Exception the exception
+     */
+    public static List<String> addRefsetMembers(final String refsetInternalId, List<String> conceptIds) throws Exception {
+        
+        final List<String> unaddedConcepts = new ArrayList<>();
+        final ObjectMapper mapper = new ObjectMapper();
+        
+        // get the edition and project for the new refset
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final Refset refset = service.get(refsetInternalId, Refset.class);
+            
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
+            
+            final String refsetId = refset.getRefsetId();
+            final String url = SnowstormConnection.BASE_URL + refset.getEdition().getBranch()
+                    + "/" + "members";
+            
+            for (final String conceptId : conceptIds) {
+                
+                final ObjectNode body = mapper.createObjectNode()
+                        .put("refsetId", refsetId)
+                        .put("referencedComponentId", conceptId);
+                
+                logger.debug("addRefsetMembers URL: " + url);
+                logger.debug("addRefsetMembers URL body: " + body.toString());
+                
+                try (final Response response = SnowstormConnection.postResponse(url, body.toString())) {
+
+                    // Only process payload if Rest call is successful
+                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                        
+                        logger.error("Add Refset Member call to url '" + url + "' for refset '" + refsetId + "' and concept '" + conceptId + "' wasn't successful. " + response.toString());
+                        unaddedConcepts.add(conceptId);
+                    }
+                }
+            }
+        }
+        
+        return unaddedConcepts;
+        
+    }
+    
+    /**
+     * Remove or inactivate refset membership for a list of concepts.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param conceptIds a list of concept IDs to make members
+     * @return A list of concepts that were unable to have membership removed
+     * @throws Exception the exception
+     */
+    public static List<String> removeRefsetMembers(final String refsetInternalId, String conceptIds) throws Exception {
+        
+        final List<String> unremovedConcept = new ArrayList<>();
+        final Map<String, String> membersToRemove = new HashMap<>();
+        final ObjectMapper mapper = new ObjectMapper();
+        
+        // get the edition and project for the new refset
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final Refset refset = service.get(refsetInternalId, Refset.class);
+            
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
+            
+            final String refsetId = refset.getRefsetId();
+            
+            // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
+            final String memberSearchUrl = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
+                    + "/members?referenceSet=" + refset.getRefsetId() + "&limit=5000&offset=0&active=true&referencedComponentId=" + conceptIds;
+            
+            logger.debug("removeRefsetMembers search URL: " + memberSearchUrl);
+            
+            Iterator<JsonNode> iterator = null;
+            
+            try (final Response response = SnowstormConnection.getResponse(memberSearchUrl)) {
+                
+                final String resultString = response.readEntity(String.class);
+                
+                // Only process payload if Rest call is successful
+                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                    throw new Exception(
+                            "call to url '" + memberSearchUrl + "' wasn't successful. " + response.toString());
+                }
+                
+                final JsonNode root = mapper.readTree(resultString.toString());
+                iterator = root.get("items").iterator();
+            }
+            
+            
+            // loop thru the returned member details and inactivate it or add it to the list to delete    
+            while (iterator != null && iterator.hasNext()) {
+                
+                final JsonNode conceptNode = iterator.next();
+                final String conceptId = conceptNode.get("referencedComponentId").asText();
+                final String membershipId = conceptNode.get("memberId").asText();
+                final boolean released = conceptNode.get("released").asBoolean();
+                final String url = SnowstormConnection.BASE_URL + refset.getEdition().getBranch()
+                        + "/" + "members/" + membershipId;
+                boolean couldNotRemove = false;
+                
+                logger.debug("removeRefsetMembers member remove URL: " + url);
+                
+                // if the member has not been released then remove the membership
+                if (!released) {
+                    
+                    try (final Response response = SnowstormConnection.deleteResponse(url)) {
+
+                        // Only process payload if Rest call is successful
+                        if (response.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
+                            
+                            logger.error("Unable to delete refset member: " + conceptId + " ; membership ID: " + membershipId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                            couldNotRemove = true;
+                        }
+                        
+                        logger.info("Deleted refset member: " + conceptId);
+                    }
+                }
+                
+                // if the member has been released or it couldn't be removed then inactivate the membership
+                if (released || couldNotRemove) {
+                    
+                    final ObjectNode memberBody = mapper.createObjectNode()
+                            .put("active", false)
+                            .put("effectiveTime", conceptNode.get("effectiveTime").asText())
+                            .put("memberId", conceptNode.get("memberId").asText())
+                            .put("moduleId", conceptNode.get("moduleId").asText())
+                            .put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
+                            .put("refsetId", conceptNode.get("refsetId").asText())
+                            .put("released", conceptNode.get("released").asBoolean())
+                            .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
+                            .set("additionalFields", conceptNode.get("additionalFields"));
+                    
+                    try (final Response response = SnowstormConnection.putResponse(url, memberBody.toString())) {
+
+                        // Only process payload if Rest call is successful
+                        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                            
+                            logger.error("Unable to inactivate refset member: " + conceptId + " ; membership ID: " + membershipId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                            unremovedConcept.add(conceptId);
+                        }
+                        
+                        logger.info("Inactivated refset member: " + conceptId);
+                    }
+                }
+            }
+        }
+        
+        return unremovedConcept;
+    }
 }

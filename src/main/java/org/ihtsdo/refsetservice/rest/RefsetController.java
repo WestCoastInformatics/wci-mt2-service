@@ -175,6 +175,115 @@ public class RefsetController extends BaseController {
     }
     
     /**
+     * Add new refset members.
+     *
+     * @param active the active status
+     * @param refsetInternalId the internal refset ID
+     * @param conceptIds a comma separated list of concepts to add
+     * @return the new internal refset ID
+     * @throws Exception the exception
+     */
+    @PostMapping("/refset/{refsetInternalId}/members")
+    public @ResponseBody String addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final String conceptFile)
+        throws Exception {
+        
+        try {
+            
+            List<String> conceptIdList = new ArrayList<>();
+            String error = "";
+            
+            // create the list of concepts based on what was passed in
+            if (conceptIds != null && !conceptIds.equals("")) {
+                conceptIdList = Arrays.asList(conceptIds.split(","));
+            }
+         
+            logger.info("*********** addRefsetMembers: conceptIds: " + conceptIds);
+            
+            // add the list of concepts as members to the refset
+            final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(refsetInternalId, conceptIdList);
+            
+            // see if there are any concepts that were unable to be added and craft the error message
+            if (unaddedConcepts.size() > 0) {
+                
+                error = "Unable to add concepts ";
+                
+                for (final String unaddedConcept : unaddedConcepts) {
+                    error += unaddedConcept + ", ";
+                }
+                
+                error = StringUtils.removeEnd(error, ", ");
+            }
+            
+            if (error.equals("")) {
+                return "{\"status\": \"All concepts added.\"}";
+            } else {
+                return "{\"error\": \"" + error + "\"}";
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Remove or inactivate refset membership for a group of concepts.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param conceptIds a comma separated list of concepts to remove
+     * @return the status of the operation
+     * @throws Exception the exception
+     */ 
+    @DeleteMapping("/refset/{refsetInternalId}/members")
+    public @ResponseBody String removeRefsetMembers(final @PathVariable String refsetInternalId, final String conceptIds)
+        throws Exception {
+        
+        try {
+            
+            String conceptsToRemove = null;
+
+            logger.info("*********** removeRefsetMembers: refsetInternalId: " + refsetInternalId + " ; conceptIds: " + conceptIds);
+            
+            String error = "";
+            
+            // If concepts were passed in use those
+            if (conceptIds != null && !conceptIds.equals("")) {
+                conceptsToRemove = conceptIds;
+            }
+         
+            logger.info("*********** removeRefsetMembers: conceptIds: " + conceptIds);
+            
+            // add the list of concepts as members to the refset
+            final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(refsetInternalId, conceptsToRemove);
+            
+            // see if there are any concepts that were unable to be added and craft the error message
+            if (unremovedConcepts.size() > 0) {
+                
+                error = "Unable to remove concepts ";
+                
+                for (final String unremovedConcept : unremovedConcepts) {
+                    error += unremovedConcept + ", ";
+                }
+                
+                error = StringUtils.removeEnd(error, ", ");
+            }
+            
+            if (error.equals("")) {
+                return "{\"status\": \"All concepts removed.\"}";
+            } else {
+                return "{\"error\": \"" + error + "\"}";
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
      * Create a new refset.
      *
      * @param active the active status
@@ -195,6 +304,10 @@ public class RefsetController extends BaseController {
             logger.info("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
             final String refsetInternalId = RefsetService.createRefset(refsetParameters);
+            
+            if (refsetInternalId.startsWith("Concept Id")) {
+                return "{\"error\": \"" + refsetInternalId + "\"}";
+            }
 
             return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
 
@@ -266,23 +379,8 @@ public class RefsetController extends BaseController {
     public @ResponseBody ResultList<Refset> searchDirectory(final SearchParameters searchParameters,
         final BindingResult bindingResult) throws Exception {
 
-        // Check whether or not parameter binding was successful
-        if (bindingResult.hasErrors()) {
-
-            final List<FieldError> errors = bindingResult.getFieldErrors();
-            final List<String> errorMessages = new ArrayList<>();
-
-            for (final FieldError error : errors) {
-
-                final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = "
-                        + error.getField() + ", " + error.getCode();
-                logger.error(errorMessage);
-                errorMessages.add(errorMessage);
-            }
-
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.join("\n ", errorMessages));
-        }
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -429,23 +527,8 @@ public class RefsetController extends BaseController {
     final String refsetInternalId, final SearchParameters searchParameters,
         final BindingResult bindingResult) throws Exception {
 
-        // Check whether or not parameter binding was successful
-        if (bindingResult.hasErrors()) {
-
-            final List<FieldError> errors = bindingResult.getFieldErrors();
-            final List<String> errorMessages = new ArrayList<>();
-
-            for (final FieldError error : errors) {
-
-                final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = "
-                        + error.getField() + ", " + error.getCode();
-                logger.error(errorMessage);
-                errorMessages.add(errorMessage);
-            }
-
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.join("\n ", errorMessages));
-        }
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
 
         try {
 
