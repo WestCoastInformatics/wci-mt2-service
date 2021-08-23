@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -28,6 +29,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Utility class for interacting with files.
@@ -232,6 +234,29 @@ public final class FileUtility {
         List<String> lineArray = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                lineArray.add(line);
+            }
+        }
+
+        return lineArray;
+    }
+    
+    /**
+     * Generate a list of line strings from a multipart file removing empty lines.
+     *
+     * @param inputFile the input file
+     * @return the line string List
+     * @throws Exception the exception
+     */
+    public static List<String> readFileToArray(final MultipartFile inputFile) throws Exception {
+
+        List<String> lineArray = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputFile.getInputStream()))) {
 
             String line;
 

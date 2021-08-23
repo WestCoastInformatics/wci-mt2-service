@@ -55,6 +55,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
@@ -180,12 +181,15 @@ public class RefsetController extends BaseController {
      * @param active the active status
      * @param refsetInternalId the internal refset ID
      * @param conceptIds a comma separated list of concepts to add
+     * @param conceptFile a file containing concept IDs to add
+     * @param fileType the type of file uploaded (list or rf2)
      * @return the new internal refset ID
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/members")
     public @ResponseBody String addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final String conceptFile)
+        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final MultipartFile conceptFile,
+        @RequestParam(required = false) final String fileType)
         throws Exception {
         
         try {
@@ -193,12 +197,16 @@ public class RefsetController extends BaseController {
             List<String> conceptIdList = new ArrayList<>();
             String error = "";
             
+            logger.debug("*********** addRefsetMembers: refsetInternalId: " + refsetInternalId);
+            
             // create the list of concepts based on what was passed in
             if (conceptIds != null && !conceptIds.equals("")) {
                 conceptIdList = Arrays.asList(conceptIds.split(","));
+            } else {
+                conceptIdList = RefsetUtility.getConceptIdsFromFile(conceptFile, fileType);
             }
          
-            logger.info("*********** addRefsetMembers: conceptIds: " + conceptIds);
+            logger.debug("*********** addRefsetMembers: conceptIds: " + conceptIds);
             
             // add the list of concepts as members to the refset
             final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(refsetInternalId, conceptIdList);
@@ -233,27 +241,33 @@ public class RefsetController extends BaseController {
      *
      * @param refsetInternalId the internal refset ID
      * @param conceptIds a comma separated list of concepts to remove
+     * @param conceptFile a file containing concept IDs to remove
+     * @param fileType the type of file uploaded (list or rf2)
      * @return the status of the operation
      * @throws Exception the exception
      */ 
-    @DeleteMapping("/refset/{refsetInternalId}/members")
-    public @ResponseBody String removeRefsetMembers(final @PathVariable String refsetInternalId, final String conceptIds)
+    @PostMapping("/refset/{refsetInternalId}/removeMembers")
+    public @ResponseBody String removeRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final MultipartFile conceptFile,
+        @RequestParam(required = false) final String fileType)
         throws Exception {
         
         try {
             
             String conceptsToRemove = null;
 
-            logger.info("*********** removeRefsetMembers: refsetInternalId: " + refsetInternalId + " ; conceptIds: " + conceptIds);
+            logger.debug("*********** removeRefsetMembers: refsetInternalId: " + refsetInternalId);
             
             String error = "";
             
             // If concepts were passed in use those
             if (conceptIds != null && !conceptIds.equals("")) {
                 conceptsToRemove = conceptIds;
+            } else {
+                conceptsToRemove = String.join(",", RefsetUtility.getConceptIdsFromFile(conceptFile, fileType));
             }
          
-            logger.info("*********** removeRefsetMembers: conceptIds: " + conceptIds);
+            logger.debug("*********** removeRefsetMembers: conceptIds: " + conceptIds);
             
             // add the list of concepts as members to the refset
             final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(refsetInternalId, conceptsToRemove);

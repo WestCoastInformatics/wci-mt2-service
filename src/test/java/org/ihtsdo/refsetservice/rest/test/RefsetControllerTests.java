@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,6 +15,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,7 +30,9 @@ import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.assertj.core.util.Arrays;
 import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
@@ -48,8 +52,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -114,17 +121,32 @@ public class RefsetControllerTests extends BaseTest {
 
     private static final List<String> detailSearchNonAcceptableConceptDescList = new ArrayList<>();
 
-    private static final String TWO_VERSION_DELTA_FILE_PATH =
-            "src/test/resources/refsetService/Lateralizable Delta 201801 to 201807.txt";
+    private static final String REFSET_FILE_PATH =
+            "src/test/resources/refsetService/";
+    
+    private static final String TWO_VERSION_DELTA_FILE =
+            REFSET_FILE_PATH + "Lateralizable Delta 201801 to 201807.txt";
 
-    private static final String THREE_VERSION_DELTA_FILE_PATH =
-            "src/test/resources/refsetService/Lateralizable Delta 201801 to 201901.txt";
+    private static final String THREE_VERSION_DELTA_FILE =
+            REFSET_FILE_PATH + "Lateralizable Delta 201801 to 201901.txt";
 
-    private static final String SNAPSHOT_FILE_PATH =
-            "src/test/resources/refsetService/561000172108 Snapshot 20200315.txt";
+    private static final String SNAPSHOT_FILE =
+            REFSET_FILE_PATH + "561000172108 Snapshot 20200315.txt";
 
-    private static final String LIST_OF_SCTIDS_FILE_PATH =
-            "src/test/resources/refsetService/561000172108 ListOfSctIds 20200315.txt";
+    private static final String LIST_OF_SCTIDS_FILE =
+            REFSET_FILE_PATH + "561000172108 ListOfSctIds 20200315.txt";
+    
+    private static final String MEMBER_ID_LIST_FILE_NAME =
+            "member_concept_id_list.txt";
+    
+    private static final String MEMBER_ID_LIST_FILE =
+            REFSET_FILE_PATH + MEMBER_ID_LIST_FILE_NAME;
+    
+    private static final String MEMBER_ID_RF2_FILE_NAME =
+            "member_concept_ids_rf2.txt";
+    
+    private static final String MEMBER_ID_RF2_FILE =
+            REFSET_FILE_PATH + MEMBER_ID_RF2_FILE_NAME;
 
     /** The mvc. */
     @Autowired
@@ -220,19 +242,24 @@ public class RefsetControllerTests extends BaseTest {
         final ObjectMapper mapper = new ObjectMapper();
         final String memberConceptIds = "48176007,280416009,10828004,260385009";
         final List<Map<String, String>> refsetDetails = new ArrayList<>();
+        final String editionInternalId = getEditionInternalId("International Edition"); 
+        final String projectInternalId = getProjectInternalId("SNOMED International Project");
         
         // the data to create a refset from a new concept
         final Map<String, String> refsetNewConcept = new HashMap<>();
         refsetNewConcept.put("name", "ZZZ RT2 Test New Concept Refset");
         refsetNewConcept.put("parentConceptId", "446609009");
         refsetNewConcept.put("moduleId", "900000000000207008");
-        refsetNewConcept.put("editionId", "bbdfc3b4-806d-4e02-8fed-88ded4ce294a");
-        refsetNewConcept.put("projectId", "741a1ec9-2838-4630-8880-9dca5ad15c45");
+        refsetNewConcept.put("editionId", editionInternalId);
+        refsetNewConcept.put("projectId", projectInternalId);
         refsetNewConcept.put("narrative", "Test.");
         refsetNewConcept.put("type", "EXTENSIONAL");
         refsetNewConcept.put("privateRefset", "false");
         refsetNewConcept.put("localSet", "false");
         refsetNewConcept.put("refsetDeleteStatus", "deleted");
+        refsetNewConcept.put("fileType", "list");
+        refsetNewConcept.put("conceptFileName", MEMBER_ID_LIST_FILE_NAME);
+        refsetNewConcept.put("conceptFile", MEMBER_ID_LIST_FILE);
         
         // prepare the call to create refset from a new concept
         final ObjectNode refsetNewConceptBody = mapper.createObjectNode()
@@ -249,21 +276,54 @@ public class RefsetControllerTests extends BaseTest {
         refsetNewConcept.put("body", refsetNewConceptBody.toString());
         refsetDetails.add(refsetNewConcept);
         
-        // the data to create a refset from an existing concept
+        // the data to create a refset with members added from an RF2 file
+        final Map<String, String> refsetRf2MemberAdd = new HashMap<>();
+        refsetRf2MemberAdd.put("name", "ZZZ RT2 Test RF2 Member Add Refset");
+        refsetRf2MemberAdd.put("parentConceptId", "446609009");
+        refsetRf2MemberAdd.put("moduleId", "900000000000207008");
+        refsetRf2MemberAdd.put("editionId", editionInternalId);
+        refsetRf2MemberAdd.put("projectId", projectInternalId);
+        refsetRf2MemberAdd.put("narrative", "Test.");
+        refsetRf2MemberAdd.put("type", "EXTENSIONAL");
+        refsetRf2MemberAdd.put("privateRefset", "false");
+        refsetRf2MemberAdd.put("localSet", "false");
+        refsetRf2MemberAdd.put("refsetDeleteStatus", "deleted");
+        refsetRf2MemberAdd.put("fileType", "rf2");
+        refsetRf2MemberAdd.put("conceptFileName", MEMBER_ID_RF2_FILE_NAME);
+        refsetRf2MemberAdd.put("conceptFile", MEMBER_ID_RF2_FILE);
+        
+        // prepare the call to create refset with members added from an RF2 file
+        final ObjectNode refsetRf2MemberAddBody = mapper.createObjectNode()
+                .put("name", refsetRf2MemberAdd.get("name"))
+                .put("parentConceptId", refsetRf2MemberAdd.get("parentConceptId"))
+                .put("moduleId", refsetRf2MemberAdd.get("moduleId"))
+                .put("editionId", refsetRf2MemberAdd.get("editionId"))
+                .put("projectId", refsetRf2MemberAdd.get("projectId"))
+                .put("narrative", refsetRf2MemberAdd.get("narrative"))
+                .put("type", refsetRf2MemberAdd.get("type"))
+                .put("privateRefset", Boolean.parseBoolean(refsetRf2MemberAdd.get("privateRefset")))
+                .put("localSet", Boolean.parseBoolean(refsetRf2MemberAdd.get("localSet")));
+        
+        refsetRf2MemberAdd.put("body", refsetRf2MemberAddBody.toString());
+        refsetDetails.add(refsetRf2MemberAdd);
+        
+        // the data to create a refset from an existing concept (but can't be a refset already in RT2)
         final Map<String, String> refsetExistingConcept = new HashMap<>();
         refsetExistingConcept.put("refsetId", "762103008");
         refsetExistingConcept.put("name", "OWL ontology reference set");
         refsetExistingConcept.put("parentConceptId", "446609009");
         refsetExistingConcept.put("moduleId", "900000000000207008");
-        refsetExistingConcept.put("editionId", "bbdfc3b4-806d-4e02-8fed-88ded4ce294a");
-        refsetExistingConcept.put("projectId", "741a1ec9-2838-4630-8880-9dca5ad15c45");
+        refsetExistingConcept.put("editionId", editionInternalId);
+        refsetExistingConcept.put("projectId", projectInternalId);
         refsetExistingConcept.put("narrative", "Test.");
         refsetExistingConcept.put("type", "EXTENSIONAL");
         refsetExistingConcept.put("privateRefset", "false");
         refsetExistingConcept.put("localSet", "false");
-        refsetNewConcept.put("refsetDeleteStatus", "inactivated");
+        refsetExistingConcept.put("refsetDeleteStatus", "deleted");
+        // DO NOT LEAVE THIS UNCOMMENTED - for one test we will try to remove a member that has already been published
+        //refsetExistingConcept.put("additionalMemberIdsToRemove", "734147008");
         
-        // prepare the call to create refset from a new concept
+        // prepare the call to create refset from an existing concept
         final ObjectNode refsetExistingConceptBody = mapper.createObjectNode()
                 .put("refsetId", refsetExistingConcept.get("refsetId"))
                 .put("name", refsetExistingConcept.get("name"))
@@ -279,6 +339,7 @@ public class RefsetControllerTests extends BaseTest {
         refsetExistingConcept.put("body", refsetExistingConceptBody.toString());
         refsetDetails.add(refsetExistingConcept);
 
+        // TESTS BEGIN - loop over the details object to run various tests
         for (final Map<String, String> refsetDetail : refsetDetails) {
             
             // make the call to create refset from a new concept
@@ -315,20 +376,30 @@ public class RefsetControllerTests extends BaseTest {
                 }
             }
             
-            String additionalMemberIds = "";
-            
-            if (refsetDetail.containsKey("refsetId")) {
-                additionalMemberIds = ",734147008";
-            }
-            
             // prepare the call to add members to the refset from a new concept
             final String membersUrl = baseUrl + "/" + refsetInternalId + "/members?conceptIds=";
+            MvcResult membersResult = null;
+            
+            if (!refsetDetail.containsKey("fileType")) {
+            
+                // make the call to add members to the refset from a new concept
+                membersResult = mvc.perform(
+                        post(membersUrl + memberConceptIds)
+                        .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+                
+            } else {
+                
+                MockMultipartFile mockMultipartFile = new MockMultipartFile("conceptFile", refsetDetail.get("conceptFileName"),
+                        "text/plain", Files.readAllBytes(Paths.get(refsetDetail.get("conceptFile"))));
 
-            // make the call to add members to the refset from a new concept
-            final MvcResult membersResult = mvc.perform(
-                    post(membersUrl + memberConceptIds + "&conceptFile=")
-                    .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()).andReturn();
+                membersResult = mvc.perform(
+                        multipart(membersUrl + "&fileType=" + refsetDetail.get("fileType"))
+                        .file(mockMultipartFile)
+                        .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+            }
+            
             final String membersContent = membersResult.getResponse().getContentAsString();
             logger.info(" membersContent = " + membersContent);
             
@@ -341,9 +412,36 @@ public class RefsetControllerTests extends BaseTest {
             // remove the members of the refset from a new concept
             if (membersNode.has("status")) {
                 
-                final MvcResult removeResult = mvc.perform(
-                        delete(membersUrl + memberConceptIds + additionalMemberIds + "&conceptFile="))
-                    .andExpect(status().isOk()).andReturn();
+                final String removeUrl = baseUrl + "/" + refsetInternalId + "/removeMembers?conceptIds=";
+                MvcResult removeResult = null;
+                
+                if (!refsetDetail.containsKey("fileType")) {
+                
+                    String additionalMemberIds = "";
+                    
+                    // for one test we will try to remove a member that has already been published
+                    if (refsetDetail.containsKey("additionalMemberIdsToRemove")) {
+                        additionalMemberIds = "," + refsetDetail.get("additionalMemberIdsToRemove");
+                    }
+                    
+                    // make the call to add members to the refset from a new concept
+                    removeResult = mvc.perform(
+                            post(removeUrl + memberConceptIds + additionalMemberIds)
+                            .accept(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isOk()).andReturn();
+                    
+                } else {
+                    
+                    MockMultipartFile mockMultipartFile = new MockMultipartFile("conceptFile", refsetDetail.get("conceptFileName"),
+                            "text/plain", Files.readAllBytes(Paths.get(refsetDetail.get("conceptFile"))));
+
+                    removeResult = mvc.perform(
+                            multipart(removeUrl + "&fileType=" + refsetDetail.get("fileType"))
+                            .file(mockMultipartFile)
+                            .accept(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isOk()).andReturn();
+                }
+ 
                 final String removeContent = removeResult.getResponse().getContentAsString();
                 final JsonNode removeRoot = mapper.readTree(removeContent);
                 final JsonNode removeNode = removeRoot;
@@ -364,7 +462,7 @@ public class RefsetControllerTests extends BaseTest {
                 final JsonNode deleteNode = deleteRoot;
                 
                 assertTrue(deleteNode.has("status"));
-                assertTrue(deleteNode.get("status").asText().equals("deleted"));
+                assertTrue(deleteNode.get("status").asText().equals(refsetDetail.get("refsetDeleteStatus")));
             }
         }
         
@@ -556,7 +654,7 @@ public class RefsetControllerTests extends BaseTest {
         final JsonNode root = mapper.readTree(resultString);
 
         // Validate
-        validateExportFiles(root, LIST_OF_SCTIDS_FILE_PATH);
+        validateExportFiles(root, LIST_OF_SCTIDS_FILE);
     }
 
     /**
@@ -588,7 +686,7 @@ public class RefsetControllerTests extends BaseTest {
         final JsonNode root = mapper.readTree(resultString);
 
         // Validate
-        validateExportFiles(root, SNAPSHOT_FILE_PATH);
+        validateExportFiles(root, SNAPSHOT_FILE);
 
     }
 
@@ -624,7 +722,7 @@ public class RefsetControllerTests extends BaseTest {
             final JsonNode root = mapper.readTree(resultString);
 
             // Validate
-            validateExportFiles(root, TWO_VERSION_DELTA_FILE_PATH);
+            validateExportFiles(root, TWO_VERSION_DELTA_FILE);
         } finally {
             if (unzippedPath != null) {
                 FileUtility.deleteDirectory(unzippedPath.toFile());
@@ -645,7 +743,7 @@ public class RefsetControllerTests extends BaseTest {
             final JsonNode root = mapper.readTree(resultString);
 
             // Validate
-            validateExportFiles(root, THREE_VERSION_DELTA_FILE_PATH);
+            validateExportFiles(root, THREE_VERSION_DELTA_FILE);
         } finally {
             if (unzippedPath != null) {
                 FileUtility.deleteDirectory(unzippedPath.toFile());
@@ -1402,6 +1500,66 @@ public class RefsetControllerTests extends BaseTest {
             assertThat(refsetToReturn.getRefsetId()).isEqualTo(requestedId);
 
             return refsetToReturn.getId();
+        }
+    }
+    
+    /**
+     * Get the internal project ID based on the project's name
+     * 
+     * @param name The name of the project
+     * @return the internal project ID
+     * @throws Exception the exception
+     */
+    private String getProjectInternalId(String name) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final PfsParameter pfs = new PfsParameter();
+
+            ResultList<Project> projects =
+                    service.find("name:" + QueryParserBase.escape(name) + "", pfs,
+                            Project.class, null);
+
+            if (projects.getItems().size() == 0) {
+                throw new Exception("Refset Internal Id: " + name
+                        + " does not exist in the RT2 database");
+            }
+            
+            Project project = projects.getItems().get(0);
+
+            assertThat(project.getName()).isEqualTo(name);
+
+            return project.getId();
+        }
+    }
+    
+    /**
+     * Get the internal edition ID based on the edition's name
+     * 
+     * @param name The name of the edition
+     * @return the internal edition ID
+     * @throws Exception the exception
+     */
+    private String getEditionInternalId(String name) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final PfsParameter pfs = new PfsParameter();
+
+            ResultList<Edition> editions =
+                    service.find("name:" + QueryParserBase.escape(name) + "", pfs,
+                            Edition.class, null);
+
+            if (editions.getItems().size() == 0) {
+                throw new Exception("Refset Internal Id: " + name
+                        + " does not exist in the RT2 database");
+            }
+            
+            Edition edition = editions.getItems().get(0);
+
+            assertThat(edition.getName()).isEqualTo(name);
+
+            return edition.getId();
         }
     }
 

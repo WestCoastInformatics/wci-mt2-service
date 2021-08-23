@@ -139,7 +139,7 @@ public class RefsetMemberService {
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 500;
 
-    private static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
+    public static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
 
     static {
 
@@ -3069,7 +3069,7 @@ public class RefsetMemberService {
      */
     public static List<String> removeRefsetMembers(final String refsetInternalId, String conceptIds) throws Exception {
         
-        final List<String> unremovedConcept = new ArrayList<>();
+        final List<String> unremovedConcepts = new ArrayList<>();
         final Map<String, String> membersToRemove = new HashMap<>();
         final ObjectMapper mapper = new ObjectMapper();
         
@@ -3157,7 +3157,7 @@ public class RefsetMemberService {
                         if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                             
                             logger.error("Unable to inactivate refset member: " + conceptId + " ; membership ID: " + membershipId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
-                            unremovedConcept.add(conceptId);
+                            unremovedConcepts.add(conceptId);
                         }
                         
                         logger.info("Inactivated refset member: " + conceptId);
@@ -3166,6 +3166,6 @@ public class RefsetMemberService {
             }
         }
         
-        return unremovedConcept;
+        return unremovedConcepts;
     }
 }
