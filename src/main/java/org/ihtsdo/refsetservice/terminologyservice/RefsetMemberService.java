@@ -203,7 +203,7 @@ public class RefsetMemberService {
 
                 // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
                 final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
-                        + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams + "active=true";
+                        + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams + "&active=true";
 
                 concepts = getMemberList(refset, nonDefaultPreferredTerms, url, searchParameters);
                 logger.info("Refset has " + concepts.size() + " members");
