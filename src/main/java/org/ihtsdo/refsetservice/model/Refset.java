@@ -472,6 +472,30 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
             this.edition.setId(editionId);
         }
     }
+    
+    /**
+     * Returns the edition branch.
+     *
+     * @return the edition branch
+     */
+    @GenericField(searchable = Searchable.YES,
+            projectable = Projectable.NO, sortable = Sortable.NO)
+    @IndexingDependency(derivedFrom = @ObjectPath(@PropertyValue(propertyName = "edition")))
+    public String getEditionBranch() {
+        return edition == null ? null : edition.getBranch();
+    }
+
+    /**
+     * Sets the edition branch.
+     *
+     * @param editionBranch the edition branch to set
+     */
+    public void setEditionBranch(final String editionBranch) {
+
+        if (edition != null) {
+            this.edition.setBranch(editionBranch);
+        }
+    }
 
     /**
      * Returns the edition name.

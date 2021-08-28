@@ -84,6 +84,8 @@ public class RefsetControllerTests extends BaseTest {
     // production
     private static String mainTestingRefsetInternalId;
 
+    private static final String GPS_REFSET_ID = "787778008";
+    
     private static final String TESTING_REFSET_ID = "561000172108"; // Belgian
 
     private static final String TESTING_REFSET_VERSION = "20200915";
@@ -798,6 +800,69 @@ public class RefsetControllerTests extends BaseTest {
 
         assertThat(content).isEmpty();
     }
+    
+    /**
+     * Test getting the list of concepts that represent refsets for dropdown options.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testRefsetConcepts() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+        String standardRefsetId = GPS_REFSET_ID;
+        boolean standardRefsetFound = false;
+        final String branch = "MAIN";
+
+        // call the api to get the refset concept list for refset parents
+        url = "/general/refsetConcepts?branch=" + branch + "&areParentConcepts=true";
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        final ConceptResultList parentsResultList = new ObjectMapper().readValue(content, ConceptResultList.class);
+
+        assertThat(parentsResultList.getItems().size()).isGreaterThan(0);
+        
+        // make sure a standard refset is present
+        for (final Concept concept : parentsResultList.getItems()) {
+            
+            if (concept.getCode().equals(standardRefsetId)) {
+                
+                standardRefsetFound = true;
+                break;
+            }
+        }
+        
+        assertThat(standardRefsetFound).isTrue();
+        standardRefsetFound = false;
+        
+        // call the api to get the refset concept list for using as the underlying concept for a new refset
+        url = "/general/refsetConcepts?branch=" + branch + "&areParentConcepts=false";
+        logger.info("Testing url - " + url);
+
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        final ConceptResultList newRefsetResultList = new ObjectMapper().readValue(content, ConceptResultList.class);
+
+        assertThat(newRefsetResultList.getItems().size()).isGreaterThan(0);
+        
+        // make sure a standard refset is not present
+        for (final Concept concept : newRefsetResultList.getItems()) {
+            
+            if (concept.getCode().equals(standardRefsetId)) {
+                
+                standardRefsetFound = true;
+                break;
+            }
+        }
+        
+        assertThat(standardRefsetFound).isFalse();
+    }
 
     /**
      * Test getting concept list.
@@ -805,7 +870,7 @@ public class RefsetControllerTests extends BaseTest {
      * @throws Exception the exception
      */
     @Test
-    public void testTable() throws Exception {
+    public void testMemberList() throws Exception {
         String url = null;
         MvcResult result = null;
         String content = null;
@@ -869,7 +934,7 @@ public class RefsetControllerTests extends BaseTest {
      * @throws Exception the exception
      */
     @Test
-    public void testTableSearch() throws Exception {
+    public void testMemberSearch() throws Exception {
         String url = null;
         MvcResult result = null;
         String content = null;

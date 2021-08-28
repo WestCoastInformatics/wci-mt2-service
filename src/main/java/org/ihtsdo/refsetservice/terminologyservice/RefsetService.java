@@ -2,24 +2,30 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.RefsetEditParameters;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +43,9 @@ public class RefsetService {
     
     /** The refset to language map. */
     private static final Map<String, String> refsetToLanguagesMap = new HashMap<>();
+    
+    /** The refset to language map. */
+    private static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
     
     static {
 
@@ -96,9 +105,9 @@ public class RefsetService {
         // if a new refset concept needs to be created
         if (refsetConceptId == null) {
             
-            // if null set the parent to "Simple Type Reference Set" ID: 446609009
+            // if null set the parent to "Simple Type Reference Set"
             if (parentConceptId == null) {
-                parentConceptId = "446609009";
+                parentConceptId = SIMPLE_TYPE_REFERENCE_SET;
             }
             
             final ObjectMapper mapper = new ObjectMapper();
@@ -363,5 +372,76 @@ public class RefsetService {
                 return true;
             }
         }
+    }
+    
+    /**
+     * Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.
+     *
+     * @param branch the branch to retrieve the concepts from
+     * @param areParentConcepts Do these concepts represent parent concepts for a new refset, or will they be the underlying concepts for a the refset itself
+     * @return the list of refset concepts
+     * @throws Exception the exception
+     */
+    public static ConceptResultList getRefsetConcepts(final String branch, final boolean areParentConcepts) throws Exception {
+    
+        final ConceptResultList results = new ConceptResultList();
+        final Set<String> existingRefsetIds = new HashSet<>();
+        final String ecl = StringUtility.encodeValue(QueryParserBase.escape("<<" + SIMPLE_TYPE_REFERENCE_SET));
+        final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000";
+        
+        logger.debug("getRefsetConcepts URL: " + url);
+        
+        if (!areParentConcepts) {
+            
+            try (final TerminologyService service = new TerminologyService()) {
+                
+                // get all the existing refsets for latest branch version
+                final ResultList<Refset> refsets = service.find("active: true AND editionBranch: " + branch + " AND (latestVersion: true OR versionStatus: \"" + Refset.IN_DEVELOPMENT + "\")", null, Refset.class, null);
+                
+                for (final Refset refset : refsets.getItems()) {
+                    existingRefsetIds.add(refset.getRefsetId());
+                }
+                
+                logger.debug("getRefsetConcepts existingRefsetIds: " + existingRefsetIds);
+            }
+        }
+        
+        // update the concept with the new data
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                throw new Exception("Unable to get refset concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+            }
+            
+            final ObjectMapper mapper = new ObjectMapper();
+            final String resultString = response.readEntity(String.class);
+            final JsonNode root = mapper.readTree(resultString.toString());
+            final Iterator<JsonNode> iterator = root.get("items").iterator();
+            
+            // loop thru the returned member details and inactivate it or add it to the list to delete    
+            while (iterator != null && iterator.hasNext()) {
+                
+                final JsonNode conceptNode = iterator.next();
+                final Concept concept = new Concept();
+                final String conceptId = conceptNode.get("conceptId").asText();
+                
+                // if this isn't for a parent concept and the refset already exists then skip it 
+                if (!areParentConcepts && existingRefsetIds.contains(conceptId)) {
+                    continue;                    
+                }
+                
+                concept.setCode(conceptId);
+                concept.setName(conceptNode.get("pt").get("term").asText());
+                concept.setTerminology("SNOMEDCT");
+                
+                results.getItems().add(concept);
+            }
+            
+            // sort the results
+            Collections.sort(results.getItems(), (o1, o2) -> (o1.getName().compareTo(o2.getName())));
+        }
+        
+        return results;
     }
 }

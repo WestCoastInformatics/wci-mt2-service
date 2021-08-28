@@ -1245,6 +1245,42 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
+    
+    /**
+     * Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.
+     *
+     * @param branch the branch to retrieve the concepts from
+     * @param areParentConcepts Do these concepts represent parent concepts for a new refset, or will they be the underlying concepts for a the refset itself
+     * @return the editions
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.", response = ResultList.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/general/refsetConcepts",
+            produces = "application/json")
+    public @ResponseBody ConceptResultList getRefsetConcepts(final String branch, final boolean areParentConcepts) throws Exception {
+
+        try {
+
+            logger.debug("*********** getRefsetConcepts: branch: " + branch + "; areParentConcepts: " + areParentConcepts);
+
+            ConceptResultList results = RefsetService.getRefsetConcepts(branch, areParentConcepts);
+            
+            logger.debug("*********** getRefsetConcepts: results: " + ModelUtility.toJson(results));
+
+            return results;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
 
     /**
      * Gets the Organizations.
