@@ -86,6 +86,18 @@ public class RefsetControllerTests extends BaseTest {
 
     private static final String GPS_REFSET_ID = "787778008";
     
+    private static String testingProjectId = "";
+    
+    private static final String TESTING_PROJECT_NAME = "SNOMED International Project";
+    
+    private static String testingOrganizationId = "";
+    
+    private static final String TESTING_ORGANIZATION_NAME = "";
+    
+    private static String testingEditionId = "";
+    
+    private static final String TESTING_EDITION_NAME = "International Edition";
+    
     private static final String TESTING_REFSET_ID = "561000172108"; // Belgian
 
     private static final String TESTING_REFSET_VERSION = "20200915";
@@ -155,64 +167,110 @@ public class RefsetControllerTests extends BaseTest {
     private MockMvc mvc;
 
     /** The object mapper. */
-    private ObjectMapper objectMapper;
+    private static ObjectMapper objectMapper;
 
     /** The base url. */
-    private String baseUrl = "";
+    private static String baseUrl = "";
 
     /**
      * Sets the up.
      */
     @BeforeEach
     public void setUp(TestInfo info) {
+        
         // skip @BeforeEach in testRttMigration
         if (info.getDisplayName().equals("testRttMigration()")) {
             return;
         }
 
-        objectMapper = new ObjectMapper();
-        JacksonTester.initFields(this, objectMapper);
-        baseUrl = "/refset";
-
-        if (firstConceptDescList.isEmpty()) {
-            firstConceptDescList.add("Venom (substance)");
-            firstConceptDescList.add("Venom");
-            firstConceptDescList.add("venin");
-            firstConceptDescList.add("gif");
-        }
-
-        if (secondConceptDescList.isEmpty()) {
-            secondConceptDescList.add("Sheep wool (substance)");
-            secondConceptDescList.add("Sheep wool");
-            secondConceptDescList.add("schapenwol");
-            secondConceptDescList.add("laine de mouton");
-        }
-
-        if (inactiveConceptDescList.isEmpty()) {
-            inactiveConceptDescList.add("Entire sclerocorneal junction (body structure)");
-            inactiveConceptDescList.add("Entire sclerocorneal junction");
-        }
-
-        if (detailSearchNonAcceptableConceptDescList.isEmpty()) {
-            detailSearchNonAcceptableConceptDescList.add("Non-human hair - material (substance)");
-            detailSearchNonAcceptableConceptDescList.add("Animal hair");
-            detailSearchNonAcceptableConceptDescList.add("dierlijk haar");
-            detailSearchNonAcceptableConceptDescList.add("poil animal");
-        }
-
         if (mainTestingRefsetInternalId == null) {
+            
+            objectMapper = new ObjectMapper();
+            JacksonTester.initFields(this, objectMapper);
+            baseUrl = "/refset";
+            
             try {
+                
                 mainTestingRefsetInternalId =
                         getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
-                ;
+
                 inactiveConceptRefsetInternalId =
                         getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
+                
+                testingEditionId = getEditionInternalId(TESTING_EDITION_NAME); 
+                testingProjectId = getProjectInternalId(TESTING_PROJECT_NAME);
+                
+                firstConceptDescList.add("Venom (substance)");
+                firstConceptDescList.add("Venom");
+                firstConceptDescList.add("venin");
+                firstConceptDescList.add("gif");
+                
+                inactiveConceptDescList.add("Entire sclerocorneal junction (body structure)");
+                inactiveConceptDescList.add("Entire sclerocorneal junction");
+                
+                detailSearchNonAcceptableConceptDescList.add("Non-human hair - material (substance)");
+                detailSearchNonAcceptableConceptDescList.add("Animal hair");
+                detailSearchNonAcceptableConceptDescList.add("dierlijk haar");
+                detailSearchNonAcceptableConceptDescList.add("poil animal");
+                
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+        
     }
 
+    /**
+     * Test getting a project.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetProject() throws Exception {
+
+        final String url = "/project/" + testingProjectId;
+        logger.info("Testing url - " + url);
+
+        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        final String content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+
+        final Project project = new ObjectMapper().readValue(content, Project.class);
+
+        assertThat(project).isNotNull();
+        assertThat(project.getId()).isEqualTo(testingProjectId);
+        assertThat(project.getName()).isEqualTo(TESTING_PROJECT_NAME);
+    }
+    
+    /**
+     * Test searching for projects.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testProjectSearch() throws Exception {
+        
+        String url = "/project/search?limit=500&offset=0&sort=name&sortAscending=false";
+        logger.info("Testing url - " + url);
+        
+        MvcResult result = null;
+        String content = null;
+        ResultList<Project> resultList = null;
+        Refset projectFound = null;
+
+        // Test full list
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        
+        resultList =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
+                }));
+        assertThat(resultList).isNotNull();
+        assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
+    }
+    
     /**
      * Test getting a refset.
      *
@@ -244,16 +302,14 @@ public class RefsetControllerTests extends BaseTest {
         final ObjectMapper mapper = new ObjectMapper();
         final String memberConceptIds = "48176007,280416009,10828004,260385009";
         final List<Map<String, String>> refsetDetails = new ArrayList<>();
-        final String editionInternalId = getEditionInternalId("International Edition"); 
-        final String projectInternalId = getProjectInternalId("SNOMED International Project");
         
         // the data to create a refset from a new concept
         final Map<String, String> refsetNewConcept = new HashMap<>();
         refsetNewConcept.put("name", "ZZZ RT2 Test New Concept Refset");
         refsetNewConcept.put("parentConceptId", "446609009");
         refsetNewConcept.put("moduleId", "900000000000207008");
-        refsetNewConcept.put("editionId", editionInternalId);
-        refsetNewConcept.put("projectId", projectInternalId);
+        refsetNewConcept.put("editionId", testingEditionId);
+        refsetNewConcept.put("projectId", testingProjectId);
         refsetNewConcept.put("narrative", "Test.");
         refsetNewConcept.put("type", "EXTENSIONAL");
         refsetNewConcept.put("privateRefset", "false");
@@ -283,8 +339,8 @@ public class RefsetControllerTests extends BaseTest {
         refsetRf2MemberAdd.put("name", "ZZZ RT2 Test RF2 Member Add Refset");
         refsetRf2MemberAdd.put("parentConceptId", "446609009");
         refsetRf2MemberAdd.put("moduleId", "900000000000207008");
-        refsetRf2MemberAdd.put("editionId", editionInternalId);
-        refsetRf2MemberAdd.put("projectId", projectInternalId);
+        refsetRf2MemberAdd.put("editionId", testingEditionId);
+        refsetRf2MemberAdd.put("projectId", testingProjectId);
         refsetRf2MemberAdd.put("narrative", "Test.");
         refsetRf2MemberAdd.put("type", "EXTENSIONAL");
         refsetRf2MemberAdd.put("privateRefset", "false");
@@ -315,8 +371,8 @@ public class RefsetControllerTests extends BaseTest {
         refsetExistingConcept.put("name", "OWL ontology reference set");
         refsetExistingConcept.put("parentConceptId", "446609009");
         refsetExistingConcept.put("moduleId", "900000000000207008");
-        refsetExistingConcept.put("editionId", editionInternalId);
-        refsetExistingConcept.put("projectId", projectInternalId);
+        refsetExistingConcept.put("editionId", testingEditionId);
+        refsetExistingConcept.put("projectId", testingProjectId);
         refsetExistingConcept.put("narrative", "Test.");
         refsetExistingConcept.put("type", "EXTENSIONAL");
         refsetExistingConcept.put("privateRefset", "false");
