@@ -214,7 +214,7 @@ public class RefsetController extends BaseController {
                 conceptIdList = RefsetUtility.getConceptIdsFromFile(conceptFile, fileType);
             }
          
-            logger.debug("*********** addRefsetMembers: conceptIds: " + conceptIds);
+            logger.debug("*********** addRefsetMembers: conceptIds: " + conceptIdList);
             
             // add the list of concepts as members to the refset
             final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(refsetInternalId, conceptIdList);

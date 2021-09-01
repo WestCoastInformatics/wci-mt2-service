@@ -45,10 +45,6 @@ public class ConceptController extends BaseController {
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(ConceptController.class);
 
-    /** The term utils. */
-    @Autowired
-    private TerminologyUtils termUtils;
-
     /**
      * Returns the concept.
      *

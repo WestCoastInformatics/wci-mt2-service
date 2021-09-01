@@ -334,6 +334,35 @@ public class RefsetControllerTests extends BaseTest {
         refsetNewConcept.put("body", refsetNewConceptBody.toString());
         refsetDetails.add(refsetNewConcept);
         
+        // the data to create a refset with members from ECL
+        final Map<String, String> refsetEclMembers = new HashMap<>();
+        refsetEclMembers.put("name", "ZZZ RT2 Test ECL Members Refset");
+        refsetEclMembers.put("parentConceptId", "446609009");
+        refsetEclMembers.put("moduleId", "900000000000207008");
+        refsetEclMembers.put("editionId", testingEditionId);
+        refsetEclMembers.put("projectId", testingProjectId);
+        refsetEclMembers.put("narrative", "Test.");
+        refsetEclMembers.put("type", "EXTENSIONAL");
+        refsetEclMembers.put("privateRefset", "false");
+        refsetEclMembers.put("localSet", "false");
+        refsetEclMembers.put("refsetDeleteStatus", "deleted");
+        refsetEclMembers.put("ecl", "183814000 | Admission funding status (finding) |");
+        
+        // prepare the call to create refset from a new concept
+        final ObjectNode refsetEclMembersBody = mapper.createObjectNode()
+                .put("name", refsetEclMembers.get("name"))
+                .put("parentConceptId", refsetEclMembers.get("parentConceptId"))
+                .put("moduleId", refsetEclMembers.get("moduleId"))
+                .put("editionId", refsetEclMembers.get("editionId"))
+                .put("projectId", refsetEclMembers.get("projectId"))
+                .put("narrative", refsetEclMembers.get("narrative"))
+                .put("type", refsetEclMembers.get("type"))
+                .put("privateRefset", Boolean.parseBoolean(refsetEclMembers.get("privateRefset")))
+                .put("localSet", Boolean.parseBoolean(refsetEclMembers.get("localSet")));
+        
+        refsetEclMembers.put("body", refsetEclMembersBody.toString());
+        refsetDetails.add(refsetEclMembers);
+        
         // the data to create a refset with members added from an RF2 file
         final Map<String, String> refsetRf2MemberAdd = new HashMap<>();
         refsetRf2MemberAdd.put("name", "ZZZ RT2 Test RF2 Member Add Refset");
@@ -435,14 +464,20 @@ public class RefsetControllerTests extends BaseTest {
             }
             
             // prepare the call to add members to the refset from a new concept
-            final String membersUrl = baseUrl + "/" + refsetInternalId + "/members?conceptIds=";
+            String membersUrl = baseUrl + "/" + refsetInternalId + "/members?conceptIds=";
             MvcResult membersResult = null;
             
             if (!refsetDetail.containsKey("fileType")) {
             
+                if (!refsetDetail.containsKey("ecl")) {
+                    membersUrl += memberConceptIds;
+                } else {
+                    membersUrl += "&ecl=" + refsetDetail.get("ecl");
+                }
+                
                 // make the call to add members to the refset from a new concept
                 membersResult = mvc.perform(
-                        post(membersUrl + memberConceptIds)
+                        post(membersUrl)
                         .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk()).andReturn();
                 
@@ -470,21 +505,28 @@ public class RefsetControllerTests extends BaseTest {
             // remove the members of the refset from a new concept
             if (membersNode.has("status")) {
                 
-                final String removeUrl = baseUrl + "/" + refsetInternalId + "/removeMembers?conceptIds=";
+                String removeUrl = baseUrl + "/" + refsetInternalId + "/removeMembers?conceptIds=";
                 MvcResult removeResult = null;
                 
                 if (!refsetDetail.containsKey("fileType")) {
-                
-                    String additionalMemberIds = "";
                     
-                    // for one test we will try to remove a member that has already been published
-                    if (refsetDetail.containsKey("additionalMemberIdsToRemove")) {
-                        additionalMemberIds = "," + refsetDetail.get("additionalMemberIdsToRemove");
+                    if (!refsetDetail.containsKey("ecl")) {
+                        
+                        String additionalMemberIds = "";
+                        
+                        // for one test we will try to remove a member that has already been published
+                        if (refsetDetail.containsKey("additionalMemberIdsToRemove")) {
+                            additionalMemberIds = "," + refsetDetail.get("additionalMemberIdsToRemove");
+                        }
+                        
+                        removeUrl += memberConceptIds + additionalMemberIds;
+                    } else {
+                        removeUrl += "&ecl=" + refsetDetail.get("ecl");
                     }
-                    
+                
                     // make the call to add members to the refset from a new concept
                     removeResult = mvc.perform(
-                            post(removeUrl + memberConceptIds + additionalMemberIds)
+                            post(removeUrl)
                             .accept(MediaType.APPLICATION_JSON))
                         .andExpect(status().isOk()).andReturn();
                     
