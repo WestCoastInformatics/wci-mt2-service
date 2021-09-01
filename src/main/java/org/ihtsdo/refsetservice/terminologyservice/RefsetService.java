@@ -3,6 +3,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,6 +23,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -513,5 +515,64 @@ public class RefsetService {
 
             return results;
         }
+    }
+    
+    /**
+     * Get the branch and version path for a refset.
+     *
+     * @param refset the refset
+     * @return the branch and version path
+     * @throws Exception the exception
+     */
+    public static String getBranchPath(final Refset refset) throws Exception {
+
+        String branchPath = "";
+        String pathDate = "";
+
+        if (refset.getVersionDate() != null) {
+            Date tmpDate = refset.getVersionDate();
+            pathDate = "/" + DateUtility.formatDate(tmpDate, DateUtility.DATE_FORMAT_REVERSE, null);
+        }
+
+        branchPath = refset.getEdition().getBranch() + pathDate;
+
+        return branchPath;
+    }
+    
+    /**
+     * Get the branch and version path for a refset from the internal refset ID.
+     *
+     * @param refsetInternalId the internal ID of the refset
+     * @return the branch and version path
+     * @throws Exception the exception
+     */
+    public static String getBranchPath(final String refsetInternalId) throws Exception {
+
+        final Refset refset = getRefsetFromInternalId(refsetInternalId);
+        return getBranchPath(refset);
+    }
+    
+    /**
+     * Get a refset from the internal refset ID.
+     *
+     * @param refsetInternalId the internal ID of the refset
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public static Refset getRefsetFromInternalId(final String refsetInternalId) throws Exception {
+        
+        Refset refset = null;
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            refset = service.get(refsetInternalId, Refset.class);
+            
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+            }
+        }
+        
+        return refset;
     }
 }

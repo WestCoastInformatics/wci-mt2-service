@@ -182,6 +182,7 @@ public class RefsetController extends BaseController {
      * @param active the active status
      * @param refsetInternalId the internal refset ID
      * @param conceptIds a comma separated list of concepts to add
+     * @param ecl an ECL query to identify concepts to add
      * @param conceptFile a file containing concept IDs to add
      * @param fileType the type of file uploaded (list or rf2)
      * @return the new internal refset ID
@@ -189,7 +190,8 @@ public class RefsetController extends BaseController {
      */
     @PostMapping("/refset/{refsetInternalId}/members")
     public @ResponseBody String addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final MultipartFile conceptFile,
+        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
+        @RequestParam(required = false) final MultipartFile conceptFile,
         @RequestParam(required = false) final String fileType)
         throws Exception {
         
@@ -203,6 +205,11 @@ public class RefsetController extends BaseController {
             // create the list of concepts based on what was passed in
             if (conceptIds != null && !conceptIds.equals("")) {
                 conceptIdList = Arrays.asList(conceptIds.split(","));
+                
+            } else if (ecl != null && !ecl.equals("")) {
+                
+                final String branchPath = RefsetService.getBranchPath(refsetInternalId);
+                conceptIdList = RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl);
             } else {
                 conceptIdList = RefsetUtility.getConceptIdsFromFile(conceptFile, fileType);
             }
@@ -242,6 +249,7 @@ public class RefsetController extends BaseController {
      *
      * @param refsetInternalId the internal refset ID
      * @param conceptIds a comma separated list of concepts to remove
+     * @param ecl an ECL query to identify concepts to remove
      * @param conceptFile a file containing concept IDs to remove
      * @param fileType the type of file uploaded (list or rf2)
      * @return the status of the operation
@@ -249,7 +257,8 @@ public class RefsetController extends BaseController {
      */ 
     @PostMapping("/refset/{refsetInternalId}/removeMembers")
     public @ResponseBody String removeRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final MultipartFile conceptFile,
+        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
+        @RequestParam(required = false) final MultipartFile conceptFile,
         @RequestParam(required = false) final String fileType)
         throws Exception {
         
@@ -264,6 +273,11 @@ public class RefsetController extends BaseController {
             // If concepts were passed in use those
             if (conceptIds != null && !conceptIds.equals("")) {
                 conceptsToRemove = conceptIds;
+                
+            } else if (ecl != null && !ecl.equals("")) {
+                
+                final String branchPath = RefsetService.getBranchPath(refsetInternalId);
+                conceptsToRemove = String.join(",", RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl));
             } else {
                 conceptsToRemove = String.join(",", RefsetUtility.getConceptIdsFromFile(conceptFile, fileType));
             }

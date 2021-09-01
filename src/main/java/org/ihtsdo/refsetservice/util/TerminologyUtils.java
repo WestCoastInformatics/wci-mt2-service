@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
  * Utilities for handling the "include" flag, and converting EVSConcept to
  * Concept.
  */
-@Component
 public final class TerminologyUtils {
 
     /** The Constant logger. */
@@ -23,6 +22,18 @@ public final class TerminologyUtils {
         // n/a
     }
 
-    // TBD - mostly an example of injecting a component utility class
-
+    /**
+     * Indicates whether or not the query is ECL language.
+     *
+     * @param query The query string
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
+    public static boolean isQueryEcl(final String query) {
+        
+        if (query.contains("<") || query.contains(">") || query.contains("^")) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

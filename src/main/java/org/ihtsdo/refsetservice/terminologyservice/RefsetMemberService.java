@@ -1576,25 +1576,14 @@ public class RefsetMemberService {
     }
 
     /**
-     * Get either the version date or the current date in yyyy-MM-dd format.
+     * Get the branch and version path for a refset.
      *
      * @param refset the refset
-     * @return the URL of the file containing the metadata
+     * @return the branch and version path
      * @throws Exception the exception
      */
     public static String getBranchPath(final Refset refset) throws Exception {
-
-        String branchPath = "";
-        String pathDate = "";
-
-        if (refset.getVersionDate() != null) {
-            Date tmpDate = refset.getVersionDate();
-            pathDate = "/" + DateUtility.formatDate(tmpDate, DateUtility.DATE_FORMAT_REVERSE, null);
-        }
-
-        branchPath = refset.getEdition().getBranch() + pathDate;
-
-        return branchPath;
+        return RefsetService.getBranchPath(refset);
     }
 
     /**
@@ -3167,5 +3156,69 @@ public class RefsetMemberService {
         }
         
         return unremovedConcepts;
+    }
+    
+    /**
+     * Get a list of concepts ID from an ECL query.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param conceptIds a list of concept IDs to make members
+     * @return A list of concepts that were unable to have membership removed
+     * @throws Exception the exception
+     */
+    public static List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
+        
+        final List<String> concepts = new ArrayList<>();
+        final ObjectMapper mapper = new ObjectMapper();
+        String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + StringUtility.encodeValue(QueryParserBase.escape(ecl)) + "&limit=1000";
+        boolean keepSearching = true;
+        int total = 0;
+        int totalReturned = 0;
+        String searchAfter = "";
+        
+        while (keepSearching) {
+            
+            logger.debug("getConceptIdsFromEcl URL: " + url + searchAfter);
+            
+            // update the concept with the new data
+            try (final Response response = SnowstormConnection.getResponse(url)) {
+
+                // Only process payload if Rest call is successful
+                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                    throw new Exception("Unable to get refset concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                }
+                
+                final String resultString = response.readEntity(String.class);
+                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode items = root.get("items");
+                final Iterator<JsonNode> iterator = items.iterator();
+                totalReturned += items.size();
+                
+                // loop thru the returned concepts add them to the list    
+                while (iterator != null && iterator.hasNext()) {
+                    
+                    final JsonNode conceptNode = iterator.next();
+                    final String conceptId = conceptNode.get("conceptId").asText();
+                    
+                    if (concepts.contains(conceptId)) {
+                        continue;                    
+                    }
+                    
+                    concepts.add(conceptId);
+                }
+                
+                if (total == 0) {
+                    total = root.get("total").asInt();
+                }
+
+                if (total <= 1000 || totalReturned == total) {
+                    keepSearching = false;
+                } else {
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                }
+            }
+        }
+        
+        return concepts;
     }
 }
