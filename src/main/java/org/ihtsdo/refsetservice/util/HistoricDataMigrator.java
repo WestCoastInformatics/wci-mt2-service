@@ -261,6 +261,8 @@ public class HistoricDataMigrator {
     private final Map<String, String> editionOwnerMap = new HashMap<>();
 
     private Set<String> rttRefsetIds = null;
+    
+    private Map<String, Edition> refsetEditions = new HashMap<>();
 
     private final Set<Refset> snowstormRefsets = new HashSet<>();
 
@@ -517,8 +519,10 @@ public class HistoricDataMigrator {
                                     refset.setModuleId(moduleId);
                                     refset.setVersionDate(branchDate);
                                     refset.setVersionStatus("PUBLISHED");
-                                    refset.setEdition(edition);
                                     refset.setActive(true);
+                                    
+                                    // add the edition to a map with the refset ID to retrieve it later
+                                    refsetEditions.put(refsetId, edition);
 
                                     if (refsetNode.get("pt").has("term")) {
                                         refset.setName(refsetNode.get("pt").get("term").asText());
@@ -702,10 +706,10 @@ public class HistoricDataMigrator {
                         // Identify Top Level Module
                         identifyTopLevelModule(edition, codeSystem, internationalModules);
 
-                        addOrganziation(editionOwnerMap.get(edition.getName()), defaultMeta);
-
                         setMetadata(edition, defaultMeta);
                         service.add(edition);
+                        
+                        addOrganziation(editionOwnerMap.get(edition.getName()), edition, defaultMeta);
                     }
                 }
             }
@@ -898,19 +902,22 @@ public class HistoricDataMigrator {
             int ignoreCounter = 0;
 
             for (Refset refset : snowstormRefsets) {
+                
+                final Edition edition = refsetEditions.get(refset.getRefsetId());
+                
                 if (refsetsToIgnore.contains(refset.getRefsetId())) {
                     ignoreCounter++;
                     continue;
                 } else if (!rttRefsetIds.contains(refset.getRefsetId())) {
                     /* Refset not in RTT */
-                    final String name = refset.getEdition().getName();
-                    final String shortName = refset.getEdition().getShortName();
+                    final String name = edition.getName();
+                    final String shortName = edition.getShortName();
 
                     // Identify Org Name
                     if (!editionOwnerMap.containsKey(name)
                             && !editionOwnerMap.containsKey(shortName)
                             || !organizationsAdded.containsKey(editionOwnerMap.get(name))) {
-                        throw new Exception("Orgnaization based on edition '" + refset.getEdition()
+                        throw new Exception("Orgnaization based on edition '" + edition
                                 + "' should have been created already");
                     }
 
@@ -920,7 +927,7 @@ public class HistoricDataMigrator {
                     // Create edition
                     final Organization org = organizationsAdded.get(orgName);
 
-                    if (!defaultEditionProjects.containsKey(refset.getEdition().getId())) {
+                    if (!defaultEditionProjects.containsKey(edition.getId())) {
                         // Create default project
                         final String projectName = "Default project for " + refset.getEditionName();
                         final String projectDescription =
@@ -931,7 +938,7 @@ public class HistoricDataMigrator {
                                 addProject(org, projectName, projectDescription, defaultMeta);
                         projectCount++;
 
-                        defaultEditionProjects.put(refset.getEdition().getId(), project);
+                        defaultEditionProjects.put(edition.getId(), project);
                         projectsAdded.put(project.getName(), project);
                     }
 
@@ -941,11 +948,11 @@ public class HistoricDataMigrator {
 
                         logger.debug("Persisting " + refset.getRefsetId() + " in "
                                 + branchDateFormatter.format(refset.getVersionDate()) + " in "
-                                + refset.getEdition().getName());
+                                + edition.getName());
                     }
 
                     counts.incrementNoMetadataCount();
-                    refset.setProject(defaultEditionProjects.get(refset.getEdition().getId()));
+                    refset.setProject(defaultEditionProjects.get(edition.getId()));
                     setMetadata(refset, defaultMeta);
                 } else {
                     /* Refset in RTT, so pull project & Org data from there */
@@ -967,7 +974,7 @@ public class HistoricDataMigrator {
                             || !organizationsAdded.containsKey(translatedOrgName)) {
                         logger.debug(
                                 "    ****   Warning - Ran across an organization that doesn't reside in Snowstorm!");
-                        org = addOrganziation(translatedOrgName, defaultMeta);
+                        org = addOrganziation(translatedOrgName, edition, defaultMeta);
                         organizationsAdded.put(translatedOrgName, org);
                     } else {
                         org = organizationsAdded.get(translatedOrgName);
@@ -999,7 +1006,7 @@ public class HistoricDataMigrator {
 
                         logger.debug("Persisting " + refset.getRefsetId() + " in "
                                 + branchDateFormatter.format(refset.getVersionDate()) + " in "
-                                + refset.getEdition().getName());
+                                + edition.getName());
                     }
 
                     counts.incrementRttMetadataCount();
@@ -1079,6 +1086,7 @@ public class HistoricDataMigrator {
             project.setName(projectName);
             project.setDescription(projectDescription);
             project.setOrganization(org);
+            project.setPrivateProject(false);
 
             // Persist
             setMetadata(project, meta);
@@ -1086,7 +1094,7 @@ public class HistoricDataMigrator {
         }
     }
 
-    private Organization addOrganziation(final String orgName, final Metadata meta)
+    private Organization addOrganziation(final String orgName, final Edition edition, final Metadata meta)
         throws Exception {
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy("Migration");
@@ -1094,6 +1102,7 @@ public class HistoricDataMigrator {
 
             Organization org = new Organization();
             org.setName(orgName);
+            org.setEdition(edition);
 
             setMetadata(org, meta);
 

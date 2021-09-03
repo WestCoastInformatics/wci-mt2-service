@@ -12,14 +12,21 @@ package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Represents an Organization.
@@ -36,6 +43,12 @@ public class Organization extends AbstractHasModified {
     /** The description. */
     @Column(nullable = true, length = 4000)
     private String description;
+    
+    /** The edition. */
+    @ManyToOne(targetEntity = Edition.class)
+    @JoinColumn(nullable = true)
+    @Fetch(FetchMode.JOIN)
+    private Edition edition;
 
     /**
      * Instantiates an empty {@link Organization}.
@@ -71,6 +84,7 @@ public class Organization extends AbstractHasModified {
         super.populateFrom(other);
         name = other.getName();
         description = other.getDescription();
+        edition = other.getEdition();
     }
 
     /**
@@ -106,6 +120,26 @@ public class Organization extends AbstractHasModified {
     public void setDescription(final String description) {
         this.description = description;
     }
+    
+    /**
+     * Gets the edition.
+     *
+     * @return the edition
+     */
+    @JsonSerialize(contentAs = Edition.class)
+    @JsonDeserialize(contentAs = Edition.class)
+    public Edition getEdition() {
+        return edition;
+    }
+
+    /**
+     * Sets the edition.
+     *
+     * @param edition the edition to set
+     */
+    public void setEdition(final Edition edition) {
+        this.edition = edition;
+    }
 
     /**
      * Hash code.
@@ -118,6 +152,7 @@ public class Organization extends AbstractHasModified {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((edition == null) ? 0 : edition.hashCode());
         result = prime * result
                 + ((description == null) ? 0 : description.hashCode());
         return result;
@@ -159,6 +194,14 @@ public class Organization extends AbstractHasModified {
                 return false;
             }
         } else if (!description.equals(other.description)) {
+            return false;
+        }
+        
+        if (edition == null) {
+            if (other.edition != null) {
+                return false;
+            }
+        } else if (!edition.equals(other.edition)) {
             return false;
         }
 

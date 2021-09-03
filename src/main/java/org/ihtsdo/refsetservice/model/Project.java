@@ -47,6 +47,10 @@ public class Project extends AbstractHasModified {
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Organization organization;
+    
+    /** The private flag. */
+    @Column(nullable = false)
+    private boolean privateProject;
 
     /**
      * Instantiates an empty {@link Project}.
@@ -85,6 +89,7 @@ public class Project extends AbstractHasModified {
         name = other.getName();
         organization = other.getOrganization();
         description = other.getDescription();
+        privateProject = other.isPrivateProject();
     }
 
     /**
@@ -142,6 +147,25 @@ public class Project extends AbstractHasModified {
     public void setOrganization(final Organization organization) {
         this.organization = organization;
     }
+    
+    /**
+     * Checks if is private project.
+     *
+     * @return is the project private
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public boolean isPrivateProject() {
+        return privateProject;
+    }
+
+    /**
+     * Sets the private project.
+     *
+     * @param privateProject the private flag to set
+     */
+    public void setPrivateProject(final boolean privateProject) {
+        this.privateProject = privateProject;
+    }
 
     /**
      * Hash code.
@@ -156,6 +180,7 @@ public class Project extends AbstractHasModified {
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
         result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + (privateProject ? 1 : 0);
         return result;
     }
 
@@ -203,6 +228,10 @@ public class Project extends AbstractHasModified {
                 return false;
             }
         } else if (!organization.equals(other.organization)) {
+            return false;
+        }
+        
+        if (privateProject != other.privateProject) {
             return false;
         }
 

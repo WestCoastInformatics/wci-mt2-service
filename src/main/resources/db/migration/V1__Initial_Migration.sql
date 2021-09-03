@@ -2,36 +2,11 @@ drop table ${pre_if_exists} refsets_definition_clauses ${post_if_exists};
 drop table ${pre_if_exists} definition_clauses ${post_if_exists};
 drop table ${pre_if_exists} refset_tags ${post_if_exists};
 drop table ${pre_if_exists} refsets ${post_if_exists};
-drop table ${pre_if_exists} edition_defaultlanguagerefsets ${post_if_exists};
-drop table ${pre_if_exists} editions ${post_if_exists};
 drop table ${pre_if_exists} projects ${post_if_exists};
 drop table ${pre_if_exists} organizations ${post_if_exists};
-   
-CREATE TABLE `organizations` (
-  `id` varchar(64) NOT NULL,
-  `active` bit(1) NOT NULL,
-  `created` datetime(6) NOT NULL,
-  `modified` datetime(6) NOT NULL,
-  `modifiedBy` varchar(256) NOT NULL,
-  `description` varchar(4000) DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`)
-);
+drop table ${pre_if_exists} edition_defaultlanguagerefsets ${post_if_exists};
+drop table ${pre_if_exists} editions ${post_if_exists};
 
-CREATE TABLE `projects` (
-  `id` varchar(64) NOT NULL,
-  `active` bit(1) NOT NULL,
-  `created` datetime(6) NOT NULL,
-  `modified` datetime(6) NOT NULL,
-  `modifiedBy` varchar(256) NOT NULL,
-  `description` varchar(4000) DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  `organization_id` varchar(64) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `FK3gwrleyyq6prcnqekmkobbimd` (`organization_id`),
-  CONSTRAINT `FK3gwrleyyq6prcnqekmkobbimd` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
-);
-    
 CREATE TABLE `editions` (
   `id` varchar(64) NOT NULL,
   `active` bit(1) NOT NULL,
@@ -55,6 +30,35 @@ CREATE TABLE `edition_defaultlanguagerefsets` (
   CONSTRAINT `FKsty54m8wa2yvysx49lsgdapq0` FOREIGN KEY (`Edition_id`) REFERENCES `editions` (`id`)
 );
 
+CREATE TABLE `organizations` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `description` varchar(4000) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `edition_id` varchar(64) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK4emt69axwy8ehf0vkr3t2acea` (`edition_id`),
+  CONSTRAINT `FK4emt69axwy8ehf0vkr3t2acea` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`)
+);
+
+CREATE TABLE `projects` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `privateProject` bit(1) NOT NULL,
+  `description` varchar(4000) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `organization_id` varchar(64) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK3gwrleyyq6prcnqekmkobbimd` (`organization_id`),
+  CONSTRAINT `FK3gwrleyyq6prcnqekmkobbimd` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+);
+
 CREATE TABLE `refsets` (
   `id` varchar(64) NOT NULL,
   `active` bit(1) NOT NULL,
@@ -73,12 +77,10 @@ CREATE TABLE `refsets` (
   `versionDate` datetime(6) DEFAULT NULL,
   `versionNotes` longtext,
   `versionStatus` varchar(256) NOT NULL,
-  `edition_id` varchar(64) DEFAULT NULL,
+  `workflowStatus` varchar(256),
   `project_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `FK4emt69axwy8ehf0vkr3t2acea` (`edition_id`),
   KEY `FKapij9mkufxno7uncjc6oo20en` (`project_id`),
-  CONSTRAINT `FK4emt69axwy8ehf0vkr3t2acea` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`),
   CONSTRAINT `FKapij9mkufxno7uncjc6oo20en` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`)
 );
 

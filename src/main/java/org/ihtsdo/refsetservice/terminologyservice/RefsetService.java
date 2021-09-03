@@ -92,19 +92,14 @@ public class RefsetService {
                 + "' is already used as a refset.";
             }
             
-            edition = service.get(refsetEditParameters.getEditionId(), Edition.class);
-
-            if (edition == null) {
-                throw new Exception("Edition Id: " + refsetEditParameters.getEditionId()
-                        + " does not exist in the RT2 database");
-            }
-            
             project = service.get(refsetEditParameters.getProjectId(), Project.class);
 
             if (project == null) {
                 throw new Exception("Project Id: " + refsetEditParameters.getProjectId()
                         + " does not exist in the RT2 database");
             }
+            
+            edition = project.getOrganization().getEdition();
         }
         
         // if a new refset concept needs to be created
@@ -203,7 +198,6 @@ public class RefsetService {
             refset.setLatestVersion(true);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
             refset.setProject(project);
-            refset.setEdition(edition);
             
             if (refset.getType().equals(Refset.INTENSIONAL)) {
                 //refset.getDefinitionClauses().addAll(definitionList);

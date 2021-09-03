@@ -108,8 +108,15 @@ public class RefsetUnitTest extends BaseTest {
         tester.include("versionNotes");
         tester.include("privateRefset");
         tester.include("localSet");
+        tester.include("workflowStatus");
+        tester.include("parentConceptId");
+        tester.include("latestVersion");
+        tester.include("privateRefset");
+        tester.include("assignedUser");
         tester.include("moduleId");
         tester.include("externalUrl");
+        tester.include("feedbackVisible");
+        tester.include("downloadable");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -129,7 +136,6 @@ public class RefsetUnitTest extends BaseTest {
 
         final Refset copyObject = new Refset();
         copyObject.setDefinitionClauses(definitionList);
-        copyObject.setEdition(edition);
         copyObject.setProject(project);
         // copyObject.setTags(tagList);
 
@@ -175,9 +181,9 @@ public class RefsetUnitTest extends BaseTest {
 
             edition.setId(null);
             service.add(edition);
-            object.setEdition(edition);
 
             organization.setId(null);
+            organization.setEdition(edition);
             service.add(organization);
 
             project.setId(null);
@@ -235,9 +241,9 @@ public class RefsetUnitTest extends BaseTest {
             }
 
             service.remove(object);
-            service.remove(edition);
             service.remove(project);
             service.remove(organization);
+            service.remove(edition);
 
             retrievedObject = service.get(object.getId(), object.getClass());
 

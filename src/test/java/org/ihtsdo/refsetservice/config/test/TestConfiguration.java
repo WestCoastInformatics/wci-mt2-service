@@ -113,12 +113,23 @@ public class TestConfiguration {
 
                 service.setModifiedBy("TestConfiguration");
                 service.setModifiedFlag(true);
+                
+                for (String editionJson : editionsJson) {
+
+                    Edition edition = ModelUtility.fromJson(editionJson, Edition.class);
+
+                    // Add an object
+                    service.add(edition);
+                    editionList.add(edition);
+                    logger.info("Edition " + edition.getName() + " successfully added");
+                }
 
                 for (String organizationJson : organizationsJson) {
 
                     Organization organization =
                             ModelUtility.fromJson(organizationJson, Organization.class);
-
+                    organization.setEdition(editionList.get(0));
+                    
                     // Add an object
                     service.add(organization);
                     organizationList.add(organization);
@@ -128,22 +139,12 @@ public class TestConfiguration {
                 for (String projectJson : projectsJson) {
 
                     Project project = ModelUtility.fromJson(projectJson, Project.class);
-                    // project.setOrganization(organizationList.get(0));
+                    project.setOrganization(organizationList.get(0));
 
                     // Add an object
                     service.add(project);
                     projectList.add(project);
                     logger.info("Project " + project.getName() + " successfully added");
-                }
-
-                for (String editionJson : editionsJson) {
-
-                    Edition edition = ModelUtility.fromJson(editionJson, Edition.class);
-
-                    // Add an object
-                    service.add(edition);
-                    editionList.add(edition);
-                    logger.info("Edition " + edition.getName() + " successfully added");
                 }
 
                 for (String definitionJson : definitionsJson) {
@@ -161,7 +162,7 @@ public class TestConfiguration {
 
                     Refset refset = ModelUtility.fromJson(refsetJson, Refset.class);
                     refset.setProject(projectList.get(0));
-                    refset.setEdition(editionList.get(0));
+                    
 
                     
                     if (refset.getType().equals("intensional")) {
@@ -199,16 +200,6 @@ public class TestConfiguration {
                     service.remove(refset);
                     logger.info("Refset " + id + " successfully removed");
                 }
-
-                for (Edition edition : editionList) {
-
-                    final String name = edition.getName();
-
-                    // remove an object
-                    service.remove(edition);
-                    logger.info("Edition " + name + " successfully removed");
-                }
-
                 for (Project project : projectList) {
 
                     final String name = project.getName();
@@ -225,6 +216,15 @@ public class TestConfiguration {
                     // remove an object
                     service.remove(organization);
                     logger.info("Organization " + name + " successfully removed");
+                }
+                
+                for (Edition edition : editionList) {
+
+                    final String name = edition.getName();
+
+                    // remove an object
+                    service.remove(edition);
+                    logger.info("Edition " + name + " successfully removed");
                 }
 
                  for (DefinitionClause definition : definitionList) {
