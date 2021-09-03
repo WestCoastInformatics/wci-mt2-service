@@ -127,7 +127,7 @@ public class RefsetMemberService {
     private final static Map<String, List<Concept>> treeCache = new HashMap<>();
 
     /** A cache of the children for each tree node. */
-    private final static Map<String, Set<String>> ancestorsCache = new HashMap<>();
+    public final static Map<String, Set<String>> ancestorsCache = new HashMap<>();
 
     /**
      * A cache that lists each tree node concept whose children have been

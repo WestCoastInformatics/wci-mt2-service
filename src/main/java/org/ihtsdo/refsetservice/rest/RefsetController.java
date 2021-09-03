@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -1142,6 +1143,37 @@ public class RefsetController extends BaseController {
                 entryResults.setTotalKnown(true);
 
                 return entryResults;
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Returns the contents of the ancestor cache for a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the ancestor cache
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/ancestorCache",
+            produces = "application/json")
+    public @ResponseBody String getRefsetAncestorCache(@PathVariable(value = "refsetInternalId")
+    final String refsetInternalId) throws Exception {
+
+        try {
+
+            logger.info("*********** getRefset: refsetInternalId: " + refsetInternalId);
+
+            final Map<String, Set<String>> ancestorsCache = RefsetMemberService.ancestorsCache;
+            
+            if (ancestorsCache.containsKey(refsetInternalId)) {
+                return ModelUtility.toJson(ancestorsCache.get(refsetInternalId));
+            } else {
+                return "Not Cached";
             }
 
         } catch (final Exception e) {
