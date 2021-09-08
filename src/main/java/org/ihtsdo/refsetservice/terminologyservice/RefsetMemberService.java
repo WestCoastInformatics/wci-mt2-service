@@ -2313,13 +2313,13 @@ public class RefsetMemberService {
             try {
 
                 final String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
-                        + "/" + "concepts/" + conceptId + "?descendantCountForm=inferred";
+                        + "/" + "concepts/" + conceptId;
 
                 logger.debug("Get Concept Details URL: " + url);
 
                 ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
                 lookupParameters.setGetDescriptions(true);
-                lookupParameters.setGetParentsAndChildren(true);
+                lookupParameters.setGetParents(true);
                 lookupParameters.setGetRoleGroups(true);
                 lookupParameters.setSingleConceptRequest(true);
 
@@ -2562,12 +2562,16 @@ public class RefsetMemberService {
 
                 }
 
-                if (missingLookupParameters.isGetParentsAndChildren() && concept.isActive()) {
+                if (missingLookupParameters.isGetParents() && concept.isActive()) {
                     // Snowstorm throws a 400-Exception when children/parents of
                     // an inactive concepts are requested
                     concept.setParents(getParents(conceptId, refset).getItems());
+                }
+                
+                if (missingLookupParameters.isGetChildren() && concept.isActive()) {
+                    // Snowstorm throws a 400-Exception when children/parents of
+                    // an inactive concepts are requested
                     concept.setChildren(getChildren(conceptId, refset).getItems());
-
                 }
 
                 if (missingLookupParameters.isGetRoleGroups()) {
@@ -2623,9 +2627,13 @@ public class RefsetMemberService {
             missingContentFound = true;
         }
 
-        if (lookupParameters.isGetParentsAndChildren() && concept.getParents().isEmpty()
-                && concept.getChildren().isEmpty()) {
-            missingConceptLookupParameters.setGetParentsAndChildren(true);
+        if (lookupParameters.isGetParents() && concept.getParents().isEmpty()) {
+            missingConceptLookupParameters.setGetParents(true);
+            missingContentFound = true;
+        }
+        
+        if (lookupParameters.isGetChildren() && concept.getChildren().isEmpty()) {
+            missingConceptLookupParameters.setGetChildren(true);
             missingContentFound = true;
         }
 

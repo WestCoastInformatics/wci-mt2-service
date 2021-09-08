@@ -17,7 +17,9 @@ public class ConceptLookupParameters {
 
 	private boolean getDescriptions = false;
 
-    private boolean getParentsAndChildren = false;
+    private boolean getParents = false;
+    
+    private boolean getChildren = false;
 
     private boolean getRoleGroups = false;
 
@@ -48,12 +50,20 @@ public class ConceptLookupParameters {
 		this.getDescriptions = getDescriptions;
 	}
 
-	public boolean isGetParentsAndChildren() {
-		return getParentsAndChildren;
+	public boolean isGetParents() {
+		return getParents;
 	}
 
-	public void setGetParentsAndChildren(boolean getParentsAndChildren) {
-		this.getParentsAndChildren = getParentsAndChildren;
+	public void setGetParents(boolean getParents) {
+		this.getParents = getParents;
+	}
+	
+	public boolean isGetChildren() {
+	    return getChildren;
+	}
+	
+	public void setGetChildren(boolean getChildren) {
+	    this.getChildren = getChildren;
 	}
 
 	public boolean isGetRoleGroups() {
@@ -98,7 +108,8 @@ public class ConceptLookupParameters {
         
     	singleConceptRequest = other.isSingleConceptRequest();
     	getDescriptions = other.isGetDescriptions();
-    	getParentsAndChildren = other.isGetParentsAndChildren();
+    	getParents = other.isGetParents();
+    	getChildren = other.isGetChildren();
         getRoleGroups = other.isGetRoleGroups();
         getMembershipInformation = other.isGetMembershipInformation();
         nonDefaultPreferredTerms = other.getNonDefaultPreferredTerms();
@@ -146,7 +157,11 @@ public class ConceptLookupParameters {
             return false;
         }
         
-        if (getParentsAndChildren != other.getParentsAndChildren) {
+        if (getParents != other.getParents) {
+            return false;
+        }
+        
+        if (getChildren != other.getChildren) {
             return false;
         }
         
@@ -174,7 +189,8 @@ public class ConceptLookupParameters {
         result = prime * result + ((nonDefaultPreferredTerms == null) ? 0 : nonDefaultPreferredTerms.hashCode());
         result = prime * result + (singleConceptRequest ? 1 : 0);
         result = prime * result + (getDescriptions ? 1 : 0);
-        result = prime * result + (getParentsAndChildren ? 1 : 0);
+        result = prime * result + (getParents ? 1 : 0);
+        result = prime * result + (getChildren ? 1 : 0);
         result = prime * result + (getRoleGroups ? 1 : 0);
         result = prime * result + (getMembershipInformation ? 1 : 0);
         return result;
