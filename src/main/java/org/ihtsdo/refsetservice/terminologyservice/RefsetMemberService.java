@@ -1908,6 +1908,7 @@ public class RefsetMemberService {
         final SearchParameters searchParameters) throws MalformedURLException, Exception {
 
         ConceptResultList members = new ConceptResultList();
+        int total = 0;
 
         // Create Snowstorm URL
         String url = SnowstormConnection.BASE_URL + "browser/" + getBranchPath(refset)
@@ -1934,8 +1935,13 @@ public class RefsetMemberService {
 
             JsonNode allDescriptionNodes = root.get("items");
 
-            // if the search found nothing try doing a description ID search
-            if (allDescriptionNodes.size() == 0) {
+            // if the search returned results set the total
+            if (allDescriptionNodes.size() > 0) {
+                total = root.get("totalElements").asInt();
+            }
+            
+            // else if the search found nothing try doing a description ID search
+            else if (allDescriptionNodes.size() == 0) {
 
                 final String descriptionUrl = SnowstormConnection.BASE_URL + getBranchPath(refset)
                         + "/descriptions/" + StringUtility
@@ -1956,7 +1962,7 @@ public class RefsetMemberService {
                     allDescriptionNodes = descriptionMapper.readTree(descriptionResult.toString());
                 }
 
-                // if the search found nothing try doing a description ID search
+                // if the search ID search found something populate basic concept information not included with this description result
                 if (allDescriptionNodes.size() != 0 && !allDescriptionNodes.get(0).has("error")) {
 
                     final String conceptUrl = SnowstormConnection.BASE_URL + getBranchPath(refset)
@@ -1978,6 +1984,8 @@ public class RefsetMemberService {
                         final ObjectMapper descriptionMapper = new ObjectMapper();
                         allDescriptionNodes =
                                 descriptionMapper.readTree(descriptionResult.toString());
+                        
+                        total = 1;
                     }
                 }
             }
@@ -2025,7 +2033,7 @@ public class RefsetMemberService {
                 populateMembershipInformation(refset,
                         new ArrayList<Concept>(conceptIdToConcept.values()));
                 members.setItems(new ArrayList<Concept>(conceptIdToConcept.values()));
-                members.setTotal(conceptIdToConcept.size());
+                members.setTotal(total);
             }
 
             return members;
