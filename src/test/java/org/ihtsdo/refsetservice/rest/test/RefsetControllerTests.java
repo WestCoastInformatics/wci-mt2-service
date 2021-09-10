@@ -602,6 +602,34 @@ public class RefsetControllerTests extends BaseTest {
 
         assertThat(editionFound).isTrue();
     }
+    
+    /**
+     * Test getting branch versions.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testBranchVersions() throws Exception {
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+
+        url = "/general/branchVersions?branch=MAIN/SNOMEDCT-BE";
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        ResultList<String> versions = new ObjectMapper().readValue(content,
+                (new TypeReference<ResultList<String>>() {
+                    /* NA */}));
+        assertThat(versions).isNotNull();
+        assertThat(versions.getItems().size()).isGreaterThan(0);
+
+        for (final String version : versions.getItems()) {
+            assertThat(version.matches("\\d{4}-\\d{2}-\\d{2}"));
+        }
+    }
 
     /**
      * Test listing refsets.

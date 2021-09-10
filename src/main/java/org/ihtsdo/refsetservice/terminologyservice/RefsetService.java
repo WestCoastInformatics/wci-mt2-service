@@ -445,6 +445,59 @@ public class RefsetService {
     }
     
     /**
+     * Gets the list of version dates for a branch.
+     *
+     * @param branch the branch to retrieve the concepts from
+     * @return the list of branch versions
+     * @throws Exception the exception
+     */
+    public static ResultList<String> getBranchVersions(final String branch) throws Exception {
+    
+        final ResultList<String> results = new ResultList<>();
+        final String url = SnowstormConnection.BASE_URL + "branches/" + branch + "/" + "children?limit=500&immediateChildren=true";
+        
+        logger.debug("getBranchVersions URL: " + url);
+        
+        // get the versions from snowstorm
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                throw new Exception("Unable to get branch versions. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+            }
+            
+            final ObjectMapper mapper = new ObjectMapper();
+            final String resultString = response.readEntity(String.class);
+            final JsonNode root = mapper.readTree(resultString.toString());
+            final Iterator<JsonNode> iterator = root.iterator();
+               
+            while (iterator != null && iterator.hasNext()) {
+                
+                final JsonNode node = iterator.next();
+                
+                if (node.get("deleted").asBoolean()) {
+                    continue;
+                }
+                
+                String path = node.get("path").asText();
+                path = path.replace(branch + "/", "");
+                
+                // if this path isn't in date format then skip it 
+                if (!path.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                    continue;                    
+                }
+                
+                results.getItems().add(path);
+            }
+            
+            // sort the results
+            Collections.sort(results.getItems(), (o1, o2) -> (o2.compareTo(o1)));
+        }
+        
+        return results;
+    }
+    
+    /**
      * Returns a specific project.
      *
      * @param projectId the project ID

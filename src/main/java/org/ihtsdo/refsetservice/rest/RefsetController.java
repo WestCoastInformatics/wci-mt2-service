@@ -113,7 +113,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getRefset: refsetInternalId: " + refsetInternalId);
+            logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -129,7 +129,7 @@ public class RefsetController extends BaseController {
                 refset.setVersionList(
                         RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
 
-                logger.info("*********** getRefset: refset: " + ModelUtility.toJson(refset));
+                logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
 
                 return refset;
             }
@@ -155,7 +155,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
+            logger.debug("*********** updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -165,7 +165,7 @@ public class RefsetController extends BaseController {
                 service.setModifiedBy("restApi");
                 service.update(refset);
 
-                logger.info("*********** updateActive: refset: " + ModelUtility.toJson(refset));
+                logger.debug("*********** updateActive: refset: " + ModelUtility.toJson(refset));
 
                 return refset;
             }
@@ -331,7 +331,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
+            logger.debug("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
             final String refsetInternalId = RefsetService.createRefset(refsetParameters);
             
@@ -361,7 +361,7 @@ public class RefsetController extends BaseController {
         
         try {
 
-            logger.info("*********** deleteRefset: refsetInternalId: " + refsetInternalId);
+            logger.debug("*********** deleteRefset: refsetInternalId: " + refsetInternalId);
             
             final String status = RefsetService.deleteRefset(refsetInternalId);
 
@@ -665,8 +665,7 @@ public class RefsetController extends BaseController {
             ConceptResultList results = new ConceptResultList();
             String query = searchParameters.getQuery();
 
-            logger.info("*********** taxonomySearch: refsetInternalId: " + refsetInternalId);
-            logger.debug("******** taxonomySearch: searchParameters: "
+            logger.debug("*********** taxonomySearch: refsetInternalId: " + refsetInternalId + " ; searchParameters: "
                     + ModelUtility.toJson(searchParameters));
 
             if (query != null && !query.equals("")) {
@@ -763,7 +762,7 @@ public class RefsetController extends BaseController {
         final long start = System.currentTimeMillis();
         ConceptResultList results = new ConceptResultList();
 
-        logger.info("*********** getMembers: refsetInternalId: " + refsetInternalId);
+        logger.debug("*********** getMembers: refsetInternalId: " + refsetInternalId);
 
         try {
 
@@ -808,7 +807,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** cacheMemberAncestors: refsetInternalId: " + refsetInternalId);
+            logger.debug("*********** cacheMemberAncestors: refsetInternalId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -897,7 +896,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** exportRefset: refsetInternalId: " + refsetInternalId
+            logger.debug("*********** exportRefset: refsetInternalId: " + refsetInternalId
                     + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: "
                     + fileNameDate + " ; startEffectiveTime: " + startEffectiveTime
                     + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: "
@@ -980,7 +979,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("****** downloadExport: fileName: " + fileName);
+            logger.debug("****** downloadExport: fileName: " + fileName);
 
             Path filePath = Paths.get(EXPORT_FILE_DIR + fileName);
             Resource file = new UrlResource(filePath.toUri());
@@ -1060,7 +1059,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getMemberHistory: memberId: " + conceptId
+            logger.debug("*********** getMemberHistory: memberId: " + conceptId
                     + "; refsetInternalId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
@@ -1078,7 +1077,7 @@ public class RefsetController extends BaseController {
                 final List<Map<String, String>> memberHistory =
                         RefsetMemberService.getMemberHistory(conceptId, versions);
 
-                logger.info("*********** getMemberHistory: member: "
+                logger.debug("*********** getMemberHistory: member: "
                         + ModelUtility.toJson(memberHistory));
 
                 ResultList<Map<String, String>> results = new ResultList<>(memberHistory);
@@ -1123,7 +1122,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getConceptDetails: conceptId: " + conceptId
+            logger.debug("*********** getConceptDetails: conceptId: " + conceptId
                     + "; refsetInternalId: " + refsetInternalId);
             try (TerminologyService service = new TerminologyService()) {
 
@@ -1136,7 +1135,7 @@ public class RefsetController extends BaseController {
 
                 final Concept concept = RefsetMemberService.getConceptDetails(conceptId, refset);
 
-                logger.info(
+                logger.debug(
                         "*********** getConceptDetails: concept: " + ModelUtility.toJson(concept));
 
                 return concept;
@@ -1215,7 +1214,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getVersionStatuses ");
+            logger.debug("*********** getVersionStatuses ");
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -1239,7 +1238,7 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-
+    
     /**
      * Gets the versions.
      *
@@ -1259,7 +1258,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getVersions ");
+            logger.debug("*********** getVersions ");
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -1319,7 +1318,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getEditions ");
+            logger.debug("*********** getEditions ");
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -1397,6 +1396,41 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
+    
+    /**
+     * Gets the list of branch versions.
+     *
+     * @param branch the branch to get versions from 
+     * @return list of edition versions
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Gets the branch versions", response = ResultList.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/general/branchVersions",
+            produces = "application/json")
+    public @ResponseBody ResultList<String> getBranchVersions(final String branch) throws Exception {
+
+        try {
+
+            logger.debug("*********** getBranchVersions - branch: " + branch);
+
+            final ResultList<String> results = RefsetService.getBranchVersions(branch);
+            
+            logger.debug("*********** getBranchVersions - results: " + results);
+            
+            return results;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
 
     /**
      * Gets the Organizations.
@@ -1417,7 +1451,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getOrganizations ");
+            logger.debug("*********** getOrganizations ");
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -1474,7 +1508,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("*********** getRefset: refsetInternalId: " + refsetInternalId);
+            logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
 
             final Map<String, Set<String>> ancestorsCache = RefsetMemberService.ancestorsCache;
             
