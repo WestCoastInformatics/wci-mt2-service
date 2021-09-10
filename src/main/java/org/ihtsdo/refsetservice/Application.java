@@ -87,7 +87,7 @@ public class Application extends SpringBootServletInitializer {
 
         // don't run this method during tests
         if (!PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
-            RefsetMemberService.cacheAllMemberAncestors();
+            //RefsetMemberService.cacheAllMemberAncestors();
         } else {
             logger.debug("Not caching all members during tests.");
         }
