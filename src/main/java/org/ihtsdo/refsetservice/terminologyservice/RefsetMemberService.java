@@ -2368,7 +2368,7 @@ public class RefsetMemberService {
             final String branchPath = getBranchPath(refset);
             final String url =
                     SnowstormConnection.BASE_URL + "browser/" + branchPath + "/" + "concepts/"
-                            + conceptId + "/children?form=inferred&includeDescendantCount=true";
+                            + conceptId + "/children?form=inferred";
 
             logger.debug("Get Children URL: " + url);
 
