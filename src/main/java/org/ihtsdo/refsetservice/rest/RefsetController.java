@@ -201,7 +201,7 @@ public class RefsetController extends BaseController {
             List<String> conceptIdList = new ArrayList<>();
             String error = "";
             
-            logger.debug("*********** addRefsetMembers: refsetInternalId: " + refsetInternalId);
+            logger.debug("*********** addRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
             
             // create the list of concepts based on what was passed in
             if (conceptIds != null && !conceptIds.equals("")) {
