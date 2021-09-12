@@ -118,11 +118,6 @@ public class SnowstormConnection {
         
         Response response = builder.post(Entity.json(entity));
         
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            throw new LocalException(
-                    "Snowstorm Error: " + response.toString());
-        }
-        
         return response;
     }
     
@@ -143,11 +138,6 @@ public class SnowstormConnection {
                 .header("Cookie", getGenericUserCookie());
         
         Response response = builder.put(Entity.json(entity));
-        
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            throw new LocalException(
-                    "Snowstorm Error: " + response.toString());
-        }
         
         return response;
     }
