@@ -53,6 +53,9 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The flag for if concept is defined or primitive. */
     private boolean defined;
+    
+    /** The flag for if concept membership has been released. */
+    private boolean released;
 
     // Members below are filled in when open Concept Details screen only (for
     // now)
@@ -133,6 +136,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         hasChildren = other.getHasChildren();
         roleGroups = other.getRoleGroups();
         defined = other.isDefined();
+        released = other.isReleased();
         descriptions = other.getDescriptions();
     }
 
@@ -419,6 +423,20 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     public void setDefined(boolean isDefined) {
         this.defined = isDefined;
     }
+    
+    /**
+     * @return has the concept been released
+     */
+    public boolean isReleased() {
+        return released;
+    }
+    
+    /**
+     * @param released the value to set the released flag to
+     */
+    public void setReleased(boolean released) {
+        this.released = released;
+    }
 
     /**
      * Hash code.
@@ -440,6 +458,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + (memberOfRefset ? 1 : 0);
         result = prime * result + (hasChildren ? 1 : 0);
         result = prime * result + (defined ? 1 : 0);
+        result = prime * result + (released ? 1 : 0);
         result = prime * result + (hasDescendantRefsetMembers ? 1 : 0);
         result = prime * result + (hasAncestorRefsetMembers ? 1 : 0);
         result = prime * result
@@ -570,6 +589,10 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         }
 
         if (defined != other.defined) {
+            return false;
+        }
+        
+        if (released != other.released) {
             return false;
         }
 

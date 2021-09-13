@@ -1001,9 +1001,8 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
 
-        url = "/refset/" + mainTestingRefsetInternalId
-                + "/members?limit=500&offset=0&displayType=list&refsetInternalId="
-                + mainTestingRefsetInternalId;
+        url = "/refset/a24178fc-69c6-43a6-9fae-d8fa713979e5" //+ mainTestingRefsetInternalId
+                + "/members?limit=500&offset=0&displayType=list";
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();

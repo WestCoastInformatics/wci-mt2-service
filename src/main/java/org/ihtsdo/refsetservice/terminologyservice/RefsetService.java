@@ -198,6 +198,7 @@ public class RefsetService {
             refset.setLatestVersion(true);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
             refset.setProject(project);
+            refset.setVersionDate(null);
             
             if (refset.getType().equals(Refset.INTENSIONAL)) {
                 //refset.getDefinitionClauses().addAll(definitionList);
