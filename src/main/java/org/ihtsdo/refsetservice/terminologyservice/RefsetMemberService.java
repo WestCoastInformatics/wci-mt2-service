@@ -2913,9 +2913,47 @@ public class RefsetMemberService {
             
             // clear the caches for this refset
             clearAllMemberCaches(refsetInternalId);
+            
+            // when searching for members we only want concepts whose membership is active
+            // (though the concept itself can be inactive)
+            final String memberSearchUrl = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
+                    + "/members?referenceSet=" + refset.getRefsetId()
+                    + "&limit=5000&offset=0&active=true&referencedComponentId=" + String.join(",", conceptIds);
+
+            logger.debug("addRefsetMembers search URL: " + memberSearchUrl);
+
+            Iterator<JsonNode> iterator = null;
+            final List<String> conceptsAlreadyMembers = new ArrayList<>();
+
+            try (final Response response = SnowstormConnection.getResponse(memberSearchUrl)) {
+
+                final String resultString = response.readEntity(String.class);
+
+                // Only process payload if Rest call is successful
+                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                    throw new Exception(
+                            "call to url '" + memberSearchUrl + "' wasn't successful. " + response.toString());
+                }
+
+                final JsonNode root = mapper.readTree(resultString.toString());
+                iterator = root.get("items").iterator();
+            }
+
+            // loop thru the returned member details add any to the list that are already members
+            while (iterator != null && iterator.hasNext()) {
+                
+                final JsonNode conceptNode = iterator.next();
+                final String conceptId = conceptNode.get("referencedComponentId").asText();
+                conceptsAlreadyMembers.add(conceptId);
+            }
 
             for (final String conceptId : conceptIds) {
 
+                // don't add concepts that are already members
+                if (conceptsAlreadyMembers.contains(conceptId)) {
+                    continue;
+                }
+                
                 final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId).put("referencedComponentId",
                         conceptId);
 
