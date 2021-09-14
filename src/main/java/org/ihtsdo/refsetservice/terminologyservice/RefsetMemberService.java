@@ -2019,27 +2019,24 @@ public class RefsetMemberService {
                 lookupParameters.setGetMembershipInformation(true);
 
                 final List<Concept> conceptsToProcess = new ArrayList<>();
-                logger.debug("111");
                 final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
-                logger.debug("222");
+                
                 ConceptResultList currentList;
                 // if search term is indicated, find members that match search
                 // term
                 if (searchParameters != null && searchParameters.getQuery() != null) {
-                    logger.debug("222222");
                     currentList = searchRefsetMembers(refset, searchParameters);
                 } else {
                     
                     logger.debug("Get Member List URL: " + url);
                     
                     // Populate results for member list
-                    logger.debug("333333");
                     currentList = getConceptsFromSnowstorm(url, refset, lookupParameters);
                 }
-                logger.debug("333");
+                
                 // add the descriptions to the children concepts in batches
                 for (int i = 0; i < currentList.getItems().size(); i++) {
-                    logger.debug("444");
+                    
                     Concept concept = currentList.getItems().get(i);
 
                     // Only search concepts that haven't already populated
@@ -2054,19 +2051,19 @@ public class RefsetMemberService {
                         }
                     }
                 }
-                logger.debug("555");
+                
                 // if the memberCache doesn't have this concept already add it
                 for (Concept concept : currentList.getItems()) {
-                    logger.debug("666");
+                    
                     if (!memberIdMap.containsKey(concept.getCode())) {
                         memberIdMap.put(concept.getCode(), concept);
                     }
                 }
-                logger.debug("777");
+                
                 members.getItems().addAll(currentList.getItems());
                 members.setTotal(currentList.getTotal());
                 members.setTotalKnown(true);
-                logger.debug("888");
+                
             } catch (Exception ex) {
                 throw new Exception("Could not get refset member list for refset " + refset.getRefsetId()
                         + " from snowstorm: " + ex.getMessage(), ex);
@@ -2274,15 +2271,15 @@ public class RefsetMemberService {
      */
     protected static ConceptResultList getConceptsFromSnowstorm(String url, Refset refset,
             ConceptLookupParameters lookupParameters) throws Exception {
-        logger.debug("AAA");
+        
         try (final Response response = SnowstormConnection.getResponse(url)) {
-            logger.debug("BBB");
+            
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                 throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
             }
-            logger.debug("CCC");
+            
             final String resultString = response.readEntity(String.class);
-            logger.debug("DDD");
+            
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                 throw new Exception(Integer.toString(response.getStatus()));
@@ -2290,7 +2287,7 @@ public class RefsetMemberService {
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
-            logger.debug("EEE");
+            
             return populateConcepts(root, refset, lookupParameters);
         }
     }
@@ -2318,16 +2315,14 @@ public class RefsetMemberService {
         if (root.get("total") != null) {
             total = root.get("total").asInt();
         }
-        logger.debug("ZZZ");
+        
         if (!lookupParameters.isGetMembershipInformation()) {
             iterator = root.iterator();
         } else {
-            logger.debug("YYY");
             iterator = root.get("items").iterator();
         }
-        logger.debug("XXX");
+        
         final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
-        logger.debug("WWW" + memberIdMap.size());
         
         while (lookupParameters.isSingleConceptRequest() || iterator.hasNext()) {
             
