@@ -14,6 +14,9 @@ public class TaxonomyParameters {
 
     /** The starting concept ID (exclusive - get the children of this concept not the concept itself). */
     private String startingConceptId = SNOMED_ROOT_CONCEPT_ID;
+    
+    /** The language to return. */
+    private String language;
 
     /** The depth - how many levels of children or parents to retrieve. */
     private Integer depth;
@@ -45,6 +48,7 @@ public class TaxonomyParameters {
     public void populateFrom(final TaxonomyParameters other) {
         
         startingConceptId = other.getStartingConceptId();
+        language = other.getLanguage();
         depth = other.getDepth();
         returnChildren = other.getReturnChildren();
     }
@@ -65,6 +69,24 @@ public class TaxonomyParameters {
      */
     public void setStartingConceptId(final String startingConceptId) {
         this.startingConceptId = startingConceptId;
+    }
+    
+    /**
+     * Returns the language.
+     *
+     * @return the language
+     */
+    public String getLanguage() {
+        return language;
+    }
+    
+    /**
+     * Sets the language.
+     *
+     * @param language the language
+     */
+    public void setLanguage(final String language) {
+        this.language = language;
     }
 
     /**
@@ -136,6 +158,16 @@ public class TaxonomyParameters {
             return false;
         }
         
+        if (language == null) {
+            
+            if (other.language != null) {
+                return false;
+            }
+            
+        } else if (!language.equals(other.language)) {
+            return false;
+        }
+        
         if (depth == null) {
             
             if (other.depth != null) {
@@ -164,6 +196,7 @@ public class TaxonomyParameters {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((startingConceptId == null) ? 0 : startingConceptId.hashCode());
+        result = prime * result + ((language == null) ? 0 : language.hashCode());
         result = prime * result + ((depth == null) ? 0 : depth.hashCode());
         result = prime * result + (returnChildren ? 1 : 0);
         return result;

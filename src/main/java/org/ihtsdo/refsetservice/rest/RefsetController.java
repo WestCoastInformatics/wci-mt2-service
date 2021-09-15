@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -651,30 +653,38 @@ public class RefsetController extends BaseController {
             // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/taxonomySearch",
+    @RequestMapping(method = RequestMethod.GET, value = {"/refset/{refsetInternalId}/taxonomySearch", "/refset/{refsetInternalId}/conceptSearch"},
             produces = "application/json")
-    public @ResponseBody ConceptResultList searchTaxonomy(@PathVariable(value = "refsetInternalId")
+    public @ResponseBody ConceptResultList searchConcepts(@PathVariable(value = "refsetInternalId")
     final String refsetInternalId, final SearchParameters searchParameters,
-        final BindingResult bindingResult) throws Exception {
+        final BindingResult bindingResult, HttpServletRequest request) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
+        
+        boolean searchRefsetMembers = false;
+        final String uri = request.getRequestURI();
+        
+        logger.debug("^^^^^ uri: " + uri);
+        if (uri.contains("taxonomySearch")) {
+            searchRefsetMembers = true;
+        }
 
         try {
 
             ConceptResultList results = new ConceptResultList();
             String query = searchParameters.getQuery();
 
-            logger.debug("*********** taxonomySearch: refsetInternalId: " + refsetInternalId + " ; searchParameters: "
-                    + ModelUtility.toJson(searchParameters));
+            logger.debug("*********** taxonomySearch: searchConcepts: " + refsetInternalId + " ; searchParameters: "
+                    + ModelUtility.toJson(searchParameters) + " ; searchRefsetMembers: " + searchRefsetMembers);
 
             if (query != null && !query.equals("")) {
 
-                results = RefsetMemberService.searchTaxonomyMembers(refsetInternalId,
-                        searchParameters);
+                results = RefsetMemberService.prepareConceptSearch(refsetInternalId,
+                        searchParameters, searchRefsetMembers);
             }
 
-            logger.debug("******** taxonomySearch: results: " + ModelUtility.toJson(results));
+            logger.debug("******** searchConcepts: results: " + ModelUtility.toJson(results));
             return results;
 
         } catch (final ResponseStatusException rse) {

@@ -109,6 +109,8 @@ public class RefsetControllerTests extends BaseTest {
     private static final String SECOND_CONCEPT_ID = "260206005";
 
     private static final String DETAILS_SEARCH_CONCEPT_ID = "276310004";
+    
+    private static final String CONCEPT_SEARCH_CONCEPT_ID = "46459009";
 
     private static String inactiveConceptRefsetInternalId;
 
@@ -134,6 +136,8 @@ public class RefsetControllerTests extends BaseTest {
     private static final List<String> inactiveConceptDescList = new ArrayList<>();
 
     private static final List<String> detailSearchNonAcceptableConceptDescList = new ArrayList<>();
+    
+    private static final List<String> conceptSearchDescList = new ArrayList<>();
 
     private static final String REFSET_FILE_PATH =
             "src/test/resources/refsetService/";
@@ -212,6 +216,8 @@ public class RefsetControllerTests extends BaseTest {
                 detailSearchNonAcceptableConceptDescList.add("Animal hair");
                 detailSearchNonAcceptableConceptDescList.add("dierlijk haar");
                 detailSearchNonAcceptableConceptDescList.add("poil animal");
+                
+                conceptSearchDescList.add("Brazilian pemphigus foliaceus");
                 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1147,6 +1153,51 @@ public class RefsetControllerTests extends BaseTest {
             // Doesn't include membership status nor memberEffectiveTime
             validateConcept(concept, DETAILS_SEARCH_CONCEPT_ID, null, false,
                     detailSearchNonAcceptableConceptDescList, 0, -1, 0);
+        }
+    }
+    
+    /**
+     * Test searching general concepts
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testConceptSearch() throws Exception {
+        String searchTerms[] = new String[] {
+                "fogo"
+        };
+
+        String url = null;
+        MvcResult result = null;
+        String content = null;
+
+        for (int i = 0; i < searchTerms.length; i++) {
+            
+            url = "/refset/" + mainTestingRefsetInternalId
+                    + "/conceptSearch?limit=500&offset=0&query=" + searchTerms[i];
+
+            logger.info("Testing term - " + searchTerms[i]);
+            logger.info("Testing url - " + url);
+            result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            ConceptResultList members =
+                    new ObjectMapper().readValue(content, (ConceptResultList.class));
+
+            // Testing Results
+            assertThat(members).isNotNull();
+            assertThat(members.getItems().size()).isGreaterThan(1);
+
+            Concept concept = null;
+            
+            for (Concept conceptBeingTested : members.getItems()) {
+                if (conceptBeingTested.getCode().equals(CONCEPT_SEARCH_CONCEPT_ID)) {
+                    concept = conceptBeingTested;
+                    break;
+                }
+            }
+            // Doesn't include membership status nor memberEffectiveTime
+            //validateConcept(concept, CONCEPT_SEARCH_CONCEPT_ID, null, false, conceptSearchDescList, 0, -1, 0);
         }
     }
 

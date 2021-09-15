@@ -197,15 +197,8 @@ public class RefsetMemberService {
             // the next call depend if a list or taxonomy is being returned
             if (displayType.equals("list")) {
 
-                final String pagingParams = "offset=" + (searchParameters.getOffset() * searchParameters.getLimit())
-                        + "&limit=" + searchParameters.getLimit();
-
-                // when searching for members we only want concepts whose membership is active
-                // (though the concept itself can be inactive)
-                final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
-                        + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams + "&active=true";
-                logger.info("URL: " + url);
-                concepts = getMemberList(refset, nonDefaultPreferredTerms, url, searchParameters);
+                
+                concepts = getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
                 logger.info("Refset has " + concepts.size() + " members");
 
             } else {
@@ -1660,18 +1653,19 @@ public class RefsetMemberService {
     }
 
     /**
-     * Search refset taxonomy members.
+     * Get ready to search concepts.
      *
      * @param refsetInternalId the internal refset ID
      * @param searchParameters the search parameters
+     * @param searchRefsetMembers Should the search be for members of the refset or for all concepts
      * @return the concept result list
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception             the exception
      */
-    public static ConceptResultList searchTaxonomyMembers(final String refsetInternalId,
-            final SearchParameters searchParameters) throws MalformedURLException, Exception {
+    public static ConceptResultList prepareConceptSearch(final String refsetInternalId,
+            final SearchParameters searchParameters, final boolean searchRefsetMembers) throws MalformedURLException, Exception {
 
-        ConceptResultList members = new ConceptResultList();
+        ConceptResultList concepts = new ConceptResultList();
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -1681,14 +1675,16 @@ public class RefsetMemberService {
                 throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
 
-            members = searchRefsetMembers(refset, searchParameters);
-            populateAllLanguageDescriptions(refset, members.getItems());
-
-            getConceptAncestors(refset, members.getItems());
+            concepts = searchConcepts(refset, searchParameters, searchRefsetMembers);
+            
+            if (searchRefsetMembers) {
+                
+                populateAllLanguageDescriptions(refset, concepts.getItems());
+                getConceptAncestors(refset, concepts.getItems());
+            }
         }
 
-        return members;
-
+        return concepts;
     }
 
     /**
@@ -1807,16 +1803,17 @@ public class RefsetMemberService {
     }
 
     /**
-     * Search refset members.
+     * Search concepts.
      *
      * @param refset           the refset
      * @param searchParameters the search parameters
+     * @param searchRefsetMembers Should the search be for members of the refset or for all concepts
      * @return the concept result list
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception             the exception
      */
-    public static ConceptResultList searchRefsetMembers(final Refset refset,
-        final SearchParameters searchParameters) throws MalformedURLException, Exception {
+    public static ConceptResultList searchConcepts(final Refset refset,
+        final SearchParameters searchParameters, final boolean searchRefsetMembers) throws MalformedURLException, Exception {
 
         ConceptResultList members = new ConceptResultList();
         final ObjectMapper mapper = new ObjectMapper();
@@ -1836,7 +1833,7 @@ public class RefsetMemberService {
             final String eclUrl = SnowstormConnection.BASE_URL + "util/ecl-string-to-model";
             final String body = StringUtility.encodeValue(searchParameters.getQuery());
             
-            logger.debug("searchRefsetMembers ECL Parse URL: " + eclUrl + "; body: " + body);
+            logger.debug("searchConcepts ECL Parse URL: " + eclUrl + "; body: " + body);
             
             try (final Response response = SnowstormConnection.postResponse(eclUrl, body)) {
                 
@@ -1849,13 +1846,24 @@ public class RefsetMemberService {
         
         // set the appropriate way to search
         if (!searchEcl) {
-            url += "&term=" + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery())) + "&ecl=" + encodedCaret + refset.getRefsetId();
+            
+            url += "&term=" + StringUtility.encodeValue(QueryParserBase.escape(searchParameters.getQuery()));
+            
+            if (searchRefsetMembers) {
+                url += "&ecl=" + encodedCaret + refset.getRefsetId();
+            }
+            
         } else {
-            url += "&ecl=" + StringUtility.encodeValue("(" + searchParameters.getQuery() + ") AND ^" + refset.getRefsetId());
+            
+            url += "&ecl=" + StringUtility.encodeValue("(" + searchParameters.getQuery() + ")");
+            
+            if (searchRefsetMembers) {
+                url += " AND " + encodedCaret + refset.getRefsetId();
+            }
         }
 
         // Call Snowstorm
-        logger.debug("searchRefsetMembers URL: " + url);
+        logger.debug("searchConcepts URL: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -1922,7 +1930,8 @@ public class RefsetMemberService {
             return members;
             
         } catch (Exception ex) {
-            logger.error("Could not retrieve descriptions matching term: " + ex.getMessage());
+            
+            logger.error("searchConcepts Could not retrieve concepts matching term: " + ex.getMessage());
             ex.printStackTrace();
         }
         
@@ -1996,15 +2005,23 @@ public class RefsetMemberService {
      *
      * @param refset                   the refset who's members are being retrieved
      * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @param url                      the terminology server URL
      * @return the refset member concepts
      * @throws Exception the exception
      */
     public static ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms,
-            final String url, final SearchParameters searchParameters) throws Exception {
-        logger.debug("\n URL2" + url);
+            final SearchParameters searchParameters) throws Exception {
+        
         // 2 Snowstorm calls: 1) Memberlist and 2) Descriptions
         ConceptResultList members = new ConceptResultList();
+        
+        final String pagingParams = "offset=" + (searchParameters.getOffset() * searchParameters.getLimit())
+                + "&limit=" + searchParameters.getLimit();
+
+        // when searching for members we only want concepts whose membership is active
+        // (though the concept itself can be inactive)
+        final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
+                + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams + "&active=true";
+        logger.info("URL: " + url);
 
         // TODO: Make the memberListCallCache store a list of concept Ids, not a
         // list of concepts.
@@ -2012,7 +2029,7 @@ public class RefsetMemberService {
         // memberIdMap, populate just those concepts
         // TODO: Also add to memberListCallCache if the url is not already a key
         if (true) { //(!memberListCallCache.containsKey(url)) {
-
+            
             try {
 
                 ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
@@ -2025,7 +2042,7 @@ public class RefsetMemberService {
                 // if search term is indicated, find members that match search
                 // term
                 if (searchParameters != null && searchParameters.getQuery() != null) {
-                    currentList = searchRefsetMembers(refset, searchParameters);
+                    currentList = searchConcepts(refset, searchParameters, true);
                 } else {
                     
                     logger.debug("Get Member List URL: " + url);
