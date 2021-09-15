@@ -1914,7 +1914,7 @@ public class RefsetMemberService {
                             }
 
                             setConceptPermissions(concept);
-                            concept.setMemberOfRefset(true);
+                            concept.setMemberOfRefset(searchRefsetMembers);
                             conceptIdToConcept.put(conceptId, concept);
                         }
                     }

@@ -1186,7 +1186,7 @@ public class RefsetControllerTests extends BaseTest {
 
             // Testing Results
             assertThat(members).isNotNull();
-            assertThat(members.getItems().size()).isGreaterThan(1);
+            assertThat(members.getItems().size()).isGreaterThan(0);
 
             Concept concept = null;
             
