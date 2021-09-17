@@ -663,7 +663,7 @@ public class RefsetControllerTests extends BaseTest {
         // Test by name
         url = baseUrl
 
-                + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal";
+                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal";
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
@@ -686,7 +686,7 @@ public class RefsetControllerTests extends BaseTest {
 
         // Test by edition name
         url = baseUrl
-                + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query=editionName:Belgian Edition";
+                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=editionName:Belgian Edition";
 
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -710,7 +710,7 @@ public class RefsetControllerTests extends BaseTest {
 
         // Test by combination
         url = baseUrl
-                + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal AND editionName:Belgian Edition"; // Hyperdontia
+                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal AND editionName:Belgian Edition"; // Hyperdontia
 
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -734,7 +734,7 @@ public class RefsetControllerTests extends BaseTest {
                 "999861000172117", "561000172108", "General"
         };
         for (int i = 0; i < searchTerms.length; i++) {
-            url = baseUrl + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query="
+            url = baseUrl + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query="
                     + searchTerms[i];
 
             logger.info("Testing term - " + searchTerms[i]);
@@ -760,7 +760,7 @@ public class RefsetControllerTests extends BaseTest {
 
         // Test graceful handling of zero results
         url = baseUrl
-                + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&query=1234567890";
+                + "/search?searchConcepts=false&limit=500&offset=0&sort=versionDate&sortAscending=false&query=1234567890";
 
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();

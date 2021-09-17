@@ -508,7 +508,7 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search",
             produces = "application/json")
-    public @ResponseBody ResultList<Refset> searchDirectory(final SearchParameters searchParameters,
+    public @ResponseBody ResultList<Refset> searchDirectory(final SearchParameters searchParameters, final boolean searchConcepts,
         final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -521,7 +521,7 @@ public class RefsetController extends BaseController {
             String query = searchParameters.getQuery();
 
             logger.debug("******** searchDirectory searchParameters: "
-                    + ModelUtility.toJson(searchParameters));
+                    + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts);
 
             final PfsParameter pfs = new PfsParameter();
 
@@ -565,8 +565,12 @@ public class RefsetController extends BaseController {
                     
                     termQuery = StringUtils.removeEnd(termQuery, " AND ");
                     
-                    String memberRefsetQuery =
-                            RefsetMemberService.searchDirectoryMembers(searchParameters);
+                    String memberRefsetQuery = "";
+                    
+                    // if it was requested search member concepts
+                    if (searchConcepts) {
+                        memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
+                    }
                     
                     if (!memberRefsetQuery.equals("")) {
                         termQuery = "((" + termQuery + ") OR " + memberRefsetQuery + ")";
