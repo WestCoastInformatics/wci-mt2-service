@@ -104,6 +104,8 @@ public class RefsetControllerTests extends BaseTest {
 
     // With 2 parents, 6 children and 0 defing rels
     private static final String FIRST_CONCEPT_ID = "37663002";
+    
+    private static final String FIRST_CONCEPT_PARENT_ID = "105899005";
 
     // With 1 parents, 0 children and 0 defing rels
     private static final String SECOND_CONCEPT_ID = "260206005";
@@ -130,6 +132,8 @@ public class RefsetControllerTests extends BaseTest {
     private static final String SNOMED_ROOT = "138875005";
 
     private static final List<String> firstConceptDescList = new ArrayList<>();
+    
+    private static final List<String> firstConceptParentDescList = new ArrayList<>();
 
     private static final List<String> secondConceptDescList = new ArrayList<>();
 
@@ -208,6 +212,11 @@ public class RefsetControllerTests extends BaseTest {
                 firstConceptDescList.add("Venom");
                 firstConceptDescList.add("venin");
                 firstConceptDescList.add("gif");
+                
+                firstConceptParentDescList.add("Animal agent (substance)");
+                firstConceptParentDescList.add("Animal agent");
+                firstConceptParentDescList.add("produit animal");
+                firstConceptParentDescList.add("dierlijk product");
                 
                 inactiveConceptDescList.add("Entire sclerocorneal junction (body structure)");
                 inactiveConceptDescList.add("Entire sclerocorneal junction");
@@ -908,7 +917,7 @@ public class RefsetControllerTests extends BaseTest {
         Concept concept = new ObjectMapper().readValue(content, Concept.class);
 
         // doesn't include membership status nor memberEffectiveTime
-        validateConcept(concept, FIRST_CONCEPT_ID, null, false, firstConceptDescList, 0, 2, 6);
+        validateConcept(concept, FIRST_CONCEPT_ID, null, false, firstConceptDescList, 0, 0, 6);
 
         // Try second concept
         url = "/concept/" + SECOND_CONCEPT_ID + "?refsetInternalId=" + mainTestingRefsetInternalId;
@@ -920,7 +929,7 @@ public class RefsetControllerTests extends BaseTest {
         concept = new ObjectMapper().readValue(content, Concept.class);
 
         // doesn't include membership status nor memberEffectiveTime
-        validateConcept(concept, SECOND_CONCEPT_ID, null, false, secondConceptDescList, 0, 1, 0);
+        validateConcept(concept, SECOND_CONCEPT_ID, null, false, secondConceptDescList, 0, 0, 0);
 
         // Test invalid refset is handled gracefully
         url = "/concept/" + FIRST_CONCEPT_ID + "?refsetInternalId=" + INVALID_INTERNAL_REFSET_ID;
@@ -1007,7 +1016,7 @@ public class RefsetControllerTests extends BaseTest {
         MvcResult result = null;
         String content = null;
 
-        url = "/refset/a24178fc-69c6-43a6-9fae-d8fa713979e5" //+ mainTestingRefsetInternalId
+        url = "/refset/" + mainTestingRefsetInternalId
                 + "/members?limit=500&offset=0&displayType=list";
         logger.info("Testing url - " + url);
 
@@ -1048,8 +1057,7 @@ public class RefsetControllerTests extends BaseTest {
 
         // Test invalid refset is handled gracefully
         url = "/refset/" + INVALID_INTERNAL_REFSET_ID
-                + "/members?limit=500&offset=0&displayType=list&refsetInternalId="
-                + INVALID_INTERNAL_REFSET_ID;
+                + "/members?limit=500&offset=0&displayType=list";
 
         logger.info("Testing url - " + url);
 
@@ -1084,8 +1092,7 @@ public class RefsetControllerTests extends BaseTest {
         for (int i = 0; i < searchTerms.length; i++) {
 
             url = "/refset/" + mainTestingRefsetInternalId + "/members?limit=500&offset=0&query="
-                    + searchTerms[i] + "&displayType=list&refsetInternalId="
-                    + mainTestingRefsetInternalId;
+                    + searchTerms[i] + "&displayType=list";
 
             logger.info("Testing term - " + searchTerms[i]);
             logger.info("Testing url - " + url);
@@ -1349,22 +1356,17 @@ public class RefsetControllerTests extends BaseTest {
     }
 
     /**
-     * Test getting taxonomy.
+     * Test getting taxonomy children.
      *
      * @throws Exception the exception
      */
     @Test
-    public void testTaxonomy() throws Exception {
+    public void testTaxonomyChildren() throws Exception {
 
         // First concept with grandparent with: Animal Material (256363008) is
         // parent of
         // Animal Agent (105899005) which is a parent to firstConIdToExamine
         // (Venon)
-
-        // Must first cache the ancestors for the refset
-        String url = "/ancestors/" + mainTestingRefsetInternalId;
-        logger.info("Testing url - " + url);
-        MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
 
         // Search on grandparent
         final Map<String, String> parChildMap = new HashMap<>();
@@ -1382,12 +1384,12 @@ public class RefsetControllerTests extends BaseTest {
             final String childId = parChildMap.get(parentId);
             logger.info("Testing parentID: " + parentId + " and childId: " + childId);
 
-            url = "/refset/" + mainTestingRefsetInternalId
+            final String url = "/refset/" + mainTestingRefsetInternalId
                     + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId="
-                    + parentId + "&refsetInternalId=" + mainTestingRefsetInternalId;
+                    + parentId + "&language=nl-X-31000172101";
             logger.info("Testing url - " + url);
 
-            result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
             String content = result.getResponse().getContentAsString();
             logger.info(" content = " + content);
             ConceptResultList children =
@@ -1396,8 +1398,10 @@ public class RefsetControllerTests extends BaseTest {
             // Find Child
             childConcept = null;
             for (Concept child : children.getItems()) {
+                
                 if (child.getCode().equals(childId)) {
-                    assertThat(child.getHasDescendantRefsetMembers()).isTrue();
+                    
+                    //assertThat(child.getHasDescendantRefsetMembers()).isTrue();
                     childConcept = child;
                     break;
                 }
@@ -1407,18 +1411,83 @@ public class RefsetControllerTests extends BaseTest {
             parentId = childId;
         }
 
+        // pull out the descriptions needed
+        final List<String> descriptionList = new ArrayList<>();
+        descriptionList.add(firstConceptDescList.get(3));
+        descriptionList.add(firstConceptDescList.get(0));
+        
         // Expected concept found
-        validateConcept(childConcept, FIRST_CONCEPT_ID, "20200315", true, firstConceptDescList, 0,
-                0, 0);
+        validateConcept(childConcept, FIRST_CONCEPT_ID, "20200315", true, descriptionList, 0,
+                0, 0, false);
+
+        // Test bad root
+        final String url = "/refset/" + INVALID_INTERNAL_REFSET_ID
+                + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId="
+                + SNOMED_ROOT;
+        logger.info("Testing url - " + url);
+
+        final MvcResult result = mvc.perform(get(url)).andExpect(status().is5xxServerError()).andReturn();
+        final String content = result.getResponse().getContentAsString();
+
+        assertThat(content).isEmpty();
+    }
+    
+    /**
+     * Test getting taxonomy children.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testTaxonomyParents() throws Exception {
+
+        // First concept should have 2 parents
+        Concept parentConcept = null;
+        final String parentId = "105899005";
+
+        String url = "/refset/" + mainTestingRefsetInternalId
+                + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId="
+                + FIRST_CONCEPT_ID + "&language=nl-X-31000172101&returnChildren=false";
+        logger.info("Testing url - " + url);
+
+        MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        String content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        ConceptResultList parents =
+                new ObjectMapper().readValue(content, (ConceptResultList.class));
+        
+        assertThat(parents.getItems()).isNotNull();
+        assertThat(parents.getItems().size()).isEqualTo(2);
+        
+        // Find Parent
+        for (Concept parent : parents.getItems()) {
+            
+            if (parent.getCode().equals(FIRST_CONCEPT_PARENT_ID)) {
+                
+                //assertThat(child.getHasDescendantRefsetMembers()).isTrue();
+                parentConcept = parent;
+                break;
+            }
+        }
+
+        assertThat(parentConcept).isNotNull();
+
+        // pull out the descriptions needed
+        final List<String> descriptionList = new ArrayList<>();
+        descriptionList.add(firstConceptParentDescList.get(3));
+        descriptionList.add(firstConceptParentDescList.get(0));
+        
+        // Expected concept found
+        validateConcept(parentConcept, FIRST_CONCEPT_PARENT_ID, null, false, descriptionList, 0,
+                0, 0, false);
 
         // Test bad root
         url = "/refset/" + INVALID_INTERNAL_REFSET_ID
                 + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId="
-                + SNOMED_ROOT + "&refsetInternalId=" + INVALID_INTERNAL_REFSET_ID;
+                + SNOMED_ROOT;
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().is5xxServerError()).andReturn();
-        final String content = result.getResponse().getContentAsString();
+        content = result.getResponse().getContentAsString();
 
         assertThat(content).isEmpty();
     }
@@ -1863,22 +1932,37 @@ public class RefsetControllerTests extends BaseTest {
         }
     }
 
-    private void validateConcept(Concept concept, String conId, String memberEfectiveTime,
+    // useDescriptions Should the validation use the description array or the concept name for validating descriptions 
+    private void validateConcept(Concept concept, String conceptId, String memberEfectiveTime,
         boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize,
-        int childSize) throws ParseException {
+        int childSize, boolean useDescriptions) throws ParseException {
 
         assertThat(concept).isNotNull();
-        assertThat(concept.getCode()).isEqualTo(conId);
+        assertThat(concept.getCode()).isEqualTo(conceptId);
 
         if (memberEfectiveTime != null) {
+            
             assertThat(concept.getMemberEffectiveTime())
                     .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(memberEfectiveTime));
             assertThat(concept.isMemberOfRefset()).isEqualTo(isRefsetMember);
         }
-        assertThat(concept.getDescriptions().size()).isEqualTo(descriptionList.size());
-        for (String matchingDesc : descriptionList) {
-            validateDescExist(concept.getDescriptions(), matchingDesc);
+        
+        if (useDescriptions) {
+            
+            assertThat(concept.getDescriptions().size()).isEqualTo(descriptionList.size());
+            
+            for (String matchingDesc : descriptionList) {
+                validateDescExist(concept.getDescriptions(), matchingDesc);
+            }
+        } else {
+            
+            assertThat(concept.getName()).isEqualTo(descriptionList.get(0));
+            
+            if (descriptionList.size() == 2) {
+                assertThat(concept.getFsn()).isEqualTo(descriptionList.get(1));
+            }
         }
+        
         assertThat(concept.getRoleGroups().size()).isEqualTo(roleGroupSize);
 
         if (parentSize >= 0) {
@@ -1887,8 +1971,15 @@ public class RefsetControllerTests extends BaseTest {
             assertThat(concept.getParents().get(concept.getParents().size() - 1).getCode())
                     .isEqualTo("395508003");
         }
+        
         assertThat(concept.getChildren().size()).isEqualTo(childSize);
 
+    }
+    
+    private void validateConcept(Concept concept, String conId, String memberEfectiveTime,
+        boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize,
+        int childSize) throws ParseException {
+        validateConcept(concept, conId, memberEfectiveTime, isRefsetMember, descriptionList, roleGroupSize, parentSize, childSize, true);
     }
 
     private void validateDescExist(List<Map<String, String>> descriptions, String matchingTerm) {

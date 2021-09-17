@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.util.LocalException;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,9 @@ public class SnowstormConnection {
 
     /** The generic user cookie. */
     private static String genericUserCookie;
+    
+    /** The default English language acceptance strings. */
+    public static final String DEFAULT_ACCECPT_LANGUAGES = "en-X-900000000000509007,en-X-900000000000508004,en";
 
     /** Static initialization. */
     static {
@@ -61,24 +65,40 @@ public class SnowstormConnection {
         USER_NAME = PropertyUtility.getProperty("snowstorm.username");
         PASSWORD = PropertyUtility.getProperty("snowstorm.password");
     }
-
+    
     /**
      * Calls a Snowstorm URL and returns the response.
+     *
+     * @param url The Snowstorm URL to call
+     * @param language The language to prefer snowstorm to return descriptions in. 
+     * @return The Snowstorm response
+     * @throws Exception the exception
+     */
+    public static Response getResponse(final String url, final String language) throws Exception {
+
+        final Client client = ClientBuilder.newClient();
+        final WebTarget target = client.target(url);
+        final Response response = target.request(ACCEPT)
+                .header("Accept-Language", language)
+                .header("Cookie", getGenericUserCookie())
+                .get();
+
+        if (url.contains("children")) {
+            logger.debug("********** getResponse language: " + language);
+        }
+        
+        return response;
+    }
+
+    /**
+     * Calls a Snowstorm URL and returns the response in English.
      *
      * @param url The Snowstorm URL to call
      * @return The Snowstorm response
      * @throws Exception the exception
      */
     public static Response getResponse(final String url) throws Exception {
-
-        final Client client = ClientBuilder.newClient();
-        final WebTarget target = client.target(url);
-        final Response response = target.request(ACCEPT)
-                .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
-                .header("Cookie", getGenericUserCookie())
-                .get();
-
-        return response;
+        return getResponse(url, DEFAULT_ACCECPT_LANGUAGES);
     }
     
     /**
@@ -93,7 +113,7 @@ public class SnowstormConnection {
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
         final InputStream response = target.request("application/zip")
-                .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
+                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
                 .header("Cookie", getGenericUserCookie())
                 .get(InputStream.class);
 
@@ -113,7 +133,7 @@ public class SnowstormConnection {
         Client client = ClientBuilder.newClient();
         WebTarget target = client.target(url);
         Builder builder = target.request(MediaType.APPLICATION_JSON)
-                .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
+                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
                 .header("Cookie", getGenericUserCookie());
         
         Response response = builder.post(Entity.json(entity));
@@ -134,7 +154,7 @@ public class SnowstormConnection {
         Client client = ClientBuilder.newClient();
         WebTarget target = client.target(url);
         Builder builder = target.request(MediaType.APPLICATION_JSON)
-                .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
+                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
                 .header("Cookie", getGenericUserCookie());
         
         Response response = builder.put(Entity.json(entity));
@@ -154,7 +174,7 @@ public class SnowstormConnection {
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
         final Response response = target.request(ACCEPT)
-                .header("Accept-Language", "en-X-900000000000509007,en-X-900000000000508004,en")
+                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
                 .header("Cookie", getGenericUserCookie())
                 .delete();
 

@@ -25,6 +25,9 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The name. */
     private String name;
+    
+    /** The Fully Specified Name. */
+    private String fsn;
 
     /** The terminology. */
     private String terminology;
@@ -125,6 +128,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         super.populateFrom(other);
         code = other.getCode();
         name = other.getName();
+        fsn = other.getFsn();
         terminology = other.getTerminology();
         version = other.getVersion();
         memberEffectiveTime = other.getMemberEffectiveTime();
@@ -174,6 +178,24 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      */
     public void setName(final String name) {
         this.name = name;
+    }
+    
+    /**
+     * Returns the fsn.
+     *
+     * @return the fsn
+     */
+    public String getFsn() {
+        return fsn;
+    }
+    
+    /**
+     * Sets the fsn.
+     *
+     * @param fsn the fsn
+     */
+    public void setFsn(final String fsn) {
+        this.fsn = fsn;
     }
 
     /**
@@ -450,6 +472,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         int result = 1;
         result = prime * result + ((code == null) ? 0 : code.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((fsn == null) ? 0 : fsn.hashCode());
         result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         result = prime * result + ((children == null) ? 0 : children.hashCode());
@@ -506,6 +529,15 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
                 return false;
             }
         } else if (!name.equals(other.name)) {
+            return false;
+        }
+        
+        if (fsn == null) {
+            
+            if (other.fsn != null) {
+                return false;
+            }
+        } else if (!fsn.equals(other.fsn)) {
             return false;
         }
 

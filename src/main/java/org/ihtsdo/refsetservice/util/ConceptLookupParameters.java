@@ -24,6 +24,8 @@ public class ConceptLookupParameters {
     private boolean getRoleGroups = false;
 
     private boolean getMembershipInformation = false;
+    
+    private boolean getFsn = false;
 
     private List<String> nonDefaultPreferredTerms = new ArrayList<>();
 
@@ -64,6 +66,14 @@ public class ConceptLookupParameters {
 	
 	public void setGetChildren(boolean getChildren) {
 	    this.getChildren = getChildren;
+	}
+	
+	public boolean isGetFsn() {
+	    return getFsn;
+	}
+	
+	public void setGetFsn(boolean getFsn) {
+	    this.getFsn = getFsn;
 	}
 
 	public boolean isGetRoleGroups() {
@@ -110,6 +120,7 @@ public class ConceptLookupParameters {
     	getDescriptions = other.isGetDescriptions();
     	getParents = other.isGetParents();
     	getChildren = other.isGetChildren();
+    	getFsn = other.isGetFsn();
         getRoleGroups = other.isGetRoleGroups();
         getMembershipInformation = other.isGetMembershipInformation();
         nonDefaultPreferredTerms = other.getNonDefaultPreferredTerms();
@@ -165,6 +176,10 @@ public class ConceptLookupParameters {
             return false;
         }
         
+        if (getFsn != other.getFsn) {
+            return false;
+        }
+        
         if (getRoleGroups != other.getRoleGroups) {
             return false;
         }
@@ -191,6 +206,7 @@ public class ConceptLookupParameters {
         result = prime * result + (getDescriptions ? 1 : 0);
         result = prime * result + (getParents ? 1 : 0);
         result = prime * result + (getChildren ? 1 : 0);
+        result = prime * result + (getFsn ? 1 : 0);
         result = prime * result + (getRoleGroups ? 1 : 0);
         result = prime * result + (getMembershipInformation ? 1 : 0);
         return result;

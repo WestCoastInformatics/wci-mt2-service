@@ -23,6 +23,9 @@ public class TaxonomyParameters {
 
     /** Should children be returned. If false then parents will be returned */
     private Boolean returnChildren = true;
+    
+    /** Should the starting concept be looked up and returned with the children under it. If false then only children will be returned */
+    private Boolean returnStartingConcept = false;
 
     /**
      * Instantiates an empty {@link TaxonomyParameters}.
@@ -51,6 +54,7 @@ public class TaxonomyParameters {
         language = other.getLanguage();
         depth = other.getDepth();
         returnChildren = other.getReturnChildren();
+        returnStartingConcept = other.getReturnStartingConcept();
     }
 
     /**
@@ -110,7 +114,7 @@ public class TaxonomyParameters {
     /**
      * Should children be returned. If false then parents will be returned
      *
-     * @return the return children
+     * @return the return children flag
      */
     public Boolean getReturnChildren() {
         return returnChildren;
@@ -123,6 +127,24 @@ public class TaxonomyParameters {
      */
     public void setReturnChildren(final Boolean returnChildren) {
         this.returnChildren = returnChildren;
+    }
+    
+    /**
+     * Should the starting concept be returned. If false then only children will be returned.
+     *
+     * @return the return starting concept flag
+     */
+    public Boolean getReturnStartingConcept() {
+        return returnStartingConcept;
+    }
+    
+    /**
+     * Sets returnStartingConcept flag.
+     *
+     * @param returnStartingConcept Should the starting concept be returned. If false then only children will be returned.
+     */
+    public void setReturnStartingConcept(final Boolean returnStartingConcept) {
+        this.returnStartingConcept = returnStartingConcept;
     }
     
     /**
@@ -182,6 +204,10 @@ public class TaxonomyParameters {
             return false;
         }
         
+        if (returnStartingConcept != other.returnStartingConcept) {
+            return false;
+        }
+        
         return true;
     }
     
@@ -199,6 +225,7 @@ public class TaxonomyParameters {
         result = prime * result + ((language == null) ? 0 : language.hashCode());
         result = prime * result + ((depth == null) ? 0 : depth.hashCode());
         result = prime * result + (returnChildren ? 1 : 0);
+        result = prime * result + (returnStartingConcept ? 1 : 0);
         return result;
     }
 
