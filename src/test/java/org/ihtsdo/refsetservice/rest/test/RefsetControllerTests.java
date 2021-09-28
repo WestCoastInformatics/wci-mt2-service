@@ -2,43 +2,23 @@
 package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
-import org.apache.lucene.queryparser.classic.QueryParserBase;
-import org.assertj.core.util.Arrays;
 import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
-import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
-import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -48,31 +28,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Integration tests for MetadataController.
  */
 
 @AutoConfigureMockMvc
-public class RefsetControllerTests extends BaseTest {
-    private final static SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-
-    /** The config properties. */
-    private final Properties properties = PropertyUtility.getProperties();
+public class RefsetControllerTests extends AbstractRefsetTests {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
@@ -85,54 +54,23 @@ public class RefsetControllerTests extends BaseTest {
     private static String mainTestingRefsetInternalId;
 
     private static final String GPS_REFSET_ID = "787778008";
-    
-    private static String testingProjectId = "";
-    
-    private static final String TESTING_PROJECT_NAME = "SNOMED International Project";
-    
-    private static String testingOrganizationId = "";
-    
-    private static final String TESTING_ORGANIZATION_NAME = "";
-    
-    private static String testingEditionId = "";
-    
-    private static final String TESTING_EDITION_NAME = "International Edition";
-    
-    private static final String TESTING_REFSET_ID = "561000172108"; // Belgian
-
-    private static final String TESTING_REFSET_VERSION = "20200915";
 
     // With 2 parents, 6 children and 0 defing rels
     private static final String FIRST_CONCEPT_ID = "37663002";
-    
+
     private static final String FIRST_CONCEPT_PARENT_ID = "105899005";
 
     // With 1 parents, 0 children and 0 defing rels
     private static final String SECOND_CONCEPT_ID = "260206005";
 
     private static final String DETAILS_SEARCH_CONCEPT_ID = "276310004";
-    
+
     private static final String CONCEPT_SEARCH_CONCEPT_ID = "46459009";
 
     private static String inactiveConceptRefsetInternalId;
 
-    private static final String INACTIVE_REFSET_ID = "723264001";
-
-    private static final String INACTIVE_REFSET_VERSION = "20210731";
-
-    // Added 20170731 and Inactived in Lateralizable (723264001) on 20180131
-    private static final String INACTIVE_CONCEPT_ID = "727156001";
-
-    private static final String INACTIVE_REFSET_DIFFERENT_VERSION = "20170731";
-
-    private static final String INVALID_INTERNAL_REFSET_ID = "12345678901234567890";
-
-    private static final String DESCRIPTION_TERM = "term";
-
-    private static final String SNOMED_ROOT = "138875005";
-
     private static final List<String> firstConceptDescList = new ArrayList<>();
-    
+
     private static final List<String> firstConceptParentDescList = new ArrayList<>();
 
     private static final List<String> secondConceptDescList = new ArrayList<>();
@@ -140,12 +78,9 @@ public class RefsetControllerTests extends BaseTest {
     private static final List<String> inactiveConceptDescList = new ArrayList<>();
 
     private static final List<String> detailSearchNonAcceptableConceptDescList = new ArrayList<>();
-    
+
     private static final List<String> conceptSearchDescList = new ArrayList<>();
 
-    private static final String REFSET_FILE_PATH =
-            "src/test/resources/refsetService/";
-    
     private static final String TWO_VERSION_DELTA_FILE =
             REFSET_FILE_PATH + "Lateralizable Delta 201801 to 201807.txt";
 
@@ -157,87 +92,75 @@ public class RefsetControllerTests extends BaseTest {
 
     private static final String LIST_OF_SCTIDS_FILE =
             REFSET_FILE_PATH + "561000172108 ListOfSctIds 20200315.txt";
-    
-    private static final String MEMBER_ID_LIST_FILE_NAME =
-            "member_concept_id_list.txt";
-    
-    private static final String MEMBER_ID_LIST_FILE =
-            REFSET_FILE_PATH + MEMBER_ID_LIST_FILE_NAME;
-    
-    private static final String MEMBER_ID_RF2_FILE_NAME =
-            "member_concept_ids_rf2.txt";
-    
-    private static final String MEMBER_ID_RF2_FILE =
-            REFSET_FILE_PATH + MEMBER_ID_RF2_FILE_NAME;
-
-    /** The mvc. */
-    @Autowired
-    private MockMvc mvc;
-
-    /** The object mapper. */
-    private static ObjectMapper objectMapper;
-
-    /** The base url. */
-    private static String baseUrl = "";
 
     /**
      * Sets the up.
      */
     @BeforeEach
     public void setUp(TestInfo info) {
-        
+
         // skip @BeforeEach in testRttMigration
         if (info.getDisplayName().equals("testRttMigration()")) {
             return;
         }
 
         if (mainTestingRefsetInternalId == null) {
-            
+
             objectMapper = new ObjectMapper();
             JacksonTester.initFields(this, objectMapper);
             baseUrl = "/refset";
-            
+
             try {
-                
+                String exportFileDir =
+                        PropertyUtility.getProperty("export.fileDir") + File.separator;
+
+                // Ensure have the export directory created on testing system
+                File f = new File(exportFileDir);
+                if (!f.exists()) {
+                    throw new Exception(
+                            "Tests with Export because the expected export directory doesn't exist: "
+                                    + exportFileDir);
+                }
+
                 mainTestingRefsetInternalId =
                         getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
 
                 inactiveConceptRefsetInternalId =
                         getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
-                
-                testingEditionId = getEditionInternalId(TESTING_EDITION_NAME); 
+
+                testingEditionId = getEditionInternalId(TESTING_EDITION_NAME);
                 testingProjectId = getProjectInternalId(TESTING_PROJECT_NAME);
-                
+
                 firstConceptDescList.add("Venom (substance)");
                 firstConceptDescList.add("Venom");
                 firstConceptDescList.add("venin");
                 firstConceptDescList.add("gif");
-                
+
                 firstConceptParentDescList.add("Animal agent (substance)");
                 firstConceptParentDescList.add("Animal agent");
                 firstConceptParentDescList.add("produit animal");
                 firstConceptParentDescList.add("dierlijk product");
-                
+
                 secondConceptDescList.add("Sheep wool (substance)");
                 secondConceptDescList.add("Sheep wool");
                 secondConceptDescList.add("schapenwol");
                 secondConceptDescList.add("laine de mouton");
-                
+
                 inactiveConceptDescList.add("Entire sclerocorneal junction (body structure)");
                 inactiveConceptDescList.add("Entire sclerocorneal junction");
-                
-                detailSearchNonAcceptableConceptDescList.add("Non-human hair - material (substance)");
+
+                detailSearchNonAcceptableConceptDescList
+                        .add("Non-human hair - material (substance)");
                 detailSearchNonAcceptableConceptDescList.add("Animal hair");
                 detailSearchNonAcceptableConceptDescList.add("dierlijk haar");
                 detailSearchNonAcceptableConceptDescList.add("poil animal");
-                
+
                 conceptSearchDescList.add("Brazilian pemphigus foliaceus");
-                
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-        
+
     }
 
     /**
@@ -261,7 +184,7 @@ public class RefsetControllerTests extends BaseTest {
         assertThat(project.getId()).isEqualTo(testingProjectId);
         assertThat(project.getName()).isEqualTo(TESTING_PROJECT_NAME);
     }
-    
+
     /**
      * Test searching for projects.
      *
@@ -269,28 +192,27 @@ public class RefsetControllerTests extends BaseTest {
      */
     @Test
     public void testProjectSearch() throws Exception {
-        
+
         String url = "/project/search?limit=500&offset=0&sort=name&sortAscending=false";
         logger.info("Testing url - " + url);
-        
+
         MvcResult result = null;
         String content = null;
         ResultList<Project> resultList = null;
-        Refset projectFound = null;
 
         // Test full list
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        
+
         resultList =
                 new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
                 }));
         assertThat(resultList).isNotNull();
         assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
     }
-    
+
     /**
      * Test getting a refset.
      *
@@ -309,283 +231,6 @@ public class RefsetControllerTests extends BaseTest {
         final Refset refset = new ObjectMapper().readValue(content, Refset.class);
 
         validateRefsetMetadata(refset);
-    }
-    
-    /**
-     * Test creating a refset.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testCreateRefset() throws Exception {
-
-        final ObjectMapper mapper = new ObjectMapper();
-        final String memberConceptIds = "48176007,280416009,10828004,260385009";
-        final List<Map<String, String>> refsetDetails = new ArrayList<>();
-        
-        // the data to create a refset from a new concept
-        final Map<String, String> refsetNewConcept = new HashMap<>();
-        refsetNewConcept.put("name", "ZZZ RT2 Test New Concept Refset");
-        refsetNewConcept.put("parentConceptId", "446609009");
-        refsetNewConcept.put("moduleId", "900000000000207008");
-        refsetNewConcept.put("editionId", testingEditionId);
-        refsetNewConcept.put("projectId", testingProjectId);
-        refsetNewConcept.put("narrative", "Test.");
-        refsetNewConcept.put("type", "EXTENSIONAL");
-        refsetNewConcept.put("privateRefset", "false");
-        refsetNewConcept.put("localSet", "false");
-        refsetNewConcept.put("refsetDeleteStatus", "deleted");
-        refsetNewConcept.put("fileType", "list");
-        refsetNewConcept.put("conceptFileName", MEMBER_ID_LIST_FILE_NAME);
-        refsetNewConcept.put("conceptFile", MEMBER_ID_LIST_FILE);
-        
-        // prepare the call to create refset from a new concept
-        final ObjectNode refsetNewConceptBody = mapper.createObjectNode()
-                .put("name", refsetNewConcept.get("name"))
-                .put("parentConceptId", refsetNewConcept.get("parentConceptId"))
-                .put("moduleId", refsetNewConcept.get("moduleId"))
-                .put("editionId", refsetNewConcept.get("editionId"))
-                .put("projectId", refsetNewConcept.get("projectId"))
-                .put("narrative", refsetNewConcept.get("narrative"))
-                .put("type", refsetNewConcept.get("type"))
-                .put("privateRefset", Boolean.parseBoolean(refsetNewConcept.get("privateRefset")))
-                .put("localSet", Boolean.parseBoolean(refsetNewConcept.get("localSet")));
-        
-        refsetNewConcept.put("body", refsetNewConceptBody.toString());
-        refsetDetails.add(refsetNewConcept);
-        
-        // the data to create a refset with members from ECL
-        final Map<String, String> refsetEclMembers = new HashMap<>();
-        refsetEclMembers.put("name", "ZZZ RT2 Test ECL Members Refset");
-        refsetEclMembers.put("parentConceptId", "446609009");
-        refsetEclMembers.put("moduleId", "900000000000207008");
-        refsetEclMembers.put("editionId", testingEditionId);
-        refsetEclMembers.put("projectId", testingProjectId);
-        refsetEclMembers.put("narrative", "Test.");
-        refsetEclMembers.put("type", "EXTENSIONAL");
-        refsetEclMembers.put("privateRefset", "false");
-        refsetEclMembers.put("localSet", "false");
-        refsetEclMembers.put("refsetDeleteStatus", "deleted");
-        refsetEclMembers.put("ecl", "183814000 | Admission funding status (finding) |");
-        
-        // prepare the call to create refset from a new concept
-        final ObjectNode refsetEclMembersBody = mapper.createObjectNode()
-                .put("name", refsetEclMembers.get("name"))
-                .put("parentConceptId", refsetEclMembers.get("parentConceptId"))
-                .put("moduleId", refsetEclMembers.get("moduleId"))
-                .put("editionId", refsetEclMembers.get("editionId"))
-                .put("projectId", refsetEclMembers.get("projectId"))
-                .put("narrative", refsetEclMembers.get("narrative"))
-                .put("type", refsetEclMembers.get("type"))
-                .put("privateRefset", Boolean.parseBoolean(refsetEclMembers.get("privateRefset")))
-                .put("localSet", Boolean.parseBoolean(refsetEclMembers.get("localSet")));
-        
-        refsetEclMembers.put("body", refsetEclMembersBody.toString());
-        refsetDetails.add(refsetEclMembers);
-        
-        // the data to create a refset with members added from an RF2 file
-        final Map<String, String> refsetRf2MemberAdd = new HashMap<>();
-        refsetRf2MemberAdd.put("name", "ZZZ RT2 Test RF2 Member Add Refset");
-        refsetRf2MemberAdd.put("parentConceptId", "446609009");
-        refsetRf2MemberAdd.put("moduleId", "900000000000207008");
-        refsetRf2MemberAdd.put("editionId", testingEditionId);
-        refsetRf2MemberAdd.put("projectId", testingProjectId);
-        refsetRf2MemberAdd.put("narrative", "Test.");
-        refsetRf2MemberAdd.put("type", "EXTENSIONAL");
-        refsetRf2MemberAdd.put("privateRefset", "false");
-        refsetRf2MemberAdd.put("localSet", "false");
-        refsetRf2MemberAdd.put("refsetDeleteStatus", "deleted");
-        refsetRf2MemberAdd.put("fileType", "rf2");
-        refsetRf2MemberAdd.put("conceptFileName", MEMBER_ID_RF2_FILE_NAME);
-        refsetRf2MemberAdd.put("conceptFile", MEMBER_ID_RF2_FILE);
-        
-        // prepare the call to create refset with members added from an RF2 file
-        final ObjectNode refsetRf2MemberAddBody = mapper.createObjectNode()
-                .put("name", refsetRf2MemberAdd.get("name"))
-                .put("parentConceptId", refsetRf2MemberAdd.get("parentConceptId"))
-                .put("moduleId", refsetRf2MemberAdd.get("moduleId"))
-                .put("editionId", refsetRf2MemberAdd.get("editionId"))
-                .put("projectId", refsetRf2MemberAdd.get("projectId"))
-                .put("narrative", refsetRf2MemberAdd.get("narrative"))
-                .put("type", refsetRf2MemberAdd.get("type"))
-                .put("privateRefset", Boolean.parseBoolean(refsetRf2MemberAdd.get("privateRefset")))
-                .put("localSet", Boolean.parseBoolean(refsetRf2MemberAdd.get("localSet")));
-        
-        refsetRf2MemberAdd.put("body", refsetRf2MemberAddBody.toString());
-        refsetDetails.add(refsetRf2MemberAdd);
-        
-        // the data to create a refset from an existing concept (but can't be a refset already in RT2)
-        final Map<String, String> refsetExistingConcept = new HashMap<>();
-        refsetExistingConcept.put("refsetId", "762103008");
-        refsetExistingConcept.put("name", "OWL ontology reference set");
-        refsetExistingConcept.put("parentConceptId", "446609009");
-        refsetExistingConcept.put("moduleId", "900000000000207008");
-        refsetExistingConcept.put("editionId", testingEditionId);
-        refsetExistingConcept.put("projectId", testingProjectId);
-        refsetExistingConcept.put("narrative", "Test.");
-        refsetExistingConcept.put("type", "EXTENSIONAL");
-        refsetExistingConcept.put("privateRefset", "false");
-        refsetExistingConcept.put("localSet", "false");
-        refsetExistingConcept.put("refsetDeleteStatus", "deleted");
-        // DO NOT LEAVE THIS UNCOMMENTED - for one test we will try to remove a member that has already been published
-        //refsetExistingConcept.put("additionalMemberIdsToRemove", "734147008");
-        
-        // prepare the call to create refset from an existing concept
-        final ObjectNode refsetExistingConceptBody = mapper.createObjectNode()
-                .put("refsetId", refsetExistingConcept.get("refsetId"))
-                .put("name", refsetExistingConcept.get("name"))
-                .put("parentConceptId", refsetExistingConcept.get("parentConceptId"))
-                .put("moduleId", refsetExistingConcept.get("moduleId"))
-                .put("editionId", refsetExistingConcept.get("editionId"))
-                .put("projectId", refsetExistingConcept.get("projectId"))
-                .put("narrative", refsetExistingConcept.get("narrative"))
-                .put("type", refsetExistingConcept.get("type"))
-                .put("privateRefset", Boolean.parseBoolean(refsetExistingConcept.get("privateRefset")))
-                .put("localSet", Boolean.parseBoolean(refsetExistingConcept.get("localSet")));
-        
-        refsetExistingConcept.put("body", refsetExistingConceptBody.toString());
-        refsetDetails.add(refsetExistingConcept);
-
-        // TESTS BEGIN - loop over the details object to run various tests
-        for (final Map<String, String> refsetDetail : refsetDetails) {
-            
-            // make the call to create refset from a new concept
-            final MvcResult result = mvc.perform(
-                    post(baseUrl).content(refsetDetail.get("body"))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()).andReturn();
-            final String content = result.getResponse().getContentAsString();
-            logger.info(" content = " + content);
-            
-            final JsonNode root = mapper.readTree(content);
-            final JsonNode refsetNode = root;
-            
-            assertTrue(refsetNode.has("refsetInternalId")); 
-            final String refsetInternalId = refsetNode.get("refsetInternalId").asText();
-            
-            // verify the refset from a new concept in the RT2 DB
-            try (final TerminologyService service = new TerminologyService()) {
-                
-                Refset refset = service.get(refsetInternalId, Refset.class);
-                assertThat(refset).isNotNull();
-                assertThat(refset.getName()).isEqualTo(refsetDetail.get("name"));
-                assertThat(refset.getModuleId()).isEqualTo(refsetDetail.get("moduleId"));
-                assertThat(refset.getEditionId()).isEqualTo(refsetDetail.get("editionId"));
-                assertThat(refset.getProjectId()).isEqualTo(refsetDetail.get("projectId"));
-                assertThat(refset.getNarrative()).isEqualTo(refsetDetail.get("narrative"));
-                assertThat(refset.getType()).isEqualTo(refsetDetail.get("type"));
-                assertThat(refset.isPrivateRefset()).isEqualTo(Boolean.parseBoolean(refsetDetail.get("privateRefset")));
-                assertThat(refset.isLocalSet()).isEqualTo(Boolean.parseBoolean(refsetDetail.get("localSet")));
-                
-                if (refsetDetail.containsKey("refsetId")) {
-                    assertThat(refset.getRefsetId()).isEqualTo(refsetDetail.get("refsetId"));
-                }
-            }
-            
-            // prepare the call to add members to the refset from a new concept
-            String membersUrl = baseUrl + "/" + refsetInternalId + "/members?conceptIds=";
-            MvcResult membersResult = null;
-            
-            if (!refsetDetail.containsKey("fileType")) {
-            
-                if (!refsetDetail.containsKey("ecl")) {
-                    membersUrl += memberConceptIds;
-                } else {
-                    membersUrl += "&ecl=" + refsetDetail.get("ecl");
-                }
-                
-                // make the call to add members to the refset from a new concept
-                membersResult = mvc.perform(
-                        post(membersUrl)
-                        .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk()).andReturn();
-                
-            } else {
-                
-                MockMultipartFile mockMultipartFile = new MockMultipartFile("conceptFile", refsetDetail.get("conceptFileName"),
-                        "text/plain", Files.readAllBytes(Paths.get(refsetDetail.get("conceptFile"))));
-
-                membersResult = mvc.perform(
-                        multipart(membersUrl + "&fileType=" + refsetDetail.get("fileType"))
-                        .file(mockMultipartFile)
-                        .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk()).andReturn();
-            }
-            
-            final String membersContent = membersResult.getResponse().getContentAsString();
-            logger.info(" membersContent = " + membersContent);
-            
-            final JsonNode membersRoot = mapper.readTree(membersContent);
-            final JsonNode membersNode = membersRoot;
-            
-            assertTrue(membersNode.has("status")); 
-            assertTrue(membersNode.get("status").asText().equals("All concepts added."));
-            
-            // remove the members of the refset from a new concept
-            if (membersNode.has("status")) {
-                
-                String removeUrl = baseUrl + "/" + refsetInternalId + "/removeMembers?conceptIds=";
-                MvcResult removeResult = null;
-                
-                if (!refsetDetail.containsKey("fileType")) {
-                    
-                    if (!refsetDetail.containsKey("ecl")) {
-                        
-                        String additionalMemberIds = "";
-                        
-                        // for one test we will try to remove a member that has already been published
-                        if (refsetDetail.containsKey("additionalMemberIdsToRemove")) {
-                            additionalMemberIds = "," + refsetDetail.get("additionalMemberIdsToRemove");
-                        }
-                        
-                        removeUrl += memberConceptIds + additionalMemberIds;
-                    } else {
-                        removeUrl += "&ecl=" + refsetDetail.get("ecl");
-                    }
-                
-                    // make the call to add members to the refset from a new concept
-                    removeResult = mvc.perform(
-                            post(removeUrl)
-                            .accept(MediaType.APPLICATION_JSON))
-                        .andExpect(status().isOk()).andReturn();
-                    
-                } else {
-                    
-                    MockMultipartFile mockMultipartFile = new MockMultipartFile("conceptFile", refsetDetail.get("conceptFileName"),
-                            "text/plain", Files.readAllBytes(Paths.get(refsetDetail.get("conceptFile"))));
-
-                    removeResult = mvc.perform(
-                            multipart(removeUrl + "&fileType=" + refsetDetail.get("fileType"))
-                            .file(mockMultipartFile)
-                            .accept(MediaType.APPLICATION_JSON))
-                        .andExpect(status().isOk()).andReturn();
-                }
- 
-                final String removeContent = removeResult.getResponse().getContentAsString();
-                final JsonNode removeRoot = mapper.readTree(removeContent);
-                final JsonNode removeNode = removeRoot;
-                
-                assertTrue(removeNode.has("status"));
-                assertTrue(removeNode.get("status").asText().equals("All concepts removed."));
-            }
-            
-            // delete the refset from a new concept
-            if (refsetInternalId != null && !refsetInternalId.equals("")) {
-                
-                final String deleteUrl = baseUrl + "/" + refsetInternalId;
-                final MvcResult deleteResult = mvc.perform(
-                        delete(deleteUrl))
-                    .andExpect(status().isOk()).andReturn();
-                final String deleteContent = deleteResult.getResponse().getContentAsString();
-                final JsonNode deleteRoot = mapper.readTree(deleteContent);
-                final JsonNode deleteNode = deleteRoot;
-                
-                assertTrue(deleteNode.has("status"));
-                assertTrue(deleteNode.get("status").asText().equals(refsetDetail.get("refsetDeleteStatus")));
-            }
-        }
-        
     }
 
     /**
@@ -622,7 +267,7 @@ public class RefsetControllerTests extends BaseTest {
 
         assertThat(editionFound).isTrue();
     }
-    
+
     /**
      * Test getting branch versions.
      *
@@ -640,8 +285,8 @@ public class RefsetControllerTests extends BaseTest {
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        ResultList<String> versions = new ObjectMapper().readValue(content,
-                (new TypeReference<ResultList<String>>() {
+        ResultList<String> versions =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<String>>() {
                     /* NA */}));
         assertThat(versions).isNotNull();
         assertThat(versions.getItems().size()).isGreaterThan(0);
@@ -739,7 +384,8 @@ public class RefsetControllerTests extends BaseTest {
                 "999861000172117", "561000172108", "General"
         };
         for (int i = 0; i < searchTerms.length; i++) {
-            url = baseUrl + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query="
+            url = baseUrl
+                    + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query="
                     + searchTerms[i];
 
             logger.info("Testing term - " + searchTerms[i]);
@@ -946,9 +592,10 @@ public class RefsetControllerTests extends BaseTest {
 
         assertThat(content).isEmpty();
     }
-    
+
     /**
-     * Test getting the list of concepts that represent refsets for dropdown options.
+     * Test getting the list of concepts that represent refsets for dropdown
+     * options.
      *
      * @throws Exception the exception
      */
@@ -969,44 +616,47 @@ public class RefsetControllerTests extends BaseTest {
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        final ConceptResultList parentsResultList = new ObjectMapper().readValue(content, ConceptResultList.class);
+        final ConceptResultList parentsResultList =
+                new ObjectMapper().readValue(content, ConceptResultList.class);
 
         assertThat(parentsResultList.getItems().size()).isGreaterThan(0);
-        
+
         // make sure a standard refset is present
         for (final Concept concept : parentsResultList.getItems()) {
-            
+
             if (concept.getCode().equals(standardRefsetId)) {
-                
+
                 standardRefsetFound = true;
                 break;
             }
         }
-        
+
         assertThat(standardRefsetFound).isTrue();
         standardRefsetFound = false;
-        
-        // call the api to get the refset concept list for using as the underlying concept for a new refset
+
+        // call the api to get the refset concept list for using as the
+        // underlying concept for a new refset
         url = "/general/refsetConcepts?branch=" + branch + "&areParentConcepts=false";
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        final ConceptResultList newRefsetResultList = new ObjectMapper().readValue(content, ConceptResultList.class);
+        final ConceptResultList newRefsetResultList =
+                new ObjectMapper().readValue(content, ConceptResultList.class);
 
         assertThat(newRefsetResultList.getItems().size()).isGreaterThan(0);
-        
+
         // make sure a standard refset is not present
         for (final Concept concept : newRefsetResultList.getItems()) {
-            
+
             if (concept.getCode().equals(standardRefsetId)) {
-                
+
                 standardRefsetFound = true;
                 break;
             }
         }
-        
+
         assertThat(standardRefsetFound).isFalse();
     }
 
@@ -1167,7 +817,7 @@ public class RefsetControllerTests extends BaseTest {
                     detailSearchNonAcceptableConceptDescList, 0, -1, 0);
         }
     }
-    
+
     /**
      * Test searching general concepts
      *
@@ -1184,7 +834,7 @@ public class RefsetControllerTests extends BaseTest {
         String content = null;
 
         for (int i = 0; i < searchTerms.length; i++) {
-            
+
             url = "/refset/" + mainTestingRefsetInternalId
                     + "/conceptSearch?limit=500&offset=0&query=" + searchTerms[i];
 
@@ -1201,7 +851,7 @@ public class RefsetControllerTests extends BaseTest {
             assertThat(members.getItems().size()).isGreaterThan(0);
 
             Concept concept = null;
-            
+
             for (Concept conceptBeingTested : members.getItems()) {
                 if (conceptBeingTested.getCode().equals(CONCEPT_SEARCH_CONCEPT_ID)) {
                     concept = conceptBeingTested;
@@ -1209,7 +859,8 @@ public class RefsetControllerTests extends BaseTest {
                 }
             }
             // Doesn't include membership status nor memberEffectiveTime
-            //validateConcept(concept, CONCEPT_SEARCH_CONCEPT_ID, null, false, conceptSearchDescList, 0, -1, 0);
+            // validateConcept(concept, CONCEPT_SEARCH_CONCEPT_ID, null, false,
+            // conceptSearchDescList, 0, -1, 0);
         }
     }
 
@@ -1284,7 +935,8 @@ public class RefsetControllerTests extends BaseTest {
          * Directory Search - Ensure refset can be matched on inactive concept
          * id
          */
-        url = baseUrl + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&searchConcepts=true&query="
+        url = baseUrl
+                + "/search?limit=500&offset=0&sort=versionDate&sortAscending=false&searchConcepts=true&query="
                 + INACTIVE_CONCEPT_ID;
 
         logger.info("Testing url - " + url);
@@ -1336,11 +988,12 @@ public class RefsetControllerTests extends BaseTest {
             }
         }
 
-        //TODO - FIND INACTIVE CONCEPT THAT IS ACTIVE REFSET MEMBER
+        // TODO - FIND INACTIVE CONCEPT THAT IS ACTIVE REFSET MEMBER
         // member is inactive so no results.
         assertThat(count).isEqualTo(0);
         // Membership info and descriptions, but no parents/children
-        //validateConcept(inactiveConcept, INACTIVE_CONCEPT_ID, "20180731", true, inactiveConceptDescList, 0, 0, 0);
+        // validateConcept(inactiveConcept, INACTIVE_CONCEPT_ID, "20180731",
+        // true, inactiveConceptDescList, 0, 0, 0);
 
         // Taxonomy Search - Snowstorm does not allow searching for inactive
         // concepts, so should return zero results
@@ -1404,10 +1057,10 @@ public class RefsetControllerTests extends BaseTest {
             // Find Child
             childConcept = null;
             for (Concept child : children.getItems()) {
-                
+
                 if (child.getCode().equals(childId)) {
-                    
-                    //assertThat(child.getHasDescendantRefsetMembers()).isTrue();
+
+                    // assertThat(child.getHasDescendantRefsetMembers()).isTrue();
                     childConcept = child;
                     break;
                 }
@@ -1421,10 +1074,10 @@ public class RefsetControllerTests extends BaseTest {
         final List<String> descriptionList = new ArrayList<>();
         descriptionList.add(firstConceptDescList.get(3));
         descriptionList.add(firstConceptDescList.get(0));
-        
+
         // Expected concept found
-        validateConcept(childConcept, FIRST_CONCEPT_ID, "20200315", true, descriptionList, 0,
-                0, 0, false);
+        validateConcept(childConcept, FIRST_CONCEPT_ID, "20200315", true, descriptionList, 0, 0, 0,
+                false);
 
         // Test bad root
         final String url = "/refset/" + INVALID_INTERNAL_REFSET_ID
@@ -1432,12 +1085,13 @@ public class RefsetControllerTests extends BaseTest {
                 + SNOMED_ROOT;
         logger.info("Testing url - " + url);
 
-        final MvcResult result = mvc.perform(get(url)).andExpect(status().is5xxServerError()).andReturn();
+        final MvcResult result =
+                mvc.perform(get(url)).andExpect(status().is5xxServerError()).andReturn();
         final String content = result.getResponse().getContentAsString();
 
         assertThat(content).isEmpty();
     }
-    
+
     /**
      * Test getting taxonomy children.
      *
@@ -1448,7 +1102,6 @@ public class RefsetControllerTests extends BaseTest {
 
         // First concept should have 2 parents
         Concept parentConcept = null;
-        final String parentId = "105899005";
 
         String url = "/refset/" + mainTestingRefsetInternalId
                 + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId="
@@ -1460,16 +1113,16 @@ public class RefsetControllerTests extends BaseTest {
         logger.info(" content = " + content);
         ConceptResultList parents =
                 new ObjectMapper().readValue(content, (ConceptResultList.class));
-        
+
         assertThat(parents.getItems()).isNotNull();
         assertThat(parents.getItems().size()).isEqualTo(2);
-        
+
         // Find Parent
         for (Concept parent : parents.getItems()) {
-            
+
             if (parent.getCode().equals(FIRST_CONCEPT_PARENT_ID)) {
-                
-                //assertThat(child.getHasDescendantRefsetMembers()).isTrue();
+
+                // assertThat(child.getHasDescendantRefsetMembers()).isTrue();
                 parentConcept = parent;
                 break;
             }
@@ -1481,10 +1134,10 @@ public class RefsetControllerTests extends BaseTest {
         final List<String> descriptionList = new ArrayList<>();
         descriptionList.add(firstConceptParentDescList.get(3));
         descriptionList.add(firstConceptParentDescList.get(0));
-        
+
         // Expected concept found
-        validateConcept(parentConcept, FIRST_CONCEPT_PARENT_ID, null, false, descriptionList, 0,
-                0, 0, false);
+        validateConcept(parentConcept, FIRST_CONCEPT_PARENT_ID, null, false, descriptionList, 0, 0,
+                0, false);
 
         // Test bad root
         url = "/refset/" + INVALID_INTERNAL_REFSET_ID
@@ -1773,295 +1426,9 @@ public class RefsetControllerTests extends BaseTest {
         // TODO - FIND INACTIVE CONCEPT THAT IS ACTIVE REFSET MEMBER
         assertThat(matchedConcept).isNull();
         // Validate concept returned and is inactive
-        //assertThat(matchedConcept).isNotNull();
-        //assertThat(matchedConcept.isActive()).isFalse();
+        // assertThat(matchedConcept).isNotNull();
+        // assertThat(matchedConcept.isActive()).isFalse();
 
-    }
-
-    /**
-     * Get the internal refset ID based on the refset's terminology specific ID
-     * .
-     * @param version
-     * @param refsetWithInactiveConcept
-     *
-     * @return the internal refset ID
-     * @throws Exception the exception
-     */
-    private String getRefsetInternalId(String requestedId, String version) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final PfsParameter pfs = new PfsParameter();
-            pfs.setSort("versionDate");
-            pfs.setAscending(false);
-
-            ResultList<Refset> refsets =
-                    service.find("refsetId:" + QueryParserBase.escape(requestedId) + "", pfs,
-                            Refset.class, null);
-
-            assertThat(refsets.getItems().size()).isGreaterThan(0);
-
-            Refset refsetToReturn = null;
-            for (Refset refset : refsets.getItems()) {
-                if (version.equals(SIMPLE_DATE_FORMAT.format(refset.getVersionDate()))) {
-                    refsetToReturn = refset;
-                    break;
-                }
-            }
-
-            if (refsetToReturn == null) {
-                throw new Exception("Refset Internal Id: " + requestedId
-                        + " does not exist in the RT2 database");
-            }
-
-            assertThat(refsetToReturn).isNotNull();
-            assertThat(refsetToReturn.getRefsetId()).isEqualTo(requestedId);
-
-            return refsetToReturn.getId();
-        }
-    }
-    
-    /**
-     * Get the internal project ID based on the project's name
-     * 
-     * @param name The name of the project
-     * @return the internal project ID
-     * @throws Exception the exception
-     */
-    private String getProjectInternalId(String name) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final PfsParameter pfs = new PfsParameter();
-
-            ResultList<Project> projects =
-                    service.find("name:" + QueryParserBase.escape(name) + "", pfs,
-                            Project.class, null);
-
-            if (projects.getItems().size() == 0) {
-                throw new Exception("Refset Internal Id: " + name
-                        + " does not exist in the RT2 database");
-            }
-            
-            Project project = projects.getItems().get(0);
-
-            assertThat(project.getName()).isEqualTo(name);
-
-            return project.getId();
-        }
-    }
-    
-    /**
-     * Get the internal edition ID based on the edition's name
-     * 
-     * @param name The name of the edition
-     * @return the internal edition ID
-     * @throws Exception the exception
-     */
-    private String getEditionInternalId(String name) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final PfsParameter pfs = new PfsParameter();
-
-            ResultList<Edition> editions =
-                    service.find("name:" + QueryParserBase.escape(name) + "", pfs,
-                            Edition.class, null);
-
-            if (editions.getItems().size() == 0) {
-                throw new Exception("Refset Internal Id: " + name
-                        + " does not exist in the RT2 database");
-            }
-            
-            Edition edition = editions.getItems().get(0);
-
-            assertThat(edition.getName()).isEqualTo(name);
-
-            return edition.getId();
-        }
-    }
-
-    private void validateRefsetMetadata(Refset refset) {
-        assertThat(refset).isNotNull();
-
-        if (refset.getRefsetId().equals(INACTIVE_REFSET_ID)) {
-            assertThat(refset.getRefsetId()).isEqualTo(INACTIVE_REFSET_ID);
-
-            assertThat(refset.getName())
-                    .isEqualToIgnoringCase("Lateralizable body structure reference set");
-            assertThat(refset.getNarrative()).isEqualToIgnoringCase(
-                    "The reference set contains all body structures that can be lateralized.");
-            assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
-            assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
-            assertThat(refset.getModuleId()).isEqualTo("900000000000012004");
-            assertThat(refset.getEdition().getName())
-                    .isEqualToIgnoringCase("International Edition");
-            assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
-            assertThat(refset.getVersionStatus()).isEqualToIgnoringCase("published");
-            assertThat(refset.getVersionNotes()).isNull();
-            assertThat(refset.getProject().getName()).isEqualTo("SNOMED International WIP Project");
-
-            assertThat(refset.isActive()).isTrue();
-            assertThat(refset.isLocalSet()).isFalse();
-            assertThat(refset.isPrivateRefset()).isFalse();
-
-            // Collection - Tags
-            assertThat(refset.getTags().size()).isEqualTo(1);
-            assertThat(refset.getTags().iterator().next()).isEqualTo("anatomy");
-
-            // Version Date
-            assertThat(refset.getVersionDate()).isEqualToIgnoringHours("2021-07-31");
-        } else {
-            assertThat(refset.getRefsetId()).isEqualTo(TESTING_REFSET_ID);
-
-            assertThat(refset.getName()).isEqualToIgnoringCase(
-                    "Belgian simple reference set for translated animal materials");
-            assertThat(refset.getNarrative()).isEqualToIgnoringCase(
-                    "descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
-            assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
-            assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
-            assertThat(refset.getModuleId()).isEqualTo("11000172109");
-            assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("Belgian Edition");
-            assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
-            assertThat(refset.getVersionStatus()).isEqualToIgnoringCase("published");
-            assertThat(refset.getVersionNotes()).isNull();
-            assertThat(refset.getProject().getName()).isEqualTo("Belgian Extension Project");
-
-            assertThat(refset.isActive()).isTrue();
-            assertThat(refset.isLocalSet()).isFalse();
-            assertThat(refset.isPrivateRefset()).isFalse();
-
-            // Collection - Tags
-            assertThat(refset.getTags().size()).isEqualTo(1);
-            assertThat(refset.getTags().iterator().next()).isEqualTo("General / Allergies");
-
-            // Version Date
-            assertThat(refset.getVersionDate()).isEqualToIgnoringHours("2020-09-15");
-        }
-    }
-
-    // useDescriptions Should the validation use the description array or the concept name for validating descriptions 
-    private void validateConcept(Concept concept, String conceptId, String memberEfectiveTime,
-        boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize,
-        int childSize, boolean useDescriptions) throws ParseException {
-
-        assertThat(concept).isNotNull();
-        assertThat(concept.getCode()).isEqualTo(conceptId);
-
-        if (memberEfectiveTime != null) {
-            
-            assertThat(concept.getMemberEffectiveTime())
-                    .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(memberEfectiveTime));
-            assertThat(concept.isMemberOfRefset()).isEqualTo(isRefsetMember);
-        }
-        
-        if (useDescriptions) {
-            
-            assertThat(concept.getDescriptions().size()).isEqualTo(descriptionList.size());
-            
-            for (String matchingDesc : descriptionList) {
-                validateDescExist(concept.getDescriptions(), matchingDesc);
-            }
-        } else {
-            
-            assertThat(concept.getName()).isEqualTo(descriptionList.get(0));
-            
-            if (descriptionList.size() == 2) {
-                assertThat(concept.getFsn()).isEqualTo(descriptionList.get(1));
-            }
-        }
-        
-        assertThat(concept.getRoleGroups().size()).isEqualTo(roleGroupSize);
-
-        if (parentSize >= 0) {
-            assertThat(concept.getParents().size()).isEqualTo(parentSize);
-        } else {
-            assertThat(concept.getParents().get(concept.getParents().size() - 1).getCode())
-                    .isEqualTo("395508003");
-        }
-        
-        assertThat(concept.getChildren().size()).isEqualTo(childSize);
-
-    }
-    
-    private void validateConcept(Concept concept, String conId, String memberEfectiveTime,
-        boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize,
-        int childSize) throws ParseException {
-        validateConcept(concept, conId, memberEfectiveTime, isRefsetMember, descriptionList, roleGroupSize, parentSize, childSize, true);
-    }
-
-    private void validateDescExist(List<Map<String, String>> descriptions, String matchingTerm) {
-        boolean descFound = false;
-
-        for (Map<String, String> descriptionGroup : descriptions) {
-            if (descriptionGroup.get(DESCRIPTION_TERM).equalsIgnoreCase(matchingTerm)) {
-                descFound = true;
-                break;
-            }
-        }
-
-        assertTrue(descFound);
-    }
-
-    private void validateExportFiles(JsonNode root, String expectedFilePath) throws IOException {
-        BufferedReader expectedFileReader = null;
-        BufferedReader generatedFileReader = null;
-
-        try {
-            // Get Zipped File
-            final String fileUrl = (root.get("url")).asText();
-            logger.info("File Url: " + fileUrl);
-            final String zipFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-            final String exportRefsetPath = properties.getProperty("REFSET_EXPORT_DIR");
-            logger.info("Refset Directory: " + exportRefsetPath);
-            final String downloadedZipFile = exportRefsetPath + "/" + zipFileName;
-            logger.info("Zip File Path: " + downloadedZipFile);
-            Path unzippedPath = Files.createTempDirectory("exportTest-");
-            FileUtility.unzip(downloadedZipFile, unzippedPath.toFile().getAbsolutePath());
-
-            assertThat(1).isEqualTo(unzippedPath.toFile().list().length);
-
-            // Get generated File
-            File generatedFile = unzippedPath.toFile().listFiles()[0];
-
-            final SortedSet<String> generatedLines = new TreeSet<>();
-            final SortedSet<String> testLines = new TreeSet<>();
-            generatedFileReader = new BufferedReader(new FileReader(generatedFile));
-
-            String st;
-            while ((st = generatedFileReader.readLine()) != null) {
-                generatedLines.add(st);
-            }
-
-            // Get test file
-            expectedFileReader = new BufferedReader(new FileReader(expectedFilePath));
-            while ((st = expectedFileReader.readLine()) != null) {
-                testLines.add(st);
-            }
-            // Compare two but first disregard the header for the generated
-            // contents.
-            int j = 0;
-            for (int i = 0; i < generatedLines.size(); i++) {
-                String generatedLine = (String) generatedLines.toArray()[i];
-
-                // If header line, just ignore altogether
-                if (!generatedLine.startsWith("id\teffectiveTime")) {
-                    String testLine = (String) testLines.toArray()[j++];
-
-                    assertThat(testLine).isEqualTo(generatedLine);
-                }
-            }
-
-            assertThat(testLines.size()).isEqualTo(j);
-        } finally {
-            if (expectedFileReader != null) {
-                expectedFileReader.close();
-            }
-
-            if (generatedFileReader != null) {
-                generatedFileReader.close();
-            }
-        }
     }
 
 }
