@@ -24,6 +24,7 @@ nexusPassword=...nexus password...
 EOF
 ```
 
+* Create a local directory for export files: %REFSET_EXPORT_DIR%
 * Set the following environment variables with appropriate values for the system the application us being run on. For a local install make sure to use 127.0.0.1 as the DB_HOST instead of localhost:
 
 ```
@@ -45,6 +46,7 @@ set AWS_REGION=us-east-1
 set AWS_FOLDER_DIRECTORY=rt2
 set AWS_ID=changeme
 set AWS_SECRET_KEY=changeme
+set REFSET_EXPORT_DIR=changeme
 ```
 
 * Install MySql Database v? or run through a docker container. Configure the database to use the environment values you set above:
