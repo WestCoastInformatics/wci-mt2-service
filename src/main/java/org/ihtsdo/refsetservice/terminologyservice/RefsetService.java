@@ -552,6 +552,100 @@ public class RefsetService {
     }
     
     /**
+     * Modify a refset.
+     *
+     * @param refsetInternalId the internal refset ID to modify
+     * @return the updated refset
+     * @throws Exception the exception
+     */
+    public static Refset modifyRefset(final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
+        
+        final Refset newRefsetVersion = new Refset();
+        
+        try (TerminologyService service = new TerminologyService()) {
+
+            Refset refset = getRefset(refsetInternalId);
+            
+            if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+                throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
+            }
+
+            service.setModifiedBy("RT2");
+            service.setModifiedFlag(true);
+            
+            // set user changed fields
+            refset.setTags(refsetEditParameters.getTags());
+            refset.setVersionNotes(refsetEditParameters.getVersionNotes());
+            refset.setNarrative(refsetEditParameters.getNarrative());
+            refset.setExternalUrl(refsetEditParameters.getExternalUrl()); 
+            
+            // update an object
+            service.update(refset);
+
+            logger.info("Modify Refset: Refset " + refset.getRefsetId() + " successfully modified");
+            logger.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));
+            return refset;
+        }
+    }
+    
+    /**
+     * Create a new version of a refset.
+     *
+     * @param refsetInternalId the internal refset ID to base the new version on
+     * @return the new internal refset ID
+     * @throws Exception the exception
+     */
+    public static String createNewRefsetVersion(final String refsetInternalId) throws Exception {
+        
+        final Refset newRefsetVersion = new Refset();
+        String newInternalRefsetId = "";
+        
+        try (TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy("RT2");
+            service.setModifiedFlag(true);
+            
+            Refset refset = getRefset(refsetInternalId);
+            
+            newRefsetVersion.populateFrom(refset);
+
+            // set automatic changed fields
+            newRefsetVersion.setVersionDate(null);
+            newRefsetVersion.setLatestVersion(true);
+            newRefsetVersion.setId(null);
+            newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
+            
+            // if the original refset was the latest version update it so it no longer is, else find the latest version and update that
+            if (refset.isLatestVersion()) {
+                
+                // update an object
+                refset.setLatestVersion(false);
+                service.update(refset);
+            } else {
+                
+                Refset lastVersionRefset = service.findSingle(
+                        "refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestVersion: true", Refset.class, null);
+
+                if (lastVersionRefset != null) {
+                    
+                    // update an object
+                    lastVersionRefset.setLatestVersion(false);
+                    service.update(lastVersionRefset);
+                }
+            }
+            
+            // Add an object
+            service.add(newRefsetVersion);
+            newInternalRefsetId = refset.getId();
+            
+            logger.info("createNewRefsetVersion: Refset " + refset.getRefsetId() + " version successfully added");
+            logger.debug("createNewRefsetVersion: Refset: " + ModelUtility.toJson(newRefsetVersion));
+            
+            return newInternalRefsetId;
+        }
+    }
+    
+    /**
      * Search Projects.
      *
      * @param searchParameters the search parameters
