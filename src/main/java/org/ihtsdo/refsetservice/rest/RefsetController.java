@@ -92,7 +92,7 @@ public class RefsetController extends BaseController {
      * Returns the refset.
      *
      * @param refsetInternalId the internal refset ID
-     * @return the concept
+     * @return the refset
      * @throws Exception the exception
      */
 
@@ -116,25 +116,9 @@ public class RefsetController extends BaseController {
         try {
 
             logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
+            final Refset refset = RefsetService.getRefset(refsetInternalId);
 
-            try (TerminologyService service = new TerminologyService()) {
-
-                final Refset refset = service.findSingle(
-                        "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
-
-                if (refset == null) {
-                    throw new Exception("Unable to retrieve refset " + refsetInternalId);
-                }
-
-                refset.setDownloadable(true);
-                refset.setFeedbackVisible(true);
-                refset.setVersionList(
-                        RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
-
-                logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
-
-                return refset;
-            }
+            return refset;
 
         } catch (final Exception e) {
 

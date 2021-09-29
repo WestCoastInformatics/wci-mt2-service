@@ -28,6 +28,7 @@ import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.RefsetEditParameters;
+import org.ihtsdo.refsetservice.util.RefsetUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -521,6 +522,36 @@ public class RefsetService {
     }
     
     /**
+     * Returns a specific refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public static Refset getRefset(final String refsetInternalId) throws Exception {
+        
+        try (TerminologyService service = new TerminologyService()) {
+
+            Refset refset = service.findSingle(
+                    "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+
+            if (refset == null) {
+                throw new Exception("Unable to retrieve refset " + refsetInternalId);
+            }
+
+            refset = getRefsetDescriptions(refset);
+            
+            refset.setDownloadable(true);
+            refset.setFeedbackVisible(true);
+            refset.setVersionList(
+                    RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
+
+            logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
+            return refset;
+        }
+    }
+    
+    /**
      * Search Projects.
      *
      * @param searchParameters the search parameters
@@ -585,6 +616,28 @@ public class RefsetService {
         branchPath = refset.getEdition().getBranch() + pathDate;
 
         return branchPath;
+    }
+    
+    /**
+     * Get all the descriptions for a refset.
+     *
+     * @param refset the refset
+     * @return the refset with descriptions
+     * @throws Exception the exception
+     */
+    public static Refset getRefsetDescriptions(final Refset refset) throws Exception {
+        
+        final List<Concept> refsetConceptList = new ArrayList<>();
+        final Concept refsetConcept = new Concept();
+        refsetConcept.setCode(refset.getRefsetId());
+        refsetConcept.setName(refset.getName());
+        refsetConceptList.add(refsetConcept);
+        
+        RefsetMemberService.populateAllLanguageDescriptions(refset, refsetConceptList);
+        
+        refset.setDescriptions(refsetConceptList.get(0).getDescriptions());
+        
+        return refset;
     }
     
     /**

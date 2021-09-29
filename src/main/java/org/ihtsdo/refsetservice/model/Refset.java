@@ -112,6 +112,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The ID of the parent of the underlying refset concept. */
     @Transient
     private String parentConceptId;
+    
+    /** The descriptions. */
+    @Transient
+    private List<Map<String, String>> descriptions = new ArrayList<>();
 
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
@@ -227,6 +231,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         latestVersion = other.isLatestVersion();
         feedbackVisible = other.isFeedbackVisible();
         versionList = other.getVersionList();
+        descriptions = other.getDescriptions();
     }
 
     /**
@@ -406,6 +411,25 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setPrivateRefset(final boolean privateRefset) {
         this.privateRefset = privateRefset;
+    }
+    
+    /**
+     * Gets the descriptions.
+     *
+     * @return the descriptions
+     */
+    @JsonGetter()
+    public List<Map<String, String>> getDescriptions() {
+        return descriptions;
+    }
+
+    /**
+     * Sets the descriptions.
+     *
+     * @param descriptions the descriptions
+     */
+    public void setDescriptions(List<Map<String, String>> descriptions) {
+        this.descriptions = descriptions;
     }
 
     /**
@@ -868,6 +892,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((versionList == null) ? 0 : versionList.hashCode());
         result = prime * result + ((assignedUser == null) ? 0 : assignedUser.hashCode());
         result = prime * result + ((parentConceptId == null) ? 0 : parentConceptId.hashCode());
+        result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (downloadable ? 1 : 0);
         result = prime * result + (feedbackVisible ? 1 : 0);
@@ -944,6 +969,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
                 return false;
             }
         } else if (!parentConceptId.equals(other.parentConceptId)) {
+            return false;
+        }
+        
+        if (descriptions == null) {
+            if (other.descriptions != null) {
+                return false;
+            }
+        } else if (!descriptions.equals(other.descriptions)) {
             return false;
         }
         
