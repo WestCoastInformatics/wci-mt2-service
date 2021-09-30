@@ -174,12 +174,12 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     }
 
     /**
-     * Test creating a refset.
+     * Test creating and deleting refsets, and adding and removing members.
      *
      * @throws Exception the exception
      */
     @Test
-    public void testCreateRefset() throws Exception {
+    public void testRefsetCreateDeleteMemberAddRemove() throws Exception {
 
         final ObjectMapper mapper = new ObjectMapper();
         final String memberConceptIds = "48176007,280416009,10828004,260385009";
