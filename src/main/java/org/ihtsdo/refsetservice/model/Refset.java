@@ -215,13 +215,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         type = other.getType();
         versionStatus = other.getVersionStatus();
         narrative = other.getNarrative();
-        tags = other.getTags();
         versionDate = other.getVersionDate();
         versionNotes = other.getVersionNotes();
         versionStatus = other.getVersionStatus();
         workflowStatus = other.getWorkflowStatus();
         project = other.getProject();
-        definitionClauses = other.getDefinitionClauses();
         externalUrl = other.getExternalUrl();
         moduleId = other.getModuleId();
         assignedUser = other.getAssignedUser();
@@ -232,6 +230,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         feedbackVisible = other.isFeedbackVisible();
         versionList = other.getVersionList();
         descriptions = other.getDescriptions();
+        definitionClauses = new ArrayList<DefinitionClause>(other.getDefinitionClauses());
+        tags = new HashSet<String>(other.getTags());
     }
 
     /**

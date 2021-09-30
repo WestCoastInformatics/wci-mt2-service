@@ -302,8 +302,7 @@ public class RefsetController extends BaseController {
     /**
      * Create a new refset.
      *
-     * @param active the active status
-     * @param refsetId The refset ID
+     * @param refsetParameters The paramaters for the new refset
      * @return the new internal refset ID
      * @throws Exception the exception
      */
@@ -335,21 +334,115 @@ public class RefsetController extends BaseController {
     }
     
     /**
-     * Delete or inactivate a refset.
+     * Modify an existing refset that is in edit mode.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset internal ID or errors
+     * @throws Exception the exception
+     */
+    @PutMapping("/refset/{refsetInternalId}")
+    public @ResponseBody String modifyRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        final @RequestBody Refset refsetParameters,
+        final BindingResult bindingResult)
+        throws Exception {
+        
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+
+        try {
+
+            logger.debug("*********** modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
+            
+            final String result = RefsetService.modifyRefset(refsetInternalId, refsetParameters);
+            
+            if (result.startsWith("Error")) {
+                return "{\"error\": \"" + result + "\"}";
+            }
+            
+            return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Create a new version of an existing refset in edit mode.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the new refset internal ID or errors
+     * @throws Exception the exception
+     */
+    @PostMapping("/refset/{refsetInternalId}/newVersion")
+    public @ResponseBody String createNewRefsetVersion(@PathVariable(value = "refsetInternalId") final String refsetInternalId)
+        throws Exception {
+        
+        // Check to make sure parameters were properly bound to variables.
+        //checkBinding(bindingResult);
+
+        try {
+
+            logger.debug("*********** createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
+            
+            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(refsetInternalId);
+            
+            if (newRefsetInternalId.startsWith("Error")) {
+                return "{\"error\": \"" + newRefsetInternalId + "\"}";
+            }
+            
+            return "{\"refsetInternalId\": \"" + newRefsetInternalId + "\"}";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Inactivate a refset.
      *
      * @param refsetInternalId the internal refset ID
      * @return the status of the operation
      * @throws Exception the exception
      */ 
     @DeleteMapping("/refset/{refsetInternalId}")
-    public @ResponseBody String deleteRefset(final @PathVariable String refsetInternalId)
+    public @ResponseBody String inactiveRefset(final @PathVariable String refsetInternalId)
         throws Exception {
         
         try {
 
-            logger.debug("*********** deleteRefset: refsetInternalId: " + refsetInternalId);
+            logger.debug("*********** inactiveRefset: refsetInternalId: " + refsetInternalId);
             
-            final String status = RefsetService.deleteRefset(refsetInternalId);
+            final String status = RefsetService.inactivateRefset(refsetInternalId);
+
+            return "{\"status\": \"" + status + "\"}";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Delete the edit version of a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */ 
+    @DeleteMapping("/refset/{refsetInternalId}/editVersion")
+    public @ResponseBody String deleteRefsetEditVersion(final @PathVariable String refsetInternalId)
+        throws Exception {
+        
+        try {
+
+            logger.debug("*********** deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
+            
+            final String status = RefsetService.deleteEditVersion(refsetInternalId, true);
 
             return "{\"status\": \"" + status + "\"}";
 
