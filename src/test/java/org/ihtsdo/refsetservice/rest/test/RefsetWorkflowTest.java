@@ -47,7 +47,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
     }
 
     private static enum WorkflowUser {
-        AUTHOR_USER, REVIEWER_USER, AUTHOR_AND_REVIEWER_ROLE, ADMIN_USER, VIEWER_USER
+        AUTHOR_USER, REVIEWER_USER, AUTHOR_AND_REVIEWER_USER, ADMIN_USER, VIEWER_USER
     }
 
     /**
@@ -105,10 +105,20 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         }
     }
 
+    /**
+     * Mimic running workflow on a refset (ignoring actual add/remove of
+     * members).
+     * 
+     * After each advancement, grab workflow history to ensure that the contents
+     * are filled out as expected. Also perform one final one looking at all
+     * history for the editing cycle to ensure no information loss as the
+     * workflow goes through the full cycle *
+     * @throws Exception the exception
+     */
     @Test
     public void testWorkflowHistory() throws Exception {
         // Testing Ready_For_Edit state
-        String refsetId = ""; // TODO: Define Refset Id
+        final String refsetId = ""; // TODO: Define Refset Id
         int actionCount = 0;
 
         // TODO: Do we create a new Refset Concept and delete it per execution?
@@ -213,6 +223,111 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
                 advanceTimestamp.toString(), note);
         validateRow(lookedUpWorkflowHistory.get(actionCount++), "Author_User",
                 "Request_Publication", advanceTimestamp.toString(), note);
+
+        // TODO: Deconstruct WF for future test (or complete cycle)
+    }
+
+    /**
+     * Mimic running workflow on a refset (ignoring actual add/remove of
+     * members).
+     * 
+     * Testing a edit and review to ensure a) once refset locked in Workflow
+     * (In_Edit or In_Review), no one else can lock it and b) only person that
+     * locked/owns refset (in edit or review) may advance it
+     */
+    @Test
+    public void testLockingOfRefset() throws Exception {
+
+        // TODO: Do we create a new Refset Concept and delete it per execution?
+        final String refsetId = ""; // TODO: Define Refset Id
+
+        // First Edit
+        WorkflowState resultingState = advanceWorkflow(refsetId, WorkflowUser.AUTHOR_USER,
+                WorkflowAction.EDIT, new Date(), "");
+        assertThat(resultingState).isNotNull();
+
+        // Someone else tries and edit - Fails as locked
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.AUTHOR_AND_REVIEWER_USER,
+                WorkflowAction.EDIT, new Date(), "");
+        assertThat(resultingState).isNull();
+
+        // Someone else tries to Request_Review despite not owning it - Fails as
+        // locked
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.AUTHOR_AND_REVIEWER_USER,
+                WorkflowAction.REQUEST_REVIEW, new Date(), "");
+        assertThat(resultingState).isNull();
+
+        // Finish First Edit
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.AUTHOR_USER,
+                WorkflowAction.REQUEST_REVIEW, new Date(), "");
+        assertThat(resultingState).isNotNull();
+
+        // In Review
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.REVIEWER_USER,
+                WorkflowAction.REVIEW, new Date(), "");
+        assertThat(resultingState).isNotNull();
+
+        // Someone else tries and review - Fails as locked
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.AUTHOR_AND_REVIEWER_USER,
+                WorkflowAction.REVIEW, new Date(), "");
+        assertThat(resultingState).isNull();
+
+        // Someone else tries to Pass_Review despite not owning it - Fails as
+        // locked
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.AUTHOR_AND_REVIEWER_USER,
+                WorkflowAction.PASS_REVIEW, new Date(), "");
+        assertThat(resultingState).isNull();
+
+        // Pass Review
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.REVIEWER_USER,
+                WorkflowAction.PASS_REVIEW, new Date(), "");
+        assertThat(resultingState).isNotNull();
+
+    }
+
+    /**
+     * Mimic running workflow on a refset (ignoring actual add/remove of
+     * members).
+     * 
+     * After each advancement, grab workflow history to ensure that the contents
+     * are filled out as expected. Also perform one final one looking at all
+     * history for the editing cycle to ensure no information loss as the
+     * workflow goes through the full cycle *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testNotesRequirementForRejectReview() throws Exception {
+
+        // TODO: Do we create a new Refset Concept and delete it per execution?
+        final String refsetId = ""; // TODO: Define Refset Id
+
+        // First Edit
+        WorkflowState resultingState = advanceWorkflow(refsetId, WorkflowUser.AUTHOR_USER,
+                WorkflowAction.EDIT, new Date(), "");
+        assertThat(resultingState).isNotNull();
+
+        // Finish First Edit
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.AUTHOR_USER,
+                WorkflowAction.REQUEST_REVIEW, new Date(), "");
+        assertThat(resultingState).isNotNull();
+
+        // In Review
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.REVIEWER_USER,
+                WorkflowAction.REVIEW, new Date(), "");
+        assertThat(resultingState).isNotNull();
+
+        // Reject Review (without Note)
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.REVIEWER_USER,
+                WorkflowAction.REJECT_REVIEW, new Date(), "");
+        assertThat(resultingState).isNull();
+
+        // Reject Review (with Note)
+        final String note = "I rejected this because it's not right";
+        resultingState = advanceWorkflow(refsetId, WorkflowUser.REVIEWER_USER,
+                WorkflowAction.REJECT_REVIEW, new Date(), note);
+        assertThat(resultingState).isNotNull();
+
+        // TODO: Deconstruct WF for future test (or complete cycle)
     }
 
     private List<List<String>> getWorkflowHistory() {
@@ -251,6 +366,8 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // - timestamp to add for WfHx
         // - note to add for WfHx (only available at 3 points)
         //
+        // TODO: Tim, if one isn't able to advance workflow due to locking or
+        // lack of note for Reject_Review, do we return null or throw exception?
         return null;
     }
 
