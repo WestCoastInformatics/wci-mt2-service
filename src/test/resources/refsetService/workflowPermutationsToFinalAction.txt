@@ -1,0 +1,13 @@
+Author, Ready_For_Edit, In_Edit
+Author, Ready_For_Edit, Ready_For_Review
+Author, In_Edit, Ready_For_Edit
+Author, In_Edit, Ready_For_Review
+Author, In_Edit, Ready_For_Publication
+Reviewer, Ready_For_Review, In_Review
+Reviewer, In_Review, Ready_For_Edit
+Reviewer, In_Review, Passes_Review
+Reviewer, In_Review, Ready_For_Review
+Author, Passes_Review, Ready_For_Edit
+Author, Passes_Review, Ready_For_Review
+Author, Passes_Review, Ready_For_Publication
+Author, Ready_For_Publication, Ready_For_Edit
