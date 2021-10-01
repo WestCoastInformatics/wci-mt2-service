@@ -69,51 +69,6 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
-    public void testReadyForEditWorkflowState() throws Exception {
-        final String currentState = "48176007,280416009,10828004,260385009";
-
-        final ObjectMapper mapper = new ObjectMapper();
-
-        // the data to create a refset from a list of Ids
-        final Map<String, String> refsetNewConcept = new HashMap<>();
-        refsetNewConcept.put("name", "ZZZ RT2 Test New Concept Refset");
-        refsetNewConcept.put("parentConceptId", "446609009");
-        refsetNewConcept.put("moduleId", "900000000000207008");
-        refsetNewConcept.put("editionId", testingEditionId);
-        refsetNewConcept.put("projectId", testingProjectId);
-        refsetNewConcept.put("narrative", "Test.");
-        refsetNewConcept.put("type", "EXTENSIONAL");
-        refsetNewConcept.put("privateRefset", "false");
-        refsetNewConcept.put("localSet", "false");
-        refsetNewConcept.put("refsetDeleteStatus", "deleted");
-
-        // Define the member list
-        refsetNewConcept.put("list", memberConceptIds);
-
-        // prepare the call to create refset from a new concept
-        final ObjectNode refsetNewConceptBody =
-                mapper.createObjectNode().put("name", refsetNewConcept.get("name"))
-                        .put("parentConceptId", refsetNewConcept.get("parentConceptId"))
-                        .put("moduleId", refsetNewConcept.get("moduleId"))
-                        .put("editionId", refsetNewConcept.get("editionId"))
-                        .put("projectId", refsetNewConcept.get("projectId"))
-                        .put("narrative", refsetNewConcept.get("narrative"))
-                        .put("type", refsetNewConcept.get("type"))
-                        .put("privateRefset",
-                                Boolean.parseBoolean(refsetNewConcept.get("privateRefset")))
-                        .put("localSet", Boolean.parseBoolean(refsetNewConcept.get("localSet")));
-
-        refsetNewConcept.put("body", refsetNewConceptBody.toString());
-
-        processAndPopulateRefset(refsetNewConcept, mapper, 4);
-    }
-
-    /**
-     * Test creating a refset concept.
-     *
-     * @throws Exception the exception
-     */
-    @Test
     public void testCreateRefsetPopulateFromSctIdList() throws Exception {
         final String memberConceptIds = "48176007,280416009,10828004,260385009";
 
