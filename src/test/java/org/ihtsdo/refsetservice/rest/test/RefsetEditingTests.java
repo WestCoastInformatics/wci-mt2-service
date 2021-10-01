@@ -4,15 +4,14 @@ package org.ihtsdo.refsetservice.rest.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.refsetservice.model.Refset;
@@ -65,16 +64,148 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     }
 
     /**
+     * Test creating a refset concept.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testReadyForEditWorkflowState() throws Exception {
+        final String currentState = "48176007,280416009,10828004,260385009";
+
+        final ObjectMapper mapper = new ObjectMapper();
+
+        // the data to create a refset from a list of Ids
+        final Map<String, String> refsetNewConcept = new HashMap<>();
+        refsetNewConcept.put("name", "ZZZ RT2 Test New Concept Refset");
+        refsetNewConcept.put("parentConceptId", "446609009");
+        refsetNewConcept.put("moduleId", "900000000000207008");
+        refsetNewConcept.put("editionId", testingEditionId);
+        refsetNewConcept.put("projectId", testingProjectId);
+        refsetNewConcept.put("narrative", "Test.");
+        refsetNewConcept.put("type", "EXTENSIONAL");
+        refsetNewConcept.put("privateRefset", "false");
+        refsetNewConcept.put("localSet", "false");
+        refsetNewConcept.put("refsetDeleteStatus", "deleted");
+
+        // Define the member list
+        refsetNewConcept.put("list", memberConceptIds);
+
+        // prepare the call to create refset from a new concept
+        final ObjectNode refsetNewConceptBody =
+                mapper.createObjectNode().put("name", refsetNewConcept.get("name"))
+                        .put("parentConceptId", refsetNewConcept.get("parentConceptId"))
+                        .put("moduleId", refsetNewConcept.get("moduleId"))
+                        .put("editionId", refsetNewConcept.get("editionId"))
+                        .put("projectId", refsetNewConcept.get("projectId"))
+                        .put("narrative", refsetNewConcept.get("narrative"))
+                        .put("type", refsetNewConcept.get("type"))
+                        .put("privateRefset",
+                                Boolean.parseBoolean(refsetNewConcept.get("privateRefset")))
+                        .put("localSet", Boolean.parseBoolean(refsetNewConcept.get("localSet")));
+
+        refsetNewConcept.put("body", refsetNewConceptBody.toString());
+
+        processAndPopulateRefset(refsetNewConcept, mapper, 4);
+    }
+
+    /**
+     * Test creating a refset concept.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testCreateRefsetPopulateFromSctIdList() throws Exception {
+        final String memberConceptIds = "48176007,280416009,10828004,260385009";
+
+        final ObjectMapper mapper = new ObjectMapper();
+
+        // the data to create a refset from a list of Ids
+        final Map<String, String> refsetNewConcept = new HashMap<>();
+        refsetNewConcept.put("name", "ZZZ RT2 Test New Concept Refset");
+        refsetNewConcept.put("parentConceptId", "446609009");
+        refsetNewConcept.put("moduleId", "900000000000207008");
+        refsetNewConcept.put("editionId", testingEditionId);
+        refsetNewConcept.put("projectId", testingProjectId);
+        refsetNewConcept.put("narrative", "Test.");
+        refsetNewConcept.put("type", "EXTENSIONAL");
+        refsetNewConcept.put("privateRefset", "false");
+        refsetNewConcept.put("localSet", "false");
+        refsetNewConcept.put("refsetDeleteStatus", "deleted");
+
+        // Define the member list
+        refsetNewConcept.put("list", memberConceptIds);
+
+        // prepare the call to create refset from a new concept
+        final ObjectNode refsetNewConceptBody =
+                mapper.createObjectNode().put("name", refsetNewConcept.get("name"))
+                        .put("parentConceptId", refsetNewConcept.get("parentConceptId"))
+                        .put("moduleId", refsetNewConcept.get("moduleId"))
+                        .put("editionId", refsetNewConcept.get("editionId"))
+                        .put("projectId", refsetNewConcept.get("projectId"))
+                        .put("narrative", refsetNewConcept.get("narrative"))
+                        .put("type", refsetNewConcept.get("type"))
+                        .put("privateRefset",
+                                Boolean.parseBoolean(refsetNewConcept.get("privateRefset")))
+                        .put("localSet", Boolean.parseBoolean(refsetNewConcept.get("localSet")));
+
+        refsetNewConcept.put("body", refsetNewConceptBody.toString());
+
+        processAndPopulateRefset(refsetNewConcept, mapper, 4);
+    }
+
+    /**
      * Test creating a refset.
      *
      * @throws Exception the exception
      */
     @Test
-    public void testCreateRefset() throws Exception {
+    public void testCreateRefsetPopulateFromECL() throws Exception {
 
         final ObjectMapper mapper = new ObjectMapper();
-        final String memberConceptIds = "48176007,280416009,10828004,260385009";
-        final List<Map<String, String>> refsetDetails = new ArrayList<>();
+
+        // the data to create a refset with members from ECL
+        final Map<String, String> refsetEclMembers = new HashMap<>();
+        refsetEclMembers.put("name", "ZZZ RT2 Test ECL Members Refset");
+        refsetEclMembers.put("parentConceptId", "446609009");
+        refsetEclMembers.put("moduleId", "900000000000207008");
+        refsetEclMembers.put("editionId", testingEditionId);
+        refsetEclMembers.put("projectId", testingProjectId);
+        refsetEclMembers.put("narrative", "Test.");
+        refsetEclMembers.put("type", "EXTENSIONAL");
+        refsetEclMembers.put("privateRefset", "false");
+        refsetEclMembers.put("localSet", "false");
+        refsetEclMembers.put("refsetDeleteStatus", "deleted");
+
+        // Define the ECL
+        refsetEclMembers.put("ecl", "<< 183814000 | Admission funding status (finding) |");
+
+        // prepare the call to create refset from a new concept
+        final ObjectNode refsetEclMembersBody =
+                mapper.createObjectNode().put("name", refsetEclMembers.get("name"))
+                        .put("parentConceptId", refsetEclMembers.get("parentConceptId"))
+                        .put("moduleId", refsetEclMembers.get("moduleId"))
+                        .put("editionId", refsetEclMembers.get("editionId"))
+                        .put("projectId", refsetEclMembers.get("projectId"))
+                        .put("narrative", refsetEclMembers.get("narrative"))
+                        .put("type", refsetEclMembers.get("type"))
+                        .put("privateRefset",
+                                Boolean.parseBoolean(refsetEclMembers.get("privateRefset")))
+                        .put("localSet", Boolean.parseBoolean(refsetEclMembers.get("localSet")));
+
+        refsetEclMembers.put("body", refsetEclMembersBody.toString());
+
+        processAndPopulateRefset(refsetEclMembers, mapper, 3);
+    }
+
+    /**
+     * Test creating a refset concept.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testCreateRefsetPopulateFromSctIdFile() throws Exception {
+
+        final ObjectMapper mapper = new ObjectMapper();
 
         // the data to create a refset from a new concept
         final Map<String, String> refsetNewConcept = new HashMap<>();
@@ -88,6 +219,8 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         refsetNewConcept.put("privateRefset", "false");
         refsetNewConcept.put("localSet", "false");
         refsetNewConcept.put("refsetDeleteStatus", "deleted");
+
+        // Define the SctIds File
         refsetNewConcept.put("fileType", "list");
         refsetNewConcept.put("conceptFileName", MEMBER_ID_LIST_FILE_NAME);
         refsetNewConcept.put("conceptFile", MEMBER_ID_LIST_FILE);
@@ -106,39 +239,20 @@ public class RefsetEditingTests extends AbstractRefsetTests {
                         .put("localSet", Boolean.parseBoolean(refsetNewConcept.get("localSet")));
 
         refsetNewConcept.put("body", refsetNewConceptBody.toString());
-        refsetDetails.add(refsetNewConcept);
 
-        // the data to create a refset with members from ECL
-        final Map<String, String> refsetEclMembers = new HashMap<>();
-        refsetEclMembers.put("name", "ZZZ RT2 Test ECL Members Refset");
-        refsetEclMembers.put("parentConceptId", "446609009");
-        refsetEclMembers.put("moduleId", "900000000000207008");
-        refsetEclMembers.put("editionId", testingEditionId);
-        refsetEclMembers.put("projectId", testingProjectId);
-        refsetEclMembers.put("narrative", "Test.");
-        refsetEclMembers.put("type", "EXTENSIONAL");
-        refsetEclMembers.put("privateRefset", "false");
-        refsetEclMembers.put("localSet", "false");
-        refsetEclMembers.put("refsetDeleteStatus", "deleted");
-        refsetEclMembers.put("ecl", "183814000 | Admission funding status (finding) |");
+        processAndPopulateRefset(refsetNewConcept, mapper, 4);
+    }
 
-        // prepare the call to create refset from a new concept
-        final ObjectNode refsetEclMembersBody =
-                mapper.createObjectNode().put("name", refsetEclMembers.get("name"))
-                        .put("parentConceptId", refsetEclMembers.get("parentConceptId"))
-                        .put("moduleId", refsetEclMembers.get("moduleId"))
-                        .put("editionId", refsetEclMembers.get("editionId"))
-                        .put("projectId", refsetEclMembers.get("projectId"))
-                        .put("narrative", refsetEclMembers.get("narrative"))
-                        .put("type", refsetEclMembers.get("type"))
-                        .put("privateRefset",
-                                Boolean.parseBoolean(refsetEclMembers.get("privateRefset")))
-                        .put("localSet", Boolean.parseBoolean(refsetEclMembers.get("localSet")));
+    /**
+     * Test creating a refset.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testCreateRefsetPopulateFromRF2() throws Exception {
 
-        refsetEclMembers.put("body", refsetEclMembersBody.toString());
-        refsetDetails.add(refsetEclMembers);
+        final ObjectMapper mapper = new ObjectMapper();
 
-        // the data to create a refset with members added from an RF2 file
         final Map<String, String> refsetRf2MemberAdd = new HashMap<>();
         refsetRf2MemberAdd.put("name", "ZZZ RT2 Test RF2 Member Add Refset");
         refsetRf2MemberAdd.put("parentConceptId", "446609009");
@@ -150,6 +264,8 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         refsetRf2MemberAdd.put("privateRefset", "false");
         refsetRf2MemberAdd.put("localSet", "false");
         refsetRf2MemberAdd.put("refsetDeleteStatus", "deleted");
+
+        // Define the Rf2 File
         refsetRf2MemberAdd.put("fileType", "rf2");
         refsetRf2MemberAdd.put("conceptFileName", MEMBER_ID_RF2_FILE_NAME);
         refsetRf2MemberAdd.put("conceptFile", MEMBER_ID_RF2_FILE);
@@ -168,7 +284,21 @@ public class RefsetEditingTests extends AbstractRefsetTests {
                         .put("localSet", Boolean.parseBoolean(refsetRf2MemberAdd.get("localSet")));
 
         refsetRf2MemberAdd.put("body", refsetRf2MemberAddBody.toString());
-        refsetDetails.add(refsetRf2MemberAdd);
+
+        processAndPopulateRefset(refsetRf2MemberAdd, mapper, 4);
+    }
+
+    /**
+     * Test creating a refset.
+     *
+     * @throws Exception the exception
+     */
+    // Test is commented out for new as no means of "reverting" the concept from
+    // refset concept to normal concept
+    // @Test
+    public void testCreateRefsetFromExistingConcept() throws Exception {
+
+        final ObjectMapper mapper = new ObjectMapper();
 
         // the data to create a refset from an existing concept (but can't be a
         // refset already in RT2)
@@ -204,59 +334,127 @@ public class RefsetEditingTests extends AbstractRefsetTests {
                 .put("localSet", Boolean.parseBoolean(refsetExistingConcept.get("localSet")));
 
         refsetExistingConcept.put("body", refsetExistingConceptBody.toString());
-        refsetDetails.add(refsetExistingConcept);
 
-        // TESTS BEGIN - loop over the details object to run various tests
-        for (final Map<String, String> refsetDetail : refsetDetails) {
+        processAndPopulateRefset(refsetExistingConcept, mapper, 0);
+    }
 
-            // make the call to create refset from a new concept
-            final MvcResult result = mvc.perform(post(baseUrl).content(refsetDetail.get("body"))
-                    .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk()).andReturn();
-            final String content = result.getResponse().getContentAsString();
-            logger.info(" content = " + content);
+    private void processAndPopulateRefset(Map<String, String> refsetDetail, ObjectMapper mapper,
+        int numConceptsAdded) throws Exception {
 
-            final JsonNode root = mapper.readTree(content);
-            final JsonNode refsetNode = root;
+        // make the call to create refset from a new concept
+        final MvcResult result = mvc
+                .perform(post(baseUrl).content(refsetDetail.get("body"))
+                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+        final String content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
 
-            assertTrue(refsetNode.has("refsetInternalId"));
-            final String refsetInternalId = refsetNode.get("refsetInternalId").asText();
+        final JsonNode root = mapper.readTree(content);
+        final JsonNode refsetNode = root;
 
-            // verify the refset from a new concept in the RT2 DB
-            try (final TerminologyService service = new TerminologyService()) {
+        assertTrue(refsetNode.has("refsetInternalId"));
+        final String refsetInternalId = refsetNode.get("refsetInternalId").asText();
 
-                Refset refset = service.get(refsetInternalId, Refset.class);
-                assertThat(refset).isNotNull();
-                assertThat(refset.getName()).isEqualTo(refsetDetail.get("name"));
-                assertThat(refset.getModuleId()).isEqualTo(refsetDetail.get("moduleId"));
-                assertThat(refset.getEditionId()).isEqualTo(refsetDetail.get("editionId"));
-                assertThat(refset.getProjectId()).isEqualTo(refsetDetail.get("projectId"));
-                assertThat(refset.getNarrative()).isEqualTo(refsetDetail.get("narrative"));
-                assertThat(refset.getType()).isEqualTo(refsetDetail.get("type"));
-                assertThat(refset.isPrivateRefset())
-                        .isEqualTo(Boolean.parseBoolean(refsetDetail.get("privateRefset")));
-                assertThat(refset.isLocalSet())
-                        .isEqualTo(Boolean.parseBoolean(refsetDetail.get("localSet")));
+        // verify the refset from a new concept in the RT2 DB
+        try (final TerminologyService service = new TerminologyService()) {
 
-                if (refsetDetail.containsKey("refsetId")) {
-                    assertThat(refset.getRefsetId()).isEqualTo(refsetDetail.get("refsetId"));
-                }
+            Refset refset = service.get(refsetInternalId, Refset.class);
+            assertThat(refset).isNotNull();
+            assertThat(refset.getName()).isEqualTo(refsetDetail.get("name"));
+            assertThat(refset.getModuleId()).isEqualTo(refsetDetail.get("moduleId"));
+            assertThat(refset.getEditionId()).isEqualTo(refsetDetail.get("editionId"));
+            assertThat(refset.getProjectId()).isEqualTo(refsetDetail.get("projectId"));
+            assertThat(refset.getNarrative()).isEqualTo(refsetDetail.get("narrative"));
+            assertThat(refset.getType()).isEqualTo(refsetDetail.get("type"));
+            assertThat(refset.isPrivateRefset())
+                    .isEqualTo(Boolean.parseBoolean(refsetDetail.get("privateRefset")));
+            assertThat(refset.isLocalSet())
+                    .isEqualTo(Boolean.parseBoolean(refsetDetail.get("localSet")));
+
+            assertThat(refset.getRefsetId()).isNotNull();
+            if (refsetDetail.containsKey("refsetId")) {
+                assertThat(refset.getRefsetId()).isEqualTo(refsetDetail.get("refsetId"));
+            }
+        }
+
+        // prepare and make call to add members to the refset
+        String membersUrl = baseUrl + "/" + refsetInternalId + "/members?conceptIds=";
+        MvcResult membersResult = null;
+
+        if (!refsetDetail.containsKey("fileType")) {
+
+            assertThat(refsetDetail.containsKey("ecl") || refsetDetail.containsKey("list"))
+                    .isTrue();
+            if (refsetDetail.containsKey("list")) {
+                membersUrl += refsetDetail.get("list");
+            } else {
+                membersUrl += "&ecl=" + refsetDetail.get("ecl");
             }
 
-            // prepare the call to add members to the refset from a new concept
-            String membersUrl = baseUrl + "/" + refsetInternalId + "/members?conceptIds=";
-            MvcResult membersResult = null;
+            // make the call to add members to the refset from a new concept
+            membersResult = mvc.perform(post(membersUrl).accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+
+        } else {
+
+            MockMultipartFile mockMultipartFile = new MockMultipartFile("conceptFile",
+                    refsetDetail.get("conceptFileName"), "text/plain",
+                    Files.readAllBytes(Paths.get(refsetDetail.get("conceptFile"))));
+
+            membersResult = mvc
+                    .perform(multipart(membersUrl + "&fileType=" + refsetDetail.get("fileType"))
+                            .file(mockMultipartFile).accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+        }
+
+        final String membersContent = membersResult.getResponse().getContentAsString();
+        logger.info(" membersContent = " + membersContent);
+
+        final JsonNode membersRoot = mapper.readTree(membersContent);
+        final JsonNode membersNode = membersRoot;
+
+        assertTrue(membersNode.has("status"));
+        assertTrue(membersNode.get("status").asText().equals("All concepts added."));
+
+        // Verifying contents as a second measure
+        final String url = baseUrl + "/" + refsetInternalId + "/members?limit=500&offset=0"
+                + "&displayType=list&refsetInternalId=" + refsetInternalId;
+
+        logger.info("Testing url - " + url);
+
+        final MvcResult countResult = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        final String countContent = countResult.getResponse().getContentAsString();
+        logger.info(" content = " + countContent);
+
+        final JsonNode conceptRoot = mapper.readTree(countContent);
+        assertThat(conceptRoot.get("total").asInt()).isEqualTo(numConceptsAdded);
+
+        // remove the members of the refset from a new concept
+        if (membersNode.has("status")) {
+
+            String removeUrl = baseUrl + "/" + refsetInternalId + "/removeMembers?conceptIds=";
+            MvcResult removeResult = null;
 
             if (!refsetDetail.containsKey("fileType")) {
 
                 if (!refsetDetail.containsKey("ecl")) {
-                    membersUrl += memberConceptIds;
+
+                    String additionalMemberIds = "";
+
+                    // for one test we will try to remove a member that has
+                    // already been published
+                    if (refsetDetail.containsKey("additionalMemberIdsToRemove")) {
+                        additionalMemberIds = "," + refsetDetail.get("additionalMemberIdsToRemove");
+                    }
+
+                    removeUrl += refsetDetail.get("list") + additionalMemberIds;
                 } else {
-                    membersUrl += "&ecl=" + refsetDetail.get("ecl");
+                    removeUrl += "&ecl=" + refsetDetail.get("ecl");
                 }
 
-                // make the call to add members to the refset from a new concept
-                membersResult = mvc.perform(post(membersUrl).accept(MediaType.APPLICATION_JSON))
+                // make the call to add members to the refset from a new
+                // concept
+                removeResult = mvc.perform(post(removeUrl).accept(MediaType.APPLICATION_JSON))
                         .andExpect(status().isOk()).andReturn();
 
             } else {
@@ -265,86 +463,34 @@ public class RefsetEditingTests extends AbstractRefsetTests {
                         refsetDetail.get("conceptFileName"), "text/plain",
                         Files.readAllBytes(Paths.get(refsetDetail.get("conceptFile"))));
 
-                membersResult = mvc
-                        .perform(multipart(membersUrl + "&fileType=" + refsetDetail.get("fileType"))
+                removeResult = mvc
+                        .perform(multipart(removeUrl + "&fileType=" + refsetDetail.get("fileType"))
                                 .file(mockMultipartFile).accept(MediaType.APPLICATION_JSON))
                         .andExpect(status().isOk()).andReturn();
             }
 
-            final String membersContent = membersResult.getResponse().getContentAsString();
-            logger.info(" membersContent = " + membersContent);
+            final String removeContent = removeResult.getResponse().getContentAsString();
+            final JsonNode removeRoot = mapper.readTree(removeContent);
+            final JsonNode removeNode = removeRoot;
 
-            final JsonNode membersRoot = mapper.readTree(membersContent);
-            final JsonNode membersNode = membersRoot;
-
-            assertTrue(membersNode.has("status"));
-            assertTrue(membersNode.get("status").asText().equals("All concepts added."));
-
-            // remove the members of the refset from a new concept
-            if (membersNode.has("status")) {
-
-                String removeUrl = baseUrl + "/" + refsetInternalId + "/removeMembers?conceptIds=";
-                MvcResult removeResult = null;
-
-                if (!refsetDetail.containsKey("fileType")) {
-
-                    if (!refsetDetail.containsKey("ecl")) {
-
-                        String additionalMemberIds = "";
-
-                        // for one test we will try to remove a member that has
-                        // already been published
-                        if (refsetDetail.containsKey("additionalMemberIdsToRemove")) {
-                            additionalMemberIds =
-                                    "," + refsetDetail.get("additionalMemberIdsToRemove");
-                        }
-
-                        removeUrl += memberConceptIds + additionalMemberIds;
-                    } else {
-                        removeUrl += "&ecl=" + refsetDetail.get("ecl");
-                    }
-
-                    // make the call to add members to the refset from a new
-                    // concept
-                    removeResult = mvc.perform(post(removeUrl).accept(MediaType.APPLICATION_JSON))
-                            .andExpect(status().isOk()).andReturn();
-
-                } else {
-
-                    MockMultipartFile mockMultipartFile = new MockMultipartFile("conceptFile",
-                            refsetDetail.get("conceptFileName"), "text/plain",
-                            Files.readAllBytes(Paths.get(refsetDetail.get("conceptFile"))));
-
-                    removeResult = mvc.perform(
-                            multipart(removeUrl + "&fileType=" + refsetDetail.get("fileType"))
-                                    .file(mockMultipartFile).accept(MediaType.APPLICATION_JSON))
-                            .andExpect(status().isOk()).andReturn();
-                }
-
-                final String removeContent = removeResult.getResponse().getContentAsString();
-                final JsonNode removeRoot = mapper.readTree(removeContent);
-                final JsonNode removeNode = removeRoot;
-
-                assertTrue(removeNode.has("status"));
-                assertTrue(removeNode.get("status").asText().equals("All concepts removed."));
-            }
-
-            // delete the refset from a new concept
-            if (refsetInternalId != null && !refsetInternalId.equals("")) {
-
-                final String deleteUrl = baseUrl + "/" + refsetInternalId;
-                final MvcResult deleteResult =
-                        mvc.perform(delete(deleteUrl)).andExpect(status().isOk()).andReturn();
-                final String deleteContent = deleteResult.getResponse().getContentAsString();
-                final JsonNode deleteRoot = mapper.readTree(deleteContent);
-                final JsonNode deleteNode = deleteRoot;
-
-                assertTrue(deleteNode.has("status"));
-                assertTrue(deleteNode.get("status").asText()
-                        .equals(refsetDetail.get("refsetDeleteStatus")));
-            }
+            assertTrue(removeNode.has("status"));
+            assertTrue(removeNode.get("status").asText().equals("All concepts removed."));
         }
 
+        // delete the refset from a new concept
+        if (refsetInternalId != null && !refsetInternalId.equals("")) {
+
+            final String deleteUrl = baseUrl + "/" + refsetInternalId;
+            final MvcResult deleteResult =
+                    mvc.perform(delete(deleteUrl)).andExpect(status().isOk()).andReturn();
+            final String deleteContent = deleteResult.getResponse().getContentAsString();
+            final JsonNode deleteRoot = mapper.readTree(deleteContent);
+            final JsonNode deleteNode = deleteRoot;
+
+            assertTrue(deleteNode.has("status"));
+            assertTrue(deleteNode.get("status").asText()
+                    .equals(refsetDetail.get("refsetDeleteStatus")));
+        }
     }
 
 }
