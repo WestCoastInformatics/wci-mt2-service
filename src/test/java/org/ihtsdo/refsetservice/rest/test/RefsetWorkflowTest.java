@@ -189,7 +189,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
 
         // Reject Review (with Note)
         advanceTimestamp = new Date();
-        note = "I rejected this because it's not right";
+        note = "The refset should be published when the full extension is published";
         advanceWorkflow(refsetId, WorkflowUser.AUTHOR_USER, WorkflowAction.REQUEST_PUBLICATION,
                 advanceTimestamp, note);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
