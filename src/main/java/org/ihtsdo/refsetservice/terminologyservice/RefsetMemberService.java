@@ -434,7 +434,7 @@ public class RefsetMemberService {
             printDescription(set);
         }
 
-        logger.warn("\nNew one encountered: " + printDescription(descriptionMap));
+        logger.warn("New one encountered: " + printDescription(descriptionMap));
     }
 
     /**
@@ -1639,6 +1639,80 @@ public class RefsetMemberService {
             ex.printStackTrace();
         }
     }
+    
+    /**
+     * Populates concepts with information on if they have children.
+     *
+     * @param refset            the refset who's members are being retrieved
+     * @param conceptsToProcess the concepts to add hasChild info to
+     * @throws MalformedURLException the malformed URL exception
+     * @throws Exception             the exception
+     */
+    public static void populateConceptLeafStatus(final Refset refset, final List<Concept> conceptsToProcess)
+            throws MalformedURLException, Exception {
+
+        final StringBuffer conceptIds = new StringBuffer();
+
+        // Create Snowstorm URL
+        final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?limit=3000&leafFlagForm=inferred";
+        
+        boolean firstTime = true;
+        for (Concept concept : conceptsToProcess) {
+            if (firstTime) {
+                firstTime = false;
+            } else {
+                conceptIds.append(",");
+            }
+            conceptIds.append(concept.getCode());
+        }
+
+        // Call Snowstorm
+        logger.debug("Get Concept Leaf Status URL: " + url + "&conceptIds=" + conceptIds);
+
+        try (final Response response = SnowstormConnection.getResponse(url + "&conceptIds=" + conceptIds)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+            }
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+
+            final JsonNode allConceptNodes = root.get("items");
+            final Iterator<JsonNode> conceptIterator = allConceptNodes.iterator();
+            final HashMap<String, JsonNode> conceptNodes = new HashMap<>();
+
+            // Map concept info
+            while (conceptIterator.hasNext()) {
+                
+                final JsonNode conceptNode = conceptIterator.next();
+
+                String conceptId = conceptNode.get("conceptId").asText();
+                conceptNodes.put(conceptId, conceptNode);
+            }
+
+            // Populate concept with child info
+            for (Concept concept : conceptsToProcess) {
+                
+                JsonNode conceptNode = conceptNodes.get(concept.getCode());
+
+                if (conceptNode == null || conceptNode.size() == 0) {
+
+                    logger.debug("Concept info not retrieved for concept " + concept.getCode());
+                    continue;
+                }
+
+                if (conceptNode.has("isLeafInferred")) {
+                    concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
+                }
+            }
+            
+        } catch (Exception ex) {
+            logger.error("Could not retrieve concept leaf info " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 
     /**
      * Get ready to search concepts.
@@ -1813,6 +1887,11 @@ public class RefsetMemberService {
             + "/concepts?&offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit="
             + searchParameters.getLimit();
         
+        // if this search is for editing then get the concept leaf information
+        if (searchParameters.isEditing()) {
+            url += "&leafFlagForm=inferred";
+        }
+        
         boolean searchEcl = false;
         
         // if the query is not an ID then see if it passes ECL syntax
@@ -1899,6 +1978,10 @@ public class RefsetMemberService {
 
                             if (conceptNode.get("pt") != null) {
                                 concept.setName(conceptNode.get("pt").get("term").asText());
+                            }
+                            
+                            if (conceptNode.has("isLeafInferred")) {
+                                concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
                             }
 
                             setConceptPermissions(concept);
@@ -2052,6 +2135,12 @@ public class RefsetMemberService {
                                 || i == currentList.getItems().size() - 1) {
 
                             populateAllLanguageDescriptions(refset, conceptsToProcess);
+                            
+                            // if this search is for editing then get the concept leaf information
+                            if (searchParameters.isEditing()) {
+                                populateConceptLeafStatus(refset, conceptsToProcess);
+                            }
+                            
                             conceptsToProcess.clear();
                         }
                     }
