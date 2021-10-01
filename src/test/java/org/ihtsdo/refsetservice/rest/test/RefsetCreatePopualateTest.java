@@ -36,9 +36,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 
 @AutoConfigureMockMvc
-public class RefsetEditingTests extends AbstractRefsetTests {
+public class RefsetCreatePopualateTest extends AbstractRefsetTests {
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(RefsetEditingTests.class);
+    private static Logger logger = LoggerFactory.getLogger(RefsetCreatePopualateTest.class);
 
     /**
      * Sets the up.
