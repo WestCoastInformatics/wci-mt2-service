@@ -746,7 +746,6 @@ public class RefsetController extends BaseController {
         boolean searchRefsetMembers = false;
         final String uri = request.getRequestURI();
         
-        logger.debug("^^^^^ uri: " + uri);
         if (uri.contains("taxonomySearch")) {
             searchRefsetMembers = true;
         }
