@@ -63,39 +63,40 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         }
 
     }
-    
     /**
-     * Test creating, modifying, and deleting a new version of an existing refset in edit mode.
+     * Test creating, modifying, and deleting a new version of an existing
+     * refset in edit mode.
      *
      * @throws Exception the exception
      */
     @Test
     public void testNewVersionCreateModifyDelete() throws Exception {
 
-        final String originalRefsetInternalId = getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
+        final String originalRefsetInternalId =
+                getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
         final String url = baseUrl + "/" + originalRefsetInternalId + "/newVersion";
         logger.info("Testing url - " + url);
-        
-        // ADD NEW VERSION 
-        final ObjectMapper mapper = new ObjectMapper();
-        final ObjectNode newVersionBody =
-                mapper.createObjectNode();//.put("readVersion", "");
 
-        final MvcResult newVersionResult = mvc.perform(post(url).content(newVersionBody.toString())
-                .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+        // ADD NEW VERSION
+        final ObjectNode newVersionBody = objectMapper.createObjectNode();// .put("readVersion",
+                                                                          // "");
+
+        final MvcResult newVersionResult = mvc
+                .perform(post(url).content(newVersionBody.toString())
+                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk()).andReturn();
-        
+
         final String newVersionContent = newVersionResult.getResponse().getContentAsString();
         logger.info(" content = " + newVersionContent);
 
-        final JsonNode newVersionRoot = mapper.readTree(newVersionContent);
+        final JsonNode newVersionRoot = objectMapper.readTree(newVersionContent);
         final JsonNode newVersionNode = newVersionRoot;
 
         assertTrue(newVersionNode.has("refsetInternalId"));
         final String newRefsetInternalId = newVersionNode.get("refsetInternalId").asText();
         assertThat(newRefsetInternalId).isNotEqualTo(originalRefsetInternalId);
         logger.info("New Version Internal ID - " + newRefsetInternalId);
-        
+
         // verify the new version
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -106,41 +107,41 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             assertThat(refset.getVersionDate()).isNull();
             assertTrue(refset.isLatestVersion());
         }
-        
-        // TODO - need to figure out why indexing is not writing fast enough and get rid of this!
-        //Thread.sleep(500);
-        
+
+        // TODO - need to figure out why indexing is not writing fast enough and
+        // get rid of this!
+        Thread.sleep(500);
+
         // MODIFY NEW VERSION
         final String modifyUrl = baseUrl + "/" + newRefsetInternalId;
         logger.info("Testing url - " + modifyUrl);
-        
+
         // the modification data
         final Map<String, String> modifyData = new HashMap<>();
         modifyData.put("tag1", "tag1");
         modifyData.put("tag2", "tag2");
         modifyData.put("versionNotes", testingProjectId);
         modifyData.put("narrative", "Test.");
-        
+
         // the body of the modification call
-        final ObjectNode modifyBody =
-                mapper.createObjectNode().put("narrative", modifyData.get("narrative"))
-                        .put("versionNotes", modifyData.get("versionNotes"))
-                        .set("tags", mapper.createArrayNode()
-                                .add(modifyData.get("tag1"))
-                                .add(modifyData.get("tag2")));
-        
-        final MvcResult modifyResult = mvc.perform(put(modifyUrl).content(modifyBody.toString())
-                .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+        final ObjectNode modifyBody = objectMapper.createObjectNode()
+                .put("narrative", modifyData.get("narrative"))
+                .put("versionNotes", modifyData.get("versionNotes")).set("tags", objectMapper
+                        .createArrayNode().add(modifyData.get("tag1")).add(modifyData.get("tag2")));
+
+        final MvcResult modifyResult = mvc
+                .perform(put(modifyUrl).content(modifyBody.toString())
+                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk()).andReturn();
-        
+
         final String modifyContent = modifyResult.getResponse().getContentAsString();
         logger.info(" content = " + modifyContent);
 
-        final JsonNode modifyRoot = mapper.readTree(modifyContent);
+        final JsonNode modifyRoot = objectMapper.readTree(modifyContent);
         final JsonNode modifyNode = modifyRoot;
 
         assertTrue(modifyNode.has("refsetInternalId"));
-        
+
         // verify the modifications
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -150,18 +151,18 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             assertTrue(refset.getTags().contains(modifyData.get("tag1")));
             assertTrue(refset.getTags().contains(modifyData.get("tag2")));
         }
-        
+
         // DELETE NEW VERSION
         final String deleteUrl = baseUrl + "/" + newRefsetInternalId + "/editVersion";
         final MvcResult deleteResult =
                 mvc.perform(delete(deleteUrl)).andExpect(status().isOk()).andReturn();
         final String deleteContent = deleteResult.getResponse().getContentAsString();
-        final JsonNode deleteRoot = mapper.readTree(deleteContent);
+        final JsonNode deleteRoot = objectMapper.readTree(deleteContent);
         final JsonNode deleteNode = deleteRoot;
 
         assertTrue(deleteNode.has("status"));
         assertTrue(deleteNode.get("status").asText().equals("deleted"));
-        
+
         // verify the original refset is back to the latest version
         try (final TerminologyService service = new TerminologyService()) {
 
