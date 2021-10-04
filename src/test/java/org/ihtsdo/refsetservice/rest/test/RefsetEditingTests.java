@@ -110,7 +110,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         }
         
         // TODO - need to figure out why indexing is not writing fast enough and get rid of this!
-        Thread.sleep(500);
+        //Thread.sleep(500);
         
         // MODIFY NEW VERSION
         final String modifyUrl = baseUrl + "/" + newRefsetInternalId;
