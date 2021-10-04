@@ -887,9 +887,10 @@ public final class IndexUtility {
         }
         
         String wildcardQuery = query;
-        Pattern regex = Pattern.compile("[a-zA-Z0-9_]+:[\"\\s]*([-a-zA-Z0-9_\\s]*)(?:\\)|\\sAND?|\\sOR|\"|$)");
+        Pattern regex = Pattern.compile("[a-zA-Z0-9_]+:[\"\\s]*([-a-zA-Z0-9_\\s]*?)(?:\\)|\\sAND?|\\sOR|\"|$)");
         Matcher regexMatcher = regex.matcher(wildcardQuery);
         Set<String> stringFieldNames = IndexUtility.getIndexedFieldNames(clazz, "string");
+        int matchIndexCounter = 0;
         
         while (regexMatcher.find()) {
             
@@ -897,7 +898,18 @@ public final class IndexUtility {
             if (stringFieldNames.stream().anyMatch(field -> {
                 return regexMatcher.group(0).contains(field + ":");
             })) {
-                wildcardQuery = wildcardQuery.replace(regexMatcher.group(1), regexMatcher.group(1) + "*");
+                
+                // if the end position of the match isn't the end of the string then append a wildcard between the match and the rest of the string
+                if (regexMatcher.end(1) < wildcardQuery.length() - 1) {
+                    
+                    wildcardQuery = wildcardQuery.substring(0, regexMatcher.end(1) + matchIndexCounter) + "*" + wildcardQuery.substring(regexMatcher.end(1) + matchIndexCounter);
+                } else {
+                    wildcardQuery += "*";
+                }
+                
+                matchIndexCounter++;
+                
+                //wildcardQuery = wildcardQuery.replace(regexMatcher.group(1), regexMatcher.group(1) + "*");
             }
         }
         

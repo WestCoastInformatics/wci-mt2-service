@@ -30,6 +30,9 @@ public class SearchParameters {
 
     /** The sort ascending. */
     private Boolean sortAscending;
+    
+    /** Flag for if this search is for editing. */
+    private Boolean editing = false;
 
     /**
      * Instantiates an empty {@link SearchParameters}.
@@ -60,6 +63,7 @@ public class SearchParameters {
         activeOnly = other.getActiveOnly();
         sort = other.getSort();
         sortAscending = other.getSortAscending();
+        editing = other.isEditing();
     }
 
     /**
@@ -187,6 +191,24 @@ public class SearchParameters {
     public void setSortAscending(final Boolean sortAscending) {
         this.sortAscending = sortAscending;
     }
+    
+    /**
+     * Returns the editing flag.
+     *
+     * @return the editing flag
+     */
+    public Boolean isEditing() {
+        return editing;
+    }
+    
+    /**
+     * Sets the editing flag.
+     *
+     * @param editing the editing flag
+     */
+    public void setEditing(final Boolean editing) {
+        this.editing = editing;
+    }
 
     /**
      * Sets the sort ascending.
@@ -267,6 +289,10 @@ public class SearchParameters {
         if (!sortAscending.equals(other.sortAscending)) {
             return false;
         }
+        
+        if (!editing.equals(other.editing)) {
+            return false;
+        }
 
         return true;
     }
@@ -288,6 +314,7 @@ public class SearchParameters {
         result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());
         result = prime * result + (activeOnly ? 1 : 0);
         result = prime * result + (sortAscending ? 1 : 0);
+        result = prime * result + (editing ? 1 : 0);
         return result;
     }
 

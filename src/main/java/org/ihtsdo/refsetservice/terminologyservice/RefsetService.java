@@ -28,6 +28,7 @@ import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.RefsetEditParameters;
+import org.ihtsdo.refsetservice.util.RefsetUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -216,21 +217,22 @@ public class RefsetService {
     }
     
     /**
-     * Delete or inactivate a refset.
+     * Inactivate a refset.
      *
      * @param refsetInternalId the internal refset ID
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String deleteRefset(final String refsetInternalId) throws Exception {
+    public static String inactivateRefset(final String refsetInternalId) throws Exception {
         
         String status = "inactivated";
         String refsetId = "";
         
         try (final TerminologyService service = new TerminologyService()) {
             
-            boolean canDeleteConcept = true;
-            boolean canDeleteRefset = false;
+            service.setModifiedBy("RT2");
+            service.setModifiedFlag(true);
+            
             final Refset refset = service.get(refsetInternalId, Refset.class);
             
             if (refset == null) {
@@ -240,105 +242,163 @@ public class RefsetService {
             
             refsetId = refset.getRefsetId();
             
-            // find out if the refset has been versioned before
-            if (!doesRefsetExist(refsetId, "AND (versionStatus: PUBISHED OR versionStatus: BETA)")) {
-                canDeleteRefset = true;
+            // if the refset has never been versioned before then delete it
+            if (!doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
+                return deleteEditVersion(refsetInternalId, true);
             }
             
-            // if the refset can be deleted try to delete the underlying concept
-            if (canDeleteRefset) {
+            // inactive the underlying refset concept
+            inactivateRefsetConcept(refsetId, refset.getEdition().getBranch());
+            
+            // inactivate the refset object in the DB    
+            refset.setActive(false);
+            service.update(refset);
+            logger.info("Inactivated refset in database: " + refsetInternalId);
+        }
+        
+        return status;
+    }
+    
+    /**
+     * Inactivate an underlying refset concept.
+     *
+     * @param refsetId the refset ID
+     * @param branch the branch to inactivate the concept on
+     * @throws Exception the exception
+     */
+    private static void inactivateRefsetConcept(final String refsetId, final String branch) throws Exception {
+            
+        // first retrieve the concept so all fields will be present for the update
+        final String getUrl = SnowstormConnection.BASE_URL + "browser/" + branch
+                + "/" + "concepts/" + refsetId;
+        final ObjectMapper mapper = new ObjectMapper();
+        ObjectNode memberBody = null;
+        
+        logger.debug("inactivateRefsetConcept inactivate concept search URL: " + getUrl);
+        
+        try (final Response response = SnowstormConnection.getResponse(getUrl)) {
+            
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                throw new Exception("Unable to retrieve refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+            }
+            
+            // create the body entity for the update call from the retrieved concept
+            final String resultString = response.readEntity(String.class);
+            memberBody = (ObjectNode) mapper.readTree(resultString.toString()).deepCopy();
+        }
+        
+        // set active to false
+        memberBody.put("active", "false");
+        
+        // set the inactivation indicator
+        memberBody.put("inactivationIndicator", "OUTDATED");
+        
+        // loop thru the class axioms and set them as inactive
+        final Iterator<JsonNode> axiomIterator = memberBody.get("classAxioms").iterator();
+        
+        while (axiomIterator.hasNext()) {
+            
+            final ObjectNode axiomNode = (ObjectNode) axiomIterator.next();
+            axiomNode.put("active", "false");
+        }
+        
+        // loop thru the relationships and set them as inactive
+        final Iterator<JsonNode> relationshipsIterator = memberBody.get("relationships").iterator();
+        
+        while (relationshipsIterator.hasNext()) {
+            
+            final ObjectNode relationshipsNode = (ObjectNode) relationshipsIterator.next();
+            relationshipsNode.put("active", "false");
+        }
+        
+        final String updateUrl = SnowstormConnection.BASE_URL + "browser/" + branch
+                + "/" + "concepts/" + refsetId;
+        
+        logger.debug("inactivateRefsetConcept inactivate URL: " + updateUrl);
+        
+        // update the concept with the new data
+        try (final Response response = SnowstormConnection.putResponse(updateUrl, memberBody.toString())) {
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                throw new Exception("Unable to inactivate refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+            }
+            
+            logger.info("Inactivated refset concept: " + refsetId);
+        }
+    }
+    
+    /**
+     * Delete the edit version of a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param deleteConcept if the underyling refset concept should be deleted
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String deleteEditVersion(final String refsetInternalId, final boolean deleteConcept) throws Exception {
+        
+        String status = "deleted";
+        String refsetId = "";
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy("RT2");
+            service.setModifiedFlag(true);
+            
+            boolean canDeleteConcept = deleteConcept;
+            boolean otherVersions = false;
+            final Refset refset = service.get(refsetInternalId, Refset.class);
+            
+            if (refset == null) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " does not exist in the RT2 database");
+                
+            } else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+                throw new Exception("Refset Internal Id: " + refsetInternalId
+                        + " is not 'In Development' and can not be removed.");
+            }
+            
+            refsetId = refset.getRefsetId();
+            
+            // find out if the refset has been versioned before
+            if (doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
+                
+                canDeleteConcept = false;
+                otherVersions = true;
+            }
+            
+            // if the concept can be deleted try to delete the underlying concept
+            if (canDeleteConcept) {
                 
                 final String url = SnowstormConnection.BASE_URL + refset.getEdition().getBranch()
                         + "/" + "concepts/" + refsetId;
                 
-                logger.debug("deleteRefset delete URL: " + url);
+                logger.debug("deleteEditVersion delete URL: " + url);
                 
                 try (final Response response = SnowstormConnection.deleteResponse(url)) {
 
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                        
                         logger.info("Unable to delete refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
-                        canDeleteConcept = false;
                     } else {
                         logger.info("Deleted refset concept: " + refsetId);
                     }
                 }
-                
-                // remove the refset from the database
-                service.remove(refset);
-                logger.info("Deleted refset from database: " + refsetInternalId);
-                status = "deleted";
             }
             
-            if (!canDeleteConcept) {
-                
-                // first retrieve the concept so all fields will be present for the update
-                final String getUrl = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
-                        + "/" + "concepts/" + refsetId;
-                final ObjectMapper mapper = new ObjectMapper();
-                ObjectNode memberBody = null;
-                
-                logger.debug("deleteRefset inactivate concept search URL: " + getUrl);
-                
-                try (final Response response = SnowstormConnection.getResponse(getUrl)) {
-                    
-                    // Only process payload if Rest call is successful
-                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                        throw new Exception("Unable to retrieve refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
-                    }
-                    
-                    // create the body entity for the update call from the retrieved concept
-                    final String resultString = response.readEntity(String.class);
-                    memberBody = (ObjectNode) mapper.readTree(resultString.toString()).deepCopy();
-                }
-                
-                // set active to false
-                memberBody.put("active", "false");
-                
-                // set the inactivation indicator
-                memberBody.put("inactivationIndicator", "OUTDATED");
-                
-                // loop thru the class axioms and set them as inactive
-                final Iterator<JsonNode> axiomIterator = memberBody.get("classAxioms").iterator();
-                
-                while (axiomIterator.hasNext()) {
-                    
-                    final ObjectNode axiomNode = (ObjectNode) axiomIterator.next();
-                    axiomNode.put("active", "false");
-                }
-                
-                // loop thru the relationships and set them as inactive
-                final Iterator<JsonNode> relationshipsIterator = memberBody.get("relationships").iterator();
-                
-                while (relationshipsIterator.hasNext()) {
-                    
-                    final ObjectNode relationshipsNode = (ObjectNode) relationshipsIterator.next();
-                    relationshipsNode.put("active", "false");
-                }
-                
-                final String updateUrl = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
-                        + "/" + "concepts/" + refsetId;
-                
-                logger.debug("deleteRefset inactivate URL: " + updateUrl);
-                
-                // update the concept with the new data
-                try (final Response response = SnowstormConnection.putResponse(updateUrl, memberBody.toString())) {
-
-                    // Only process payload if Rest call is successful
-                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                        throw new Exception("Unable to inactivate refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
-                    }
-                    
-                    logger.info("Inactivated refset concept: " + refsetId);
-                }
-            }
+            // remove the refset from the database
+            service.remove(refset);
+            logger.info("Deleted refset from database: " + refsetInternalId);
             
-            if (!canDeleteRefset) {
+            // if there were other versions of this refset set the lastest version flag appropriately
+            if (otherVersions) {
                 
-                refset.setActive(false);
-                service.update(refset);
-                logger.info("Inactivated refset in database: " + refsetInternalId);
+                final Refset mostRecentVersion = getLatestRefsetVersion(refsetId);
+                mostRecentVersion.setLatestVersion(true);
+                service.update(mostRecentVersion);
+                logger.info("Refset " + mostRecentVersion.getId() + " version marked as latest.");
             }
         }
         
@@ -521,6 +581,167 @@ public class RefsetService {
     }
     
     /**
+     * Returns a specific refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public static Refset getRefset(final String refsetInternalId) throws Exception {
+        
+        try (TerminologyService service = new TerminologyService()) {
+
+            Refset refset = service.findSingle(
+                    "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+
+            if (refset == null) {
+                throw new Exception("Unable to retrieve refset " + refsetInternalId);
+            }
+
+            refset = getRefsetDescriptions(refset);
+            
+            refset.setDownloadable(true);
+            refset.setFeedbackVisible(true);
+            refset.setVersionList(
+                    RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
+
+            logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
+            return refset;
+        }
+    }
+    
+    /**
+     * Modify a refset.
+     *
+     * @param refsetInternalId the internal refset ID to modify
+     * @return the updated refset
+     * @throws Exception the exception
+     */
+    public static String modifyRefset(final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
+       
+        try (TerminologyService service = new TerminologyService()) {
+
+            Refset refset = getRefset(refsetInternalId);
+            
+            if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+                throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
+            }
+
+            service.setModifiedBy("RT2");
+            service.setModifiedFlag(true);
+            
+            // set user changed fields
+            refset.setTags(refsetEditParameters.getTags());
+            refset.setVersionNotes(refsetEditParameters.getVersionNotes());
+            refset.setNarrative(refsetEditParameters.getNarrative());
+            refset.setExternalUrl(refsetEditParameters.getExternalUrl()); 
+            refset.setDefinitionClauses(refsetEditParameters.getDefinitionClauses()); 
+            
+            // update an object
+            service.update(refset);
+
+            logger.info("Refset " + refset.getRefsetId() + " successfully modified");
+            logger.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));
+            return refsetInternalId;
+        }
+    }
+    
+    /**
+     * Create a new version of a refset.
+     *
+     * @param refsetInternalId the internal refset ID to base the new version on
+     * @return the new internal refset ID
+     * @throws Exception the exception
+     */
+    public static String createNewRefsetVersion(final String refsetInternalId) throws Exception {
+        
+        final Refset newRefsetVersion = new Refset();
+        String newInternalRefsetId = "";
+        
+        try (TerminologyService service = new TerminologyService()) {
+
+            Refset oldLatestVersionRefset = null;
+            service.setModifiedBy("RT2");
+            service.setModifiedFlag(true);
+            
+            Refset refset = getRefset(refsetInternalId);
+            
+            newRefsetVersion.populateFrom(refset);
+
+            // set automatic changed fields
+            newRefsetVersion.setVersionDate(null);
+            newRefsetVersion.setLatestVersion(true);
+            newRefsetVersion.setId(null);
+            newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
+            
+            // find the previous latest version
+            if (refset.isLatestVersion()) {
+                oldLatestVersionRefset = refset;
+
+            } else {
+                oldLatestVersionRefset = service.findSingle(
+                        "refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestVersion: true", Refset.class, null);
+            }
+            
+            // Add an object
+            service.add(newRefsetVersion);
+            newInternalRefsetId = newRefsetVersion.getId();
+            
+            // update the previous latest version so it no longer is marked as latest
+            if (oldLatestVersionRefset != null) {
+                
+                // update an object
+                oldLatestVersionRefset.setLatestVersion(false);
+                service.update(oldLatestVersionRefset);
+                logger.info("Refset " + oldLatestVersionRefset.getId() + " version marked as not latest.");
+            }
+            
+            logger.info("Refset " + newRefsetVersion.getRefsetId() + " version ID '" + newInternalRefsetId + "' successfully added");
+            logger.debug("createNewRefsetVersion: Refset: " + ModelUtility.toJson(newRefsetVersion));
+            
+            return newInternalRefsetId;
+        }
+    }
+    
+    /**
+     * Get the latest version of a refset without using the latest version flag.
+     *
+     * @param refsetId the refset ID
+     * @return the refset version
+     * @throws Exception the exception
+     */
+    public static Refset getLatestRefsetVersion(final String refsetId) throws Exception {
+        
+        Refset refsetLatestVersion = null;
+        
+        try (TerminologyService service = new TerminologyService()) {      
+            
+            final PfsParameter pfs = new PfsParameter();
+            pfs.setSort("versionDate");
+            pfs.setAscending(false);
+
+            final ResultList<Refset> results = service
+                    .find("refsetId: " + QueryParserBase.escape(refsetId), pfs, Refset.class, null);
+            
+            // see if there is an "In Development" version as that should be the latest.
+            for (final Refset result: results.getItems()) {
+                
+                if (result.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+                    
+                    refsetLatestVersion = result;
+                    break;
+                }
+            }
+            
+            if (refsetLatestVersion == null && results.getItems().size() > 0) {
+                refsetLatestVersion = results.getItems().get(0);
+            }
+            
+            return refsetLatestVersion;
+        }
+    }
+    
+    /**
      * Search Projects.
      *
      * @param searchParameters the search parameters
@@ -585,6 +806,28 @@ public class RefsetService {
         branchPath = refset.getEdition().getBranch() + pathDate;
 
         return branchPath;
+    }
+    
+    /**
+     * Get all the descriptions for a refset.
+     *
+     * @param refset the refset
+     * @return the refset with descriptions
+     * @throws Exception the exception
+     */
+    public static Refset getRefsetDescriptions(final Refset refset) throws Exception {
+        
+        final List<Concept> refsetConceptList = new ArrayList<>();
+        final Concept refsetConcept = new Concept();
+        refsetConcept.setCode(refset.getRefsetId());
+        refsetConcept.setName(refset.getName());
+        refsetConceptList.add(refsetConcept);
+        
+        RefsetMemberService.populateAllLanguageDescriptions(refset, refsetConceptList);
+        
+        refset.setDescriptions(refsetConceptList.get(0).getDescriptions());
+        
+        return refset;
     }
     
     /**
