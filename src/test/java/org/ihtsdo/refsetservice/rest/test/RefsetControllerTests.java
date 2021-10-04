@@ -547,7 +547,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     }
 
     /**
-     * Test getting concept details.
+     * Test getting concept details - This doesn't include parents or children
+     * as there are dedicated tests for them in the class.
      *
      * @throws Exception the exception
      */
@@ -661,7 +662,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     }
 
     /**
-     * Test getting concept list.
+     * Test getting all members of a given refset.
      *
      * @throws Exception the exception
      */
@@ -723,7 +724,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     }
 
     /**
-     * Test searching refset members
+     * Test searching refset members for when examining which members of a given
+     * refset match on the search criteria
      *
      * @throws Exception the exception
      */
@@ -819,7 +821,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     }
 
     /**
-     * Test searching general concepts
+     * Test searching general concepts when searching across all concepts for
+     * possible members to add
      *
      * @throws Exception the exception
      */
