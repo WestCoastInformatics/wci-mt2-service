@@ -39,7 +39,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
     private Map<WorkflowUser, Map<WorkflowState, Map<WorkflowAction, WorkflowState>>> permissiblePaths;
 
     private static enum WorkflowAction {
-        REQUEST_REVIEW, REQUEST_PUBLICATION, EDIT, FINISH_EDIT, FAILS_RVF, REFSET_PUBLISHED, REVIEW, REJECT_REVIEW, PASS_REVIEW, UNASSIGN
+        REQUEST_REVIEW, REQUEST_PUBLICATION, EDIT, FINISH_EDIT, FAILS_RVF, REFSET_PUBLISHED, REVIEW, REJECT_REVIEW, PASS_REVIEW, UNASSIGN, WITHDRAW
     };
 
     private static enum WorkflowState {

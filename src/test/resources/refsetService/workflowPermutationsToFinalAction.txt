@@ -3,6 +3,7 @@ Author, Ready_For_Edit, Request_Review, Ready_For_Review
 Author, In_Edit, Finish_Edit, Ready_For_Edit
 Author, In_Edit, Request_Review, Ready_For_Review
 Author, In_Edit, Request_Publication, Ready_For_Publication
+Reviewer, Ready_For_Review, Withdraw, Ready_For_Edit
 Reviewer, Ready_For_Review, Review, In_Review
 Reviewer, In_Review, Reject_Review, Ready_For_Edit
 Reviewer, In_Review, Accept_Review, Review_Completed
