@@ -8,6 +8,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +32,6 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -1614,6 +1615,94 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+    }
+    
+    // ***** TEST FUNCTIONS - REMOVE AFTER TEST
+    protected String getRefsetInternalId(String requestedId, String version) throws Exception {
+
+        SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+        
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final PfsParameter pfs = new PfsParameter();
+            pfs.setSort("versionDate");
+            pfs.setAscending(false);
+
+            ResultList<Refset> refsets =
+                    service.find("refsetId:" + QueryParserBase.escape(requestedId) + "", pfs,
+                            Refset.class, null);
+
+            logger.debug("refsets.getItems().size() should be > 0: " + refsets.getItems().size());
+
+            Refset refsetToReturn = null;
+            for (Refset refset : refsets.getItems()) {
+                if (version.equals(SIMPLE_DATE_FORMAT.format(refset.getVersionDate()))) {
+                    refsetToReturn = refset;
+                    break;
+                }
+            }
+
+            if (refsetToReturn == null) {
+                throw new Exception("Refset Internal Id: " + requestedId
+                        + " does not exist in the RT2 database");
+            }
+
+            logger.debug("refsetToReturn should be != null: " + refsetToReturn);
+            logger.debug("refsetToReturn should be == " + requestedId + ": " + refsetToReturn);
+
+            return refsetToReturn.getId();
+        }
+    }
+    
+    @RequestMapping(method = RequestMethod.GET, value = "/testNewVersionCreateModifyDelete",
+            produces = "application/json")
+    public String testNewVersionCreateModifyDelete() throws Exception {
+        
+        String TESTING_REFSET_ID = "561000172108";
+        String TESTING_REFSET_VERSION = "20200915";
+
+        final String originalRefsetInternalId =
+                getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
+
+        // ADD NEW VERSION
+        final String newVersionContent = RefsetService.createNewRefsetVersion(originalRefsetInternalId);
+        logger.info(" newVersionContent = " + newVersionContent);
+
+        final String newRefsetInternalId = newVersionContent;
+        logger.info("New Version Internal ID - " + newRefsetInternalId);
+
+        // verify the new version
+        try (final TerminologyService service = new TerminologyService()) {
+
+            Refset refset = service.get(newRefsetInternalId, Refset.class);
+            logger.debug("refsetToReturn should be != null: " + refset);
+            logger.debug("refset.getRefsetId should be == " + TESTING_REFSET_ID + ": " + refset.getRefsetId());
+            logger.debug("refset.getVersionStatus should be == " + Refset.IN_DEVELOPMENT + ": " + refset.getVersionStatus());
+            logger.debug("refset.getVersionDate should be == null: " + refset.getVersionDate());
+            logger.debug("refset.isLatestVersion should be true: " + refset.isLatestVersion());
+        }
+
+        // MODIFY NEW VERSION
+        Refset newRefset = new Refset();
+        
+        // the modification data
+        final Set<String> tags = new HashSet<>();
+        tags.add("tag1");
+        tags.add("tag2");
+
+        newRefset.setTags(tags);
+        newRefset.setVersionNotes("Test.");
+        newRefset.setNarrative("Test.");
+
+        final String modifyContent = RefsetService.modifyRefset(newRefsetInternalId, newRefset);
+
+        logger.info(" modify content = " + modifyContent);
+
+        // DELETE NEW VERSION
+        final String deleteResult = RefsetService.deleteEditVersion(newRefsetInternalId, true);
+
+        logger.info(" delete content = " + deleteResult);
+        return deleteResult;
     }
     
 }
