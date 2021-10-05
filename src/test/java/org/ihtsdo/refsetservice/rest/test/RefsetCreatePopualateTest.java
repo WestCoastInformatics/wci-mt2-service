@@ -78,8 +78,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         logger.info("Testing url - " + url);
 
         // ADD NEW VERSION
-        final ObjectNode newVersionBody = objectMapper.createObjectNode();// .put("readVersion",
-                                                                          // "");
+        final ObjectNode newVersionBody = objectMapper.createObjectNode();// .put("readVersion", "");
 
         final MvcResult newVersionResult = mvc
                 .perform(post(url).content(newVersionBody.toString())
@@ -107,10 +106,6 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             assertThat(refset.getVersionDate()).isNull();
             assertTrue(refset.isLatestVersion());
         }
-
-        // TODO - need to figure out why indexing is not writing fast enough and
-        // get rid of this!
-        Thread.sleep(500);
 
         // MODIFY NEW VERSION
         final String modifyUrl = baseUrl + "/" + newRefsetInternalId;

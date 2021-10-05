@@ -1952,7 +1952,7 @@ public class RefsetMemberService {
             if (allMemberNodes.size() != 0 && !allMemberNodes.get(0).has("error")) {
 
                 final Iterator<JsonNode> itemIterator = allMemberNodes.iterator();
-                final HashMap<String, Concept> conceptIdToConcept = new HashMap<>();
+                final ArrayList<Concept> returnConcepts = new ArrayList<>();
 
                 // parse items to retrieve matching concepts
                 while (itemIterator.hasNext()) {
@@ -1960,41 +1960,35 @@ public class RefsetMemberService {
                     final JsonNode conceptNode = itemIterator.next();
 
                     if (conceptNode.get("active").asBoolean()) {
-                        
-                        String conceptId = conceptNode.get("conceptId").asText();
-
-                        if (!conceptIdToConcept.containsKey(conceptId)) {
                             
-                            Concept concept = new Concept();
-                            concept.setActive(conceptNode.get("active").asBoolean());
-                            concept.setId(conceptNode.get("id").asText());
-                            concept.setCode(conceptNode.get("id").asText());
+                        Concept concept = new Concept();
+                        concept.setActive(conceptNode.get("active").asBoolean());
+                        concept.setId(conceptNode.get("id").asText());
+                        concept.setCode(conceptNode.get("id").asText());
 
-                            if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
-                                concept.setDefined(true);
-                            } else {
-                                concept.setDefined(false);
-                            }
-
-                            if (conceptNode.get("pt") != null) {
-                                concept.setName(conceptNode.get("pt").get("term").asText());
-                            }
-                            
-                            if (conceptNode.has("isLeafInferred")) {
-                                concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
-                            }
-
-                            setConceptPermissions(concept);
-                            concept.setMemberOfRefset(searchRefsetMembers);
-                            conceptIdToConcept.put(conceptId, concept);
+                        if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                            concept.setDefined(true);
+                        } else {
+                            concept.setDefined(false);
                         }
+
+                        if (conceptNode.get("pt") != null) {
+                            concept.setName(conceptNode.get("pt").get("term").asText());
+                        }
+                        
+                        if (conceptNode.has("isLeafInferred")) {
+                            concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
+                        }
+
+                        setConceptPermissions(concept);
+                        concept.setMemberOfRefset(searchRefsetMembers);
+                        returnConcepts.add(concept);
                     }
                 }
 
                 // Only populated if search results exist
-                populateMembershipInformation(refset,
-                        new ArrayList<Concept>(conceptIdToConcept.values()));
-                members.setItems(new ArrayList<Concept>(conceptIdToConcept.values()));
+                populateMembershipInformation(refset, returnConcepts);
+                members.setItems(returnConcepts);
                 members.setTotal(total);
             }
 
