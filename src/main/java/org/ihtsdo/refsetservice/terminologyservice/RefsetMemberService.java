@@ -1654,7 +1654,7 @@ public class RefsetMemberService {
         final StringBuffer conceptIds = new StringBuffer();
 
         // Create Snowstorm URL
-        final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?limit=3000&leafFlagForm=inferred";
+        final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?limit=3000&includeLeafFlag=true&form=inferred";
         
         boolean firstTime = true;
         for (Concept concept : conceptsToProcess) {
@@ -1889,7 +1889,7 @@ public class RefsetMemberService {
         
         // if this search is for editing then get the concept leaf information
         if (searchParameters.isEditing()) {
-            url += "&leafFlagForm=inferred";
+            url += "&includeLeafFlag=true&form=inferred";
         }
         
         boolean searchEcl = false;
@@ -2097,6 +2097,7 @@ public class RefsetMemberService {
             
             try {
 
+                boolean notSearching = true;
                 ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
                 lookupParameters.setGetMembershipInformation(true);
 
@@ -2107,6 +2108,8 @@ public class RefsetMemberService {
                 // if search term is indicated, find members that match search
                 // term
                 if (searchParameters != null && searchParameters.getQuery() != null) {
+                    
+                    notSearching = false;
                     currentList = searchConcepts(refset, searchParameters, true);
                 } else {
                     
@@ -2131,7 +2134,7 @@ public class RefsetMemberService {
                             populateAllLanguageDescriptions(refset, conceptsToProcess);
                             
                             // if this search is for editing then get the concept leaf information
-                            if (searchParameters.isEditing()) {
+                            if (notSearching && searchParameters.isEditing()) {
                                 populateConceptLeafStatus(refset, conceptsToProcess);
                             }
                             
