@@ -644,6 +644,10 @@ public class HistoricDataMigrator {
 
                     while (codeSystems.hasNext()) {
                         JsonNode codeSystem = codeSystems.next();
+                        
+                        if (!codeSystem.has("name")) {
+                            continue;
+                        }
 
                         if (testing && !codeSystem.get("name").asText().contains("Danish")
                                 && !codeSystem.get("name").asText().contains("Inter")) {
@@ -796,7 +800,11 @@ public class HistoricDataMigrator {
 
             while (codeSystems.hasNext()) {
                 JsonNode codeSystem = codeSystems.next();
-
+                
+                if (!codeSystem.has("name")) {
+                    continue;
+                }
+                
                 if ("international edition".equals(codeSystem.get("name").asText().toLowerCase())) {
 
                     // At international Edition
