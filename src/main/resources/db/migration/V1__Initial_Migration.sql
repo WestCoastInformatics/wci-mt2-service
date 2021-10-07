@@ -110,3 +110,18 @@ CREATE TABLE `refsets_definition_clauses` (
   CONSTRAINT `FKbxe21a6g8xufs1yh5537pya8p` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses` (`id`),
   CONSTRAINT `FKdowc61fwiejkojh1wj7wk0mn0` FOREIGN KEY (`Refset_id`) REFERENCES `refsets` (`id`)
 );
+
+CREATE TABLE `workflow_history` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `notes` longtext,
+  `userName` varchar(256) NOT NULL,
+  `workflowStatus` varchar(256) DEFAULT NULL,
+  `refset_id` varchar(64) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK7c0nnfqf1yumohfk60ysf68y7` (`refset_id`),
+  CONSTRAINT `FK7c0nnfqf1yumohfk60ysf68y7` FOREIGN KEY (`refset_id`) REFERENCES `refsets` (`id`)
+);

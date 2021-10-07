@@ -32,6 +32,7 @@ import org.ihtsdo.refsetservice.util.RefsetUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
+import org.ihtsdo.refsetservice.util.WorkflowUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,6 +199,7 @@ public class RefsetService {
             refset.setRefsetId(refsetConceptId);
             refset.setLatestVersion(true);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
+            refset.setWorkflowStatus(WorkflowUtility.IN_EDIT);
             refset.setProject(project);
             refset.setVersionDate(null);
             
@@ -673,6 +675,7 @@ public class RefsetService {
             newRefsetVersion.setLatestVersion(true);
             newRefsetVersion.setId(null);
             newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
+            newRefsetVersion.setWorkflowStatus(WorkflowUtility.READY_FOR_EDIT);
             
             // find the previous latest version
             if (refset.isLatestVersion()) {

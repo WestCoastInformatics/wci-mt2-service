@@ -1,0 +1,256 @@
+
+package org.ihtsdo.refsetservice.model;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Represents a user and roles.
+ * 
+ */
+
+public class User extends AbstractHasModified implements Comparable<User> {
+
+    /** The username. */
+    private String userName;
+
+    /** The user's full name. */
+    private String name;
+    
+    /** A list of the roles this user has. */
+    private List<String> roles = new ArrayList<>();
+    
+    /** The admin role. */
+    public static final String ROLE_ADMIN = "admin";
+    
+    /** The lead role. */
+    public static final String ROLE_LEAD = "lead";
+    
+    /** The reviewer role. */
+    public static final String ROLE_REVIEWER = "reviewer";
+    
+    /** The author role. */
+    public static final String ROLE_AUTHOR = "author";
+    
+    /** The user role. */
+    public static final String ROLE_USER = "user";
+
+    /**
+     * Instantiates an empty {@link User}.
+     */
+    public User() {
+        // n/a
+    }
+
+    /**
+     * Instantiates a {@link User} from the specified parameters.
+     *
+     * @param userName the username
+     * @param name the user's full name
+     * @param roles the roles this user has
+     */
+    public User(final String userName, final String name, final List<String> roles) {
+        
+        this.userName = userName;
+        this.name = name;
+        this.roles = roles;
+    }
+
+    /**
+     * Instantiates a {@link User} from the specified parameters.
+     *
+     * @param other the other
+     */
+    public User(final User other) {
+        populateFrom(other);
+    }
+
+    /**
+     * Populate from.
+     *
+     * @param other the other
+     */
+    public void populateFrom(final User other) {
+
+        super.populateFrom(other);
+        userName = other.getUserName();
+        name = other.getName();
+        roles = other.getRoles();
+    }
+
+    /**
+     * Returns the userName.
+     *
+     * @return the userName
+     */
+    public String getUserName() {
+        return userName;
+    }
+
+    /**
+     * Sets the userName.
+     *
+     * @param userName the userName
+     */
+    public void setUserName(final String userName) {
+        this.userName = userName;
+    }
+
+    /**
+     * Returns the full name.
+     *
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Sets the full name.
+     *
+     * @param name the name
+     */
+    public void setName(final String name) {
+        this.name = name;
+    }
+
+    /**
+     * Gets the roles.
+     *
+     * @return the roles
+     */
+    public List<String> getRoles() {
+
+        if (roles == null) {
+            roles = new ArrayList<>();
+        }
+
+        return roles;
+    }
+
+    /**
+     * Sets the roles.
+     *
+     * @param roles the roles to set
+     */
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
+    }
+    
+    /**
+     * Check if the user has the specified role on the refset.
+     *
+     * @param roleToCheck the role to look for
+     * @param refset the refset to check permissions against
+     * @return if the user has the specified role on the refset
+     * @throws Exception the exception
+     */
+    public boolean doesUserHavePermission(final String roleToCheck,
+            final Refset refset) throws Exception {
+        
+        final String edition = refset.getEditionShortName().replaceFirst("SNOMEDCT-?", "");
+        
+        for (final String role : roles) {
+            
+            if (role.contains("-all-" + roleToCheck) || role.contains("-" + edition + "-" + roleToCheck)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
+    /* see superclass */
+    @Override
+    public int hashCode() {
+        
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((userName == null) ? 0 : userName.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+
+        return result;
+    }
+
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
+    /* see superclass */
+    @Override
+    public boolean equals(final Object obj) {
+
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null) {
+            return false;
+        }
+
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final User other = (User) obj;
+
+        if (userName == null) {
+
+            if (other.userName != null) {
+                return false;
+            }
+        } else if (!userName.equals(other.userName)) {
+            return false;
+        }
+
+        if (name == null) {
+
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+        
+        if (roles == null) {
+
+            if (other.roles != null) {
+                return false;
+            }
+        } else if (!roles.equals(other.roles)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Compare to.
+     *
+     * @param o the o
+     * @return the int
+     */
+    /* see superclass */
+    @Override
+    public int compareTo(final User o) {
+        // Handle null
+        return (name + roles.toString()).compareToIgnoreCase(o.getName() + o.getRoles().toString());
+    }
+
+    /**
+     * Lazy init.
+     */
+    @Override
+    public void lazyInit() {
+        // TODO Auto-generated method stub
+
+    }
+}
