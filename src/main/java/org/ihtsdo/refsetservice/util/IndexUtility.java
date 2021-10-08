@@ -901,10 +901,9 @@ public final class IndexUtility {
                 
                 // if the end position of the match isn't the end of the string then append a wildcard between the match and the rest of the string
                 if (regexMatcher.end(1) < wildcardQuery.length() - 1) {
-                    
                     wildcardQuery = wildcardQuery.substring(0, regexMatcher.end(1) + matchIndexCounter) + "*" + wildcardQuery.substring(regexMatcher.end(1) + matchIndexCounter);
                 } else {
-                    wildcardQuery += "*";
+                	wildcardQuery = wildcardQuery.replace(")", "*)");
                 }
                 
                 matchIndexCounter++;
