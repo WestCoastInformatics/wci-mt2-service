@@ -334,6 +334,30 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         validateRefsetMetadata(refsetFound);
 
+        // Test by partial name
+        url = baseUrl
+
+                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:ani";
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        resultList =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
+                }));
+        assertThat(resultList).isNotNull();
+        assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
+
+        refsetFound = null;
+        for (Refset r : resultList.getItems()) {
+            if (r.getRefsetId().equals(TESTING_REFSET_ID)) {
+                refsetFound = r;
+                break;
+            }
+        }
+
+        validateRefsetMetadata(refsetFound);        
+
         // Test by edition name
         url = baseUrl
                 + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=editionName:Belgian Edition";
@@ -361,6 +385,21 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // Test by combination
         url = baseUrl
                 + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal AND editionName:Belgian Edition"; // Hyperdontia
+
+        logger.info("Testing url - " + url);
+        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+        resultList =
+                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
+                }));
+        assertThat(resultList).isNotNull();
+        assertThat(resultList.getItems().size()).isEqualTo(1);
+        validateRefsetMetadata(resultList.getItems().get(0));
+        
+        // Test by combination with partials
+        url = baseUrl
+                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:anim AND editionName:Belgian Edi";
 
         logger.info("Testing url - " + url);
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
