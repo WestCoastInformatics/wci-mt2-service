@@ -17,6 +17,9 @@ public class User extends AbstractHasModified implements Comparable<User> {
     /** The user's full name. */
     private String name;
     
+    /** The user's email. */
+    private String email;
+    
     /** A list of the roles this user has. */
     private List<String> roles = new ArrayList<>();
     
@@ -47,12 +50,14 @@ public class User extends AbstractHasModified implements Comparable<User> {
      *
      * @param userName the username
      * @param name the user's full name
+     * @param email the user's email
      * @param roles the roles this user has
      */
-    public User(final String userName, final String name, final List<String> roles) {
+    public User(final String userName, final String name, final String email, final List<String> roles) {
         
         this.userName = userName;
         this.name = name;
+        this.email = email;
         this.roles = roles;
     }
 
@@ -75,6 +80,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
         super.populateFrom(other);
         userName = other.getUserName();
         name = other.getName();
+        email = other.getEmail();
         roles = other.getRoles();
     }
 
@@ -112,6 +118,24 @@ public class User extends AbstractHasModified implements Comparable<User> {
      */
     public void setName(final String name) {
         this.name = name;
+    }
+    
+    /**
+     * Returns the email.
+     *
+     * @return the email
+     */
+    public String getEmail() {
+        return email;
+    }
+
+    /**
+     * Sets the email.
+     *
+     * @param email the email
+     */
+    public void setEmail(final String email) {
+        this.email = email;
     }
 
     /**
@@ -173,6 +197,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
         int result = 1;
         result = prime * result + ((userName == null) ? 0 : userName.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((email == null) ? 0 : email.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
 
         return result;
@@ -217,6 +242,15 @@ public class User extends AbstractHasModified implements Comparable<User> {
                 return false;
             }
         } else if (!name.equals(other.name)) {
+            return false;
+        }
+        
+        if (email == null) {
+            
+            if (other.email != null) {
+                return false;
+            }
+        } else if (!email.equals(other.email)) {
             return false;
         }
         
