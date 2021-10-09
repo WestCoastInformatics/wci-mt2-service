@@ -28,9 +28,11 @@ import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
+import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
 import org.ihtsdo.refsetservice.util.IndexUtility;
@@ -117,7 +119,8 @@ public class RefsetController extends BaseController {
         try {
 
             logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
-            final Refset refset = RefsetService.getRefset(refsetInternalId);
+            
+            final Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
 
             return refset;
 
@@ -319,7 +322,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
-            final String refsetInternalId = RefsetService.createRefset(refsetParameters);
+            final String refsetInternalId = RefsetService.createRefset(getUserFromSession(), refsetParameters);
             
             if (refsetInternalId.startsWith("Concept Id")) {
                 return "{\"error\": \"" + refsetInternalId + "\"}";
@@ -354,13 +357,111 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
-            final String result = RefsetService.modifyRefset(refsetInternalId, refsetParameters);
+            final String result = RefsetService.modifyRefset(getUserFromSession(), refsetInternalId, refsetParameters);
             
             if (result.startsWith("Error")) {
                 return "{\"error\": \"" + result + "\"}";
             }
             
             return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Get Workflow history for a refset.
+     *
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the workflow history
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Get Workflow history search results", response = ResultList.class,
+            notes = "Use cases for search range from use of paging "
+                    + "parameters, additional filters, searches properties, and so on.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "terminology",
+                    value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true,
+                    dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query",
+                    value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
+                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return",
+                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result",
+                    required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            // TODO: activeOnly, sort, sortAscending
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/workflowHistory",
+            produces = "application/json")
+    public @ResponseBody ResultList<WorkflowHistory> getWorkflowHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+
+        try {
+
+            logger.debug("******** getWorkflowHistory refsetInternalId: " + refsetInternalId + " ; searchParameters: "
+                    + ModelUtility.toJson(searchParameters));
+            
+            final Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
+            ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(refset, searchParameters);
+           
+            logger.debug("******** getWorkflowHistory results: " + ModelUtility.toJson(results));
+            return results;
+
+        } catch (final ResponseStatusException rse) {
+            throw rse;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Modify an existing refset that is in edit mode.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset internal ID or errors
+     * @throws Exception the exception
+     */
+    @PutMapping("/refset/{refsetInternalId}/workflowStatus")
+    public @ResponseBody Refset setWorkflowStatus(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestParam final String newStatus, @RequestParam(required = false) final String notes)
+        throws Exception {
+        
+        try {
+
+            logger.debug("*********** setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; newStatus: " + newStatus + " ; notes: " + notes);
+            
+            Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
+            final String currentStatus = refset.getWorkflowStatus();
+            
+            refset = WorkflowService.setWorkflowStatus(getUserFromSession(), refset, notes, newStatus);
+            
+            // if the status changed return the updated refset else return null
+            if (!currentStatus.equals(refset.getWorkflowStatus())) {
+                
+                logger.debug("*********** setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
+                return refset;
+            } else {
+                
+                logger.debug("*********** setWorkflowStatus: did not update workflow status.");
+                return null;
+            }
 
         } catch (final Exception e) {
 
@@ -387,7 +488,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
             
-            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(refsetInternalId);
+            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(getUserFromSession(), refsetInternalId);
             
             if (newRefsetInternalId.startsWith("Error")) {
                 return "{\"error\": \"" + newRefsetInternalId + "\"}";
@@ -417,7 +518,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** inactiveRefset: refsetInternalId: " + refsetInternalId);
             
-            final String status = RefsetService.inactivateRefset(refsetInternalId);
+            final String status = RefsetService.inactivateRefset(getUserFromSession(), refsetInternalId);
 
             return "{\"status\": \"" + status + "\"}";
 
@@ -443,7 +544,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             
-            final String status = RefsetService.deleteEditVersion(refsetInternalId, true);
+            final String status = RefsetService.deleteEditVersion(getUserFromSession(), refsetInternalId, true);
 
             return "{\"status\": \"" + status + "\"}";
 
@@ -555,7 +656,7 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Search.
+     * Search Directory.
      *
      * @param searchParameters the search parameters
      * @param bindingResult the binding result
@@ -594,103 +695,11 @@ public class RefsetController extends BaseController {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            final long start = System.currentTimeMillis();
-            ResultList<Refset> results = new ResultList<Refset>();
-            String query = searchParameters.getQuery();
-
             logger.debug("******** searchDirectory searchParameters: "
                     + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts);
-
-            final PfsParameter pfs = new PfsParameter();
-
-            if (searchParameters.getOffset() != null) {
-                pfs.setOffset(searchParameters.getOffset());
-            }
-
-            if (searchParameters.getLimit() != null) {
-                pfs.setLimit(searchParameters.getLimit());
-            }
-
-            if (searchParameters.getSortAscending() != null) {
-                pfs.setAscending(searchParameters.getSortAscending());
-            }
-
-            if (searchParameters.getSort() != null) {
-                pfs.setSort(searchParameters.getSort());
-            }
-
-            if (query != null && !query.equals("")) {
-
-                final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
-                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
-                String[] queryParts = query.split(" AND ");
-                String filterQuery = "";
-                String termQuery = "";
-
-                for (final String queryPart : queryParts) {
-
-                    String[] keyValue = queryPart.split(":");
-
-                    if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
-                        filterQuery += queryPart + " AND ";
-                    } else {
-                        termQuery += queryPart + "* AND ";
-                    }
-                }
-
-                // if the term query isn't empty then search members and build the full term query string
-                if (!termQuery.equals("")) {
-                    
-                    termQuery = StringUtils.removeEnd(termQuery, " AND ");
-                    
-                    String memberRefsetQuery = "";
-                    
-                    // if it was requested search member concepts
-                    if (searchConcepts) {
-                        memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
-                    }
-                    
-                    if (!memberRefsetQuery.equals("")) {
-                        termQuery = "((" + termQuery + ") OR " + memberRefsetQuery + ")";
-                    } else {
-                        termQuery = "(" + termQuery + ")";
-                    }
-                }
-                
-                // if the filter query isn't empty then prepare the query with wildcards
-                if (!filterQuery.equals("")) {
-                    
-                    filterQuery = "(" + StringUtils.removeEnd(filterQuery, " AND ") + ")";
-                    filterQuery = IndexUtility.addWildcardsToQuery(filterQuery, Refset.class);
-                    
-                    // if the term query isn't empty then append an 'AND' to the filter query
-                    if (!termQuery.equals("")) {
-                        filterQuery += " AND ";
-                    }
-                }
-                
-                query = filterQuery + termQuery;
-            }
-
-            if (query != null && !query.equals("")) {
-                query += " AND latestVersion: true";
-            } else {
-                query = "latestVersion: true";
-            }
-
-            results = service.find(query, pfs, Refset.class, null);
-
-            for (Refset refset : results.getItems()) {
-
-                refset.setDownloadable(true);
-                refset.setFeedbackVisible(false);
-                refset.setVersionList(
-                        RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
-            }
-
-            results.setTimeTaken(System.currentTimeMillis() - start);
-            results.setTotalKnown(true);
-
+            
+            ResultList<Refset> results = RefsetService.searchRefsets(getUserFromSession(), searchParameters, searchConcepts);
+           
             logger.debug("******** searchDirectory results: " + ModelUtility.toJson(results));
             return results;
 

@@ -109,6 +109,26 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private boolean feedbackVisible;
     
+    /** The flag for if a user can edit this refset. */
+    @Transient
+    private boolean canEdit;
+    
+    /** The flag for if a user can review this refset. */
+    @Transient
+    private boolean canReview;
+    
+    /** The flag for if a user can publish this refset. */
+    @Transient
+    private boolean canPublish;
+    
+    /** The flag for if a user can view this refset. */
+    @Transient
+    private boolean canView;
+    
+    /** The list of actions available for the user to perform on this refset. */
+    @Transient
+    private List<String> availableActions;
+    
     /** The ID of the parent of the underlying refset concept. */
     @Transient
     private String parentConceptId;
@@ -225,6 +245,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         assignedUser = other.getAssignedUser();
         privateRefset = other.isPrivateRefset();
         downloadable = other.isDownloadable();
+        canEdit = other.getCanEdit();
+        canReview = other.getCanEdit();
+        canPublish = other.getCanPublish();
+        canView = other.getCanView();
+        availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
         latestVersion = other.isLatestVersion();
         feedbackVisible = other.isFeedbackVisible();
@@ -451,7 +476,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setVersionList(List<Map<String, String>> versionList) {
         this.versionList = versionList;
     }
-
+    
     /**
      * Gets the tags.
      *
@@ -702,7 +727,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * Checks if is downloadable.
+     * Checks if the refset is downloadable.
      *
      * @return the downloadable
      */
@@ -712,18 +737,118 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * Sets the downloadable.
+     * Sets the downloadable flag.
      *
-     * @param downloadable the downloadable to set
+     * @param downloadable the downloadable flag to set
      */
     public void setDownloadable(final boolean downloadable) {
         this.downloadable = downloadable;
+    }
+    
+    /**
+     * Gets the flag that shows if the user can edit this refset.
+     *
+     * @return the canEdit flag
+     */
+    @JsonGetter()
+    public boolean getCanEdit() {
+        return canEdit;
+    }
+    
+    /**
+     * Sets the flag that shows if the user can edit this refset.
+     *
+     * @param canEdit the canEdit flag
+     */
+    public void setCanEdit(final boolean canEdit) {
+        this.canEdit = canEdit;
+    }
+    
+    /**
+     * Gets the flag that shows if the user can review this refset.
+     *
+     * @return the canReview flag
+     */
+    @JsonGetter()
+    public boolean getCanReview() {
+        return canReview;
+    }
+    
+    /**
+     * Sets the flag that shows if the user can review this refset.
+     *
+     * @param canReview the canReview flag
+     */
+    public void setCanReview(final boolean canReview) {
+        this.canReview = canReview;
+    }
+    
+    /**
+     * Gets the flag that shows if the user can publish this refset.
+     *
+     * @return the canPublish flag
+     */
+    @JsonGetter()
+    public boolean getCanPublish() {
+        return canPublish;
+    }
+    
+    /**
+     * Sets the flag that shows if the user can publish this refset.
+     *
+     * @param canPublish the canPublish flag
+     */
+    public void setCanPublish(final boolean canPublish) {
+        this.canPublish = canPublish;
+    }
+    
+    /**
+     * Gets the flag that shows if the user can view this refset.
+     *
+     * @return the canView flag
+     */
+    @JsonGetter()
+    public boolean getCanView() {
+        return canView;
+    }
+    
+    /**
+     * Gets the list of actions available for the user to perform on this refset.
+     * 
+     * @return the available actions
+     */
+    @JsonGetter()
+    public List<String> getAvailableActions() {
+        
+        if (availableActions == null) {
+            availableActions = new ArrayList<>();
+        }
+        
+        return availableActions;
+    }
+    
+    /**
+     * Sets the list of actions available for the user to perform on this refset.
+     * 
+     * @param availableActions the available actions to set
+     */
+    public void setAvailableActions(List<String> availableActions) {
+        this.availableActions = availableActions;
+    }
+    
+    /**
+     * Sets the flag that shows if the user can view this refset.
+     *
+     * @param canView the canView flag
+     */
+    public void setCanView(final boolean canView) {
+        this.canView = canView;
     }
 
     /**
      * Checks if is feedback visible.
      *
-     * @return the feedbackVisible
+     * @return the feedbackVisible flag
      */
     @JsonGetter()
     public boolean isFeedbackVisible() {
@@ -731,9 +856,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * Sets the feedback visible.
+     * Sets the feedback visible flag.
      *
-     * @param feedbackVisible the feedbackVisible to set
+     * @param feedbackVisible the feedbackVisible flag to set
      */
     public void setFeedbackVisible(final boolean feedbackVisible) {
         this.feedbackVisible = feedbackVisible;
@@ -897,10 +1022,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (downloadable ? 1 : 0);
         result = prime * result + (feedbackVisible ? 1 : 0);
         result = prime * result + (latestVersion ? 1 : 0);
+        result = prime * result + (canEdit ? 1 : 0);
+        result = prime * result + (canReview ? 1 : 0);
+        result = prime * result + (canPublish ? 1 : 0);
+        result = prime * result + (canView ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
     }
-
+    
     /**
      * Equals.
      *
@@ -1045,6 +1174,22 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         }
         
         if (feedbackVisible != other.feedbackVisible) {
+            return false;
+        }
+        
+        if (canEdit != other.canEdit) {
+            return false;
+        }
+        
+        if (canReview != other.canReview) {
+            return false;
+        }
+        
+        if (canPublish != other.canPublish) {
+            return false;
+        }
+        
+        if (canView != other.canView) {
             return false;
         }
 

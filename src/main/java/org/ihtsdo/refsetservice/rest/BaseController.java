@@ -2,8 +2,10 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import org.ihtsdo.refsetservice.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -61,5 +63,28 @@ public class BaseController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.join("\n ", errorMessages));
         }
+    }
+    
+    /**
+     * Get the user from the session.
+     *
+     * @return the user from the session or null
+     * @throws Exception the exception
+     */
+    protected User getUserFromSession() throws Exception {
+        
+        User user = new User("testUser", "Test User", "tuser@testuser.com", new ArrayList<String>(Arrays.asList("rt-all-user", "rt-all-author", "rt-all-reviewer")));
+        return user;
+    }
+    
+    /**
+     * Set the user into the session.
+     *
+     * @param the user to set in the session
+     * @throws Exception the exception
+     */
+    protected void setUserInSession(final User user) throws Exception {
+        
+        // code to set the user in the session
     }
 }

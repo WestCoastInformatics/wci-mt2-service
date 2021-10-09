@@ -176,7 +176,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
         
         for (final String role : roles) {
             
-            if (role.contains("-all-" + roleToCheck) || role.contains("-" + edition + "-" + roleToCheck)) {
+            if (role.contains("-all-" + roleToCheck.toLowerCase()) || role.contains("-" + edition + "-" + roleToCheck.toLowerCase())) {
                 return true;
             }
         }

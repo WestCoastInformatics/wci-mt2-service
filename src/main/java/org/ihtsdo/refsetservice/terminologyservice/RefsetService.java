@@ -2,6 +2,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.Set;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
@@ -21,6 +23,7 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -32,7 +35,6 @@ import org.ihtsdo.refsetservice.util.RefsetUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
-import org.ihtsdo.refsetservice.util.WorkflowUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,11 +75,12 @@ public class RefsetService {
     /**
      * Create a refset with the given parameters .
      *
+     * @param user the user
      * @param refsetEditParameters the paramters for creating the refset
      * @return the new refset's internal ID
      * @throws Exception the exception
      */
-    public static String createRefset(final Refset refsetEditParameters) throws Exception {
+    public static String createRefset(final User user, final Refset refsetEditParameters) throws Exception {
         
         String newInternalRefsetId = null;
         String refsetConceptId = refsetEditParameters.getRefsetId();
@@ -199,7 +202,7 @@ public class RefsetService {
             refset.setRefsetId(refsetConceptId);
             refset.setLatestVersion(true);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
-            refset.setWorkflowStatus(WorkflowUtility.IN_EDIT);
+            refset.setWorkflowStatus(WorkflowService.IN_EDIT);
             refset.setProject(project);
             refset.setVersionDate(null);
             
@@ -221,11 +224,12 @@ public class RefsetService {
     /**
      * Inactivate a refset.
      *
+     * @param user the user
      * @param refsetInternalId the internal refset ID
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String inactivateRefset(final String refsetInternalId) throws Exception {
+    public static String inactivateRefset(final User user, final String refsetInternalId) throws Exception {
         
         String status = "inactivated";
         String refsetId = "";
@@ -246,7 +250,7 @@ public class RefsetService {
             
             // if the refset has never been versioned before then delete it
             if (!doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
-                return deleteEditVersion(refsetInternalId, true);
+                return deleteEditVersion(user, refsetInternalId, true);
             }
             
             // inactive the underlying refset concept
@@ -334,12 +338,13 @@ public class RefsetService {
     /**
      * Delete the edit version of a refset.
      *
+     * @param user the user
      * @param refsetInternalId the internal refset ID
      * @param deleteConcept if the underyling refset concept should be deleted
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String deleteEditVersion(final String refsetInternalId, final boolean deleteConcept) throws Exception {
+    public static String deleteEditVersion(final User user, final String refsetInternalId, final boolean deleteConcept) throws Exception {
         
         String status = "deleted";
         String refsetId = "";
@@ -585,11 +590,12 @@ public class RefsetService {
     /**
      * Returns a specific refset.
      *
+     * @param user the user
      * @param refsetInternalId the internal refset ID
      * @return the refset
      * @throws Exception the exception
      */
-    public static Refset getRefset(final String refsetInternalId) throws Exception {
+    public static Refset getRefset(final User user, final String refsetInternalId) throws Exception {
         
         try (TerminologyService service = new TerminologyService()) {
 
@@ -601,9 +607,7 @@ public class RefsetService {
             }
 
             refset = getRefsetDescriptions(refset);
-            
-            refset.setDownloadable(true);
-            refset.setFeedbackVisible(true);
+            refset = setRefsetPermissions(user, refset);
             refset.setVersionList(
                     RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
 
@@ -613,17 +617,128 @@ public class RefsetService {
     }
     
     /**
+     * Searches for refset with filters and member concept search.
+     *
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @param searchConcepts should refset members be searched
+     * @return the list of found refsets
+     * @throws Exception the exception
+     */
+    public static ResultList<Refset> searchRefsets(final User user, final SearchParameters searchParameters, final boolean searchConcepts) throws Exception {
+        
+        try (TerminologyService service = new TerminologyService()) {
+
+            final long start = System.currentTimeMillis();
+            ResultList<Refset> results = new ResultList<Refset>();
+            String query = searchParameters.getQuery();
+
+            final PfsParameter pfs = new PfsParameter();
+
+            if (searchParameters.getOffset() != null) {
+                pfs.setOffset(searchParameters.getOffset());
+            }
+
+            if (searchParameters.getLimit() != null) {
+                pfs.setLimit(searchParameters.getLimit());
+            }
+
+            if (searchParameters.getSortAscending() != null) {
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
+
+            if (searchParameters.getSort() != null) {
+                pfs.setSort(searchParameters.getSort());
+            }
+
+            if (query != null && !query.equals("")) {
+
+                final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
+                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
+                String[] queryParts = query.split(" AND ");
+                String filterQuery = "";
+                String termQuery = "";
+
+                for (final String queryPart : queryParts) {
+
+                    String[] keyValue = queryPart.split(":");
+
+                    if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
+                        filterQuery += queryPart + " AND ";
+                    } else {
+                        termQuery += queryPart + "* AND ";
+                    }
+                }
+
+                // if the term query isn't empty then search members and build the full term query string
+                if (!termQuery.equals("")) {
+                    
+                    termQuery = StringUtils.removeEnd(termQuery, " AND ");
+                    
+                    String memberRefsetQuery = "";
+                    
+                    // if it was requested search member concepts
+                    if (searchConcepts) {
+                        memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
+                    }
+                    
+                    if (!memberRefsetQuery.equals("")) {
+                        termQuery = "((" + termQuery + ") OR " + memberRefsetQuery + ")";
+                    } else {
+                        termQuery = "(" + termQuery + ")";
+                    }
+                }
+                
+                // if the filter query isn't empty then prepare the query with wildcards
+                if (!filterQuery.equals("")) {
+                    
+                    filterQuery = "(" + StringUtils.removeEnd(filterQuery, " AND ") + ")";
+                    filterQuery = IndexUtility.addWildcardsToQuery(filterQuery, Refset.class);
+                    
+                    // if the term query isn't empty then append an 'AND' to the filter query
+                    if (!termQuery.equals("")) {
+                        filterQuery += " AND ";
+                    }
+                }
+                
+                query = filterQuery + termQuery;
+            }
+
+            if (query != null && !query.equals("")) {
+                query += " AND latestVersion: true";
+            } else {
+                query = "latestVersion: true";
+            }
+
+            results = service.find(query, pfs, Refset.class, null);
+
+            for (Refset refset : results.getItems()) {
+
+                refset = setRefsetPermissions(user, refset);
+                refset.setVersionList(
+                        RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service));
+            }
+
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
+
+            return results;
+        }
+    }
+    
+    /**
      * Modify a refset.
      *
+     * @param user the user
      * @param refsetInternalId the internal refset ID to modify
      * @return the updated refset
      * @throws Exception the exception
      */
-    public static String modifyRefset(final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
+    public static String modifyRefset(final User user, final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
        
         try (TerminologyService service = new TerminologyService()) {
 
-            Refset refset = getRefset(refsetInternalId);
+            Refset refset = getRefset(user, refsetInternalId);
             
             if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
                 throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
@@ -651,11 +766,12 @@ public class RefsetService {
     /**
      * Create a new version of a refset.
      *
+     * @param user the user
      * @param refsetInternalId the internal refset ID to base the new version on
      * @return the new internal refset ID
      * @throws Exception the exception
      */
-    public static String createNewRefsetVersion(final String refsetInternalId) throws Exception {
+    public static String createNewRefsetVersion(final User user, final String refsetInternalId) throws Exception {
         
         final Refset newRefsetVersion = new Refset();
         String newInternalRefsetId = "";
@@ -666,7 +782,7 @@ public class RefsetService {
             service.setModifiedBy("RT2");
             service.setModifiedFlag(true);
             
-            Refset refset = getRefset(refsetInternalId);
+            Refset refset = getRefset(user, refsetInternalId);
             
             newRefsetVersion.populateFrom(refset);
 
@@ -675,7 +791,7 @@ public class RefsetService {
             newRefsetVersion.setLatestVersion(true);
             newRefsetVersion.setId(null);
             newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
-            newRefsetVersion.setWorkflowStatus(WorkflowUtility.READY_FOR_EDIT);
+            newRefsetVersion.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
             
             // find the previous latest version
             if (refset.isLatestVersion()) {
@@ -867,6 +983,49 @@ public class RefsetService {
             }
         }
         
+        return refset;
+    }
+    
+    /**
+     * Set the user permissions for a refset.
+     *
+     * @param user the user
+     * @param refset the refset
+     * @return the refset with permissions
+     * @throws Exception the exception
+     */
+    public static Refset setRefsetPermissions(final User user, final Refset refset) throws Exception {
+        
+        refset.setDownloadable(true);
+        refset.setFeedbackVisible(true);
+        refset.setCanView(true);
+        
+        // Edit permissions
+        if (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+            
+            final List<String> allowedStatuses = WorkflowService.getAllowedStatuses(user, refset);
+            
+            if (allowedStatuses.contains(WorkflowService.IN_EDIT)) {
+                refset.setCanEdit(true);
+            } else {
+                refset.setCanEdit(false);
+            }
+            
+            if (allowedStatuses.contains(WorkflowService.IN_REVIEW)) {
+                refset.setCanReview(true);
+            } else {
+                refset.setCanReview(false);
+            }
+            
+            if (allowedStatuses.contains(WorkflowService.READY_FOR_PUBLICATION)) {
+                refset.setCanPublish(true);
+            } else {
+                refset.setCanPublish(false);
+            }
+            
+            refset.setAvailableActions(WorkflowService.getAllowedActions(user, refset));
+        }
+       
         return refset;
     }
 }
