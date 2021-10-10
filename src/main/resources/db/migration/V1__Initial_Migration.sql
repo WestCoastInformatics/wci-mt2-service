@@ -120,6 +120,7 @@ CREATE TABLE `workflow_history` (
   `notes` longtext,
   `userName` varchar(256) NOT NULL,
   `workflowStatus` varchar(256) DEFAULT NULL,
+  `workflowAction` varchar(256) DEFAULT NULL,
   `refset_id` varchar(64) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `FK7c0nnfqf1yumohfk60ysf68y7` (`refset_id`),

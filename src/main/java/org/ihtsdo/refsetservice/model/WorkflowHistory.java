@@ -1,7 +1,9 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -15,12 +17,17 @@ import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 
 /**
  * Represents the changes of workflow state for a refset version.
  */
 @Entity
 @Table(name = "workflow_history")
+@Indexed
 public class WorkflowHistory extends AbstractHasModified {
 
     /** The username. */
@@ -30,6 +37,10 @@ public class WorkflowHistory extends AbstractHasModified {
     /** The workflow status. */
     @Column(nullable = true, length = 256)
     private String workflowStatus;
+    
+    /** The workflow status. */
+    @Column(nullable = true, length = 256)
+    private String workflowAction;
     
     /** The workflow status notes. */
     @Column(nullable = true, length = 10000)
@@ -65,10 +76,11 @@ public class WorkflowHistory extends AbstractHasModified {
      * @param workflowStatus the workflow status
      * @param notes the notes
      */
-    public WorkflowHistory(final String userName, final String workflowStatus, final String notes, final Refset refset) {
+    public WorkflowHistory(final String userName, final String workflowStatus, final String workflowAction, final String notes, final Refset refset) {
         
         this.userName = userName;
         this.workflowStatus = workflowStatus;
+        this.workflowAction = workflowAction;
         this.notes = notes;
         this.refset = refset;
     }
@@ -83,6 +95,7 @@ public class WorkflowHistory extends AbstractHasModified {
         super.populateFrom(other);
         userName = other.getUserName();
         workflowStatus = other.getWorkflowStatus();
+        workflowAction = other.getWorkflowAction();
         notes = other.getNotes();
         refset = other.getRefset();
     }
@@ -93,7 +106,7 @@ public class WorkflowHistory extends AbstractHasModified {
      * @return the userName
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "refsetIdSort", searchable = Searchable.YES, projectable = Projectable.NO,
+    @GenericField(name = "userNameSort", searchable = Searchable.YES, projectable = Projectable.NO,
             sortable = Sortable.YES)
     public String getUserName() {
         return userName;
@@ -131,7 +144,8 @@ public class WorkflowHistory extends AbstractHasModified {
      *
      * @return the workflow status
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "workflowStatusSort", searchable = Searchable.YES, projectable = Projectable.NO,
             sortable = Sortable.YES)
     public String getWorkflowStatus() {
         return workflowStatus;
@@ -144,6 +158,27 @@ public class WorkflowHistory extends AbstractHasModified {
      */
     public void setWorkflowStatus(final String workflowStatus) {
         this.workflowStatus = workflowStatus;
+    }
+    
+    /**
+     * Returns the workflow action.
+     *
+     * @return the workflow action
+     */
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "workflowActionSort", searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
+    public String getWorkflowAction() {
+        return workflowAction;
+    }
+    
+    /**
+     * Sets the workflow action.
+     *
+     * @param workflowAction the workflow action
+     */
+    public void setWorkflowAction(final String workflowAction) {
+        this.workflowAction = workflowAction;
     }
     
     /**
@@ -162,6 +197,29 @@ public class WorkflowHistory extends AbstractHasModified {
      */
     public void setRefset(final Refset refset) {
         this.refset = refset;
+    }
+    
+    /**
+     * Returns the refset ID.
+     *
+     * @return the workflow status
+     */
+    @IndexingDependency(derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "refset")
+    }))
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
+    public String getRefsetId() {
+        return refset == null ? null : refset.getId();
+    }
+    
+    /**
+     * Sets the refsetId.
+     *
+     * @param refset the refset to set
+     */
+    public void setRefsetId(final String refsetId) {
+        // NA
     }
 
 
@@ -212,6 +270,14 @@ public class WorkflowHistory extends AbstractHasModified {
             return false;
         }
         
+        if (workflowAction == null) {
+            if (other.workflowAction != null) {
+                return false;
+            }
+        } else if (!workflowAction.equals(other.workflowAction)) {
+            return false;
+        }
+        
         if (refset == null) {
             if (other.refset != null) {
                 return false;
@@ -236,6 +302,7 @@ public class WorkflowHistory extends AbstractHasModified {
         result = prime * result + ((userName == null) ? 0 : userName.hashCode());
         result = prime * result + ((notes == null) ? 0 : notes.hashCode());
         result = prime * result + ((workflowStatus == null) ? 0 : workflowStatus.hashCode());
+        result = prime * result + ((workflowAction == null) ? 0 : workflowAction.hashCode());
         result = prime * result + ((refset == null) ? 0 : refset.hashCode());
 
         return result;

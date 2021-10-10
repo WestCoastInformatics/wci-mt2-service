@@ -418,7 +418,6 @@ public class RefsetController extends BaseController {
             final Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
             ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(refset, searchParameters);
            
-            logger.debug("******** getWorkflowHistory results: " + ModelUtility.toJson(results));
             return results;
 
         } catch (final ResponseStatusException rse) {
@@ -438,19 +437,19 @@ public class RefsetController extends BaseController {
      * @return the refset internal ID or errors
      * @throws Exception the exception
      */
-    @PutMapping("/refset/{refsetInternalId}/workflowStatus")
+    @PostMapping("/refset/{refsetInternalId}/workflowStatus")
     public @ResponseBody Refset setWorkflowStatus(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam final String newStatus, @RequestParam(required = false) final String notes)
+        @RequestParam final String action, @RequestParam(required = false) final String notes)
         throws Exception {
         
         try {
 
-            logger.debug("*********** setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; newStatus: " + newStatus + " ; notes: " + notes);
+            logger.debug("*********** setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; action: " + action + " ; notes: " + notes);
             
             Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
             
-            refset = WorkflowService.setWorkflowStatus(getUserFromSession(), refset, notes, newStatus);
+            refset = WorkflowService.setWorkflowStatusByAction(getUserFromSession(), action, refset, notes);
             
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
@@ -462,6 +461,36 @@ public class RefsetController extends BaseController {
                 logger.debug("*********** setWorkflowStatus: did not update workflow status.");
                 return null;
             }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Modify an existing refset that is in edit mode.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset internal ID or errors
+     * @throws Exception the exception
+     */
+    @PutMapping("/refset/{refsetInternalId}/workflowNote")
+    public @ResponseBody String updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestParam(required = true) final String notes)
+        throws Exception {
+        
+        try {
+
+            logger.debug("*********** updateWorkflowNote: refsetInternalId: " + refsetInternalId + " ;notes: " + notes);
+            
+            Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
+            final String currentStatus = refset.getWorkflowStatus();
+            
+            WorkflowService.updateWorkflowNote(getUserFromSession(), refset, notes);
+            
+            return "true";
 
         } catch (final Exception e) {
 

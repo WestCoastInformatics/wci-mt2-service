@@ -24,19 +24,19 @@ public class User extends AbstractHasModified implements Comparable<User> {
     private List<String> roles = new ArrayList<>();
     
     /** The admin role. */
-    public static final String ROLE_ADMIN = "admin";
+    public static final String ROLE_ADMIN = "ADMIN";
     
     /** The lead role. */
-    public static final String ROLE_LEAD = "lead";
+    public static final String ROLE_LEAD = "LEAD";
     
     /** The reviewer role. */
-    public static final String ROLE_REVIEWER = "reviewer";
+    public static final String ROLE_REVIEWER = "REVIEWER";
     
     /** The author role. */
-    public static final String ROLE_AUTHOR = "author";
+    public static final String ROLE_AUTHOR = "AUTHOR";
     
     /** The user role. */
-    public static final String ROLE_USER = "user";
+    public static final String ROLE_USER = "USER";
 
     /**
      * Instantiates an empty {@link User}.

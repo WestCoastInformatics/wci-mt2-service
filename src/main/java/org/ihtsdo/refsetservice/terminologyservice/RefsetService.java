@@ -24,6 +24,7 @@ import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -202,7 +203,7 @@ public class RefsetService {
             refset.setRefsetId(refsetConceptId);
             refset.setLatestVersion(true);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
-            refset.setWorkflowStatus(WorkflowService.IN_EDIT);
+            refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
             refset.setProject(project);
             refset.setVersionDate(null);
             
@@ -213,6 +214,11 @@ public class RefsetService {
             // Add an object
             service.add(refset);
             newInternalRefsetId = refset.getId();
+            
+            // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
+            WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, refset, "");
+            refset = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, refset, "", WorkflowService.IN_EDIT);
+            
             logger.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added");
             logger.debug("Create Refset: Refset: " + ModelUtility.toJson(refset));
         }
@@ -393,6 +399,13 @@ public class RefsetService {
                         logger.info("Deleted refset concept: " + refsetId);
                     }
                 }
+            }
+            
+            // remove any workflow history that exists
+            ResultList<WorkflowHistory> workflowResults = WorkflowService.getWorkflowHistory(refset, new SearchParameters());
+            
+            for (final WorkflowHistory workflow : workflowResults.getItems()) {
+                service.remove(workflow);
             }
             
             // remove the refset from the database
@@ -773,7 +786,7 @@ public class RefsetService {
      */
     public static String createNewRefsetVersion(final User user, final String refsetInternalId) throws Exception {
         
-        final Refset newRefsetVersion = new Refset();
+        Refset newRefsetVersion = new Refset();
         String newInternalRefsetId = "";
         
         try (TerminologyService service = new TerminologyService()) {
@@ -805,6 +818,10 @@ public class RefsetService {
             // Add an object
             service.add(newRefsetVersion);
             newInternalRefsetId = newRefsetVersion.getId();
+            
+            // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
+            WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, newRefsetVersion, "");
+            newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT);
             
             // update the previous latest version so it no longer is marked as latest
             if (oldLatestVersionRefset != null) {
@@ -1003,6 +1020,11 @@ public class RefsetService {
         // Edit permissions
         if (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
             
+            // set the assigned user for the refset if it is being edited or reviewed
+            if (Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_REVIEW).contains(refset.getWorkflowStatus())) {
+                refset.setAssignedUser(WorkflowService.getAssignedUserName(refset));
+            }
+                
             final List<String> allowedStatuses = WorkflowService.getAllowedStatuses(user, refset);
             
             if (allowedStatuses.contains(WorkflowService.IN_EDIT)) {
