@@ -3,6 +3,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Utility class for workflow processes.
@@ -93,20 +95,17 @@ public final class WorkflowService {
     public static final List<String> WORKFLOW_ACTIONS = new ArrayList<>(Arrays.asList(EDIT, FINISH_EDIT, REQUEST_REVIEW, REVIEW, REJECT_REVIEW, 
             ACCEPT_REVIEW, UNASSIGN, REQUEST_PUBLICATION, FAILS_RVF, REFSET_PUBLISHED));
     
-    /** The path to workflow files. */
-    private static final String FILE_PATH = "src/main/resources/workflow/";
-    
     /** The file that contains workflow actions by user and step. */
     private static final String WORKFLOW_PERMUTATIONS_FILE_NAME =
-            "workflowPermutationsToFinalAction.txt";
+            "workflow/workflowPermutationsToFinalAction.txt";
     
     /** The file that contains workflow actions. */
     private static final String WORKFLOW_ACTIONS_FILE_NAME =
-            "workflowActions.txt";
+            "workflow/workflowActions.txt";
     
     /** The file that contains workflow statuses. */
     private static final String WORKFLOW_STATUSES_FILE_NAME =
-            "workflowStatuses.txt";
+            "workflow/workflowStatuses.txt";
     
     /** The workflow actions by user and step. */
     private static Map<String, Map<String, Map<String, String>>> WORKFLOW_PERMUTATIONS = new HashMap<>();
@@ -120,7 +119,8 @@ public final class WorkflowService {
 //            WORKFLOW_STATUSES = FileUtility.readFileToArray(WORKFLOW_STATUSES_FILE_NAME);
 //            
             // read in the actions by user and step
-            try (BufferedReader bufferedReader = new BufferedReader(new FileReader(FILE_PATH + WORKFLOW_PERMUTATIONS_FILE_NAME))) {
+            ClassPathResource workflowPermutationsResource = new ClassPathResource(WORKFLOW_PERMUTATIONS_FILE_NAME);
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(workflowPermutationsResource.getInputStream()))) {
                 String line;
 
                 while ((line = bufferedReader.readLine()) != null) {
@@ -149,7 +149,7 @@ public final class WorkflowService {
             }
             
         } catch(Exception e){
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(" Unable to read worflow file: " + e.getMessage());
          }
     }
     
