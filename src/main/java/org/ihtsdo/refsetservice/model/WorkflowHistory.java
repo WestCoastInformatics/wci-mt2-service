@@ -1,9 +1,7 @@
 
 package org.ihtsdo.refsetservice.model;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -15,6 +13,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
@@ -204,11 +203,12 @@ public class WorkflowHistory extends AbstractHasModified {
      *
      * @return the workflow status
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
     @IndexingDependency(derivedFrom = @ObjectPath({
         @PropertyValue(propertyName = "refset")
     }))
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getRefsetId() {
         return refset == null ? null : refset.getId();
     }

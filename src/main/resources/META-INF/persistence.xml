@@ -18,6 +18,7 @@
     <class>org.ihtsdo.refsetservice.model.Organization</class>
     <class>org.ihtsdo.refsetservice.model.Project</class>
     <class>org.ihtsdo.refsetservice.model.DefinitionClause</class>
+    <class>org.ihtsdo.refsetservice.model.WorkflowHistory</class>
 
     <!--  import models for auth -->
     <class>org.ihtsdo.refsetservice.model.User</class>
