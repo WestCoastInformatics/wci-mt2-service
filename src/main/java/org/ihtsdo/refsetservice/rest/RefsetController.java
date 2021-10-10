@@ -729,7 +729,6 @@ public class RefsetController extends BaseController {
             
             ResultList<Refset> results = RefsetService.searchRefsets(getUserFromSession(), searchParameters, searchConcepts);
            
-            logger.debug("******** searchDirectory results: " + ModelUtility.toJson(results));
             return results;
 
         } catch (final ResponseStatusException rse) {
@@ -803,7 +802,6 @@ public class RefsetController extends BaseController {
                         searchParameters, searchRefsetMembers);
             }
 
-            logger.debug("******** searchConcepts: results: " + ModelUtility.toJson(results));
             return results;
 
         } catch (final ResponseStatusException rse) {
@@ -897,7 +895,7 @@ public class RefsetController extends BaseController {
 
             results = RefsetMemberService.getRefsetMembers(refsetInternalId, searchParameters,
                     displayType, taxonomyParameters);
-            logger.debug("******** getMembers results: " + ModelUtility.toJson(results));
+            
             results.setTimeTaken(System.currentTimeMillis() - start);
             return results;
 

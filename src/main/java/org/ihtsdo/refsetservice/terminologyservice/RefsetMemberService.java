@@ -195,6 +195,8 @@ public class RefsetMemberService {
             } else {
                 concepts = getMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
             }
+            
+            logger.debug("******** getRefsetMembers results: " + ModelUtility.toJson(concepts));
         }
 
         return concepts;
@@ -1744,6 +1746,8 @@ public class RefsetMemberService {
                 populateAllLanguageDescriptions(refset, concepts.getItems());
                 getConceptAncestors(refset, concepts.getItems());
             }
+            
+            logger.debug("******** prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
         }
 
         return concepts;
