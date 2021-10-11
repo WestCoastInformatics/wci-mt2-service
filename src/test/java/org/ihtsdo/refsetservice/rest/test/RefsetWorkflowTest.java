@@ -156,7 +156,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
     @Test
     public void testWorkflowHistory() throws Exception {
         
-        // Testing Ready_For_Edit state
+        // Create a new Edit version of a published refset
         final String refsetInternalId = createNewRefsetVerion();
         int actionCount = 1;
         List<WorkflowHistory> lookedUpWorkflowHistory;
@@ -165,15 +165,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         Refset refset = getRefset(refsetInternalId);
         Refset updatedRefset = null;
 
-        // ALREADY IN EDIT WHEN CREATED First Edit
-//        note = "";
-//        updatedRefset = advanceWorkflow(refset, AUTHOR_USER, WorkflowService.EDIT, note);
-//        assertThat(updatedRefset).isNotNull();
-//        refset = updatedRefset;
-//        lookedUpWorkflowHistory = getWorkflowHistory();
-//        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-//        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.IN_EDIT, "");
-        
+        // ALREADY IN EDIT WHEN CREATED
         // Finish First Edit (with Note)
         actionCount++;
         note = "This is the first edit of this workflow";
@@ -231,6 +223,26 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
         validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_REVIEW, WorkflowService.READY_FOR_REVIEW, note);
 
+        // Withdraw Review
+        actionCount++;
+        note = "Not Ready for review yet";
+        updatedRefset = advanceWorkflow(refset, REVIEWER_USER, WorkflowService.WITHDRAW, note);
+        assertThat(updatedRefset).isNotNull();
+        refset = updatedRefset;
+        lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
+        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.WITHDRAW, WorkflowService.READY_FOR_EDIT, note);
+        
+        // Resubmit for review
+        actionCount++;
+        note = "Refset is now ready.";
+        updatedRefset = advanceWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
+        assertThat(updatedRefset).isNotNull();
+        refset = updatedRefset;
+        lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
+        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_REVIEW, WorkflowService.READY_FOR_REVIEW, note);
+        
         // In Review
         actionCount++;
         note = "";

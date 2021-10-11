@@ -67,6 +67,9 @@ public final class WorkflowService {
     /** The REQUEST_REVIEW workflow action . */
     public static final String REQUEST_REVIEW = "REQUEST_REVIEW";
     
+    /** The WITHDRAW workflow action . */
+    public static final String WITHDRAW = "WITHDRAW";
+    
     /** The REVIEW workflow action . */
     public static final String REVIEW = "REVIEW";
     
@@ -527,6 +530,7 @@ public final class WorkflowService {
             
         } else if (currentStatus.equals(READY_FOR_REVIEW) && user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
             
+            allowedActions.add(WITHDRAW);
             allowedActions.add(REVIEW);
             
         } else if (currentStatus.equals(IN_REVIEW) && user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
