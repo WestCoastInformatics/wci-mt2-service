@@ -229,7 +229,27 @@ public final class WorkflowService {
         
         // get the next status based on the user, current status, and supplied action
         final String nextStatus = WORKFLOW_PERMUTATIONS.get(role).get(refset.getWorkflowStatus()).get(action);
-        return setWorkflowStatus(user, action, refset, notes, nextStatus);
+        final Refset updatedRefset = setWorkflowStatus(user, action, refset, notes, nextStatus);
+        
+        // if edits have just been completed then merge the edit branch into the refset branch and delete the edit branch 
+        if (currentStatus.equals(IN_EDIT) && (Arrays.asList(REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action))) {
+            
+            final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), notes);
+            
+            if (merged) {
+                deleteEditBranch(refset.getEditionBranch(), refset.getRefsetId());
+            } else {
+                logger.error("Unable to merge edit into refset branch for refset " + refset.getRefsetId());
+            }
+            
+        } 
+        
+        // else if this is the start of edits create the refset edit branch
+        else if (action.equals(EDIT)) {
+            createEditBranch(refset.getEditionBranch(), refset.getRefsetId());
+        }
+        
+        return updatedRefset;
     }
     
     /**
@@ -412,6 +432,18 @@ public final class WorkflowService {
         return workflow.getUserName();
         
     }
+
+    /**
+     * Get the refset branch path for a refset.
+     *
+     * @param editionBranchPath the branch path of the edition the refset belongs to
+     * @param refsetId the refset ID
+     * @return the branch path of the refset branch
+     * @throws Exception the exception
+     */
+    public static String getRefsetBranchPath(final String editionBranchPath, final String refsetId) throws Exception {
+        return editionBranchPath + "/"  + REFSET_BRANCH_PREFIX + refsetId;
+    }
     
     /**
      * Create the refset branch for an IN DEVELOPMENT version.
@@ -424,11 +456,34 @@ public final class WorkflowService {
     public static String createRefsetBranch(final String editionBranchPath, final String refsetId) throws Exception {
         
         final String branchName = REFSET_BRANCH_PREFIX + refsetId;
+        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
         
-        if (doesBranchExist(editionBranchPath + "/" + branchName)) {
-            return editionBranchPath + "/" + branchName;
+        if (doesBranchExist(refsetBranchPath)) {
+            return refsetBranchPath;
         } else {
             return createBranch(editionBranchPath, branchName);
+        }
+    }
+    
+    /**
+     * Merge the refset branch into the edition branch.
+     *
+     * @param editionBranchPath the branch path of the edition the refset belongs to
+     * @param refsetId the refset ID
+     * @param comment the merge comment
+     * @return were the branches merged
+     * @throws Exception the exception
+     */
+    public static boolean mergeRefsetIntoEditionBranch(final String editionBranchPath, final String refsetId, final String comment) throws Exception {
+        
+        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
+        
+        if (doesBranchExist(refsetBranchPath)) {
+            
+            mergeBranch(refsetBranchPath, editionBranchPath, comment);
+            return true;
+        } else {
+            return false;
         }
     }
     
@@ -442,8 +497,20 @@ public final class WorkflowService {
      */
     public static boolean deleteRefsetBranch(final String editionBranchPath, final String refsetId) throws Exception {
         
-        final String branchPath = editionBranchPath + "/"  + REFSET_BRANCH_PREFIX + refsetId;
+        final String branchPath = getRefsetBranchPath(editionBranchPath, refsetId);
         return deleteBranch(branchPath);
+    }
+    
+    /**
+     * Get the edit branch path for a refset.
+     *
+     * @param editionBranchPath the branch path of the edition the refset belongs to
+     * @param refsetId the refset ID
+     * @return the branch path of the edit branch
+     * @throws Exception the exception
+     */
+    public static String getEditBranchPath(final String editionBranchPath, final String refsetId) throws Exception {
+        return editionBranchPath + "/"  + REFSET_BRANCH_PREFIX + refsetId + "/" + EDIT_BRANCH_NAME;
     }
     
     /**
@@ -456,13 +523,36 @@ public final class WorkflowService {
      */
     public static String createEditBranch(final String editionBranchPath, final String refsetId) throws Exception {
         
-        final String refsetBranchPath = editionBranchPath + "/" + REFSET_BRANCH_PREFIX + refsetId;
-        final String branchName = EDIT_BRANCH_NAME;
+        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
+        final String editBranchPath = getEditBranchPath(editionBranchPath, refsetId);
         
-        if (doesBranchExist(refsetBranchPath + "/" + branchName)) {
-            return refsetBranchPath + "/" + branchName;
+        if (doesBranchExist(editBranchPath)) {
+            return editBranchPath;
         } else {
-            return createBranch(refsetBranchPath, branchName);
+            return createBranch(refsetBranchPath, EDIT_BRANCH_NAME);
+        }
+    }
+    
+    /**
+     * Merge the edit branch into the refset branch.
+     *
+     * @param editionBranchPath the branch path of the edition the refset belongs to
+     * @param refsetId the refset ID
+     * @param comment the merge comment
+     * @return were the branches merged
+     * @throws Exception the exception
+     */
+    public static boolean mergeEditIntoRefsetBranch(final String editionBranchPath, final String refsetId, final String comment) throws Exception {
+        
+        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
+        final String editBranchPath = getEditBranchPath(editionBranchPath, refsetId);
+        
+        if (doesBranchExist(refsetBranchPath) && doesBranchExist(editBranchPath)) {
+            
+            mergeBranch(editBranchPath, refsetBranchPath, comment);
+            return true;
+        } else {
+            return false;
         }
     }
     
@@ -476,7 +566,7 @@ public final class WorkflowService {
      */
     public static boolean deleteEditBranch(final String editionBranchPath, final String refsetId) throws Exception {
         
-        final String branchPath = editionBranchPath + "/"  + REFSET_BRANCH_PREFIX + refsetId + "/" + EDIT_BRANCH_NAME;
+        final String branchPath = getEditBranchPath(editionBranchPath, refsetId);
         return deleteBranch(branchPath);
     }
     
@@ -570,6 +660,40 @@ public final class WorkflowService {
                 return true;
             } else {
                 return false;
+            }
+        }
+    }
+    
+    /**
+     * Merge one branch into another.
+     *
+     * @param sourceBranchPath the branch path with the content to merge
+     * @param targetBranchPath the branch path to merge content into
+     * @param comment the merge comment
+     * @return the branch path of the new branch
+     * @throws Exception the exception
+     */
+    public static void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment) throws Exception {
+        
+        String refsetBranchPath = null;
+        final String url = SnowstormConnection.BASE_URL + "merges";
+        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
+        
+        if (comment != null) {
+            body.put("commitComment", comment);
+        }
+        
+        logger.debug("mergeBranch URL: " + url + " ; body: " + body.toString());
+        
+        try (final Response response = SnowstormConnection.postResponse(url, body.toString())) {
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode() && response.getStatus() != Response.Status.CREATED.getStatusCode()) {
+                
+                final String error = "Could not merge branch " + sourceBranchPath + " into branch " + targetBranchPath;
+                logger.error(error);
+                throw new Exception (error);
             }
         }
     }
