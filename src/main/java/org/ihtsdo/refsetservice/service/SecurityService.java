@@ -93,13 +93,9 @@ public class SecurityService implements AutoCloseable {
 		if (authUser == null)
 			return null;
 
-		logger.debug("NUNO find user {}", authUser);
-
 		// check if authenticated user exists
 		final User userFound = getUserFromUserName(authUser.getUserName());
 
-		logger.debug("NUNO found user is {}", userFound);
-		
 		// if user was found, update to match settings
 		String userId = null;
 		if (userFound != null) {
@@ -263,11 +259,9 @@ public class SecurityService implements AutoCloseable {
 	 */
 	public User getUserFromUserName(final String userName) throws Exception {
 		
-		logger.info("NUNO getUserFromUserName userName:{}", userName);
 		User user = null;
 		try (final TerminologyService service = new TerminologyService()) {
 			user = service.findSingle("userName:" + userName, User.class, null);
-			logger.info("NUNO getUserFromUserName user:{}", user);
 		}
 		return user;
 	}
