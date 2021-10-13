@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
+
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -25,6 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 /**
  * Utility class for workflow processes.
  */
@@ -33,6 +40,15 @@ public final class WorkflowService {
     /** The logger. */
     @SuppressWarnings("unused")
     private static Logger logger = LoggerFactory.getLogger(WorkflowService.class);
+    
+    /** The prefix to use for a refset branch . */
+    public static final String REFSET_BRANCH_PREFIX = "refset-";
+    
+    /** The name of a refset edit branch . */
+    public static final String EDIT_BRANCH_NAME = "edit";
+    
+    /** The name of a temporary branch to create empty concepts in to generate concept IDs for new refsets. */
+    public static final String TEMP_BRANCH_NAME = "temp";
     
     /** The PUBLISHED workflow status . */
     public static final String PUBLISHED = "PUBLISHED";
@@ -395,6 +411,220 @@ public final class WorkflowService {
         WorkflowHistory workflow = getCurrentWorkflow(refset);
         return workflow.getUserName();
         
+    }
+    
+    /**
+     * Create the refset branch for an IN DEVELOPMENT version.
+     *
+     * @param editionBranchPath the branch path of the edition to create the new branch in
+     * @param refsetId the refset ID
+     * @return the branch path of the new refset branch
+     * @throws Exception the exception
+     */
+    public static String createRefsetBranch(final String editionBranchPath, final String refsetId) throws Exception {
+        
+        final String branchName = REFSET_BRANCH_PREFIX + refsetId;
+        
+        if (doesBranchExist(editionBranchPath + "/" + branchName)) {
+            return editionBranchPath + "/" + branchName;
+        } else {
+            return createBranch(editionBranchPath, branchName);
+        }
+    }
+    
+    /**
+     * Delete the refset branch for a refset.
+     *
+     * @param editionBranchPath the branch path of the edition to create the new branch in
+     * @param refsetId the refset ID
+     * @return was the branch deleted
+     * @throws Exception the exception
+     */
+    public static boolean deleteRefsetBranch(final String editionBranchPath, final String refsetId) throws Exception {
+        
+        final String branchPath = editionBranchPath + "/"  + REFSET_BRANCH_PREFIX + refsetId;
+        return deleteBranch(branchPath);
+    }
+    
+    /**
+     * Create the edit branch for a refset.
+     *
+     * @param editionBranchPath the branch path of the edition to create the new branch in
+     * @param refsetId the refset ID
+     * @return the branch path of the new edit branch
+     * @throws Exception the exception
+     */
+    public static String createEditBranch(final String editionBranchPath, final String refsetId) throws Exception {
+        
+        final String refsetBranchPath = editionBranchPath + "/" + REFSET_BRANCH_PREFIX + refsetId;
+        final String branchName = EDIT_BRANCH_NAME;
+        
+        if (doesBranchExist(refsetBranchPath + "/" + branchName)) {
+            return refsetBranchPath + "/" + branchName;
+        } else {
+            return createBranch(refsetBranchPath, branchName);
+        }
+    }
+    
+    /**
+     * Delete the edit branch for a refset.
+     *
+     * @param editionBranchPath the branch path of the edition to create the new branch in
+     * @param refsetId the refset ID
+     * @return was the branch deleted
+     * @throws Exception the exception
+     */
+    public static boolean deleteEditBranch(final String editionBranchPath, final String refsetId) throws Exception {
+        
+        final String branchPath = editionBranchPath + "/"  + REFSET_BRANCH_PREFIX + refsetId + "/" + EDIT_BRANCH_NAME;
+        return deleteBranch(branchPath);
+    }
+    
+    /**
+     * Create a branch.
+     *
+     * @param parentBranchPath the branch path of the parent to create the new branch in
+     * @param branchName the name the new branch
+     * @return the branch path of the new branch
+     * @throws Exception the exception
+     */
+    public static String createBranch(final String parentBranchPath, final String branchName) throws Exception {
+        
+        String refsetBranchPath = null;
+        final String url = SnowstormConnection.BASE_URL + "branches";
+        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectNode body = mapper.createObjectNode().put("name", branchName).put("parent",
+                parentBranchPath);
+        
+        logger.debug("createBranch URL: " + url + " ; body: " + body.toString());
+        
+        try (final Response response = SnowstormConnection.postResponse(url, body.toString())) {
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                
+                final String error = "Could not create branch " + parentBranchPath + "/" + branchName;
+                logger.error(error);
+                throw new Exception (error);
+            }
+            
+            final String resultString = response.readEntity(String.class);
+            
+            final JsonNode root = mapper.readTree(resultString.toString());
+            JsonNode rootNode = root;
+            
+            if (rootNode.has("path")) {
+                refsetBranchPath = rootNode.get("path").asText();
+            }
+        }
+        
+        return refsetBranchPath;
+    }
+    
+    /**
+     * Delete a branch.
+     *
+     * @param branchPath the branch path to delete
+     * @return was the branch deleted
+     * @throws Exception the exception
+     */
+    public static boolean deleteBranch(final String branchPath) throws Exception {
+        
+        String refsetBranchPath = null;
+        final String url = SnowstormConnection.BASE_URL + "admin/" + branchPath + "/actions/hard-delete";
+        
+        logger.debug("deleteBranch URL: " + url);
+        
+        try (final Response response = SnowstormConnection.deleteResponse(url)) {
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                
+                logger.info("Deleted branch " + branchPath);
+                return true;
+            } else {
+                
+                logger.error("Could not delete branch " + branchPath);
+                return false;
+            }
+        }
+    }
+    
+    /**
+     * Check if a branch exists.
+     *
+     * @param branchPath the branch path to check
+     * @return the true if the branch exists, otherwise false
+     * @throws Exception the exception
+     */
+    public static boolean doesBranchExist(final String branchPath) throws Exception {
+        
+        final String url = SnowstormConnection.BASE_URL + "branches/" + branchPath;
+        
+        logger.debug("doesBranchExist URL: " + url);
+        
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            // If Rest call is successful then branch exists
+            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    
+    /**
+     * In order to create a refset branch for a new refset the SCTID needs to get generated in a temp branch first.
+     *
+     * @param editionBranchPath the branch path of the temporary branch
+     * @param branchName the name the new branch
+     * @return the branch path of the new branch
+     * @throws Exception the exception
+     */
+    public static String getNewRefsetId(final String editionBranchPath) throws Exception {
+        
+        String refsetConceptId = null;
+        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectNode body = mapper.createObjectNode();
+        String tempBranchPath = null;
+        
+        if (doesBranchExist(editionBranchPath + "/" + TEMP_BRANCH_NAME)) {
+            tempBranchPath = editionBranchPath + "/" + TEMP_BRANCH_NAME;
+        } else {
+            tempBranchPath = createBranch(editionBranchPath, TEMP_BRANCH_NAME);
+        }
+        
+        final String url = SnowstormConnection.BASE_URL + "browser/" + tempBranchPath
+                + "/" + "concepts/";
+       
+        logger.debug("getNewRefsetId URL: " + url);
+        
+        try (final Response response = SnowstormConnection.postResponse(url, body.toString())) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception(
+                        "call to url '" + url + "' wasn't successful. " + response.toString());
+            }
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                throw new Exception(Integer.toString(response.getStatus()));
+            }
+            
+            final String resultString = response.readEntity(String.class);
+            
+            final JsonNode root = mapper.readTree(resultString.toString());
+            JsonNode conceptNode = root;
+            
+            if (conceptNode.has("conceptId")) {
+                refsetConceptId = conceptNode.get("conceptId").asText();
+            } else {
+                throw new Exception("Unable to create new refset concept.");
+            }
+        }
+        
+        return refsetConceptId;
     }
     
     /**

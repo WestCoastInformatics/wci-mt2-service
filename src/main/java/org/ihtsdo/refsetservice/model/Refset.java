@@ -144,6 +144,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The module ID. */
     @Column(nullable = false, length = 256)
     private String moduleId;
+    
+    /** The branch and version for originating content from when editing. */
+    @Column(nullable = true, length = 256)
+    private String editOriginBranchPath;
 
     /** The external URL. */
     @Column(nullable = true, length = 4000)
@@ -242,6 +246,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         project = other.getProject();
         externalUrl = other.getExternalUrl();
         moduleId = other.getModuleId();
+        editOriginBranchPath = other.getEditOriginBranchPath();
         assignedUser = other.getAssignedUser();
         privateRefset = other.isPrivateRefset();
         downloadable = other.isDownloadable();
@@ -684,6 +689,24 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Gets the branch and version for originating content from when editing.
+     *
+     * @return the editOriginBranchPath
+     */
+    public String getEditOriginBranchPath() {
+        return editOriginBranchPath;
+    }
+
+    /**
+     * Sets the branch and version for originating content from when editing.
+     *
+     * @param editOriginBranchPath the editOriginBranchPath to set
+     */
+    public void setEditOriginBranchPath(final String editOriginBranchPath) {
+        this.editOriginBranchPath = editOriginBranchPath;
+    }
+    
+    /**
      * Gets the external url.
      *
      * @return the externalUrl
@@ -691,7 +714,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public String getExternalUrl() {
         return externalUrl;
     }
-
+    
     /**
      * Sets the external url.
      *
@@ -1012,6 +1035,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((narrative == null) ? 0 : narrative.hashCode());
         result = prime * result + ((versionNotes == null) ? 0 : versionNotes.hashCode());
         result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
+        result = prime * result + ((editOriginBranchPath == null) ? 0 : editOriginBranchPath.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
         result = prime * result + ((project == null) ? 0 : project.hashCode());
         result = prime * result + ((versionList == null) ? 0 : versionList.hashCode());
@@ -1146,6 +1170,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
                 return false;
             }
         } else if (!moduleId.equals(other.moduleId)) {
+            return false;
+        }
+        
+        if (editOriginBranchPath == null) {
+            if (other.editOriginBranchPath != null) {
+                return false;
+            }
+        } else if (!editOriginBranchPath.equals(other.editOriginBranchPath)) {
             return false;
         }
 

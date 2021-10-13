@@ -38,7 +38,6 @@ import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
-import org.ihtsdo.refsetservice.util.RefsetUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
@@ -202,7 +201,7 @@ public class RefsetController extends BaseController {
                 final String branchPath = RefsetService.getBranchPath(refsetInternalId);
                 conceptIdList = RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl);
             } else {
-                conceptIdList = RefsetUtility.getConceptIdsFromFile(conceptFile, fileType);
+                conceptIdList = RefsetService.getConceptIdsFromFile(conceptFile, fileType);
             }
          
             logger.debug("*********** addRefsetMembers: conceptIds: " + conceptIdList);
@@ -270,7 +269,7 @@ public class RefsetController extends BaseController {
                 final String branchPath = RefsetService.getBranchPath(refsetInternalId);
                 conceptsToRemove = String.join(",", RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl));
             } else {
-                conceptsToRemove = String.join(",", RefsetUtility.getConceptIdsFromFile(conceptFile, fileType));
+                conceptsToRemove = String.join(",", RefsetService.getConceptIdsFromFile(conceptFile, fileType));
             }
          
             logger.debug("*********** removeRefsetMembers: conceptIds: " + conceptIds);
@@ -573,7 +572,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             
-            final String status = RefsetService.deleteEditVersion(getUserFromSession(), refsetInternalId, true);
+            final String status = RefsetService.deleteInDevelopmentVersion(getUserFromSession(), refsetInternalId, true);
 
             return "{\"status\": \"" + status + "\"}";
 
@@ -1199,7 +1198,7 @@ public class RefsetController extends BaseController {
                 }
 
                 final List<Map<String, String>> versions =
-                        RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(), service);
+                        RefsetService.getSortedRefsetVersionList(refset.getRefsetId(), service);
 
                 final List<Map<String, String>> memberHistory =
                         RefsetMemberService.getMemberHistory(conceptId, versions);

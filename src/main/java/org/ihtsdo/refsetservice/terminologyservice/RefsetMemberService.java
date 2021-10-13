@@ -51,7 +51,6 @@ import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
-import org.ihtsdo.refsetservice.util.RefsetUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -703,7 +702,7 @@ public class RefsetMemberService {
 
                 // determine all snapshot versions that will contribute to the
                 // delta
-                List<Map<String, String>> versionMap = RefsetUtility.getSortedRefsetVersionList(refset.getRefsetId(),
+                List<Map<String, String>> versionMap = RefsetService.getSortedRefsetVersionList(refset.getRefsetId(),
                         service);
                 Map<String, String> versionToRefsetInternalId = new HashMap<>();
                 List<String> versionsInScope = new ArrayList<>();
@@ -1389,8 +1388,14 @@ public class RefsetMemberService {
         fileLines.append("Project" + separator + refset.getProject().getName() + "\n");
         fileLines.append("Module ID" + separator + refset.getModuleId() + "\n");
         fileLines.append("Refset Version Status" + separator + refset.getVersionStatus() + "\n");
-        fileLines.append("Refset Version Date" + separator
-                + DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+        
+        if (refset.getVersionDate() != null) {
+            fileLines.append("Refset Version Date" + separator
+                    + DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+        } else {
+            fileLines.append("Refset Version Date" + separator + "\n");
+        }
+
         fileLines.append("Refset Last Modified Date" + separator
                 + DateUtility.formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
         fileLines.append("Refset Type" + separator + refset.getType() + "\n");
@@ -3077,14 +3082,14 @@ public class RefsetMemberService {
             }
 
             final String refsetId = refset.getRefsetId();
-            final String url = SnowstormConnection.BASE_URL + refset.getEdition().getBranch() + "/" + "members";
+            final String url = SnowstormConnection.BASE_URL + RefsetService.getBranchPath(refset) + "/" + "members";
             
             // clear the caches for this refset
             clearAllMemberCaches(refsetInternalId);
             
             // when searching for members we only want concepts whose membership is active
             // (though the concept itself can be inactive)
-            final String memberSearchUrl = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
+            final String memberSearchUrl = SnowstormConnection.BASE_URL + "browser/" + RefsetService.getBranchPath(refset)
                     + "/members?referenceSet=" + refset.getRefsetId()
                     + "&limit=5000&offset=0&active=true&referencedComponentId=" + String.join(",", conceptIds);
 
@@ -3175,7 +3180,7 @@ public class RefsetMemberService {
 
             // when searching for members we only want concepts whose membership is active
             // (though the concept itself can be inactive)
-            final String memberSearchUrl = SnowstormConnection.BASE_URL + "browser/" + refset.getEdition().getBranch()
+            final String memberSearchUrl = SnowstormConnection.BASE_URL + "browser/" + RefsetService.getBranchPath(refset)
                     + "/members?referenceSet=" + refset.getRefsetId()
                     + "&limit=5000&offset=0&active=true&referencedComponentId=" + conceptIds;
 
@@ -3205,7 +3210,7 @@ public class RefsetMemberService {
                 final String conceptId = conceptNode.get("referencedComponentId").asText();
                 final String membershipId = conceptNode.get("memberId").asText();
                 final boolean released = conceptNode.get("released").asBoolean();
-                final String url = SnowstormConnection.BASE_URL + refset.getEdition().getBranch() + "/" + "members/"
+                final String url = SnowstormConnection.BASE_URL + RefsetService.getBranchPath(refset) + "/" + "members/"
                         + membershipId;
                 boolean couldNotRemove = false;
 

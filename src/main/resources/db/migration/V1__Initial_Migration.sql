@@ -69,6 +69,7 @@ CREATE TABLE `refsets` (
   `localSet` bit(1) NOT NULL,
   `latestVersion` bit(1) DEFAULT false,
   `moduleId` varchar(256) NOT NULL,
+  `editOriginBranchPath` varchar(256),
   `name` varchar(4000) NOT NULL,
   `narrative` longtext,
   `privateRefset` bit(1) NOT NULL,
