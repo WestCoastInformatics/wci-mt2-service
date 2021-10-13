@@ -1,27 +1,62 @@
 
 package org.ihtsdo.refsetservice.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Represents a user and roles.
  * 
  */
-
+@Entity
+@Table(name = "users")
+@Schema(description = "Represents a message to send (and possibly have confirmed)")
+@JsonInclude(Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Indexed
 public class User extends AbstractHasModified implements Comparable<User> {
 
     /** The username. */
+	@Column(nullable = false, unique = true, length = 250)
     private String userName;
 
     /** The user's full name. */
+	@Column(nullable = false, length = 250)
     private String name;
     
     /** The user's email. */
+	@Column(nullable = false, length = 250)
     private String email;
+	
+	/** The auth token. */
+	@Transient
+	private String authToken;
     
     /** A list of the roles this user has. */
-    private List<String> roles = new ArrayList<>();
+	@ElementCollection
+	@Fetch(FetchMode.JOIN)
+    private Set<String> roles = new HashSet<>();
     
     /** The admin role. */
     public static final String ROLE_ADMIN = "ADMIN";
@@ -53,7 +88,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @param email the user's email
      * @param roles the roles this user has
      */
-    public User(final String userName, final String name, final String email, final List<String> roles) {
+    public User(final String userName, final String name, final String email, final Set<String> roles) {
         
         this.userName = userName;
         this.name = name;
@@ -89,9 +124,11 @@ public class User extends AbstractHasModified implements Comparable<User> {
      *
      * @return the userName
      */
-    public String getUserName() {
-        return userName;
-    }
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+	public String getUserName() {
+		return userName;
+	}
 
     /**
      * Sets the userName.
@@ -137,16 +174,35 @@ public class User extends AbstractHasModified implements Comparable<User> {
     public void setEmail(final String email) {
         this.email = email;
     }
+    
+    /**
+     * Sets the authentication token.
+     * 
+     * @return
+     */
+	public String getAuthToken() {
+		return authToken;
+	}
+
+	/**
+	 * Returns the authentication token.
+	 * 
+	 * @param authToken
+	 */
+	public void setAuthToken(String authToken) {
+		this.authToken = authToken;
+	}
 
     /**
      * Gets the roles.
      *
      * @return the roles
      */
-    public List<String> getRoles() {
+    //@GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public Set<String> getRoles() {
 
         if (roles == null) {
-            roles = new ArrayList<>();
+            roles = new HashSet<>();
         }
 
         return roles;
@@ -157,7 +213,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
      *
      * @param roles the roles to set
      */
-    public void setRoles(List<String> roles) {
+    public void setRoles(Set<String> roles) {
         this.roles = roles;
     }
     
@@ -183,7 +239,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
 
         return false;
     }
-
+    
     /**
      * Hash code.
      *
@@ -288,3 +344,4 @@ public class User extends AbstractHasModified implements Comparable<User> {
 
     }
 }
+

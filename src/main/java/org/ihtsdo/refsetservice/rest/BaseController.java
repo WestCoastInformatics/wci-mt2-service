@@ -3,6 +3,7 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.model.User;
@@ -73,7 +74,7 @@ public class BaseController {
      */
     protected User getUserFromSession() throws Exception {
         
-        User user = new User("testUser", "Test User", "tuser@testuser.com", new ArrayList<String>(Arrays.asList("rt-all-user", "rt-all-author", "rt-all-reviewer")));
+        User user = new User("testUser", "Test User", "tuser@testuser.com", new HashSet<String>(Arrays.asList("rt-all-user", "rt-all-author", "rt-all-reviewer")));
         return user;
     }
     
