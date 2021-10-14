@@ -1348,7 +1348,7 @@ public class RefsetController extends BaseController {
 
                 for (VersionStatus value : VersionStatus.values()) {
                     TypeKeyValue typeKeyValue =
-                            new TypeKeyValue("status", value.toString(), value.toString());
+                            new TypeKeyValue("status", value.getLable(), value.getLable());
                     versionStatuses.add(typeKeyValue);
                 }
 
