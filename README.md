@@ -70,7 +70,7 @@ Download and install the latest version of Docker.
 Download and run elasticsearch in a Docker container, pointing to the directory you created above:
 
 ```
-docker run -d --name=es_evs --rm -p 9200:9200 -v %INDEX_BASE%:/usr/share/elasticsearch/data  -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms1g -Xmx3g"  docker.elastic.co/elasticsearch/elasticsearch:7.1.0
+docker run -d --name=es_rt2 --rm -p 9200:9200 -v %INDEX_BASE%:/usr/share/elasticsearch/data  -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms1g -Xmx3g"  docker.elastic.co/elasticsearch/elasticsearch:7.1.0
 ```
 
 
