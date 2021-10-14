@@ -148,9 +148,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
      * members).
      * 
      * After each advancement, grab workflow history to ensure that the contents
-     * are filled out as expected. Also perform one final one looking at all
-     * history for the editing cycle to ensure no information loss as the
-     * workflow goes through the full cycle *
+     * are filled out as expected. 
      * @throws Exception the exception
      */
     @Test
@@ -169,7 +167,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // Finish First Edit (with Note)
         actionCount++;
         note = "This is the first edit of this workflow";
-        updatedRefset = advanceWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
@@ -179,7 +177,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // In Review
         actionCount++;
         note = "";
-        updatedRefset = advanceWorkflow(refset, REVIEWER_USER, WorkflowService.REVIEW, note);
+        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.REVIEW, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
@@ -189,7 +187,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // Reject Review (with Note)
         actionCount++;
         note = "I rejected this because it's not right";
-        updatedRefset = advanceWorkflow(refset, REVIEWER_USER, WorkflowService.REJECT_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.REJECT_REVIEW, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
@@ -199,7 +197,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // Second Edit
         actionCount++;
         note = "";
-        updatedRefset = advanceWorkflow(refset, AUTHOR_USER, WorkflowService.EDIT, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.EDIT, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
@@ -216,7 +214,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // Finish Second Edit (with Note)
         actionCount++;
         note = "Mistakes handled";
-        updatedRefset = advanceWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
@@ -226,7 +224,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // Withdraw Review
         actionCount++;
         note = "Not Ready for review yet";
-        updatedRefset = advanceWorkflow(refset, REVIEWER_USER, WorkflowService.WITHDRAW, note);
+        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.WITHDRAW, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
@@ -236,7 +234,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // Resubmit for review
         actionCount++;
         note = "Refset is now ready.";
-        updatedRefset = advanceWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
@@ -246,7 +244,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // In Review
         actionCount++;
         note = "";
-        updatedRefset = advanceWorkflow(refset, REVIEWER_USER, WorkflowService.REVIEW, note);
+        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.REVIEW, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
@@ -256,23 +254,59 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // Pass Review (with Note)
         actionCount++;
         note = "This has been fixed as expected";
-        updatedRefset = advanceWorkflow(refset, REVIEWER_USER, WorkflowService.ACCEPT_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.ACCEPT_REVIEW, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
         validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.ACCEPT_REVIEW, WorkflowService.REVIEW_COMPLETED, note);
 
-        // Reject Review (with Note)
+        // Request Publication (with Note)
         actionCount++;
         note = "The refset should be published when the full extension is published";
-        updatedRefset = advanceWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
         validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, WorkflowService.READY_FOR_PUBLICATION, note);
         
+        // Withdraw Publicaiton Request (with Note)
+        actionCount++;
+        note = "The refset failed RVF.";
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.FAILS_RVF, note);
+        assertThat(updatedRefset).isNotNull();
+        refset = updatedRefset;
+        lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
+        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.FAILS_RVF, WorkflowService.READY_FOR_EDIT, note);
+        
+        // Request Publication Again (with Note)
+        actionCount++;
+        note = "Fixes made. The refset should be published when the full extension is published";
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, note);
+        assertThat(updatedRefset).isNotNull();
+        refset = updatedRefset;
+        lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
+        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, WorkflowService.READY_FOR_PUBLICATION, note);
+        
+        // !!!! DO NOT LEAVE UNCOMMENTED !!!!
+        // Publication Complete
+//        actionCount++;
+//        note = "";
+//        updatedRefset = advanceWorkflow(refset, AUTHOR_USER, WorkflowService.REFSET_PUBLISHED, note);
+//        assertThat(updatedRefset).isNotNull();
+//        refset = updatedRefset;
+//        lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
+//        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
+//        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REFSET_PUBLISHED, WorkflowService.PUBLISHED, note);
+//        
+//        // now that it is published make sure there is a version date on the refset and the version status is PUBLISHED
+//        assertThat(updatedRefset.getVersionDate()).isNotNull();
+//        assertThat(updatedRefset.getVersionStatus()).isEqualTo(Refset.PUBLISHED);
+        
+        // !!!! LEAVE THIS UNCOMMENTED EXCEPT WHEN TESTING PUBLISHED COMLETE STATUS !!!!
         // remove the refset version
         deleteNewRefsetVerion(refsetInternalId);
 
@@ -283,7 +317,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
      *
      * @throws Exception the exception
      */
-    private Refset advanceWorkflow(final Refset refset, final String user, final String action, final String note) throws Exception{
+    private Refset updateWorkflow(final Refset refset, final String user, final String action, final String note) throws Exception{
         
         final String newStatus = getWorkflowStatusByAction(user, refset.getWorkflowStatus(), action);
         final String url = baseUrl + "/" + refset.getId() + "/workflowStatus?action=" + action + "&notes=" + note;
