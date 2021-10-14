@@ -127,3 +127,23 @@ CREATE TABLE `workflow_history` (
   KEY `FK7c0nnfqf1yumohfk60ysf68y7` (`refset_id`),
   CONSTRAINT `FK7c0nnfqf1yumohfk60ysf68y7` FOREIGN KEY (`refset_id`) REFERENCES `refsets` (`id`)
 );
+
+CREATE TABLE `users` (
+	`id` varchar(64) NOT NULL,
+	`active` bit(1) NOT NULL,
+	`created` datetime(6) NOT NULL,
+	`modified` datetime(6) NOT NULL,
+	`modifiedBy` varchar(256) NOT NULL,
+	`username` varchar(250) NOT NULL,
+	`name` varchar(250) NOT NULL,
+	`email` varchar(255) NOT NULL,
+	PRIMARY KEY (`id`)
+);
+
+
+CREATE TABLE `user_roles` (
+  `user_id` varchar(64) NOT NULL,
+  `roles` varchar(255) DEFAULT NULL,
+  KEY `FK7ppgoj8kxsmh27hyahk1m96v7` (`user_id`),
+  CONSTRAINT `FK7ppgoj8kxsmh27hyahk1m96v7` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+);
