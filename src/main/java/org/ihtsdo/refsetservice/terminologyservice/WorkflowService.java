@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,9 +20,11 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -239,7 +242,10 @@ public final class WorkflowService {
             if (merged) {
                 deleteEditBranch(refset.getEditionBranch(), refset.getRefsetId());
             } else {
-                logger.error("Unable to merge edit into refset branch for refset " + refset.getRefsetId());
+                
+                final String message = "Unable to merge edit into refset branch for refset " + refset.getRefsetId() + " because the edit branch doesn't exist.";
+                logger.error(message);
+                throw new Exception(message);
             }
             
         } 
@@ -247,6 +253,18 @@ public final class WorkflowService {
         // else if this is the start of edits create the refset edit branch
         else if (action.equals(EDIT)) {
             createEditBranch(refset.getEditionBranch(), refset.getRefsetId());
+        }
+        
+        // if publication is being requested merge the refset branch into the edition branch   
+        if (action.equals(REQUEST_PUBLICATION)) {
+            
+            final boolean merged = mergeRefsetIntoEditionBranch(refset.getEditionBranch(), refset.getRefsetId(), notes);
+            
+            if (!merged) {
+                final String message = "Unable to merge refset into edition branch for refset " + refset.getRefsetId() + " because the refset branch doesn't exist.";
+                logger.error(message);
+                throw new Exception(message);
+            }
         }
         
         return updatedRefset;
@@ -271,9 +289,22 @@ public final class WorkflowService {
             
             refset.setWorkflowStatus(status);
             
-            // Published is the final status
+            // Published is the final status so set the version information
             if (status.equals(PUBLISHED)) {
                 
+                // get the latest edition version branch
+                final ResultList<String> branchVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
+                
+                if (branchVersions.getItems().size() < 1) {
+                    
+                    final String message = "Could not retrieve branch versions for branch " + refset.getEditionBranch();
+                    logger.error(message);
+                    throw new Exception(message);
+                }
+                
+                final String newVersion = branchVersions.getItems().get(0);
+                
+                refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(newVersion));
                 refset.setVersionStatus(Refset.PUBLISHED);
             }
             
@@ -903,7 +934,7 @@ public final class WorkflowService {
             allowedActions.add(REQUEST_REVIEW);
             allowedActions.add(REQUEST_PUBLICATION);
             
-        } else if (currentStatus.equals(REQUEST_PUBLICATION) && (user.doesUserHavePermission(User.ROLE_AUTHOR, refset) || user.doesUserHavePermission(User.ROLE_ADMIN, refset))) {
+        } else if (currentStatus.equals(READY_FOR_PUBLICATION) && (user.doesUserHavePermission(User.ROLE_AUTHOR, refset) || user.doesUserHavePermission(User.ROLE_ADMIN, refset))) {
             
             allowedActions.add(FAILS_RVF);
             allowedActions.add(REFSET_PUBLISHED);

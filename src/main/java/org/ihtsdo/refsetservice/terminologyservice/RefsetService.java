@@ -221,7 +221,7 @@ public class RefsetService {
             String originBranchPath = edition.getBranch();
             
             if (refsetEditParameters.getVersionDate() != null) {
-                originBranchPath += "/" + getFormatedRefsetDate(refsetEditParameters.getVersionDate());
+                originBranchPath += "/" + getFormattedRefsetDate(refsetEditParameters.getVersionDate());
             }
                     
             refset.setEditOriginBranchPath(edition.getBranch() + originBranchPath);
@@ -811,7 +811,7 @@ public class RefsetService {
             newRefsetVersion.setId(null);
             newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
             newRefsetVersion.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
-            newRefsetVersion.setEditOriginBranchPath(refset.getEditionBranch() + "/" + getFormatedRefsetDate(refset.getVersionDate()));
+            newRefsetVersion.setEditOriginBranchPath(refset.getEditionBranch() + "/" + getFormattedRefsetDate(refset.getVersionDate()));
             
             // find the previous latest version
             if (refset.isLatestVersion()) {
@@ -1186,7 +1186,18 @@ public class RefsetService {
      * @return the formatted date string
      * @throws Exception the exception
      */
-    public static String getFormatedRefsetDate(final Date date) throws Exception {
+    public static String getFormattedRefsetDate(final Date date) throws Exception {
         return DateUtility.formatDate(date, DateUtility.DATE_FORMAT_REVERSE, null);
+    }
+    
+    /**
+     * Get refset dates as Date objects from properly formatted strings.
+     *
+     * @param date the date to format
+     * @return the formatted date string
+     * @throws Exception the exception
+     */
+    public static Date getRefsetDateFromFormattedString(final String date) throws Exception {
+        return DateUtility.getDate(date, DateUtility.DATE_FORMAT_REVERSE, null);
     }
 }

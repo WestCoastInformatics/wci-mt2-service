@@ -273,15 +273,23 @@ public final class DateUtility {
      * @param dateStr the date str
      * @param pattern the pattern
      * @param timeZone the time zone
-     * @return the date
+     * @return the date 
      * @throws Exception the exception
      */
     public static Date getDate(final String dateStr, final String pattern, final String timeZone)
         throws Exception {
 
+        String newTimezone;
+        
+        if (timeZone == null) {
+            newTimezone = "-00:00";
+        } else {
+            newTimezone = new String(timeZone);
+        }
+        
         final LocalDateTime ldt =
                 LocalDateTime.parse(dateStr, DateTimeFormatter.ofPattern(pattern));
-        final ZonedDateTime zdt = ZonedDateTime.of(ldt, ZoneId.of(timeZone));
+        final ZonedDateTime zdt = ZonedDateTime.of(ldt, ZoneId.of(newTimezone));
         return Date.from(zdt.toInstant());
     }
 
