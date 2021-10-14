@@ -1198,6 +1198,6 @@ public class RefsetService {
      * @throws Exception the exception
      */
     public static Date getRefsetDateFromFormattedString(final String date) throws Exception {
-        return DateUtility.getDate(date, DateUtility.DATE_FORMAT_REVERSE, null);
+        return DateUtility.getDateWithNoTime(date, DateUtility.DATE_FORMAT_REVERSE);
     }
 }

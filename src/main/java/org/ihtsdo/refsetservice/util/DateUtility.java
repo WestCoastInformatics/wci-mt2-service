@@ -268,15 +268,15 @@ public final class DateUtility {
     }
 
     /**
-     * Returns the date.
+     * Returns the date for a string that includes a time component.
      *
-     * @param dateStr the date str
+     * @param dateString the date string
      * @param pattern the pattern
      * @param timeZone the time zone
      * @return the date 
      * @throws Exception the exception
      */
-    public static Date getDate(final String dateStr, final String pattern, final String timeZone)
+    public static Date getDate(final String dateString, final String pattern, final String timeZone)
         throws Exception {
 
         String newTimezone;
@@ -288,9 +288,23 @@ public final class DateUtility {
         }
         
         final LocalDateTime ldt =
-                LocalDateTime.parse(dateStr, DateTimeFormatter.ofPattern(pattern));
+                LocalDateTime.parse(dateString, DateTimeFormatter.ofPattern(pattern));
         final ZonedDateTime zdt = ZonedDateTime.of(ldt, ZoneId.of(newTimezone));
         return Date.from(zdt.toInstant());
+    }
+    
+    /**
+     * Returns the date when the date string has no time component.
+     *
+     * @param dateString the date string
+     * @param pattern the pattern
+     * @return the date 
+     * @throws Exception the exception
+     */
+    public static Date getDateWithNoTime(final String dateString, final String pattern)
+        throws Exception {
+
+        return getDate(dateString + " 00:00", pattern + " HH:mm", null);
     }
 
     /**
