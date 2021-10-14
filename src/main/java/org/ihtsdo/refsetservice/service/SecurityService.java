@@ -12,6 +12,7 @@ import java.util.Set;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.User;
 //import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
@@ -66,10 +67,16 @@ public class SecurityService implements AutoCloseable {
 		Properties config = PropertyUtility.getProperties();
 
 		if (handler == null) {
-			timeout = Integer.valueOf(config.getProperty("security.timeout"));
-			final String handlerName = config.getProperty("security.handler");
+			timeout = (StringUtils.isNotBlank(config.getProperty("security.timeout")))
+					? Integer.valueOf(config.getProperty("security.timeout"))
+					: 7200000;
+		
+			final String handlerName = (StringUtils.isNotBlank(config.getProperty("security.handler")))
+					? config.getProperty("security.handler") 
+					: "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
+			
 			handler = HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler", handlerName,
-					SecurityServiceHandler.class);
+							SecurityServiceHandler.class);
 
 		}
 
@@ -151,12 +158,13 @@ public class SecurityService implements AutoCloseable {
 			throw new LocalException(
 					"Attempt to access a service without an AuthToken, the user is likely not logged in.");
 
+		final boolean allowGuest = (StringUtils.isNotBlank(PropertyUtility.getProperties().getProperty("security.guest.disabled")))
+				? "true".equals(PropertyUtility.getProperties().getProperty("security.guest.disabled"))
+				: false;
+		
 		// handle guest user unless
-		if (authToken.equals("guest")
-				&& "false".equals(PropertyUtility.getProperties().getProperty("security.guest.disabled"))) {
+		if (authToken.equals("guest") && allowGuest) {
 			return "guest";
-			
-			
 		}
 
 		// Replace double quotes in auth token.
@@ -189,9 +197,13 @@ public class SecurityService implements AutoCloseable {
 			throw new LocalException(
 					"Attempt to access a service without an AuthToken, the user is likely not logged in.");
 		}
+		
+		final boolean allowGuest = (StringUtils.isNotBlank(PropertyUtility.getProperties().getProperty("security.guest.disabled")))
+				? "true".equals(PropertyUtility.getProperties().getProperty("security.guest.disabled"))
+				: false;
+				
 		// Handle "guest" user
-		if (authToken.equals("guest")
-				&& "false".equals(PropertyUtility.getProperties().getProperty("security.guest.disabled"))) {
+		if (authToken.equals("guest") && allowGuest) {
 			return new HashSet<>(Arrays.asList(User.ROLE_USER));
 		}
 
