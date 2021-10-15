@@ -42,7 +42,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 			if ("admin".equalsIgnoreCase(password)) {
 				user.getRoles().add(User.ROLE_ADMIN);
 			} else if ("author".equalsIgnoreCase(password)) {
-				user.getRoles().add(User.ROLE_ADMIN);
+				user.getRoles().add(User.ROLE_AUTHOR);
 			} else if ("reviewer".equalsIgnoreCase(password)) {
 				user.getRoles().add(User.ROLE_REVIEWER);
 			} else if ("lead".equalsIgnoreCase(password)) {
