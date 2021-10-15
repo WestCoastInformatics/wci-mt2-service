@@ -2,15 +2,19 @@ package org.ihtsdo.refsetservice.model;
 
 public enum VersionStatus {
 
+    /** Captures all non-published status. */
+    IN_DEVELOPMENT("In Development"),
 
-	  /** The new status. */
-	  NEW,
+    /** The published status. */
+    PUBLISHED("Published");
 
-	  /** The beta status. */
-	  BETA,
+    private final String label;
 
-	  /** The published status. */
-	  PUBLISHED;
+    private VersionStatus(String label) {
+        this.label = label;
+    }
 
-	
+    public String getLable() {
+        return label;
+    }
 }
