@@ -704,7 +704,7 @@ public class RefsetMemberService {
     @SuppressWarnings({
             "null", "unused"
     })
-    public static String exportDeltaRefsetRf2(final String refsetInternalId, final String type,
+    public static String exportRefsetRf2Delta(final String refsetInternalId, final String type,
         final String languageId, final String fileNameDate, final String startEffectiveTime,
         final String transientEffectiveTime, final boolean exportMetadata, boolean withNames)
         throws Exception {
@@ -764,6 +764,7 @@ public class RefsetMemberService {
 
                 // build fileContentsArray with contents from each snapshot
                 // version
+                String headerLine = null;
                 List<String> fileContentsArray = new ArrayList<>();
                 for (String versionInScope : versionsInScope) {
                     dates.clear();
@@ -816,6 +817,7 @@ public class RefsetMemberService {
                                 localSnowGeneratedFilePath);
 
                         logger.debug("uploading snowstorm genned file to S3");
+
                         // store file one s3
                         S3ConnectionWrapper.uploadToS3(awsVersionedPath,
                                 localSnowGeneratedTempDir.toString(), snowGeneratedFileName);
@@ -867,8 +869,19 @@ public class RefsetMemberService {
                     }
                     logger.debug("fileContentsArray after versionInScope "
                             + fileContentsArray.size() + " " + versionInScope);
+
+                    // If first file, store header so can print it later
+                    if (headerLine == null) {
+                        for (String line : fileContentsArray) {
+                            if (line.toLowerCase().startsWith("id")) {
+                                headerLine = line;
+                                break;
+                            }
+                        }
+                    }
                 }
 
+                /* Processed all intermediate files */
                 // put in a set to remove duplicates from fileContents
                 Set<String> fileContentsSet = new HashSet<>(fileContentsArray);
                 // sort fileContents
@@ -881,7 +894,17 @@ public class RefsetMemberService {
                             + File.separator + deltaSnowGeneratedFileName);
                     BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 
+                    // Write header onto delta file
+                    bw.write(headerLine);
+                    bw.newLine();
+
                     for (String line : fileContentsArrayList) {
+
+                        // Only print the header line once... Was done above
+                        if (line.toLowerCase().startsWith("id")) {
+                            continue;
+                        }
+
                         bw.write(line);
                         bw.newLine();
                     }
