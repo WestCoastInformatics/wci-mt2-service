@@ -261,7 +261,7 @@ public class HistoricDataMigrator {
     private final Map<String, String> editionOwnerMap = new HashMap<>();
 
     private Set<String> rttRefsetIds = null;
-    
+
     private Map<String, Edition> refsetEditions = new HashMap<>();
 
     private final Set<Refset> snowstormRefsets = new HashSet<>();
@@ -520,8 +520,9 @@ public class HistoricDataMigrator {
                                     refset.setVersionDate(branchDate);
                                     refset.setVersionStatus("PUBLISHED");
                                     refset.setActive(true);
-                                    
-                                    // add the edition to a map with the refset ID to retrieve it later
+
+                                    // add the edition to a map with the refset
+                                    // ID to retrieve it later
                                     refsetEditions.put(refsetId, edition);
 
                                     if (refsetNode.get("pt").has("term")) {
@@ -644,8 +645,13 @@ public class HistoricDataMigrator {
 
                     while (codeSystems.hasNext()) {
                         JsonNode codeSystem = codeSystems.next();
-                        
+
                         if (!codeSystem.has("name")) {
+                            continue;
+                        }
+
+                        if (codeSystem.get("name").asText().equalsIgnoreCase("kk")) {
+                            logger.info("Skipping odd code system 'Kk' as was likely for testing");
                             continue;
                         }
 
@@ -712,8 +718,9 @@ public class HistoricDataMigrator {
 
                         setMetadata(edition, defaultMeta);
                         service.add(edition);
-                        
-                        addOrganziation(editionOwnerMap.get(edition.getName()), edition, defaultMeta);
+
+                        addOrganziation(editionOwnerMap.get(edition.getName()), edition,
+                                defaultMeta);
                     }
                 }
             }
@@ -800,11 +807,11 @@ public class HistoricDataMigrator {
 
             while (codeSystems.hasNext()) {
                 JsonNode codeSystem = codeSystems.next();
-                
+
                 if (!codeSystem.has("name")) {
                     continue;
                 }
-                
+
                 if ("international edition".equals(codeSystem.get("name").asText().toLowerCase())) {
 
                     // At international Edition
@@ -910,9 +917,9 @@ public class HistoricDataMigrator {
             int ignoreCounter = 0;
 
             for (Refset refset : snowstormRefsets) {
-                
+
                 final Edition edition = refsetEditions.get(refset.getRefsetId());
-                
+
                 if (refsetsToIgnore.contains(refset.getRefsetId())) {
                     ignoreCounter++;
                     continue;
@@ -1102,8 +1109,8 @@ public class HistoricDataMigrator {
         }
     }
 
-    private Organization addOrganziation(final String orgName, final Edition edition, final Metadata meta)
-        throws Exception {
+    private Organization addOrganziation(final String orgName, final Edition edition,
+        final Metadata meta) throws Exception {
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);

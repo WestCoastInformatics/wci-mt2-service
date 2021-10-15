@@ -87,7 +87,7 @@ public class SecurityController extends BaseController {
                     content = {
                             @Content(mediaType = MediaType.TEXT_PLAIN,
                                     schema = @Schema(implementation = String.class),
-                                    examples = @ExampleObject(value = "")),
+                                    examples = @ExampleObject(value = "supersecretpwd**")),
                             @Content(mediaType = MediaType.APPLICATION_JSON,
                                     schema = @Schema(implementation = User.class))
                     }))

@@ -35,52 +35,78 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 			throw new WebApplicationException("IMS Authentication failed with invalid parameters.");
 		}
 
-		final ObjectMapper mapper = new ObjectMapper();
-		final JsonNode doc = mapper.readTree(password);
+		if (!password.contains("login") && !password.contains("roles")) {
 
-		logger.info("User is {}", userName);
+			final User user = new User();
 
-		// e.g.
-		// {
-		// "login": "jsmith",
-		// "password": null,
-		// "firstName": "John",
-		// "lastName": "Smith",
-		// "email": "***REMOVED***",
-		// "langKey": null,
-		// "roles": [
-		// "ROLE_confluence-users",
-		// "ROLE_ihtsdo-ops-admin",
-		// "ROLE_ihtsdo-sca-author",
-		// "ROLE_ihtsdo-tba-author",
-		// "ROLE_ihtsdo-tech-group",
-		// "ROLE_ihtsdo-users",
-		// "ROLE_jira-developers",
-		// "ROLE_jira-users",
-		// "ROLE_mapping-dev-team"
-		// ]
-		// }
-
-		// Construct user from document
-		final User user = new User();
-		user.setName(doc.get("firstName").asText() + " " + doc.get("lastName").asText());
-		user.setUserName(doc.get("login").asText());
-		user.setEmail(doc.get("email").asText());
-		user.getRoles().add(User.ROLE_USER);
-
-		final Iterator<JsonNode> iter = doc.get("roles").elements();
-		while (iter.hasNext()) {
-			JsonNode role = iter.next();
-			if ("ROLE_refset-administrators".equals(role.asText())) {
+			if ("admin".equalsIgnoreCase(password)) {
 				user.getRoles().add(User.ROLE_ADMIN);
-			}
-			if (!user.getRoles().contains(User.ROLE_ADMIN) && "ROLE_refset-users".equals(role.asText())) {
+			} else if ("author".equalsIgnoreCase(password)) {
+				user.getRoles().add(User.ROLE_AUTHOR);
+			} else if ("reviewer".equalsIgnoreCase(password)) {
+				user.getRoles().add(User.ROLE_REVIEWER);
+			} else if ("lead".equalsIgnoreCase(password)) {
+				user.getRoles().add(User.ROLE_LEAD);
+			} else {
 				user.getRoles().add(User.ROLE_USER);
 			}
-		}
 
-		user.setModifiedBy(user.getUserName());
-		return user;
+			user.setName("Demo " + userName);
+			user.setUserName(userName);
+			user.setEmail("not used");
+
+			user.setModifiedBy(user.getUserName());
+			return user;
+
+		} else {
+
+			final ObjectMapper mapper = new ObjectMapper();
+			final JsonNode doc = mapper.readTree(password);
+
+			logger.info("User is {}", userName);
+
+			// e.g.
+			// {
+			// "login": "jsmith",
+			// "password": null,
+			// "firstName": "John",
+			// "lastName": "Smith",
+			// "email": "***REMOVED***",
+			// "langKey": null,
+			// "roles": [
+			// "ROLE_confluence-users",
+			// "ROLE_ihtsdo-ops-admin",
+			// "ROLE_ihtsdo-sca-author",
+			// "ROLE_ihtsdo-tba-author",
+			// "ROLE_ihtsdo-tech-group",
+			// "ROLE_ihtsdo-users",
+			// "ROLE_jira-developers",
+			// "ROLE_jira-users",
+			// "ROLE_mapping-dev-team"
+			// ]
+			// }
+
+			// Construct user from document
+			final User user = new User();
+			user.setName(doc.get("firstName").asText() + " " + doc.get("lastName").asText());
+			user.setUserName(doc.get("login").asText());
+			user.setEmail(doc.get("email").asText());
+			user.getRoles().add(User.ROLE_USER);
+
+			final Iterator<JsonNode> iter = doc.get("roles").elements();
+			while (iter.hasNext()) {
+				JsonNode role = iter.next();
+				if ("ROLE_refset-administrators".equals(role.asText())) {
+					user.getRoles().add(User.ROLE_ADMIN);
+				}
+				if (!user.getRoles().contains(User.ROLE_ADMIN) && "ROLE_refset-users".equals(role.asText())) {
+					user.getRoles().add(User.ROLE_USER);
+				}
+			}
+
+			user.setModifiedBy(user.getUserName());
+			return user;
+		}
 	}
 
 	/* see superclass */

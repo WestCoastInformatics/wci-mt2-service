@@ -22,6 +22,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -51,6 +52,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
 	
 	/** The auth token. */
 	@Transient
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	private String authToken;
     
     /** A list of the roles this user has. */
