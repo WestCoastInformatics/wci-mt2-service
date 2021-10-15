@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * Base controller for error handling.
  */
-@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:4200", "https://dev-rt2.ihtsdotools.org", "https://uat-rt2.ihtsdotools.org", "https://rt2.ihtsdotools.org"}, allowCredentials = "true")
 public class BaseController {
 
     /** The Constant log. */
