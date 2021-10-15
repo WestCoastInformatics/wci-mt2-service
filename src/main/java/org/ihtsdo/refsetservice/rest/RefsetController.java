@@ -1049,7 +1049,7 @@ public class RefsetController extends BaseController {
                                     languageId, fileNameDate, startEffectiveTime,
                                     transientEffectiveTime, exportMetadata, withNames);
                         } else {
-                            uri = RefsetMemberService.exportDeltaRefsetRf2(refsetInternalId,
+                            uri = RefsetMemberService.exportRefsetRf2Delta(refsetInternalId,
                                     exportType, languageId, fileNameDate, startEffectiveTime,
                                     transientEffectiveTime, exportMetadata, withNames);
                         }
