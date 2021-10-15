@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
@@ -20,6 +21,11 @@ import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Reference implementation of the {@link SecurityService}.
@@ -37,9 +43,13 @@ public class SecurityService implements AutoCloseable {
 
 	/** The handler. */
 	private static SecurityServiceHandler handler = null;
+	
+	/** The handler. */
+	private static final String SESSION_USER_OBJECT_KEY = "RT2_USER_OBJECT";
 
 	/** The timeout. */
 	private static int timeout;
+	
 
 	/**
 	 * Instantiates an empty {@link SecurityServiceJpa}.
@@ -49,6 +59,50 @@ public class SecurityService implements AutoCloseable {
 	public SecurityService() throws Exception {
 		super();
 	}
+	
+	/**
+     * Get the user from the session.
+     *
+     * @return the user from the session or null
+     * @throws Exception the exception
+     */
+    public static User getUserFromSession() throws Exception {
+        
+        final Object object = getFromSession(SESSION_USER_OBJECT_KEY);
+        
+        if (object != null) {
+            
+            // return (User) object;
+            return new User("testUser", "Test User", "tuser@testuser.com", new HashSet<String>(Arrays.asList("rt-all-user", "rt-all-author", "rt-all-reviewer")));
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Get the something from the session.
+     *
+     * @param attributeName the session attribute name
+     * @return the object from the session or null
+     * @throws Exception the exception
+     */
+    public static Object getFromSession(final String attributeName) throws Exception {
+        
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+        
+        if (requestAttributes == null || requestAttributes.getRequest() == null ) {
+            return null;
+        }
+        
+        final HttpSession session = requestAttributes.getRequest().getSession();
+        
+        if (session == null) {
+            return null;
+        }
+        
+        Object object = session.getAttribute(attributeName);
+        return object;
+    }
 
 	/**
 	 * 

@@ -26,6 +26,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -736,6 +737,7 @@ public class RefsetService {
             results.setTotalKnown(true);
             
             logger.debug("******** searchRefsets results: " + ModelUtility.toJson(results));
+            logger.debug("^^^^^^^^^^^^ Session Access from RefsetService: " + (String) SecurityService.getFromSession("GREETING_MESSAGES"));
 
             return results;
         }

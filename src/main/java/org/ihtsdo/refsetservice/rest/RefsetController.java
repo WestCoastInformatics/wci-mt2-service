@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -61,6 +62,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -724,6 +727,11 @@ public class RefsetController extends BaseController {
         checkBinding(bindingResult);
         
         logger.debug("******** SESSION MESSAGE: " + request.getSession().getAttribute("GREETING_MESSAGES"));
+        request.getSession().setAttribute("GREETING_MESSAGES", "HI FROM searchDirectory");
+        logger.debug("******** Just Changed SESSION MESSAGE: " + request.getSession().getAttribute("GREETING_MESSAGES"));
+        
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+        HttpSession session = requestAttributes.getRequest().getSession();
 
         try (TerminologyService service = new TerminologyService()) {
 

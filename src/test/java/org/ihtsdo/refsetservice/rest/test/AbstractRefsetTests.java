@@ -210,8 +210,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
                     .isEqualToIgnoringCase("Lateralizable body structure reference set");
             assertThat(refset.getNarrative()).isEqualToIgnoringCase(
                     "The reference set contains all body structures that can be lateralized.");
-            assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
-                    || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
+//            assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
+//                    || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("900000000000012004");
             assertThat(refset.getEdition().getName())
@@ -238,8 +238,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
                     "Belgian simple reference set for translated animal materials");
             assertThat(refset.getNarrative()).isEqualToIgnoringCase(
                     "descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
-            assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
-                    || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
+//            assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
+//                    || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("11000172109");
             assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("Belgian Edition");
