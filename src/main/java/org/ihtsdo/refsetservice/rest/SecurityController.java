@@ -53,7 +53,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
         }, servers = {
                 @Server(description = "Dev Deployment", url = "https://dev.terminologyhub.com")
         })
-@CrossOrigin(origins = "https://demo.terminologyhub.com")
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 @SuppressWarnings("javadoc")

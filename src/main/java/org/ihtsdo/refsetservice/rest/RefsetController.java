@@ -113,13 +113,15 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}",
             produces = "application/json")
     public @ResponseBody Refset getRefset(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId) throws Exception {
+    final String refsetInternalId, HttpServletRequest request) throws Exception {
 
         try {
 
             logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
             
             final Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
+            
+            request.getSession().setAttribute("GREETING_MESSAGES", "HI FROM getRefset");
 
             return refset;
 
@@ -716,10 +718,12 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search",
             produces = "application/json")
     public @ResponseBody ResultList<Refset> searchDirectory(final SearchParameters searchParameters, final boolean searchConcepts,
-        final BindingResult bindingResult) throws Exception {
+        final BindingResult bindingResult, HttpServletRequest request) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
+        
+        logger.debug("******** SESSION MESSAGE: " + request.getSession().getAttribute("GREETING_MESSAGES"));
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1097,7 +1101,6 @@ public class RefsetController extends BaseController {
                     required = true, dataType = "string", paramType = "path"),
     })
     @RecordMetric
-    @CrossOrigin(origins = "http://localhost:4200")
     @RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}",
             produces = "application/json")
     public @ResponseBody ResponseEntity<Resource> downloadExport(@PathVariable(value = "fileName")
