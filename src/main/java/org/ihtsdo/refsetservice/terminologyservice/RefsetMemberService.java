@@ -2106,31 +2106,28 @@ public class RefsetMemberService {
 
                     final JsonNode conceptNode = itemIterator.next();
 
-                    if (conceptNode.get("active").asBoolean()) {
+                    Concept concept = new Concept();
+                    concept.setActive(conceptNode.get("active").asBoolean());
+                    concept.setId(conceptNode.get("id").asText());
+                    concept.setCode(conceptNode.get("id").asText());
 
-                        Concept concept = new Concept();
-                        concept.setActive(conceptNode.get("active").asBoolean());
-                        concept.setId(conceptNode.get("id").asText());
-                        concept.setCode(conceptNode.get("id").asText());
-
-                        if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
-                            concept.setDefined(true);
-                        } else {
-                            concept.setDefined(false);
-                        }
-
-                        if (conceptNode.get("pt") != null) {
-                            concept.setName(conceptNode.get("pt").get("term").asText());
-                        }
-
-                        if (conceptNode.has("isLeafInferred")) {
-                            concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
-                        }
-
-                        setConceptPermissions(concept);
-                        concept.setMemberOfRefset(searchRefsetMembers);
-                        returnConcepts.add(concept);
+                    if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                        concept.setDefined(true);
+                    } else {
+                        concept.setDefined(false);
                     }
+
+                    if (conceptNode.get("pt") != null) {
+                        concept.setName(conceptNode.get("pt").get("term").asText());
+                    }
+
+                    if (conceptNode.has("isLeafInferred")) {
+                        concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
+                    }
+
+                    setConceptPermissions(concept);
+                    concept.setMemberOfRefset(searchRefsetMembers);
+                    returnConcepts.add(concept);
                 }
 
                 // Only populated if search results exist
