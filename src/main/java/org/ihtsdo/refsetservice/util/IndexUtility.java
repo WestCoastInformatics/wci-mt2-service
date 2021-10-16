@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.ManyToMany;
@@ -36,10 +35,8 @@ import javax.ws.rs.core.Response.Status.Family;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.hibernate.search.backend.elasticsearch.ElasticsearchExtension;
 import org.hibernate.search.backend.elasticsearch.index.ElasticsearchIndexManager;
 import org.hibernate.search.backend.elasticsearch.metamodel.ElasticsearchIndexDescriptor;
@@ -66,9 +63,6 @@ import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 
 /**
  * Performs utility functions relating to Lucene indexes and Hibernate Search.
@@ -688,72 +682,118 @@ public final class IndexUtility {
     @SuppressWarnings("unchecked")
     public static <T> SearchResult<T> applyPfsToLuceneQuery(final Class<T> clazz, final String query,
         final PfsParameter pfs, final EntityManager manager, final List<String> projections) throws Exception {
-        
+
         SearchSession searchSession = Search.session(manager);
         SearchMapping mapping = Search.mapping(manager.getEntityManagerFactory());
 
         // Build up the query
         final StringBuilder pfsQuery = new StringBuilder();
         pfsQuery.append(StringUtility.isEmpty(query) ? "*:*" : query);
-        
+
         // Set up the "full text query"
 
         // construct the query
-        String finalQuery = (pfsQuery.toString().startsWith(" AND "))
-            ? pfsQuery.toString().substring(5) : pfsQuery.toString();
-              
+        String finalQuery =
+                (pfsQuery.toString().startsWith(" AND ")) ? pfsQuery.toString().substring(5) : pfsQuery.toString();
+
         SearchResult<T> result;
         SearchScope<T> scope = searchSession.scope(clazz);
         SearchPredicateFactory predicateFactory = scope.predicate();
         SearchPredicate predicate;
-        
+
         logger.debug("    query = " + finalQuery + ", " + pfs);
-        
-        // Set<String> fieldNames = IndexUtility.getIndexedFieldNames(clazz, "date");
-        // logger.debug("    indexedDateFieldNames: " + fieldNames);
+
+        final Set<String> dateFieldNames = IndexUtility.getIndexedFieldNames(clazz, "date");
+        logger.debug("    indexedDateFieldNames: " + dateFieldNames);
 
         // Directory indexmanager
-        if (!PropertyUtility.getProperties()
-                .getProperty("spring.jpa.properties.hibernate.search.backend.type").trim()
+        if (!PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.type").trim()
                 .equals("elasticsearch")) {
 
             final QueryParser queryParser = new MultiFieldQueryParser(
                     IndexUtility.getIndexedFieldNames(clazz, "string").toArray(new String[] {}),
                     mapping.indexedEntity(clazz).indexManager().unwrap(LuceneIndexManager.class).searchAnalyzer());
 
-            predicate = predicateFactory
-                    .extension(LuceneExtension.get())
-                    .fromLuceneQuery(queryParser.parse(finalQuery)).toPredicate();
+            predicate = predicateFactory.extension(LuceneExtension.get()).fromLuceneQuery(queryParser.parse(finalQuery))
+                    .toPredicate();
         }
 
         // elasticsearch index manager
-        else if (PropertyUtility.getProperties()
-                .getProperty("spring.jpa.properties.hibernate.search.backend.type").trim()
-                .equals("elasticsearch")) {
-            
-            String fullQueryString = "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\"" + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
-            
-//            if (finalQuery.contains("versionDate")) {
-//                fullQueryString = "{\"range\":{\"versionDate\": {\"gt\": \"2020-11-30\", \"lt\": \"2020-11-30\"} }}";
-//            }
-            
-            logger.debug("********* elasticsearch fullQueryString: " + fullQueryString);
-            
+        else if (PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.type")
+                .trim().equals("elasticsearch")) {
+
+            String fullQueryString = "";
+
+            boolean hasDate = false;
+            for (String dateFieldName : dateFieldNames) {
+                if (!hasDate && finalQuery.contains(dateFieldName + ":")) {
+                    hasDate = true;
+                    continue;
+                }
+            }
+
+            if (hasDate) {
+
+                logger.debug("QUery has date(s) fields");
+
+                final String booleanQueryFormat = "{ \"bool\": { \"must\": [ #QUERY_STRING#, #DATE_RANGES# ] } }";
+                final String dateQueryFormat =
+                        "{\"range\": {\"#DATE_FIELD_NAME#\": {\"gte\": \"#DATE#\",\"lte\": \"#DATE#\",\"format\": \"uuuu-MM-dd\"}}}";
+
+                final Map<String, String> dateSegments = new HashMap<>();
+                // remove date segments from string and add to list.
+                for (String dateFieldName : dateFieldNames) {
+
+                    if (finalQuery.contains(dateFieldName + ":")) {
+                        final int startPosition = finalQuery.indexOf(dateFieldName);
+                        // 11 = : + number of characters in date (10)
+                        final int endPosition = startPosition + dateFieldName.length() + 11;
+                        final String[] dateQuery = finalQuery.substring(startPosition, endPosition).split(":");
+
+                        dateSegments.put(finalQuery.substring(startPosition, endPosition), dateQueryFormat
+                                .replace("#DATE_FIELD_NAME#", dateQuery[0]).replace("#DATE#", dateQuery[1]));
+                    }
+                }
+
+                String dateFreeQueryString = finalQuery;
+                StringBuilder dateRangeQueryString = new StringBuilder();
+                for (Map.Entry<String, String> dateSegment : dateSegments.entrySet()) {
+                    dateFreeQueryString = dateFreeQueryString.replace(dateSegment.getKey(), "");
+                    dateRangeQueryString.append(dateSegment.getValue());
+                }
+
+                // Remove leading AND OR and clear out empty query_string
+                dateFreeQueryString = dateFreeQueryString.replace("() AND", "").replace("( AND", " (")
+                        .replace("( OR", " (").replace("() OR", "");
+                logger.debug("Date free query string {}", dateFreeQueryString);
+
+                final String queryString =
+                        "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""
+                                + StringEscapeUtils.escapeJson(dateFreeQueryString) + "\"}}";
+
+                fullQueryString = booleanQueryFormat.replace("#QUERY_STRING#", queryString).replace("#DATE_RANGES#",
+                        dateRangeQueryString.toString());
+                logger.debug("********* elasticsearch fullQueryString with dates: " + fullQueryString);
+
+            } else {
+
+                fullQueryString =
+                        "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""
+                                + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
+                logger.debug("********* elasticsearch fullQueryString: " + fullQueryString);
+            }
+
             // Need to escape double-quotes for the json
-            predicate = predicateFactory
-                    .extension(ElasticsearchExtension.get())
-                    .fromJson(fullQueryString)
-                    .toPredicate();
+            predicate =
+                    predicateFactory.extension(ElasticsearchExtension.get()).fromJson(fullQueryString).toPredicate();
         }
 
         // Unknown indexmanager type
         else {
-            throw new Exception(
-                    "Unsupported spring.jpa.properties.hibernate.search.backend.type = "
-                            + PropertyUtility.getProperties().getProperty(
-                                    "spring.jpa.properties.hibernate.search.backend.type"));
+            throw new Exception("Unsupported spring.jpa.properties.hibernate.search.backend.type = " + PropertyUtility
+                    .getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.type"));
         }
-        
+
         // the constructed sort fields to sort on
         final List<SearchSort> sortFields = new ArrayList<>();
 
@@ -775,13 +815,13 @@ public final class IndexUtility {
                     sortFieldNames = new ArrayList<>();
                     sortFieldNames.add(pfs.getSort());
                 }
-                
+
                 for (final String sortFieldName : sortFieldNames) {
 
                     // the computed string name of the indexed field to sort by
                     String sortFieldStr = null;
                     SearchSort searchSort;
-                    
+
                     // if a subfield search (e.g. FIELD1.FIELD2) skip
                     // preconditions
                     if (sortFieldName.contains(".")) {
@@ -791,14 +831,13 @@ public final class IndexUtility {
                     // otherwise, check preconditions
                     else {
 
-                        final Map<String, Boolean> nameToAnalyzedMap = IndexUtility
-                                .getNameAnalyzedPairsFromAnnotation(clazz, sortFieldName);
+                        final Map<String, Boolean> nameToAnalyzedMap =
+                                IndexUtility.getNameAnalyzedPairsFromAnnotation(clazz, sortFieldName);
 
                         // check existence of the annotated get[OffsetName]()
                         // method
                         if (nameToAnalyzedMap.size() == 0) {
-                            throw new Exception(clazz.getName()
-                                    + " does not have declared, annotated method for field "
+                            throw new Exception(clazz.getName() + " does not have declared, annotated method for field "
                                     + sortFieldName);
                         }
 
@@ -812,8 +851,7 @@ public final class IndexUtility {
                         // analyzed,
                         // use
                         // this as sort
-                        else if (nameToAnalyzedMap.get("") != null
-                                && nameToAnalyzedMap.get("").equals(false)) {
+                        else if (nameToAnalyzedMap.get("") != null && nameToAnalyzedMap.get("").equals(false)) {
                             sortFieldStr = sortFieldName;
                         }
 
@@ -821,11 +859,10 @@ public final class IndexUtility {
                         // exception
                         if (sortFieldStr == null) {
                             throw new Exception("Could not retrieve a non-analyzed Field "
-                                    + "annotation for get method for variable name "
-                                    + sortFieldName);
+                                    + "annotation for get method for variable name " + sortFieldName);
                         }
                     }
-  
+
                     if (pfs.isAscending()) {
                         searchSort = scope.sort().field(sortFieldStr).asc().toSort();
                     } else {
@@ -837,42 +874,40 @@ public final class IndexUtility {
                 }
             }
         }
-        
+
         // the constructed projections
         SearchProjection<T> projectionSelect = null;
-        
+
         projectionSelect = (SearchProjection<T>) scope.projection().score().toProjection();
-        
+
         if (projections.contains("score")) {
             projectionSelect = (SearchProjection<T>) scope.projection().score().toProjection();
-            
+
         } else if (projections.contains("entity")) {
             projectionSelect = scope.projection().entity().toProjection();
-            
+
         } else if (projections.contains("id")) {
             projectionSelect = (SearchProjection<T>) scope.projection().entityReference().toProjection();
         }
-        
+
         SearchQuery<T> searchQuery = searchSession.search(scope)
-            //.select(projectionSelect)
-            .where(predicate)
-            .sort( f -> f.composite( sortBuilder -> { 
-                for (final SearchSort sortField : sortFields) {
-                    sortBuilder.add(sortField);
-                }
-            }))
-            .toQuery();
-        
+                // .select(projectionSelect)
+                .where(predicate).sort(f -> f.composite(sortBuilder -> {
+                    for (final SearchSort sortField : sortFields) {
+                        sortBuilder.add(sortField);
+                    }
+                })).toQuery();
+
         // if start index and max results are set, set paging
         if (pfs != null && pfs.getOffset() >= 0 && pfs.getLimit() >= 0) {
             result = searchQuery.fetch(pfs.getOffset(), pfs.getLimit());
         } else {
             result = searchQuery.fetch(0, 200000);
         }
-        
+
         return result;
     }
-
+    
     /**
      * Add wildcard suffixes to a query
      *
