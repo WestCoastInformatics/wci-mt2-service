@@ -71,12 +71,11 @@ public class SecurityService implements AutoCloseable {
         final Object object = getFromSession(SESSION_USER_OBJECT_KEY);
         
         if (object != null) {
-            
-            // return (User) object;
-            return new User("testUser", "Test User", "tuser@testuser.com", new HashSet<String>(Arrays.asList("rt-all-user", "rt-all-author", "rt-all-reviewer")));
+            return (User) object;
         }
         
-        return null;
+        return new User("testUser", "Test User", "tuser@testuser.com", new HashSet<String>(Arrays.asList("rt-all-user", "rt-all-author", "rt-all-reviewer")));
+        //return null;
     }
     
     /**

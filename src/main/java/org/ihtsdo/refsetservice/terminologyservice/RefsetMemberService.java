@@ -1642,11 +1642,25 @@ public class RefsetMemberService {
      */
     public static void clearAllMemberCaches(final String refsetInternalId) throws Exception {
 
-        logger.debug(" Clearing caches for refset: " + refsetInternalId);
-
-        if (membersCache.containsKey(refsetInternalId)) {
-            membersCache.remove(refsetInternalId);
+        if (refsetInternalId != null) {
+            
+            logger.debug(" Clearing caches for refset: " + refsetInternalId);
+            
+            if (membersCache.containsKey(refsetInternalId)) {
+                membersCache.remove(refsetInternalId);
+            }
+            
+            if (ancestorsCache.containsKey(refsetInternalId)) {
+                ancestorsCache.remove(refsetInternalId);
+            }
+        } else {
+            
+            logger.debug(" Clearing caches for all refsets");
+            
+            membersCache.clear();
+            ancestorsCache.clear();
         }
+        
     }
 
     /**
@@ -3336,6 +3350,9 @@ public class RefsetMemberService {
                     }
                 }
             }
+            
+            // caches the ancestors again for this refset
+            //cacheMemberAncestors(refsetInternalId);
         }
 
         return unaddedConcepts;
