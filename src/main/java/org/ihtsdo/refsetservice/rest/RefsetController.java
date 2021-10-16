@@ -30,6 +30,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
@@ -122,7 +123,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
             
-            final Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
+            final Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
             
             request.getSession().setAttribute("GREETING_MESSAGES", "HI FROM getRefset");
 
@@ -326,7 +327,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
-            final String refsetInternalId = RefsetService.createRefset(getUserFromSession(), refsetParameters);
+            final String refsetInternalId = RefsetService.createRefset(SecurityService.getUserFromSession(), refsetParameters);
             
             if (refsetInternalId.startsWith("Concept Id")) {
                 return "{\"error\": \"" + refsetInternalId + "\"}";
@@ -361,7 +362,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
-            final String result = RefsetService.modifyRefset(getUserFromSession(), refsetInternalId, refsetParameters);
+            final String result = RefsetService.modifyRefset(SecurityService.getUserFromSession(), refsetInternalId, refsetParameters);
             
             if (result.startsWith("Error")) {
                 return "{\"error\": \"" + result + "\"}";
@@ -419,7 +420,7 @@ public class RefsetController extends BaseController {
             logger.debug("******** getWorkflowHistory refsetInternalId: " + refsetInternalId + " ; searchParameters: "
                     + ModelUtility.toJson(searchParameters));
             
-            final Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
+            final Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
             ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(refset, searchParameters);
            
             return results;
@@ -450,10 +451,10 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; action: " + action + " ; notes: " + notes);
             
-            Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
+            Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
             
-            refset = WorkflowService.setWorkflowStatusByAction(getUserFromSession(), action, refset, notes);
+            refset = WorkflowService.setWorkflowStatusByAction(SecurityService.getUserFromSession(), action, refset, notes);
             
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
@@ -489,10 +490,10 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** updateWorkflowNote: refsetInternalId: " + refsetInternalId + " ;notes: " + notes);
             
-            Refset refset = RefsetService.getRefset(getUserFromSession(), refsetInternalId);
+            Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
             
-            WorkflowService.updateWorkflowNote(getUserFromSession(), refset, notes);
+            WorkflowService.updateWorkflowNote(SecurityService.getUserFromSession(), refset, notes);
             
             return "true";
 
@@ -521,7 +522,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
             
-            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(getUserFromSession(), refsetInternalId);
+            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(SecurityService.getUserFromSession(), refsetInternalId);
             
             if (newRefsetInternalId.startsWith("Error")) {
                 return "{\"error\": \"" + newRefsetInternalId + "\"}";
@@ -551,7 +552,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** inactiveRefset: refsetInternalId: " + refsetInternalId);
             
-            final String status = RefsetService.inactivateRefset(getUserFromSession(), refsetInternalId);
+            final String status = RefsetService.inactivateRefset(SecurityService.getUserFromSession(), refsetInternalId);
 
             return "{\"status\": \"" + status + "\"}";
 
@@ -577,7 +578,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             
-            final String status = RefsetService.deleteInDevelopmentVersion(getUserFromSession(), refsetInternalId, true);
+            final String status = RefsetService.deleteInDevelopmentVersion(SecurityService.getUserFromSession(), refsetInternalId, true);
 
             return "{\"status\": \"" + status + "\"}";
 
@@ -738,7 +739,7 @@ public class RefsetController extends BaseController {
             logger.debug("******** searchDirectory searchParameters: "
                     + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts);
             
-            ResultList<Refset> results = RefsetService.searchRefsets(getUserFromSession(), searchParameters, searchConcepts);
+            ResultList<Refset> results = RefsetService.searchRefsets(SecurityService.getUserFromSession(), searchParameters, searchConcepts);
            
             return results;
 
