@@ -2,11 +2,13 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -93,16 +95,20 @@ public class SecurityController extends BaseController {
                     }))
     public @ResponseBody ResponseEntity<User> authenticate(
     		@PathVariable(value = "userName") final String userName,
-    		final @org.springframework.web.bind.annotation.RequestBody String password) throws Exception {
+    		final @org.springframework.web.bind.annotation.RequestBody String password, HttpServletRequest request) throws Exception {
     	
     	logger.info("RESTful call POST (Security): authentication for username = {}", userName);
     	
-    	
     	try (SecurityService securityService = new SecurityService()) {
+    	    
     		final User user = securityService.authenticate(userName, password);
+    		
     		if (user == null || user.getAuthToken() == null) {
     			throw new Exception("Unable to authenticate user");
     		}
+    		
+    		logger.debug("******** SESSION USER: " + ModelUtility.toJson(user));
+    		request.getSession().setAttribute(SecurityService.SESSION_USER_OBJECT_KEY, user);
     		return new ResponseEntity<>(user, new HttpHeaders(), HttpStatus.OK);
     	}
     }

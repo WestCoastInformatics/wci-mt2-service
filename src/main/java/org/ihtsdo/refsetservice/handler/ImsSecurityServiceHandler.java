@@ -37,19 +37,29 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
 		if (!password.contains("login") && !password.contains("roles")) {
 
+		    logger.debug("Demo Password: " + password);
+		    
 			final User user = new User();
-
-			if ("admin".equalsIgnoreCase(password)) {
-				user.getRoles().add(User.ROLE_ADMIN);
-			} else if ("author".equalsIgnoreCase(password)) {
-				user.getRoles().add(User.ROLE_AUTHOR);
-			} else if ("reviewer".equalsIgnoreCase(password)) {
-				user.getRoles().add(User.ROLE_REVIEWER);
-			} else if ("lead".equalsIgnoreCase(password)) {
-				user.getRoles().add(User.ROLE_LEAD);
-			} else {
-				user.getRoles().add(User.ROLE_USER);
-			}
+			user.getRoles().add(User.ROLE_USER);
+			
+			String passwordText = password.toLowerCase();
+            
+            if (passwordText.contains(User.ROLE_ADMIN.toLowerCase())) {
+                user.getRoles().add(User.ROLE_ADMIN);
+            }
+            
+            if (passwordText.contains(User.ROLE_AUTHOR.toLowerCase())) {
+                user.getRoles().add(User.ROLE_AUTHOR);
+            }
+            
+            if (passwordText.contains(User.ROLE_REVIEWER.toLowerCase())) {
+                user.getRoles().add(User.ROLE_REVIEWER);
+            }
+            
+            if (passwordText.contains(User.ROLE_LEAD.toLowerCase())) {
+                user.getRoles().add(User.ROLE_LEAD);
+            }
+			
 
 			user.setName("Demo " + userName);
 			user.setUserName(userName);

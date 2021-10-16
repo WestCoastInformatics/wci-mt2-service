@@ -28,6 +28,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
@@ -125,6 +126,7 @@ public class RefsetController extends BaseController {
             
             final Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
             
+            logger.debug("******** SESSION USER: " + ModelUtility.toJson(SecurityService.getUserFromSession()));
             request.getSession().setAttribute("GREETING_MESSAGES", "HI FROM getRefset");
 
             return refset;
@@ -728,6 +730,7 @@ public class RefsetController extends BaseController {
         checkBinding(bindingResult);
         
         logger.debug("******** SESSION MESSAGE: " + request.getSession().getAttribute("GREETING_MESSAGES"));
+        logger.debug("******** SESSION USER: " + ModelUtility.toJson(SecurityService.getUserFromSession()));
         request.getSession().setAttribute("GREETING_MESSAGES", "HI FROM searchDirectory");
         logger.debug("******** Just Changed SESSION MESSAGE: " + request.getSession().getAttribute("GREETING_MESSAGES"));
         

@@ -45,7 +45,7 @@ public class SecurityService implements AutoCloseable {
 	private static SecurityServiceHandler handler = null;
 	
 	/** The handler. */
-	private static final String SESSION_USER_OBJECT_KEY = "RT2_USER_OBJECT";
+	public static final String SESSION_USER_OBJECT_KEY = "RT2_USER_OBJECT";
 
 	/** The timeout. */
 	private static int timeout;

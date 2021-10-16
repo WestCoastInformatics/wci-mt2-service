@@ -1,6 +1,8 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -17,7 +19,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
  * Abstractly represents something that has an id.
  */
 @MappedSuperclass
-public abstract class AbstractHasId implements HasId {
+public abstract class AbstractHasId implements HasId, Serializable {
 
     /** The id. */
     @Id
