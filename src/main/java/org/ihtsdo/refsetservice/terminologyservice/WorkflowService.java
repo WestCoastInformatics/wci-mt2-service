@@ -53,71 +53,71 @@ public final class WorkflowService {
     public static final String TEMP_BRANCH_NAME = "temp";
 
     /** The PUBLISHED workflow status . */
-    public static final String PUBLISHED = "PUBLISHED";
+    public static final String PUBLISHED_STATE = "PUBLISHED";
 
     /** The READY_FOR_EDIT workflow status . */
-    public static final String READY_FOR_EDIT = "READY_FOR_EDIT";
+    public static final String READY_FOR_EDIT_STATE = "READY_FOR_EDIT";
 
     /** The IN_EDIT workflow status . */
-    public static final String IN_EDIT = "IN_EDIT";
+    public static final String IN_EDIT_STATE = "IN_EDIT";
 
     /** The READY_FOR_REVIEW workflow status . */
-    public static final String READY_FOR_REVIEW = "READY_FOR_REVIEW";
+    public static final String READY_FOR_REVIEW_STATE = "READY_FOR_REVIEW";
 
     /** The IN_REVIEW workflow status . */
-    public static final String IN_REVIEW = "IN_REVIEW";
+    public static final String IN_REVIEW_STATE = "IN_REVIEW";
 
     /** The REVIEW_COMPLETED workflow status . */
-    public static final String REVIEW_COMPLETED = "REVIEW_COMPLETED";
+    public static final String REVIEW_COMPLETED_STATE = "REVIEW_COMPLETED";
 
     /** The READY_FOR_PUBLICATION workflow status . */
-    public static final String READY_FOR_PUBLICATION = "READY_FOR_PUBLICATION";
+    public static final String READY_FOR_PUBLICATION_STATE = "READY_FOR_PUBLICATION";
 
     /** The EDIT workflow action . */
-    public static final String CREATE = "CREATE";
+    public static final String CREATE_ACTION = "CREATE";
 
     /** The EDIT workflow action . */
-    public static final String EDIT = "EDIT";
+    public static final String EDIT_ACTION = "EDIT";
 
     /** The FINISH_EDIT workflow action . */
-    public static final String FINISH_EDIT = "FINISH_EDIT";
+    public static final String FINISH_EDIT_ACTION = "FINISH_EDIT";
 
     /** The REQUEST_REVIEW workflow action . */
-    public static final String REQUEST_REVIEW = "REQUEST_REVIEW";
+    public static final String REQUEST_REVIEW_ACTION = "REQUEST_REVIEW";
 
     /** The WITHDRAW workflow action . */
-    public static final String WITHDRAW = "WITHDRAW";
+    public static final String WITHDRAW_ACTION = "WITHDRAW";
 
     /** The REVIEW workflow action . */
-    public static final String REVIEW = "REVIEW";
+    public static final String REVIEW_ACTION = "REVIEW";
 
     /** The REJECT_REVIEW workflow action . */
-    public static final String REJECT_REVIEW = "REJECT_REVIEW";
+    public static final String REJECT_REVIEW_ACTION = "REJECT_REVIEW";
 
     /** The ACCEPT_REVIEW workflow action . */
-    public static final String ACCEPT_REVIEW = "ACCEPT_REVIEW";
+    public static final String ACCEPT_REVIEW_ACTION = "ACCEPT_REVIEW";
 
     /** The UNASSIGN workflow action . */
-    public static final String UNASSIGN = "UNASSIGN";
+    public static final String UNASSIGN_ACTION = "UNASSIGN";
 
     /** The REQUEST_PUBLICATION workflow action . */
-    public static final String REQUEST_PUBLICATION = "REQUEST_PUBLICATION";
+    public static final String REQUEST_PUBLICATION_ACTION = "REQUEST_PUBLICATION";
 
     /** The FAILS_RVF workflow action . */
-    public static final String FAILS_RVF = "FAILS_RVF";
+    public static final String FAILS_RVF_ACTION = "FAILS_RVF";
 
     /** The REFSET_PUBLISHED workflow action . */
-    public static final String REFSET_PUBLISHED = "REFSET_PUBLISHED";
+    public static final String REFSET_PUBLISHED_ACTION = "REFSET_PUBLISHED";
 
     /** The order of workflow steps . */
     public static final List<String> WORKFLOW_STATUSES =
-            new ArrayList<>(Arrays.asList(READY_FOR_EDIT, IN_EDIT, READY_FOR_REVIEW, IN_REVIEW,
-                    REVIEW_COMPLETED, READY_FOR_PUBLICATION, PUBLISHED));
+            new ArrayList<>(Arrays.asList(READY_FOR_EDIT_STATE, IN_EDIT_STATE, READY_FOR_REVIEW_STATE, IN_REVIEW_STATE,
+                    REVIEW_COMPLETED_STATE, READY_FOR_PUBLICATION_STATE, PUBLISHED_STATE));
 
     /** The order of workflow actions . */
     public static final List<String> WORKFLOW_ACTIONS =
-            new ArrayList<>(Arrays.asList(EDIT, FINISH_EDIT, REQUEST_REVIEW, REVIEW, REJECT_REVIEW,
-                    ACCEPT_REVIEW, UNASSIGN, REQUEST_PUBLICATION, FAILS_RVF, REFSET_PUBLISHED));
+            new ArrayList<>(Arrays.asList(EDIT_ACTION, FINISH_EDIT_ACTION, REQUEST_REVIEW_ACTION, REVIEW_ACTION, REJECT_REVIEW_ACTION,
+                    ACCEPT_REVIEW_ACTION, UNASSIGN_ACTION, REQUEST_PUBLICATION_ACTION, FAILS_RVF_ACTION, REFSET_PUBLISHED_ACTION));
 
     /** The file that contains workflow actions by user and step. */
     private static final String WORKFLOW_PERMUTATIONS_FILE_NAME =
@@ -233,7 +233,7 @@ public final class WorkflowService {
         final String currentStatus = refset.getWorkflowStatus();
         String role = User.ROLE_AUTHOR;
 
-        if (Arrays.asList(READY_FOR_REVIEW, IN_REVIEW).contains(currentStatus)) {
+        if (Arrays.asList(READY_FOR_REVIEW_STATE, IN_REVIEW_STATE).contains(currentStatus)) {
             role = User.ROLE_REVIEWER;
         }
 
@@ -245,8 +245,8 @@ public final class WorkflowService {
 
         // if edits have just been completed then merge the edit branch into the
         // refset branch and delete the edit branch
-        if (currentStatus.equals(IN_EDIT)
-                && (Arrays.asList(REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action))) {
+        if (currentStatus.equals(IN_EDIT_STATE)
+                && (Arrays.asList(REQUEST_REVIEW_ACTION, REQUEST_PUBLICATION_ACTION).contains(action))) {
 
             final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(),
                     refset.getRefsetId(), notes);
@@ -264,13 +264,13 @@ public final class WorkflowService {
         }
 
         // else if this is the start of edits create the refset edit branch
-        else if (action.equals(EDIT)) {
+        else if (action.equals(EDIT_ACTION)) {
             createEditBranch(refset.getEditionBranch(), refset.getRefsetId());
         }
 
         // if publication is being requested merge the refset branch into the
         // edition branch
-        if (action.equals(REQUEST_PUBLICATION)) {
+        if (action.equals(REQUEST_PUBLICATION_ACTION)) {
 
             final boolean merged = mergeRefsetIntoEditionBranch(refset.getEditionBranch(),
                     refset.getRefsetId(), notes);
@@ -306,7 +306,7 @@ public final class WorkflowService {
             refset.setWorkflowStatus(status);
 
             // Published is the final status so set the version information
-            if (status.equals(PUBLISHED)) {
+            if (status.equals(PUBLISHED_STATE)) {
 
                 // get the latest edition version branch
                 final ResultList<String> branchVersions =
@@ -482,7 +482,7 @@ public final class WorkflowService {
     public static String getAssignedUserName(final Refset refset) throws Exception {
 
         // if the refset isn't being edited or reviewed no one is assigned
-        if (!Arrays.asList(IN_EDIT, IN_REVIEW).contains(refset.getWorkflowStatus())) {
+        if (!Arrays.asList(IN_EDIT_STATE, IN_REVIEW_STATE).contains(refset.getWorkflowStatus())) {
             return "";
         }
 
@@ -843,7 +843,7 @@ public final class WorkflowService {
     public static String getNextWorkflowStatus(final String currentStatus) {
 
         // Published is the final status
-        if (currentStatus.equals(PUBLISHED)) {
+        if (currentStatus.equals(PUBLISHED_STATE)) {
             return null;
         }
 
@@ -867,66 +867,66 @@ public final class WorkflowService {
         final String currentStatus = refset.getWorkflowStatus();
 
         // Published is the final status so no edits are allowed anymore,
-        if (currentStatus == null || currentStatus.equals(PUBLISHED)) {
+        if (currentStatus == null || currentStatus.equals(PUBLISHED_STATE)) {
             return allowedStatuses;
         }
 
         // only the assigned user can edit or review
         if (!user.getUserName().equals(refset.getAssignedUser())
-                && Arrays.asList(IN_EDIT, IN_REVIEW).contains(currentStatus)) {
+                && Arrays.asList(IN_EDIT_STATE, IN_REVIEW_STATE).contains(currentStatus)) {
             return allowedStatuses;
         }
 
         // set status permissions for AUTHORS
         if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
 
-            if (Arrays.asList(REVIEW_COMPLETED, READY_FOR_PUBLICATION).contains(currentStatus)) {
-                allowedStatuses.add(READY_FOR_EDIT);
+            if (Arrays.asList(REVIEW_COMPLETED_STATE, READY_FOR_PUBLICATION_STATE).contains(currentStatus)) {
+                allowedStatuses.add(READY_FOR_EDIT_STATE);
             }
 
-            if (Arrays.asList(READY_FOR_EDIT, READY_FOR_REVIEW, REVIEW_COMPLETED)
+            if (Arrays.asList(READY_FOR_EDIT_STATE, READY_FOR_REVIEW_STATE, REVIEW_COMPLETED_STATE)
                     .contains(currentStatus)) {
-                allowedStatuses.add(IN_EDIT);
+                allowedStatuses.add(IN_EDIT_STATE);
             }
 
-            if (Arrays.asList(READY_FOR_EDIT, IN_EDIT, REVIEW_COMPLETED).contains(currentStatus)) {
-                allowedStatuses.add(READY_FOR_REVIEW);
+            if (Arrays.asList(READY_FOR_EDIT_STATE, IN_EDIT_STATE, REVIEW_COMPLETED_STATE).contains(currentStatus)) {
+                allowedStatuses.add(READY_FOR_REVIEW_STATE);
             }
 
-            if (Arrays.asList(READY_FOR_EDIT, IN_EDIT, READY_FOR_REVIEW).contains(currentStatus)) {
-                allowedStatuses.add(READY_FOR_PUBLICATION);
+            if (Arrays.asList(READY_FOR_EDIT_STATE, IN_EDIT_STATE, READY_FOR_REVIEW_STATE).contains(currentStatus)) {
+                allowedStatuses.add(READY_FOR_PUBLICATION_STATE);
             }
 
-            if (Arrays.asList(READY_FOR_PUBLICATION).contains(currentStatus)) {
-                allowedStatuses.add(PUBLISHED);
+            if (Arrays.asList(READY_FOR_PUBLICATION_STATE).contains(currentStatus)) {
+                allowedStatuses.add(PUBLISHED_STATE);
             }
         }
 
         // set status permissions for REVIEWERS
         if (user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
 
-            if (Arrays.asList(IN_REVIEW).contains(currentStatus)) {
-                allowedStatuses.add(READY_FOR_EDIT);
+            if (Arrays.asList(IN_REVIEW_STATE).contains(currentStatus)) {
+                allowedStatuses.add(READY_FOR_EDIT_STATE);
             }
 
-            if (Arrays.asList(READY_FOR_REVIEW).contains(currentStatus)) {
-                allowedStatuses.add(IN_REVIEW);
+            if (Arrays.asList(READY_FOR_REVIEW_STATE).contains(currentStatus)) {
+                allowedStatuses.add(IN_REVIEW_STATE);
             }
 
-            if (Arrays.asList(IN_REVIEW).contains(currentStatus)) {
-                allowedStatuses.add(REVIEW_COMPLETED);
+            if (Arrays.asList(IN_REVIEW_STATE).contains(currentStatus)) {
+                allowedStatuses.add(REVIEW_COMPLETED_STATE);
             }
         }
 
         // set status permissions for ADMINS
         if (user.doesUserHavePermission(User.ROLE_ADMIN, refset)) {
 
-            if (Arrays.asList(READY_FOR_PUBLICATION).contains(currentStatus)) {
-                allowedStatuses.add(READY_FOR_EDIT);
+            if (Arrays.asList(READY_FOR_PUBLICATION_STATE).contains(currentStatus)) {
+                allowedStatuses.add(READY_FOR_EDIT_STATE);
             }
 
-            if (Arrays.asList(READY_FOR_PUBLICATION).contains(currentStatus)) {
-                allowedStatuses.add(PUBLISHED);
+            if (Arrays.asList(READY_FOR_PUBLICATION_STATE).contains(currentStatus)) {
+                allowedStatuses.add(PUBLISHED_STATE);
             }
         }
 
@@ -949,58 +949,58 @@ public final class WorkflowService {
         final String currentStatus = refset.getWorkflowStatus();
 
         // Published is the final status so no edits are allowed anymore
-        if (currentStatus.equals(PUBLISHED)) {
+        if (currentStatus.equals(PUBLISHED_STATE)) {
             return allowedActions;
         }
 
-        if (currentStatus.equals(READY_FOR_EDIT)
+        if (currentStatus.equals(READY_FOR_EDIT_STATE)
                 && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
 
-            allowedActions.add(EDIT);
-            allowedActions.add(REQUEST_REVIEW);
-            allowedActions.add(REQUEST_PUBLICATION);
+            allowedActions.add(EDIT_ACTION);
+            allowedActions.add(REQUEST_REVIEW_ACTION);
+            allowedActions.add(REQUEST_PUBLICATION_ACTION);
 
-        } else if (currentStatus.equals(IN_EDIT)
+        } else if (currentStatus.equals(IN_EDIT_STATE)
                 && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
 
             // only the assigned user can edit
             if (user.getUserName().equals(refset.getAssignedUser())) {
 
-                allowedActions.add(FINISH_EDIT);
-                allowedActions.add(REQUEST_REVIEW);
-                allowedActions.add(REQUEST_PUBLICATION);
+                allowedActions.add(FINISH_EDIT_ACTION);
+                allowedActions.add(REQUEST_REVIEW_ACTION);
+                allowedActions.add(REQUEST_PUBLICATION_ACTION);
             }
 
-        } else if (currentStatus.equals(READY_FOR_REVIEW)
+        } else if (currentStatus.equals(READY_FOR_REVIEW_STATE)
                 && user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
 
-            allowedActions.add(WITHDRAW);
-            allowedActions.add(REVIEW);
+            allowedActions.add(WITHDRAW_ACTION);
+            allowedActions.add(REVIEW_ACTION);
 
-        } else if (currentStatus.equals(IN_REVIEW)
+        } else if (currentStatus.equals(IN_REVIEW_STATE)
                 && user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
 
             // only the assigned user can review
             if (user.getUserName().equals(refset.getAssignedUser())) {
 
-                allowedActions.add(REJECT_REVIEW);
-                allowedActions.add(ACCEPT_REVIEW);
-                allowedActions.add(UNASSIGN);
+                allowedActions.add(REJECT_REVIEW_ACTION);
+                allowedActions.add(ACCEPT_REVIEW_ACTION);
+                allowedActions.add(UNASSIGN_ACTION);
             }
 
-        } else if (currentStatus.equals(REVIEW_COMPLETED)
+        } else if (currentStatus.equals(REVIEW_COMPLETED_STATE)
                 && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
 
-            allowedActions.add(EDIT);
-            allowedActions.add(REQUEST_REVIEW);
-            allowedActions.add(REQUEST_PUBLICATION);
+            allowedActions.add(EDIT_ACTION);
+            allowedActions.add(REQUEST_REVIEW_ACTION);
+            allowedActions.add(REQUEST_PUBLICATION_ACTION);
 
-        } else if (currentStatus.equals(READY_FOR_PUBLICATION)
+        } else if (currentStatus.equals(READY_FOR_PUBLICATION_STATE)
                 && (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)
                         || user.doesUserHavePermission(User.ROLE_ADMIN, refset))) {
 
-            allowedActions.add(FAILS_RVF);
-            allowedActions.add(REFSET_PUBLISHED);
+            allowedActions.add(FAILS_RVF_ACTION);
+            allowedActions.add(REFSET_PUBLISHED_ACTION);
         }
 
         return allowedActions;
