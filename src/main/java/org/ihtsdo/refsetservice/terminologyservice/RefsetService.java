@@ -1060,9 +1060,9 @@ public class RefsetService {
             } else {
                 refset.setCanPublish(false);
             }
-            
-            refset.setAvailableActions(WorkflowService.getAllowedActions(user, refset));
         }
+        
+        refset.setAvailableActions(WorkflowService.getAllowedActions(user, refset));
        
         return refset;
     }
