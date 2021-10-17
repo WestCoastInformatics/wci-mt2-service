@@ -2,11 +2,9 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,11 +18,9 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -198,16 +194,16 @@ public final class WorkflowService {
      * @param action the action
      * @param refset the refset
      * @param notes the workflow status notes
-     * @param status the new workflow status
+     * @param nextStatus the new workflow status
      * @return the updated refset
      * @throws Exception the exception
      */
     public static Refset setWorkflowStatus(final User user, final String action,
-        final Refset refset, final String notes, final String status) throws Exception {
+        final Refset refset, final String notes, final String nextStatus) throws Exception {
 
         if (WorkflowService.getAllowedActions(user, refset).contains(action)) {
 
-            final Refset updatedRefset = setRefsetWorkflowStatus(user, refset, status);
+            final Refset updatedRefset = setRefsetWorkflowStatus(user, refset, nextStatus);
             addWorkflowHistory(user, action, refset, notes);
             return updatedRefset;
         } else {

@@ -229,12 +229,17 @@ public class User extends AbstractHasModified implements Comparable<User> {
      */
     public boolean doesUserHavePermission(final String roleToCheck,
             final Refset refset) throws Exception {
-        
+
         final String edition = refset.getEditionShortName().replaceFirst("SNOMEDCT-?", "");
-        
         for (final String role : roles) {
-            
+            /*
+             * TODO: Making a demo solution for this as actual permission definition is TBD
+             *
             if (role.contains("-all-" + roleToCheck.toLowerCase()) || role.contains("-" + edition + "-" + roleToCheck.toLowerCase())) {
+                return true;
+            }
+            */
+            if (role.equals(roleToCheck)) {
                 return true;
             }
         }

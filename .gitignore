@@ -18,3 +18,9 @@ WEB-INF/*
 .vscode/launch.json
 .vscode/settings.json
 .idea/.gitignore
+/downloadedRefsets
+/launch.sh
+/a
+/b
+/s
+/sd

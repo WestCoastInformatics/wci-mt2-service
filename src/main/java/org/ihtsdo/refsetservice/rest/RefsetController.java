@@ -455,9 +455,29 @@ public class RefsetController extends BaseController {
             
             Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
+            logger.debug("111 - " + currentStatus);
             
+            
+            if (currentStatus == null) {
+                // Workflow for demo... just set it to Ready for Edit
+                logger.debug(
+                        " ----> Temp Demo Measure: Workflow for demo has null WF status... just set it to Ready for Edit");
+                try (final TerminologyService service = new TerminologyService()) {
+
+                
+                    final String internalRefsetId = RefsetService.createNewRefsetVersion(SecurityService.getUserFromSession(), refset.getId());
+                    refset = service.get(internalRefsetId, Refset.class);
+                }
+                
+                final String updatedCurrentStatus = refset.getWorkflowStatus();
+                logger.debug("111 #2 - " + updatedCurrentStatus);
+                return refset;
+            }
+
             refset = WorkflowService.setWorkflowStatusByAction(SecurityService.getUserFromSession(), action, refset, notes);
+            logger.debug("222 - " + refset);
             
+            logger.debug("333 - " + refset.getWorkflowStatus());
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
                 
