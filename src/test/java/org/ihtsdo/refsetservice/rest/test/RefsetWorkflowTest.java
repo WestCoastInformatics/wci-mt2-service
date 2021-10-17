@@ -167,12 +167,12 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // Finish First Edit (with Note)
         actionCount++;
         note = "This is the first edit of this workflow";
-        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_REVIEW, WorkflowService.READY_FOR_REVIEW, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_REVIEW_ACTION, WorkflowService.READY_FOR_REVIEW_STATE, note);
 
         // In Review
         actionCount++;
@@ -182,64 +182,64 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.REVIEW, WorkflowService.IN_REVIEW, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.REVIEW, WorkflowService.IN_REVIEW_STATE, note);
 
         // Reject Review (with Note)
         actionCount++;
         note = "I rejected this because it's not right";
-        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.REJECT_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.REJECT_REVIEW_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.REJECT_REVIEW, WorkflowService.READY_FOR_EDIT, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.REJECT_REVIEW_ACTION, WorkflowService.READY_FOR_EDIT_STATE, note);
 
         // Second Edit
         actionCount++;
         note = "";
-        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.EDIT, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.EDIT_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.EDIT, WorkflowService.IN_EDIT, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.EDIT_ACTION, WorkflowService.IN_EDIT_STATE, note);
 
         // Update the note
         note = "Started my edits";
         updateWorkflowNote(refset, AUTHOR_USER, note);
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.EDIT, WorkflowService.IN_EDIT, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.EDIT_ACTION, WorkflowService.IN_EDIT_STATE, note);
         
         // Finish Second Edit (with Note)
         actionCount++;
         note = "Mistakes handled";
-        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_REVIEW, WorkflowService.READY_FOR_REVIEW, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_REVIEW_ACTION, WorkflowService.READY_FOR_REVIEW_STATE, note);
 
         // Withdraw Review
         actionCount++;
         note = "Not Ready for review yet";
-        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.WITHDRAW, note);
+        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.WITHDRAW_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.WITHDRAW, WorkflowService.READY_FOR_EDIT, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.WITHDRAW_ACTION, WorkflowService.READY_FOR_EDIT_STATE, note);
         
         // Resubmit for review
         actionCount++;
         note = "Refset is now ready.";
-        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_REVIEW_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_REVIEW, WorkflowService.READY_FOR_REVIEW, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_REVIEW_ACTION, WorkflowService.READY_FOR_REVIEW_STATE, note);
         
         // In Review
         actionCount++;
@@ -249,47 +249,47 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.REVIEW, WorkflowService.IN_REVIEW, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.REVIEW, WorkflowService.IN_REVIEW_STATE, note);
 
         // Pass Review (with Note)
         actionCount++;
         note = "This has been fixed as expected";
-        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.ACCEPT_REVIEW, note);
+        updatedRefset = updateWorkflow(refset, REVIEWER_USER, WorkflowService.ACCEPT_REVIEW_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.ACCEPT_REVIEW, WorkflowService.REVIEW_COMPLETED, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), REVIEWER_USER, WorkflowService.ACCEPT_REVIEW_ACTION, WorkflowService.REVIEW_COMPLETED_STATE, note);
 
         // Request Publication (with Note)
         actionCount++;
         note = "The refset should be published when the full extension is published";
-        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, WorkflowService.READY_FOR_PUBLICATION, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION_ACTION, WorkflowService.READY_FOR_PUBLICATION_STATE, note);
         
         // Withdraw Publicaiton Request (with Note)
         actionCount++;
         note = "The refset failed RVF.";
-        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.FAILS_RVF, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.FAILS_RVF_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.FAILS_RVF, WorkflowService.READY_FOR_EDIT, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.FAILS_RVF_ACTION, WorkflowService.READY_FOR_EDIT_STATE, note);
         
         // Request Publication Again (with Note)
         actionCount++;
         note = "Fixes made. The refset should be published when the full extension is published";
-        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, note);
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION_ACTION, note);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, WorkflowService.READY_FOR_PUBLICATION, note);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION_ACTION, WorkflowService.READY_FOR_PUBLICATION_STATE, note);
         
         // !!!! DO NOT LEAVE UNCOMMENTED !!!!
         // Publication Complete
@@ -386,45 +386,45 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         final String userRole = getUserRole(user);
         
         // Published is the final status so no edits are allowed anymore
-        if (initialStatus.equals(WorkflowService.PUBLISHED)) {
+        if (initialStatus.equals(WorkflowService.PUBLISHED_STATE)) {
             return allowedActions;
         }
         
-        if (initialStatus.equals(WorkflowService.READY_FOR_EDIT) && userRole.equals(User.ROLE_AUTHOR)) {
+        if (initialStatus.equals(WorkflowService.READY_FOR_EDIT_STATE) && userRole.equals(User.ROLE_AUTHOR)) {
             
-            allowedActions.add(WorkflowService.EDIT);
-            allowedActions.add(WorkflowService.REQUEST_REVIEW);
-            allowedActions.add(WorkflowService.REQUEST_PUBLICATION);
+            allowedActions.add(WorkflowService.EDIT_ACTION);
+            allowedActions.add(WorkflowService.REQUEST_REVIEW_ACTION);
+            allowedActions.add(WorkflowService.REQUEST_PUBLICATION_ACTION);
             
-        } else if (initialStatus.equals(WorkflowService.IN_EDIT) && userRole.equals(User.ROLE_AUTHOR)) {
+        } else if (initialStatus.equals(WorkflowService.IN_EDIT_STATE) && userRole.equals(User.ROLE_AUTHOR)) {
             
             // only the assigned user can edit
             if (assignedUser) {
                 
-                allowedActions.add(WorkflowService.FINISH_EDIT);
-                allowedActions.add(WorkflowService.REQUEST_REVIEW);
-                allowedActions.add(WorkflowService.REQUEST_PUBLICATION);
+                allowedActions.add(WorkflowService.FINISH_EDIT_ACTION);
+                allowedActions.add(WorkflowService.REQUEST_REVIEW_ACTION);
+                allowedActions.add(WorkflowService.REQUEST_PUBLICATION_ACTION);
             }
             
-        } else if (initialStatus.equals(WorkflowService.READY_FOR_REVIEW) && userRole.equals(User.ROLE_REVIEWER)) {
+        } else if (initialStatus.equals(WorkflowService.READY_FOR_REVIEW_STATE) && userRole.equals(User.ROLE_REVIEWER)) {
             
             allowedActions.add(WorkflowService.REVIEW);
             
-        } else if (initialStatus.equals(WorkflowService.IN_REVIEW) && userRole.equals(User.ROLE_REVIEWER)) {
+        } else if (initialStatus.equals(WorkflowService.IN_REVIEW_STATE) && userRole.equals(User.ROLE_REVIEWER)) {
             
             // only the assigned user can review
             if (assignedUser) {
 
-                allowedActions.add(WorkflowService.REJECT_REVIEW);
-                allowedActions.add(WorkflowService.ACCEPT_REVIEW);
-                allowedActions.add(WorkflowService.UNASSIGN);
+                allowedActions.add(WorkflowService.REJECT_REVIEW_ACTION);
+                allowedActions.add(WorkflowService.ACCEPT_REVIEW_ACTION);
+                allowedActions.add(WorkflowService.UNASSIGN_ACTION);
             }
             
-        } else if (initialStatus.equals(WorkflowService.REVIEW_COMPLETED) && userRole.equals(User.ROLE_AUTHOR)) {
+        } else if (initialStatus.equals(WorkflowService.REVIEW_COMPLETED_STATE) && userRole.equals(User.ROLE_AUTHOR)) {
             
-            allowedActions.add(WorkflowService.EDIT);
-            allowedActions.add(WorkflowService.REQUEST_REVIEW);
-            allowedActions.add(WorkflowService.REQUEST_PUBLICATION);
+            allowedActions.add(WorkflowService.EDIT_ACTION);
+            allowedActions.add(WorkflowService.REQUEST_REVIEW_ACTION);
+            allowedActions.add(WorkflowService.REQUEST_PUBLICATION_ACTION);
             
         }
        
