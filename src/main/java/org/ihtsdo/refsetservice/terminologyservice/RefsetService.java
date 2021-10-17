@@ -215,7 +215,7 @@ public class RefsetService {
             refset.setRefsetId(refsetConceptId);
             refset.setLatestVersion(true);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
-            refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT_STATE);
+            refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
             refset.setProject(project);
             refset.setVersionDate(null);
             
@@ -236,8 +236,8 @@ public class RefsetService {
             newInternalRefsetId = refset.getId();
             
             // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
-            WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE_ACTION, refset, "");
-            refset = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT_ACTION, refset, "", WorkflowService.IN_EDIT_STATE);
+            WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, refset, "");
+            refset = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, refset, "", WorkflowService.IN_EDIT);
             
             logger.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added");
             logger.debug("Create Refset: Refset: " + ModelUtility.toJson(refset));
@@ -812,7 +812,7 @@ public class RefsetService {
             newRefsetVersion.setLatestVersion(true);
             newRefsetVersion.setId(null);
             newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
-            newRefsetVersion.setWorkflowStatus(WorkflowService.READY_FOR_EDIT_STATE);
+            newRefsetVersion.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
             newRefsetVersion.setEditOriginBranchPath(refset.getEditionBranch() + "/" + getFormattedRefsetDate(refset.getVersionDate()));
             
             // find the previous latest version
@@ -829,8 +829,8 @@ public class RefsetService {
             newInternalRefsetId = newRefsetVersion.getId();
             
             // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
-            WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE_ACTION, newRefsetVersion, "");
-            newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT_ACTION, newRefsetVersion, "", WorkflowService.IN_EDIT_STATE);
+            WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, newRefsetVersion, "");
+            newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT);
             
             // update the previous latest version so it no longer is marked as latest
             if (oldLatestVersionRefset != null) {
@@ -965,7 +965,7 @@ public class RefsetService {
             
             branchPath = refset.getEdition().getBranch() + "/" + WorkflowService.REFSET_BRANCH_PREFIX + refset.getRefsetId();
             
-            if (refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT_STATE)) {
+            if (refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
                 branchPath += "/" + WorkflowService.EDIT_BRANCH_NAME ;
             }
         }
@@ -1037,25 +1037,25 @@ public class RefsetService {
         if (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
             
             // set the assigned user for the refset if it is being edited or reviewed
-            if (Arrays.asList(WorkflowService.IN_EDIT_STATE, WorkflowService.IN_REVIEW_STATE).contains(refset.getWorkflowStatus())) {
+            if (Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_REVIEW).contains(refset.getWorkflowStatus())) {
                 refset.setAssignedUser(WorkflowService.getAssignedUserName(refset));
             }
                 
             final List<String> allowedStatuses = WorkflowService.getAllowedStatuses(user, refset);
             
-            if (allowedStatuses.contains(WorkflowService.IN_EDIT_STATE)) {
+            if (allowedStatuses.contains(WorkflowService.IN_EDIT)) {
                 refset.setCanEdit(true);
             } else {
                 refset.setCanEdit(false);
             }
             
-            if (allowedStatuses.contains(WorkflowService.IN_REVIEW_STATE)) {
+            if (allowedStatuses.contains(WorkflowService.IN_REVIEW)) {
                 refset.setCanReview(true);
             } else {
                 refset.setCanReview(false);
             }
             
-            if (allowedStatuses.contains(WorkflowService.READY_FOR_PUBLICATION_STATE)) {
+            if (allowedStatuses.contains(WorkflowService.READY_FOR_PUBLICATION)) {
                 refset.setCanPublish(true);
             } else {
                 refset.setCanPublish(false);
