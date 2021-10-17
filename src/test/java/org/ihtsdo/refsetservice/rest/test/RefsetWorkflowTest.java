@@ -71,7 +71,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
     private Map<String, Map<String, Map<String, String>>> permissiblePaths;
 
     /** The actions . */
-    private static List<String> actions = WorkflowService.WORKFLOWS;
+    private static List<String> actions = WorkflowService.WORKFLOW_ACTIONS;
 
     /** The statuses . */
     private static List<String> statuses = WorkflowService.WORKFLOW_STATUSES;
