@@ -2041,6 +2041,7 @@ public class RefsetMemberService {
         final ObjectMapper mapper = new ObjectMapper();
         int total = 0;
         final String encodedCaret = "%5E";
+        final String encodedSpace = "%20";
 
         // Create Snowstorm URL
         String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset="
@@ -2063,7 +2064,6 @@ public class RefsetMemberService {
             logger.debug("searchConcepts ECL Parse URL: " + eclUrl + "; body: " + body);
 
             try (final Response response = SnowstormConnection.postResponse(eclUrl, body)) {
-
                 // if the query parses as ECL then search by ecl
                 if (response.getStatusInfo().getFamily() == Family.SUCCESSFUL) {
                     searchEcl = true;
@@ -2086,7 +2086,7 @@ public class RefsetMemberService {
             url += "&ecl=" + StringUtility.encodeValue("(" + searchParameters.getQuery() + ")");
 
             if (searchRefsetMembers) {
-                url += " AND " + encodedCaret + refset.getRefsetId();
+                url += encodedSpace + "AND" + encodedSpace + encodedCaret + refset.getRefsetId();
             }
         }
 

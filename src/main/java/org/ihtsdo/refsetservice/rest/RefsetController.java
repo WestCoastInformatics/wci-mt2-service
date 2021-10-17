@@ -212,7 +212,7 @@ public class RefsetController extends BaseController {
                 conceptIdList = RefsetService.getConceptIdsFromFile(conceptFile, fileType);
             }
          
-            logger.debug("*********** addRefsetMembers: conceptIds: " + conceptIdList);
+            logger.debug("*********** addRefsetMembers: conceptIdList: " + conceptIdList);
             
             // add the list of concepts as members to the refset
             final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(refsetInternalId, conceptIdList);
@@ -264,7 +264,7 @@ public class RefsetController extends BaseController {
             
             String conceptsToRemove = null;
 
-            logger.debug("*********** removeRefsetMembers: refsetInternalId: " + refsetInternalId);
+            logger.debug("*********** removeRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
             
             String error = "";
             
