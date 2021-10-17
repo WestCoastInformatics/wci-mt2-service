@@ -60,7 +60,6 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                 user.getRoles().add(User.ROLE_LEAD);
             }
 			
-
 			user.setName("Demo " + userName);
 			user.setUserName(userName);
 			user.setEmail("not used");
@@ -72,8 +71,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
 			final ObjectMapper mapper = new ObjectMapper();
 			final JsonNode doc = mapper.readTree(password);
+			final JsonNode userDoc = doc.get("userData");
 
-			logger.info("User is {}", userName);
+			logger.info("User     is {}", userName);
+	        logger.info("Password is {}", password);
+	        logger.info("JsonNode doc is {}", doc);
+	        logger.info("JsonNode userDoc {}", userDoc);
 
 			// e.g.
 			// {
@@ -98,12 +101,13 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
 			// Construct user from document
 			final User user = new User();
-			user.setName(doc.get("firstName").asText() + " " + doc.get("lastName").asText());
-			user.setUserName(doc.get("login").asText());
-			user.setEmail(doc.get("email").asText());
+			 
+			user.setName(userDoc.get("firstName").asText() + " " + userDoc.get("lastName").asText());
+			user.setUserName(userDoc.get("login").asText());
+			user.setEmail(userDoc.get("email").asText());
 			user.getRoles().add(User.ROLE_USER);
 
-			final Iterator<JsonNode> iter = doc.get("roles").elements();
+			final Iterator<JsonNode> iter = userDoc.get("roles").elements();
 			while (iter.hasNext()) {
 				JsonNode role = iter.next();
 				if ("ROLE_refset-administrators".equals(role.asText())) {
@@ -115,6 +119,8 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 			}
 
 			user.setModifiedBy(user.getUserName());
+			
+			logger.debug("^^^^^^^^^^^^^^^^^^^^^ user is {}", user);
 			return user;
 		}
 	}
