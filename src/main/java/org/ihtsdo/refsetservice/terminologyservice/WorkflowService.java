@@ -866,8 +866,15 @@ public final class WorkflowService {
         final List<String> allowedStatuses = new ArrayList<>();
         final String currentStatus = refset.getWorkflowStatus();
 
-        // Published is the final status so no edits are allowed anymore,
-        if (currentStatus == null || currentStatus.equals(PUBLISHED)) {
+        // Authors can start an edit cycle on Published refsets
+        if (refset.getVersionStatus().equals(PUBLISHED)) {
+            
+            if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+                
+                allowedStatuses.add(READY_FOR_EDIT);
+                allowedStatuses.add(IN_EDIT);
+            }
+            
             return allowedStatuses;
         }
 
@@ -948,12 +955,12 @@ public final class WorkflowService {
         final List<String> allowedActions = new ArrayList<>();
         final String currentStatus = refset.getWorkflowStatus();
 
-        // Published is the final status so no edits are allowed anymore
-        if (currentStatus.equals(PUBLISHED)) {
-            return allowedActions;
-        }
+        // Authors can start an edit cycle on Published refsets
+        if (refset.getVersionStatus().equals(PUBLISHED)
+                && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+            allowedActions.add(EDIT);
 
-        if (currentStatus.equals(READY_FOR_EDIT)
+        } else if (currentStatus.equals(READY_FOR_EDIT)
                 && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
 
             allowedActions.add(EDIT);
