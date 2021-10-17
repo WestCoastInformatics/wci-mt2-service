@@ -960,6 +960,9 @@ public final class WorkflowService {
                 && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
             allowedActions.add(EDIT);
 
+        } else if (currentStatus == null) {
+            return allowedActions;
+            
         } else if (currentStatus.equals(READY_FOR_EDIT)
                 && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
 
