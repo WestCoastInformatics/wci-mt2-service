@@ -74,7 +74,7 @@ public class SecurityService implements AutoCloseable {
             return (User) object;
         }
         
-        return new User("testUser", "Test User", "tuser@testuser.com", new HashSet<String>(Arrays.asList("rt-all-user", "rt-all-author", "rt-all-reviewer")));
+        return new User("testUser", "Test User", "tuser@testuser.com", new HashSet<String>(Arrays.asList(User.ROLE_USER, User.ROLE_AUTHOR, User.ROLE_REVIEWER)));
         //return null;
     }
     

@@ -477,7 +477,7 @@ public class RefsetService {
             try (final TerminologyService service = new TerminologyService()) {
                 
                 // get all the existing refsets for latest branch version
-                final ResultList<Refset> refsets = service.find("active: true AND editionBranch: " + branch + " AND (latestVersion: true OR versionStatus: \"" + Refset.IN_DEVELOPMENT + "\")", null, Refset.class, null);
+                final ResultList<Refset> refsets = service.find("active: true AND editionBranch: " + QueryParserBase.escape(branch) + " AND (latestVersion: true OR versionStatus: \"" + Refset.IN_DEVELOPMENT + "\")", null, Refset.class, null);
                 
                 for (final Refset refset : refsets.getItems()) {
                     existingRefsetIds.add(refset.getRefsetId());
