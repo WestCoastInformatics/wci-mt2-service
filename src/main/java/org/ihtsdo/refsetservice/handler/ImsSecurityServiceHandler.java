@@ -114,14 +114,25 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             while (iter.hasNext()) {
 
                 JsonNode role = iter.next();
-
+                logger.debug("role: " + role.asText());
+                
                 if ("ROLE_refset-administrators".equals(role.asText())) {
                     user.getRoles().add(User.ROLE_ADMIN);
                 }
 
-                logger.debug("AAA: " + role.asText());
+                // TODO  - !!!!!! JUST FOR TESTING - REMOVE BEFORE PROD !!!!!!
+                if (user.getUserName().equals("refset-dev")) {
+                    
+                    logger.debug(" Using refset-dev creds and making Authour & Reviewer");
+                    user.getRoles().add(User.ROLE_AUTHOR);
+                    user.getRoles().add(User.ROLE_REVIEWER);
+                    authorCredentialsMatched = true;
+                    break;
+                }
+                
                 if (!user.getRoles().contains(User.ROLE_ADMIN)
                         && "ROLE_us-crs-requestor".equals(role.asText())) {
+                    
                     logger.debug(" Using Jesse's creds and making myself Authour & Reviewer");
                     user.getRoles().add(User.ROLE_AUTHOR);
                     // FOR ME TESTING
