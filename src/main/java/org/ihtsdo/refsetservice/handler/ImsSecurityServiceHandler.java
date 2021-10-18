@@ -59,106 +59,115 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             if (passwordText.contains(User.ROLE_LEAD.toLowerCase())) {
                 user.getRoles().add(User.ROLE_LEAD);
             }
-			
-			user.setName("Demo " + userName);
-			user.setUserName(userName);
-			user.setEmail("not used");
 
-			user.setModifiedBy(user.getUserName());
-			return user;
+            user.setName("Demo " + userName);
+            user.setUserName(userName);
+            user.setEmail("not used");
 
-		} else {
+            user.setModifiedBy(user.getUserName());
+            return user;
 
-			final ObjectMapper mapper = new ObjectMapper();
-			final JsonNode doc = mapper.readTree(password);
-			final JsonNode userDoc = doc.get("userData");
+        } else {
 
-			logger.info("User     is {}", userName);
-	        logger.info("Password is {}", password);
-	        logger.info("JsonNode doc is {}", doc);
-	        logger.info("JsonNode userDoc {}", userDoc);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode doc = mapper.readTree(password);
+            final JsonNode userDoc = doc.get("userData");
 
-			// e.g.
-			// {
-			// "login": "jsmith",
-			// "password": null,
-			// "firstName": "John",
-			// "lastName": "Smith",
-			// "email": "***REMOVED***",
-			// "langKey": null,
-			// "roles": [
-			// "ROLE_confluence-users",
-			// "ROLE_ihtsdo-ops-admin",
-			// "ROLE_ihtsdo-sca-author",
-			// "ROLE_ihtsdo-tba-author",
-			// "ROLE_ihtsdo-tech-group",
-			// "ROLE_ihtsdo-users",
-			// "ROLE_jira-developers",
-			// "ROLE_jira-users",
-			// "ROLE_mapping-dev-team"
-			// ]
-			// }
+            logger.info("User     is {}", userName);
+            logger.info("Password is {}", password);
+            logger.info("JsonNode doc is {}", doc);
+            logger.info("JsonNode userDoc {}", userDoc);
 
-			// Construct user from document
-			final User user = new User();
-			 
-			user.setName(userDoc.get("firstName").asText() + " " + userDoc.get("lastName").asText());
-			user.setUserName(userDoc.get("login").asText());
-			user.setEmail(userDoc.get("email").asText());
-			user.getRoles().add(User.ROLE_USER);
+            // e.g.
+            // {
+            // "login": "jsmith",
+            // "password": null,
+            // "firstName": "John",
+            // "lastName": "Smith",
+            // "email": "***REMOVED***",
+            // "langKey": null,
+            // "roles": [
+            // "ROLE_confluence-users",
+            // "ROLE_ihtsdo-ops-admin",
+            // "ROLE_ihtsdo-sca-author",
+            // "ROLE_ihtsdo-tba-author",
+            // "ROLE_ihtsdo-tech-group",
+            // "ROLE_ihtsdo-users",
+            // "ROLE_jira-developers",
+            // "ROLE_jira-users",
+            // "ROLE_mapping-dev-team"
+            // ]
+            // }
 
-			final Iterator<JsonNode> iter = userDoc.get("roles").elements();
-			while (iter.hasNext()) {
-				
-			    JsonNode role = iter.next();
-				
-				if ("ROLE_refset-administrators".equals(role.asText())) {
-					user.getRoles().add(User.ROLE_ADMIN);
-				}
-				
+            // Construct user from document
+            final User user = new User();
+
+            user.setName(
+                    userDoc.get("firstName").asText() + " " + userDoc.get("lastName").asText());
+            user.setUserName(userDoc.get("login").asText());
+            user.setEmail(userDoc.get("email").asText());
+            user.getRoles().add(User.ROLE_USER);
+
+            final Iterator<JsonNode> iter = userDoc.get("roles").elements();
+
+            boolean authorCredentialsMatched = false;
+            while (iter.hasNext()) {
+
+                JsonNode role = iter.next();
+
+                if ("ROLE_refset-administrators".equals(role.asText())) {
+                    user.getRoles().add(User.ROLE_ADMIN);
+                }
+
+                logger.debug("AAA: " + role.asText());
                 if (!user.getRoles().contains(User.ROLE_ADMIN)
                         && "ROLE_us-crs-requestor".equals(role.asText())) {
                     logger.debug(" Using Jesse's creds and making myself Authour & Reviewer");
                     user.getRoles().add(User.ROLE_AUTHOR);
                     // FOR ME TESTING
                     user.getRoles().add(User.ROLE_REVIEWER);
-                } else {
-                    logger.debug(" Using anyone else's creds and making them Reviewer only");
-                    user.getRoles().add(User.ROLE_REVIEWER);
+
+                    authorCredentialsMatched = true;
+                    break;
                 }
-                
-			}
 
-			user.setModifiedBy(user.getUserName());
-			
-			logger.debug("^^^^^^^^^^^^^^^^^^^^^ user is {}", user);
-			return user;
-		}
-	}
+            }
 
-	/* see superclass */
-	@Override
-	public boolean timeoutUser(final String user) {
-		// Never timeout user
-		return false;
-	}
+            if (!authorCredentialsMatched) {
+                logger.debug(" Using anyone else's creds and making them Reviewer only");
+                user.getRoles().add(User.ROLE_REVIEWER);
+            }
 
-	/* see superclass */
-	@Override
-	public String computeTokenForUser(final String user) {
-		return user;
-	}
+            user.setModifiedBy(user.getUserName());
 
-	/* see superclass */
-	@Override
-	public void setProperties(final Properties properties) {
-		this.properties = properties;
-	}
+            logger.debug("^^^^^^^^^^^^^^^^^^^^^ user is {}", user);
+            return user;
+        }
+    }
 
-	/* see superclass */
-	@Override
-	public String getName() {
-		return "IHTSDO Identity Management Service handler";
-	}
+    /* see superclass */
+    @Override
+    public boolean timeoutUser(final String user) {
+        // Never timeout user
+        return false;
+    }
+
+    /* see superclass */
+    @Override
+    public String computeTokenForUser(final String user) {
+        return user;
+    }
+
+    /* see superclass */
+    @Override
+    public void setProperties(final Properties properties) {
+        this.properties = properties;
+    }
+
+    /* see superclass */
+    @Override
+    public String getName() {
+        return "IHTSDO Identity Management Service handler";
+    }
 
 }
