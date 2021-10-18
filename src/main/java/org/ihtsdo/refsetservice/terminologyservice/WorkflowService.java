@@ -246,7 +246,7 @@ public final class WorkflowService {
         // if edits have just been completed then merge the edit branch into the
         // refset branch and delete the edit branch
         if (currentStatus.equals(IN_EDIT)
-                && (Arrays.asList(REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action))) {
+                && (Arrays.asList(FINISH_EDIT, REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action))) {
 
             final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(),
                     refset.getRefsetId(), notes);
@@ -683,6 +683,8 @@ public final class WorkflowService {
             if (rootNode.has("path")) {
                 refsetBranchPath = rootNode.get("path").asText();
             }
+            
+            logger.info("Created branch " + refsetBranchPath);
         }
 
         return refsetBranchPath;
@@ -735,8 +737,12 @@ public final class WorkflowService {
 
             // If Rest call is successful then branch exists
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                
+                logger.debug("doesBranchExist: true");
                 return true;
             } else {
+                
+                logger.debug("doesBranchExist: false");
                 return false;
             }
         }
@@ -777,6 +783,8 @@ public final class WorkflowService {
                 logger.error(error);
                 throw new Exception(error);
             }
+            
+            logger.info("Merged branch " + sourceBranchPath + " into branch " + targetBranchPath);
         }
     }
 
