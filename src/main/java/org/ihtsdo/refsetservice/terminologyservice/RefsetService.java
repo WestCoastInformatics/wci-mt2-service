@@ -768,6 +768,8 @@ public class RefsetService {
             refset.setTags(refsetEditParameters.getTags());
             refset.setVersionNotes(refsetEditParameters.getVersionNotes());
             refset.setNarrative(refsetEditParameters.getNarrative());
+            refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
+            refset.setType(refsetEditParameters.getType());
             refset.setExternalUrl(refsetEditParameters.getExternalUrl()); 
             refset.setDefinitionClauses(refsetEditParameters.getDefinitionClauses()); 
             
