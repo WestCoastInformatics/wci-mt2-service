@@ -106,49 +106,59 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                     userDoc.get("firstName").asText() + " " + userDoc.get("lastName").asText());
             user.setUserName(userDoc.get("login").asText());
             user.setEmail(userDoc.get("email").asText());
-            user.getRoles().add(User.ROLE_USER);
+            // user.getRoles().add(User.ROLE_USER);
 
             final Iterator<JsonNode> iter = userDoc.get("roles").elements();
 
-            boolean authorCredentialsMatched = false;
+            boolean isJesseLogin = false;
+            // boolean authorCredentialsMatched = false;
             while (iter.hasNext()) {
 
                 JsonNode role = iter.next();
                 logger.debug("role: " + role.asText());
-                
-                if ("ROLE_refset-administrators".equals(role.asText())) {
-                    user.getRoles().add(User.ROLE_ADMIN);
-                }
 
-                // TODO  - !!!!!! JUST FOR TESTING - REMOVE BEFORE PROD !!!!!!
-                if (user.getUserName().equals("refset-dev")) {
-                    
-                    logger.debug(" Using refset-dev creds and making Authour & Reviewer");
-                    user.getRoles().add(User.ROLE_AUTHOR);
-                    user.getRoles().add(User.ROLE_REVIEWER);
-                    authorCredentialsMatched = true;
-                    break;
-                }
-                
-                if (!user.getRoles().contains(User.ROLE_ADMIN)
-                        && "ROLE_us-crs-requestor".equals(role.asText())) {
-                    
+                /*
+                 * if ("ROLE_refset-administrators".equals(role.asText())) {
+                 * user.getRoles().add(User.ROLE_ADMIN); }
+                 */
+                /*
+                 * // TODO - !!!!!! JUST FOR TESTING - REMOVE BEFORE PROD !!!!!!
+                 * if (user.getUserName().equals("refset-dev")) {
+                 * 
+                 * logger.
+                 * debug(" Using refset-dev creds and making Authour & Reviewer"
+                 * ); user.getRoles().add(User.ROLE_AUTHOR);
+                 * user.getRoles().add(User.ROLE_REVIEWER);
+                 * authorCredentialsMatched = true; break; }
+                 */
+                if ("ROLE_us-crs-requestor".equals(role.asText())) {
+
                     logger.debug(" Using Jesse's creds and making myself Authour & Reviewer");
-                    user.getRoles().add(User.ROLE_AUTHOR);
-                    // FOR ME TESTING
-                    user.getRoles().add(User.ROLE_REVIEWER);
-
-                    authorCredentialsMatched = true;
+                    isJesseLogin = true;
                     break;
                 }
 
             }
+            if (user.getUserName().equals("refset-dev")) {
+               user.getRoles().add(User.ROLE_AUTHOR);
+               user.getRoles().add(User.ROLE_REVIEWER);
 
-            if (!authorCredentialsMatched) {
-                logger.debug(" Using anyone else's creds and making them Reviewer only");
+            } else if (isJesseLogin) {
+                user.getRoles().add(User.ROLE_AUTHOR);
+                user.getRoles().add(User.ROLE_REVIEWER);
+                // FOR ME TESTING
+
+                // authorCredentialsMatched = true;
+            } else {
                 user.getRoles().add(User.ROLE_REVIEWER);
             }
 
+            /*
+             * if (!authorCredentialsMatched) { logger.
+             * debug(" Using anyone else's creds and making them Reviewer only"
+             * ); user.getRoles().add(User.ROLE_REVIEWER); }
+             */
+            user.getRoles().add(User.ROLE_REVIEWER);
             user.setModifiedBy(user.getUserName());
 
             logger.debug("^^^^^^^^^^^^^^^^^^^^^ user is {}", user);
