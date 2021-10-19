@@ -5,7 +5,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -339,9 +338,8 @@ public final class WorkflowService {
 
                 final String newVersion = branchVersions.getItems().get(0);
 
-                // TODO: Revert to non-demo
-//                refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(newVersion));
-                refset.setVersionDate(new Date());
+                
+                refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(newVersion));
                 refset.setVersionStatus(Refset.PUBLISHED);
             }
 
