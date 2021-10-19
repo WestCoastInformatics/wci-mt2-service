@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -231,16 +232,31 @@ public final class WorkflowService {
         final Refset refset, final String notes) throws Exception {
 
         final String currentStatus = refset.getWorkflowStatus();
-        String role = User.ROLE_AUTHOR;
-
-        if (Arrays.asList(READY_FOR_REVIEW, IN_REVIEW).contains(currentStatus)) {
-            role = User.ROLE_REVIEWER;
-        }
+        Set<String> roles = user.getRoles();
 
         // get the next status based on the user, current status, and supplied
         // action
-        final String nextStatus =
-                WORKFLOW_PERMUTATIONS.get(role).get(refset.getWorkflowStatus()).get(action);
+        logger.debug("WORKFLOW_PERMUTATIONS: " + ModelUtility.toJson(WORKFLOW_PERMUTATIONS));
+        
+        String nextStatus = null;
+        
+        // loop thru the roles to find a match for the action and current status. !! This only works if any multiple matches between role, current status, and action go to the same next status !!
+        for (final String role: roles) {
+            
+            if (WORKFLOW_PERMUTATIONS.containsKey(role) && WORKFLOW_PERMUTATIONS.get(role).containsKey(refset.getWorkflowStatus())) {
+                
+                final String possibleStatus =
+                        WORKFLOW_PERMUTATIONS.get(role).get(refset.getWorkflowStatus()).get(action);
+                
+                if (possibleStatus != null) {
+                    
+                    nextStatus = possibleStatus;
+                    break;
+                }
+            }
+        }
+        
+        logger.debug("nextStatus: " + nextStatus);
         final Refset updatedRefset = setWorkflowStatus(user, action, refset, notes, nextStatus);
 
         // if edits have just been completed then merge the edit branch into the
@@ -971,54 +987,66 @@ public final class WorkflowService {
         } else if (currentStatus == null) {
             return allowedActions;
             
-        } else if (currentStatus.equals(READY_FOR_EDIT)
-                && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
-
-            allowedActions.add(EDIT);
-            allowedActions.add(REQUEST_REVIEW);
-            allowedActions.add(REQUEST_PUBLICATION);
-
-        } else if (currentStatus.equals(IN_EDIT)
-                && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
-
-            // only the assigned user can edit
-            if (user.getUserName().equals(refset.getAssignedUser())) {
-
-                allowedActions.add(FINISH_EDIT);
-                allowedActions.add(REQUEST_REVIEW);
-                allowedActions.add(REQUEST_PUBLICATION);
+        } else if (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+            
+            if (currentStatus.equals(READY_FOR_EDIT)) {
+    
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+                    allowedActions.add(EDIT);
+                    allowedActions.add(REQUEST_REVIEW);
+                    allowedActions.add(REQUEST_PUBLICATION);
+                }
             }
 
-        } else if (currentStatus.equals(READY_FOR_REVIEW)
-                && user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
-
-            allowedActions.add(WITHDRAW);
-            allowedActions.add(REVIEW);
-
-        } else if (currentStatus.equals(IN_REVIEW)
-                && user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
-
-            // only the assigned user can review
-            if (user.getUserName().equals(refset.getAssignedUser())) {
-
-                allowedActions.add(REJECT_REVIEW);
-                allowedActions.add(ACCEPT_REVIEW);
-                allowedActions.add(UNASSIGN);
+            else if (currentStatus.equals(IN_EDIT)) {
+    
+                // only the assigned user can edit
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset) && user.getUserName().equals(refset.getAssignedUser())) {
+    
+                    allowedActions.add(FINISH_EDIT);
+                    allowedActions.add(REQUEST_REVIEW);
+                    allowedActions.add(REQUEST_PUBLICATION);
+                }
             }
 
-        } else if (currentStatus.equals(REVIEW_COMPLETED)
-                && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+            else if (currentStatus.equals(READY_FOR_REVIEW)) {
+            
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+                    allowedActions.add(WITHDRAW);
+                }
+                
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+                    allowedActions.add(REVIEW);
+                }
+            }
 
-            allowedActions.add(EDIT);
-            allowedActions.add(REQUEST_REVIEW);
-            allowedActions.add(REQUEST_PUBLICATION);
+            else if (currentStatus.equals(IN_REVIEW)) {
+    
+                // only the assigned user can review
+                if (user.doesUserHavePermission(User.ROLE_REVIEWER, refset) && user.getUserName().equals(refset.getAssignedUser())) {
+    
+                    allowedActions.add(REJECT_REVIEW);
+                    allowedActions.add(ACCEPT_REVIEW);
+                    allowedActions.add(UNASSIGN);
+                }
+            }
 
-        } else if (currentStatus.equals(READY_FOR_PUBLICATION)
-                && (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)
-                        || user.doesUserHavePermission(User.ROLE_ADMIN, refset))) {
+            else if (currentStatus.equals(REVIEW_COMPLETED)) {
+    
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+                    allowedActions.add(EDIT);
+                    allowedActions.add(REQUEST_REVIEW);
+                    allowedActions.add(REQUEST_PUBLICATION);
+                }
+            }
 
-            allowedActions.add(FAILS_RVF);
-            allowedActions.add(REFSET_PUBLISHED);
+            else if (currentStatus.equals(READY_FOR_PUBLICATION)) {
+    
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset) || user.doesUserHavePermission(User.ROLE_ADMIN, refset)) {
+                    allowedActions.add(FAILS_RVF);
+                    allowedActions.add(REFSET_PUBLISHED);
+                }
+            }
         }
 
         return allowedActions;
