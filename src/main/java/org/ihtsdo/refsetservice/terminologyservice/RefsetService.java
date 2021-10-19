@@ -228,7 +228,11 @@ public class RefsetService {
             refset.setEditOriginBranchPath(edition.getBranch() + originBranchPath);
             
             if (refset.getType().equals(Refset.INTENSIONAL)) {
-                //refset.getDefinitionClauses().addAll(definitionList);
+                
+                // Add definition clauses to the DB
+                for (final DefinitionClause clause : refset.getDefinitionClauses()) {
+                    service.add(clause);
+                }
             }
 
             // Add an object
@@ -238,6 +242,22 @@ public class RefsetService {
             // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
             WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, refset, "");
             refset = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, refset, "", WorkflowService.IN_EDIT);
+            
+            if (refset.getType().equals(Refset.INTENSIONAL)) {
+                
+                String ecl = ""; 
+                        
+                // TODO - !! need to make this work with multiple clauses and negation !! loop thru the clauses to get the combined ECL
+                for (final DefinitionClause clause : refset.getDefinitionClauses()) {
+                    ecl += clause.getValue();
+                }
+                
+                // get the list of concepts from the ECL
+                List<String> conceptIdList = RefsetMemberService.getConceptIdsFromEcl(getBranchPath(refset.getId()), ecl);
+                
+                // add the list of concepts as members to the refset
+                final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(refset.getId(), conceptIdList);
+            }
             
             logger.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added");
             logger.debug("Create Refset: Refset: " + ModelUtility.toJson(refset));
