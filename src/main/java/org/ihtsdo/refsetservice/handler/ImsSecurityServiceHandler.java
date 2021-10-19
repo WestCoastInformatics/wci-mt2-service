@@ -145,7 +145,6 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
             } else if (isJesseLogin) {
                 user.getRoles().add(User.ROLE_AUTHOR);
-                user.getRoles().add(User.ROLE_REVIEWER);
                 // FOR ME TESTING
 
                 // authorCredentialsMatched = true;
