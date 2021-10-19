@@ -1021,7 +1021,7 @@ public final class WorkflowService {
                     allowedActions.add(WITHDRAW);
                 }
                 
-                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+                if (user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
                     allowedActions.add(REVIEW);
                 }
             }
