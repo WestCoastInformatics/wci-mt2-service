@@ -722,7 +722,7 @@ public final class WorkflowService {
 
         logger.debug("deleteBranch URL: " + url);
 
-        try (final Response response = SnowstormConnection.deleteResponse(url)) {
+        try (final Response response = SnowstormConnection.deleteResponse(url, null)) {
 
             // Only process payload if Rest call is successful
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {

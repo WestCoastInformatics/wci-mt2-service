@@ -16,9 +16,13 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.ClientProperties;
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,18 +170,32 @@ public class SnowstormConnection {
      * Calls a Snowstorm DELETE URL and returns the response.
      *
      * @param url The Snowstorm URL to call
+     * @param entity the entity
      * @return The Snowstorm response
      * @throws Exception the exception
      */
-    public static Response deleteResponse(final String url) throws Exception {
+    @SuppressWarnings("resource")
+    public static Response deleteResponse(final String url, String entity) throws Exception {
 
-        final Client client = ClientBuilder.newClient();
+        ResteasyClient client = (ResteasyClient)ClientBuilder.newClient();
         final WebTarget target = client.target(url);
-        final Response response = target.request(ACCEPT)
+        Response response;
+        
+        if (entity == null) {
+            
+            response = target.request(ACCEPT)
                 .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
                 .header("Cookie", getGenericUserCookie())
                 .delete();
-
+        } else {
+            
+            response = target.request(ACCEPT)
+                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
+                .header("Cookie", getGenericUserCookie())
+                .build("DELETE", Entity.entity(entity, MediaType.APPLICATION_JSON_TYPE))
+                .invoke(Response.class);
+        }
+        
         return response;
     }
 

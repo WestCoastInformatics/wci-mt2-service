@@ -61,6 +61,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -3267,13 +3268,15 @@ public class RefsetMemberService {
     public static List<String> addRefsetMembers(final String refsetInternalId,
         List<String> conceptIds) throws Exception {
 
-        final List<String> unaddedConcepts = new ArrayList<>();
+        List<String> unaddedConcepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
 
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = service.get(refsetInternalId, Refset.class);
+            final String branchPath = RefsetService.getBranchPath(refset);
+            final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
 
             if (refset == null) {
                 throw new Exception("Refset Internal Id: " + refsetInternalId
@@ -3281,8 +3284,6 @@ public class RefsetMemberService {
             }
 
             final String refsetId = refset.getRefsetId();
-            final String url = SnowstormConnection.BASE_URL + RefsetService.getBranchPath(refset)
-                    + "/" + "members";
 
             // clear the caches for this refset
             clearAllMemberCaches(refsetInternalId);
@@ -3291,15 +3292,13 @@ public class RefsetMemberService {
             // is active
             // (though the concept itself can be inactive)
             final String memberSearchUrl =
-                    SnowstormConnection.BASE_URL + "browser/" + RefsetService.getBranchPath(refset)
-                            + "/members?referenceSet=" + refset.getRefsetId()
+                    SnowstormConnection.BASE_URL + "browser/" + branchPath + "/members?referenceSet=" + refset.getRefsetId()
                             + "&limit=5000&offset=0&active=true&referencedComponentId="
                             + String.join(",", conceptIds);
 
             logger.debug("addRefsetMembers search URL: " + memberSearchUrl);
 
             Iterator<JsonNode> iterator = null;
-            final List<String> conceptsAlreadyMembers = new ArrayList<>();
 
             try (final Response response = SnowstormConnection.getResponse(memberSearchUrl)) {
 
@@ -3315,48 +3314,149 @@ public class RefsetMemberService {
                 iterator = root.get("items").iterator();
             }
 
-            // loop thru the returned member details add any to the list that
-            // are already members
+            // loop thru the returned member details remove any from the list to add
             while (iterator != null && iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
                 final String conceptId = conceptNode.get("referencedComponentId").asText();
-                conceptsAlreadyMembers.add(conceptId);
+                conceptIds.remove(conceptId);
             }
 
-            for (final String conceptId : conceptIds) {
-
-                // don't add concepts that are already members
-                if (conceptsAlreadyMembers.contains(conceptId)) {
-                    continue;
-                }
-
-                final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId)
-                        .put("referencedComponentId", conceptId);
-
-                logger.debug("addRefsetMembers URL: " + url);
-                logger.debug("addRefsetMembers URL body: " + body.toString());
-
-                try (final Response response =
-                        SnowstormConnection.postResponse(url, body.toString())) {
-
-                    // Only process payload if Rest call is successful
-                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                        logger.error("Add Refset Member call to url '" + url + "' for refset '"
-                                + refsetId + "' and concept '" + conceptId + "' wasn't successful. "
-                                + response.toString());
-                        unaddedConcepts.add(conceptId);
-                    }
-                }
+            if (conceptIds.size() == 1) {
+                unaddedConcepts = callAddMemberSingle(refsetId, url, conceptIds.get(0));
+            } else {
+                unaddedConcepts = callAddMembersBulk(refsetId, url, conceptIds);
             }
-            
-            // caches the ancestors again for this refset
-            //cacheMemberAncestors(refsetInternalId);
         }
 
         return unaddedConcepts;
+    }
+    
+    /**
+     * Call the API to add a single member to a refset.
+     *
+     * @param refsetId the refset ID
+     * @param url the URL to call
+     * @param conceptId the concept ID to add as a member
+     * @return A list of concepts that were unable to be added
+     * @throws Exception the exception
+     */
+    private static List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId) throws Exception {
+        
+        final List<String> unaddedConcepts = new ArrayList<>();
+        
+        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId)
+            .put("referencedComponentId", conceptId);
 
+        logger.debug("callAddMemberSingle URL: " + url);
+        logger.debug("callAddMemberSingle URL body: " + body.toString());
+    
+        try (final Response response =
+                SnowstormConnection.postResponse(url, body.toString())) {
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+    
+                logger.error("Add Refset Member call to url '" + url + "' for refset '"
+                        + refsetId + "' and concept '" + conceptId + "' wasn't successful. "
+                        + response.toString());
+                unaddedConcepts.add(conceptId);
+            }
+        }
+        
+        return unaddedConcepts;
+    }
+    
+    /**
+     * Call the API to add members in bulk to a refset.
+     *
+     * @param refsetId the refset ID
+     * @param url the base URL to call
+     * @param conceptIds a list of concept IDs to make members
+     * @return A list of concepts that were unable to be added
+     * @throws Exception the exception
+     */
+    private static List<String> callAddMembersBulk(final String refsetId, final String url, List<String> conceptIds) throws Exception {
+        
+        final List<String> unaddedConcepts = new ArrayList<>();
+        final String bulkUrl = url + "/bulk";
+        final ObjectMapper mapper = new ObjectMapper();
+        final ArrayNode body = mapper.createArrayNode();
+
+        for (final String conceptId : conceptIds) {
+
+            final ObjectNode memberBody = mapper.createObjectNode()
+                .put("refsetId", refsetId)
+                .put("referencedComponentId", conceptId);
+            
+            body.add(memberBody);
+        }
+        
+        logger.debug("callAddMembersBulk URL: " + bulkUrl);
+        logger.debug("callAddMembersBulk URL body: " + body.toString());
+        
+        String jobStatusUrl = null;
+        boolean jobDone = false;
+        String errorMessage = "Add Refset Member bulk call to url '" + bulkUrl + "' for refset '" + refsetId + " wasn't successful. ";
+        
+        try (final Response response = SnowstormConnection.postResponse(bulkUrl, body.toString())) {
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.CREATED.getStatusCode()) {
+                logger.error(errorMessage + response.toString());
+            }
+            
+            jobStatusUrl = response.getHeaderString("Location");
+        }
+        
+        if (jobStatusUrl == null) {
+            logger.error(errorMessage);
+            
+        } else {
+            
+            try {
+                Thread.sleep(800);
+            } catch(InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+            
+            logger.debug("callAddMembersBulk job status URL: " + jobStatusUrl);
+            
+            while (!jobDone) {
+                
+                try (final Response response = SnowstormConnection.getResponse(jobStatusUrl, body.toString())) {
+
+                    // Only process payload if Rest call is successful
+                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                        logger.error(errorMessage + response.toString());
+                    }
+                    
+                    final String resultString = response.readEntity(String.class);
+                    final JsonNode root = mapper.readTree(resultString.toString());
+                    
+                    //logger.debug("addRefsetMembers job status response: " + root);
+                    final String status = root.get("status").asText();
+                    
+                    if (status.equalsIgnoreCase("COMPLETED")) {
+                        jobDone = true;
+                    
+                    } else if (status.equalsIgnoreCase("failed")) {
+                        logger.error(errorMessage + root.get("message").asText());
+                    } else {
+                        
+                        logger.debug("Bulk member add hasn't finished yet...");
+                        try {
+                            Thread.sleep(800);
+                        } catch(InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+            }
+        }
+        
+        return unaddedConcepts;
     }
 
     /**
@@ -3370,8 +3470,7 @@ public class RefsetMemberService {
     public static List<String> removeRefsetMembers(final String refsetInternalId, String conceptIds)
         throws Exception {
 
-        final List<String> unremovedConcepts = new ArrayList<>();
-        final Map<String, String> membersToRemove = new HashMap<>();
+        List<String> unremovedConcepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
 
         // get the edition and project for the new refset
@@ -3414,73 +3513,32 @@ public class RefsetMemberService {
                 final JsonNode root = mapper.readTree(resultString.toString());
                 iterator = root.get("items").iterator();
             }
-
-            // loop thru the returned member details and inactivate it or add it
-            // to the list
-            // to delete
+            
+            final ArrayNode conceptDeleteArray = mapper.createArrayNode();
+            
+            // loop thru the returned member details and add it to the list to delete
             while (iterator != null && iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
-                final String conceptId = conceptNode.get("referencedComponentId").asText();
                 final String membershipId = conceptNode.get("memberId").asText();
-                final boolean released = conceptNode.get("released").asBoolean();
-                final String url = SnowstormConnection.BASE_URL
-                        + RefsetService.getBranchPath(refset) + "/" + "members/" + membershipId;
-                boolean couldNotRemove = false;
+               
+                conceptDeleteArray.add(membershipId);
+            }
+            
+            if (conceptDeleteArray.size() > 0) {
+                
+                final String deleteBody = mapper.createObjectNode().set("memberIds", conceptDeleteArray).toString();
+                final String url = SnowstormConnection.BASE_URL + RefsetService.getBranchPath(refset) + "/" + "members?force";
+                String errorMessage = "Remove Refset Member bulk call to url '" + url + "' for refset '" + refsetId + " wasn't successful. ";
+                
+                logger.debug("removeRefsetMembers URL: " + url);
+                logger.debug("removeRefsetMembers URL Body: " + deleteBody);
+                
+                try (final Response response = SnowstormConnection.deleteResponse(url, deleteBody)) {
 
-                logger.debug("removeRefsetMembers member remove URL: " + url);
-
-                // if the member has not been released then remove the
-                // membership
-                if (!released) {
-
-                    try (final Response response = SnowstormConnection.deleteResponse(url)) {
-
-                        // Only process payload if Rest call is successful
-                        if (response.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
-
-                            logger.error("Unable to delete refset member: " + conceptId
-                                    + " ; membership ID: " + membershipId + ". Status: "
-                                    + Integer.toString(response.getStatus()) + ". Error: "
-                                    + response.toString());
-                            couldNotRemove = true;
-                        }
-
-                        logger.info("Deleted refset member: " + conceptId);
-                    }
-                }
-
-                // if the member has been released or it couldn't be removed
-                // then inactivate the
-                // membership
-                if (released || couldNotRemove) {
-
-                    final ObjectNode memberBody = mapper.createObjectNode().put("active", false)
-                            .put("effectiveTime", conceptNode.get("effectiveTime").asText())
-                            .put("memberId", conceptNode.get("memberId").asText())
-                            .put("moduleId", conceptNode.get("moduleId").asText())
-                            .put("referencedComponentId",
-                                    conceptNode.get("referencedComponentId").asText())
-                            .put("refsetId", conceptNode.get("refsetId").asText())
-                            .put("released", conceptNode.get("released").asBoolean())
-                            .put("releasedEffectiveTime",
-                                    conceptNode.get("releasedEffectiveTime").asInt())
-                            .set("additionalFields", conceptNode.get("additionalFields"));
-
-                    try (final Response response =
-                            SnowstormConnection.putResponse(url, memberBody.toString())) {
-
-                        // Only process payload if Rest call is successful
-                        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                            logger.error("Unable to inactivate refset member: " + conceptId
-                                    + " ; membership ID: " + membershipId + ". Status: "
-                                    + Integer.toString(response.getStatus()) + ". Error: "
-                                    + response.toString());
-                            unremovedConcepts.add(conceptId);
-                        }
-
-                        logger.info("Inactivated refset member: " + conceptId);
+                    // Only process payload if Rest call is successful
+                    if (response.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
+                        logger.error(errorMessage + response.toString());
                     }
                 }
             }

@@ -169,6 +169,7 @@ dependencies {
   implementation "org.hibernate:hibernate-hikaricp:5.5.3.Final"
   implementation "org.reflections:reflections:0.9.11"
   implementation "javax.ws.rs:javax.ws.rs-api:2.1.1"
+  implementation "org.jboss.resteasy:resteasy-client:4.7.2.Final"
   implementation "mysql:mysql-connector-java"
   implementation "commons-cli:commons-cli:1.4"
   implementation "cglib:cglib:2.2.2"
