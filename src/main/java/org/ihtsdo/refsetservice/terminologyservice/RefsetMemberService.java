@@ -3561,7 +3561,7 @@ public class RefsetMemberService {
         final List<String> concepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
         String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl="
-                + StringUtility.encodeValue(QueryParserBase.escape(ecl)) + "&limit=1000";
+                + StringUtility.encodeValue(ecl) + "&limit=1000";
         boolean keepSearching = true;
         int total = 0;
         int totalReturned = 0;

@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -245,12 +246,7 @@ public class RefsetService {
             
             if (refset.getType().equals(Refset.INTENSIONAL)) {
                 
-                String ecl = ""; 
-                        
-                // TODO - !! need to make this work with multiple clauses and negation !! loop thru the clauses to get the combined ECL
-                for (final DefinitionClause clause : refset.getDefinitionClauses()) {
-                    ecl += clause.getValue();
-                }
+                String ecl = getEclFromDefinition(refset.getDefinitionClauses());
                 
                 // get the list of concepts from the ECL
                 List<String> conceptIdList = RefsetMemberService.getConceptIdsFromEcl(getBranchPath(refset.getId()), ecl);
@@ -264,6 +260,142 @@ public class RefsetService {
         }
         
         return newInternalRefsetId;
+    }
+    
+    /**
+     * Generate an ECL statement from a list of definition clauses.
+     *
+     * @param definitionClauses the definition clauses
+     * @return the generated ECL statement
+     * @throws Exception the exception
+     */
+    public static String getEclFromDefinition(final List<DefinitionClause> definitionClauses) throws Exception {
+        
+        String additiveEcl = ""; 
+        String negatedEcl = ""; 
+        String ecl = ""; 
+                
+        // loop thru the clauses to get the combined ECL
+        for (final DefinitionClause clause : definitionClauses) {
+            
+            if (clause.getNegated()) {
+                negatedEcl += "(" + clause.getValue() + ") OR ";
+            } else {
+                additiveEcl += "(" + clause.getValue() + ") AND ";
+            }
+            
+        }
+        
+        ecl = StringUtils.removeEnd(additiveEcl, " AND ");
+        
+        if (!negatedEcl.equals("")) {
+            ecl = "(" + ecl +  ") MINUS (" + StringUtils.removeEnd(negatedEcl, " OR ") + ")";
+        }
+        
+        return ecl;
+    }
+    
+    /**
+     * Modify a refset.
+     *
+     * @param user the user
+     * @param refsetInternalId the internal refset ID to modify
+     * @return the updated refset
+     * @throws Exception the exception
+     */
+    public static String modifyRefset(final User user, final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
+       
+        try (TerminologyService service = new TerminologyService()) {
+
+            Refset refset = getRefset(user, refsetInternalId);
+            
+            if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+                throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
+            }
+
+            service.setModifiedBy("RT2");
+            service.setModifiedFlag(true);
+            
+            // set user changed fields
+            refset.setTags(refsetEditParameters.getTags());
+            refset.setVersionNotes(refsetEditParameters.getVersionNotes());
+            refset.setNarrative(refsetEditParameters.getNarrative());
+            refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
+            refset.setType(refsetEditParameters.getType());
+            refset.setExternalUrl(refsetEditParameters.getExternalUrl()); 
+            
+            // update an object
+            service.update(refset);
+            
+            if (refset.getType().equals(Refset.INTENSIONAL)) {
+                
+                final String oldDefinition = getEclFromDefinition(refset.getDefinitionClauses());
+                final String newDefinition = getEclFromDefinition(refsetEditParameters.getDefinitionClauses());
+                
+                if (!oldDefinition.equals(newDefinition)) {
+                    
+                    final String branchPath = getBranchPath(refsetInternalId);
+                    final List<String> oldMembers = RefsetMemberService.getConceptIdsFromEcl(branchPath, oldDefinition);
+                    final List<String> newMembers = RefsetMemberService.getConceptIdsFromEcl(branchPath, newDefinition);
+                    
+                    final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
+                    
+                    // loop thru the existing clauses see what has been removed
+                    for (final DefinitionClause existingClause : definitionClauses) {
+                        
+                        int matchIndex = -1;
+                        
+                        for (final DefinitionClause newClause : refsetEditParameters.getDefinitionClauses()) {
+                            
+                            if (existingClause.getValue().equals(newClause.getValue()) && (existingClause.getNegated() == newClause.getNegated())) {
+                                
+                                matchIndex = refsetEditParameters.getDefinitionClauses().indexOf(newClause);
+                                break;
+                            }
+                        }
+                        
+                        // if the clause still exists remove it from the new clauses, otherwise remove the old clause from the DB 
+                        if (matchIndex >= 0) {
+                            refsetEditParameters.getDefinitionClauses().remove(matchIndex);
+                        } else {
+                            
+                            // remove an object
+                            service.remove(existingClause);
+                            definitionClauses.remove(existingClause);
+                        }
+                    }
+                    
+                    // loop thru the new clauses to add to the DB
+                    for (final DefinitionClause newClause : refsetEditParameters.getDefinitionClauses()) {
+                        service.add(newClause);
+                    }
+                    
+                    // add the new clauses to the refset and save the refset
+                    definitionClauses.addAll(refsetEditParameters.getDefinitionClauses());
+                    service.update(refset);
+                    
+                    // Get the list of members to remove
+                    List<String> conceptsToRemove = oldMembers.stream()
+                        .filter(oldMember -> !newMembers.contains(oldMember))
+                        .collect(Collectors.toList());
+                    
+                    logger.debug("modifyRefset intensional conceptsToRemove: " + conceptsToRemove);
+                    RefsetMemberService.removeRefsetMembers(refsetInternalId, String.join(",", conceptsToRemove));
+                    
+                    // Get the list of members to add
+                    List<String> conceptsToAdd = newMembers.stream()
+                        .filter(newMember -> !oldMembers.contains(newMember))
+                        .collect(Collectors.toList());
+                    
+                    logger.debug("modifyRefset intensional conceptsToAdd: " + conceptsToAdd);
+                    RefsetMemberService.addRefsetMembers(refsetInternalId, conceptsToAdd);
+                }
+            }
+             
+            logger.info("Refset " + refset.getRefsetId() + " successfully modified");
+            logger.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));
+            return refsetInternalId;
+        }
     }
     
     /**
@@ -288,7 +420,7 @@ public class RefsetService {
             
             if (refset == null) {
                 throw new Exception("Refset Internal Id: " + refsetInternalId
-                        + " does not exist in the RT2 database");
+                    + " does not exist in the RT2 database");
             }
             
             refsetId = refset.getRefsetId();
@@ -709,6 +841,8 @@ public class RefsetService {
                     
                     termQuery = StringUtils.removeEnd(termQuery, " AND ");
                     
+                    // search all the descriptions of refset concepts
+                    final String refsetDescriptionQuery = "";//searchRefsetDescriptions(searchParameters);
                     String memberRefsetQuery = "";
                     
                     // if it was requested search member concepts
@@ -716,8 +850,20 @@ public class RefsetService {
                         memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
                     }
                     
-                    if (!memberRefsetQuery.equals("")) {
-                        termQuery = "((" + termQuery + ") OR " + memberRefsetQuery + ")";
+                    if (!memberRefsetQuery.equals("") || !refsetDescriptionQuery.equals("")) {
+                        
+                        termQuery = "((" + termQuery + ")";
+                        
+                        if (!memberRefsetQuery.equals("")) {
+                            termQuery += " OR " + memberRefsetQuery;
+                        }
+                        
+                        if (!refsetDescriptionQuery.equals("")) {
+                            termQuery += " OR " + refsetDescriptionQuery;
+                        }
+                        
+                        termQuery += ")";
+                        
                     } else {
                         termQuery = "(" + termQuery + ")";
                     }
@@ -764,42 +910,108 @@ public class RefsetService {
     }
     
     /**
-     * Modify a refset.
+     * Returns a list of all refset IDs.
      *
-     * @param user the user
-     * @param refsetInternalId the internal refset ID to modify
-     * @return the updated refset
+     * @return the list of refset IDs
      * @throws Exception the exception
      */
-    public static String modifyRefset(final User user, final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
-       
+    public static List<String> getRefsetIds() throws Exception {
+        
         try (TerminologyService service = new TerminologyService()) {
 
-            Refset refset = getRefset(user, refsetInternalId);
+            List<String> results = new ArrayList<String>();
             
-            if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-                throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
+
+            final ResultList<Refset> refsets = service.find("latestVersion: true", new PfsParameter(), Refset.class, null);
+            
+            for (final Refset refset : refsets.getItems()) {
+                results.add(refset.getRefsetId());
+            }
+            
+            return results;
+        }
+    }
+    
+    /**
+     * Get a list of refsets containing descriptions matching the search.
+     *
+     * @param searchParameters the search parameters
+     * @return a list of refsets containing descriptions matching the search
+     * @throws Exception the exception
+     */
+    public static String searchRefsetDescriptions(final SearchParameters searchParameters)
+        throws Exception {
+
+        String refsetQuery = "";
+        final String query = searchParameters.getQuery(); 
+                                                          
+        final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
+                "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
+        String snowstormQuery = "";
+        String[] queryParts = query.split(" AND ");
+
+        for (final String queryPart : queryParts) {
+
+            String[] keyValue = queryPart.split(":");
+
+            if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
+                continue;
+            } else {
+
+                snowstormQuery += queryPart + " AND ";
+            }
+        }
+
+        // if there are no query terms just exit the method
+        if (snowstormQuery.equals("")) {
+            return refsetQuery;
+        }
+        
+        // get the list of refset IDs to look up descriptions for
+        final String refsetIds = String.join(",", getRefsetIds());
+        
+        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+
+        String url = SnowstormConnection.BASE_URL + "concepts?offset=0&limit=3000&term="
+                + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery))
+                + "&conceptIds=" + refsetIds;
+
+        logger.debug("searchRefsetDescriptions URL: " + url);
+
+        try (Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception(
+                        "call to url '" + url + "' wasn't successful. " + response.toString());
+            }
+            
+            final ObjectMapper mapper = new ObjectMapper();
+            final String resultString = response.readEntity(String.class);
+            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode items = root.get("items");
+            final Iterator<JsonNode> iterator = items.iterator();
+
+            // loop thru the returned concepts add them to the list
+            while (iterator != null && iterator.hasNext()) {
+
+                final JsonNode conceptNode = iterator.next();
+                final String refsetId = conceptNode.get("conceptId").asText();
+
+                refsetQuery += refsetId + " OR ";
             }
 
-            service.setModifiedBy("RT2");
-            service.setModifiedFlag(true);
-            
-            // set user changed fields
-            refset.setTags(refsetEditParameters.getTags());
-            refset.setVersionNotes(refsetEditParameters.getVersionNotes());
-            refset.setNarrative(refsetEditParameters.getNarrative());
-            refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
-            refset.setType(refsetEditParameters.getType());
-            refset.setExternalUrl(refsetEditParameters.getExternalUrl()); 
-            refset.setDefinitionClauses(refsetEditParameters.getDefinitionClauses()); 
-            
-            // update an object
-            service.update(refset);
+            if (!refsetQuery.equals("")) {
+                refsetQuery = "refsetId:(" + StringUtils.removeEnd(refsetQuery, " OR ") + ")";
+            }
 
-            logger.info("Refset " + refset.getRefsetId() + " successfully modified");
-            logger.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));
-            return refsetInternalId;
+        } catch (Exception ex) {
+            throw new Exception(
+                    "Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
         }
+
+        logger.debug("searchRefsetDescriptions refsetQuery: " + refsetQuery);
+
+        return refsetQuery;
     }
     
     /**
