@@ -2,6 +2,7 @@
 package org.ihtsdo.refsetservice.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +17,7 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -35,6 +37,9 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmb
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
+import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -50,6 +55,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Indexed
 public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
+    /** The logger. */
+    private static Logger logger = LoggerFactory.getLogger(Refset.class);
+    
     /** The refset ID. */
     @Column(nullable = false, length = 256)
     private String refsetId;
@@ -133,6 +141,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private String parentConceptId;
     
+    /** The concept members added through inclusion clauses. */
+    @Transient
+    private List<String> inclusionConcepts = new ArrayList<>();
+    
+    /** The concept members added through exclusion clauses. */
+    @Transient
+    private List<String> exclusionConcepts = new ArrayList<>();
+    
     /** The descriptions. */
     @Transient
     private List<Map<String, String>> descriptions = new ArrayList<>();
@@ -167,6 +183,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     // @Fetch(FetchMode.JOIN)
     @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class,
             orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("created ASC")
     private List<DefinitionClause> definitionClauses = new ArrayList<>();
     
     /** The value to use for the 'published' version status. */
@@ -188,6 +205,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The value to use for the 'EXTENSIONAL' refset type. */
     @Transient
     public static final String EXTENSIONAL = "EXTENSIONAL";
+    
+    /** The value to use for the 'INCLUSION' intensional definition exception type. */
+    @Transient
+    public static final String INCLUSION = "INCLUSION";
+    
+    /** The value to use for the 'EXCLUSION' intensional definition exception type. */
+    @Transient
+    public static final String EXCLUSION = "EXCLUSION";
 
     /**
      * Instantiates an empty {@link Refset}.
@@ -259,6 +284,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         latestVersion = other.isLatestVersion();
         feedbackVisible = other.isFeedbackVisible();
         versionList = other.getVersionList();
+        inclusionConcepts = other.getInclusionConcepts();
+        exclusionConcepts = other.getExclusionConcepts();
         descriptions = other.getDescriptions();
         definitionClauses = new ArrayList<DefinitionClause>(other.getDefinitionClauses());
         tags = new HashSet<String>(other.getTags());
@@ -314,7 +341,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
             sortable = Sortable.YES)
     public String getType() {
-        return type;
+        return type.toUpperCase();
     }
 
     /**
@@ -323,7 +350,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param type the type
      */
     public void setType(final String type) {
-        this.type = type;
+        this.type = type.toUpperCase();
     }
 
     /**
@@ -444,6 +471,44 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
+     * Gets the inclusion concepts.
+     *
+     * @return the inclusion concepts
+     */
+    @JsonGetter()
+    public List<String> getInclusionConcepts() {
+        return inclusionConcepts;
+    }
+
+    /**
+     * Sets the inclusion concepts.
+     *
+     * @param inclusionConcepts the inclusion concepts
+     */
+    public void setInclusionConcepts(List<String> inclusionConcepts) {
+        this.inclusionConcepts = inclusionConcepts;
+    }
+    
+    /**
+     * Gets the exclusion concepts.
+     *
+     * @return the exclusion concepts
+     */
+    @JsonGetter()
+    public List<String> getExclusionConcepts() {
+        return exclusionConcepts;
+    }
+    
+    /**
+     * Sets the exclusion concepts.
+     *
+     * @param exclusionConcepts the exclusion concepts
+     */
+    public void setExclusionConcepts(List<String> exclusionConcepts) {
+        this.exclusionConcepts = exclusionConcepts;
+    }
+    
+    /**
      * Gets the descriptions.
      *
      * @return the descriptions
@@ -452,7 +517,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public List<Map<String, String>> getDescriptions() {
         return descriptions;
     }
-
+    
     /**
      * Sets the descriptions.
      *
@@ -746,6 +811,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param definitionClauses the definitionClauses to set
      */
     public void setDefinitionClauses(final List<DefinitionClause> definitionClauses) {
+        
+        Collections.sort(definitionClauses, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
         this.definitionClauses = definitionClauses;
     }
 
@@ -1042,6 +1109,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((assignedUser == null) ? 0 : assignedUser.hashCode());
         result = prime * result + ((parentConceptId == null) ? 0 : parentConceptId.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
+        result = prime * result + ((inclusionConcepts == null) ? 0 : inclusionConcepts.hashCode());
+        result = prime * result + ((exclusionConcepts == null) ? 0 : exclusionConcepts.hashCode());
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (downloadable ? 1 : 0);
         result = prime * result + (feedbackVisible ? 1 : 0);
@@ -1122,6 +1191,22 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
                 return false;
             }
         } else if (!parentConceptId.equals(other.parentConceptId)) {
+            return false;
+        }
+        
+        if (inclusionConcepts == null) {
+            if (other.inclusionConcepts != null) {
+                return false;
+            }
+        } else if (!inclusionConcepts.equals(other.inclusionConcepts)) {
+            return false;
+        }
+        
+        if (exclusionConcepts == null) {
+            if (other.exclusionConcepts != null) {
+                return false;
+            }
+        } else if (!exclusionConcepts.equals(other.exclusionConcepts)) {
             return false;
         }
         

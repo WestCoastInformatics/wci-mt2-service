@@ -281,18 +281,64 @@ public class RefsetService {
             if (clause.getNegated()) {
                 negatedEcl += "(" + clause.getValue() + ") OR ";
             } else {
-                additiveEcl += "(" + clause.getValue() + ") AND ";
+                additiveEcl += "(" + clause.getValue() + ") OR ";
             }
             
         }
         
-        ecl = StringUtils.removeEnd(additiveEcl, " AND ");
+        ecl = StringUtils.removeEnd(additiveEcl, " OR ");
         
         if (!negatedEcl.equals("")) {
             ecl = "(" + ecl +  ") MINUS (" + StringUtils.removeEnd(negatedEcl, " OR ") + ")";
         }
         
         return ecl;
+    }
+    
+    /**
+     * Generate lists of concept ID for inclusion and exclusion clauses from a list of definition clauses.
+     *
+     * @param definitionClauses the definition clauses
+     * @param branchPath the refset branch path
+     * @return the generated ECL statement
+     * @throws Exception the exception
+     */
+    public static Map<String, List<String>> getInclusionExclusionLists(final List<DefinitionClause> definitionClauses, final String branchPath) throws Exception {
+        
+        String additiveEcl = ""; 
+        String negatedEcl = ""; 
+        List<String> inclusionList = new ArrayList<>();
+        List<String> exclusionList = new ArrayList<>();
+        final Map<String, List<String>> returnMap = new HashMap<>();
+                
+        // loop thru the clauses to get the combined ECL
+        for (int i = 1; i < definitionClauses.size(); i++) {
+            
+            final DefinitionClause clause = definitionClauses.get(i);
+            
+            if (clause.getNegated()) {
+                negatedEcl += "(" + clause.getValue() + ") OR ";
+            } else {
+                additiveEcl += "(" + clause.getValue() + ") OR ";
+            }
+        }
+        
+        if (!additiveEcl.equals("")) {
+            
+            additiveEcl = StringUtils.removeEnd(additiveEcl, " OR ");
+            inclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, additiveEcl);
+        }
+        
+        if (!negatedEcl.equals("")) {
+            
+            negatedEcl = StringUtils.removeEnd(negatedEcl, " OR ");
+            exclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, negatedEcl);
+        }
+        
+        returnMap.put(Refset.INCLUSION, inclusionList);
+        returnMap.put(Refset.EXCLUSION, exclusionList);
+        
+        return returnMap;
     }
     
     /**
@@ -309,7 +355,7 @@ public class RefsetService {
 
             Refset refset = getRefset(user, refsetInternalId);
             
-            if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+            if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
                 throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
             }
 
@@ -327,75 +373,179 @@ public class RefsetService {
             // update an object
             service.update(refset);
             
+            // if this is an intensional refset update the definition
             if (refset.getType().equals(Refset.INTENSIONAL)) {
-                
-                final String oldDefinition = getEclFromDefinition(refset.getDefinitionClauses());
-                final String newDefinition = getEclFromDefinition(refsetEditParameters.getDefinitionClauses());
-                
-                if (!oldDefinition.equals(newDefinition)) {
-                    
-                    final String branchPath = getBranchPath(refsetInternalId);
-                    final List<String> oldMembers = RefsetMemberService.getConceptIdsFromEcl(branchPath, oldDefinition);
-                    final List<String> newMembers = RefsetMemberService.getConceptIdsFromEcl(branchPath, newDefinition);
-                    
-                    final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
-                    
-                    // loop thru the existing clauses see what has been removed
-                    for (final DefinitionClause existingClause : definitionClauses) {
-                        
-                        int matchIndex = -1;
-                        
-                        for (final DefinitionClause newClause : refsetEditParameters.getDefinitionClauses()) {
-                            
-                            if (existingClause.getValue().equals(newClause.getValue()) && (existingClause.getNegated() == newClause.getNegated())) {
-                                
-                                matchIndex = refsetEditParameters.getDefinitionClauses().indexOf(newClause);
-                                break;
-                            }
-                        }
-                        
-                        // if the clause still exists remove it from the new clauses, otherwise remove the old clause from the DB 
-                        if (matchIndex >= 0) {
-                            refsetEditParameters.getDefinitionClauses().remove(matchIndex);
-                        } else {
-                            
-                            // remove an object
-                            service.remove(existingClause);
-                            definitionClauses.remove(existingClause);
-                        }
-                    }
-                    
-                    // loop thru the new clauses to add to the DB
-                    for (final DefinitionClause newClause : refsetEditParameters.getDefinitionClauses()) {
-                        service.add(newClause);
-                    }
-                    
-                    // add the new clauses to the refset and save the refset
-                    definitionClauses.addAll(refsetEditParameters.getDefinitionClauses());
-                    service.update(refset);
-                    
-                    // Get the list of members to remove
-                    List<String> conceptsToRemove = oldMembers.stream()
-                        .filter(oldMember -> !newMembers.contains(oldMember))
-                        .collect(Collectors.toList());
-                    
-                    logger.debug("modifyRefset intensional conceptsToRemove: " + conceptsToRemove);
-                    RefsetMemberService.removeRefsetMembers(refsetInternalId, String.join(",", conceptsToRemove));
-                    
-                    // Get the list of members to add
-                    List<String> conceptsToAdd = newMembers.stream()
-                        .filter(newMember -> !oldMembers.contains(newMember))
-                        .collect(Collectors.toList());
-                    
-                    logger.debug("modifyRefset intensional conceptsToAdd: " + conceptsToAdd);
-                    RefsetMemberService.addRefsetMembers(refsetInternalId, conceptsToAdd);
-                }
+                refset = modifyRefsetDefinition(service, refset, refsetEditParameters.getDefinitionClauses());
             }
              
             logger.info("Refset " + refset.getRefsetId() + " successfully modified");
             logger.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));
             return refsetInternalId;
         }
+    }
+    
+    /**
+     * Add an inclusion or exclusion clause to a refset definition.
+     *
+     * @param user the user
+     * @param refsetInternalId the internal refset ID to modify
+     * @param ecl the ecl to use for the clause
+     * @param definitionExceptionType is the exception an inclusion or exclusion
+     * @return the ecl to use for the clause
+     * @throws Exception the exception
+     */
+    public static List<String> addDefinitionException(final User user, final String refsetInternalId, final String ecl, final String definitionExceptionType) throws Exception {
+       
+        try (TerminologyService service = new TerminologyService()) {
+
+            List<String> unaddedConcepts = new ArrayList<>();
+            Refset refset = getRefset(user, refsetInternalId);
+            
+            if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
+                throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
+            }
+            
+            if (!refset.getType().equals(Refset.INTENSIONAL)) {
+                throw new Exception("This is not an Intensional Refset " + refsetInternalId);
+            }
+            
+            final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
+            final List<DefinitionClause> newClauses = new ArrayList<>();
+            boolean isNewClause = true;
+            
+            for (final DefinitionClause currentClause : currentClauses) {
+                
+                if (currentClause.getValue().equals(ecl)) {
+                    
+                    isNewClause = false;
+                    break;
+                    
+                } else {
+                    newClauses.add(new DefinitionClause(currentClause));
+                }
+            }
+            
+            if (isNewClause) {
+                
+                boolean negated = false;
+                
+                if (definitionExceptionType.equals(Refset.EXCLUSION)) {
+                    negated = true;
+                }
+                
+                newClauses.add(new DefinitionClause(ecl, negated));
+                refset = modifyRefsetDefinition(service, refset, newClauses);
+            }
+             
+            logger.info("Refset " + refset.getRefsetId() + " successfully modified");
+            logger.debug("addDefinitionException: Refset: " + ModelUtility.toJson(refset));
+            return unaddedConcepts;
+        }
+    }
+    
+    /**
+     * Modify a refset definition.
+     *
+     * @param user the user
+     * @param refsetInternalId the internal refset ID to modify
+     * @return the updated refset
+     * @throws Exception the exception
+     */
+    public static Refset modifyRefsetDefinition(final TerminologyService service, final Refset refset, final List<DefinitionClause> modifiedDefinitionClauses) throws Exception {
+       
+        service.setModifiedBy("RT2");
+        service.setModifiedFlag(true);
+        
+        if (refset.getType().equals(Refset.INTENSIONAL)) {
+            
+            final String oldDefinition = getEclFromDefinition(refset.getDefinitionClauses());
+            final String newDefinition = getEclFromDefinition(modifiedDefinitionClauses);
+            logger.debug("modifyRefsetDefinition oldDefinition: " + oldDefinition);
+            logger.debug("modifyRefsetDefinition newDefinition: " + newDefinition);
+            
+            if (!oldDefinition.equals(newDefinition)) {
+                
+                final String branchPath = getBranchPath(refset.getId());
+                final List<String> oldMembers = RefsetMemberService.getConceptIdsFromEcl(branchPath, oldDefinition);
+                final List<String> newMembers = RefsetMemberService.getConceptIdsFromEcl(branchPath, newDefinition);
+                
+                logger.debug("modifyRefsetDefinition oldMembers: " + oldMembers);
+                logger.debug("modifyRefsetDefinition newMembers: " + newMembers);
+                
+                final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
+                
+                // loop thru the existing clauses see what has been removed
+                for (final DefinitionClause existingClause : definitionClauses) {
+                    
+                    int matchIndex = -1;
+                    
+                    for (final DefinitionClause newClause : modifiedDefinitionClauses) {
+                        
+                        if (existingClause.getId().equals(newClause.getId())) {
+                            
+                            // if the clause is changed then update the existing clause
+                            if (!existingClause.getValue().equals(newClause.getValue()) || (existingClause.getNegated() != newClause.getNegated())) {
+
+                                existingClause.setValue(newClause.getValue());
+                                existingClause.setNegated(newClause.getNegated());
+                                logger.debug("modifyRefsetDefinition updating clause: " + existingClause);
+                                service.update(existingClause);
+                            }
+                            
+                            matchIndex = modifiedDefinitionClauses.indexOf(newClause);
+                            break;
+                        }
+                    }
+                    
+                    // if the clause still exists remove it from the new clauses, otherwise remove the old clause from the DB 
+                    if (matchIndex >= 0) {
+                        
+                        logger.debug("modifyRefsetDefinition removing clause from editParams: " + modifiedDefinitionClauses.get(matchIndex));
+                        modifiedDefinitionClauses.remove(matchIndex);
+                    } else {
+                        
+                        // remove an object
+                        logger.debug("modifyRefsetDefinition removing clause: " + existingClause);
+                        service.remove(existingClause);
+                        definitionClauses.remove(existingClause);
+                    }
+                }
+                
+                // loop thru the new clauses to add to the DB
+                for (final DefinitionClause newClause : modifiedDefinitionClauses) {
+                    logger.debug("modifyRefsetDefinition adding clause: " + newClause);
+                    service.add(newClause);
+                }
+                
+                // add the new clauses to the refset and save the refset
+                definitionClauses.addAll(modifiedDefinitionClauses);
+                service.update(refset);
+                
+                // Get the list of members to remove
+                List<String> conceptsToRemove = oldMembers.stream()
+                    .filter(oldMember -> !newMembers.contains(oldMember))
+                    .collect(Collectors.toList());
+                 
+                if (conceptsToRemove.size() > 0) {
+                    
+                    logger.debug("modifyRefsetDefinition intensional conceptsToRemove: " + conceptsToRemove);
+                    RefsetMemberService.removeRefsetMembers(refset.getId(), String.join(",", conceptsToRemove));
+                }
+                
+                // Get the list of members to add
+                List<String> conceptsToAdd = newMembers.stream()
+                    .filter(newMember -> !oldMembers.contains(newMember))
+                    .collect(Collectors.toList());
+                
+                if (conceptsToAdd.size() > 0) {
+                    logger.debug("modifyRefsetDefinition intensional conceptsToAdd: " + conceptsToAdd);
+                    RefsetMemberService.addRefsetMembers(refset.getId(), conceptsToAdd);
+                }
+            }
+        }
+         
+        logger.info("Refset " + refset.getRefsetId() + " definition successfully modified");
+        return refset;
     }
     
     /**

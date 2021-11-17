@@ -176,13 +176,8 @@ public class RefsetMemberService {
         ConceptResultList concepts = new ConceptResultList();
 
         try (final TerminologyService service = new TerminologyService()) {
-            Refset refset = service.get(refsetInternalId, Refset.class);
-
-            if (refset == null) {
-                throw new Exception("Refset Internal Id: " + refsetInternalId
-                        + " does not exist in the RT2 database");
-            }
-
+            
+            Refset refset = getRefset(service, refsetInternalId);
             final List<String> nonDefaultPreferredTerms =
                     identifyNonDefaultPreferredTerms(refset.getEdition());
 
@@ -200,6 +195,33 @@ public class RefsetMemberService {
         }
 
         return concepts;
+    }
+    
+    /**
+     * Get the refset.
+     *
+     * @param service the service
+     * @param refsetInternalId the internal refset ID
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public static Refset getRefset(final TerminologyService service, final String refsetInternalId) throws Exception {
+
+        final Refset refset = service.get(refsetInternalId, Refset.class);
+
+        if (refset == null) {
+            throw new Exception("Refset Internal Id: " + refsetInternalId
+                    + " does not exist in the RT2 database");
+        }
+        
+//        if (refset.getType().equals(Refset.INTENSIONAL)) {
+//            
+//            final Map<String, List<String>> exceptionMap = RefsetService.getInclusionExclusionLists(refset.getDefinitionClauses(), getBranchPath(refset));
+//            refset.setInclusionConcepts(exceptionMap.get(Refset.INCLUSION));
+//            refset.setExclusionConcepts(exceptionMap.get(Refset.EXCLUSION));
+//        }
+
+        return refset;
     }
 
     // called recursively to accumulate all refset members in order to compose a
@@ -1879,12 +1901,7 @@ public class RefsetMemberService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
-
-            if (refset == null) {
-                throw new Exception("Refset Internal Id: " + refsetInternalId
-                        + " does not exist in the RT2 database");
-            }
+            final Refset refset = getRefset(service, refsetInternalId);
 
             concepts = searchConcepts(refset, searchParameters, searchRefsetMembers);
 
@@ -2660,7 +2677,7 @@ public class RefsetMemberService {
 
             String conceptId = null;
 
-            if (conceptNode.has("referencedComponentId")) {
+            if (conceptNode.has("referencedComponent")) {
                 conceptId = conceptNode.get("referencedComponent").get("conceptId").asText();
             } else if (conceptNode.has("conceptId")) {
                 conceptId = conceptNode.get("conceptId").asText();
@@ -2725,6 +2742,8 @@ public class RefsetMemberService {
                         concept.setMemberEffectiveTime(SIMPLE_DATE_FORMAT
                                 .parse(conceptNode.get("releasedEffectiveTime").asText()));
                     }
+                    
+                    concept.setDefinitionExceptionType(getConceptDefinitionExceptionType(refset, conceptId));
 
                 } else if (conceptNode.has("conceptId")) {
 
@@ -2991,10 +3010,11 @@ public class RefsetMemberService {
             for (Concept conceptToProcess : conceptsToProcess) {
 
                 if (lookupConcept.getCode().equals(conceptToProcess.getCode())) {
-
+                    
                     conceptToProcess.setMemberOfRefset(lookupConcept.isMemberOfRefset());
                     conceptToProcess.setMemberEffectiveTime(lookupConcept.getMemberEffectiveTime());
                     conceptToProcess.setReleased(lookupConcept.isReleased());
+                    conceptToProcess.setDefinitionExceptionType(getConceptDefinitionExceptionType(refset, conceptToProcess.getCode()));
                     conceptsToBeProcessed--;
                     break;
                 }
@@ -3004,6 +3024,36 @@ public class RefsetMemberService {
                 break;
             }
         }
+    }
+    
+    private static String getConceptDefinitionExceptionType(final Refset refset,
+        final String conceptId) throws Exception {
+        
+        String conceptExceptionType = "";
+        
+        if (!refset.getType().equals(Refset.INTENSIONAL)) {
+            return conceptExceptionType;
+        }
+        
+        final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
+        
+        for (int i = 1; i < definitionClauses.size(); i++) {
+            
+            final DefinitionClause clause = definitionClauses.get(i);
+            
+            if (clause.getValue().matches("\\b" + conceptId + "\\b")){
+                
+                if (clause.getNegated()) {
+                    conceptExceptionType = Refset.EXCLUSION;
+                } else {
+                    conceptExceptionType = Refset.INCLUSION;
+                }
+                
+                return conceptExceptionType;
+            }
+        }
+        
+        return conceptExceptionType;
     }
 
     public static List<Map<String, String>> getMemberHistory(String referencedComponentId,
@@ -3255,6 +3305,24 @@ public class RefsetMemberService {
                         + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
             }
         }
+    }
+    
+    /**
+     * Convert a list of concepts into an ECL statement.
+     *
+     * @param conceptIds a list of concept IDs
+     * @return An ECL statement composed of the list of concept IDs
+     * @throws Exception the exception
+     */
+    public static String conceptListToEclStatement(List<String> conceptIds) throws Exception {
+        
+        String ecl = "";
+        
+        for (final String conceptId : conceptIds) {
+            ecl += conceptId + " OR ";
+        }
+        
+        return StringUtils.removeEnd(ecl, " OR ");
     }
 
     /**

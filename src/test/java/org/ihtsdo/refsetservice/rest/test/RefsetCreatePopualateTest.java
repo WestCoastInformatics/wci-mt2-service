@@ -174,7 +174,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
      */
     @Test
     public void testCreateRefsetPopulateFromSctIdList() throws Exception {
-        final String memberConceptIds = "48176007,280416009,10828004,260385009";
+        final String memberConceptIds = "48176007000,280416009000,10828004000,260385009";
 
         final ObjectMapper mapper = new ObjectMapper();
 

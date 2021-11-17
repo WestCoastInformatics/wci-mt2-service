@@ -197,9 +197,11 @@ public class RefsetController extends BaseController {
             
             List<String> conceptIdList = new ArrayList<>();
             String error = "";
+            List<String> unaddedConcepts;
+            final User user = SecurityService.getUserFromSession(); 
             
             logger.debug("*********** addRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
-            
+              
             // create the list of concepts based on what was passed in
             if (conceptIds != null && !conceptIds.equals("")) {
                 conceptIdList = Arrays.asList(conceptIds.split(","));
@@ -215,7 +217,79 @@ public class RefsetController extends BaseController {
             logger.debug("*********** addRefsetMembers: conceptIdList: " + conceptIdList);
             
             // add the list of concepts as members to the refset
-            final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(refsetInternalId, conceptIdList);
+            unaddedConcepts = RefsetMemberService.addRefsetMembers(refsetInternalId, conceptIdList);
+            
+            // see if there are any concepts that were unable to be added and craft the error message
+            if (unaddedConcepts.size() > 0) {
+                
+                error = "Unable to add concepts ";
+                
+                for (final String unaddedConcept : unaddedConcepts) {
+                    error += unaddedConcept + ", ";
+                }
+                
+                error = StringUtils.removeEnd(error, ", ");
+            }
+            
+            if (error.equals("")) {
+                return "{\"status\": \"All concepts added.\"}";
+            } else {
+                return "{\"error\": \"" + error + "\"}";
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Add new refset members.
+     *
+     * @param active the active status
+     * @param refsetInternalId the internal refset ID
+     * @param conceptIds a comma separated list of concepts to add
+     * @param ecl an ECL query to identify concepts to add
+     * @param conceptFile a file containing concept IDs to add
+     * @param fileType the type of file uploaded (list or rf2)
+     * @param definitionType is the exception an inclusion or exclusion
+     * @return the new internal refset ID
+     * @throws Exception the exception
+     */
+    @PostMapping("/refset/{refsetInternalId}/definitionExceptions")
+    public @ResponseBody String addRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
+        @RequestParam(required = false) final MultipartFile conceptFile,
+        @RequestParam(required = false) final String fileType,
+        @RequestParam(required = false) final String definitionExceptionType)
+        throws Exception {
+        
+        try {
+            
+            List<String> conceptIdList = new ArrayList<>();
+            String error = "";
+            List<String> unaddedConcepts;
+            final User user = SecurityService.getUserFromSession(); 
+            
+            logger.debug("*********** addRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType + " ; definitionExceptionType: " + definitionExceptionType);
+               
+            String inclusionEcl = ecl;
+            
+            if (ecl == null || ecl.equals("")) {
+                
+                // create the list of concepts based on what was passed in
+                if (conceptIds != null && !conceptIds.equals("")) {
+                    conceptIdList = Arrays.asList(conceptIds.split(","));
+                    
+                } else if (ecl == null || ecl.equals("")) {
+                    conceptIdList = RefsetService.getConceptIdsFromFile(conceptFile, fileType);
+                }
+                
+                inclusionEcl = RefsetMemberService.conceptListToEclStatement(conceptIdList);
+            }
+            
+            unaddedConcepts = RefsetService.addDefinitionException(user, refsetInternalId, inclusionEcl, definitionExceptionType);
             
             // see if there are any concepts that were unable to be added and craft the error message
             if (unaddedConcepts.size() > 0) {

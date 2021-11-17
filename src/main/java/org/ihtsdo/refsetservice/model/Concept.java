@@ -46,7 +46,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The descriptions. */
     private List<Map<String, String>> descriptions = new ArrayList<>();
-
+    
     // These next two booleans are NOT needed for tree
     /** The flag for if a user can see the history for this concept. */
     private boolean historyVisible;
@@ -59,6 +59,9 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     
     /** The flag for if concept membership has been released. */
     private boolean released;
+    
+    /** What kind of intensional refset definition exception type is this concept. (definition/inclusion/exclusion) */
+    private String definitionExceptionType;
 
     // Members below are filled in when open Concept Details screen only (for
     // now)
@@ -137,6 +140,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         children = other.getChildren();
         hasDescendantRefsetMembers = other.getHasDescendantRefsetMembers();
         memberOfRefset = other.isMemberOfRefset();
+        definitionExceptionType = other.getDefinitionExceptionType();
         hasChildren = other.getHasChildren();
         roleGroups = other.getRoleGroups();
         defined = other.isDefined();
@@ -179,7 +183,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     public void setName(final String name) {
         this.name = name;
     }
-    
+   
     /**
      * Returns the fsn.
      *
@@ -382,6 +386,24 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     public void setHasAncestorRefsetMembers(boolean hasAncestorRefsetMembers) {
         this.hasAncestorRefsetMembers = hasAncestorRefsetMembers;
     }
+    
+    /**
+     * Returns the definition exception type.
+     *
+     * @return the definition exception type
+     */
+    public String getDefinitionExceptionType() {
+        return definitionExceptionType;
+    }
+    
+    /**
+     * Sets the definition exception type.
+     *
+     * @param intensionalMemberType the definition exception type
+     */
+    public void setDefinitionExceptionType(final String intensionalMemberType) {
+        this.definitionExceptionType = intensionalMemberType;
+    }
 
     /**
      * Gets the children.
@@ -478,6 +500,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((children == null) ? 0 : children.hashCode());
         result = prime * result + ((parents == null) ? 0 : parents.hashCode());
         result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
+        result = prime * result + ((definitionExceptionType == null) ? 0 : definitionExceptionType.hashCode());
         result = prime * result + (memberOfRefset ? 1 : 0);
         result = prime * result + (hasChildren ? 1 : 0);
         result = prime * result + (defined ? 1 : 0);
@@ -574,6 +597,15 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
                 return false;
             }
         } else if (!descriptions.equals(other.descriptions)) {
+            return false;
+        }
+        
+        if (definitionExceptionType == null) {
+            
+            if (other.definitionExceptionType != null) {
+                return false;
+            }
+        } else if (!definitionExceptionType.equals(other.definitionExceptionType)) {
             return false;
         }
 
