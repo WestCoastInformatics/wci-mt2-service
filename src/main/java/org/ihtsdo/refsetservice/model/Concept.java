@@ -62,6 +62,9 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     
     /** What kind of intensional refset definition exception type is this concept. (definition/inclusion/exclusion) */
     private String definitionExceptionType;
+    
+    /** The internal ID of intensional refset definition exception */
+    private String definitionExceptionId;
 
     // Members below are filled in when open Concept Details screen only (for
     // now)
@@ -141,6 +144,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         hasDescendantRefsetMembers = other.getHasDescendantRefsetMembers();
         memberOfRefset = other.isMemberOfRefset();
         definitionExceptionType = other.getDefinitionExceptionType();
+        definitionExceptionId = other.getDefinitionExceptionId();
         hasChildren = other.getHasChildren();
         roleGroups = other.getRoleGroups();
         defined = other.isDefined();
@@ -399,10 +403,28 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /**
      * Sets the definition exception type.
      *
-     * @param intensionalMemberType the definition exception type
+     * @param definitionExceptionType the definition exception type
      */
-    public void setDefinitionExceptionType(final String intensionalMemberType) {
-        this.definitionExceptionType = intensionalMemberType;
+    public void setDefinitionExceptionType(final String definitionExceptionType) {
+        this.definitionExceptionType = definitionExceptionType;
+    }
+    
+    /**
+     * Returns the definition exception ID.
+     *
+     * @return the definition exception ID
+     */
+    public String getDefinitionExceptionId() {
+        return definitionExceptionId;
+    }
+    
+    /**
+     * Sets the definition exception ID.
+     *
+     * @param definitionExceptionId the definition exception ID
+     */
+    public void setDefinitionExceptionId(final String definitionExceptionId) {
+        this.definitionExceptionId = definitionExceptionId;
     }
 
     /**
@@ -501,6 +523,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((parents == null) ? 0 : parents.hashCode());
         result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
         result = prime * result + ((definitionExceptionType == null) ? 0 : definitionExceptionType.hashCode());
+        result = prime * result + ((definitionExceptionId == null) ? 0 : definitionExceptionId.hashCode());
         result = prime * result + (memberOfRefset ? 1 : 0);
         result = prime * result + (hasChildren ? 1 : 0);
         result = prime * result + (defined ? 1 : 0);
@@ -606,6 +629,15 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
                 return false;
             }
         } else if (!definitionExceptionType.equals(other.definitionExceptionType)) {
+            return false;
+        }
+        
+        if (definitionExceptionId == null) {
+            
+            if (other.definitionExceptionId != null) {
+                return false;
+            }
+        } else if (!definitionExceptionId.equals(other.definitionExceptionId)) {
             return false;
         }
 

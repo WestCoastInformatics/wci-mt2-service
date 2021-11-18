@@ -346,20 +346,22 @@ public class RefsetService {
      *
      * @param user the user
      * @param refsetInternalId the internal refset ID to modify
-     * @return the updated refset
+     * @param refsetEditParameters the paramters for creating the refset
+     * @return a list of concepts unable to be processed
      * @throws Exception the exception
      */
-    public static String modifyRefset(final User user, final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
+    public static List<String> modifyRefset(final User user, final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
        
         try (TerminologyService service = new TerminologyService()) {
 
+            List<String> unprocessedConcepts = new ArrayList<>();
             Refset refset = getRefset(user, refsetInternalId);
             
             if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
                 throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
             }
 
-            service.setModifiedBy("RT2");
+            service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
             
             // set user changed fields
@@ -375,12 +377,12 @@ public class RefsetService {
             
             // if this is an intensional refset update the definition
             if (refset.getType().equals(Refset.INTENSIONAL)) {
-                refset = modifyRefsetDefinition(service, refset, refsetEditParameters.getDefinitionClauses());
+                unprocessedConcepts = modifyRefsetDefinition(service, refset, refsetEditParameters.getDefinitionClauses());
             }
              
             logger.info("Refset " + refset.getRefsetId() + " successfully modified");
             logger.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));
-            return refsetInternalId;
+            return unprocessedConcepts;
         }
     }
     
@@ -391,14 +393,17 @@ public class RefsetService {
      * @param refsetInternalId the internal refset ID to modify
      * @param ecl the ecl to use for the clause
      * @param definitionExceptionType is the exception an inclusion or exclusion
-     * @return the ecl to use for the clause
+     * @return a list of concepts unable to be processed
      * @throws Exception the exception
      */
     public static List<String> addDefinitionException(final User user, final String refsetInternalId, final String ecl, final String definitionExceptionType) throws Exception {
        
         try (TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
 
-            List<String> unaddedConcepts = new ArrayList<>();
+            List<String> unprocessedConcepts = new ArrayList<>();
             Refset refset = getRefset(user, refsetInternalId);
             
             if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
@@ -434,12 +439,61 @@ public class RefsetService {
                 }
                 
                 newClauses.add(new DefinitionClause(ecl, negated));
-                refset = modifyRefsetDefinition(service, refset, newClauses);
+                unprocessedConcepts = modifyRefsetDefinition(service, refset, newClauses);
+                logger.debug("addDefinitionException: Refset: " + ModelUtility.toJson(refset));
+            }
+            
+            return unprocessedConcepts;
+        }
+    }
+    
+    /**
+     * Remove an inclusion or exclusion clause from a refset definition.
+     *
+     * @param user the user
+     * @param refsetInternalId the internal refset ID to modify
+     * @param definitionExceptionId the exception ID
+     * @return a list of concepts unable to be removed
+     * @throws Exception the exception
+     */
+    public static List<String> removeDefinitionException(final User user, final String refsetInternalId, final String definitionExceptionId) throws Exception {
+       
+        try (TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+
+            List<String> unprocessedConcepts = new ArrayList<>();
+            Refset refset = getRefset(user, refsetInternalId);
+            
+            if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
+                throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
+            }
+            
+            if (!refset.getType().equals(Refset.INTENSIONAL)) {
+                throw new Exception("This is not an Intensional Refset " + refsetInternalId);
+            }
+            
+            final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
+            final List<DefinitionClause> newClauses = new ArrayList<>();
+            boolean removeClause = false;
+            
+            for (final DefinitionClause currentClause : currentClauses) {
+                
+                if (currentClause.getId().equals(definitionExceptionId)) {
+                    removeClause = true;
+                } else {
+                    newClauses.add(new DefinitionClause(currentClause));
+                }
+            }
+            
+            if (removeClause) {
+                
+                unprocessedConcepts = modifyRefsetDefinition(service, refset, newClauses);
+                logger.debug("removeDefinitionException: Refset: " + ModelUtility.toJson(refset));
             }
              
-            logger.info("Refset " + refset.getRefsetId() + " successfully modified");
-            logger.debug("addDefinitionException: Refset: " + ModelUtility.toJson(refset));
-            return unaddedConcepts;
+            return unprocessedConcepts;
         }
     }
     
@@ -448,13 +502,12 @@ public class RefsetService {
      *
      * @param user the user
      * @param refsetInternalId the internal refset ID to modify
-     * @return the updated refset
+     * @return a list of concepts unable to be processed
      * @throws Exception the exception
      */
-    public static Refset modifyRefsetDefinition(final TerminologyService service, final Refset refset, final List<DefinitionClause> modifiedDefinitionClauses) throws Exception {
+    public static List<String> modifyRefsetDefinition(final TerminologyService service, final Refset refset, final List<DefinitionClause> modifiedDefinitionClauses) throws Exception {
        
-        service.setModifiedBy("RT2");
-        service.setModifiedFlag(true);
+        List<String> unprocessedConcepts = new ArrayList<>();
         
         if (refset.getType().equals(Refset.INTENSIONAL)) {
             
@@ -473,6 +526,7 @@ public class RefsetService {
                 logger.debug("modifyRefsetDefinition newMembers: " + newMembers);
                 
                 final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
+                final List<DefinitionClause> clausesToRemove = new ArrayList<>();
                 
                 // loop thru the existing clauses see what has been removed
                 for (final DefinitionClause existingClause : definitionClauses) {
@@ -497,17 +551,25 @@ public class RefsetService {
                         }
                     }
                     
-                    // if the clause still exists remove it from the new clauses, otherwise remove the old clause from the DB 
+                    // if the clause still exists remove it from the new clauses, otherwise mark the old clause for removal
                     if (matchIndex >= 0) {
                         
                         logger.debug("modifyRefsetDefinition removing clause from editParams: " + modifiedDefinitionClauses.get(matchIndex));
                         modifiedDefinitionClauses.remove(matchIndex);
                     } else {
+                        clausesToRemove.add(existingClause);
+                    }
+                }
+                
+                // Remove any marked clauses from the DB 
+                if (clausesToRemove.size() > 0) {
+                    
+                    for (final DefinitionClause clauseToRemove : clausesToRemove) {
                         
                         // remove an object
-                        logger.debug("modifyRefsetDefinition removing clause: " + existingClause);
-                        service.remove(existingClause);
-                        definitionClauses.remove(existingClause);
+                        logger.debug("modifyRefsetDefinition removing clause: " + clauseToRemove);
+                        service.remove(clauseToRemove);
+                        definitionClauses.remove(clauseToRemove);
                     }
                 }
                 
@@ -529,7 +591,7 @@ public class RefsetService {
                 if (conceptsToRemove.size() > 0) {
                     
                     logger.debug("modifyRefsetDefinition intensional conceptsToRemove: " + conceptsToRemove);
-                    RefsetMemberService.removeRefsetMembers(refset.getId(), String.join(",", conceptsToRemove));
+                    unprocessedConcepts.addAll(RefsetMemberService.removeRefsetMembers(refset.getId(), String.join(",", conceptsToRemove)));
                 }
                 
                 // Get the list of members to add
@@ -539,13 +601,13 @@ public class RefsetService {
                 
                 if (conceptsToAdd.size() > 0) {
                     logger.debug("modifyRefsetDefinition intensional conceptsToAdd: " + conceptsToAdd);
-                    RefsetMemberService.addRefsetMembers(refset.getId(), conceptsToAdd);
+                    unprocessedConcepts.addAll(RefsetMemberService.addRefsetMembers(refset.getId(), conceptsToAdd));
                 }
             }
         }
          
         logger.info("Refset " + refset.getRefsetId() + " definition successfully modified");
-        return refset;
+        return unprocessedConcepts;
     }
     
     /**

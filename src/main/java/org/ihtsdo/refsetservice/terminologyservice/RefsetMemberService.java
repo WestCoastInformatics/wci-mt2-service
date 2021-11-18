@@ -28,6 +28,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -2121,16 +2123,16 @@ public class RefsetMemberService {
             final String resultString = response.readEntity(String.class);
             final JsonNode root = mapper.readTree(resultString.toString());
 
-            JsonNode allMemberNodes = root.get("items");
+            JsonNode allConceptNodes = root.get("items");
 
             // if the search returned results set the total
-            if (allMemberNodes.size() > 0) {
+            if (allConceptNodes.size() > 0) {
                 total = root.get("total").asInt();
             }
 
-            if (allMemberNodes.size() != 0 && !allMemberNodes.get(0).has("error")) {
+            if (allConceptNodes.size() != 0 && !allConceptNodes.get(0).has("error")) {
 
-                final Iterator<JsonNode> itemIterator = allMemberNodes.iterator();
+                final Iterator<JsonNode> itemIterator = allConceptNodes.iterator();
                 final ArrayList<Concept> returnConcepts = new ArrayList<>();
 
                 // parse items to retrieve matching concepts
@@ -2159,10 +2161,10 @@ public class RefsetMemberService {
 
                     setConceptPermissions(concept);
                     concept.setMemberOfRefset(searchRefsetMembers);
+                    processIntensionalDefinitionException(refset, concept);
                     returnConcepts.add(concept);
                 }
 
-                // Only populated if search results exist
                 populateMembershipInformation(refset, returnConcepts);
                 members.setItems(returnConcepts);
                 members.setTotal(total);
@@ -2742,8 +2744,6 @@ public class RefsetMemberService {
                         concept.setMemberEffectiveTime(SIMPLE_DATE_FORMAT
                                 .parse(conceptNode.get("releasedEffectiveTime").asText()));
                     }
-                    
-                    concept.setDefinitionExceptionType(getConceptDefinitionExceptionType(refset, conceptId));
 
                 } else if (conceptNode.has("conceptId")) {
 
@@ -2793,6 +2793,7 @@ public class RefsetMemberService {
                 concept.setMemberOfRefset(memberStatus);
                 concept.setDefined(defined);
                 setConceptPermissions(concept);
+                processIntensionalDefinitionException(refset, concept);
 
                 // Populate descriptions
                 if (missingLookupParameters.isGetDescriptions()) {
@@ -3014,7 +3015,6 @@ public class RefsetMemberService {
                     conceptToProcess.setMemberOfRefset(lookupConcept.isMemberOfRefset());
                     conceptToProcess.setMemberEffectiveTime(lookupConcept.getMemberEffectiveTime());
                     conceptToProcess.setReleased(lookupConcept.isReleased());
-                    conceptToProcess.setDefinitionExceptionType(getConceptDefinitionExceptionType(refset, conceptToProcess.getCode()));
                     conceptsToBeProcessed--;
                     break;
                 }
@@ -3026,8 +3026,8 @@ public class RefsetMemberService {
         }
     }
     
-    private static String getConceptDefinitionExceptionType(final Refset refset,
-        final String conceptId) throws Exception {
+    private static String processIntensionalDefinitionException(final Refset refset,
+        final Concept concept) throws Exception {
         
         String conceptExceptionType = "";
         
@@ -3036,12 +3036,14 @@ public class RefsetMemberService {
         }
         
         final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
+        final Pattern pattern = Pattern.compile("\\b" + concept.getCode() + "\\b");
         
         for (int i = 1; i < definitionClauses.size(); i++) {
             
             final DefinitionClause clause = definitionClauses.get(i);
+            final Matcher matcher = pattern.matcher(clause.getValue());
             
-            if (clause.getValue().matches("\\b" + conceptId + "\\b")){
+            if (matcher.find()) {
                 
                 if (clause.getNegated()) {
                     conceptExceptionType = Refset.EXCLUSION;
@@ -3049,6 +3051,8 @@ public class RefsetMemberService {
                     conceptExceptionType = Refset.INCLUSION;
                 }
                 
+                concept.setDefinitionExceptionType(conceptExceptionType);
+                concept.setDefinitionExceptionId(clause.getId());
                 return conceptExceptionType;
             }
         }
