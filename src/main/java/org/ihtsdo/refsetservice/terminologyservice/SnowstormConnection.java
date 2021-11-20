@@ -21,8 +21,8 @@ import org.glassfish.jersey.client.ClientProperties;
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+//import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+//import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -177,7 +177,8 @@ public class SnowstormConnection {
     @SuppressWarnings("resource")
     public static Response deleteResponse(final String url, String entity) throws Exception {
 
-        ResteasyClient client = (ResteasyClient)ClientBuilder.newClient();
+        Client client = ClientBuilder.newClient();
+        //ResteasyClient client = (ResteasyClient)ClientBuilder.newClient();
         final WebTarget target = client.target(url);
         Response response;
         

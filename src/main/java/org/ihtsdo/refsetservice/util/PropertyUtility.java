@@ -144,6 +144,24 @@ public class PropertyUtility {
         // logger.debug("****** propertiesSubset: ", propertiesSubset);
         return propertiesSubset;
     }
+    
+    /**
+     * Return JPA specific properties, including any additional info.
+     *
+     * @return the JPA properties
+     * @throws Exception the exception
+     */
+    public static Properties getJpaProperties() throws Exception {
+
+        assureReadiness();
+
+        final Properties jpaProperties = getPrefixedProperties("spring.jpa.properties.", true);
+
+        // additional JPA properties that are not included in the properties file
+        jpaProperties.put("hibernate.search.backend.analysis.configurer", "class:org.ihtsdo.refsetservice.configuration.ElasticsearchCustomAnalysisConfigurer");
+
+        return jpaProperties;
+    }
 
     /**
      * Are the properties ready to be retrieved.

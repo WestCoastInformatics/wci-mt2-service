@@ -101,7 +101,7 @@ public class TestConfiguration {
     @EventListener(ApplicationReadyEvent.class)
     public void loadTestData() throws Exception {
 
-        if (!dataLoaded) {
+        if (false) { //!dataLoaded
 
             List<String> refsetsJson = FileUtility.readFileToArray(refsetDataFile);
             List<String> organizationsJson = FileUtility.readFileToArray(organizationDataFile);

@@ -35,6 +35,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -338,8 +339,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the type
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @KeywordField(normalizer = "lowercase", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getType() {
         return type.toUpperCase();
     }
@@ -358,8 +358,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the version status
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "versionStatusSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getVersionStatus() {
         return versionStatus;
     }
@@ -378,8 +378,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the workflow status
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "workflowStatusSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getWorkflowStatus() {
         return workflowStatus;
     }
@@ -739,7 +739,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the moduleId
      */
-    @FullTextField(analyzer = "standard")
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getModuleId() {
         return moduleId;
     }

@@ -101,7 +101,7 @@ public class TerminologyService implements RootService {
 
             logger.debug("Setting root service entity manager factory. ", properties);
             factory = Persistence.createEntityManagerFactory("refsetservice-ds",
-                    PropertyUtility.getPrefixedProperties("spring.jpa.properties.", true));
+                    PropertyUtility.getJpaProperties());
         }
 
         if (searchHandlerMap == null) {
