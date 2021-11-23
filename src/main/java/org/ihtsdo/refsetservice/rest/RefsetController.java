@@ -127,7 +127,6 @@ public class RefsetController extends BaseController {
             final Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
             
             logger.debug("******** SESSION USER: " + ModelUtility.toJson(SecurityService.getUserFromSession()));
-            request.getSession().setAttribute("GREETING_MESSAGES", "HI FROM getRefset");
 
             return refset;
 
@@ -882,11 +881,8 @@ public class RefsetController extends BaseController {
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
         
-        logger.debug("******** SESSION MESSAGE: " + request.getSession().getAttribute("GREETING_MESSAGES"));
         logger.debug("******** SESSION USER: " + ModelUtility.toJson(SecurityService.getUserFromSession()));
-        request.getSession().setAttribute("GREETING_MESSAGES", "HI FROM searchDirectory");
-        logger.debug("******** Just Changed SESSION MESSAGE: " + request.getSession().getAttribute("GREETING_MESSAGES"));
-        
+
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
         HttpSession session = requestAttributes.getRequest().getSession();
 

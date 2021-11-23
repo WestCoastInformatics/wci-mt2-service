@@ -1115,7 +1115,6 @@ public class RefsetService {
             results.setTotalKnown(true);
             
             logger.debug("******** searchRefsets results: " + ModelUtility.toJson(results));
-            logger.debug("^^^^^^^^^^^^ Session Access from RefsetService: " + (String) SecurityService.getFromSession("GREETING_MESSAGES"));
 
             return results;
         }

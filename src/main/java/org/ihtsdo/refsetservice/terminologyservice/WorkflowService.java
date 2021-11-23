@@ -979,11 +979,6 @@ public final class WorkflowService {
 
         final List<String> allowedActions = new ArrayList<>();
         final String currentStatus = refset.getWorkflowStatus();
-        
-        logger.debug("refset.getVersionStatus(): " + refset.getVersionStatus());
-        logger.debug("currentStatus: " + currentStatus);
-        logger.debug("user.doesUserHavePermission(User.ROLE_AUTHOR, refset): " + user.doesUserHavePermission(User.ROLE_AUTHOR, refset));
-        logger.debug("user.doesUserHavePermission(User.ROLE_REVIEWER, refset): " + user.doesUserHavePermission(User.ROLE_REVIEWER, refset));
 
         // Authors can start an edit cycle on Published refsets
         if (refset.getVersionStatus().equals(PUBLISHED)

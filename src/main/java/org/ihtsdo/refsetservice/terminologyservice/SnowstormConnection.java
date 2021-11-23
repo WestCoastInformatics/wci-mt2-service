@@ -86,10 +86,6 @@ public class SnowstormConnection {
                 .header("Accept-Language", language)
                 .header("Cookie", getGenericUserCookie())
                 .get();
-
-        if (url.contains("children")) {
-            logger.debug("********** getResponse language: " + language);
-        }
         
         return response;
     }
@@ -116,12 +112,14 @@ public class SnowstormConnection {
         
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
-        final InputStream response = target.request("application/zip")
+        final Response response = target.request("application/zip")
                 .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
                 .header("Cookie", getGenericUserCookie())
-                .get(InputStream.class);
+                .get();
+        
+        InputStream inputStream = response.readEntity(InputStream.class);
 
-        return response;
+        return inputStream;
     }
 
     /**

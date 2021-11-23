@@ -704,7 +704,6 @@ public final class IndexUtility {
         logger.debug("    query = " + finalQuery + ", " + pfs);
 
         final Set<String> dateFieldNames = IndexUtility.getIndexedFieldNames(clazz, "date");
-        logger.debug("    indexedDateFieldNames: " + dateFieldNames);
 
         // Directory indexmanager
         if (!PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.type").trim()
