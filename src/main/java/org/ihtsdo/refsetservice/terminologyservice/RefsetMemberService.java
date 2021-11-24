@@ -865,33 +865,40 @@ public class RefsetMemberService {
                             + File.separator;
                     String[] files = new File(fileNamePath).list();
 
-                    if (withNames) {
-                        final String snowGeneratedRf2FilePath = fileNamePath + files[0];
-                        final String rf2FileName = snowGeneratedRf2FilePath.substring(
-                                snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
-                        final String builderRf2FilePath = fileNamePath + files[0] + ".names";
-
-                        Refset specificRefset = service.findSingle(
-                                "id:" + versionToRefsetInternalId.get(versionInScope), Refset.class,
-                                null);
-                        appendNamesToRf2(specificRefset, snowGeneratedRf2FilePath,
-                                builderRf2FilePath, languageId);
-
-                        File origFile = new File(snowGeneratedRf2FilePath);
-                        if (origFile.exists()) {
-                            origFile.delete();
-                        }
-                        File namesFile = new File(builderRf2FilePath);
-                        if (namesFile.exists()) {
-                            namesFile.renameTo(origFile);
-                        }
-                        withNames = false;
-                    }
-
                     if (files != null) {
+                        
+                        if (withNames) {
+                            
+                            final String snowGeneratedRf2FilePath = fileNamePath + files[0];
+                            final String rf2FileName = snowGeneratedRf2FilePath.substring(
+                                    snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
+                            final String builderRf2FilePath = fileNamePath + files[0] + ".names";
+
+                            Refset specificRefset = service.findSingle(
+                                    "id:" + versionToRefsetInternalId.get(versionInScope), Refset.class,
+                                    null);
+                            appendNamesToRf2(specificRefset, snowGeneratedRf2FilePath,
+                                    builderRf2FilePath, languageId);
+
+                            File origFile = new File(snowGeneratedRf2FilePath);
+                            
+                            if (origFile.exists()) {
+                                origFile.delete();
+                            }
+                            
+                            File namesFile = new File(builderRf2FilePath);
+                            
+                            if (namesFile.exists()) {
+                                namesFile.renameTo(origFile);
+                            }
+                            
+                            withNames = false;
+                        }
+                        
                         fileContentsArray
                                 .addAll(FileUtility.readFileToArray(fileNamePath + files[0]));
                     }
+                    
                     logger.debug("fileContentsArray after versionInScope "
                             + fileContentsArray.size() + " " + versionInScope);
 
@@ -912,6 +919,13 @@ public class RefsetMemberService {
                 // sort fileContents
                 List<String> fileContentsArrayList = new ArrayList<>(fileContentsSet);
                 Collections.sort(fileContentsArrayList);
+                
+                // if the files were empty then print out an empty file with just the header line
+                if (headerLine == null) {
+                    
+                    final String separator = "\t";
+                    headerLine = "id" + separator + "effectiveTime" + separator + "active" + separator + "moduleId" + separator + "refsetId" + separator + "referencedComponentId";
+                }
 
                 // write fileContents to file
                 try {
@@ -971,7 +985,7 @@ public class RefsetMemberService {
             return EXPORT_DOWNLOAD_URL + deltaRt2VersionFileName;
 
         } catch (Exception ex) {
-            throw new Exception("Failed to export delta zip file name" + ex.getMessage(), ex);
+            throw new Exception("Failed to export delta zip file name: " + ex.getMessage(), ex);
         }
     }
 
@@ -2681,12 +2695,13 @@ public class RefsetMemberService {
 
             if (conceptNode.has("referencedComponent")) {
                 conceptId = conceptNode.get("referencedComponent").get("conceptId").asText();
+
             } else if (conceptNode.has("conceptId")) {
                 conceptId = conceptNode.get("conceptId").asText();
             } else {
                 throw new Exception("Unable to process the conceptNode: " + conceptNode);
             }
-
+            
             final Concept concept = new Concept();
             final Concept cachedConcept = memberIdMap.get(conceptId);
 
@@ -3397,7 +3412,37 @@ public class RefsetMemberService {
             if (conceptIds.size() == 1) {
                 unaddedConcepts = callAddMemberSingle(refsetId, url, conceptIds.get(0));
             } else {
-                unaddedConcepts = callAddMembersBulk(refsetId, url, conceptIds);
+                
+                // TODO - This can be removed if invalid concepts are handled on SnowStorm
+                for (final String conceptId : conceptIds) {
+                    
+                    String conceptVerificationUrl = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/" + "concepts?conceptIds="
+                        + StringUtility.encodeValue(conceptId) + "&limit=1";
+                    
+                    logger.debug("addRefsetMembers bulk verification URL: " + conceptVerificationUrl);
+                    
+                    try (final Response response = SnowstormConnection.getResponse(conceptVerificationUrl)) {
+                        
+                        final String resultString = response.readEntity(String.class);
+                        
+                        // Only process payload if Rest call is successful
+                        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                            throw new Exception("call to url '" + conceptVerificationUrl + "' wasn't successful. "
+                                    + response.toString());
+                        }
+                        
+                        final JsonNode root = mapper.readTree(resultString.toString());
+                        
+                        if (root.get("total").asInt() == 0) {
+                            
+                            unaddedConcepts.add(conceptId);
+                            logger.debug("The ID " + conceptId + " is not a valid concept.");
+                        }
+                    }
+                }
+                
+                conceptIds.removeAll(unaddedConcepts); 
+                unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds));
             }
         }
 
@@ -3457,7 +3502,7 @@ public class RefsetMemberService {
         final ArrayNode body = mapper.createArrayNode();
 
         for (final String conceptId : conceptIds) {
-
+            
             final ObjectNode memberBody = mapper.createObjectNode()
                 .put("refsetId", refsetId)
                 .put("referencedComponentId", conceptId);

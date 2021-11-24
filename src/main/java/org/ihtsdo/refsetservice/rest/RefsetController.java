@@ -203,7 +203,7 @@ public class RefsetController extends BaseController {
               
             // create the list of concepts based on what was passed in
             if (conceptIds != null && !conceptIds.equals("")) {
-                conceptIdList = Arrays.asList(conceptIds.split(","));
+                conceptIdList = new ArrayList<String>(Arrays.asList(conceptIds.split(",")));
                 
             } else if (ecl != null && !ecl.equals("")) {
                 
