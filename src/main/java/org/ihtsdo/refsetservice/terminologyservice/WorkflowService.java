@@ -79,6 +79,9 @@ public final class WorkflowService {
 
     /** The EDIT workflow action . */
     public static final String EDIT = "EDIT";
+    
+    /** The CANCEL EDIT workflow action . */
+    public static final String CANCEL_EDIT = "CANCEL_EDIT";
 
     /** The FINISH_EDIT workflow action . */
     public static final String FINISH_EDIT = "FINISH_EDIT";
@@ -117,7 +120,7 @@ public final class WorkflowService {
 
     /** The order of workflow actions . */
     public static final List<String> WORKFLOW_ACTIONS =
-            new ArrayList<>(Arrays.asList(EDIT, FINISH_EDIT, REQUEST_REVIEW, REVIEW, REJECT_REVIEW,
+            new ArrayList<>(Arrays.asList(EDIT, CANCEL_EDIT, FINISH_EDIT, REQUEST_REVIEW, REVIEW, REJECT_REVIEW,
                     ACCEPT_REVIEW, UNASSIGN, REQUEST_PUBLICATION, FAILS_RVF, REFSET_PUBLISHED));
 
     /** The file that contains workflow actions by user and step. */
@@ -240,7 +243,7 @@ public final class WorkflowService {
         
         String nextStatus = null;
         
-        // loop thru the roles to find a match for the action and current status. !! This only works if any multiple matches between role, current status, and action go to the same next status !!
+        // loop thru the roles to find a match for the action and current status. !! This only works if any multiple matches between role, current status, and action go to the same next status !! 
         for (final String role: roles) {
             
             if (WORKFLOW_PERMUTATIONS.containsKey(role) && WORKFLOW_PERMUTATIONS.get(role).containsKey(refset.getWorkflowStatus())) {
@@ -277,6 +280,10 @@ public final class WorkflowService {
                 throw new Exception(message);
             }
 
+        }
+        
+        else if (currentStatus.equals(IN_EDIT) && (Arrays.asList(CANCEL_EDIT).contains(action))) {
+            deleteEditBranch(refset.getEditionBranch(), refset.getRefsetId());
         }
 
         // else if this is the start of edits create the refset edit branch
@@ -1004,6 +1011,7 @@ public final class WorkflowService {
                 // only the assigned user can edit
                 if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset) && user.getUserName().equals(refset.getAssignedUser())) {
     
+                    allowedActions.add(CANCEL_EDIT);
                     allowedActions.add(FINISH_EDIT);
                     allowedActions.add(REQUEST_REVIEW);
                     allowedActions.add(REQUEST_PUBLICATION);

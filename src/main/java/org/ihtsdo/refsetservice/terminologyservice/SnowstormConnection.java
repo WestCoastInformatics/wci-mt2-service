@@ -175,8 +175,7 @@ public class SnowstormConnection {
     @SuppressWarnings("resource")
     public static Response deleteResponse(final String url, String entity) throws Exception {
 
-        //Client client = ClientBuilder.newClient();
-        ResteasyClient client = (ResteasyClient)ClientBuilder.newClient();
+        Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
         Response response;
         
