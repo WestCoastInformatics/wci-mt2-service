@@ -271,7 +271,7 @@ public final class WorkflowService {
                     refset.getRefsetId(), notes);
 
             if (merged) {
-                deleteEditBranch(refset.getEditionBranch(), refset.getRefsetId());
+                deleteEditBranch(user, refset.getEditionBranch(), refset.getRefsetId());
             } else {
 
                 final String message = "Unable to merge edit into refset branch for refset "
@@ -283,12 +283,14 @@ public final class WorkflowService {
         }
         
         else if (currentStatus.equals(IN_EDIT) && (Arrays.asList(CANCEL_EDIT).contains(action))) {
-            deleteEditBranch(refset.getEditionBranch(), refset.getRefsetId());
+            
+            RefsetService.replaceRefsetWithEditHistory(user, refset.getId());
+            deleteEditBranch(user, refset.getEditionBranch(), refset.getRefsetId());
         }
 
         // else if this is the start of edits create the refset edit branch
         else if (action.equals(EDIT)) {
-            createEditBranch(refset.getEditionBranch(), refset.getRefsetId());
+            createEditBranch(user, refset.getEditionBranch(), refset.getId(), refset.getRefsetId());
         }
 
         // if publication is being requested merge the refset branch into the
@@ -610,11 +612,12 @@ public final class WorkflowService {
      *
      * @param editionBranchPath the branch path of the edition to create the new
      *            branch in
+     * @param refsetInternalId the internal refset ID to modify
      * @param refsetId the refset ID
      * @return the branch path of the new edit branch
      * @throws Exception the exception
      */
-    public static String createEditBranch(final String editionBranchPath, final String refsetId)
+    public static String createEditBranch(final User user, final String editionBranchPath, final String refsetInternalId, final String refsetId)
         throws Exception {
 
         final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
@@ -623,6 +626,11 @@ public final class WorkflowService {
         if (doesBranchExist(editBranchPath)) {
             return editBranchPath;
         } else {
+            
+            if (refsetInternalId != null) {
+                RefsetService.createRefsetEditHistory(user, refsetInternalId);
+            }
+            
             return createBranch(refsetBranchPath, EDIT_BRANCH_NAME);
         }
     }
@@ -655,15 +663,18 @@ public final class WorkflowService {
     /**
      * Delete the edit branch for a refset.
      *
+     * @param user the user
      * @param editionBranchPath the branch path of the edition to create the new
      *            branch in
      * @param refsetId the refset ID
      * @return was the branch deleted
      * @throws Exception the exception
      */
-    public static boolean deleteEditBranch(final String editionBranchPath, final String refsetId)
+    public static boolean deleteEditBranch(final User user, final String editionBranchPath, final String refsetId)
         throws Exception {
 
+        RefsetService.removeRefsetEditHistory(user, refsetId);
+        
         final String branchPath = getEditBranchPath(editionBranchPath, refsetId);
         return deleteBranch(branchPath);
     }
@@ -808,7 +819,13 @@ public final class WorkflowService {
                 throw new Exception(error);
             }
             
+            final String jobStatusUrl = response.getHeaderString("Location");
             logger.info("Merged branch " + sourceBranchPath + " into branch " + targetBranchPath);
+            logger.debug("Merge branch info at " + jobStatusUrl);
+            
+            try (final Response mergeInforesponse = SnowstormConnection.getResponse(jobStatusUrl)) {
+                logger.debug("Merge branch info: " + mergeInforesponse.readEntity(String.class));
+            }
         }
     }
 

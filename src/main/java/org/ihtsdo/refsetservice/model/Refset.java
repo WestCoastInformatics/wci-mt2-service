@@ -259,6 +259,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param other the other
      */
     public void populateFrom(final Refset other) {
+        
         super.populateFrom(other);
         refsetId = other.getRefsetId();
         name = other.getName();
@@ -267,7 +268,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         narrative = other.getNarrative();
         versionDate = other.getVersionDate();
         versionNotes = other.getVersionNotes();
-        versionStatus = other.getVersionStatus();
         workflowStatus = other.getWorkflowStatus();
         project = other.getProject();
         externalUrl = other.getExternalUrl();
@@ -277,7 +277,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         privateRefset = other.isPrivateRefset();
         downloadable = other.isDownloadable();
         canEdit = other.getCanEdit();
-        canReview = other.getCanEdit();
+        canReview = other.getCanReview();
         canPublish = other.getCanPublish();
         canView = other.getCanView();
         availableActions = other.getAvailableActions();

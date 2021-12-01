@@ -125,6 +125,7 @@ public class RefsetController extends BaseController {
             logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
             
             final Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
+            RefsetService.getRefsetDescriptions(refset);
             
             logger.debug("******** SESSION USER: " + ModelUtility.toJson(SecurityService.getUserFromSession()));
 

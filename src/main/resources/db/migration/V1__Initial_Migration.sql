@@ -140,10 +140,59 @@ CREATE TABLE `users` (
 	PRIMARY KEY (`id`)
 );
 
-
 CREATE TABLE `user_roles` (
   `user_id` varchar(64) NOT NULL,
   `roles` varchar(255) DEFAULT NULL,
   KEY `FK7ppgoj8kxsmh27hyahk1m96v7` (`user_id`),
   CONSTRAINT `FK7ppgoj8kxsmh27hyahk1m96v7` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+);
+
+CREATE TABLE `definition_clauses_history` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `negated` bit(1) NOT NULL,
+  `value` varchar(4000) NOT NULL,
+  PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `refset_history` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `editOriginBranchPath` varchar(256) DEFAULT NULL,
+  `externalUrl` varchar(4000) DEFAULT NULL,
+  `latestVersion` bit(1) DEFAULT NULL,
+  `localSet` bit(1) NOT NULL,
+  `moduleId` varchar(256) NOT NULL,
+  `name` varchar(4000) NOT NULL,
+  `narrative` longtext,
+  `privateRefset` bit(1) NOT NULL,
+  `refsetId` varchar(256) NOT NULL,
+  `type` varchar(256) NOT NULL,
+  `versionDate` datetime(6) DEFAULT NULL,
+  `versionNotes` longtext,
+  `versionStatus` varchar(256) NOT NULL,
+  `workflowStatus` varchar(256) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `refsetedithistory_tags` (
+  `RefsetEditHistory_id` varchar(64) NOT NULL,
+  `tags` varchar(255) DEFAULT NULL,
+  KEY `FKp3ibc0vuk4awosxcicl40d9mf` (`RefsetEditHistory_id`),
+  CONSTRAINT `FKp3ibc0vuk4awosxcicl40d9mf` FOREIGN KEY (`RefsetEditHistory_id`) REFERENCES `refset_history` (`id`)
+);
+
+CREATE TABLE `refset_history_definition_clauses_history` (
+  `RefsetEditHistory_id` varchar(64) NOT NULL,
+  `definitionClauses_id` varchar(64) NOT NULL,
+  UNIQUE KEY `UK_i1trc62t28cd2ktnwm5mw83n3` (`definitionClauses_id`),
+  KEY `FKwyybq7oy7spmr11a78ix5b4p` (`RefsetEditHistory_id`),
+  CONSTRAINT `FKo21bax91dosoykcp70vg8709n` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses_history` (`id`),
+  CONSTRAINT `FKwyybq7oy7spmr11a78ix5b4p` FOREIGN KEY (`RefsetEditHistory_id`) REFERENCES `refset_history` (`id`)
 );
