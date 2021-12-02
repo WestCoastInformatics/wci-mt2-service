@@ -733,16 +733,19 @@ public class RefsetMemberService {
         final String languageId, final String fileNameDate, final String startEffectiveTime,
         final String transientEffectiveTime, final boolean exportMetadata, boolean withNames)
         throws Exception {
+        
         // TODO: Turn this into a method variable
         final Set<String> dates = new HashSet<>();
-
         dates.add(transientEffectiveTime);
+        
         if (startEffectiveTime != null) {
             dates.add(startEffectiveTime);
         }
+        
         ExportHandler exporter = new ExportHandler();
 
         try (final TerminologyService service = new TerminologyService()) {
+            
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
             if (refset == null) {
@@ -763,106 +766,80 @@ public class RefsetMemberService {
             // Check if delta file already exists
             if (!S3ConnectionWrapper.isInS3Cache(deltaAwsVersionedPath, deltaRt2VersionFileName)) {
 
-                // determine all snapshot versions that will contribute to the
-                // delta
-                List<Map<String, String>> versionMap =
-                        RefsetService.getSortedRefsetVersionList(refset.getRefsetId(), service);
+                // determine all snapshot versions that will contribute to the delta
+                List<Map<String, String>> versionMap = RefsetService.getSortedRefsetVersionList(refset.getRefsetId(), service);
                 Map<String, String> versionToRefsetInternalId = new HashMap<>();
                 List<String> versionsInScope = new ArrayList<>();
+                
                 for (Map<String, String> entry : versionMap) {
+                    
                     String candidateVersion = entry.get("date");
-                    if (candidateVersion != null
-                            && candidateVersion.replaceAll("-", "")
-                                    .compareTo(startEffectiveTime) > 0
-                            && candidateVersion.replaceAll("-", "")
-                                    .compareTo(transientEffectiveTime) <= 0) {
+                    
+                    if (candidateVersion != null && candidateVersion.replaceAll("-", "").compareTo(startEffectiveTime) > 0
+                            && candidateVersion.replaceAll("-", "").compareTo(transientEffectiveTime) <= 0) {
+                        
                         versionsInScope.add(candidateVersion);
-                        versionToRefsetInternalId.put(candidateVersion,
-                                entry.get("refsetInternalId"));
+                        versionToRefsetInternalId.put(candidateVersion, entry.get("refsetInternalId"));
                     }
                 }
+                
                 logger.debug("versionsInScope " + versionsInScope);
 
                 // Local place to store snowBaseVersionFileName
-                final Path localSnowGeneratedTempDir =
-                        Files.createTempDirectory("rt2LocalSnowGenerated-");
+                final Path localSnowGeneratedTempDir = Files.createTempDirectory("rt2LocalSnowGenerated-");
 
-                // build fileContentsArray with contents from each snapshot
-                // version
+                // build fileContentsArray with contents from each snapshot version
                 String headerLine = null;
                 List<String> fileContentsArray = new ArrayList<>();
+                
                 for (String versionInScope : versionsInScope) {
+                    
                     dates.clear();
                     dates.add(versionInScope.replaceAll("-", ""));
 
-                    String awsVersionedPath =
-                            exporter.generateAwsBaseVersionPath(refset, "DELTA-SNAPSHOT", dates);
+                    String awsVersionedPath = exporter.generateAwsBaseVersionPath(refset, "DELTA-SNAPSHOT", dates);
 
-                    String rt2VersionFileName = exporter.generateRt2VersionFileName(refset,
-                            "SNAPSHOT", languageId, dates, exportMetadata, withNames);
+                    String rt2VersionFileName = exporter.generateRt2VersionFileName(refset, "SNAPSHOT", languageId, dates, exportMetadata, withNames);
 
                     // Snowstorm generated RF2 file
-                    final String snowGeneratedFileName =
-                            exporter.generateSnowVersionFileName(refset, "SNAPSHOT", dates);
+                    final String snowGeneratedFileName = exporter.generateSnowVersionFileName(refset, "SNAPSHOT", dates);
 
                     // Local Snowstorm generated Rf2 file name
-                    final String localSnowGeneratedFilePath =
-                            localSnowGeneratedTempDir + File.separator + snowGeneratedFileName;
+                    final String localSnowGeneratedFilePath = localSnowGeneratedTempDir + File.separator + snowGeneratedFileName;
 
-                    // Check if SnowS version file name does already exist in S3
-                    // Cache
+                    // Check if SnowS version file name does already exist in S3 cache
                     if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
-                        // Base-SnowVersion file is not on S3, so generate it,
-                        // and
-                        // after downloading it, store it on S3
-
-                        // Generate file on SnowS
-                        final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId()
-                                + "\"],  \"branchPath\": \"" + refset.getEdition().getBranch() + "/"
-                                + versionInScope
-                                + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
-                                + versionInScope.replaceAll("-", "")
-                                + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
-                                + (versionInScope == null ? ""
-                                        : ",  \"startEffectiveTime\": \""
-                                                + versionInScope.replaceAll("-", "") + "\"")
-                                + (versionInScope == null ? "" : ",  \"transientEffectiveTime\": \""
-                                        + versionInScope.replaceAll("-", "") + "\"")
-                                + "}";
+                        
+                        // Base-SnowVersion file is not on S3, so generate it, and after downloading it, store it on S3
+                        final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId() + "\"],  \"branchPath\": \"" + refset.getEdition().getBranch() + "/"
+                                + versionInScope + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
+                                + versionInScope.replaceAll("-", "") + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
+                                + (versionInScope == null ? "" : ",  \"startEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"")
+                                + (versionInScope == null ? "" : ",  \"transientEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"") + "}";
 
                         logger.info("generating file from snowstorm" + entityString);
+                        
                         // Generate on SnowS
-                        final String snowGeneratedFileUrl =
-                                exporter.generateSnowVersionFile(entityString);
-
-                        logger.debug(
-                                "Downloading file from snowstorm, " + localSnowGeneratedFilePath);
+                        final String snowGeneratedFileUrl = exporter.generateSnowVersionFile(entityString);
+                        logger.debug("Downloading file from snowstorm, " + localSnowGeneratedFilePath);
+                        
                         // Download file from SnowS
-                        exporter.downloadSnowGeneratedFile(snowGeneratedFileUrl,
-                                localSnowGeneratedFilePath);
-
+                        exporter.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
                         logger.debug("uploading snowstorm genned file to S3");
 
                         // store file one s3
-                        S3ConnectionWrapper.uploadToS3(awsVersionedPath,
-                                localSnowGeneratedTempDir.toString(), snowGeneratedFileName);
+                        S3ConnectionWrapper.uploadToS3(awsVersionedPath, localSnowGeneratedTempDir.toString(), snowGeneratedFileName);
+                        
                     } else {
 
-                        logger.info("Downloading snowstorm genned file from S3, "
-                                + snowGeneratedFileName);
-                        S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath,
-                                snowGeneratedFileName, localSnowGeneratedFilePath);
-
+                        logger.info("Downloading snowstorm genned file from S3, " + snowGeneratedFileName);
+                        S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath, snowGeneratedFileName, localSnowGeneratedFilePath);
                     }
 
-                    // append the contents of this snapshot file to the
-                    // fileContentsArray
-                    FileUtility.unzip(localSnowGeneratedFilePath,
-                            localSnowGeneratedFilePath.replace(".zip", ""));
+                    // append the contents of this snapshot file to the fileContentsArray
+                    FileUtility.unzip(localSnowGeneratedFilePath, localSnowGeneratedFilePath.replace(".zip", ""));
                     String fileNamePath = localSnowGeneratedFilePath.replace(".zip", "")
-                            + File.separator + "SnomedCT_Export" + File.separator + "Snapshot"
-                            + File.separator + "Refset" + File.separator + "Content"
-                            + File.separator;
+                            + File.separator + "SnomedCT_Export" + File.separator + "Snapshot" + File.separator + "Refset" + File.separator + "Content" + File.separator;
                     String[] files = new File(fileNamePath).list();
 
                     if (files != null) {
@@ -874,11 +851,8 @@ public class RefsetMemberService {
                                     snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
                             final String builderRf2FilePath = fileNamePath + files[0] + ".names";
 
-                            Refset specificRefset = service.findSingle(
-                                    "id:" + versionToRefsetInternalId.get(versionInScope), Refset.class,
-                                    null);
-                            appendNamesToRf2(specificRefset, snowGeneratedRf2FilePath,
-                                    builderRf2FilePath, languageId);
+                            Refset specificRefset = service.findSingle("id:" + versionToRefsetInternalId.get(versionInScope), Refset.class, null);
+                            appendNamesToRf2(specificRefset, snowGeneratedRf2FilePath, builderRf2FilePath, languageId);
 
                             File origFile = new File(snowGeneratedRf2FilePath);
                             
@@ -895,17 +869,19 @@ public class RefsetMemberService {
                             withNames = false;
                         }
                         
-                        fileContentsArray
-                                .addAll(FileUtility.readFileToArray(fileNamePath + files[0]));
+                        fileContentsArray.addAll(FileUtility.readFileToArray(fileNamePath + files[0]));
                     }
                     
-                    logger.debug("fileContentsArray after versionInScope "
-                            + fileContentsArray.size() + " " + versionInScope);
+                    logger.debug("fileContentsArray after versionInScope " + fileContentsArray.size() + " " + versionInScope);
+                    logger.debug("****@@@@@@@@@@@@@@@@@@@@@ fileContentsArray: " + fileContentsArray);
 
                     // If first file, store header so can print it later
                     if (headerLine == null) {
+                        
                         for (String line : fileContentsArray) {
+                            
                             if (line.toLowerCase().startsWith("id")) {
+                                
                                 headerLine = line;
                                 break;
                             }
@@ -913,9 +889,9 @@ public class RefsetMemberService {
                     }
                 }
 
-                /* Processed all intermediate files */
-                // put in a set to remove duplicates from fileContents
+                // Processed all intermediate files - put in a set to remove duplicates from fileContents
                 Set<String> fileContentsSet = new HashSet<>(fileContentsArray);
+                
                 // sort fileContents
                 List<String> fileContentsArrayList = new ArrayList<>(fileContentsSet);
                 Collections.sort(fileContentsArrayList);
@@ -929,8 +905,8 @@ public class RefsetMemberService {
 
                 // write fileContents to file
                 try {
-                    FileOutputStream fos = new FileOutputStream(localSnowGeneratedTempDir.toString()
-                            + File.separator + deltaSnowGeneratedFileName);
+                    
+                    FileOutputStream fos = new FileOutputStream(localSnowGeneratedTempDir.toString() + File.separator + deltaSnowGeneratedFileName);
                     BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 
                     // Write header onto delta file
@@ -956,32 +932,26 @@ public class RefsetMemberService {
                 }
 
                 logger.debug("converting snowstorm genned file to RT2 format");
-                // Have access to localSnowGeneratedFilePath from which rt2 will
-                // generate the export file
-                generateRt2ExportFile(refset,
-                        localSnowGeneratedTempDir.toString() + File.separator
-                                + deltaSnowGeneratedFileName,
-                        deltaRt2VersionFileName, exportMetadata, withNames, languageId);
+                // Have access to localSnowGeneratedFilePath from which rt2 will generate the export file
+                generateRt2ExportFile(refset, localSnowGeneratedTempDir.toString() + File.separator + deltaSnowGeneratedFileName, deltaRt2VersionFileName, exportMetadata, withNames, languageId);
 
                 logger.debug("uploading snowstorm genned file to S3");
+                
                 // store file on s3
-                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, EXPORT_FILE_DIR,
-                        deltaRt2VersionFileName);
-
+                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, EXPORT_FILE_DIR, deltaRt2VersionFileName);
                 FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
             } else {
 
                 if (!Files.exists(Path.of(EXPORT_FILE_DIR + deltaRt2VersionFileName))) {
+                    
                     logger.debug("Downloading RT2 snapshot genned file from S3");
-                    S3ConnectionWrapper.downloadSnowFromS3(deltaAwsVersionedPath,
-                            deltaRt2VersionFileName, EXPORT_FILE_DIR + deltaRt2VersionFileName);
-
+                    S3ConnectionWrapper.downloadSnowFromS3(deltaAwsVersionedPath, deltaRt2VersionFileName, EXPORT_FILE_DIR + deltaRt2VersionFileName);
                 }
             }
+            
             // if download is from RT2 server
-            ServletUriComponentsBuilder builder =
-                    ServletUriComponentsBuilder.fromCurrentContextPath();
+            ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
             return EXPORT_DOWNLOAD_URL + deltaRt2VersionFileName;
 
         } catch (Exception ex) {
