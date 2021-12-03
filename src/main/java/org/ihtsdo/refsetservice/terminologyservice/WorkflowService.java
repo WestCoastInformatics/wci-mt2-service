@@ -24,6 +24,7 @@ import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -189,6 +190,110 @@ public final class WorkflowService {
      */
     private WorkflowService() {
         // n/a
+    }
+    
+    /**
+     * Complete the publication of a refset.
+     *
+     * @param service the Terminology Service
+     * @param refset the refset
+     * @param versionDate the publication date of the refset in YYYY/mm/dd format
+     * @return A list of concepts that were unable to have publication completed
+     * @throws Exception the exception
+     */
+    public static List<String> completeRefsetPublication(final TerminologyService service, final Refset refset, final String versionDate) throws Exception {
+        
+        List<String> refsetsNotUpdated = new ArrayList<>();
+        
+        try {
+            
+            if (!refset.getWorkflowStatus().equals(READY_FOR_PUBLICATION)) {
+                throw new Exception("Refset is not in the proper status to have publication completed " + refset.getId());
+            }
+            
+            refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(versionDate));
+            refset.setWorkflowStatus(PUBLISHED);
+            refset.setVersionStatus(PUBLISHED);
+            
+            service.update(refset);
+            
+            if (!refset.getWorkflowStatus().equals(PUBLISHED)) {
+                throw new Exception("Refset was not able to have publication completed " + refset.getId());
+            }
+            
+        } catch(Exception e) {
+            
+            logger.error("Completing Refset Publication failed: " + e.getMessage());
+            logger.debug("", e);
+            refsetsNotUpdated.add(refset.getRefsetId());
+        }
+        
+        return refsetsNotUpdated;
+    }
+    
+    /**
+     * Complete the publication of all Ready for Publication refsets.
+     *
+     * @param service the Terminology Service
+     * @param versionDate the publication date of the refset in YYYY/mm/dd format
+     * @param branch an optional branch to limit the refset to
+     * @return A list of concepts that were unable to have publication completed
+     * @throws Exception the exception
+     */
+    public static List<String> completeAllRefsetPublications(final TerminologyService service, final String versionDate, final String branch) throws Exception {
+        
+        List<String> refsetsNotUpdated = new ArrayList<>();
+        String query = "workflowStatus: " + READY_FOR_PUBLICATION;
+        
+        if (!StringUtility.isEmpty(branch)) {
+            query += " AND editionBranch: " + QueryParserBase.escape(branch);
+        }
+        
+        final ResultList<Refset> results = service.find("workflowStatus: " + READY_FOR_PUBLICATION, null, Refset.class, null);
+    
+        // see if there is an "In Development" version as that should be the latest.
+        for (final Refset refset: results.getItems()) {
+            refsetsNotUpdated.addAll(completeRefsetPublication(service, refset, versionDate));
+        }
+       
+        return refsetsNotUpdated;
+    }
+    
+    /**
+     * Set workflow status for a number of refsets at once.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetIds a comma separated list of refset IDs
+     * @param action the action the user took
+     * @param notes the workflow status notes
+     * @return A list of concepts that were unable to have their status updated
+     * @throws Exception the exception
+     */
+    public static List<String> setBatchWorkflowStatusByAction(final TerminologyService service, final User user, final String refsetIds, final String action, final String notes) throws Exception {
+        
+        List<String> refsetsNotUpdated = new ArrayList<>();
+        
+        final ResultList<Refset> results = service.find("refsetId:(" + refsetIds.replace(",", " OR ") + ") AND latestVersion: true", new PfsParameter(), Refset.class, null);
+        
+        for (final Refset refset: results.getItems()) {
+            
+            try {
+                
+                final String currentStatus = refset.getWorkflowStatus();
+                
+                setWorkflowStatusByAction(user, action, refset, notes);
+                
+                if (currentStatus.equals(refset.getWorkflowStatus())) {
+                    refsetsNotUpdated.add(refset.getRefsetId());
+                }
+                
+            } catch (Exception e) {
+                refsetsNotUpdated.add(refset.getRefsetId());
+            }
+        }
+       
+        return refsetsNotUpdated;
     }
 
     /**
@@ -954,7 +1059,7 @@ public final class WorkflowService {
             }
 
             if (Arrays.asList(READY_FOR_PUBLICATION).contains(currentStatus)) {
-                allowedStatuses.add(PUBLISHED);
+                allowedStatuses.add(READY_FOR_EDIT);
             }
         }
 
@@ -979,10 +1084,6 @@ public final class WorkflowService {
 
             if (Arrays.asList(READY_FOR_PUBLICATION).contains(currentStatus)) {
                 allowedStatuses.add(READY_FOR_EDIT);
-            }
-
-            if (Arrays.asList(READY_FOR_PUBLICATION).contains(currentStatus)) {
-                allowedStatuses.add(PUBLISHED);
             }
         }
 
@@ -1070,7 +1171,6 @@ public final class WorkflowService {
     
                 if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset) || user.doesUserHavePermission(User.ROLE_ADMIN, refset)) {
                     allowedActions.add(FAILS_RVF);
-                    allowedActions.add(REFSET_PUBLISHED);
                 }
             }
         }

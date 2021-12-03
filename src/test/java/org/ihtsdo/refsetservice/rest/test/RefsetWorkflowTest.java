@@ -281,6 +281,26 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
         validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.FAILS_RVF, WorkflowService.READY_FOR_EDIT, note);
         
+        // Start Edit by Mistake
+        actionCount++;
+        note = "";
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.EDIT, note);
+        assertThat(updatedRefset).isNotNull();
+        refset = updatedRefset;
+        lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
+        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.EDIT, WorkflowService.IN_EDIT, note);
+        
+        // Cancel Edit (with Note)
+        actionCount++;
+        note = "That edit was a mistake";
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.CANCEL_EDIT, note);
+        assertThat(updatedRefset).isNotNull();
+        refset = updatedRefset;
+        lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
+        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.CANCEL_EDIT, WorkflowService.READY_FOR_EDIT, note);
+        
         // Request Publication Again (with Note)
         actionCount++;
         note = "Fixes made. The refset should be published when the full extension is published";
@@ -291,22 +311,38 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
         validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, WorkflowService.READY_FOR_PUBLICATION, note);
         
+        // Fail Publication by API (with Note)
+        actionCount++;
+        note = "SNOMED has rejected this refset.";
+        // include a fake refset ID
+        String results = failPublication(refset.getRefsetId() + ",11112222", note);
+        assertThat(results).doesNotContain(refset.getRefsetId());
+        updatedRefset = getRefset(refsetInternalId);
+        assertThat(updatedRefset).isNotNull();
+        refset = updatedRefset;
+        lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
+        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
+        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.FAILS_RVF, WorkflowService.READY_FOR_EDIT, note);
+        
+        // Request Publication Before Completion
+        updatedRefset = updateWorkflow(refset, AUTHOR_USER, WorkflowService.REQUEST_PUBLICATION, "");
+        assertThat(updatedRefset).isNotNull();
+        refset = updatedRefset;
+        
         // !!!! DO NOT LEAVE UNCOMMENTED !!!!
         // Publication Complete
-//        actionCount++;
-//        note = "";
-//        updatedRefset = advanceWorkflow(refset, AUTHOR_USER, WorkflowService.REFSET_PUBLISHED, note);
+//        String publicationDate = "2000-04-14";
+//        String results = completePublication(publicationDate, refset.getEditionBranch());
+//        assertThat(results).doesNotContain(refset.getRefsetId());
+//        updatedRefset = getRefset(refsetInternalId);
 //        assertThat(updatedRefset).isNotNull();
-//        refset = updatedRefset;
-//        lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
-//        assertThat(lookedUpWorkflowHistory.size()).isEqualTo(actionCount + 1);
-//        validateRow(lookedUpWorkflowHistory.get(actionCount), AUTHOR_USER, WorkflowService.REFSET_PUBLISHED, WorkflowService.PUBLISHED, note);
 //        
 //        // now that it is published make sure there is a version date on the refset and the version status is PUBLISHED
 //        assertThat(updatedRefset.getVersionDate()).isNotNull();
 //        assertThat(updatedRefset.getVersionStatus()).isEqualTo(Refset.PUBLISHED);
+//        assertThat(updatedRefset.getWorkflowStatus()).isEqualTo(Refset.PUBLISHED);
         
-        // !!!! LEAVE THIS UNCOMMENTED EXCEPT WHEN TESTING PUBLISHED COMLETE STATUS !!!!
+        // !!!! LEAVE THIS UNCOMMENTED EXCEPT WHEN TESTING PUBLICATION COMPLETE STATUS !!!!
         // remove the refset version
         deleteNewRefsetVerion(refsetInternalId);
 
@@ -354,6 +390,46 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         
         final String content = result.getResponse().getContentAsString();
         assertThat(content).isEqualTo("true");
+    }
+    
+    /**
+     * complete publication.
+     *
+     * @throws Exception the exception
+     */
+    private String completePublication(final String versionDate, final String branch) throws Exception{
+        
+        final String url = "/admin/completeAllRefsetPublications?versionDate=" + versionDate + "&branch=" + branch;
+        
+        final MvcResult result = mvc
+                .perform(put(url)
+                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+        
+        final String content = result.getResponse().getContentAsString();
+        assertThat(content).isNotBlank();
+        
+        return content;
+    }
+    
+    /**
+     * Publication Fails call.
+     *
+     * @throws Exception the exception
+     */
+    private String failPublication(final String refsetIds, final String notes) throws Exception{
+        
+        final String url = "/admin/failRefsetPublications?refsetIds=" + refsetIds + "&notes=" + notes;
+        
+        final MvcResult result = mvc
+                .perform(put(url)
+                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+        
+        final String content = result.getResponse().getContentAsString();
+        assertThat(content).isNotBlank();
+        
+        return content;
     }
     
     /**

@@ -43,6 +43,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.ihtsdo.refsetservice.util.StringUtility;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -588,7 +589,6 @@ public class RefsetController extends BaseController {
             
             Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
-            logger.debug("111 - " + currentStatus);
             
             
             if (currentStatus == null) {
@@ -602,15 +602,11 @@ public class RefsetController extends BaseController {
                     refset = service.get(internalRefsetId, Refset.class);
                 }
                 
-                final String updatedCurrentStatus = refset.getWorkflowStatus();
-                logger.debug("111 #2 - " + updatedCurrentStatus);
                 return refset;
             }
 
             refset = WorkflowService.setWorkflowStatusByAction(SecurityService.getUserFromSession(), action, refset, notes);
-            logger.debug("222 - " + refset);
             
-            logger.debug("333 - " + refset.getWorkflowStatus());
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
                 
@@ -651,6 +647,111 @@ public class RefsetController extends BaseController {
             WorkflowService.updateWorkflowNote(SecurityService.getUserFromSession(), refset, notes);
             
             return "true";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Complete the publication of all Ready for Publication refsets.
+     *
+     * @param versionDate the publication date of the refset in YYYY/mm/dd format
+     * @param branch a branch to limit the refset to (optional)
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    @PutMapping("/admin/completeAllRefsetPublications")
+    public @ResponseBody String completeAllRefsetPublications(@RequestParam(required = true) final String versionDate,
+        @RequestParam(required = false) final String branch) throws Exception {
+        
+        final User user = SecurityService.getUserFromSession();
+        
+        try (TerminologyService service = new TerminologyService()){
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+
+            logger.debug("*********** completeAllRefsetPublications: versionDate: " + versionDate + " ; branch: " + branch);
+            
+            final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, branch);
+            String error = "";
+            
+            // see if there are any refsets that were unable to be updated and craft the error message
+            if (refsetsNotUpdated.size() > 0) {
+                
+                error = "Unable to complete publication for refsets: ";
+                
+                for (final String unremovedConcept : refsetsNotUpdated) {
+                    error += unremovedConcept + ", ";
+                }
+                
+                error = StringUtils.removeEnd(error, ", ");
+            }
+            
+            if (error.equals("")) {
+                
+                String message = "All refset publications completed";
+                
+                if (!StringUtility.isEmpty(branch)) {
+                    message += " in branch " + branch;
+                }
+                
+                return "{\"status\": \"" + message + ".\"}";
+                
+            } else {
+                return "{\"error\": \"" + error + "\"}";
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Set refsets that failed publication back to 'Ready For Edit' status.
+     *
+     * @param refsetIds a comma separated list of refset IDs
+     * @param notes the reason why the refsets failed
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    @PutMapping("/admin/failRefsetPublications")
+    public @ResponseBody String failRefsetPublications(@RequestParam(required = true) final String refsetIds, @RequestParam(required = true) final String notes) throws Exception {
+        
+        final User user = SecurityService.getUserFromSession();
+        
+        try (TerminologyService service = new TerminologyService()){
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+
+            logger.debug("*********** failRefsetPublications: refset IDs: " + refsetIds + " ; notes: " + notes);
+            
+            final List<String> refsetsNotUpdated = WorkflowService.setBatchWorkflowStatusByAction(service, user, refsetIds, WorkflowService.FAILS_RVF, notes);
+            String error = "";
+            
+            // see if there are any refsets that were unable to be updated and craft the error message
+            if (refsetsNotUpdated.size() > 0) {
+                
+                error = "Unable to update refsets: ";
+                
+                for (final String unremovedConcept : refsetsNotUpdated) {
+                    error += unremovedConcept + ", ";
+                }
+                
+                error = StringUtils.removeEnd(error, ", ");
+            }
+            
+            if (error.equals("")) {
+                return "{\"status\": \"All refsets updated.\"}";
+            } else {
+                return "{\"error\": \"" + error + "\"}";
+            }
 
         } catch (final Exception e) {
 
