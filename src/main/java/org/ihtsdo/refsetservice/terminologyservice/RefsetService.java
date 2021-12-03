@@ -1173,9 +1173,9 @@ public class RefsetService {
             if (searchParameters.getSortAscending() != null) {
                 pfs.setAscending(searchParameters.getSortAscending());
             }
-
+            
             if (searchParameters.getSort() != null) {
-                pfs.setSort(searchParameters.getSort());
+                pfs.setSortFields(Arrays.asList(searchParameters.getSort(), "modified desc", "id"));
             }
 
             if (query != null && !query.equals("")) {

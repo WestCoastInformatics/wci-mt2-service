@@ -60,7 +60,7 @@ public abstract class AbstractHasId implements HasId, Serializable {
      * @return the id
      */
     @Override
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getId() {
         return id;
     }
