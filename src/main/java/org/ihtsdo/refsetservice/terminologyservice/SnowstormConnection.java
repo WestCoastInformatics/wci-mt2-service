@@ -82,10 +82,27 @@ public class SnowstormConnection {
 
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
-        final Response response = target.request(ACCEPT)
+        String cookie = getGenericUserCookie(false);
+        Response response = null;
+        boolean firstRun = true;
+        boolean run = true;
+        
+        while (run) {
+            
+            run = false;
+            
+            response = target.request(ACCEPT)
                 .header("Accept-Language", language)
-                .header("Cookie", getGenericUserCookie())
+                .header("Cookie", cookie)
                 .get();
+            
+            if (firstRun && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
+                
+                run = true;
+                firstRun = false;
+                cookie = getGenericUserCookie(true);
+            }
+        }
         
         return response;
     }
@@ -114,7 +131,7 @@ public class SnowstormConnection {
         final WebTarget target = client.target(url);
         final Response response = target.request("application/zip")
                 .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie())
+                .header("Cookie", getGenericUserCookie(false))
                 .get();
         
         InputStream inputStream = response.readEntity(InputStream.class);
@@ -136,7 +153,7 @@ public class SnowstormConnection {
         WebTarget target = client.target(url);
         Builder builder = target.request(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie());
+                .header("Cookie", getGenericUserCookie(false));
         
         Response response = builder.post(Entity.json(entity));
         
@@ -157,7 +174,7 @@ public class SnowstormConnection {
         WebTarget target = client.target(url);
         Builder builder = target.request(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie());
+                .header("Cookie", getGenericUserCookie(false));
         
         Response response = builder.put(Entity.json(entity));
         
@@ -183,13 +200,13 @@ public class SnowstormConnection {
             
             response = target.request(ACCEPT)
                 .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie())
+                .header("Cookie", getGenericUserCookie(false))
                 .delete();
         } else {
             
             response = target.request(ACCEPT)
                 .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie())
+                .header("Cookie", getGenericUserCookie(false))
                 .build("DELETE", Entity.entity(entity, MediaType.APPLICATION_JSON_TYPE))
                 .invoke(Response.class);
         }
@@ -203,11 +220,15 @@ public class SnowstormConnection {
      * @return the generic user cookie
      * @throws Exception the exception
      */
-    public static String getGenericUserCookie() throws Exception {
+    public static String getGenericUserCookie(final boolean forceReload) throws Exception {
 
         // if there is no auth configured then skip this
         if (AUTH_URL.equals("none")) {
             return "";
+        }
+        
+        if (forceReload) {
+            genericUserCookie = null;
         }
         
         // Check if the generic user cookie is expired and needs to be cleared

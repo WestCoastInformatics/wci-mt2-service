@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.service;
+package org.ihtsdo.refsetservice.handler;
 
 import org.ihtsdo.refsetservice.model.Configurable;
 import org.ihtsdo.refsetservice.model.User;

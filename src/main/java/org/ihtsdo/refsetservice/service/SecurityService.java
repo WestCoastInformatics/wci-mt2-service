@@ -14,6 +14,7 @@ import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
 import org.ihtsdo.refsetservice.model.User;
 //import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
@@ -74,7 +75,7 @@ public class SecurityService implements AutoCloseable {
             return (User) object;
         }
         
-        return new User("testUser", "Test User", "tuser@testuser.com", new HashSet<String>(Arrays.asList(User.ROLE_USER, User.ROLE_AUTHOR, User.ROLE_REVIEWER)));
+        return new User("nonLoggedInUser", "Non Logged In User", "", new HashSet<String>());
         //return null;
     }
     
