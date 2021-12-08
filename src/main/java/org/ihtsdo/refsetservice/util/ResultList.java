@@ -31,6 +31,9 @@ public class ResultList<T> implements Collection<T> {
     /** The offset. */
     private int offset;
     
+    /** The searchAfter */
+    private String searchAfter;
+    
     /** The offset. */
     private boolean totalKnown;
 
@@ -82,6 +85,7 @@ public class ResultList<T> implements Collection<T> {
         items = other.getItems();
         limit = other.getLimit();
         offset = other.getOffset();
+        searchAfter = other.getSearchAfter();
         parameters = other.getParameters();
         scoreMap = other.getScoreMap();
         timeTaken = other.getTimeTaken();
@@ -201,6 +205,14 @@ public class ResultList<T> implements Collection<T> {
     @Override
     public void setOffset(final int offset) {
         this.offset = offset;
+    }
+    
+    public String getSearchAfter() {
+        return searchAfter;
+    }
+
+    public void setSearchAfter(final String searchAfter) {
+        this.searchAfter = searchAfter;
     }
 
     /**
