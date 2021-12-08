@@ -1183,7 +1183,7 @@ public class RefsetService {
             if (query != null && !query.equals("")) {
 
                 final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
-                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
+                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset, editionShortName");
                 String[] queryParts = query.split(" AND ");
                 String filterQuery = "";
                 String termQuery = "";
@@ -1253,6 +1253,7 @@ public class RefsetService {
                 query = "latestVersion: true";
             }
 
+            logger.debug("******** searchRefsets query: " + query);
             results = service.find(query, pfs, Refset.class, null);
 
             for (Refset refset : results.getItems()) {
