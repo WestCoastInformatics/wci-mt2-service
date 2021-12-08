@@ -634,7 +634,7 @@ public class RefsetController extends BaseController {
      */
     @PutMapping("/refset/{refsetInternalId}/workflowNote")
     public @ResponseBody String updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = true) final String notes)
+        @RequestBody(required = true) final String notes)
         throws Exception {
         
         try {
