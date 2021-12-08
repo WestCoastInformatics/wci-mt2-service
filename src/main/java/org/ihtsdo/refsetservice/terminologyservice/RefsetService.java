@@ -170,6 +170,7 @@ public class RefsetService {
                             )
                     );
             
+            final long start = System.currentTimeMillis();
             final ObjectNode body = mapper.createObjectNode().put("conceptId", refsetConceptId);
             body.setAll(relationships);
             body.setAll(descriptions);
@@ -204,7 +205,7 @@ public class RefsetService {
                 }
             }
             
-            logger.debug("Create Refset: newly created refset concept ID: " + refsetConceptId);
+            logger.debug("Create Refset: newly created refset concept ID: " + refsetConceptId + ". Time: " + (System.currentTimeMillis() - start));
         }
         
         final String editBranch = WorkflowService.createEditBranch(user, edition.getBranch(), null, refsetConceptId);
@@ -212,6 +213,7 @@ public class RefsetService {
         // add the new refset to the database
         try (final TerminologyService service = new TerminologyService()) {
 
+            final long start = System.currentTimeMillis();
             service.setModifiedBy("RT2");
             service.setModifiedFlag(true);
 
@@ -261,7 +263,7 @@ public class RefsetService {
                 final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(refset.getId(), conceptIdList);
             }
             
-            logger.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added");
+            logger.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added. Time: " + (System.currentTimeMillis() - start));
             logger.debug("Create Refset: Refset: " + ModelUtility.toJson(refset));
         }
         
@@ -1181,7 +1183,7 @@ public class RefsetService {
             if (query != null && !query.equals("")) {
 
                 final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
-                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
+                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset, editionShortName");
                 String[] queryParts = query.split(" AND ");
                 String filterQuery = "";
                 String termQuery = "";
@@ -1251,6 +1253,7 @@ public class RefsetService {
                 query = "latestVersion: true";
             }
 
+            logger.debug("******** searchRefsets query: " + query);
             results = service.find(query, pfs, Refset.class, null);
 
             for (Refset refset : results.getItems()) {
@@ -1259,7 +1262,7 @@ public class RefsetService {
                 refset.setVersionList(
                         RefsetService.getSortedRefsetVersionList(refset.getRefsetId(), service));
             }
-
+            
             results.setTimeTaken(System.currentTimeMillis() - start);
             results.setTotalKnown(true);
             

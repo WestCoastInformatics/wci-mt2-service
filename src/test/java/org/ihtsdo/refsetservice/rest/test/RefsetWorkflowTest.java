@@ -332,7 +332,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // !!!! DO NOT LEAVE UNCOMMENTED !!!!
         // Publication Complete
 //        String publicationDate = "2000-04-14";
-//        String results = completePublication(publicationDate, refset.getEditionBranch());
+//        String results = completePublication(publicationDate, refset.getEditionShortName());
 //        assertThat(results).doesNotContain(refset.getRefsetId());
 //        updatedRefset = getRefset(refsetInternalId);
 //        assertThat(updatedRefset).isNotNull();
@@ -397,9 +397,9 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
      *
      * @throws Exception the exception
      */
-    private String completePublication(final String versionDate, final String branch) throws Exception{
+    private String completePublication(final String versionDate, final String editionShortName) throws Exception{
         
-        final String url = "/admin/completeAllRefsetPublications?versionDate=" + versionDate + "&branch=" + branch;
+        final String url = "/admin/completeAllRefsetPublications?versionDate=" + versionDate + "&codeSystem=" + editionShortName;
         
         final MvcResult result = mvc
                 .perform(put(url)
