@@ -939,6 +939,9 @@ public final class IndexUtility {
         Set<String> stringFieldNames = IndexUtility.getIndexedFieldNames(clazz, "string");
         int matchIndexCounter = 0;
         
+        // remove specific fields that should not have wildcards applied
+        stringFieldNames.removeAll(Arrays.asList("editionShortName", "editionBranch"));
+        
         while (regexMatcher.find()) {
             
             // only add wildcards to String fields
@@ -946,6 +949,7 @@ public final class IndexUtility {
                 return regexMatcher.group(0).contains(field + ":");
             })) {
                 
+                logger.debug("******** WILDCARD MATCH: " + regexMatcher.group(0));
                 // if the end position of the match isn't the end of the string then append a wildcard between the match and the rest of the string
                 if (regexMatcher.end(1) < wildcardQuery.length() - 1) {
                     wildcardQuery = wildcardQuery.substring(0, regexMatcher.end(1) + matchIndexCounter) + "*" + wildcardQuery.substring(regexMatcher.end(1) + matchIndexCounter);

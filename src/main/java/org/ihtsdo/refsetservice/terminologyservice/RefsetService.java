@@ -1183,7 +1183,7 @@ public class RefsetService {
             if (query != null && !query.equals("")) {
 
                 final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
-                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset, editionShortName");
+                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset", "editionShortName");
                 String[] queryParts = query.split(" AND ");
                 String filterQuery = "";
                 String termQuery = "";

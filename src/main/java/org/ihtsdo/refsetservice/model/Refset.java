@@ -690,9 +690,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the edition short name
      */
-    @FullTextField(analyzer = "standard")
-    @GenericField(name = "editionShortNameSort", searchable = Searchable.YES,
-            projectable = Projectable.NO, sortable = Sortable.YES)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({@PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization"), @PropertyValue(propertyName = "edition")}))
     public String getEditionShortName() {
         
