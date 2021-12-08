@@ -1159,16 +1159,16 @@ public class RefsetMemberService {
      * Get the refset member basic information.
      *
      * @param refsetId the refset ID
-     * @param offset the 0 based page number to get
      * @param limit the number of results per page
+     * @param searchAfter the member to search after
      * @param branchPath the branch and version of the refset
      * @return the raw resultString
      * @throws Exception the exception
      */
-    private static String getMemberSctids(final String refsetId, final int offset, final int limit,
-        final String branchPath) throws Exception {
+    private static String getMemberSctids(final String refsetId, final int limit,
 
-        final String pagingParams = "offset=" + (offset * limit) + "&limit=" + limit;
+        final String searchAfter, final String branchPath) throws Exception {
+        final String pagingParams = "&limit=" + limit + "&searchAfter=" + searchAfter;
 
         String url = SnowstormConnection.BASE_URL + "browser/" + branchPath
                 + "/members?referenceSet=" + refsetId + "&" + pagingParams;
@@ -1202,9 +1202,8 @@ public class RefsetMemberService {
     public static String exportRefsetSctidList(final String refsetInternalId,
         final boolean exportMetadata) throws Exception {
 
-        int offset = 0;
         int limit = 10000;
-        boolean morePages = true;
+        boolean hasMorePages = true;
         StringBuilder fileLines = new StringBuilder();
         String zipOutputPath = EXPORT_FILE_DIR;
         String refsetFileName = "";
@@ -1236,20 +1235,20 @@ public class RefsetMemberService {
                 sourceFiles.add(exportRefsetMetadata(refset, tempDirectoryPath));
             }
 
-            while (morePages) {
+            String searchAfter = "";
 
-                final String resultString =
-                        getMemberSctids(refset.getRefsetId(), offset, limit, getBranchPath(refset));
+            while (hasMorePages) {
+
+                final String resultString = getMemberSctids(refset.getRefsetId(), limit, searchAfter, getBranchPath(refset));
 
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString);
-                int totalPages = (root.get("totalPages")).asInt();
-                offset = (root.get("number")).asInt();
+                searchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asText() : "");
                 final JsonNode items = root.get("items");
                 final Iterator<JsonNode> iterator = items.iterator();
 
-                if (offset == totalPages - 1) {
-                    morePages = false;
+                if (items.size() < limit) {
+                    hasMorePages = false;
                 }
 
                 while (iterator.hasNext()) {
@@ -1258,6 +1257,7 @@ public class RefsetMemberService {
                     final String conceptId = (item.get("referencedComponentId").asText());
                     fileLines.append(conceptId + "\n");
                 }
+
             }
 
         } catch (Exception ex) {
@@ -2249,7 +2249,8 @@ public class RefsetMemberService {
 
         final String pagingParams =
                 "offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit="
-                        + searchParameters.getLimit();
+                        + searchParameters.getLimit()
+                        + (StringUtils.isNotEmpty(searchParameters.getSearchAfter()) ? "&searchAfter=" + searchParameters.getSearchAfter() : ""); 
 
         // when searching for members we only want concepts whose membership is
         // active
@@ -2646,6 +2647,11 @@ public class RefsetMemberService {
         if (root.get("total") != null) {
             total = root.get("total").asInt();
         }
+        
+        String searchAfter = "";
+        if (root.get("searchAfter") != null) {
+            searchAfter = root.get("searchAfter").asText();
+        }
 
         if (!lookupParameters.isGetMembershipInformation()) {
             iterator = root.iterator();
@@ -2837,6 +2843,7 @@ public class RefsetMemberService {
         }
 
         conceptList.setTotal(total);
+        conceptList.setSearchAfter(searchAfter);
         return conceptList;
         // populateVersionInfo(conceptIdMap, branch);
     }
