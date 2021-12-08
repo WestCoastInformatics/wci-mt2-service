@@ -236,20 +236,16 @@ public final class WorkflowService {
      *
      * @param service the Terminology Service
      * @param versionDate the publication date of the refset in YYYY/mm/dd format
-     * @param branch an optional branch to limit the refset to
+     * @param editionShortName an code system to limit the refset to
      * @return A list of concepts that were unable to have publication completed
      * @throws Exception the exception
      */
-    public static List<String> completeAllRefsetPublications(final TerminologyService service, final String versionDate, final String branch) throws Exception {
+    public static List<String> completeAllRefsetPublications(final TerminologyService service, final String versionDate, final String editionShortName) throws Exception {
         
         List<String> refsetsNotUpdated = new ArrayList<>();
-        String query = "workflowStatus: " + READY_FOR_PUBLICATION;
+        String query = "workflowStatus: " + READY_FOR_PUBLICATION + " AND editionShortName: " + QueryParserBase.escape(editionShortName);
         
-        if (!StringUtility.isEmpty(branch)) {
-            query += " AND editionBranch: " + QueryParserBase.escape(branch);
-        }
-        
-        final ResultList<Refset> results = service.find("workflowStatus: " + READY_FOR_PUBLICATION, null, Refset.class, null);
+        final ResultList<Refset> results = service.find(query, null, Refset.class, null);
     
         // see if there is an "In Development" version as that should be the latest.
         for (final Refset refset: results.getItems()) {

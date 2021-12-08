@@ -656,33 +656,37 @@ public class RefsetController extends BaseController {
     }
     
     /**
-     * Complete the publication of all Ready for Publication refsets.
+     * Complete the publication of all Ready for Publication refsetsin a code system.
      *
      * @param versionDate the publication date of the refset in YYYY/mm/dd format
-     * @param branch a branch to limit the refset to (optional)
+     * @param codeSystem a code system to limit the refset to
      * @return the status of the operation
      * @throws Exception the exception
      */
     @PutMapping("/admin/completeAllRefsetPublications")
     public @ResponseBody String completeAllRefsetPublications(@RequestParam(required = true) final String versionDate,
-        @RequestParam(required = false) final String branch) throws Exception {
+        @RequestParam(required = true) final String codeSystem) throws Exception {
         
         final User user = SecurityService.getUserFromSession();
+        
+        if (StringUtility.isEmpty(codeSystem)) {
+            throw new Exception ("A Code System must be specified.");
+        }
         
         try (TerminologyService service = new TerminologyService()){
             
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
-            logger.debug("*********** completeAllRefsetPublications: versionDate: " + versionDate + " ; branch: " + branch);
+            logger.debug("*********** completeAllRefsetPublications: versionDate: " + versionDate + " ; editionShortName (codeSystem): " + codeSystem);
             
-            final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, branch);
+            final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, codeSystem);
             String error = "";
             
             // see if there are any refsets that were unable to be updated and craft the error message
             if (refsetsNotUpdated.size() > 0) {
                 
-                error = "Unable to complete publication for refsets: ";
+                error = "Unable to complete publication for refsets in code system " + codeSystem + ": ";
                 
                 for (final String unremovedConcept : refsetsNotUpdated) {
                     error += unremovedConcept + ", ";
@@ -693,11 +697,7 @@ public class RefsetController extends BaseController {
             
             if (error.equals("")) {
                 
-                String message = "All refset publications completed";
-                
-                if (!StringUtility.isEmpty(branch)) {
-                    message += " in branch " + branch;
-                }
+                String message = "All refset publications completed in code system " + codeSystem;
                 
                 return "{\"status\": \"" + message + ".\"}";
                 
