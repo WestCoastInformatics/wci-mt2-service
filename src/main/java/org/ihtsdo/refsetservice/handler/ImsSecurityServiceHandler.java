@@ -87,7 +87,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             // user.getRoles().add(User.ROLE_USER);
 
             final Iterator<JsonNode> roleIterator = userDoc.get("roles").elements();
-            final List<String> wciUsers = Arrays.asList("jefron", "twhalen", "twilliams", "wboeger", "ajones", "swhalen", "nmarques", "rwood", "dshapiro");
+            final List<String> wciUsers = Arrays.asList("jefron", "twhalen", "twilliams2", "wboeger", "ajones", "swhalen", "nmarques", "rwood", "dshapiro");
             
             // boolean authorCredentialsMatched = false;
             while (roleIterator.hasNext()) {
@@ -120,7 +120,6 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             // TODO - ONLY UNTIL IMS ROLES RESOVLED
             if (user.getUserName().equals("refset-dev")) {
                 
-               user.getRoles().add(User.ROLE_AUTHOR);
                user.getRoles().add(User.ROLE_REVIEWER);
                
             } else if (wciUsers.contains(user.getUserName())) {
