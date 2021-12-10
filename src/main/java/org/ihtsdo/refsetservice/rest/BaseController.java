@@ -70,27 +70,5 @@ public class BaseController {
                     String.join("\n ", errorMessages));
         }
     }
-    
-    /**
-     * Get the user from the session.
-     *
-     * @return the user from the session or null
-     * @throws Exception the exception
-     */
-    protected User getUserFromSession() throws Exception {
-        
-        User user = new User("testUser", "Test User", "tuser@testuser.com", new HashSet<String>(Arrays.asList("rt-all-user", "rt-all-author", "rt-all-reviewer")));
-        return user;
-    }
-    
-    /**
-     * Set the user into the session.
-     *
-     * @param the user to set in the session
-     * @throws Exception the exception
-     */
-    protected void setUserInSession(final User user) throws Exception {
-        
-        // code to set the user in the session
-    }
+   
 }
