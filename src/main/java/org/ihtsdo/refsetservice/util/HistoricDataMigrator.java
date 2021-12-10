@@ -519,6 +519,7 @@ public class HistoricDataMigrator {
                                     refset.setModuleId(moduleId);
                                     refset.setVersionDate(branchDate);
                                     refset.setVersionStatus("PUBLISHED");
+                                    refset.setWorkflowStatus("PUBLISHED");
                                     refset.setActive(true);
 
                                     // add the edition to a map with the refset

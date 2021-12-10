@@ -590,11 +590,9 @@ public class RefsetController extends BaseController {
             Refset refset = RefsetService.getRefset(SecurityService.getUserFromSession(), refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
             
-            
-            if (currentStatus == null) {
-                // Workflow for demo... just set it to Ready for Edit
-                logger.debug(
-                        " ----> Temp Demo Measure: Workflow for demo has null WF status... just set it to Ready for Edit");
+            // if the status is Published then create a new version of the refset that is ready to be edited
+            if (currentStatus == null || currentStatus.equals(WorkflowService.PUBLISHED)) {
+                
                 try (final TerminologyService service = new TerminologyService()) {
 
                 
