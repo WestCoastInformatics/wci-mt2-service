@@ -336,8 +336,6 @@ public class RefsetController extends BaseController {
         try {
             
             List<String> conceptIdList = new ArrayList<>();
-            String error = "";
-            List<String> unprocessedConcepts;
             final User user = SecurityService.getUserFromSession(); 
             
             logger.debug("*********** addRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType + " ; definitionExceptionType: " + definitionExceptionType);
@@ -357,24 +355,13 @@ public class RefsetController extends BaseController {
                 inclusionEcl = RefsetMemberService.conceptListToEclStatement(conceptIdList);
             }
             
-            unprocessedConcepts = RefsetService.addDefinitionException(user, refsetInternalId, inclusionEcl, definitionExceptionType);
+            final String status = RefsetService.addDefinitionException(user, refsetInternalId, inclusionEcl, definitionExceptionType);
             
-            // see if there are any concepts that were unable to be processed and craft the error message
-            if (unprocessedConcepts.size() > 0) {
-                
-                error = "Unable to process concepts ";
-                
-                for (final String unprocessedConcept : unprocessedConcepts) {
-                    error += unprocessedConcept + ", ";
-                }
-                
-                error = StringUtils.removeEnd(error, ", ");
-            }
             
-            if (error.equals("")) {
+            if (!status.startsWith("Error")) {
                 return "{\"status\": \"Definition exception added.\"}";
             } else {
-                return "{\"error\": \"" + error + "\"}";
+                return "{\"error\": \"" + status + "\"}";
             }
 
         } catch (final Exception e) {
@@ -399,30 +386,16 @@ public class RefsetController extends BaseController {
         
         try {
             
-            String error = "";
-            List<String> unprocessedConcepts;
             final User user = SecurityService.getUserFromSession(); 
             
             logger.debug("*********** removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; definitionExceptionId: " + definitionExceptionId);
                
-            unprocessedConcepts = RefsetService.removeDefinitionException(user, refsetInternalId, definitionExceptionId);
+            final String status = RefsetService.removeDefinitionException(user, refsetInternalId, definitionExceptionId);
             
-            // see if there are any concepts that were unable to be removed and craft the error message
-            if (unprocessedConcepts.size() > 0) {
-                
-                error = "Unable to process concepts ";
-                
-                for (final String unprocessedConcept : unprocessedConcepts) {
-                    error += unprocessedConcept + ", ";
-                }
-                
-                error = StringUtils.removeEnd(error, ", ");
-            }
-            
-            if (error.equals("")) {
+            if (!status.startsWith("Error")) {
                 return "{\"status\": \"Definition exception removed.\"}";
             } else {
-                return "{\"error\": \"" + error + "\"}";
+                return "{\"error\": \"" + status + "\"}";
             }
 
         } catch (final Exception e) {
@@ -451,13 +424,13 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
-            final String refsetInternalId = RefsetService.createRefset(SecurityService.getUserFromSession(), refsetParameters);
+            final String status = RefsetService.createRefset(SecurityService.getUserFromSession(), refsetParameters);
             
-            if (refsetInternalId.startsWith("Concept Id")) {
-                return "{\"error\": \"" + refsetInternalId + "\"}";
+            if (status.startsWith("Error")) {
+                return "{\"error\": \"" + status + "\"}";
             }
 
-            return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
+            return "{\"refsetInternalId\": \"" + status + "\"}";
 
         } catch (final Exception e) {
 
@@ -485,25 +458,12 @@ public class RefsetController extends BaseController {
         try {
 
             logger.debug("*********** modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
-            String error = "";
-            final List<String> unprocessedConcepts = RefsetService.modifyRefset(SecurityService.getUserFromSession(), refsetInternalId, refsetParameters);
+            final String status = RefsetService.modifyRefset(SecurityService.getUserFromSession(), refsetInternalId, refsetParameters);
             
-            // see if there are any concepts that were unable to be processed and craft the error message
-            if (unprocessedConcepts.size() > 0) {
-                
-                error = "Unable to process concepts ";
-                
-                for (final String unprocessedConcept : unprocessedConcepts) {
-                    error += unprocessedConcept + ", ";
-                }
-                
-                error = StringUtils.removeEnd(error, ", ");
-            }
-            
-            if (error.equals("")) {
+            if (!status.startsWith("Error")) {
                 return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
             } else {
-                return "{\"error\": \"" + error + "\"}";
+                return "{\"error\": \"" + status + "\"}";
             }
 
         } catch (final Exception e) {

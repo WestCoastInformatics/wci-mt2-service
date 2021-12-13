@@ -79,6 +79,15 @@ public class SecurityService implements AutoCloseable {
             return (User) object;
         }
         
+        // TODO - Find a better solution for unit tests
+        if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
+            
+            final User testUser = new User("unitTestUser", "Unit Test User", "", new HashSet<String>());
+            testUser.getRoles().add(User.ROLE_AUTHOR);
+            testUser.getRoles().add(User.ROLE_REVIEWER);
+            return testUser;
+        }
+        
         final User nonLoggedInUser = new User("nonLoggedInUser", "Non Logged In User", "", new HashSet<String>());
         
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();

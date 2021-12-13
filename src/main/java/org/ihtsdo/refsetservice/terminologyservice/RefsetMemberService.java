@@ -138,6 +138,12 @@ public class RefsetMemberService {
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 500;
+    
+    /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
+    private static final int URL_MAX_CHAR_LENGTH = 7500;
+    
+    /** The masx number of record elasticsearch will return without erroring. */
+    private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
 
     public static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
 
@@ -3352,71 +3358,100 @@ public class RefsetMemberService {
             // clear the caches for this refset
             clearAllMemberCaches(refsetInternalId);
 
-            // when searching for members we only want concepts whose membership
-            // is active
-            // (though the concept itself can be inactive)
-            final String memberSearchUrl =
-                    SnowstormConnection.BASE_URL + "browser/" + branchPath + "/members?referenceSet=" + refset.getRefsetId()
-                            + "&limit=5000&offset=0&active=true&referencedComponentId="
-                            + String.join(",", conceptIds);
-
-            logger.debug("addRefsetMembers search URL: " + memberSearchUrl);
-
-            Iterator<JsonNode> iterator = null;
-
-            try (final Response response = SnowstormConnection.getResponse(memberSearchUrl)) {
-
-                final String resultString = response.readEntity(String.class);
-
-                // Only process payload if Rest call is successful
-                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                    throw new Exception("call to url '" + memberSearchUrl + "' wasn't successful. "
-                            + response.toString());
-                }
-
-                final JsonNode root = mapper.readTree(resultString.toString());
-                iterator = root.get("items").iterator();
-            }
-
-            // loop thru the returned member details remove any from the list to add
-            while (iterator != null && iterator.hasNext()) {
-
-                final JsonNode conceptNode = iterator.next();
-                final String conceptId = conceptNode.get("referencedComponentId").asText();
-                conceptIds.remove(conceptId);
-            }
-
-            if (conceptIds.size() == 1) {
-                unaddedConcepts = callAddMemberSingle(refsetId, url, conceptIds.get(0));
-            } else {
+            // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
+            final String conceptSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/concepts/search";
+            final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", \"activeFilter\": true, ";
+            final List<String> conceptsToSearch = new ArrayList<>(conceptIds);
+            boolean searchAgain = true;
+            int searchIndex = 0;
+            int loopNumber = 1;
+            logger.debug("addRefsetMembers concept search/verification URL: " + conceptSearchUrl);
+            
+            while (searchAgain) { 
                 
-                // TODO - This can be removed if invalid concepts are handled on SnowStorm
-                for (final String conceptId : conceptIds) {
+                searchAgain = false;
+                String bodyConceptIds = "\"conceptIds\":[";
+                
+                for (; searchIndex < conceptsToSearch.size(); searchIndex++) {
                     
-                    String conceptVerificationUrl = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/" + "concepts?conceptIds="
-                        + StringUtility.encodeValue(conceptId) + "&limit=1";
+                    final String conceptId = conceptsToSearch.get(searchIndex);
+                    bodyConceptIds += "\"" + conceptId + "\",";
                     
-                    logger.debug("addRefsetMembers bulk verification URL: " + conceptVerificationUrl);
+                    if (searchIndex / loopNumber >= ELASTICSEARCH_MAX_RECORD_LENGTH) {
+                        
+                        loopNumber++;
+                        searchAgain = true;
+                        break;
+                    }
+                }
+                
+                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
+                
+                final String memberSearchBody = bodyBase + bodyConceptIds + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\"}";
+                Iterator<JsonNode> iterator = null;
+                
+                logger.debug("addRefsetMembers member search body: " + memberSearchBody);
+                
+                try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
+
+                    final String resultString = response.readEntity(String.class);
+
+                    // Only process payload if Rest call is successful
+                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                        throw new Exception("call to url '" + conceptSearchUrl + "' for member search wasn't successful. " + response.toString());
+                    }
+
+                    final JsonNode root = mapper.readTree(resultString.toString());
+                    iterator = root.get("items").iterator();
                     
-                    try (final Response response = SnowstormConnection.getResponse(conceptVerificationUrl)) {
+                    // loop thru the returned member details remove any from the list to add
+                    while (iterator != null && iterator.hasNext()) {
+
+                        final JsonNode conceptNode = iterator.next();
+                        final String conceptId = conceptNode.get("referencedComponentId").asText();
+                        conceptIds.remove(conceptId);
+                    }
+                }
+                
+                // verify the concept IDs if a bulk add is going to be used -- TODO - This can be removed if invalid concepts are handled on SnowStorm
+                if (conceptIds.size() > 1) {
+                    
+                    final String conceptVerificationBody = bodyBase + bodyConceptIds + "}";
+                    logger.debug("addRefsetMembers bulk verification body: " + conceptVerificationBody);
+                    
+                    try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, conceptVerificationBody)) {
                         
                         final String resultString = response.readEntity(String.class);
                         
                         // Only process payload if Rest call is successful
                         if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                            throw new Exception("call to url '" + conceptVerificationUrl + "' wasn't successful. "
-                                    + response.toString());
+                            throw new Exception("call to url '" + conceptSearchUrl + "' for concept verification wasn't successful. " + response.toString());
                         }
                         
                         final JsonNode root = mapper.readTree(resultString.toString());
+                        iterator = root.get("items").iterator();
                         
-                        if (root.get("total").asInt() == 0) {
+                        // loop thru the returned member details remove any from the list to add
+                        while (iterator != null && iterator.hasNext()) {
+
+                            final JsonNode conceptNode = iterator.next();
+                            final String conceptId = conceptNode.get("conceptId").asText();
                             
-                            unaddedConcepts.add(conceptId);
-                            logger.debug("The ID " + conceptId + " is not a valid concept.");
+                            if (!conceptIds.contains(conceptId)) {
+                                
+                                conceptIds.remove(conceptId);
+                                unaddedConcepts.add(conceptId);
+                                logger.debug("The ID " + conceptId + " is not a valid concept.");
+                            }
                         }
                     }
                 }
+            }
+            
+             
+            if (conceptIds.size() == 1) {
+                unaddedConcepts = callAddMemberSingle(refsetId, url, conceptIds.get(0));
+            } else {
                 
                 conceptIds.removeAll(unaddedConcepts); 
                 unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds));
@@ -3578,68 +3613,87 @@ public class RefsetMemberService {
             }
 
             final String refsetId = refset.getRefsetId();
-            final String url = SnowstormConnection.BASE_URL + RefsetService.getBranchPath(refset) + "/" + "members";
+            final String branchPath = RefsetService.getBranchPath(refset);
+            final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
 
             // clear the caches for this refset
             clearAllMemberCaches(refsetInternalId);
 
-            // when searching for members we only want concepts whose membership
-            // is active
-            // (though the concept itself can be inactive)
-            final String memberSearchUrl = SnowstormConnection.BASE_URL + "browser/"
-                    + RefsetService.getBranchPath(refset) + "/members?referenceSet="
-                    + refset.getRefsetId()
-                    + "&limit=5000&offset=0&active=true&referencedComponentId=" + conceptIds;
-
-            logger.debug("removeRefsetMembers search URL: " + memberSearchUrl);
-
-            Iterator<JsonNode> iterator = null;
-            
-            try (final Response response = SnowstormConnection.getResponse(memberSearchUrl)) {
-
-                final String resultString = response.readEntity(String.class);
-
-                // Only process payload if Rest call is successful
-                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                    throw new Exception("call to url '" + memberSearchUrl + "' wasn't successful. "
-                            + response.toString());
-                }
-
-                final JsonNode root = mapper.readTree(resultString.toString());
-                iterator = root.get("items").iterator();
-            }
-            
+            // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
+            final String memberSearchUrlBase = SnowstormConnection.BASE_URL + "browser/" + branchPath + "/members?referenceSet=" + refset.getRefsetId() + "&offset=0&active=true" 
+            + "&limit=" + URL_MAX_CHAR_LENGTH + "&referencedComponentId=";
             final ArrayNode memberDeleteArray = mapper.createArrayNode();
             final ArrayNode memberUpdateArray = mapper.createArrayNode();
+            final List<String> conceptsToSearch = Arrays.asList(conceptIds.split(","));
+            boolean searchAgain = true;
+            int searchIndex = 0;
             
-            // loop thru the returned member details and add it to the list to delete
-            while (iterator != null && iterator.hasNext()) {
-
-                final JsonNode conceptNode = iterator.next();
-                final boolean released = conceptNode.get("released").asBoolean();
-                final String membershipId = conceptNode.get("memberId").asText();
+            while (searchAgain) {
                 
-                // if the member has not been released then remove the membership
-                if (!released) {
-                    memberDeleteArray.add(membershipId);
+                searchAgain = false;
+                String bodyConceptIds = "";
+                
+                for (; searchIndex < conceptsToSearch.size(); searchIndex++) {
+                    
+                    final String conceptId = conceptsToSearch.get(searchIndex);
+                    bodyConceptIds += conceptId + ",";
+                    
+                    if (memberSearchUrlBase.length() + bodyConceptIds.length() >= URL_MAX_CHAR_LENGTH) {
+                        
+                        searchAgain = true;
+                        break;
+                    }
                 }
                 
-                // if the member has been released add the information to the update array
-                else {
+                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+                
+                final String memberSearchUrl = memberSearchUrlBase + bodyConceptIds;
+                Iterator<JsonNode> iterator = null;
+                
+                logger.debug("removeRefsetMembers search URL: " + memberSearchUrl);
+                
+                try (final Response response = SnowstormConnection.getResponse(memberSearchUrl)) {
+
+                    final String resultString = response.readEntity(String.class);
+
+                    // Only process payload if Rest call is successful
+                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                        throw new Exception("call to url '" + memberSearchUrl + "' wasn't successful. " + response.toString());
+                    }
+
+                    final JsonNode root = mapper.readTree(resultString.toString());
+                    iterator = root.get("items").iterator();
+                }
+                
+                // loop thru the returned member details and add it to the list to delete
+                while (iterator != null && iterator.hasNext()) {
+
+                    final JsonNode conceptNode = iterator.next();
+                    final boolean released = conceptNode.get("released").asBoolean();
+                    final String membershipId = conceptNode.get("memberId").asText();
                     
-                    final ObjectNode memberBody = mapper.createObjectNode().put("active", false)
-                        .put("effectiveTime", conceptNode.get("effectiveTime").asText())
-                        .put("memberId", membershipId)
-                        .put("moduleId", conceptNode.get("moduleId").asText())
-                        .put("referencedComponentId",
-                                conceptNode.get("referencedComponentId").asText())
-                        .put("refsetId", conceptNode.get("refsetId").asText())
-                        .put("released", released)
-                        .put("releasedEffectiveTime",
-                                conceptNode.get("releasedEffectiveTime").asInt())
-                        .set("additionalFields", conceptNode.get("additionalFields"));
+                    // if the member has not been released then remove the membership
+                    if (!released) {
+                        memberDeleteArray.add(membershipId);
+                    }
                     
-                    memberUpdateArray.add(memberBody);
+                    // if the member has been released add the information to the update array
+                    else {
+                        
+                        final ObjectNode memberBody = mapper.createObjectNode().put("active", false)
+                            .put("effectiveTime", conceptNode.get("effectiveTime").asText())
+                            .put("memberId", membershipId)
+                            .put("moduleId", conceptNode.get("moduleId").asText())
+                            .put("referencedComponentId",
+                                    conceptNode.get("referencedComponentId").asText())
+                            .put("refsetId", conceptNode.get("refsetId").asText())
+                            .put("released", released)
+                            .put("releasedEffectiveTime",
+                                    conceptNode.get("releasedEffectiveTime").asInt())
+                            .set("additionalFields", conceptNode.get("additionalFields"));
+                        
+                        memberUpdateArray.add(memberBody);
+                    }
                 }
             }
             
@@ -3808,7 +3862,7 @@ public class RefsetMemberService {
         final List<String> concepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
         String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl="
-                + StringUtility.encodeValue(ecl) + "&limit=1000";
+                + StringUtility.encodeValue(ecl) + "&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
         boolean keepSearching = true;
         int total = 0;
         int totalReturned = 0;
@@ -3851,7 +3905,7 @@ public class RefsetMemberService {
                     total = root.get("total").asInt();
                 }
 
-                if (total <= 1000 || totalReturned == total) {
+                if (total <= ELASTICSEARCH_MAX_RECORD_LENGTH || totalReturned == total) {
                     keepSearching = false;
                 } else {
                     searchAfter = "&searchAfter=" + root.get("searchAfter").asText();

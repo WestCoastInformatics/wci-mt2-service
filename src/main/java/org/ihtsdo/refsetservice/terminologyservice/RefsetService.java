@@ -95,12 +95,13 @@ public class RefsetService {
         String refsetId = refsetEditParameters.getRefsetId();
         Edition edition = null;
         Project project = null;
+        List<String> conceptIdList = new ArrayList<>();
         
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
 
             if (refsetId != null && doesRefsetExist(refsetId, null)) {
-                return "Concept Id '" + refsetId
+                return "Error - Concept Id '" + refsetId
                 + "' is already used as a refset.";
             }
             
@@ -112,6 +113,24 @@ public class RefsetService {
             }
             
             edition = project.getOrganization().getEdition();
+        }
+        
+        if (refsetEditParameters.getType().equals(Refset.INTENSIONAL)) {
+            
+            try {
+                String ecl = getEclFromDefinition(refsetEditParameters.getDefinitionClauses());
+                
+                // get the list of concepts from the ECL
+                conceptIdList = RefsetMemberService.getConceptIdsFromEcl(edition.getBranch(), ecl);
+                
+                // if there are no concepts in the definition then stop the creation
+                if (conceptIdList.size() == 0) {
+                    return "Error - Definition returns no concepts.";
+                }
+                
+            } catch (Exception e) {
+                return "Error - Invalid ECL Definition";
+            }
         }
         
         // if a new refset concept needs to be created get the ID to use
@@ -254,11 +273,6 @@ public class RefsetService {
             
             if (refset.getType().equals(Refset.INTENSIONAL)) {
                 
-                String ecl = getEclFromDefinition(refset.getDefinitionClauses());
-                
-                // get the list of concepts from the ECL
-                List<String> conceptIdList = RefsetMemberService.getConceptIdsFromEcl(getBranchPath(refset), ecl);
-                
                 // add the list of concepts as members to the refset
                 final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(refset.getId(), conceptIdList);
             }
@@ -355,14 +369,14 @@ public class RefsetService {
      * @param user the user
      * @param refsetInternalId the internal refset ID to modify
      * @param refsetEditParameters the paramters for creating the refset
-     * @return a list of concepts unable to be processed
+     * @return the status of the operation
      * @throws Exception the exception
      */
-    public static List<String> modifyRefset(final User user, final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
+    public static String modifyRefset(final User user, final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
        
         try (TerminologyService service = new TerminologyService()) {
 
-            List<String> unprocessedConcepts = new ArrayList<>();
+            String statusMessage = "Success";
             Refset refset = getRefset(user, refsetInternalId);
             
             if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
@@ -385,12 +399,12 @@ public class RefsetService {
             
             // if this is an intensional refset update the definition
             if (refset.getType().equals(Refset.INTENSIONAL)) {
-                unprocessedConcepts = modifyRefsetDefinition(service, refset, refsetEditParameters.getDefinitionClauses());
+                statusMessage = modifyRefsetDefinition(service, refset, refsetEditParameters.getDefinitionClauses());
             }
              
             logger.info("Refset " + refset.getRefsetId() + " successfully modified");
             logger.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));
-            return unprocessedConcepts;
+            return statusMessage;
         }
     }
     
@@ -545,17 +559,17 @@ public class RefsetService {
      * @param refsetInternalId the internal refset ID to modify
      * @param ecl the ecl to use for the clause
      * @param definitionExceptionType is the exception an inclusion or exclusion
-     * @return a list of concepts unable to be processed
+     * @return the status of the operation
      * @throws Exception the exception
      */
-    public static List<String> addDefinitionException(final User user, final String refsetInternalId, final String ecl, final String definitionExceptionType) throws Exception {
+    public static String addDefinitionException(final User user, final String refsetInternalId, final String ecl, final String definitionExceptionType) throws Exception {
        
         try (TerminologyService service = new TerminologyService()) {
             
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
-            List<String> unprocessedConcepts = new ArrayList<>();
+            String statusMessage = "Success";
             Refset refset = getRefset(user, refsetInternalId);
             
             if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
@@ -591,11 +605,11 @@ public class RefsetService {
                 }
                 
                 newClauses.add(new DefinitionClause(ecl, negated));
-                unprocessedConcepts = modifyRefsetDefinition(service, refset, newClauses);
+                statusMessage = modifyRefsetDefinition(service, refset, newClauses);
                 logger.debug("addDefinitionException: Refset: " + ModelUtility.toJson(refset));
             }
             
-            return unprocessedConcepts;
+            return statusMessage;
         }
     }
     
@@ -605,17 +619,17 @@ public class RefsetService {
      * @param user the user
      * @param refsetInternalId the internal refset ID to modify
      * @param definitionExceptionId the exception ID
-     * @return a list of concepts unable to be removed
+     * @return the status of the operation
      * @throws Exception the exception
      */
-    public static List<String> removeDefinitionException(final User user, final String refsetInternalId, final String definitionExceptionId) throws Exception {
+    public static String removeDefinitionException(final User user, final String refsetInternalId, final String definitionExceptionId) throws Exception {
        
         try (TerminologyService service = new TerminologyService()) {
             
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
-            List<String> unprocessedConcepts = new ArrayList<>();
+            String statusMessage = "Success";
             Refset refset = getRefset(user, refsetInternalId);
             
             if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
@@ -641,11 +655,11 @@ public class RefsetService {
             
             if (removeClause) {
                 
-                unprocessedConcepts = modifyRefsetDefinition(service, refset, newClauses);
+                statusMessage = modifyRefsetDefinition(service, refset, newClauses);
                 logger.debug("removeDefinitionException: Refset: " + ModelUtility.toJson(refset));
             }
              
-            return unprocessedConcepts;
+            return statusMessage;
         }
     }
     
@@ -654,12 +668,13 @@ public class RefsetService {
      *
      * @param user the user
      * @param refsetInternalId the internal refset ID to modify
-     * @return a list of concepts unable to be processed
+     * @return the status of the operation
      * @throws Exception the exception
      */
-    public static List<String> modifyRefsetDefinition(final TerminologyService service, final Refset refset, final List<DefinitionClause> modifiedDefinitionClauses) throws Exception {
+    public static String modifyRefsetDefinition(final TerminologyService service, final Refset refset, final List<DefinitionClause> modifiedDefinitionClauses) throws Exception {
        
         List<String> unprocessedConcepts = new ArrayList<>();
+        String statusMessage = "Success";
         
         if (refset.getType().equals(Refset.INTENSIONAL)) {
             
@@ -671,8 +686,22 @@ public class RefsetService {
             if (!oldDefinition.equals(newDefinition)) {
                 
                 final String branchPath = getBranchPath(refset.getId());
-                final List<String> oldMembers = RefsetMemberService.getConceptIdsFromEcl(branchPath, oldDefinition);
-                final List<String> newMembers = RefsetMemberService.getConceptIdsFromEcl(branchPath, newDefinition);
+                List<String> oldMembersTemp = new ArrayList<>();
+                List<String> newMembersTemp = new ArrayList<>();
+                
+                try {
+                    
+                    oldMembersTemp = RefsetMemberService.getConceptIdsFromEcl(branchPath, oldDefinition);
+                    newMembersTemp = RefsetMemberService.getConceptIdsFromEcl(branchPath, newDefinition);
+                    
+                } catch (Exception e) {
+                    
+                    logger.error("modifyRefsetDefinition error: ", e);
+                    return "Error - Invalid ECL Definition";
+                }
+                
+                final List<String> oldMembers = oldMembersTemp;
+                final List<String> newMembers = newMembersTemp;
                 
                 logger.debug("modifyRefsetDefinition oldMembers: " + oldMembers);
                 logger.debug("modifyRefsetDefinition newMembers: " + newMembers);
@@ -757,9 +786,20 @@ public class RefsetService {
                 }
             }
         }
+        
+        if (unprocessedConcepts.size() > 0) {
+            
+            statusMessage = "Error - Refset definition modified but unable to process concepts: ";
+            
+            for (final String unprocessedConcept : unprocessedConcepts) {
+                statusMessage += unprocessedConcept + ", ";
+            }
+            
+            statusMessage = StringUtils.removeEnd(statusMessage, ", ");
+        }
          
         logger.info("Refset " + refset.getRefsetId() + " definition successfully modified");
-        return unprocessedConcepts;
+        return statusMessage;
     }
     
     /**
