@@ -137,7 +137,7 @@ public class RefsetMemberService {
     private final static Map<String, Set<String>> refsetTreeNodeCache = new HashMap<>();
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
-    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 500;
+    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 900;
     
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
     private static final int URL_MAX_CHAR_LENGTH = 7500;
@@ -1692,7 +1692,7 @@ public class RefsetMemberService {
 
         // Create Snowstorm URL
         final String url =
-                SnowstormConnection.BASE_URL + getBranchPath(refset) + "/descriptions?limit=3000";
+                SnowstormConnection.BASE_URL + getBranchPath(refset) + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
 
         boolean firstTime = true;
         for (Concept concept : conceptsToProcess) {
@@ -2271,10 +2271,7 @@ public class RefsetMemberService {
                         + refset.getRefsetId() + "&" + pagingParams + "&active=true";
         logger.debug("URL: " + url);
 
-        // TODO: Make the memberListCallCache store a list of concept Ids, not a
-        // list of concepts.
-        // Then parse through returned list and for any conIds not in
-        // memberIdMap, populate just those concepts
+        // TODO: Make the memberListCallCache store a list of concept Ids, not a list of concepts. Then parse through returned list and for any conIds not in memberIdMap, populate just those concepts
         // TODO: Also add to memberListCallCache if the url is not already a key
         if (true) { // (!memberListCallCache.containsKey(url)) {
 
@@ -2311,12 +2308,11 @@ public class RefsetMemberService {
                     Concept concept = currentList.getItems().get(i);
 
                     // Only search concepts that haven't already populated
-                    if (!memberIdMap.containsKey(concept.getCode())
-                            || concept.getDescriptions().isEmpty()) {
+                    if (!memberIdMap.containsKey(concept.getCode()) || concept.getDescriptions().isEmpty()) {
+                        
                         conceptsToProcess.add(concept);
 
-                        if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL
-                                || i == currentList.getItems().size() - 1) {
+                        if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == currentList.getItems().size() - 1) {
 
                             populateAllLanguageDescriptions(refset, conceptsToProcess);
 
@@ -2514,7 +2510,7 @@ public class RefsetMemberService {
                 lookupParameters.setSingleConceptRequest(true);
 
                 ConceptResultList conceptResultList =
-                        getConceptsFromSnowstorm(url, refset, lookupParameters);
+                        getConceptsFromSnowstorm(url, refset, lookupParameters, null);
 
                 if (conceptResultList.size() != 1) {
                     throw new Exception("Unexpected number of concepts found ("
@@ -2623,20 +2619,6 @@ public class RefsetMemberService {
         }
     }
 
-    /**
-     * Call the provided Snowstorm URL to get concepts and return a processed
-     * result list, using English.
-     * 
-     * @param url The API URL to call
-     * @param refset the refset
-     * @param lookupParameters the parts of the concept to retrieve
-     * @return the concepts
-     * @throws Exception the exception
-     */
-    protected static ConceptResultList getConceptsFromSnowstorm(final String url,
-        final Refset refset, final ConceptLookupParameters lookupParameters) throws Exception {
-        return getConceptsFromSnowstorm(url, refset, lookupParameters, null);
-    }
 
     /**
      * Populate concepts from Snowstorm.
@@ -3008,7 +2990,7 @@ public class RefsetMemberService {
 
         ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
         lookupParameters.setGetMembershipInformation(true);
-        ConceptResultList resultList = getConceptsFromSnowstorm(url, refset, lookupParameters);
+        ConceptResultList resultList = getConceptsFromSnowstorm(url, refset, lookupParameters, null);
 
         int conceptsToBeProcessed = conceptsToProcess.size();
 
