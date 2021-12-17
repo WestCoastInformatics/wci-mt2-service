@@ -1171,13 +1171,11 @@ public class RefsetMemberService {
      * @return the raw resultString
      * @throws Exception the exception
      */
-    private static String getMemberSctids(final String refsetId, final int limit,
-
-        final String searchAfter, final String branchPath) throws Exception {
+    private static String getMemberSctids(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
+        
         final String pagingParams = "&limit=" + limit + "&searchAfter=" + searchAfter;
 
-        String url = SnowstormConnection.BASE_URL + "browser/" + branchPath
-                + "/members?referenceSet=" + refsetId + "&" + pagingParams;
+        String url = SnowstormConnection.BASE_URL + "browser/" + branchPath + "/members?referenceSet=" + refsetId + "&" + pagingParams;
 
         logger.debug("Snowstorm URL: " + url);
 
@@ -2049,14 +2047,11 @@ public class RefsetMemberService {
 
         ConceptResultList members = new ConceptResultList();
         final ObjectMapper mapper = new ObjectMapper();
-        int total = 0;
         final String encodedCaret = "%5E";
         final String encodedSpace = "%20";
 
         // Create Snowstorm URL
-        String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset="
-                + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit="
-                + searchParameters.getLimit();
+        String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
 
         // if this search is for editing then get the concept leaf information
         if (searchParameters.isEditing()) {
@@ -2066,7 +2061,7 @@ public class RefsetMemberService {
         boolean searchEcl = false;
 
         // if the query is not an ID then see if it passes ECL syntax
-        if (!searchParameters.getQuery().matches("\\d*")) {
+        if (searchParameters.getQuery() != null && !searchParameters.getQuery().matches("\\d*")) {
 
             final String eclUrl = SnowstormConnection.BASE_URL + "util/ecl-string-to-model";
             final String body = StringUtility.encodeValue(searchParameters.getQuery());
@@ -2100,73 +2095,84 @@ public class RefsetMemberService {
             }
         }
 
-        // Call Snowstorm
-        logger.debug("searchConcepts URL: " + url);
+        String searchAfter = "";
+        boolean hasMorePages = true;
 
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                throw new Exception(
-                        "call to url '" + url + "' wasn't successful. " + response.toString());
-            }
-
-            final String resultString = response.readEntity(String.class);
-            final JsonNode root = mapper.readTree(resultString.toString());
-
-            JsonNode allConceptNodes = root.get("items");
-
-            // if the search returned results set the total
-            if (allConceptNodes.size() > 0) {
-                total = root.get("total").asInt();
-            }
-
-            if (allConceptNodes.size() != 0 && !allConceptNodes.get(0).has("error")) {
-
-                final Iterator<JsonNode> itemIterator = allConceptNodes.iterator();
-                final ArrayList<Concept> returnConcepts = new ArrayList<>();
-
-                // parse items to retrieve matching concepts
-                while (itemIterator.hasNext()) {
-
-                    final JsonNode conceptNode = itemIterator.next();
-
-                    Concept concept = new Concept();
-                    concept.setActive(conceptNode.get("active").asBoolean());
-                    concept.setId(conceptNode.get("id").asText());
-                    concept.setCode(conceptNode.get("id").asText());
-
-                    if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
-                        concept.setDefined(true);
-                    } else {
-                        concept.setDefined(false);
-                    }
-
-                    if (conceptNode.get("pt") != null) {
-                        concept.setName(conceptNode.get("pt").get("term").asText());
-                    }
-
-                    if (conceptNode.has("isLeafInferred")) {
-                        concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
-                    }
-
-                    setConceptPermissions(concept);
-                    concept.setMemberOfRefset(searchRefsetMembers);
-                    processIntensionalDefinitionException(refset, concept);
-                    returnConcepts.add(concept);
+        while (hasMorePages) {
+   
+            // Call Snowstorm
+            logger.debug("searchConcepts URL: " + url);
+    
+            try (final Response response = SnowstormConnection.getResponse(url)) {
+    
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                    throw new Exception(
+                            "call to url '" + url + "' wasn't successful. " + response.toString());
                 }
+    
+                final String resultString = response.readEntity(String.class);
+                final JsonNode root = mapper.readTree(resultString.toString());
+                
+                if (root.get("searchAfter") != null) {
+                    searchAfter = root.get("searchAfter").asText();
+                }
+    
+                JsonNode allConceptNodes = root.get("items");
+    
+                if (allConceptNodes.size() + members.getItems().size() <= ELASTICSEARCH_MAX_RECORD_LENGTH) {
+                    hasMorePages = false;
+                }
+    
+                if (allConceptNodes.size() != 0 && !allConceptNodes.get(0).has("error")) {
+    
+                    final Iterator<JsonNode> itemIterator = allConceptNodes.iterator();
+                    final ArrayList<Concept> returnConcepts = new ArrayList<>();
+    
+                    // parse items to retrieve matching concepts
+                    while (itemIterator.hasNext()) {
+    
+                        final JsonNode conceptNode = itemIterator.next();
+    
+                        Concept concept = new Concept();
+                        concept.setActive(conceptNode.get("active").asBoolean());
+                        concept.setId(conceptNode.get("id").asText());
+                        concept.setCode(conceptNode.get("id").asText());
+    
+                        if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                            concept.setDefined(true);
+                        } else {
+                            concept.setDefined(false);
+                        }
+    
+                        if (conceptNode.get("pt") != null) {
+                            concept.setName(conceptNode.get("pt").get("term").asText());
+                        }
+    
+                        if (conceptNode.has("isLeafInferred")) {
+                            concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
+                        }
+    
+                        setConceptPermissions(concept);
+                        concept.setMemberOfRefset(searchRefsetMembers);
+                        processIntensionalDefinitionException(refset, concept);
+                        returnConcepts.add(concept);
+                    }
+    
+                    populateMembershipInformation(refset, returnConcepts);
+                    members.getItems().addAll(returnConcepts);
+                    
+                    // if the search returned results set the total
+                    if (allConceptNodes.size() > 0 && members.getTotal() == 0) {
+                        members.setTotal(root.get("total").asInt());
+                    }
+                }
+                
+            } catch (Exception ex) {
 
-                populateMembershipInformation(refset, returnConcepts);
-                members.setItems(returnConcepts);
-                members.setTotal(total);
+                logger.error(
+                        "searchConcepts Could not retrieve concepts matching term: " + ex.getMessage());
+                ex.printStackTrace();
             }
-
-            return members;
-
-        } catch (Exception ex) {
-
-            logger.error(
-                    "searchConcepts Could not retrieve concepts matching term: " + ex.getMessage());
-            ex.printStackTrace();
         }
 
         return members;
@@ -2254,8 +2260,7 @@ public class RefsetMemberService {
         ConceptResultList members = new ConceptResultList();
 
         final String pagingParams =
-                "offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit="
-                        + searchParameters.getLimit()
+                "offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
                         + (StringUtils.isNotEmpty(searchParameters.getSearchAfter()) ? "&searchAfter=" + searchParameters.getSearchAfter() : ""); 
 
         // when searching for members we only want concepts whose membership is
@@ -2282,20 +2287,23 @@ public class RefsetMemberService {
                 final List<Concept> conceptsToProcess = new ArrayList<>();
                 final Map<String, Concept> memberIdMap = getCachedRefsetMembers(refset.getId());
 
+                if (searchParameters.getQuery() == null) {
+                    searchParameters.setQuery("");
+                }
                 ConceptResultList currentList;
                 // if search term is indicated, find members that match search
                 // term
-                if (searchParameters != null && searchParameters.getQuery() != null) {
+                //if (searchParameters.getQuery() != null) {
 
                     notSearching = false;
                     currentList = searchConcepts(refset, searchParameters, true);
-                } else {
-
-                    logger.debug("Get Member List URL: " + url);
-
-                    // Populate results for member list
-                    currentList = getConceptsFromSnowstorm(url, refset, lookupParameters);
-                }
+//                } else {
+//
+//                    logger.debug("Get Member List URL: " + url);
+//
+//                    // Populate results for member list
+//                    currentList = getConceptsFromSnowstorm(url, refset, lookupParameters);
+//                }
 
                 // add the descriptions to the children concepts in batches
                 for (int i = 0; i < currentList.getItems().size(); i++) {
