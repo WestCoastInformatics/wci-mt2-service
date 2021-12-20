@@ -504,6 +504,7 @@ public class RefsetMemberService {
      * @return the refsetToLanguagesMap
      */
     public static Map<String, String> getRefsetToLanguagesMap() {
+
         return refsetToLanguagesMap;
     }
 
@@ -514,17 +515,11 @@ public class RefsetMemberService {
      * @return a list of refsets containing members matching the search
      * @throws Exception the exception
      */
-    public static String searchDirectoryMembers(final SearchParameters searchParameters)
-        throws Exception {
+    public static Set<String> searchDirectoryMembers(final SearchParameters searchParameters) throws Exception {
 
-        String refsetQuery = "";
-        final String query = searchParameters.getQuery(); // refsetId: "12345"
-                                                          // AND privateRefset:
-                                                          // false AND term:
-                                                          // "blood" AND name:
-                                                          // "work"
-        final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
-                "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
+        final String query = searchParameters.getQuery();
+        final List<String> directoryColumns =
+            Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
         String snowstormQuery = "";
         String[] queryParts = query.split(" AND ");
 
@@ -539,25 +534,35 @@ public class RefsetMemberService {
                 snowstormQuery += queryPart + " AND ";
             }
         }
+        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+        return getDirectoryMembers(snowstormQuery);
+    }
+    
+    /**
+     * Multisearch descriptions of reference sets
+     * @param snowstormQuery the query string
+     * @return JSON string search results
+     * @throws Exception the exception
+     */
+    private static Set<String> getDirectoryMembers(String snowstormQuery) throws Exception {
+
+        // refsetId: "12345" AND privateRefset:false AND term:"blood" AND name:"work"
+        final Set<String> refsetIds = new HashSet<>();
 
         // if there are no query terms just exit the method
         if (snowstormQuery.equals("")) {
-            return refsetQuery;
+            return refsetIds;
         }
 
-        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
-
-        String url = SnowstormConnection.BASE_URL
-                + "multisearch/descriptions/referencesets?active=true&offset=0&limit=1&term="
-                + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery));
+        String url = SnowstormConnection.BASE_URL + "multisearch/descriptions/referencesets?active=true&offset=0&limit=1&term="
+            + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery));
 
         logger.debug("Snowstorm URL: " + url);
 
         try (Response response = SnowstormConnection.getResponse(url)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                throw new Exception(
-                        "call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -567,29 +572,74 @@ public class RefsetMemberService {
 
             if (root.get("buckets") != null) {
 
-                Iterator<String> membershipIterator =
-                        root.get("buckets").get("membership").fieldNames();
+                Iterator<String> membershipIterator = root.get("buckets").get("membership").fieldNames();
 
                 while (membershipIterator.hasNext()) {
-
-                    String refsetId = membershipIterator.next();
-                    refsetQuery += refsetId + " OR ";
+                    refsetIds.add(membershipIterator.next());
                 }
-
-                if (!refsetQuery.equals("")) {
-                    refsetQuery = "refsetId:(" + StringUtils.removeEnd(refsetQuery, " OR ") + ")";
-                }
-
             }
 
         } catch (Exception ex) {
-            throw new Exception(
-                    "Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
         }
 
-        logger.debug("searchDirectoryMembers refsetQuery: " + refsetQuery);
+        logger.debug("searchDirectoryMembers refsetQuery: {}", refsetIds);
+        return refsetIds;
+    }
+    
+    /**
+     * Multisearch of descriptions
+     * 
+     * @param term Term to search
+     * @param ecl ECL to narrow search
+     * @return Collection of conceptIds as strings.
+     * @throws Exception the exception
+     */
+    public static Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl) throws Exception {
 
-        return refsetQuery;
+        final String query = searchParameters.getQuery();
+        final List<String> directoryColumns =
+            Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
+        String snowstormQuery = "";
+        String[] queryParts = query.split(" AND ");
+
+        for (final String queryPart : queryParts) {
+
+            String[] keyValue = queryPart.split(":");
+
+            if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
+                continue;
+            } else {
+
+                snowstormQuery += queryPart + " AND ";
+            }
+        }
+        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+
+        String url = SnowstormConnection.BASE_URL + "multisearch/descriptions?active=true&offset=0&limit=10000" + "&ecl=" + StringUtility.encodeValue(ecl) + "&term="
+            + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery));
+
+        try (Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+            }
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+
+            final Set<String> conceptIds = new HashSet<>();
+            if (root.get("items") != null) {
+                final JsonNode itemsNode = root.get("items");
+                if (itemsNode.isArray()) {
+                    for (JsonNode itemNode : itemsNode) {
+                        conceptIds.add(itemNode.get("concept").get("conceptId").asText());
+                    }
+                }
+            }
+            return conceptIds;
+        }
     }
 
     /**

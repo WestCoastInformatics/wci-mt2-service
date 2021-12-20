@@ -1243,28 +1243,24 @@ public class RefsetService {
                 if (!termQuery.equals("")) {
                     
                     termQuery = StringUtils.removeEnd(termQuery, " AND ");
+                    Set<String> refsetIds = new HashSet<>(); 
                     
-                    // search all the descriptions of refset concepts
-                    final String refsetDescriptionQuery = "";//searchRefsetDescriptions(searchParameters);
-                    String memberRefsetQuery = "";
-                    
-                    // if it was requested search member concepts
+                    // if it was requested search member concepts                    
                     if (searchConcepts) {
-                        memberRefsetQuery = RefsetMemberService.searchDirectoryMembers(searchParameters);
+                        refsetIds.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
+                        
+                        // search descriptions of Simple type reference set (foundation metadata concept) "<446609009"
+                        refsetIds.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009"));
                     }
                     
-                    if (!memberRefsetQuery.equals("") || !refsetDescriptionQuery.equals("")) {
+                    if (!refsetIds.isEmpty()) {
                         
                         termQuery = "((" + termQuery + ")";
                         
-                        if (!memberRefsetQuery.equals("")) {
-                            termQuery += " OR " + memberRefsetQuery;
+                        if (!refsetIds.isEmpty()) {
+                            termQuery = termQuery + " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
                         }
-                        
-                        if (!refsetDescriptionQuery.equals("")) {
-                            termQuery += " OR " + refsetDescriptionQuery;
-                        }
-                        
+                                                
                         termQuery += ")";
                         
                     } else {
@@ -1294,6 +1290,7 @@ public class RefsetService {
             }
 
             logger.debug("******** searchRefsets query: " + query);
+            
             results = service.find(query, pfs, Refset.class, null);
 
             for (Refset refset : results.getItems()) {
