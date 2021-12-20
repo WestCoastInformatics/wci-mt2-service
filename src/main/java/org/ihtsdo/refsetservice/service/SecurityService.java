@@ -76,6 +76,8 @@ public class SecurityService implements AutoCloseable {
         final Object object = getFromSession(SESSION_USER_OBJECT_KEY);
         
         if (object != null) {
+            
+            logger.debug("******** SESSION USER: " + ModelUtility.toJson(object));
             return (User) object;
         }
         
@@ -85,10 +87,12 @@ public class SecurityService implements AutoCloseable {
             final User testUser = new User("unitTestUser", "Unit Test User", "", new HashSet<String>());
             testUser.getRoles().add(User.ROLE_AUTHOR);
             testUser.getRoles().add(User.ROLE_REVIEWER);
+            logger.debug("******** SESSION USER: " + ModelUtility.toJson(testUser));
             return testUser;
         }
         
         final User nonLoggedInUser = new User("nonLoggedInUser", "Non Logged In User", "", new HashSet<String>());
+        logger.debug("******** SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
         
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
         

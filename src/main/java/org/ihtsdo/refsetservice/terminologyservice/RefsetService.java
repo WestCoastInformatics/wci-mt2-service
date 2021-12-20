@@ -274,7 +274,7 @@ public class RefsetService {
             if (refset.getType().equals(Refset.INTENSIONAL)) {
                 
                 // add the list of concepts as members to the refset
-                final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(refset.getId(), conceptIdList);
+                final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(user, refset.getId(), conceptIdList);
             }
             
             logger.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added. Time: " + (System.currentTimeMillis() - start));
@@ -399,7 +399,7 @@ public class RefsetService {
             
             // if this is an intensional refset update the definition
             if (refset.getType().equals(Refset.INTENSIONAL)) {
-                statusMessage = modifyRefsetDefinition(service, refset, refsetEditParameters.getDefinitionClauses());
+                statusMessage = modifyRefsetDefinition(user, service, refset, refsetEditParameters.getDefinitionClauses());
             }
              
             logger.info("Refset " + refset.getRefsetId() + " successfully modified");
@@ -605,7 +605,7 @@ public class RefsetService {
                 }
                 
                 newClauses.add(new DefinitionClause(ecl, negated));
-                statusMessage = modifyRefsetDefinition(service, refset, newClauses);
+                statusMessage = modifyRefsetDefinition(user, service, refset, newClauses);
                 logger.debug("addDefinitionException: Refset: " + ModelUtility.toJson(refset));
             }
             
@@ -655,7 +655,7 @@ public class RefsetService {
             
             if (removeClause) {
                 
-                statusMessage = modifyRefsetDefinition(service, refset, newClauses);
+                statusMessage = modifyRefsetDefinition(user, service, refset, newClauses);
                 logger.debug("removeDefinitionException: Refset: " + ModelUtility.toJson(refset));
             }
              
@@ -671,7 +671,7 @@ public class RefsetService {
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String modifyRefsetDefinition(final TerminologyService service, final Refset refset, final List<DefinitionClause> modifiedDefinitionClauses) throws Exception {
+    public static String modifyRefsetDefinition(final User user, final TerminologyService service, final Refset refset, final List<DefinitionClause> modifiedDefinitionClauses) throws Exception {
        
         List<String> unprocessedConcepts = new ArrayList<>();
         String statusMessage = "Success";
@@ -772,7 +772,7 @@ public class RefsetService {
                 if (conceptsToRemove.size() > 0) {
                     
                     logger.debug("modifyRefsetDefinition intensional conceptsToRemove: " + conceptsToRemove);
-                    unprocessedConcepts.addAll(RefsetMemberService.removeRefsetMembers(refset.getId(), String.join(",", conceptsToRemove)));
+                    unprocessedConcepts.addAll(RefsetMemberService.removeRefsetMembers(user, refset.getId(), String.join(",", conceptsToRemove)));
                 }
                 
                 // Get the list of members to add
@@ -782,7 +782,7 @@ public class RefsetService {
                 
                 if (conceptsToAdd.size() > 0) {
                     logger.debug("modifyRefsetDefinition intensional conceptsToAdd: " + conceptsToAdd);
-                    unprocessedConcepts.addAll(RefsetMemberService.addRefsetMembers(refset.getId(), conceptsToAdd));
+                    unprocessedConcepts.addAll(RefsetMemberService.addRefsetMembers(user, refset.getId(), conceptsToAdd));
                 }
             }
         }

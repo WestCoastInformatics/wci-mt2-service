@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -70,5 +72,4 @@ public class BaseController {
                     String.join("\n ", errorMessages));
         }
     }
-   
 }

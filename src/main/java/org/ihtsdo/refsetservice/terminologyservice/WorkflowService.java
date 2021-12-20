@@ -1184,4 +1184,19 @@ public final class WorkflowService {
 
         return allowedActions;
     }
+    
+
+    /**
+     * Test if a user can edit a refset.
+     *
+     * @param user the user
+     * @param refset the refset
+     * @throws Exception the exception
+     */
+    public static void canUserEditRefset(final User user, final Refset refset) throws Exception {
+        
+        if (!refset.getAvailableActions().contains(WorkflowService.FINISH_EDIT)) {
+            throw new Exception("Refset is not in the proper state or user does not have permission to edit.");
+        }
+    }
 }

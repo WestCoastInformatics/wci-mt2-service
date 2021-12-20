@@ -46,6 +46,7 @@ import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
@@ -137,7 +138,7 @@ public class RefsetMemberService {
     private final static Map<String, Set<String>> refsetTreeNodeCache = new HashMap<>();
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
-    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 900;
+    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 650;
     
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
     private static final int URL_MAX_CHAR_LENGTH = 7500;
@@ -170,6 +171,7 @@ public class RefsetMemberService {
     /**
      * Get the refset member concepts.
      *
+     * @param user the user
      * @param refsetInternalId the internal refset ID
      * @param searchParameters the search parameters
      * @param displayType Should results be a list or hierarchical taxonomy
@@ -177,17 +179,15 @@ public class RefsetMemberService {
      * @return the refset member concepts
      * @throws Exception the exception
      */
-    public static ConceptResultList getRefsetMembers(final String refsetInternalId,
-        final SearchParameters searchParameters, final String displayType,
-        final TaxonomyParameters taxonomyParameters) throws Exception {
+    public static ConceptResultList getRefsetMembers(final User user, final String refsetInternalId,
+        final SearchParameters searchParameters, final String displayType, final TaxonomyParameters taxonomyParameters) throws Exception {
 
         ConceptResultList concepts = new ConceptResultList();
 
         try (final TerminologyService service = new TerminologyService()) {
             
-            Refset refset = getRefset(service, refsetInternalId);
-            final List<String> nonDefaultPreferredTerms =
-                    identifyNonDefaultPreferredTerms(refset.getEdition());
+            Refset refset = getRefset(user, service, refsetInternalId);
+            final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(refset.getEdition());
 
             // the next call depend if a list or taxonomy is being returned
             if (displayType.equals("list")) {
@@ -208,26 +208,22 @@ public class RefsetMemberService {
     /**
      * Get the refset.
      *
+     * @param user the user
      * @param service the service
      * @param refsetInternalId the internal refset ID
      * @return the refset
      * @throws Exception the exception
      */
-    public static Refset getRefset(final TerminologyService service, final String refsetInternalId) throws Exception {
+    public static Refset getRefset(final User user, final TerminologyService service, final String refsetInternalId) throws Exception {
 
-        final Refset refset = service.get(refsetInternalId, Refset.class);
+        Refset refset = service.get(refsetInternalId, Refset.class);
 
         if (refset == null) {
             throw new Exception("Refset Internal Id: " + refsetInternalId
                     + " does not exist in the RT2 database");
         }
         
-//        if (refset.getType().equals(Refset.INTENSIONAL)) {
-//            
-//            final Map<String, List<String>> exceptionMap = RefsetService.getInclusionExclusionLists(refset.getDefinitionClauses(), getBranchPath(refset));
-//            refset.setInclusionConcepts(exceptionMap.get(Refset.INCLUSION));
-//            refset.setExclusionConcepts(exceptionMap.get(Refset.EXCLUSION));
-//        }
+        refset = RefsetService.setRefsetPermissions(user, refset);
 
         return refset;
     }
@@ -1925,6 +1921,7 @@ public class RefsetMemberService {
     /**
      * Get ready to search concepts.
      *
+     * @param user the user
      * @param refsetInternalId the internal refset ID
      * @param searchParameters the search parameters
      * @param searchRefsetMembers Should the search be for members of the refset
@@ -1933,7 +1930,7 @@ public class RefsetMemberService {
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static ConceptResultList prepareConceptSearch(final String refsetInternalId,
+    public static ConceptResultList prepareConceptSearch(final User user, final String refsetInternalId,
         final SearchParameters searchParameters, final boolean searchRefsetMembers)
         throws MalformedURLException, Exception {
 
@@ -1941,7 +1938,7 @@ public class RefsetMemberService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final Refset refset = getRefset(service, refsetInternalId);
+            final Refset refset = getRefset(user, service, refsetInternalId);
 
             concepts = searchConcepts(refset, searchParameters, searchRefsetMembers);
 
@@ -3370,13 +3367,13 @@ public class RefsetMemberService {
     /**
      * Add a list of concepts as members to a refset.
      *
+     * @param user the user
      * @param refsetInternalId the internal refset ID
      * @param conceptIds a list of concept IDs to make members
      * @return A list of concepts that were unable to be added
      * @throws Exception the exception
      */
-    public static List<String> addRefsetMembers(final String refsetInternalId,
-        List<String> conceptIds) throws Exception {
+    public static List<String> addRefsetMembers(final User user, final String refsetInternalId, List<String> conceptIds) throws Exception {
 
         List<String> unaddedConcepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
@@ -3384,7 +3381,9 @@ public class RefsetMemberService {
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
+            final Refset refset = getRefset(user, service, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
+            
             final String branchPath = RefsetService.getBranchPath(refset);
             final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
 
@@ -3642,12 +3641,13 @@ public class RefsetMemberService {
     /**
      * Remove or inactivate refset membership for a list of concepts.
      *
+     * @param user the user
      * @param refsetInternalId the internal refset ID
      * @param conceptIds a list of concept IDs to make members
      * @return A list of concepts that were unable to have membership removed
      * @throws Exception the exception
      */
-    public static List<String> removeRefsetMembers(final String refsetInternalId, String conceptIds)
+    public static List<String> removeRefsetMembers(final User user, final String refsetInternalId, String conceptIds)
         throws Exception {
 
         List<String> unremovedConcepts = new ArrayList<>();
@@ -3656,12 +3656,8 @@ public class RefsetMemberService {
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
-
-            if (refset == null) {
-                throw new Exception("Refset Internal Id: " + refsetInternalId
-                        + " does not exist in the RT2 database");
-            }
+            final Refset refset = getRefset(user, service, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             final String refsetId = refset.getRefsetId();
             final String branchPath = RefsetService.getBranchPath(refset);
