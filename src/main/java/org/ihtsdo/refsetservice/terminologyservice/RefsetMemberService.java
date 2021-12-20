@@ -3398,7 +3398,7 @@ public class RefsetMemberService {
                     while (iterator != null && iterator.hasNext()) {
 
                         final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("referencedComponentId").asText();
+                        final String conceptId = conceptNode.get("conceptId").asText();
                         conceptIds.remove(conceptId);
                     }
                 }
@@ -3420,30 +3420,41 @@ public class RefsetMemberService {
                         
                         final JsonNode root = mapper.readTree(resultString.toString());
                         iterator = root.get("items").iterator();
+                        final List<String> validatedConcepts = new ArrayList<>();
                         
-                        // loop thru the returned member details remove any from the list to add
                         while (iterator != null && iterator.hasNext()) {
 
                             final JsonNode conceptNode = iterator.next();
                             final String conceptId = conceptNode.get("conceptId").asText();
-                            
-                            if (!conceptIds.contains(conceptId)) {
-                                
-                                conceptIds.remove(conceptId);
-                                unaddedConcepts.add(conceptId);
-                                logger.debug("The ID " + conceptId + " is not a valid concept.");
-                            }
+                            validatedConcepts.add(conceptId);
                         }
+                        
+                        // gather any input concept not in the validated list 
+                        final List<String> invalidConcepts = conceptIds.stream()
+                            .filter((inputConceptId) -> { 
+                                
+                                boolean found = validatedConcepts.contains(inputConceptId);
+                                
+                                if (found) {
+                                    return false;
+                                } else {
+                                    
+                                    logger.debug("The ID " + inputConceptId + " is not a valid concept.");
+                                    return true;
+                                }
+                            })
+                            .collect(Collectors.toList());
+                        
+                        logger.debug("********* invalidConcepts: " + invalidConcepts);
+                        unaddedConcepts.addAll(invalidConcepts);
+                        conceptIds.removeAll(invalidConcepts);
                     }
                 }
             }
-            
              
             if (conceptIds.size() == 1) {
-                unaddedConcepts = callAddMemberSingle(refsetId, url, conceptIds.get(0));
+                unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0)));
             } else {
-                
-                conceptIds.removeAll(unaddedConcepts); 
                 unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds));
             }
         }
