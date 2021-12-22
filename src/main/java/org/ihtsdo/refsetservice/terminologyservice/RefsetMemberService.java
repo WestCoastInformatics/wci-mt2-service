@@ -3453,7 +3453,7 @@ public class RefsetMemberService {
                 }
                 
                 // verify the concept IDs if a bulk add is going to be used -- TODO - This can be removed if invalid concepts are handled on SnowStorm
-                if (conceptIds.size() > 1) {
+                if (conceptIds.size() > 0) {
                     
                     final String conceptVerificationBody = bodyBase + bodyConceptIds + "}";
                     logger.debug("addRefsetMembers bulk verification body: " + conceptVerificationBody);
