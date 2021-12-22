@@ -111,7 +111,7 @@ Run this to run the web server
 
 ## Usage
 To get data into your local database for the first time go to this URL in a browser or Postman (as GET). This will only work if the database is empty, and will take several minutes. It will return a success message when complete:
-* http://localhost:8080/refsetservice/admin/migration/rtt
+* http://localhost:8080/refsetservice/refsetservice/admin/migration/rtt
 
 To hit a REST endpoint go to the following URLs in a browser or in Postman (as GET):
 * http://localhost:8080/test/info (You will see "Welcome")

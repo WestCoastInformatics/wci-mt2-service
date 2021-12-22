@@ -54,8 +54,8 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             baseUrl = "/refset";
 
             try {
-                testingEditionId = getEditionInternalId(TESTING_EDITION_NAME);
-                testingProjectId = getProjectInternalId(TESTING_PROJECT_NAME);
+                testingEditionId = internalidGetterUtil.getEditionInternalId(TESTING_EDITION_NAME);
+                testingProjectId = internalidGetterUtil.getProjectInternalId(TESTING_PROJECT_NAME);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -73,7 +73,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
     public void testNewVersionCreateModifyDelete() throws Exception {
 
         final String originalRefsetInternalId =
-                getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
+                internalidGetterUtil.getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
         final String url = baseUrl + "/" + originalRefsetInternalId + "/newVersion";
         logger.info("Testing url - " + url);
 

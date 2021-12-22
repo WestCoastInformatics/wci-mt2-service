@@ -93,15 +93,12 @@ public class RefsetControllerTests extends AbstractRefsetTests {
             REFSET_FILE_PATH + "561000172108 ListOfSctIds 20200315.txt";
 
     private static final String TESTING_REFSET_SNAPSHOT_EXPORT_VERSION = "20200315";
+
     private static final String INACTIVE_REFSET_DELTA_FROM_EXPORT_VERSION = "20180131";
+
     private static final String INACTIVE_REFSET_DELTA_TO_EXPORT_TWO_VERSIONS = "20180731";
+
     private static final String INACTIVE_REFSET_DELTA_TO_EXPORT_THREE_VERSIONS = "20190131";
-
-    private GetterUnitTestUtilities getterUtil;
-
-    private InternalIdGetterUnitTestUtilities internalidGetterUtil;
-
-    private ExportUnitTestUtilities exportUtil;
 
     /**
      * Sets the up.
@@ -115,10 +112,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         }
 
         // Setup Utility classes
-        getterUtil = new GetterUnitTestUtilities(mvc, baseUrl);
-        internalidGetterUtil = new InternalIdGetterUnitTestUtilities(SIMPLE_DATE_FORMAT);
-        exportUtil = new ExportUnitTestUtilities(mvc);
-
         if (mainTestingRefsetInternalId == null) {
 
             objectMapper = new ObjectMapper();
@@ -266,7 +259,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         ResultList<Refset> refsetList;
         Refset refsetIdentified;
-        
+
         // Test by name
         refsetList = getterUtil.searchDirectory("query=name:animal");
         refsetIdentified = validateRefsetExists(refsetList, TESTING_REFSET_ID);
@@ -276,7 +269,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         refsetList = getterUtil.searchDirectory("query=name:ani");
         refsetIdentified = validateRefsetExists(refsetList, TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
-
 
         // Test by edition name
         refsetList = getterUtil.searchDirectory("query=editionName:Belgian Edition");
@@ -313,7 +305,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // Test graceful handling of zero results
         try {
-        refsetList = getterUtil.searchDirectory("1234567890");
+            refsetList = getterUtil.searchDirectory("1234567890");
         } catch (AssertionError e) {
             assertThat(refsetList.getItems().isEmpty()).isTrue();
             assertThat(refsetList.getTotal()).isEqualTo(0);
@@ -340,10 +332,13 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      */
     @Test
     public void testExportRf2Snapshot() throws Exception {
-        // Clear content on AWS first to ensure actually are generating export rather than just returning cached content
-        exportUtil.deleteRefsetExportsFromAws(TESTING_REFSET_ID, TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
-        
-        final JsonNode root = exportUtil.exportRf2Snapshot(mainTestingRefsetInternalId, TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
+        // Clear content on AWS first to ensure actually are generating export
+        // rather than just returning cached content
+        exportUtil.deleteRefsetExportsFromAws(TESTING_REFSET_ID,
+                TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
+
+        final JsonNode root = exportUtil.exportRf2Snapshot(mainTestingRefsetInternalId,
+                TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
 
         // Validate
         validateExportFiles(root, SNAPSHOT_FILE);
@@ -359,14 +354,18 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         /* Test delta between two versions */
         exportUtil.deleteRefsetExportsFromAwsAllVersions(INACTIVE_REFSET_ID);
 
-        JsonNode root = exportUtil.exportRf2Delta(inactiveConceptRefsetInternalId, INACTIVE_REFSET_DELTA_FROM_EXPORT_VERSION, INACTIVE_REFSET_DELTA_TO_EXPORT_TWO_VERSIONS);
+        JsonNode root = exportUtil.exportRf2Delta(inactiveConceptRefsetInternalId,
+                INACTIVE_REFSET_DELTA_FROM_EXPORT_VERSION,
+                INACTIVE_REFSET_DELTA_TO_EXPORT_TWO_VERSIONS);
 
         validateExportFiles(root, TWO_VERSION_DELTA_FILE);
 
         /* Test delta between three versions */
         exportUtil.deleteRefsetExportsFromAwsAllVersions(INACTIVE_REFSET_ID);
 
-        root = exportUtil.exportRf2Delta(inactiveConceptRefsetInternalId, INACTIVE_REFSET_DELTA_FROM_EXPORT_VERSION, INACTIVE_REFSET_DELTA_TO_EXPORT_THREE_VERSIONS);
+        root = exportUtil.exportRf2Delta(inactiveConceptRefsetInternalId,
+                INACTIVE_REFSET_DELTA_FROM_EXPORT_VERSION,
+                INACTIVE_REFSET_DELTA_TO_EXPORT_THREE_VERSIONS);
 
         validateExportFiles(root, THREE_VERSION_DELTA_FILE);
     }
@@ -1259,5 +1258,4 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // assertThat(matchedConcept.isActive()).isFalse();
 
     }
-
 }

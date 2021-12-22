@@ -20,6 +20,9 @@ import java.util.TreeSet;
 
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.GetterUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.InternalIdGetterUnitTestUtilities;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -93,6 +96,19 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     /** The base url. */
     protected static String baseUrl = "/refset";
+
+    protected GetterUnitTestUtilities getterUtil;
+
+    protected InternalIdGetterUnitTestUtilities internalidGetterUtil;
+
+    protected ExportUnitTestUtilities exportUtil;
+
+    public AbstractRefsetTests() {
+        getterUtil = new GetterUnitTestUtilities(mvc, baseUrl);
+        internalidGetterUtil = new InternalIdGetterUnitTestUtilities(SIMPLE_DATE_FORMAT);
+        exportUtil = new ExportUnitTestUtilities(mvc);
+    }
+
     protected void validateRefsetMetadata(Refset refset) {
         assertThat(refset).isNotNull();
 
@@ -103,8 +119,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
                     .isEqualToIgnoringCase("Lateralizable body structure reference set");
             assertThat(refset.getNarrative()).isEqualToIgnoringCase(
                     "The reference set contains all body structures that can be lateralized.");
-//            assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
-//                    || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
+            // assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
+            // || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("900000000000012004");
             assertThat(refset.getEdition().getName())
@@ -131,8 +147,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
                     "Belgian simple reference set for translated animal materials");
             assertThat(refset.getNarrative()).isEqualToIgnoringCase(
                     "descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
-//            assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
-//                    || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
+            // assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
+            // || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("11000172109");
             assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("Belgian Edition");
@@ -280,7 +296,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
         }
     }
 
-    protected Refset validateRefsetExists(final ResultList<Refset> refsetList, final String internalRefsetId) {
+    protected Refset validateRefsetExists(final ResultList<Refset> refsetList,
+        final String internalRefsetId) {
         for (Refset r : refsetList.getItems()) {
             if (r.getRefsetId().equals(internalRefsetId)) {
                 return r;

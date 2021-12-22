@@ -44,8 +44,8 @@ public class RefsetPublishTest extends AbstractRefsetTests {
             baseUrl = "/refset";
 
             try {
-                testingEditionId = getEditionInternalId(TESTING_EDITION_NAME);
-                testingProjectId = getProjectInternalId(TESTING_PROJECT_NAME);
+                testingEditionId = internalidGetterUtil.getEditionInternalId(TESTING_EDITION_NAME);
+                testingProjectId = internalidGetterUtil.getProjectInternalId(TESTING_PROJECT_NAME);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -68,7 +68,7 @@ public class RefsetPublishTest extends AbstractRefsetTests {
 
         // verify the new version
         try (final TerminologyService service = new TerminologyService()) {
-            refsetInternalId = getRefsetInternalId(refsetId, versionDate);
+            refsetInternalId = internalidGetterUtil.getRefsetInternalId(refsetId, versionDate);
             Refset refset = service.get(refsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
             releaseBranchPath = refset.getEdition().getBranch();
