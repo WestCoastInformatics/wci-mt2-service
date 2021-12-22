@@ -18,6 +18,9 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
+import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.GetterUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.InternalIdGetterUnitTestUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -93,6 +96,12 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     private static final String LIST_OF_SCTIDS_FILE =
             REFSET_FILE_PATH + "561000172108 ListOfSctIds 20200315.txt";
 
+    private GetterUnitTestUtilities getterUtil;
+
+    private InternalIdGetterUnitTestUtilities internalidGetterUtil;
+
+    private ExportUnitTestUtilities exportUtil;
+
     /**
      * Sets the up.
      */
@@ -122,14 +131,14 @@ public class RefsetControllerTests extends AbstractRefsetTests {
                                     + exportFileDir);
                 }
 
-                mainTestingRefsetInternalId =
-                        getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
+                mainTestingRefsetInternalId = internalidGetterUtil
+                        .getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
 
-                inactiveConceptRefsetInternalId =
-                        getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
+                inactiveConceptRefsetInternalId = internalidGetterUtil
+                        .getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
 
-                testingEditionId = getEditionInternalId(TESTING_EDITION_NAME);
-                testingProjectId = getProjectInternalId(TESTING_PROJECT_NAME);
+                testingEditionId = internalidGetterUtil.getEditionInternalId(TESTING_EDITION_NAME);
+                testingProjectId = internalidGetterUtil.getProjectInternalId(TESTING_PROJECT_NAME);
 
                 firstConceptDescList.add("Venom (substance)");
                 firstConceptDescList.add("Venom");
@@ -159,6 +168,11 @@ public class RefsetControllerTests extends AbstractRefsetTests {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            // Setup Utility classes
+            getterUtil = new GetterUnitTestUtilities(mvc, baseUrl);
+            internalidGetterUtil = new InternalIdGetterUnitTestUtilities(SIMPLE_DATE_FORMAT);
+            exportUtil = new ExportUnitTestUtilities(mvc);
         }
 
     }
@@ -169,18 +183,10 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
-    public void testGetProject() throws Exception {
-
+    public void testGetProject() {
         final String url = "/project/" + testingProjectId;
-        logger.info("Testing url - " + url);
+        final Project project = getterUtil.getProject(url);
 
-        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        final String content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-
-        final Project project = new ObjectMapper().readValue(content, Project.class);
-
-        assertThat(project).isNotNull();
         assertThat(project.getId()).isEqualTo(testingProjectId);
         assertThat(project.getName()).isEqualTo(TESTING_PROJECT_NAME);
     }
@@ -193,23 +199,9 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testProjectSearch() throws Exception {
 
-        String url = "/project/search?limit=500&offset=0&sort=name&sortAscending=false";
-        logger.info("Testing url - " + url);
+        final String url = "/project/search?limit=500&offset=0&sort=name&sortAscending=false";
+        final ResultList<Project> resultList = getterUtil.searchProjects(url);
 
-        MvcResult result = null;
-        String content = null;
-        ResultList<Project> resultList = null;
-
-        // Test full list
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-
-        resultList =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
-                }));
-        assertThat(resultList).isNotNull();
         assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
     }
 
@@ -222,13 +214,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testRefset() throws Exception {
 
         final String url = baseUrl + "/" + mainTestingRefsetInternalId;
-        logger.info("Testing url - " + url);
-
-        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        final String content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-
-        final Refset refset = new ObjectMapper().readValue(content, Refset.class);
+        final Refset refset = getterUtil.getRefset(url);
 
         validateRefsetMetadata(refset);
     }
@@ -241,19 +227,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testEditions() throws Exception {
 
-        String url = null;
-        MvcResult result = null;
-        String content = null;
-
-        url = baseUrl + "/editions";
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        ResultList<TypeKeyValue> editions = new ObjectMapper().readValue(content,
-                (new TypeReference<ResultList<TypeKeyValue>>() {
-                    /* NA */}));
-        assertThat(editions).isNotNull();
+        final String url = baseUrl + "/editions";
+        final ResultList<TypeKeyValue> editions = getterUtil.getEditions(url);
         assertThat(editions.getItems().size()).isGreaterThan(8);
 
         boolean editionFound = false;
@@ -276,19 +251,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testBranchVersions() throws Exception {
 
-        String url = null;
-        MvcResult result = null;
-        String content = null;
-
-        url = "/general/branchVersions?branch=MAIN/SNOMEDCT-BE";
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        ResultList<String> versions =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<String>>() {
-                    /* NA */}));
-        assertThat(versions).isNotNull();
+        final String url = "/general/branchVersions?branch=MAIN/SNOMEDCT-BE";
+        final ResultList<String> versions = getterUtil.getBranches(url);
         assertThat(versions.getItems().size()).isGreaterThan(0);
 
         for (final String version : versions.getItems()) {
@@ -304,113 +268,34 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testDirectorySearch() throws Exception {
 
-        String url = null;
-        MvcResult result = null;
-        String content = null;
-        ResultList<Refset> resultList = null;
-        Refset refsetFound = null;
-
+        ResultList<Refset> refsetList;
+        Refset refsetIdentified;
+        
         // Test by name
-        url = baseUrl
-
-                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal";
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        resultList =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
-                }));
-        assertThat(resultList).isNotNull();
-        assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
-
-        refsetFound = null;
-        for (Refset r : resultList.getItems()) {
-            if (r.getRefsetId().equals(TESTING_REFSET_ID)) {
-                refsetFound = r;
-                break;
-            }
-        }
-
-        validateRefsetMetadata(refsetFound);
+        refsetList = getterUtil.searchDirectory("query=name:animal");
+        refsetIdentified = validateRefsetExists(refsetList, TESTING_REFSET_ID);
+        validateRefsetMetadata(refsetIdentified);
 
         // Test by partial name
-        url = baseUrl
+        refsetList = getterUtil.searchDirectory("query=name:ani");
+        refsetIdentified = validateRefsetExists(refsetList, TESTING_REFSET_ID);
+        validateRefsetMetadata(refsetIdentified);
 
-                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:ani";
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        resultList =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
-                }));
-        assertThat(resultList).isNotNull();
-        assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
-
-        refsetFound = null;
-        for (Refset r : resultList.getItems()) {
-            if (r.getRefsetId().equals(TESTING_REFSET_ID)) {
-                refsetFound = r;
-                break;
-            }
-        }
-
-        validateRefsetMetadata(refsetFound);        
 
         // Test by edition name
-        url = baseUrl
-                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=editionName:Belgian Edition";
-
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        resultList =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
-                }));
-        assertThat(resultList).isNotNull();
-        assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
-
-        refsetFound = null;
-        for (Refset r : resultList.getItems()) {
-            if (r.getRefsetId().equals(TESTING_REFSET_ID)) {
-                refsetFound = r;
-                break;
-            }
-        }
-
-        validateRefsetMetadata(refsetFound);
+        refsetList = getterUtil.searchDirectory("query=editionName:Belgian Edition");
+        refsetIdentified = validateRefsetExists(refsetList, TESTING_REFSET_ID);
+        validateRefsetMetadata(refsetIdentified);
 
         // Test by combination
-        url = baseUrl
-                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal AND editionName:Belgian Edition"; // Hyperdontia
+        refsetList = getterUtil.searchDirectory("name:animal AND editionName:Belgian Edition");
+        refsetIdentified = validateRefsetExists(refsetList, TESTING_REFSET_ID);
+        validateRefsetMetadata(refsetIdentified);
 
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        resultList =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
-                }));
-        assertThat(resultList).isNotNull();
-        assertThat(resultList.getItems().size()).isEqualTo(1);
-        validateRefsetMetadata(resultList.getItems().get(0));
-        
         // Test by combination with partials
-        url = baseUrl
-                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:anim AND editionName:Belgian Edi";
-
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        resultList =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
-                }));
-        assertThat(resultList).isNotNull();
-        assertThat(resultList.getItems().size()).isEqualTo(1);
-        validateRefsetMetadata(resultList.getItems().get(0));
+        refsetList = getterUtil.searchDirectory("name:anim AND editionName:Belgian Edi");
+        refsetIdentified = validateRefsetExists(refsetList, TESTING_REFSET_ID);
+        validateRefsetMetadata(refsetIdentified);
 
         // Test by term per language (at least on non-pt)
         // Test by concept Id
@@ -420,49 +305,23 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // by tags
         String searchTerms[] = new String[] {
                 "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005",
-                "999861000172117", "561000172108", "General"
+                "999861000172117", "561000172108", "General", "anim Belgian Edi"
         };
         for (int i = 0; i < searchTerms.length; i++) {
-            url = baseUrl
-                    + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query="
-                    + searchTerms[i];
-
             logger.info("Testing term - " + searchTerms[i]);
-            logger.info("Testing url - " + url);
-            result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-            content = result.getResponse().getContentAsString();
-            logger.info(" content = " + content);
-            resultList =
-                    new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
-                    }));
+            refsetList = getterUtil.searchDirectory(searchTerms[i]);
 
-            // Check results
-            refsetFound = null;
-            for (Refset r : resultList.getItems()) {
-                if (r.getRefsetId().equals(TESTING_REFSET_ID)) {
-                    refsetFound = r;
-                    break;
-                }
-            }
-
-            validateRefsetMetadata(refsetFound);
+            refsetIdentified = validateRefsetExists(refsetList, TESTING_REFSET_ID);
+            validateRefsetMetadata(refsetIdentified);
         }
 
         // Test graceful handling of zero results
-        url = baseUrl
-                + "/search?searchConcepts=false&limit=500&offset=0&sort=versionDate&sortAscending=false&query=1234567890";
-
-        logger.info("Testing url - " + url);
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        resultList =
-                new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
-                    /* NA */}));
-
-        // Check results
-        assertThat(resultList.getItems().isEmpty()).isTrue();
-        assertThat(resultList.getTotal()).isEqualTo(0);
+        try {
+        refsetList = getterUtil.searchDirectory("1234567890");
+        } catch (AssertionError e) {
+            assertThat(refsetList.getItems().isEmpty()).isTrue();
+            assertThat(refsetList.getTotal()).isEqualTo(0);
+        }
     }
 
     /**
@@ -472,19 +331,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      */
     @Test
     public void testExportSctidList() throws Exception {
-
-        String url = null;
-        MvcResult result = null;
-        String resultString = null;
-
-        url = "/export/" + mainTestingRefsetInternalId + "/?format=sctids";
-        logger.info("Testing url - " + url);
-
-        result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        resultString = result.getResponse().getContentAsString();
-
-        final ObjectMapper mapper = new ObjectMapper();
-        final JsonNode root = mapper.readTree(resultString);
+        final JsonNode root = exportUtil.exportSctIds(mainTestingRefsetInternalId);
 
         // Validate
         validateExportFiles(root, LIST_OF_SCTIDS_FILE);
@@ -497,6 +344,9 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      */
     @Test
     public void testExportRf2Snapshot() throws Exception {
+
+        final JsonNode root = exportUtil.exportRf2Snapshot(mainTestingRefsetInternalId);
+        
         try {
             S3ConnectionWrapper.connectToAmazonS3();
             ExportHandler exporter = new ExportHandler();
@@ -1317,8 +1167,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         Concept matchedConcept = null;
         ConceptResultList members = null;
 
-        String origRefsetVersionId =
-                getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_DIFFERENT_VERSION);
+        String origRefsetVersionId = internalidGetterUtil.getRefsetInternalId(INACTIVE_REFSET_ID,
+                INACTIVE_REFSET_DIFFERENT_VERSION);
 
         /*
          * Testing across concept details

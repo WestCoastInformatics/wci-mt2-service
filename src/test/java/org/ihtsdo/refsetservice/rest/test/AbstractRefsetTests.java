@@ -18,13 +18,8 @@ import java.util.Properties;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.PfsParameter;
-import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -98,108 +93,6 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     /** The base url. */
     protected static String baseUrl = "/refset";
-
-    /**
-     * Get the internal refset ID based on the refset's terminology specific ID
-     * .
-     * @param version
-     * @param refsetWithInactiveConcept
-     *
-     * @return the internal refset ID
-     * @throws Exception the exception
-     */
-    protected String getRefsetInternalId(String requestedId, String version) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final PfsParameter pfs = new PfsParameter();
-            pfs.setSort("versionDate");
-            pfs.setAscending(false);
-
-            ResultList<Refset> refsets =
-                    service.find("refsetId:" + QueryParserBase.escape(requestedId) + "", pfs,
-                            Refset.class, null);
-
-            assertThat(refsets.getItems().size()).isGreaterThan(0);
-
-            Refset refsetToReturn = null;
-            for (Refset refset : refsets.getItems()) {
-                if (version.equals(SIMPLE_DATE_FORMAT.format(refset.getVersionDate()))) {
-                    refsetToReturn = refset;
-                    break;
-                }
-            }
-
-            if (refsetToReturn == null) {
-                throw new Exception("Refset Internal Id: " + requestedId
-                        + " does not exist in the RT2 database");
-            }
-
-            assertThat(refsetToReturn).isNotNull();
-            assertThat(refsetToReturn.getRefsetId()).isEqualTo(requestedId);
-
-            return refsetToReturn.getId();
-        }
-    }
-
-    /**
-     * Get the internal project ID based on the project's name
-     * 
-     * @param name The name of the project
-     * @return the internal project ID
-     * @throws Exception the exception
-     */
-    protected String getProjectInternalId(String name) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final PfsParameter pfs = new PfsParameter();
-
-            ResultList<Project> projects = service.find("name:" + QueryParserBase.escape(name) + "",
-                    pfs, Project.class, null);
-
-            if (projects.getItems().size() == 0) {
-                throw new Exception(
-                        "Refset Internal Id: " + name + " does not exist in the RT2 database");
-            }
-
-            Project project = projects.getItems().get(0);
-
-            assertThat(project.getName()).isEqualTo(name);
-
-            return project.getId();
-        }
-    }
-
-    /**
-     * Get the internal edition ID based on the edition's name
-     * 
-     * @param name The name of the edition
-     * @return the internal edition ID
-     * @throws Exception the exception
-     */
-    protected String getEditionInternalId(String name) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final PfsParameter pfs = new PfsParameter();
-
-            ResultList<Edition> editions = service.find("name:" + QueryParserBase.escape(name) + "",
-                    pfs, Edition.class, null);
-
-            if (editions.getItems().size() == 0) {
-                throw new Exception(
-                        "Refset Internal Id: " + name + " does not exist in the RT2 database");
-            }
-
-            Edition edition = editions.getItems().get(0);
-
-            assertThat(edition.getName()).isEqualTo(name);
-
-            return edition.getId();
-        }
-    }
-
     protected void validateRefsetMetadata(Refset refset) {
         assertThat(refset).isNotNull();
 
@@ -385,5 +278,15 @@ abstract public class AbstractRefsetTests extends BaseTest {
                 generatedFileReader.close();
             }
         }
+    }
+
+    protected Refset validateRefsetExists(final ResultList<Refset> refsetList, final String internalRefsetId) {
+        for (Refset r : refsetList.getItems()) {
+            if (r.getRefsetId().equals(internalRefsetId)) {
+                return r;
+            }
+        }
+
+        return null;
     }
 }
