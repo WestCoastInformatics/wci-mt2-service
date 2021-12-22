@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.ihtsdo.refsetservice.handler.ExportHandler;
+import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,10 +30,11 @@ public class ExportUnitTestUtilities {
             logger.info("Export SctId url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-            final String resultString = result.getResponse().getContentAsString();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
 
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = mapper.readTree(content);
 
             assertThat(root).isNotNull();
             return root;
@@ -42,4 +45,63 @@ public class ExportUnitTestUtilities {
         }
     }
 
+    public JsonNode exportRf2Snapshot(String internalRefsetId, String exportVersion) {
+        final String format = "SNAPSHOT";
+        final String url = "/export/" + internalRefsetId + "/?format=rf2" + "&exportType=" + format
+                + "&fileNameDate=" + exportVersion + "&transientEffectiveTime=" + exportVersion
+                + "&languageId=900000000000509007FSN";
+
+        return generateExport(url);
+    }
+
+    public JsonNode exportRf2Delta(String internalRefsetId, String exportFromVersion,
+        String exportToVersion) {
+        final String format = "DELTA";
+        final String url = "/export/" + internalRefsetId + "/?format=rf2" + "&exportType=" + format
+                + "&fileNameDate=" + exportToVersion + "&startEffectiveTime=" + exportFromVersion
+                + "&transientEffectiveTime=" + exportToVersion + "languageId=900000000000509007PT&";
+
+        return generateExport(url);
+    }
+
+    private JsonNode generateExport(String url) {
+        try {
+            logger.info("Testing url - " + url);
+
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(content);
+
+            return root;
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            return null;
+        }
+    }
+
+    public void deleteRefsetExportsFromAws(String refsetId, String exportVersion) {
+        try {
+            S3ConnectionWrapper.connectToAmazonS3();
+            ExportHandler exporter = new ExportHandler();
+            String awsPath = exporter.getTopLevelAwsPath() + refsetId + "/" + exportVersion;
+            S3ConnectionWrapper.deleteRefsetFromAws(awsPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deleteRefsetExportsFromAwsAllVersions(String refsetId) {
+        try {
+            S3ConnectionWrapper.connectToAmazonS3();
+            ExportHandler exporter = new ExportHandler();
+            String awsPath = exporter.getTopLevelAwsPath() + refsetId;
+            S3ConnectionWrapper.deleteRefsetFromAws(awsPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

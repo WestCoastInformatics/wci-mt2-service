@@ -35,9 +35,10 @@ public class GetterUnitTestUtilities {
         this.baseUrl = baseUrl;
     }
 
-    public Project getProject(String url) {
+    public Project getProject(final String projectId) {
 
         try {
+            final String url = "/project/" + projectId;
             logger.info("Get Project Testing url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -55,32 +56,9 @@ public class GetterUnitTestUtilities {
         }
     }
 
-    public ResultList<Project> searchProjects(String url) {
-
+    public Refset getRefsetFromInternalId(final String internalRefsetId) {
         try {
-            // Test full list
-            logger.info("Project Search Testing url - " + url);
-
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-            final String content = result.getResponse().getContentAsString();
-            logger.info(" content = " + content);
-
-            final ResultList<Project> projectList = new ObjectMapper().readValue(content,
-                    (new TypeReference<ResultList<Project>>() {
-                    }));
-
-            assertThat(projectList).isNotNull();
-            assertThat(projectList.getItems().size()).isGreaterThanOrEqualTo(1);
-            return projectList;
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            return null;
-        }
-    }
-
-    public Refset getRefset(String url) {
-        try {
+            final String url = baseUrl + "/" + internalRefsetId;
             logger.info("Get Refset Testing url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -98,8 +76,9 @@ public class GetterUnitTestUtilities {
         }
     }
 
-    public ResultList<TypeKeyValue> getEditions(String url) {
+    public ResultList<TypeKeyValue> getEditions() {
         try {
+            final String url = baseUrl + "/editions";
             logger.info("Get Editions Testing url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -119,10 +98,11 @@ public class GetterUnitTestUtilities {
         }
     }
 
-    public ResultList<String> getBranches(String url) {
+    public ResultList<String> getBranches(String codeSystem) {
         try {
-
+            final String url = "/general/branchVersions?branch=MAIN/" + codeSystem;
             logger.info("Testing url - " + url);
+
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             logger.info(" content = " + content);
@@ -132,6 +112,31 @@ public class GetterUnitTestUtilities {
 
             assertThat(versions).isNotNull();
             return versions;
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            return null;
+        }
+    }
+
+    public ResultList<Project> searchProjects() {
+
+        try {
+            // Test full list
+            final String url = "/project/search?limit=500&offset=0&sort=name&sortAscending=false";
+            logger.info("Project Search Testing url - " + url);
+
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+
+            final ResultList<Project> projectList = new ObjectMapper().readValue(content,
+                    (new TypeReference<ResultList<Project>>() {
+                    }));
+
+            assertThat(projectList).isNotNull();
+            assertThat(projectList.getItems().size()).isGreaterThanOrEqualTo(1);
+            return projectList;
         } catch (Exception e) {
             e.printStackTrace();
 

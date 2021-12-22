@@ -6,13 +6,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -21,9 +19,7 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetterUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.InternalIdGetterUnitTestUtilities;
-import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
@@ -96,6 +92,11 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     private static final String LIST_OF_SCTIDS_FILE =
             REFSET_FILE_PATH + "561000172108 ListOfSctIds 20200315.txt";
 
+    private static final String TESTING_REFSET_SNAPSHOT_EXPORT_VERSION = "20200315";
+    private static final String INACTIVE_REFSET_DELTA_FROM_EXPORT_VERSION = "20180131";
+    private static final String INACTIVE_REFSET_DELTA_TO_EXPORT_TWO_VERSIONS = "20180731";
+    private static final String INACTIVE_REFSET_DELTA_TO_EXPORT_THREE_VERSIONS = "20190131";
+
     private GetterUnitTestUtilities getterUtil;
 
     private InternalIdGetterUnitTestUtilities internalidGetterUtil;
@@ -112,6 +113,11 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         if (info.getDisplayName().equals("testRttMigration()")) {
             return;
         }
+
+        // Setup Utility classes
+        getterUtil = new GetterUnitTestUtilities(mvc, baseUrl);
+        internalidGetterUtil = new InternalIdGetterUnitTestUtilities(SIMPLE_DATE_FORMAT);
+        exportUtil = new ExportUnitTestUtilities(mvc);
 
         if (mainTestingRefsetInternalId == null) {
 
@@ -168,11 +174,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
-            // Setup Utility classes
-            getterUtil = new GetterUnitTestUtilities(mvc, baseUrl);
-            internalidGetterUtil = new InternalIdGetterUnitTestUtilities(SIMPLE_DATE_FORMAT);
-            exportUtil = new ExportUnitTestUtilities(mvc);
         }
 
     }
@@ -184,25 +185,10 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      */
     @Test
     public void testGetProject() {
-        final String url = "/project/" + testingProjectId;
-        final Project project = getterUtil.getProject(url);
+        final Project project = getterUtil.getProject(testingProjectId);
 
         assertThat(project.getId()).isEqualTo(testingProjectId);
         assertThat(project.getName()).isEqualTo(TESTING_PROJECT_NAME);
-    }
-
-    /**
-     * Test searching for projects.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testProjectSearch() throws Exception {
-
-        final String url = "/project/search?limit=500&offset=0&sort=name&sortAscending=false";
-        final ResultList<Project> resultList = getterUtil.searchProjects(url);
-
-        assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
     }
 
     /**
@@ -213,8 +199,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testRefset() throws Exception {
 
-        final String url = baseUrl + "/" + mainTestingRefsetInternalId;
-        final Refset refset = getterUtil.getRefset(url);
+        final Refset refset = getterUtil.getRefsetFromInternalId(mainTestingRefsetInternalId);
 
         validateRefsetMetadata(refset);
     }
@@ -227,8 +212,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testEditions() throws Exception {
 
-        final String url = baseUrl + "/editions";
-        final ResultList<TypeKeyValue> editions = getterUtil.getEditions(url);
+        final ResultList<TypeKeyValue> editions = getterUtil.getEditions();
         assertThat(editions.getItems().size()).isGreaterThan(8);
 
         boolean editionFound = false;
@@ -251,13 +235,25 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testBranchVersions() throws Exception {
 
-        final String url = "/general/branchVersions?branch=MAIN/SNOMEDCT-BE";
-        final ResultList<String> versions = getterUtil.getBranches(url);
+        final ResultList<String> versions = getterUtil.getBranches("SNOMEDCT-BE");
         assertThat(versions.getItems().size()).isGreaterThan(0);
 
         for (final String version : versions.getItems()) {
             assertThat(version.matches("\\d{4}-\\d{2}-\\d{2}"));
         }
+    }
+
+    /**
+     * Test searching for projects.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testProjectSearch() throws Exception {
+
+        final ResultList<Project> resultList = getterUtil.searchProjects();
+
+        assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
     }
 
     /**
@@ -344,33 +340,13 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      */
     @Test
     public void testExportRf2Snapshot() throws Exception {
-
-        final JsonNode root = exportUtil.exportRf2Snapshot(mainTestingRefsetInternalId);
+        // Clear content on AWS first to ensure actually are generating export rather than just returning cached content
+        exportUtil.deleteRefsetExportsFromAws(TESTING_REFSET_ID, TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
         
-        try {
-            S3ConnectionWrapper.connectToAmazonS3();
-            ExportHandler exporter = new ExportHandler();
-            String awsPath = exporter.getTopLevelAwsPath() + TESTING_REFSET_ID + "/20200315";
-            S3ConnectionWrapper.deleteRefsetFromAws(awsPath);
-        } catch (Exception e) {
-            // do nothing
-        }
-
-        final String format = "rf2";
-        final String url = "/export/" + mainTestingRefsetInternalId + "/?format=" + format
-                + "&exportType=SNAPSHOT&fileNameDate=20200315&transientEffectiveTime=20200315&languageId=900000000000509007FSN";
-
-        logger.info("Testing url - " + url);
-
-        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        final String resultString = result.getResponse().getContentAsString();
-
-        final ObjectMapper mapper = new ObjectMapper();
-        final JsonNode root = mapper.readTree(resultString);
+        final JsonNode root = exportUtil.exportRf2Snapshot(mainTestingRefsetInternalId, TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
 
         // Validate
         validateExportFiles(root, SNAPSHOT_FILE);
-
     }
 
     /**
@@ -380,59 +356,19 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      */
     @Test
     public void testExportRf2Delta() throws Exception {
+        /* Test delta between two versions */
+        exportUtil.deleteRefsetExportsFromAwsAllVersions(INACTIVE_REFSET_ID);
 
-        // TODO: Delete refsets specific files or dates (once finalize naming
-        // convention)
-        try {
-            S3ConnectionWrapper.connectToAmazonS3();
-            ExportHandler exporter = new ExportHandler();
-            String awsPath = exporter.getTopLevelAwsPath() + INACTIVE_REFSET_ID;
-            S3ConnectionWrapper.deleteRefsetFromAws(awsPath);
-        } catch (Exception e) {
-            // do nothing
-        }
+        JsonNode root = exportUtil.exportRf2Delta(inactiveConceptRefsetInternalId, INACTIVE_REFSET_DELTA_FROM_EXPORT_VERSION, INACTIVE_REFSET_DELTA_TO_EXPORT_TWO_VERSIONS);
 
-        Path unzippedPath = null;
-        try {
-            // v1 (20180131) & v2 (20180731)
-            final String url = "/export/" + inactiveConceptRefsetInternalId
-                    + "/?format=rf2&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210806&transientEffectiveTime=20180731&startEffectiveTime=20180131";
-            logger.info("Testing url - " + url);
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-            final String resultString = result.getResponse().getContentAsString();
+        validateExportFiles(root, TWO_VERSION_DELTA_FILE);
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
+        /* Test delta between three versions */
+        exportUtil.deleteRefsetExportsFromAwsAllVersions(INACTIVE_REFSET_ID);
 
-            // Validate
-            validateExportFiles(root, TWO_VERSION_DELTA_FILE);
-        } finally {
-            if (unzippedPath != null) {
-                FileUtility.deleteDirectory(unzippedPath.toFile());
-            }
-        }
+        root = exportUtil.exportRf2Delta(inactiveConceptRefsetInternalId, INACTIVE_REFSET_DELTA_FROM_EXPORT_VERSION, INACTIVE_REFSET_DELTA_TO_EXPORT_THREE_VERSIONS);
 
-        unzippedPath = null;
-
-        try {
-            // v1 (20180131) & v3 (20190131)
-            final String url = "/export/" + inactiveConceptRefsetInternalId
-                    + "/?format=rf2&exportType=DELTA&languageId=900000000000509007PT&fileNameDate=20210806&transientEffectiveTime=20190131&startEffectiveTime=20180131";
-            logger.info("Testing url - " + url);
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-            final String resultString = result.getResponse().getContentAsString();
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
-
-            // Validate
-            validateExportFiles(root, THREE_VERSION_DELTA_FILE);
-        } finally {
-            if (unzippedPath != null) {
-                FileUtility.deleteDirectory(unzippedPath.toFile());
-            }
-        }
-
+        validateExportFiles(root, THREE_VERSION_DELTA_FILE);
     }
 
     /**
@@ -440,7 +376,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      * as there are dedicated tests for them in the class.
      *
      * @throws Exception the exception
-     */
+     */ 
+    // JESSE
     @Test
     public void testConceptDetails() throws Exception {
 

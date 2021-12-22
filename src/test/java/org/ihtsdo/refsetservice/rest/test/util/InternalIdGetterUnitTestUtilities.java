@@ -33,7 +33,7 @@ public class InternalIdGetterUnitTestUtilities {
      * @throws Exception the exception
      */
     
-    protected String getRefsetInternalId(String refsetId, String version) throws Exception {
+    public String getRefsetInternalId(String refsetId, String version) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -74,7 +74,7 @@ public class InternalIdGetterUnitTestUtilities {
      * @return the internal project ID
      * @throws Exception the exception
      */
-    protected String getProjectInternalId(String projectName) throws Exception {
+    public String getProjectInternalId(String projectName) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -103,7 +103,7 @@ public class InternalIdGetterUnitTestUtilities {
      * @return the internal edition ID
      * @throws Exception the exception
      */
-    protected String getEditionInternalId(String name) throws Exception {
+    public String getEditionInternalId(String name) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
