@@ -21,6 +21,8 @@ import java.util.Map;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
+import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
@@ -85,6 +87,11 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
      */
     @BeforeEach
     public void setUp(TestInfo info) throws Exception {
+
+        if (getUtil == null) {
+            getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
+            exportUtil = new ExportUnitTestUtilities(mvc);
+        }
 
         if (testingEditionId != null && testingEditionId.isEmpty()) {
 

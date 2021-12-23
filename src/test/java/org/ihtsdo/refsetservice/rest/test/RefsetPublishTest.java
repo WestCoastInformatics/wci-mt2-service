@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +39,12 @@ public class RefsetPublishTest extends AbstractRefsetTests {
     @BeforeEach
     public void setUp(TestInfo info) {
 
-        if (testingEditionId != null && testingEditionId.isEmpty()) {
+        if (getUtil == null) {
+            getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
+            exportUtil = new ExportUnitTestUtilities(mvc);
+        }
+
+       if (testingEditionId != null && testingEditionId.isEmpty()) {
 
             objectMapper = new ObjectMapper();
             JacksonTester.initFields(this, objectMapper);

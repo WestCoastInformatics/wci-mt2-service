@@ -16,6 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +48,11 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
      */
     @BeforeEach
     public void setUp(TestInfo info) {
+        if (getUtil == null) {
+            getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
+            exportUtil = new ExportUnitTestUtilities(mvc);
+        }
+
 
         if (testingEditionId != null && testingEditionId.isEmpty()) {
 
