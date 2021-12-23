@@ -27,6 +27,7 @@ import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,7 +96,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected static ObjectMapper objectMapper;
 
     /** The base url. */
-    protected static String baseUrl = "/refset";
+    protected static String baseUrl = "/refsetservice/refset";
 
     protected GetterUnitTestUtilities getterUtil;
 
@@ -103,10 +104,16 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected ExportUnitTestUtilities exportUtil;
 
-    public AbstractRefsetTests() {
-        getterUtil = new GetterUnitTestUtilities(mvc, baseUrl);
-        internalidGetterUtil = new InternalIdGetterUnitTestUtilities(SIMPLE_DATE_FORMAT);
-        exportUtil = new ExportUnitTestUtilities(mvc);
+    /**
+     * Sets the up.
+     */
+    @BeforeAll
+    public void setUp() {
+        if (getterUtil == null) {
+            getterUtil = new GetterUnitTestUtilities(mvc, baseUrl);
+            internalidGetterUtil = new InternalIdGetterUnitTestUtilities(SIMPLE_DATE_FORMAT);
+            exportUtil = new ExportUnitTestUtilities(mvc);
+        }
     }
 
     protected void validateRefsetMetadata(Refset refset) {
