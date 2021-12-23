@@ -15,6 +15,9 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
+import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.GetterUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.InternalIdGetterUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.RefsetConceptsType;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -118,6 +121,11 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      */
     @BeforeEach
     public void setUp(TestInfo info) {
+        if (getterUtil == null) {
+            getterUtil = new GetterUnitTestUtilities(mvc, baseUrl);
+            internalidGetterUtil = new InternalIdGetterUnitTestUtilities(SIMPLE_DATE_FORMAT);
+            exportUtil = new ExportUnitTestUtilities(mvc);
+        }
 
         // skip @BeforeEach in testRttMigration
         if (info.getDisplayName().equals("testRttMigration()")) {
