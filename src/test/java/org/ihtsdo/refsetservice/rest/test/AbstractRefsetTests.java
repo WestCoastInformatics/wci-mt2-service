@@ -21,14 +21,11 @@ import java.util.TreeSet;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
-import org.ihtsdo.refsetservice.rest.test.util.GetterUnitTestUtilities;
-import org.ihtsdo.refsetservice.rest.test.util.InternalIdGetterUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,9 +96,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
     /** The base url. */
     protected static String baseUrl = "/refset";
 
-    protected GetterUnitTestUtilities getterUtil;
-
-    protected InternalIdGetterUnitTestUtilities internalidGetterUtil;
+    protected GetUnitTestUtilities getUtil;
 
     protected ExportUnitTestUtilities exportUtil;
 

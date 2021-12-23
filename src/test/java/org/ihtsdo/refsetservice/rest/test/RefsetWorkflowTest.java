@@ -93,8 +93,8 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
             baseUrl = "/refset";
 
             try {
-                testingEditionId = internalidGetterUtil.getEditionInternalId(TESTING_EDITION_NAME);
-                testingProjectId = internalidGetterUtil.getProjectInternalId(TESTING_PROJECT_NAME);
+                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
+                testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -669,7 +669,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
     private String createNewRefsetVerion() throws Exception {
 
         final String originalRefsetInternalId =
-                internalidGetterUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
+                getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
         final String url = baseUrl + "/" + originalRefsetInternalId + "/newVersion";
         logger.info("Testing url - " + url);
 
@@ -715,7 +715,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
     private void deleteNewRefsetVerion(final String newRefsetInternalId) throws Exception {
 
         final String originalRefsetInternalId =
-                internalidGetterUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
+                getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
 
         // DELETE NEW VERSION
         final String deleteUrl = baseUrl + "/" + newRefsetInternalId + "/editVersion";
