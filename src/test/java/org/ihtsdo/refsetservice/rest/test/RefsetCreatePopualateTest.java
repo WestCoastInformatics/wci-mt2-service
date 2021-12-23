@@ -54,7 +54,6 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
         }
 
-
         if (testingEditionId != null && testingEditionId.isEmpty()) {
 
             objectMapper = new ObjectMapper();
@@ -64,9 +63,8 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             try {
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
-                mainTestingRefsetInternalId = getUtil
-                        .getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
-
+                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
+                        MAIN_TESTING_REFSET_VERSION);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -74,6 +72,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         }
 
     }
+
     /**
      * Test creating, modifying, and deleting a new version of an existing
      * refset in edit mode.
@@ -81,10 +80,11 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
-    public void testNewVersionCreateModifyDelete() throws Exception {
+    public void testCreateNewVersionModifyDelete() throws Exception {
 
         // ADD NEW VERSION
-        final String newRefsetInternalId = editUtil.createNewRefsetVersion(mainTestingRefsetInternalId);
+        final String newRefsetInternalId =
+                editUtil.createNewRefsetVersion(mainTestingRefsetInternalId);
         assertThat(newRefsetInternalId).isNotEqualTo(mainTestingRefsetInternalId);
         logger.info("New Version Internal ID - " + newRefsetInternalId);
 
@@ -147,30 +147,21 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
+    // JESSE
     public void testCreateRefsetPopulateFromSctIdList() throws Exception {
         final String memberConceptIds = "48176007000,280416009000,10828004000,260385009";
 
-        final ObjectMapper mapper = new ObjectMapper();
-
         // the data to create a refset from a list of Ids
         final Map<String, String> refsetNewConcept = new HashMap<>();
-        refsetNewConcept.put("name", "ZZZ RT2 Test New Concept Refset");
-        refsetNewConcept.put("parentConceptId", "446609009");
-        refsetNewConcept.put("moduleId", "900000000000207008");
-        refsetNewConcept.put("editionId", testingEditionId);
-        refsetNewConcept.put("projectId", testingProjectId);
-        refsetNewConcept.put("narrative", "Test.");
+        refsetNewConcept.put("name", "ZZZ RT2 Test New Extensinoal Refset");
         refsetNewConcept.put("type", "EXTENSIONAL");
-        refsetNewConcept.put("privateRefset", "false");
-        refsetNewConcept.put("localSet", "false");
-        refsetNewConcept.put("refsetDeleteStatus", "deleted");
 
         // Define the member list
         refsetNewConcept.put("list", memberConceptIds);
 
         // prepare the call to create refset from a new concept
         final ObjectNode refsetNewConceptBody =
-                mapper.createObjectNode().put("name", refsetNewConcept.get("name"))
+                new ObjectMapper().createObjectNode().put("name", refsetNewConcept.get("name"))
                         .put("parentConceptId", refsetNewConcept.get("parentConceptId"))
                         .put("moduleId", refsetNewConcept.get("moduleId"))
                         .put("editionId", refsetNewConcept.get("editionId"))
@@ -183,9 +174,9 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
 
         refsetNewConcept.put("body", refsetNewConceptBody.toString());
 
-        processAndPopulateRefset(refsetNewConcept, mapper, 4);
+        processAndPopulateRefset(refsetNewConcept, 4);
     }
-    
+
     /**
      * Test creating a refset concept and populating it from a list of sctids.
      *
@@ -193,14 +184,12 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
      */
     @Test
     public void testCreateIntensionalRefset() throws Exception {
-        
+
         final String memberConceptIds = "48176007,280416009,10828004,260385009";
-        
-        final ObjectMapper mapper = new ObjectMapper();
-        
+
         // the data to create a refset from a list of Ids
         final Map<String, String> refsetNewConcept = new HashMap<>();
-        refsetNewConcept.put("name", "ZZZ RT2 Test New Concept Refset");
+        refsetNewConcept.put("name", "ZZZ RT2 Test New Intensional Refset");
         refsetNewConcept.put("parentConceptId", "446609009");
         refsetNewConcept.put("moduleId", "900000000000207008");
         refsetNewConcept.put("editionId", testingEditionId);
@@ -213,33 +202,30 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         refsetNewConcept.put("fileType", "list");
         refsetNewConcept.put("conceptFileName", MEMBER_ID_LIST_FILE_NAME);
         refsetNewConcept.put("conceptFile", MEMBER_ID_LIST_FILE);
-        
+
         // Define the member list
         refsetNewConcept.put("list", memberConceptIds);
-        
+
         // prepare the call to create refset from a new concept
-        
-        final ObjectNode refsetNewConceptBody =
-                mapper.createObjectNode().put("name", refsetNewConcept.get("name"))
-                        .put("parentConceptId", refsetNewConcept.get("parentConceptId"))
-                        .put("moduleId", refsetNewConcept.get("moduleId"))
-                        .put("editionId", refsetNewConcept.get("editionId"))
-                        .put("projectId", refsetNewConcept.get("projectId"))
-                        .put("narrative", refsetNewConcept.get("narrative"))
-                        .put("type", refsetNewConcept.get("type"))
-                        .put("privateRefset",
-                                Boolean.parseBoolean(refsetNewConcept.get("privateRefset")))
-                        .put("localSet", Boolean.parseBoolean(refsetNewConcept.get("localSet")))
-                        .set("definitionClauses", mapper.createArrayNode()
-                                .add(mapper.createObjectNode()
-                                        .put("value", "<< 277457005 |Histological grading systems (staging scale)|")
-                                        .put("negated", "false")
-                                )
-                        );
+
+        final ObjectNode refsetNewConceptBody = new ObjectMapper().createObjectNode()
+                .put("name", refsetNewConcept.get("name"))
+                .put("parentConceptId", refsetNewConcept.get("parentConceptId"))
+                .put("moduleId", refsetNewConcept.get("moduleId"))
+                .put("editionId", refsetNewConcept.get("editionId"))
+                .put("projectId", refsetNewConcept.get("projectId"))
+                .put("narrative", refsetNewConcept.get("narrative"))
+                .put("type", refsetNewConcept.get("type"))
+                .put("privateRefset", Boolean.parseBoolean(refsetNewConcept.get("privateRefset")))
+                .put("localSet", Boolean.parseBoolean(refsetNewConcept.get("localSet")))
+                .set("definitionClauses", new ObjectMapper().createArrayNode()
+                        .add(new ObjectMapper().createObjectNode().put("value",
+                                "<< 277457005 |Histological grading systems (staging scale)|")
+                                .put("negated", "false")));
 
         refsetNewConcept.put("body", refsetNewConceptBody.toString());
-        
-        processAndPopulateRefset(refsetNewConcept, mapper, 4);
+
+        processAndPopulateRefset(refsetNewConcept, 4);
     }
 
     /**
@@ -249,8 +235,6 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
      */
     @Test
     public void testCreateRefsetPopulateFromECL() throws Exception {
-
-        final ObjectMapper mapper = new ObjectMapper();
 
         // the data to create a refset with members from ECL
         final Map<String, String> refsetEclMembers = new HashMap<>();
@@ -270,7 +254,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
 
         // prepare the call to create refset from a new concept
         final ObjectNode refsetEclMembersBody =
-                mapper.createObjectNode().put("name", refsetEclMembers.get("name"))
+                new ObjectMapper().createObjectNode().put("name", refsetEclMembers.get("name"))
                         .put("parentConceptId", refsetEclMembers.get("parentConceptId"))
                         .put("moduleId", refsetEclMembers.get("moduleId"))
                         .put("editionId", refsetEclMembers.get("editionId"))
@@ -283,7 +267,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
 
         refsetEclMembers.put("body", refsetEclMembersBody.toString());
 
-        processAndPopulateRefset(refsetEclMembers, mapper, 3);
+        processAndPopulateRefset(refsetEclMembers, 3);
     }
 
     /**
@@ -293,8 +277,6 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
      */
     @Test
     public void testCreateRefsetPopulateFromSctIdFile() throws Exception {
-
-        final ObjectMapper mapper = new ObjectMapper();
 
         // the data to create a refset from a new concept
         final Map<String, String> refsetNewConcept = new HashMap<>();
@@ -316,7 +298,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
 
         // prepare the call to create refset from a new concept
         final ObjectNode refsetNewConceptBody =
-                mapper.createObjectNode().put("name", refsetNewConcept.get("name"))
+                new ObjectMapper().createObjectNode().put("name", refsetNewConcept.get("name"))
                         .put("parentConceptId", refsetNewConcept.get("parentConceptId"))
                         .put("moduleId", refsetNewConcept.get("moduleId"))
                         .put("editionId", refsetNewConcept.get("editionId"))
@@ -329,7 +311,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
 
         refsetNewConcept.put("body", refsetNewConceptBody.toString());
 
-        processAndPopulateRefset(refsetNewConcept, mapper, 4);
+        processAndPopulateRefset(refsetNewConcept, 4);
     }
 
     /**
@@ -339,8 +321,6 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
      */
     @Test
     public void testCreateRefsetPopulateFromRF2() throws Exception {
-
-        final ObjectMapper mapper = new ObjectMapper();
 
         final Map<String, String> refsetRf2MemberAdd = new HashMap<>();
         refsetRf2MemberAdd.put("name", "ZZZ RT2 Test RF2 Member Add Refset");
@@ -361,7 +341,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
 
         // prepare the call to create refset with members added from an RF2 file
         final ObjectNode refsetRf2MemberAddBody =
-                mapper.createObjectNode().put("name", refsetRf2MemberAdd.get("name"))
+                new ObjectMapper().createObjectNode().put("name", refsetRf2MemberAdd.get("name"))
                         .put("parentConceptId", refsetRf2MemberAdd.get("parentConceptId"))
                         .put("moduleId", refsetRf2MemberAdd.get("moduleId"))
                         .put("editionId", refsetRf2MemberAdd.get("editionId"))
@@ -374,7 +354,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
 
         refsetRf2MemberAdd.put("body", refsetRf2MemberAddBody.toString());
 
-        processAndPopulateRefset(refsetRf2MemberAdd, mapper, 4);
+        processAndPopulateRefset(refsetRf2MemberAdd, 4);
     }
 
     /**
@@ -386,8 +366,6 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
     // refset concept to normal concept
     // @Test
     public void testCreateRefsetFromExistingConcept() throws Exception {
-
-        final ObjectMapper mapper = new ObjectMapper();
 
         // the data to create a refset from an existing concept (but can't be a
         // refset already in RT2)
@@ -409,7 +387,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         // "734147008");
 
         // prepare the call to create refset from an existing concept
-        final ObjectNode refsetExistingConceptBody = mapper.createObjectNode()
+        final ObjectNode refsetExistingConceptBody = new ObjectMapper().createObjectNode()
                 .put("refsetId", refsetExistingConcept.get("refsetId"))
                 .put("name", refsetExistingConcept.get("name"))
                 .put("parentConceptId", refsetExistingConcept.get("parentConceptId"))
@@ -424,11 +402,12 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
 
         refsetExistingConcept.put("body", refsetExistingConceptBody.toString());
 
-        processAndPopulateRefset(refsetExistingConcept, mapper, 0);
+        processAndPopulateRefset(refsetExistingConcept, 0);
     }
-// JESSE
-    private void processAndPopulateRefset(Map<String, String> refsetDetail, ObjectMapper mapper,
-        int numConceptsAdded) throws Exception {
+
+    // JESSE
+    private void processAndPopulateRefset(Map<String, String> refsetDetail, int numConceptsAdded)
+        throws Exception {
 
         // make the call to create refset from a new concept
         final MvcResult result = mvc
@@ -438,7 +417,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         final String content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
 
-        final JsonNode root = mapper.readTree(content);
+        final JsonNode root = new ObjectMapper().readTree(content);
         final JsonNode refsetNode = root;
 
         assertThat(refsetNode.has("refsetInternalId")).isTrue();
@@ -499,7 +478,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         final String membersContent = membersResult.getResponse().getContentAsString();
         logger.info(" membersContent = " + membersContent);
 
-        final JsonNode membersRoot = mapper.readTree(membersContent);
+        final JsonNode membersRoot = new ObjectMapper().readTree(membersContent);
         final JsonNode membersNode = membersRoot;
 
         assertThat(membersNode.has("status")).isTrue();
@@ -515,7 +494,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         final String countContent = countResult.getResponse().getContentAsString();
         logger.info(" content = " + countContent);
 
-        final JsonNode conceptRoot = mapper.readTree(countContent);
+        final JsonNode conceptRoot = new ObjectMapper().readTree(countContent);
         assertThat(conceptRoot.get("total").asInt()).isEqualTo(numConceptsAdded);
 
         // remove the members of the refset from a new concept
@@ -559,7 +538,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             }
 
             final String removeContent = removeResult.getResponse().getContentAsString();
-            final JsonNode removeRoot = mapper.readTree(removeContent);
+            final JsonNode removeRoot = new ObjectMapper().readTree(removeContent);
             final JsonNode removeNode = removeRoot;
 
             assertThat(removeNode.has("status")).isTrue();
@@ -573,11 +552,12 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             final MvcResult deleteResult =
                     mvc.perform(delete(deleteUrl)).andExpect(status().isOk()).andReturn();
             final String deleteContent = deleteResult.getResponse().getContentAsString();
-            final JsonNode deleteRoot = mapper.readTree(deleteContent);
+            final JsonNode deleteRoot = new ObjectMapper().readTree(deleteContent);
             final JsonNode deleteNode = deleteRoot;
 
             assertThat(deleteNode.has("status")).isTrue();
-            assertThat(deleteNode.get("status").asText().equals(refsetDetail.get("refsetDeleteStatus"))).isTrue();
+            assertThat(deleteNode.get("status").asText()
+                    .equals(refsetDetail.get("refsetDeleteStatus"))).isTrue();
         }
     }
 
