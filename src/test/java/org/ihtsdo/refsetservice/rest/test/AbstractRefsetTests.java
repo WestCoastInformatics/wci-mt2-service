@@ -66,16 +66,16 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String INACTIVE_REFSET_VERSION = "20210731";
 
-    protected static final String INACTIVE_REFSET_DIFFERENT_VERSION = "20170731";
+    protected static final String INACTIVE_REFSET_EARLIER_VERSION = "20170731";
 
     // Added 20170731 and Inactived in Lateralizable (723264001) on 20180131
     protected static final String INACTIVE_CONCEPT_ID = "727156001";
 
     protected static final String INVALID_INTERNAL_REFSET_ID = "12345678901234567890";
 
-    protected static final String TESTING_REFSET_ID = "561000172108"; // Belgian
+    protected static final String MAIN_TESTING_REFSET_ID = "561000172108"; // Belgian
 
-    protected static final String TESTING_REFSET_VERSION = "20200915";
+    protected static final String MAIN_TESTING_REFSET_VERSION = "20200915";
 
     protected static final String TESTING_PROJECT_NAME = "SNOMED International Project";
 
@@ -137,7 +137,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
             // Version Date
             assertThat(refset.getVersionDate()).isEqualToIgnoringHours("2021-07-31");
         } else {
-            assertThat(refset.getRefsetId()).isEqualTo(TESTING_REFSET_ID);
+            assertThat(refset.getRefsetId()).isEqualTo(MAIN_TESTING_REFSET_ID);
 
             assertThat(refset.getName()).isEqualToIgnoringCase(
                     "Belgian simple reference set for translated animal materials");
@@ -202,9 +202,6 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
         if (parentSize >= 0) {
             assertThat(concept.getParents().size()).isEqualTo(parentSize);
-        } else {
-            assertThat(concept.getParents().get(concept.getParents().size() - 1).getCode())
-                    .isEqualTo("395508003");
         }
 
         assertThat(concept.getChildren().size()).isEqualTo(childSize);

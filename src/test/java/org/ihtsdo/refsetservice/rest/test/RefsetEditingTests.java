@@ -76,7 +76,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     public void testNewVersionCreateModifyDelete() throws Exception {
 
         final String originalRefsetInternalId =
-                internalidGetterUtil.getRefsetInternalId(TESTING_REFSET_ID, TESTING_REFSET_VERSION);
+                internalidGetterUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
         final String url = baseUrl + "/" + originalRefsetInternalId + "/newVersion";
         logger.info("Testing url - " + url);
 
@@ -106,7 +106,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
             Refset refset = service.get(newRefsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
-            assertThat(refset.getRefsetId()).isEqualTo(TESTING_REFSET_ID);
+            assertThat(refset.getRefsetId()).isEqualTo(MAIN_TESTING_REFSET_ID);
             assertThat(refset.getVersionStatus()).isEqualTo(Refset.IN_DEVELOPMENT);
             assertThat(refset.getVersionDate()).isNull();
             assertTrue(refset.isLatestVersion());

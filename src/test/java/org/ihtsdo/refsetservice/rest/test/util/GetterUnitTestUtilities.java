@@ -207,10 +207,10 @@ public class GetterUnitTestUtilities {
             final String content = result.getResponse().getContentAsString();
             logger.info(" content = " + content);
 
-            final ConceptResultList parentsResultList =
+            final ConceptResultList refsetConcepts =
                     new ObjectMapper().readValue(content, ConceptResultList.class);
-            assertThat(parentsResultList.getItems()).isNotEmpty();
-            return parentsResultList;
+            assertThat(refsetConcepts.getItems()).isNotEmpty();
+            return refsetConcepts;
 
         } catch (Exception e) {
             e.printStackTrace();

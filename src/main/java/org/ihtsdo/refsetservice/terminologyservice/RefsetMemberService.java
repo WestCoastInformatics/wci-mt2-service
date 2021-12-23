@@ -1930,7 +1930,7 @@ public class RefsetMemberService {
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static ConceptResultList prepareConceptSearch(final User user, final String refsetInternalId,
+    public static ConceptResultList searchConcepts(final User user, final String refsetInternalId,
         final SearchParameters searchParameters, final boolean searchRefsetMembers)
         throws MalformedURLException, Exception {
 
@@ -2803,9 +2803,9 @@ public class RefsetMemberService {
                     if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
                         defined = true;
                     }
+
                     // As this method is used for more than just taxonomy, don't
                     // assume cache set for refset version by checking for key.
-
                     if (ancestorsCache.containsKey(refset.getId()) && ancestorsCache
                             .get(refset.getId()).contains(conceptNode.get("conceptId").asText())) {
                         concept.setHasDescendantRefsetMembers(true);
