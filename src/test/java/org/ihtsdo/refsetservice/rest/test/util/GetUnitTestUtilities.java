@@ -39,13 +39,13 @@ public class GetUnitTestUtilities {
 
     private String baseUrl;
 
-    protected static SimpleDateFormat sdf = null;
+    protected SimpleDateFormat sdf = null;
 
 
     public GetUnitTestUtilities(final MockMvc mvc, final String baseUrl, final SimpleDateFormat sdf) {
         this.mvc = mvc;
         this.baseUrl = baseUrl;
-        GetUnitTestUtilities.sdf = sdf;
+        this.sdf = sdf;
     }
 
     public String getRefsetInternalId(String refsetId, String version) throws Exception {

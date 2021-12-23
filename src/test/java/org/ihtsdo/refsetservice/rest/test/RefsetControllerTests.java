@@ -61,8 +61,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     // With 2 parents, 6 children and 0 defing rels
     private static final String FIRST_CONCEPT_ID = "37663002";
 
-    private static final String FIRST_CONCEPT_PARENT_ID = "105899005";
-
     // With 1 parents, 0 children and 0 defing rels
     private static final String SECOND_CONCEPT_ID = "260206005";
 
@@ -393,7 +391,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      *
      * @throws Exception the exception
      */
-    // JESSE
     @Test
     public void testConceptDetails() throws Exception {
 

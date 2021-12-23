@@ -2,12 +2,10 @@
 package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.file.Files;
@@ -43,6 +41,8 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetCreatePopualateTest.class);
 
+    private static String mainTestingRefsetInternalId;
+
     /**
      * Sets the up.
      */
@@ -51,6 +51,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         if (getUtil == null) {
             getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
             exportUtil = new ExportUnitTestUtilities(mvc);
+            editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
         }
 
 
@@ -63,6 +64,9 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             try {
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
+                mainTestingRefsetInternalId = getUtil
+                        .getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
+
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -79,31 +83,12 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
     @Test
     public void testNewVersionCreateModifyDelete() throws Exception {
 
-        final String originalRefsetInternalId =
-                getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
-        final String url = baseUrl + "/" + originalRefsetInternalId + "/newVersion";
-        logger.info("Testing url - " + url);
-
         // ADD NEW VERSION
-        final ObjectNode newVersionBody = objectMapper.createObjectNode();// .put("readVersion", "");
-
-        final MvcResult newVersionResult = mvc
-                .perform(post(url).content(newVersionBody.toString())
-                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()).andReturn();
-
-        final String newVersionContent = newVersionResult.getResponse().getContentAsString();
-        logger.info(" content = " + newVersionContent);
-
-        final JsonNode newVersionRoot = objectMapper.readTree(newVersionContent);
-        final JsonNode newVersionNode = newVersionRoot;
-
-        assertTrue(newVersionNode.has("refsetInternalId"));
-        final String newRefsetInternalId = newVersionNode.get("refsetInternalId").asText();
-        assertThat(newRefsetInternalId).isNotEqualTo(originalRefsetInternalId);
+        final String newRefsetInternalId = editUtil.createNewRefsetVersion(mainTestingRefsetInternalId);
+        assertThat(newRefsetInternalId).isNotEqualTo(mainTestingRefsetInternalId);
         logger.info("New Version Internal ID - " + newRefsetInternalId);
 
-        // verify the new version
+        // validate the new version
         try (final TerminologyService service = new TerminologyService()) {
 
             Refset refset = service.get(newRefsetInternalId, Refset.class);
@@ -111,66 +96,48 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             assertThat(refset.getRefsetId()).isEqualTo(MAIN_TESTING_REFSET_ID);
             assertThat(refset.getVersionStatus()).isEqualTo(Refset.IN_DEVELOPMENT);
             assertThat(refset.getVersionDate()).isNull();
-            assertTrue(refset.isLatestVersion());
+            assertThat(refset.isLatestVersion()).isTrue();
         }
 
         // MODIFY NEW VERSION
-        final String modifyUrl = baseUrl + "/" + newRefsetInternalId;
-        logger.info("Testing url - " + modifyUrl);
-
-        // the modification data
+        // Define the modifications
         final Map<String, String> modifyData = new HashMap<>();
         modifyData.put("tag1", "tag1");
         modifyData.put("tag2", "tag2");
         modifyData.put("versionNotes", testingProjectId);
         modifyData.put("narrative", "Test.");
 
-        // the body of the modification call
-        final ObjectNode modifyBody = objectMapper.createObjectNode()
-                .put("narrative", modifyData.get("narrative"))
-                .put("versionNotes", modifyData.get("versionNotes")).set("tags", objectMapper
-                        .createArrayNode().add(modifyData.get("tag1")).add(modifyData.get("tag2")));
+        editUtil.modifyRefsetMetadata(newRefsetInternalId, modifyData);
 
-        final MvcResult modifyResult = mvc
-                .perform(put(modifyUrl).content(modifyBody.toString())
-                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()).andReturn();
-
-        final String modifyContent = modifyResult.getResponse().getContentAsString();
-        logger.info(" content = " + modifyContent);
-
-        final JsonNode modifyRoot = objectMapper.readTree(modifyContent);
-        final JsonNode modifyNode = modifyRoot;
-
-        assertTrue(modifyNode.has("refsetInternalId"));
-
-        // verify the modifications
+        // validate the modifications
         try (final TerminologyService service = new TerminologyService()) {
 
             Refset refset = service.get(newRefsetInternalId, Refset.class);
+
+            // Validate modified data
             assertThat(refset.getNarrative()).isEqualTo(modifyData.get("narrative"));
             assertThat(refset.getVersionNotes()).isEqualTo(modifyData.get("versionNotes"));
-            assertTrue(refset.getTags().contains(modifyData.get("tag1")));
-            assertTrue(refset.getTags().contains(modifyData.get("tag2")));
+            assertThat(refset.getTags().contains(modifyData.get("tag1"))).isTrue();
+            assertThat(refset.getTags().contains(modifyData.get("tag2"))).isTrue();
+
+            // Validate refset versioning
+            assertThat(refset).isNotNull();
+            assertThat(refset.isLatestVersion()).isTrue();
+
+            refset = service.get(mainTestingRefsetInternalId, Refset.class);
+            assertThat(refset).isNotNull();
+            assertThat(refset.isLatestVersion()).isFalse();
         }
 
         // DELETE NEW VERSION
-        final String deleteUrl = baseUrl + "/" + newRefsetInternalId + "/editVersion";
-        final MvcResult deleteResult =
-                mvc.perform(delete(deleteUrl)).andExpect(status().isOk()).andReturn();
-        final String deleteContent = deleteResult.getResponse().getContentAsString();
-        final JsonNode deleteRoot = objectMapper.readTree(deleteContent);
-        final JsonNode deleteNode = deleteRoot;
+        editUtil.deleteRefset(newRefsetInternalId);
 
-        assertTrue(deleteNode.has("status"));
-        assertTrue(deleteNode.get("status").asText().equals("deleted"));
-
-        // verify the original refset is back to the latest version
+        // validate the original refset is back to the latest version
         try (final TerminologyService service = new TerminologyService()) {
 
-            Refset refset = service.get(originalRefsetInternalId, Refset.class);
+            Refset refset = service.get(mainTestingRefsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
-            assertTrue(refset.isLatestVersion());
+            assertThat(refset.isLatestVersion()).isTrue();
         }
     }
 
@@ -459,7 +426,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
 
         processAndPopulateRefset(refsetExistingConcept, mapper, 0);
     }
-
+// JESSE
     private void processAndPopulateRefset(Map<String, String> refsetDetail, ObjectMapper mapper,
         int numConceptsAdded) throws Exception {
 
@@ -474,7 +441,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         final JsonNode root = mapper.readTree(content);
         final JsonNode refsetNode = root;
 
-        assertTrue(refsetNode.has("refsetInternalId"));
+        assertThat(refsetNode.has("refsetInternalId")).isTrue();
         final String refsetInternalId = refsetNode.get("refsetInternalId").asText();
 
         // verify the refset from a new concept in the RT2 DB
@@ -535,8 +502,8 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         final JsonNode membersRoot = mapper.readTree(membersContent);
         final JsonNode membersNode = membersRoot;
 
-        assertTrue(membersNode.has("status"));
-        assertTrue(membersNode.get("status").asText().equals("All concepts added."));
+        assertThat(membersNode.has("status")).isTrue();
+        assertThat(membersNode.get("status").asText().equals("All concepts added.")).isTrue();
 
         // Verifying contents as a second measure
         final String url = baseUrl + "/" + refsetInternalId + "/members?limit=500&offset=0"
@@ -595,8 +562,8 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             final JsonNode removeRoot = mapper.readTree(removeContent);
             final JsonNode removeNode = removeRoot;
 
-            assertTrue(removeNode.has("status"));
-            assertTrue(removeNode.get("status").asText().equals("All concepts removed."));
+            assertThat(removeNode.has("status")).isTrue();
+            assertThat(removeNode.get("status").asText().equals("All concepts removed.")).isTrue();
         }
 
         // delete the refset from a new concept
@@ -609,9 +576,8 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
             final JsonNode deleteRoot = mapper.readTree(deleteContent);
             final JsonNode deleteNode = deleteRoot;
 
-            assertTrue(deleteNode.has("status"));
-            assertTrue(deleteNode.get("status").asText()
-                    .equals(refsetDetail.get("refsetDeleteStatus")));
+            assertThat(deleteNode.has("status")).isTrue();
+            assertThat(deleteNode.get("status").asText().equals(refsetDetail.get("refsetDeleteStatus"))).isTrue();
         }
     }
 

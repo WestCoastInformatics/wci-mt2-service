@@ -100,6 +100,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected ExportUnitTestUtilities exportUtil;
 
+    protected EditUnitTestUtilities editUtil;
+
     protected void validateRefsetMetadata(Refset refset) {
         assertThat(refset).isNotNull();
 
