@@ -126,12 +126,50 @@ public class RefsetController extends BaseController {
             User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(user, refsetInternalId);
             RefsetService.getRefsetDescriptions(refset);
+            
+            if (RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId)) {
+                refset.setLocked(true);
+            }
+            
             return refset;
 
         } catch (final Exception e) {
 
             handleException(e);
             return null;
+        }
+    }
+    
+    /**
+     * Returns the refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset
+     * @throws Exception the exception
+     */
+
+    @ApiOperation(value = "Returns if the refset is locked", response = Refset.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataType = "string", paramType = "path")})
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/isLocked", produces = "application/json")
+    public @ResponseBody boolean isRefsetLocked(@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request) throws Exception {
+
+        try {
+
+            User user = SecurityService.getUserFromSession();
+            final boolean isLocked = RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId);
+            logger.debug("*********** isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
+            return isLocked;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return false;
         }
     }
 
@@ -193,6 +231,7 @@ public class RefsetController extends BaseController {
         
         try {
             
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             List<String> conceptIdList = new ArrayList<>();
             String error = "";
             List<String> unaddedConcepts;
@@ -229,6 +268,8 @@ public class RefsetController extends BaseController {
                 error = StringUtils.removeEnd(error, ", ");
             }
             
+            logger.debug("*********** addRefsetMembers: Finished with " + unaddedConcepts.size() + " invaild concepts");
+            
             if (error.equals("")) {
                 return "{\"status\": \"All concepts added.\"}";
             } else {
@@ -239,6 +280,10 @@ public class RefsetController extends BaseController {
 
             handleException(e);
             return null;
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
     }
     
@@ -262,6 +307,7 @@ public class RefsetController extends BaseController {
         
         try {
             
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             String conceptsToRemove = null;
             User user = SecurityService.getUserFromSession();
 
@@ -309,6 +355,10 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+        }
     }
     
     /**
@@ -333,6 +383,7 @@ public class RefsetController extends BaseController {
         
         try {
             
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             List<String> conceptIdList = new ArrayList<>();
             final User user = SecurityService.getUserFromSession(); 
             
@@ -367,6 +418,10 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+        }
     }
     
     /**
@@ -384,6 +439,7 @@ public class RefsetController extends BaseController {
         
         try {
             
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             final User user = SecurityService.getUserFromSession(); 
             logger.debug("*********** removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; definitionExceptionId: " + definitionExceptionId);
                
@@ -399,6 +455,10 @@ public class RefsetController extends BaseController {
 
             handleException(e);
             return null;
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
     }
     
@@ -416,7 +476,11 @@ public class RefsetController extends BaseController {
         
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
-
+        
+        final String tempRefsetId = refsetParameters.getRefsetId();
+        RefsetMemberService.refsetsBeingUpdated.add(tempRefsetId);
+        refsetParameters.setRefsetId(null);
+        
         try {
 
             logger.debug("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
@@ -434,6 +498,10 @@ public class RefsetController extends BaseController {
 
             handleException(e);
             return null;
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(tempRefsetId);
         }
     }
     
@@ -456,6 +524,7 @@ public class RefsetController extends BaseController {
         try {
 
             logger.debug("*********** modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             User user = SecurityService.getUserFromSession();
             final String status = RefsetService.modifyRefset(user, refsetInternalId, refsetParameters);
             
@@ -469,6 +538,10 @@ public class RefsetController extends BaseController {
 
             handleException(e);
             return null;
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
     }
     

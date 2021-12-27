@@ -118,6 +118,9 @@ public class RefsetMemberService {
 
     /** A cache of the members returned for a specific URL. */
     private final static Map<String, ConceptResultList> memberListCallCache = new HashMap<>();
+    
+    /** A list of refset actively being updated. */
+    public final static Set<String> refsetsBeingUpdated = new HashSet<>();
 
     /** A cache of the details for any concept. */
     private final static Map<String, Concept> conceptDetailsCache = new HashMap<>();
@@ -3377,7 +3380,7 @@ public class RefsetMemberService {
 
         List<String> unaddedConcepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
-
+        
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -3507,7 +3510,7 @@ public class RefsetMemberService {
                 unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds));
             }
         }
-
+        
         return unaddedConcepts;
     }
     
@@ -3934,6 +3937,8 @@ public class RefsetMemberService {
                 final JsonNode items = root.get("items");
                 final Iterator<JsonNode> iterator = items.iterator();
                 totalReturned += items.size();
+                
+                logger.debug("getConceptIdsFromEcl totalReturned so far: " + totalReturned);
 
                 // loop thru the returned concepts add them to the list
                 while (iterator != null && iterator.hasNext()) {
@@ -3949,10 +3954,12 @@ public class RefsetMemberService {
                 }
 
                 if (total == 0) {
+                    
+                    keepSearching = false;
                     total = root.get("total").asInt();
                 }
 
-                if (total <= ELASTICSEARCH_MAX_RECORD_LENGTH || totalReturned == total) {
+                if (total <= ELASTICSEARCH_MAX_RECORD_LENGTH || totalReturned == total || root.get("searchAfter") == null) {
                     keepSearching = false;
                 } else {
                     searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
