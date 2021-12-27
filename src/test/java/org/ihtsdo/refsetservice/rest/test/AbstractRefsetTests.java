@@ -80,7 +80,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String MEMBER_ID_LIST_FILE_NAME = "member_concept_id_list.txt";
 
-    protected static final String MEMBER_ID_LIST_FILE = REFSET_FILE_PATH + MEMBER_ID_LIST_FILE_NAME;
+    protected static final String MEMBER_ID_LIST_FILE_PATH = REFSET_FILE_PATH + MEMBER_ID_LIST_FILE_NAME;
 
     protected static final String MEMBER_ID_RF2_FILE_NAME = "member_concept_ids_rf2.txt";
 

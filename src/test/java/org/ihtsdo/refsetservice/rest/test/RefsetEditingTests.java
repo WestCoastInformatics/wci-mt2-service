@@ -209,7 +209,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         refsetNewConcept.put("refsetDeleteStatus", "deleted");
         refsetNewConcept.put("fileType", "list");
         refsetNewConcept.put("conceptFileName", MEMBER_ID_LIST_FILE_NAME);
-        refsetNewConcept.put("conceptFile", MEMBER_ID_LIST_FILE);
+        refsetNewConcept.put("conceptFile", MEMBER_ID_LIST_FILE_PATH);
 
         // prepare the call to create refset from a new concept
         final ObjectNode refsetNewConceptBody =
