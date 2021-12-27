@@ -283,4 +283,8 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
         // TODO: Add execution
     }
 
+    public void testCreateInvalids() throws Exception {
+    // TODO: Determine approach
+    }
+
 }
