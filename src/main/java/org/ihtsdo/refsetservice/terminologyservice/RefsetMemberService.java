@@ -121,6 +121,9 @@ public class RefsetMemberService {
     
     /** A list of refset actively being updated. */
     public final static Set<String> refsetsBeingUpdated = new HashSet<>();
+    
+    /** A list of refset actively being updated. */
+    public final static Map<String, Map<String, Map<String, String>>> refsetsUpdatedMembers = new HashMap<>();
 
     /** A cache of the details for any concept. */
     private final static Map<String, Concept> conceptDetailsCache = new HashMap<>();
@@ -3404,6 +3407,7 @@ public class RefsetMemberService {
             final String conceptSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/concepts/search";
             final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", \"activeFilter\": true, ";
             final List<String> conceptsToSearch = new ArrayList<>(conceptIds);
+            final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
             boolean searchAgain = true;
             int searchIndex = 0;
             int loopNumber = 1;
@@ -3417,6 +3421,10 @@ public class RefsetMemberService {
                 for (; searchIndex < conceptsToSearch.size(); searchIndex++) {
                     
                     final String conceptId = conceptsToSearch.get(searchIndex);
+                    final Map<String, String> status = new HashMap<>();
+                    status.put("operation", "Added");
+                    status.put("status", "Success");
+                    conceptsStatus.put(conceptId, status);
                     bodyConceptIds += "\"" + conceptId + "\",";
                     
                     if (searchIndex / loopNumber >= ELASTICSEARCH_MAX_RECORD_LENGTH) {
@@ -3508,6 +3516,14 @@ public class RefsetMemberService {
                 unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0)));
             } else {
                 unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds));
+            }
+            
+            for (final String conceptId : unaddedConcepts) {
+                
+                final Map<String, String> status = new HashMap<>();
+                status.put("operation", "Added");
+                status.put("status", "Failed");
+                conceptsStatus.put(conceptId, status);
             }
         }
         
@@ -3655,6 +3671,7 @@ public class RefsetMemberService {
 
         List<String> unremovedConcepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
+        final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
 
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
@@ -3686,6 +3703,10 @@ public class RefsetMemberService {
                 for (; searchIndex < conceptsToSearch.size(); searchIndex++) {
                     
                     final String conceptId = conceptsToSearch.get(searchIndex);
+                    final Map<String, String> status = new HashMap<>();
+                    status.put("operation", "Removed");
+                    status.put("status", "Success");
+                    conceptsStatus.put(conceptId, status);
                     bodyConceptIds += conceptId + ",";
                     
                     if (memberSearchUrlBase.length() + bodyConceptIds.length() >= URL_MAX_CHAR_LENGTH) {
@@ -3775,6 +3796,14 @@ public class RefsetMemberService {
             } else if (memberUpdateArray.size() > 1) {
                 
                 unremovedConcepts = callUpdateMembersBulk(refsetId, url + "/bulk", memberUpdateArray);
+            }
+            
+            for (final String conceptId : unremovedConcepts) {
+                
+                final Map<String, String> status = new HashMap<>();
+                status.put("operation", "Removed");
+                status.put("status", "Failed");
+                conceptsStatus.put(conceptId, status);
             }
         }
 

@@ -157,19 +157,27 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataType = "string", paramType = "path")})
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/isLocked", produces = "application/json")
-    public @ResponseBody boolean isRefsetLocked(@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request) throws Exception {
-
+    public @ResponseBody String isRefsetLocked(@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request) throws Exception {
+ 
         try {
 
+            String returnString = true + "";
             User user = SecurityService.getUserFromSession();
             final boolean isLocked = RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId);
             logger.debug("*********** isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
-            return isLocked;
+            
+            if (!isLocked) {
+                
+                returnString = ModelUtility.toJson(RefsetMemberService.refsetsUpdatedMembers.get(refsetInternalId));
+                RefsetMemberService.refsetsUpdatedMembers.remove(refsetInternalId);
+            }
+            
+            return returnString;
 
         } catch (final Exception e) {
 
             handleException(e);
-            return false;
+            return false + "";
         }
     }
 
@@ -232,6 +240,7 @@ public class RefsetController extends BaseController {
         try {
             
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             List<String> conceptIdList = new ArrayList<>();
             String error = "";
             List<String> unaddedConcepts;
@@ -308,6 +317,7 @@ public class RefsetController extends BaseController {
         try {
             
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             String conceptsToRemove = null;
             User user = SecurityService.getUserFromSession();
 
@@ -384,6 +394,7 @@ public class RefsetController extends BaseController {
         try {
             
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             List<String> conceptIdList = new ArrayList<>();
             final User user = SecurityService.getUserFromSession(); 
             
@@ -440,6 +451,7 @@ public class RefsetController extends BaseController {
         try {
             
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             final User user = SecurityService.getUserFromSession(); 
             logger.debug("*********** removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; definitionExceptionId: " + definitionExceptionId);
                
@@ -479,6 +491,7 @@ public class RefsetController extends BaseController {
         
         final String tempRefsetId = refsetParameters.getRefsetId();
         RefsetMemberService.refsetsBeingUpdated.add(tempRefsetId);
+        RefsetMemberService.refsetsUpdatedMembers.put(tempRefsetId, new HashMap<>());
         refsetParameters.setRefsetId(null);
         
         try {
@@ -525,6 +538,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("*********** modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             User user = SecurityService.getUserFromSession();
             final String status = RefsetService.modifyRefset(user, refsetInternalId, refsetParameters);
             
