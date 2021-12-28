@@ -1038,6 +1038,18 @@ public class HistoricDataMigrator {
 
             }
 
+            logger.info("Adding a dedicated UAT Training Project for each Organization");
+            for (String orgName : organizationsAdded.keySet()) {
+                Organization org = organizationsAdded.get(orgName);
+
+                final Project project = addProject(org, "UAT Training Project",
+                        "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project",
+                        defaultMeta);
+                projectCount++;
+
+                projectsAdded.put(project.getName(), project);
+            }
+
             logger.info("Have imported " + projectCount + " projects and "
                     + counts.getOrgsImportedCount() + " organizations");
 
