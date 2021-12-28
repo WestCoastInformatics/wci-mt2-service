@@ -132,7 +132,8 @@ public class EditUnitTestUtilities {
         return defineRefsetConcept(refsetNewConcept, testName, RefsetType.EXTENSIONAL);
     }
 
-    public Map<String, String> defineExtensionalRefsetConcept(String testName, String memberConceptIds) {
+    public Map<String, String> defineExtensionalRefsetConcept(String testName,
+        String memberConceptIds) {
 
         final Map<String, String> refsetNewConcept = new HashMap<>();
 
@@ -170,13 +171,18 @@ public class EditUnitTestUtilities {
                         .put("localSet", Boolean.parseBoolean(refsetNewConcept.get("localSet")));
 
         if (refsetNewConcept.containsKey("ecl")) {
-            refsetNewConceptBody.put("definitionClauses", "[{\"value\":\"" + refsetNewConcept.get("ecl") + "\", \"negated\": false}]");
+            refsetNewConceptBody.set("definitionClauses",
+                    new ObjectMapper().createArrayNode()
+                            .add(new ObjectMapper().createObjectNode().put("value",
+                                    refsetNewConcept.get("ecl"))
+                                    .put("negated", "false")));
         }
+        
         refsetNewConcept.put("body", refsetNewConceptBody.toString());
 
         return refsetNewConcept;
     }
-    
+
     public Map<String, String> defineIntensionalRefsetConcept(String testName, String ecl) {
 
         final Map<String, String> refsetNewConcept = new HashMap<>();
@@ -187,13 +193,12 @@ public class EditUnitTestUtilities {
         return defineRefsetConcept(refsetNewConcept, testName, RefsetType.INTENSIONAL);
     }
 
-
     public String createRefset(Map<String, String> refsetDetail) {
 
         try {
             // make the call to create refset from a new concept
             logger.debug("po");
-            logger.debug( "iwth : " + refsetDetail.get("body"));
+            logger.debug("iwth : " + refsetDetail.get("body"));
             final MvcResult result = mvc.perform(post(baseUrl).content(refsetDetail.get("body"))
                     .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk()).andReturn();

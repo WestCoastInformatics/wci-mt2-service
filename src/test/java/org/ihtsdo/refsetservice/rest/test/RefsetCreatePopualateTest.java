@@ -2,14 +2,7 @@
 package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -25,9 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -140,7 +130,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
     @Test
     public void testCreateFromECL() throws Exception {
         // the data to create a refset from an ECL
-        final String ecl = "<<226528004";
+        final String ecl = "<<226528004 | Whiskey (substance) |";
 
         Map<String, String> refsetConcept =
                 editUtil.defineIntensionalRefsetConcept("testCreateFromECL", ecl);
@@ -242,7 +232,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
     // Test is commented out for new as no means of "reverting" the concept from
     // refset concept to normal concept
     // @Test
-    // TODO: Need to update this including defining of metadata
+    // TODO: Need to update this including deciding if makes sense
     public void testCreateRefsetFromExistingConcept() throws Exception {
         // TODO: Review purpose
         // the data to create a refset from an existing concept (but can't be a
@@ -284,7 +274,7 @@ public class RefsetCreatePopualateTest extends AbstractRefsetTests {
     }
 
     public void testCreateInvalids() throws Exception {
-    // TODO: Determine approach
+        // TODO: Determine approach
     }
 
 }
