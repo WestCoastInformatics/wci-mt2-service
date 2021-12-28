@@ -59,6 +59,9 @@ public class RefsetService {
     /** The refset to language map. */
     private static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
     
+    /** The module Id of the SIMPLE_TYPE_REFERENCE_SET */ 
+    private static final String SIMPLE_TYPE_REFERENCE_SET_MODULE_ID = "900000000000012004";
+    
     static {
 
         // TODO: Remove once Edition updated
@@ -1020,8 +1023,9 @@ public class RefsetService {
         final ConceptResultList results = new ConceptResultList();
         final Set<String> existingRefsetIds = new HashSet<>();
         final String ecl = StringUtility.encodeValue(QueryParserBase.escape("<<" + SIMPLE_TYPE_REFERENCE_SET));
-        final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000";
         final List<Edition> editions = getEditionForBranch(branch);
+        final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module="
+            + editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(",")) + "," + SIMPLE_TYPE_REFERENCE_SET_MODULE_ID;
 
         logger.debug("getRefsetConcepts URL: " + url);
 
@@ -1030,8 +1034,7 @@ public class RefsetService {
             try (final TerminologyService service = new TerminologyService()) {
 
                 // get all the existing refsets for latest branch version
-                final ResultList<Refset> refsets = service.find("active: true AND moduleId:" + "(" + editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(" OR ")) + ")"
-                    + " AND editionBranch: " + QueryParserBase.escape(branch) + " AND (latestVersion: true OR versionStatus: \"" + Refset.IN_DEVELOPMENT + "\")", null, Refset.class, null);
+                final ResultList<Refset> refsets = service.find("latestVersion: true", null, Refset.class, null);
 
                 for (final Refset refset : refsets.getItems()) {
                     existingRefsetIds.add(refset.getRefsetId());
