@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
@@ -176,7 +175,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         List<WorkflowHistory> lookedUpWorkflowHistory;
         String note;
 
-        Refset refset = getRefset(refsetInternalId);
+        Refset refset = getUtil.getRefsetFromInternalId(refsetInternalId);
         Refset updatedRefset = null;
 
         // ALREADY IN EDIT WHEN CREATED
@@ -350,7 +349,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // include a fake refset ID
         String results = failPublication(refset.getRefsetId() + ",11112222", note);
         assertThat(results).doesNotContain(refset.getRefsetId());
-        updatedRefset = getRefset(refsetInternalId);
+        updatedRefset = getUtil.getRefsetFromInternalId(refsetInternalId);
         assertThat(updatedRefset).isNotNull();
         refset = updatedRefset;
         lookedUpWorkflowHistory = getWorkflowHistory(refsetInternalId);
@@ -370,7 +369,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         // String results = completePublication(publicationDate,
         // refset.getEditionShortName());
         // assertThat(results).doesNotContain(refset.getRefsetId());
-        // updatedRefset = getRefset(refsetInternalId);
+        // updatedRefset = getUtil.getRefsetFromInternalId(refsetInternalId);
         // assertThat(updatedRefset).isNotNull();
         //
         // // now that it is published make sure there is a version date on the
@@ -432,27 +431,6 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
     }
 
     /**
-     * complete publication.
-     *
-     * @throws Exception the exception
-     */
-    private String completePublication(final String versionDate, final String editionShortName)
-        throws Exception {
-
-        final String url = "/admin/completeAllRefsetPublications?versionDate=" + versionDate
-                + "&codeSystem=" + editionShortName;
-
-        final MvcResult result = mvc.perform(
-                put(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()).andReturn();
-
-        final String content = result.getResponse().getContentAsString();
-        assertThat(content).isNotBlank();
-
-        return content;
-    }
-
-    /**
      * Publication Fails call.
      *
      * @throws Exception the exception
@@ -491,68 +469,6 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         assertThat(resultList).isNotNull();
 
         return resultList.getItems();
-    }
-
-    /**
-     * list all actions allowed.
-     *
-     * @throws Exception the exception
-     */
-    private List<String> listAvailableActions(final String user, final String initialStatus,
-        final String action, final boolean assignedUser) {
-
-        final List<String> allowedActions = new ArrayList<>();
-        final String userRole = getUserRole(user);
-
-        // Published is the final status so no edits are allowed anymore
-        if (initialStatus.equals(WorkflowService.PUBLISHED)) {
-            return allowedActions;
-        }
-
-        if (initialStatus.equals(WorkflowService.READY_FOR_EDIT)
-                && userRole.equals(User.ROLE_AUTHOR)) {
-
-            allowedActions.add(WorkflowService.EDIT);
-            allowedActions.add(WorkflowService.REQUEST_REVIEW);
-            allowedActions.add(WorkflowService.REQUEST_PUBLICATION);
-
-        } else if (initialStatus.equals(WorkflowService.IN_EDIT)
-                && userRole.equals(User.ROLE_AUTHOR)) {
-
-            // only the assigned user can edit
-            if (assignedUser) {
-
-                allowedActions.add(WorkflowService.FINISH_EDIT);
-                allowedActions.add(WorkflowService.REQUEST_REVIEW);
-                allowedActions.add(WorkflowService.REQUEST_PUBLICATION);
-            }
-
-        } else if (initialStatus.equals(WorkflowService.READY_FOR_REVIEW)
-                && userRole.equals(User.ROLE_REVIEWER)) {
-
-            allowedActions.add(WorkflowService.REVIEW);
-
-        } else if (initialStatus.equals(WorkflowService.IN_REVIEW)
-                && userRole.equals(User.ROLE_REVIEWER)) {
-
-            // only the assigned user can review
-            if (assignedUser) {
-
-                allowedActions.add(WorkflowService.REJECT_REVIEW);
-                allowedActions.add(WorkflowService.ACCEPT_REVIEW);
-                allowedActions.add(WorkflowService.UNASSIGN);
-            }
-
-        } else if (initialStatus.equals(WorkflowService.REVIEW_COMPLETED)
-                && userRole.equals(User.ROLE_AUTHOR)) {
-
-            allowedActions.add(WorkflowService.EDIT);
-            allowedActions.add(WorkflowService.REQUEST_REVIEW);
-            allowedActions.add(WorkflowService.REQUEST_PUBLICATION);
-
-        }
-
-        return allowedActions;
     }
 
     /**
@@ -659,21 +575,6 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
         assertThat(workflowHistory.getWorkflowAction()).isEqualTo(action);
         assertThat(workflowHistory.getWorkflowStatus()).isEqualTo(status);
         assertThat(workflowHistory.getNotes()).isEqualTo(note);
-    }
-
-    /**
-     * Get a refset.
-     *
-     * @throws Exception the exception
-     */
-    private Refset getRefset(final String refsetInternalId) throws Exception {
-
-        final String url = baseUrl + "/" + refsetInternalId;
-
-        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-        final String content = result.getResponse().getContentAsString();
-
-        return new ObjectMapper().readValue(content, Refset.class);
     }
 
     /**
