@@ -651,8 +651,10 @@ public class HistoricDataMigrator {
                             continue;
                         }
 
-                        if (codeSystem.get("name").asText().equalsIgnoreCase("kk")) {
-                            logger.info("Skipping odd code system 'Kk' as was likely for testing");
+                        if ("kk".equalsIgnoreCase(codeSystem.get("name").asText())
+                                || "wci".equalsIgnoreCase(codeSystem.get("name").asText())) {
+                            logger.info("Skipping odd code system '" + codeSystem.get("name")
+                                    + "' as was likely for testing");
                             continue;
                         }
 
@@ -702,6 +704,7 @@ public class HistoricDataMigrator {
                         Iterator<String> languages = codeSystem.get("languages").fieldNames();
                         String defaultLanguage = languages.next();
                         edition.setDefaultLanguageCode(defaultLanguage);
+                        String orgDesc = null;
 
                         // Identify Code System Owner
                         if (codeSystem.has("owner")) {
@@ -709,6 +712,7 @@ public class HistoricDataMigrator {
                                     codeSystem.get("owner").asText());
                             editionOwnerMap.put(edition.getName(),
                                     codeSystem.get("owner").asText());
+                            orgDesc = codeSystem.get("owner").asText();
                         } else {
                             editionOwnerMap.put(edition.getShortName(), edition.getName());
                             editionOwnerMap.put(edition.getName(), edition.getName());
@@ -720,7 +724,7 @@ public class HistoricDataMigrator {
                         setMetadata(edition, defaultMeta);
                         service.add(edition);
 
-                        addOrganziation(editionOwnerMap.get(edition.getName()), edition,
+                        addOrganziation(editionOwnerMap.get(edition.getName()), orgDesc, edition,
                                 defaultMeta);
                     }
                 }
@@ -739,6 +743,7 @@ public class HistoricDataMigrator {
         } else {
             Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
 
+            // Ignore CORE Modules
             Set<String> editionModules = new HashSet<>();
             while (moduleIterator.hasNext()) {
                 JsonNode module = moduleIterator.next();
@@ -748,10 +753,15 @@ public class HistoricDataMigrator {
             }
 
             if (editionModules.size() == 0) {
+                // If no non-CORE modules found, use the default Module
                 edition.setTopLevelModule(MODULE_ANCESTOR_CONCEPT_SCTID);
                 logger.info("No dedicated modules identified for " + edition.getName() + ": "
                         + editionModules.toString());
-            } else if (editionModules.size() > 1) {
+            } else if (editionModules.size() == 1) {
+                // If only one non-CORE modules found, use it
+                edition.setTopLevelModule(editionModules.iterator().next());
+            } else {
+                // If multiple non-CORE modules found, TODO: Fill in
                 Set<String> childrenModules = new HashSet<>();
 
                 Set<String> children = getModuleChildren(edition);
@@ -767,8 +777,6 @@ public class HistoricDataMigrator {
                 } else {
                     edition.setTopLevelModule(childrenModules.iterator().next());
                 }
-            } else {
-                edition.setTopLevelModule(editionModules.iterator().next());
             }
         }
     }
@@ -937,8 +945,8 @@ public class HistoricDataMigrator {
                                 + "' should have been created already");
                     }
 
-                    final String orgName = editionOwnerMap.get(name) != null
-                            ? editionOwnerMap.get(name) : editionOwnerMap.get(shortName);
+                    String orgName = editionOwnerMap.get(name) != null ? editionOwnerMap.get(name)
+                            : editionOwnerMap.get(shortName);
 
                     // Create edition
                     final Organization org = organizationsAdded.get(orgName);
@@ -990,7 +998,7 @@ public class HistoricDataMigrator {
                             || !organizationsAdded.containsKey(translatedOrgName)) {
                         logger.debug(
                                 "    ****   Warning - Ran across an organization that doesn't reside in Snowstorm!");
-                        org = addOrganziation(translatedOrgName, edition, defaultMeta);
+                        org = addOrganziation(translatedOrgName, null, edition, defaultMeta);
                         organizationsAdded.put(translatedOrgName, org);
                     } else {
                         org = organizationsAdded.get(translatedOrgName);
@@ -1122,14 +1130,15 @@ public class HistoricDataMigrator {
         }
     }
 
-    private Organization addOrganziation(final String orgName, final Edition edition,
-        final Metadata meta) throws Exception {
+    private Organization addOrganziation(final String orgName, String orgDesc,
+        final Edition edition, final Metadata meta) throws Exception {
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
             Organization org = new Organization();
             org.setName(orgName);
+            org.setDescription(orgDesc);
             org.setEdition(edition);
 
             setMetadata(org, meta);
