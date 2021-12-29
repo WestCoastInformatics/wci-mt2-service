@@ -134,6 +134,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private boolean canView;
     
+    /** The flag for if the refset is locked due to an edit. */
+    @Transient
+    private boolean locked = false;
+    
     /** The list of actions available for the user to perform on this refset. */
     @Transient
     private List<String> availableActions;
@@ -280,6 +284,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         canReview = other.getCanReview();
         canPublish = other.getCanPublish();
         canView = other.getCanView();
+        locked = other.isLocked();
         availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
         latestVersion = other.isLatestVersion();
@@ -690,9 +695,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the edition short name
      */
-    @FullTextField(analyzer = "standard")
-    @GenericField(name = "editionShortNameSort", searchable = Searchable.YES,
-            projectable = Projectable.NO, sortable = Sortable.YES)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({@PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization"), @PropertyValue(propertyName = "edition")}))
     public String getEditionShortName() {
         
@@ -903,6 +906,34 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
+     * Sets the flag that shows if the user can view this refset.
+     *
+     * @param canView the canView flag
+     */
+    public void setCanView(final boolean canView) {
+        this.canView = canView;
+    }
+    
+    /**
+     * Gets the flag that shows if the refset is locked due to edits.
+     *
+     * @return the locked flag
+     */
+    @JsonGetter()
+    public boolean isLocked() {
+        return locked;
+    }
+    
+    /**
+     * Sets the flag that shows if the refset is locked due to edits.
+     *
+     * @param locked the locked flag
+     */
+    public void setLocked(final boolean locked) {
+        this.locked = locked;
+    }
+    
+    /**
      * Gets the list of actions available for the user to perform on this refset.
      * 
      * @return the available actions
@@ -924,15 +955,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setAvailableActions(List<String> availableActions) {
         this.availableActions = availableActions;
-    }
-    
-    /**
-     * Sets the flag that shows if the user can view this refset.
-     *
-     * @param canView the canView flag
-     */
-    public void setCanView(final boolean canView) {
-        this.canView = canView;
     }
 
     /**
@@ -1119,6 +1141,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (canReview ? 1 : 0);
         result = prime * result + (canPublish ? 1 : 0);
         result = prime * result + (canView ? 1 : 0);
+        result = prime * result + (locked ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
     }
@@ -1307,6 +1330,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         }
         
         if (canView != other.canView) {
+            return false;
+        }
+        
+        if (locked != other.locked) {
             return false;
         }
 

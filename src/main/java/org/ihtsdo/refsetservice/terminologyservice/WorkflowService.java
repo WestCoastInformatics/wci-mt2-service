@@ -236,20 +236,16 @@ public final class WorkflowService {
      *
      * @param service the Terminology Service
      * @param versionDate the publication date of the refset in YYYY/mm/dd format
-     * @param branch an optional branch to limit the refset to
+     * @param editionShortName an code system to limit the refset to
      * @return A list of concepts that were unable to have publication completed
      * @throws Exception the exception
      */
-    public static List<String> completeAllRefsetPublications(final TerminologyService service, final String versionDate, final String branch) throws Exception {
+    public static List<String> completeAllRefsetPublications(final TerminologyService service, final String versionDate, final String editionShortName) throws Exception {
         
         List<String> refsetsNotUpdated = new ArrayList<>();
-        String query = "workflowStatus: " + READY_FOR_PUBLICATION;
+        String query = "workflowStatus: " + READY_FOR_PUBLICATION + " AND editionShortName: " + QueryParserBase.escape(editionShortName);
         
-        if (!StringUtility.isEmpty(branch)) {
-            query += " AND editionBranch: " + QueryParserBase.escape(branch);
-        }
-        
-        final ResultList<Refset> results = service.find("workflowStatus: " + READY_FOR_PUBLICATION, null, Refset.class, null);
+        final ResultList<Refset> results = service.find(query, null, Refset.class, null);
     
         // see if there is an "In Development" version as that should be the latest.
         for (final Refset refset: results.getItems()) {
@@ -428,6 +424,8 @@ public final class WorkflowService {
     public static Refset setRefsetWorkflowStatus(final User user, final Refset refset,
         final String status) throws Exception {
 
+        final long start = System.currentTimeMillis();
+        
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(user.getUserName());
@@ -456,11 +454,10 @@ public final class WorkflowService {
                 refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(newVersion));
                 refset.setVersionStatus(Refset.PUBLISHED);
             }
-
+            
             // Update an object
             service.update(refset);
-            logger.info(
-                    "Refset workflow status set to " + status + " for refset " + refset.getId());
+            logger.info("Refset workflow status set to " + status + " for refset " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
 
             // update the refset permissions
             return RefsetService.setRefsetPermissions(user, refset);
@@ -479,6 +476,8 @@ public final class WorkflowService {
     public static void addWorkflowHistory(final User user, final String action, final Refset refset,
         final String notes) throws Exception {
 
+        final long start = System.currentTimeMillis();
+        
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(user.getUserName());
@@ -496,7 +495,7 @@ public final class WorkflowService {
             }
 
             logger.info("New workflow history entry with status " + refset.getWorkflowStatus()
-                    + " added for refset " + refset.getId());
+                    + " added for refset " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
         }
     }
 
@@ -618,6 +617,7 @@ public final class WorkflowService {
         }
 
         WorkflowHistory workflow = getCurrentWorkflow(refset);
+        logger.debug("getAssignedUserName: " + workflow.getUserName());
         return workflow.getUserName();
 
     }
@@ -796,6 +796,7 @@ public final class WorkflowService {
     public static String createBranch(final String parentBranchPath, final String branchName)
         throws Exception {
 
+        final long start = System.currentTimeMillis();
         String refsetBranchPath = null;
         final String url = SnowstormConnection.BASE_URL + "branches";
         final ObjectMapper mapper = new ObjectMapper();
@@ -824,7 +825,7 @@ public final class WorkflowService {
                 refsetBranchPath = rootNode.get("path").asText();
             }
             
-            logger.info("Created branch " + refsetBranchPath);
+            logger.info("Created branch " + refsetBranchPath + ". Time: " + (System.currentTimeMillis() - start));
         }
 
         return refsetBranchPath;
@@ -839,6 +840,7 @@ public final class WorkflowService {
      */
     public static boolean deleteBranch(final String branchPath) throws Exception {
 
+        final long start = System.currentTimeMillis();
         String refsetBranchPath = null;
         final String url =
                 SnowstormConnection.BASE_URL + "admin/" + branchPath + "/actions/hard-delete";
@@ -849,8 +851,8 @@ public final class WorkflowService {
 
             // Only process payload if Rest call is successful
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-
-                logger.info("Deleted branch " + branchPath);
+                
+                logger.info("Deleted branch " + branchPath + ". Time: " + (System.currentTimeMillis() - start));
                 return true;
             } else {
 
@@ -869,6 +871,7 @@ public final class WorkflowService {
      */
     public static boolean doesBranchExist(final String branchPath) throws Exception {
 
+        final long start = System.currentTimeMillis();
         final String url = SnowstormConnection.BASE_URL + "branches/" + branchPath;
 
         logger.debug("doesBranchExist URL: " + url);
@@ -878,11 +881,11 @@ public final class WorkflowService {
             // If Rest call is successful then branch exists
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {
                 
-                logger.debug("doesBranchExist: true");
+                logger.debug("doesBranchExist: true. Time: " + (System.currentTimeMillis() - start));
                 return true;
             } else {
                 
-                logger.debug("doesBranchExist: false");
+                logger.debug("doesBranchExist: false. Time: " + (System.currentTimeMillis() - start));
                 return false;
             }
         }
@@ -900,6 +903,7 @@ public final class WorkflowService {
     public static void mergeBranch(final String sourceBranchPath, final String targetBranchPath,
         final String comment) throws Exception {
 
+        final long start = System.currentTimeMillis();
         String refsetBranchPath = null;
         final String url = SnowstormConnection.BASE_URL + "merges";
         final ObjectMapper mapper = new ObjectMapper();
@@ -929,7 +933,7 @@ public final class WorkflowService {
             logger.debug("Merge branch info at " + jobStatusUrl);
             
             try (final Response mergeInforesponse = SnowstormConnection.getResponse(jobStatusUrl)) {
-                logger.debug("Merge branch info: " + mergeInforesponse.readEntity(String.class));
+                logger.debug("Merge branch info: " + mergeInforesponse.readEntity(String.class) + ". Time: " + (System.currentTimeMillis() - start));
             }
         }
     }
@@ -956,10 +960,12 @@ public final class WorkflowService {
             tempBranchPath = createBranch(editionBranchPath, TEMP_BRANCH_NAME);
         }
 
+        final long start = System.currentTimeMillis();
         final String url =
                 SnowstormConnection.BASE_URL + "browser/" + tempBranchPath + "/" + "concepts/";
 
         logger.debug("getNewRefsetId URL: " + url);
+        logger.debug("getNewRefsetId URL Body: " + body.toString());
 
         try (final Response response = SnowstormConnection.postResponse(url, body.toString())) {
 
@@ -985,6 +991,7 @@ public final class WorkflowService {
             }
         }
 
+        logger.debug("New Refset ID " + refsetConceptId + ". Time: " + (System.currentTimeMillis() - start));
         return refsetConceptId;
     }
 
@@ -1104,12 +1111,12 @@ public final class WorkflowService {
 
         final List<String> allowedActions = new ArrayList<>();
         final String currentStatus = refset.getWorkflowStatus();
-
+        
         // Authors can start an edit cycle on Published refsets
         if (refset.getVersionStatus().equals(PUBLISHED)
                 && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
             allowedActions.add(EDIT);
-
+            
         } else if (currentStatus == null) {
             return allowedActions;
             
@@ -1176,5 +1183,20 @@ public final class WorkflowService {
         }
 
         return allowedActions;
+    }
+    
+
+    /**
+     * Test if a user can edit a refset.
+     *
+     * @param user the user
+     * @param refset the refset
+     * @throws Exception the exception
+     */
+    public static void canUserEditRefset(final User user, final Refset refset) throws Exception {
+        
+        if (!refset.getAvailableActions().contains(WorkflowService.FINISH_EDIT)) {
+            throw new Exception("Refset is not in the proper state or user does not have permission to edit.");
+        }
     }
 }

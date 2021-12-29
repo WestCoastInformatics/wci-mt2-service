@@ -10,14 +10,18 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
 import org.ihtsdo.refsetservice.model.User;
 //import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.LocalException;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * Reference implementation of the {@link SecurityService}.
@@ -71,10 +76,65 @@ public class SecurityService implements AutoCloseable {
         final Object object = getFromSession(SESSION_USER_OBJECT_KEY);
         
         if (object != null) {
+            
+            logger.debug("******** SESSION USER: " + ModelUtility.toJson(object));
             return (User) object;
         }
         
-        return new User("testUser", "Test User", "tuser@testuser.com", new HashSet<String>(Arrays.asList(User.ROLE_USER, User.ROLE_AUTHOR, User.ROLE_REVIEWER)));
+        // TODO - Find a better solution for unit tests
+        if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
+            
+            final User testUser = new User("unitTestUser", "Unit Test User", "", new HashSet<String>());
+            testUser.getRoles().add(User.ROLE_AUTHOR);
+            testUser.getRoles().add(User.ROLE_REVIEWER);
+            logger.debug("******** SESSION USER: " + ModelUtility.toJson(testUser));
+            return testUser;
+        }
+        
+        final User nonLoggedInUser = new User("nonLoggedInUser", "Non Logged In User", "", new HashSet<String>());
+        logger.debug("******** SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
+        
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+        
+        if (requestAttributes == null || requestAttributes.getRequest() == null ) {
+            return nonLoggedInUser;
+        }
+        
+        ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
+        
+        Cookie[] cookies = requestAttributes.getRequest().getCookies();
+        HttpServletResponse response = ((ServletRequestAttributes)requestAttributes).getResponse();
+        logger.debug("****************** cookies: " + ModelUtility.toJson(cookies));
+        logger.debug("****************** Builder Host: " + builder.build().toString());
+        logger.debug("****************** getServerName: " + requestAttributes.getRequest().getServerName());
+        logger.debug("****************** getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
+        
+        for (int i = 0; i < cookies.length ; i++) {
+            
+            if (cookies[i].getName().contains("ims-ihtsdo")) {
+                
+                logger.debug("****************** ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+                Cookie cookie = new Cookie(cookies[i].getName(), null);
+                cookie.setPath("/"); //cookies[i].getPath()
+                cookie.setDomain(".ihtsdotools.org"); //cookies[i].getDomain()
+                cookie.setHttpOnly(cookies[i].isHttpOnly());
+                cookie.setMaxAge(0);
+                response.addCookie(cookie);
+                break;
+                
+            } else if (cookies[i].getName().contains("rt2-auth")) {
+                
+                logger.debug("****************** rt2 auth cookie: " + ModelUtility.toJson(cookies[i]));
+                Cookie cookie = new Cookie(cookies[i].getName(), null);
+                cookie.setPath("/"); //cookies[i].getPath()
+                cookie.setDomain(cookies[i].getDomain()); //cookies[i].getDomain()
+                cookie.setHttpOnly(cookies[i].isHttpOnly());
+                cookie.setMaxAge(0);
+                response.addCookie(cookie);
+            }
+        } 
+        
+        return nonLoggedInUser;
         //return null;
     }
     
@@ -102,6 +162,30 @@ public class SecurityService implements AutoCloseable {
         Object object = session.getAttribute(attributeName);
         return object;
     }
+    
+    /**
+     * Remove the something from the session.
+     *
+     * @param attributeName the session attribute name
+     * @throws Exception the exception
+     */
+    public static void removeFromSession(final String attributeName) throws Exception {
+        
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+        
+        if (requestAttributes == null || requestAttributes.getRequest() == null ) {
+            return;
+        }
+        
+        final HttpSession session = requestAttributes.getRequest().getSession();
+        
+        if (session == null) {
+            return;
+        }
+        
+        session.removeAttribute(attributeName);
+    }
+    
 
 	/**
 	 * 
@@ -199,8 +283,10 @@ public class SecurityService implements AutoCloseable {
 	/* see superclass */
 	//@Override
 	public void logout(final String authToken) throws Exception {
+	    
 		tokenUsernameMap.remove(authToken);
 		tokenTimeoutMap.remove(authToken);
+		removeFromSession(SESSION_USER_OBJECT_KEY);
 	}
 
 	/* see superclass */

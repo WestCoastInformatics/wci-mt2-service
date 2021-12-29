@@ -21,6 +21,9 @@ public class SearchParameters {
 
     /** The offset. */
     private Integer offset;
+    
+    /** The searchAfter. */
+    private String searchAfter;
 
     /** The active only. */
     private Boolean activeOnly;
@@ -60,6 +63,7 @@ public class SearchParameters {
         query = other.getQuery();
         limit = other.getLimit();
         offset = other.getOffset();
+        searchAfter = other.getSearchAfter();
         activeOnly = other.getActiveOnly();
         sort = other.getSort();
         sortAscending = other.getSortAscending();
@@ -136,6 +140,24 @@ public class SearchParameters {
      */
     public void setOffset(final Integer offset) {
         this.offset = offset;
+    }
+    
+    /**
+     * The searchAfter
+     * 
+     * @param searchAfter
+     */
+    public String getSearchAfter() {
+        return searchAfter;
+    }
+
+    /**
+     * Sets the searchAfter
+     * 
+     * @param searchAfter
+     */
+    public void setSearchAfter(final String searchAfter) {
+        this.searchAfter = searchAfter;
     }
 
     /**
@@ -271,6 +293,16 @@ public class SearchParameters {
         } else if (!offset.equals(other.offset)) {
             return false;
         }
+        
+        if (searchAfter == null) {
+
+            if (other.searchAfter != null) {
+                return false;
+            }
+
+        } else if (!searchAfter.equals(other.searchAfter)) {
+            return false;
+        }
 
         if (terminology == null) {
 
@@ -309,6 +341,7 @@ public class SearchParameters {
         int result = 1;
         result = prime * result + ((limit == null) ? 0 : limit.hashCode());
         result = prime * result + ((offset == null) ? 0 : offset.hashCode());
+        result = prime * result + ((searchAfter == null) ? 0 : searchAfter.hashCode());
         result = prime * result + ((query == null) ? 0 : query.hashCode());
         result = prime * result + ((sort == null) ? 0 : sort.hashCode());
         result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());

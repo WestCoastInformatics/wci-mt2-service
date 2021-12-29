@@ -1,12 +1,13 @@
 package org.ihtsdo.refsetservice.handler;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 
 import javax.ws.rs.WebApplicationException;
 
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.service.SecurityServiceHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,33 +72,10 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode doc = mapper.readTree(password);
+            // ex: {"login": "jsmith", "password": null, "firstName": "John", "lastName": "Smith", "email": "", "langKey": null, "roles": ["ROLE_us-crs-requestor"]}
             final JsonNode userDoc = doc.get("userData");
 
-            logger.info("User     is {}", userName);
-            logger.info("Password is {}", password);
-            logger.info("JsonNode doc is {}", doc);
             logger.info("JsonNode userDoc {}", userDoc);
-
-            // e.g.
-            // {
-            // "login": "jsmith",
-            // "password": null,
-            // "firstName": "John",
-            // "lastName": "Smith",
-            // "email": "***REMOVED***",
-            // "langKey": null,
-            // "roles": [
-            // "ROLE_confluence-users",
-            // "ROLE_ihtsdo-ops-admin",
-            // "ROLE_ihtsdo-sca-author",
-            // "ROLE_ihtsdo-tba-author",
-            // "ROLE_ihtsdo-tech-group",
-            // "ROLE_ihtsdo-users",
-            // "ROLE_jira-developers",
-            // "ROLE_jira-users",
-            // "ROLE_mapping-dev-team"
-            // ]
-            // }
 
             // Construct user from document
             final User user = new User();
@@ -108,13 +86,13 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             user.setEmail(userDoc.get("email").asText());
             // user.getRoles().add(User.ROLE_USER);
 
-            final Iterator<JsonNode> iter = userDoc.get("roles").elements();
-
-            boolean isJesseLogin = false;
+            final Iterator<JsonNode> roleIterator = userDoc.get("roles").elements();
+            final List<String> wciUsers = Arrays.asList("jefron", "twhalen", "twilliams2", "wboeger", "ajones", "swhalen", "nmarques", "rwood", "dshapiro");
+            
             // boolean authorCredentialsMatched = false;
-            while (iter.hasNext()) {
+            while (roleIterator.hasNext()) {
 
-                JsonNode role = iter.next();
+                JsonNode role = roleIterator.next();
                 logger.debug("role: " + role.asText());
 
                 /*
@@ -131,36 +109,28 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                  * user.getRoles().add(User.ROLE_REVIEWER);
                  * authorCredentialsMatched = true; break; }
                  */
+                
                 if ("ROLE_us-crs-requestor".equals(role.asText())) {
 
-                    logger.debug(" Using Jesse's creds and making myself Authour & Reviewer");
-                    isJesseLogin = true;
+                    user.getRoles().add(User.ROLE_REVIEWER);
                     break;
                 }
-
             }
+            
+            // TODO - ONLY UNTIL IMS ROLES RESOVLED
             if (user.getUserName().equals("refset-dev")) {
-               user.getRoles().add(User.ROLE_AUTHOR);
+                
                user.getRoles().add(User.ROLE_REVIEWER);
-
-            } else if (isJesseLogin) {
+               
+            } else if (wciUsers.contains(user.getUserName())) {
                 user.getRoles().add(User.ROLE_AUTHOR);
-                // FOR ME TESTING
-
-                // authorCredentialsMatched = true;
             } else {
                 user.getRoles().add(User.ROLE_REVIEWER);
             }
 
-            /*
-             * if (!authorCredentialsMatched) { logger.
-             * debug(" Using anyone else's creds and making them Reviewer only"
-             * ); user.getRoles().add(User.ROLE_REVIEWER); }
-             */
-            user.getRoles().add(User.ROLE_REVIEWER);
             user.setModifiedBy(user.getUserName());
 
-            logger.debug("^^^^^^^^^^^^^^^^^^^^^ user is {}", user);
+            logger.debug("!!!!!!!!!!!!! user is: " + user);
             return user;
         }
     }

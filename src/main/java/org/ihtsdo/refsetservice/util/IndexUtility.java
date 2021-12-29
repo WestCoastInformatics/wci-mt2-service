@@ -701,8 +701,6 @@ public final class IndexUtility {
         SearchPredicateFactory predicateFactory = scope.predicate();
         SearchPredicate predicate;
 
-        logger.debug("    query = " + finalQuery + ", " + pfs);
-
         final Set<String> dateFieldNames = IndexUtility.getIndexedFieldNames(clazz, "date");
 
         // Directory indexmanager
@@ -733,8 +731,6 @@ public final class IndexUtility {
 
             if (hasDate) {
 
-                logger.debug("QUery has date(s) fields");
-
                 final String booleanQueryFormat = "{ \"bool\": { \"must\": [ #QUERY_STRING#, #DATE_RANGES# ] } }";
                 final String dateQueryFormat =
                         "{\"range\": {\"#DATE_FIELD_NAME#\": {\"gte\": \"#DATE#\",\"lte\": \"#DATE#\",\"format\": \"uuuu-MM-dd\"}}}";
@@ -764,7 +760,6 @@ public final class IndexUtility {
                 // Remove leading AND OR and clear out empty query_string
                 dateFreeQueryString = dateFreeQueryString.replace("() AND", "").replace("( AND", " (")
                         .replace("( OR", " (").replace("() OR", "");
-                logger.debug("Date free query string {}", dateFreeQueryString);
 
                 final String queryString =
                         "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""
@@ -772,14 +767,12 @@ public final class IndexUtility {
 
                 fullQueryString = booleanQueryFormat.replace("#QUERY_STRING#", queryString).replace("#DATE_RANGES#",
                         dateRangeQueryString.toString());
-                logger.debug("********* elasticsearch fullQueryString with dates: " + fullQueryString);
 
             } else {
 
                 fullQueryString =
                         "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""
                                 + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
-                logger.debug("********* elasticsearch fullQueryString: " + fullQueryString);
             }
 
             // Need to escape double-quotes for the json
@@ -815,12 +808,24 @@ public final class IndexUtility {
                     sortFieldNames.add(pfs.getSort());
                 }
 
-                for (final String sortFieldName : sortFieldNames) {
+                for (String sortFieldName : sortFieldNames) {
 
                     // the computed string name of the indexed field to sort by
                     String sortFieldStr = null;
+                    String sortDirection = null;
                     SearchSort searchSort;
 
+                    if (sortFieldName.contains(" asc")) {
+                        
+                        sortFieldName = sortFieldName.replace(" asc", "");
+                        sortDirection = "asc";
+                        
+                    } else if (sortFieldName.contains(" desc")) {
+                        
+                        sortFieldName = sortFieldName.replace(" desc", "");
+                        sortDirection = "desc";
+                    }
+                    
                     // if a subfield search (e.g. FIELD1.FIELD2) skip
                     // preconditions
                     if (sortFieldName.contains(".")) {
@@ -862,7 +867,13 @@ public final class IndexUtility {
                         }
                     }
 
-                    if (pfs.isAscending()) {
+                    if (sortDirection != null && sortDirection.equals("asc")) {
+                        searchSort = scope.sort().field(sortFieldStr).asc().toSort();
+                        
+                    } else if (sortDirection != null && sortDirection.equals("desc")){
+                        searchSort = scope.sort().field(sortFieldStr).desc().toSort();
+                        
+                    } else if (pfs.isAscending()) {
                         searchSort = scope.sort().field(sortFieldStr).asc().toSort();
                     } else {
                         searchSort = scope.sort().field(sortFieldStr).desc().toSort();
@@ -897,13 +908,15 @@ public final class IndexUtility {
                     }
                 })).toQuery();
 
+        logger.debug("###*********### ElasticSearch QueryString: " + searchQuery.queryString());
+        
         // if start index and max results are set, set paging
         if (pfs != null && pfs.getOffset() >= 0 && pfs.getLimit() >= 0) {
             result = searchQuery.fetch(pfs.getOffset(), pfs.getLimit());
         } else {
             result = searchQuery.fetch(0, 200000);
         }
-
+        
         return result;
     }
     
@@ -926,6 +939,9 @@ public final class IndexUtility {
         Set<String> stringFieldNames = IndexUtility.getIndexedFieldNames(clazz, "string");
         int matchIndexCounter = 0;
         
+        // remove specific fields that should not have wildcards applied
+        stringFieldNames.removeAll(Arrays.asList("editionShortName", "editionBranch"));
+        
         while (regexMatcher.find()) {
             
             // only add wildcards to String fields
@@ -933,6 +949,7 @@ public final class IndexUtility {
                 return regexMatcher.group(0).contains(field + ":");
             })) {
                 
+                logger.debug("******** WILDCARD MATCH: " + regexMatcher.group(0));
                 // if the end position of the match isn't the end of the string then append a wildcard between the match and the rest of the string
                 if (regexMatcher.end(1) < wildcardQuery.length() - 1) {
                     wildcardQuery = wildcardQuery.substring(0, regexMatcher.end(1) + matchIndexCounter) + "*" + wildcardQuery.substring(regexMatcher.end(1) + matchIndexCounter);
