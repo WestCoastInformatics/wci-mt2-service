@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.rest.test;
+package org.ihtsdo.refsetservice.rest.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -43,19 +43,22 @@ public class EditUnitTestUtilities {
 
     protected SimpleDateFormat sdf = null;
 
+    private String testingProjectId;
+
+    private String testingEditionId;
+
     private static final String TESTING_PARENT_CONCEPT = "446609009";
 
     private static final String TESTING_MODULE_ID = "900000000000207008";
 
-    protected static final String TESTING_PROJECT_NAME = "29eb9d8c-cf68-44e8-93ab-1aba2714fc88";
-
-    protected static final String TESTING_EDITION_NAME = "538b4d7c-cbd3-4ee4-b411-5bcbf0ad2afd";
-
     public EditUnitTestUtilities(final MockMvc mvc, final String baseUrl,
-            final SimpleDateFormat sdf) {
+            final SimpleDateFormat sdf, final String testingProjectId,
+            final String testingEditionId) {
         this.mvc = mvc;
         this.baseUrl = baseUrl;
         this.sdf = sdf;
+        this.testingProjectId = testingProjectId;
+        this.testingEditionId = testingEditionId;
     }
 
     public String createNewRefsetVersion(String refsetId) {
@@ -149,8 +152,8 @@ public class EditUnitTestUtilities {
         refsetNewConcept.put("name", "UnitTest New Extensional Refset for " + testName);
         refsetNewConcept.put("parentConceptId", TESTING_PARENT_CONCEPT);
         refsetNewConcept.put("moduleId", TESTING_MODULE_ID);
-        refsetNewConcept.put("editionId", TESTING_EDITION_NAME);
-        refsetNewConcept.put("projectId", TESTING_PROJECT_NAME);
+        refsetNewConcept.put("editionId", testingEditionId);
+        refsetNewConcept.put("projectId", testingProjectId);
         refsetNewConcept.put("narrative", "Narative for " + testName);
         refsetNewConcept.put("type", refsetType.toString());
         refsetNewConcept.put("privateRefset", "false");
@@ -172,12 +175,10 @@ public class EditUnitTestUtilities {
 
         if (refsetNewConcept.containsKey("ecl")) {
             refsetNewConceptBody.set("definitionClauses",
-                    new ObjectMapper().createArrayNode()
-                            .add(new ObjectMapper().createObjectNode().put("value",
-                                    refsetNewConcept.get("ecl"))
-                                    .put("negated", "false")));
+                    new ObjectMapper().createArrayNode().add(new ObjectMapper().createObjectNode()
+                            .put("value", refsetNewConcept.get("ecl")).put("negated", "false")));
         }
-        
+
         refsetNewConcept.put("body", refsetNewConceptBody.toString());
 
         return refsetNewConcept;

@@ -13,7 +13,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +20,7 @@ import java.util.Map;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
+import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -93,24 +93,30 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
             exportUtil = new ExportUnitTestUtilities(mvc);
         }
 
-        if (testingEditionId != null && testingEditionId.isEmpty()) {
+        objectMapper = new ObjectMapper();
+        JacksonTester.initFields(this, objectMapper);
+        baseUrl = "/refset";
 
-            objectMapper = new ObjectMapper();
-            JacksonTester.initFields(this, objectMapper);
-            baseUrl = "/refset";
-
-            try {
-                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
+        try {
+            if (testingProjectId == null) {
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
-
-            } catch (Exception e) {
-                e.printStackTrace();
+                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
+                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
+                        MAIN_TESTING_REFSET_VERSION);
             }
 
-            // Define the Source-Of-Truth (all role/state permutations including
-            // all possible outcomes
-            permissiblePaths = defineAllPermissiblePermutations();
+            if (editUtil == null) {
+                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT,
+                        testingProjectId, testingEditionId);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        // Define the Source-Of-Truth (all role/state permutations including
+        // all possible outcomes
+        permissiblePaths = defineAllPermissiblePermutations();
 
     }
 

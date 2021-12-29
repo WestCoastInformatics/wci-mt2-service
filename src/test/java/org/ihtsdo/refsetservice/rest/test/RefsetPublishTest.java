@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -44,19 +45,25 @@ public class RefsetPublishTest extends AbstractRefsetTests {
             exportUtil = new ExportUnitTestUtilities(mvc);
         }
 
-       if (testingEditionId != null && testingEditionId.isEmpty()) {
+        objectMapper = new ObjectMapper();
+        JacksonTester.initFields(this, objectMapper);
+        baseUrl = "/refset";
 
-            objectMapper = new ObjectMapper();
-            JacksonTester.initFields(this, objectMapper);
-            baseUrl = "/refset";
-
-            try {
-                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
+        try {
+            if (testingProjectId == null) {
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
-
-            } catch (Exception e) {
-                e.printStackTrace();
+                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
+                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
+                        MAIN_TESTING_REFSET_VERSION);
             }
+
+            if (editUtil == null) {
+                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT,
+                        testingProjectId, testingEditionId);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
     }

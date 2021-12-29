@@ -15,6 +15,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
+import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.RefsetConceptsType;
@@ -54,8 +55,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     // members
     // Resides with 101 members on wci-snowstorm, dev-integration, UAT, and
     // production
-    private static String mainTestingRefsetInternalId;
-
     private static final String GPS_REFSET_ID = "787778008";
 
     // With 2 parents, 6 children and 0 defing rels
@@ -134,6 +133,17 @@ public class RefsetControllerTests extends AbstractRefsetTests {
             baseUrl = "/refset";
 
             try {
+                if (testingProjectId == null) {
+                    testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
+                    testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
+                    mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
+                            MAIN_TESTING_REFSET_VERSION);
+                }    
+
+                if (editUtil == null) {
+                    editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
+                }
+
                 String exportFileDir =
                         PropertyUtility.getProperty("export.fileDir") + File.separator;
 

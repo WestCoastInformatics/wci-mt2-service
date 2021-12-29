@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -21,7 +22,6 @@ import org.springframework.boot.test.json.JacksonTester;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Integration tests for MetadataController.
@@ -32,8 +32,6 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetEditingTests.class);
 
-    private static String mainTestingRefsetInternalId;
-
     /**
      * Sets the up.
      */
@@ -42,24 +40,26 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         if (getUtil == null) {
             getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
             exportUtil = new ExportUnitTestUtilities(mvc);
-            editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
         }
 
-        if (testingEditionId != null && testingEditionId.isEmpty()) {
+        objectMapper = new ObjectMapper();
+        JacksonTester.initFields(this, objectMapper);
+        baseUrl = "/refset";
 
-            objectMapper = new ObjectMapper();
-            JacksonTester.initFields(this, objectMapper);
-            baseUrl = "/refset";
-
-            try {
-                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
+        try {
+            if (testingProjectId == null) {
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
+                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
                 mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
                         MAIN_TESTING_REFSET_VERSION);
-
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+
+            if (editUtil == null) {
+                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT,
+                        testingProjectId, testingEditionId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
     }
@@ -70,7 +70,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
-    public void testCreateFromListonNewRefsetConcept() throws Exception {
+    public void testCreateFromListOnNewRefsetConcept() throws Exception {
 
         // the data to create a refset from a list of Ids
         final String memberConceptIds = "53527002,226528004,404684003,260385009";
@@ -90,10 +90,10 @@ public class RefsetEditingTests extends AbstractRefsetTests {
      *
      * @throws Exception the exception
      */
-    @Test
+    // @Test
     // TODO: Handle existing vs new concept. Thus ensure others (such as test
     // above) is indeed on new concept. See below for initial pass in Summer.
-    public void testCreateFromListonExistingRefsetConcept() throws Exception {
+    public void testCreateFromListOnExistingRefsetConcept() throws Exception {
 
         // the data to create a refset from a list of Ids
         final String memberConceptIds = "53527002,226528004,404684003,260385009";
@@ -109,48 +109,46 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     }
 
     /**
-     * earlier createRefsetFromExisting test
-    public void testCreateRefsetFromExistingConcept() throws Exception {
-        // TODO: Review purpose
-        // the data to create a refset from an existing concept (but can't be a
-        // refset already in RT2)
-        final Map<String, String> refsetExistingConcept = new HashMap<>();
-        refsetExistingConcept.put("refsetId", "762103008");
-        refsetExistingConcept.put("name", "OWL ontology reference set");
-        refsetExistingConcept.put("parentConceptId", "446609009");
-        refsetExistingConcept.put("moduleId", "900000000000207008");
-        refsetExistingConcept.put("editionId", testingEditionId);
-        refsetExistingConcept.put("projectId", testingProjectId);
-        refsetExistingConcept.put("narrative", "Test.");
-        refsetExistingConcept.put("type", "EXTENSIONAL");
-        refsetExistingConcept.put("privateRefset", "false");
-        refsetExistingConcept.put("localSet", "false");
-        refsetExistingConcept.put("refsetDeleteStatus", "deleted");
-        // DO NOT LEAVE THIS UNCOMMENTED - for one test we will try to remove a
-        // member that has already been published
-        // refsetExistingConcept.put("additionalMemberIdsToRemove",
-        // "734147008");
+     * earlier createRefsetFromExisting test public void
+     * testCreateRefsetFromExistingConcept() throws Exception { // TODO: Review
+     * purpose // the data to create a refset from an existing concept (but
+     * can't be a // refset already in RT2) final Map<String, String>
+     * refsetExistingConcept = new HashMap<>();
+     * refsetExistingConcept.put("refsetId", "762103008");
+     * refsetExistingConcept.put("name", "OWL ontology reference set");
+     * refsetExistingConcept.put("parentConceptId", "446609009");
+     * refsetExistingConcept.put("moduleId", "900000000000207008");
+     * refsetExistingConcept.put("editionId", testingEditionId);
+     * refsetExistingConcept.put("projectId", testingProjectId);
+     * refsetExistingConcept.put("narrative", "Test.");
+     * refsetExistingConcept.put("type", "EXTENSIONAL");
+     * refsetExistingConcept.put("privateRefset", "false");
+     * refsetExistingConcept.put("localSet", "false");
+     * refsetExistingConcept.put("refsetDeleteStatus", "deleted"); // DO NOT
+     * LEAVE THIS UNCOMMENTED - for one test we will try to remove a // member
+     * that has already been published //
+     * refsetExistingConcept.put("additionalMemberIdsToRemove", // "734147008");
+     * 
+     * // prepare the call to create refset from an existing concept final
+     * ObjectNode refsetExistingConceptBody = new
+     * ObjectMapper().createObjectNode() .put("refsetId",
+     * refsetExistingConcept.get("refsetId")) .put("name",
+     * refsetExistingConcept.get("name")) .put("parentConceptId",
+     * refsetExistingConcept.get("parentConceptId")) .put("moduleId",
+     * refsetExistingConcept.get("moduleId")) .put("editionId",
+     * refsetExistingConcept.get("editionId")) .put("projectId",
+     * refsetExistingConcept.get("projectId")) .put("narrative",
+     * refsetExistingConcept.get("narrative")) .put("type",
+     * refsetExistingConcept.get("type")) .put("privateRefset",
+     * Boolean.parseBoolean(refsetExistingConcept.get("privateRefset")))
+     * .put("localSet",
+     * Boolean.parseBoolean(refsetExistingConcept.get("localSet")));
+     * 
+     * refsetExistingConcept.put("body", refsetExistingConceptBody.toString());
+     * 
+     * // TODO: Add execution }
+     */
 
-        // prepare the call to create refset from an existing concept
-        final ObjectNode refsetExistingConceptBody = new ObjectMapper().createObjectNode()
-                .put("refsetId", refsetExistingConcept.get("refsetId"))
-                .put("name", refsetExistingConcept.get("name"))
-                .put("parentConceptId", refsetExistingConcept.get("parentConceptId"))
-                .put("moduleId", refsetExistingConcept.get("moduleId"))
-                .put("editionId", refsetExistingConcept.get("editionId"))
-                .put("projectId", refsetExistingConcept.get("projectId"))
-                .put("narrative", refsetExistingConcept.get("narrative"))
-                .put("type", refsetExistingConcept.get("type"))
-                .put("privateRefset",
-                        Boolean.parseBoolean(refsetExistingConcept.get("privateRefset")))
-                .put("localSet", Boolean.parseBoolean(refsetExistingConcept.get("localSet")));
-
-        refsetExistingConcept.put("body", refsetExistingConceptBody.toString());
-
-        // TODO: Add execution
-    }
-*/
-    
     /**
      * Test creating a refset concept.
      *

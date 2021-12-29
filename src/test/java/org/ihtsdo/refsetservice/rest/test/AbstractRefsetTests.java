@@ -20,6 +20,7 @@ import java.util.TreeSet;
 
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.test.BaseTest;
@@ -49,9 +50,11 @@ abstract public class AbstractRefsetTests extends BaseTest {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(AbstractRefsetTests.class);
 
-    protected static String testingProjectId = "";
+    protected static String testingProjectId = null;
 
-    protected static String testingEditionId = "";
+    protected static String testingEditionId = null;
+
+    protected static String mainTestingRefsetInternalId = "";
 
     protected static final String SNOMED_ROOT = "138875005";
 
@@ -74,10 +77,6 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String MAIN_TESTING_REFSET_VERSION = "20200915";
 
-    protected static final String TESTING_PROJECT_NAME = "SNOMED International Project";
-
-    protected static final String TESTING_EDITION_NAME = "International Edition";
-
     protected static final String MEMBER_ID_LIST_FILE_NAME = "member_concept_id_list.txt";
 
     protected static final String MEMBER_ID_LIST_FILE_PATH = REFSET_FILE_PATH + MEMBER_ID_LIST_FILE_NAME;
@@ -85,6 +84,11 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected static final String MEMBER_ID_RF2_FILE_NAME = "member_concept_ids_rf2.txt";
 
     protected static final String MEMBER_ID_RF2_FILE = REFSET_FILE_PATH + MEMBER_ID_RF2_FILE_NAME;
+
+    protected static final String TESTING_PROJECT_NAME = "SNOMED International Project";
+
+    protected static final String TESTING_EDITION_NAME = "International Edition";
+
 
     /** The mvc. */
     @Autowired
