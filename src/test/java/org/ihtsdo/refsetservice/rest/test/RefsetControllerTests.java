@@ -119,7 +119,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         if (getUtil == null) {
             getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
             exportUtil = new ExportUnitTestUtilities(mvc);
-            workflowUtil = new WorkflowUnitTestUtilities(mvc);
+            workflowUtil = new WorkflowUnitTestUtilities(mvc, baseUrl, REFSET_FILE_PATH);
         }
 
         // skip @BeforeEach in testRttMigration
@@ -320,10 +320,10 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // by term id
         // by refset id
         // By narrative
-        // by tags
+        // by tags (with punctuation and reverse order)
         String searchTerms[] = new String[] {
                 "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005",
-                "999861000172117", "561000172108", "General / Allergies", "anim Belgian Edi"
+                "999861000172117", "561000172108", "General / Allergies", "Allergies General", "anim Belgian Edi"
         };
         for (int i = 0; i < searchTerms.length; i++) {
             logger.info("Testing term - " + searchTerms[i]);
@@ -455,8 +455,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         final Concept newRefsetConcept = identifyMemberFromList(newRefsetConcepts, GPS_REFSET_ID);
 
-        // TODO: uncomment out once ParentBug is fixed
-        // assertThat(newRefsetConcept).isNull();
+        // TODO-done: uncomment out once ParentBug is fixed
+        assertThat(newRefsetConcept).isNull();
     }
 
     /**
@@ -729,6 +729,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // ACTIVE_REFSET_MEMBER of an ACTIVE_REFSET
 
     }
+    
+
 
     // @Test
     // TODO: Fill out once have capability

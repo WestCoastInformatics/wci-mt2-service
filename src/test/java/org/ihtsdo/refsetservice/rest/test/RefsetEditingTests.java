@@ -41,7 +41,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         if (getUtil == null) {
             getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
             exportUtil = new ExportUnitTestUtilities(mvc);
-            workflowUtil = new WorkflowUnitTestUtilities(mvc);
+            workflowUtil = new WorkflowUnitTestUtilities(mvc, baseUrl, REFSET_FILE_PATH);
         }
 
         objectMapper = new ObjectMapper();

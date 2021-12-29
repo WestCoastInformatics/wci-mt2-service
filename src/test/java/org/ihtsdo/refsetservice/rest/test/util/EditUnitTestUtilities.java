@@ -1,6 +1,7 @@
 package org.ihtsdo.refsetservice.rest.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -84,9 +85,10 @@ public class EditUnitTestUtilities {
 
             assertThat(newVersionNode.has("refsetInternalId")).isTrue();
 
-            final String newRefsetInternalId = newVersionNode.get("refsetInternalId").asText();
-            assertThat(newRefsetInternalId).isNotNull();
-            return newRefsetInternalId;
+            final String newRefsetVersionInternalId =
+                    newVersionNode.get("refsetInternalId").asText();
+            assertThat(newRefsetVersionInternalId).isNotNull();
+            return newRefsetVersionInternalId;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -397,7 +399,9 @@ public class EditUnitTestUtilities {
         }
     }
 
-    public void deleteUnversionedRefset(String refsetInternalId, Map<String, String> refsetDetail) {
+    // TODO: Calling fucntions should just pass in value of this:
+    // refsetDetail.get("refsetDeleteStatus")
+    public void deleteUnversionedRefset(String refsetInternalId, String deleteStatus) {
         try {
             // delete the refset from a new concept
             if (refsetInternalId != null && !refsetInternalId.equals("")) {
@@ -410,11 +414,39 @@ public class EditUnitTestUtilities {
                 final JsonNode deleteNode = deleteRoot;
 
                 assertThat(deleteNode.has("status")).isTrue();
-                assertThat(deleteNode.get("status").asText()
-                        .equals(refsetDetail.get("refsetDeleteStatus"))).isTrue();
+                assertThat(deleteNode.get("status").asText().equals(deleteStatus)).isTrue();
             } else {
                 throw new Exception("Unable to identify refset to delete: " + refsetInternalId);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * deleteNewRefsetVerion
+     *
+     * @throws Exception the exception
+     */
+    public void deleteRefsetVersion(String refsetVersionInternalId) {
+
+        try (final TerminologyService service = new TerminologyService()) {
+            // DELETE NEW VERSION
+            final String deleteUrl = baseUrl + "/" + refsetVersionInternalId + "/editVersion";
+            final MvcResult deleteResult =
+                    mvc.perform(delete(deleteUrl)).andExpect(status().isOk()).andReturn();
+            final String deleteContent = deleteResult.getResponse().getContentAsString();
+            final JsonNode deleteRoot = new ObjectMapper().readTree(deleteContent);
+            final JsonNode deleteNode = deleteRoot;
+
+            assertTrue(deleteNode.has("status"));
+            assertTrue(deleteNode.get("status").asText().equals("deleted"));
+
+            // verify the original refset is back to the latest version
+
+            Refset refset = service.get(refsetVersionInternalId, Refset.class);
+            assertThat(refset).isNotNull();
+            assertTrue(refset.isLatestVersion());
         } catch (Exception e) {
             e.printStackTrace();
         }
