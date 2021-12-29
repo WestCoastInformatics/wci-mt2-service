@@ -84,7 +84,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
         editUtil.validateRefsetContents(refsetInternalId, 4);
         editUtil.removeRefsetContent(refsetInternalId, refsetConcept, membersNode);
-        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept);
+        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept.get("refsetDeleteStatus"));
     }
 
     /**
@@ -107,7 +107,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
         editUtil.validateRefsetContents(refsetInternalId, 4);
         editUtil.removeRefsetContent(refsetInternalId, refsetConcept, membersNode);
-        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept);
+        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept.get("refsetDeleteStatus"));
     }
 
     /**
@@ -167,7 +167,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
         editUtil.validateRefsetContents(refsetInternalId, 4);
         editUtil.removeRefsetContent(refsetInternalId, refsetConcept, membersNode);
-        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept);
+        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept.get("refsetDeleteStatus"));
     }
 
     /**
@@ -185,7 +185,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
         editUtil.validateRefsetContents(refsetInternalId, 4);
         editUtil.removeRefsetContent(refsetInternalId, refsetConcept, membersNode);
-        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept);
+        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept.get("refsetDeleteStatus"));
     }
 
     /**
@@ -205,7 +205,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
         editUtil.validateRefsetContents(refsetInternalId, 3);
         editUtil.removeRefsetContent(refsetInternalId, refsetConcept, membersNode);
-        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept);
+        editUtil.deleteUnversionedRefset(refsetInternalId, refsetConcept.get("refsetDeleteStatus"));
     }
 
     /**
