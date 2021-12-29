@@ -19,6 +19,7 @@ import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.RefsetConceptsType;
+import org.ihtsdo.refsetservice.rest.test.util.WorkflowUnitTestUtilities;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -118,6 +119,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         if (getUtil == null) {
             getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
             exportUtil = new ExportUnitTestUtilities(mvc);
+            workflowUtil = new WorkflowUnitTestUtilities(mvc);
         }
 
         // skip @BeforeEach in testRttMigration
@@ -126,74 +128,66 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         }
 
         // Setup Utility classes
-        if (mainTestingRefsetInternalId == null) {
+        objectMapper = new ObjectMapper();
+        JacksonTester.initFields(this, objectMapper);
+        baseUrl = "/refset";
 
-            objectMapper = new ObjectMapper();
-            JacksonTester.initFields(this, objectMapper);
-            baseUrl = "/refset";
-
-            try {
-                if (testingProjectId == null) {
-                    testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
-                    testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
-                    mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
-                            MAIN_TESTING_REFSET_VERSION);
-                }    
-
-                if (editUtil == null) {
-                    editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
-                }
-
-                String exportFileDir =
-                        PropertyUtility.getProperty("export.fileDir") + File.separator;
-
-                // Ensure have the export directory created on testing system
-                File f = new File(exportFileDir);
-                if (!f.exists()) {
-                    throw new Exception(
-                            "Tests with Export because the expected export directory doesn't exist: "
-                                    + exportFileDir);
-                }
-
-                mainTestingRefsetInternalId = getUtil
-                        .getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
-
-                inactiveRefsetInternalId = getUtil
-                        .getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
-
-                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
+        try {
+            if (testingProjectId == null) {
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
-
-                firstConceptDescList.add("Venom (substance)");
-                firstConceptDescList.add("Venom");
-                firstConceptDescList.add("venin");
-                firstConceptDescList.add("gif");
-
-                firstConceptParentDescList.add("Animal agent (substance)");
-                firstConceptParentDescList.add("Animal agent");
-                firstConceptParentDescList.add("produit animal");
-                firstConceptParentDescList.add("dierlijk product");
-
-                secondConceptDescList.add("Sheep wool (substance)");
-                secondConceptDescList.add("Sheep wool");
-                secondConceptDescList.add("schapenwol");
-                secondConceptDescList.add("laine de mouton");
-
-                inactiveConceptDescList.add("Entire sclerocorneal junction (body structure)");
-                inactiveConceptDescList.add("Entire sclerocorneal junction");
-
-                detailSearchNonAcceptableConceptDescList
-                        .add("Non-human hair - material (substance)");
-                detailSearchNonAcceptableConceptDescList.add("Animal hair");
-                detailSearchNonAcceptableConceptDescList.add("dierlijk haar");
-                detailSearchNonAcceptableConceptDescList.add("poil animal");
-
-                conceptSearchDescList.add("Brazilian pemphigus foliaceus");
-            } catch (Exception e) {
-                e.printStackTrace();
+                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
+                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
+                        MAIN_TESTING_REFSET_VERSION);
             }
-        }
 
+            if (editUtil == null) {
+                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT,
+                        testingProjectId, testingEditionId);
+            }
+
+            String exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
+
+            // Ensure have the export directory created on testing system
+            File f = new File(exportFileDir);
+            if (!f.exists()) {
+                throw new Exception(
+                        "Tests with Export because the expected export directory doesn't exist: "
+                                + exportFileDir);
+            }
+
+            mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
+                    MAIN_TESTING_REFSET_VERSION);
+
+            inactiveRefsetInternalId =
+                    getUtil.getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
+
+            firstConceptDescList.add("Venom (substance)");
+            firstConceptDescList.add("Venom");
+            firstConceptDescList.add("venin");
+            firstConceptDescList.add("gif");
+
+            firstConceptParentDescList.add("Animal agent (substance)");
+            firstConceptParentDescList.add("Animal agent");
+            firstConceptParentDescList.add("produit animal");
+            firstConceptParentDescList.add("dierlijk product");
+
+            secondConceptDescList.add("Sheep wool (substance)");
+            secondConceptDescList.add("Sheep wool");
+            secondConceptDescList.add("schapenwol");
+            secondConceptDescList.add("laine de mouton");
+
+            inactiveConceptDescList.add("Entire sclerocorneal junction (body structure)");
+            inactiveConceptDescList.add("Entire sclerocorneal junction");
+
+            detailSearchNonAcceptableConceptDescList.add("Non-human hair - material (substance)");
+            detailSearchNonAcceptableConceptDescList.add("Animal hair");
+            detailSearchNonAcceptableConceptDescList.add("dierlijk haar");
+            detailSearchNonAcceptableConceptDescList.add("poil animal");
+
+            conceptSearchDescList.add("Brazilian pemphigus foliaceus");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -296,7 +290,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         validateRefsetMetadata(refsetIdentified);
 
         // Test by alternate refset name (using translation)
-        refsetList = getUtil.searchDirectory("query=name:ensemble de référence simple belge pour les matières animales traduites");
+        refsetList = getUtil.searchDirectory(
+                "query=name:ensemble de référence simple belge pour les matières animales traduites");
         refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
@@ -415,8 +410,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testConceptDetails() throws Exception {
 
         // Test normal concept Details Call
-        Concept concept =
-                getUtil.getConceptDetails(FIRST_CONCEPT_ID, mainTestingRefsetInternalId);
+        Concept concept = getUtil.getConceptDetails(FIRST_CONCEPT_ID, mainTestingRefsetInternalId);
 
         // doesn't include membership status nor memberEffectiveTime
         validateConcept(concept, FIRST_CONCEPT_ID, null, false, firstConceptDescList, 0, 0, 0);
@@ -449,8 +443,9 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // call the api to get the refset concept list for refset parents
         final ConceptResultList existingRefsetConcepts =
                 getUtil.getRefsetConcepts(branch, RefsetConceptsType.ALL_REFSET_CONCEPTS);
-        
-        final Concept existingRefsetConcept = identifyMemberFromList(existingRefsetConcepts, GPS_REFSET_ID);
+
+        final Concept existingRefsetConcept =
+                identifyMemberFromList(existingRefsetConcepts, GPS_REFSET_ID);
         assertThat(existingRefsetConcept).isNotNull();
 
         // call the api to get the refset concept list for using as the
@@ -459,7 +454,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
                 getUtil.getRefsetConcepts(branch, RefsetConceptsType.NEW_REFSET_CONCEPTS);
 
         final Concept newRefsetConcept = identifyMemberFromList(newRefsetConcepts, GPS_REFSET_ID);
-        
+
         // TODO: uncomment out once ParentBug is fixed
         // assertThat(newRefsetConcept).isNull();
     }
@@ -497,8 +492,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         for (int i = 0; i < membersSearchQueryList.length; i++) {
 
-            final ConceptResultList members = getUtil.searchMembers(mainTestingRefsetInternalId,
-                    membersSearchQueryList[i]);
+            final ConceptResultList members =
+                    getUtil.searchMembers(mainTestingRefsetInternalId, membersSearchQueryList[i]);
             final Concept concept = identifyMemberFromList(members, DETAILS_SEARCH_CONCEPT_ID);
 
             // Doesn't include relationships
@@ -517,8 +512,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         for (int i = 0; i < membersSearchQueryList.length; i++) {
 
-            final ConceptResultList members = getUtil.searchTaxonomy(mainTestingRefsetInternalId,
-                    membersSearchQueryList[i]);
+            final ConceptResultList members =
+                    getUtil.searchTaxonomy(mainTestingRefsetInternalId, membersSearchQueryList[i]);
 
             final Concept concept = identifyMemberFromList(members, DETAILS_SEARCH_CONCEPT_ID);
 
@@ -543,14 +538,15 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         for (int i = 0; i < searchTerms.length; i++) {
 
-            final ConceptResultList members = getUtil.searchConcepts(mainTestingRefsetInternalId,
-                    membersSearchQueryList[i]);
+            final ConceptResultList members =
+                    getUtil.searchConcepts(mainTestingRefsetInternalId, membersSearchQueryList[i]);
 
             final Concept concept = identifyMemberFromList(members, DETAILS_SEARCH_CONCEPT_ID);
 
-            // Doesn't include membership status nor memberEffectiveTime nor descriptions
-            validateConcept(concept, DETAILS_SEARCH_CONCEPT_ID, null, false, new ArrayList<String>(),
-                    0, -1, 0);
+            // Doesn't include membership status nor memberEffectiveTime nor
+            // descriptions
+            validateConcept(concept, DETAILS_SEARCH_CONCEPT_ID, null, false,
+                    new ArrayList<String>(), 0, -1, 0);
         }
     }
 
@@ -643,8 +639,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testVersionsAcrossRefsets() throws Exception {
 
-        final String earlierInactiveRefsetInternalId = getUtil
-                .getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_EARLIER_VERSION);
+        final String earlierInactiveRefsetInternalId =
+                getUtil.getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_EARLIER_VERSION);
 
         /*
          * Testing across concept details
@@ -662,20 +658,23 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         /*
          * In List
          * 
-         * TODO: Uncomment once Tim updates timeout
-        ConceptResultList members = getterUtil.getMembers(earlierInactiveRefsetId);
-        Concept identifiedConcept = identifyMemberFromList(members, INACTIVE_CONCEPT_ID);
-        assertThat(identifiedConcept.isActive()).isTrue();
-
-        members = getterUtil.getMembers(inactiveConceptRefsetInternalId);
-        identifiedConcept = identifyMemberFromList(members, INACTIVE_CONCEPT_ID);
-        assertThat(identifiedConcept.isActive()).isFalse();
+         * TODO: Uncomment once Tim updates timeout ConceptResultList members =
+         * getterUtil.getMembers(earlierInactiveRefsetId); Concept
+         * identifiedConcept = identifyMemberFromList(members,
+         * INACTIVE_CONCEPT_ID);
+         * assertThat(identifiedConcept.isActive()).isTrue();
+         * 
+         * members = getterUtil.getMembers(inactiveConceptRefsetInternalId);
+         * identifiedConcept = identifyMemberFromList(members,
+         * INACTIVE_CONCEPT_ID);
+         * assertThat(identifiedConcept.isActive()).isFalse();
          */
 
         /*
          * In List Search
          */
-        ConceptResultList members = getUtil.searchMembers(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ID);
+        ConceptResultList members =
+                getUtil.searchMembers(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ID);
         Concept identifiedConcept = identifyMemberFromList(members, INACTIVE_CONCEPT_ID);
         assertThat(identifiedConcept.isActive()).isTrue();
 
@@ -793,8 +792,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
          * Concept Details - Test no failure when calling conceptDetails on
          * inactive concept
          */
-        url = "/concept/" + INACTIVE_CONCEPT_ID + "?refsetInternalId="
-                + inactiveRefsetInternalId;
+        url = "/concept/" + INACTIVE_CONCEPT_ID + "?refsetInternalId=" + inactiveRefsetInternalId;
         logger.info("Inactive Concept Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -873,8 +871,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // Taxonomy Search - Snowstorm does not allow searching for inactive
         // concepts, so should return zero results
 
-        url = "/refset/" + inactiveRefsetInternalId
-                + "/taxonomySearch?limit=500&offset=0&query=" + INACTIVE_CONCEPT_ID;
+        url = "/refset/" + inactiveRefsetInternalId + "/taxonomySearch?limit=500&offset=0&query="
+                + INACTIVE_CONCEPT_ID;
 
         logger.info("Testing term - " + INACTIVE_CONCEPT_ID);
         logger.info("Testing url - " + url);
@@ -899,16 +897,17 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testInvalids() throws Exception {
         // Test invalid refset used in getMembers is handled gracefully
         ConceptResultList members = null;
-        
+
         try {
             members = getUtil.getMembers(INVALID_INTERNAL_REFSET_ID);
-            
-            // Should never get here, so throw error if we get a non-null members
+
+            // Should never get here, so throw error if we get a non-null
+            // members
             assertThat(members).isNotNull();
         } catch (AssertionError e) {
-        assertThat(members).isNull();
+            assertThat(members).isNull();
         }
-        
+
         // Test bad root
         ConceptResultList children = null;
         try {
