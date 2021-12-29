@@ -257,7 +257,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
-    public void testProjectSearch() throws Exception {
+    public void testSearchProject() throws Exception {
 
         final ResultList<Project> resultList = getUtil.searchProjects();
 
@@ -270,7 +270,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
-    public void testDirectorySearch() throws Exception {
+    public void testSearchDirectory() throws Exception {
 
         ResultList<Refset> refsetList;
         Refset refsetIdentified;
@@ -282,6 +282,16 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // Test by partial name
         refsetList = getUtil.searchDirectory("query=name:ani");
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+        validateRefsetMetadata(refsetIdentified);
+
+        // Test by alternate refset name (using translation)
+        refsetList = getUtil.searchDirectory("query=name:ensemble de référence simple belge pour les matières animales traduites");
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+        validateRefsetMetadata(refsetIdentified);
+
+        // Test by partial alternate refset name (using translation)
+        refsetList = getUtil.searchDirectory("query=name:atière");
         refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
@@ -308,7 +318,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // by tags
         String searchTerms[] = new String[] {
                 "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005",
-                "999861000172117", "561000172108", "General", "anim Belgian Edi"
+                "999861000172117", "561000172108", "General / Allergies", "anim Belgian Edi"
         };
         for (int i = 0; i < searchTerms.length; i++) {
             logger.info("Testing term - " + searchTerms[i]);
@@ -473,7 +483,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
-    public void testMemberSearch() throws Exception {
+    public void testSearchMember() throws Exception {
 
         for (int i = 0; i < membersSearchQueryList.length; i++) {
 
@@ -493,7 +503,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
-    public void testTaxonomySearch() throws Exception {
+    public void testSearchTaxonomy() throws Exception {
 
         for (int i = 0; i < membersSearchQueryList.length; i++) {
 
@@ -515,7 +525,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     @Test
-    public void testConceptSearch() throws Exception {
+    public void testSearchConcept() throws Exception {
         String searchTerms[] = new String[] {
                 // TODO: Add more
                 "fogo"
