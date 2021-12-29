@@ -648,6 +648,8 @@ public class HistoricDataMigrator {
                         JsonNode codeSystem = codeSystems.next();
 
                         if (!codeSystem.has("name")) {
+                            logger.info("Skipping odd code system without a name'"
+                                    + codeSystem.asText());
                             continue;
                         }
 
@@ -705,7 +707,6 @@ public class HistoricDataMigrator {
                         String defaultLanguage = languages.next();
                         edition.setDefaultLanguageCode(defaultLanguage);
                         String orgDesc = null;
-
                         // Identify Code System Owner
                         if (codeSystem.has("owner")) {
                             editionOwnerMap.put(edition.getShortName(),
@@ -1142,7 +1143,6 @@ public class HistoricDataMigrator {
             setMetadata(org, meta);
 
             org = service.add(org);
-
             organizationsAdded.put(orgName, org);
 
             counts.incrementOrgsImportedCount();
