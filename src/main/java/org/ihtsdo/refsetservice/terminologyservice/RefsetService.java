@@ -1,6 +1,5 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,15 +28,12 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetEditHistory;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
-import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
-import org.ihtsdo.refsetservice.util.RefsetEditParameters;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -62,6 +58,9 @@ public class RefsetService {
     
     /** The refset to language map. */
     private static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
+    
+    /** The module Id of the SIMPLE_TYPE_REFERENCE_SET */ 
+    private static final String SIMPLE_TYPE_REFERENCE_SET_MODULE_ID = "900000000000012004";
     
     static {
 
@@ -1020,29 +1019,31 @@ public class RefsetService {
      * @throws Exception the exception
      */
     public static ConceptResultList getRefsetConcepts(final String branch, final boolean areParentConcepts) throws Exception {
-    
+
         final ConceptResultList results = new ConceptResultList();
         final Set<String> existingRefsetIds = new HashSet<>();
         final String ecl = StringUtility.encodeValue(QueryParserBase.escape("<<" + SIMPLE_TYPE_REFERENCE_SET));
-        final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000";
-        
+        final List<Edition> editions = getEditionForBranch(branch);
+        final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module="
+            + editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(",")) + "," + SIMPLE_TYPE_REFERENCE_SET_MODULE_ID;
+
         logger.debug("getRefsetConcepts URL: " + url);
-        
+
         if (!areParentConcepts) {
-            
+
             try (final TerminologyService service = new TerminologyService()) {
-                
+
                 // get all the existing refsets for latest branch version
-                final ResultList<Refset> refsets = service.find("active: true AND editionBranch: " + QueryParserBase.escape(branch) + " AND (latestVersion: true OR versionStatus: \"" + Refset.IN_DEVELOPMENT + "\")", null, Refset.class, null);
-                
+                final ResultList<Refset> refsets = service.find("latestVersion: true", null, Refset.class, null);
+
                 for (final Refset refset : refsets.getItems()) {
                     existingRefsetIds.add(refset.getRefsetId());
                 }
-                
+
                 logger.debug("getRefsetConcepts existingRefsetIds: " + existingRefsetIds);
             }
         }
-        
+
         // update the concept with the new data
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -1050,35 +1051,35 @@ public class RefsetService {
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                 throw new Exception("Unable to get refset concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
             }
-            
+
             final ObjectMapper mapper = new ObjectMapper();
             final String resultString = response.readEntity(String.class);
             final JsonNode root = mapper.readTree(resultString.toString());
             final Iterator<JsonNode> iterator = root.get("items").iterator();
-            
-            // loop thru the returned member details and inactivate it or add it to the list to delete    
+
+            // loop thru the returned member details and inactivate it or add it to the list to delete
             while (iterator != null && iterator.hasNext()) {
-                
+
                 final JsonNode conceptNode = iterator.next();
                 final Concept concept = new Concept();
                 final String conceptId = conceptNode.get("conceptId").asText();
-                
-                // if this isn't for a parent concept and the refset already exists then skip it 
+
+                // if this isn't for a parent concept and the refset already exists then skip it
                 if (!areParentConcepts && existingRefsetIds.contains(conceptId)) {
-                    continue;                    
+                    continue;
                 }
-                
+
                 concept.setCode(conceptId);
                 concept.setName(conceptNode.get("pt").get("term").asText());
                 concept.setTerminology("SNOMEDCT");
-                
+
                 results.getItems().add(concept);
             }
-            
+
             // sort the results
             Collections.sort(results.getItems(), (o1, o2) -> (o1.getName().compareTo(o2.getName())));
         }
-        
+
         return results;
     }
     
@@ -1838,5 +1839,26 @@ public class RefsetService {
      */
     public static Date getRefsetDateFromFormattedString(final String date) throws Exception {
         return DateUtility.getDateWithNoTime(date, DateUtility.DATE_FORMAT_REVERSE);
+    }
+    
+    
+    /**
+     * Fetch editions for given branch
+     * 
+     * @param branch the branch
+     * @return List <Edition> list of editions matching branch
+     * @throws Exception
+     */
+    private static List<Edition> getEditionForBranch(final String branch) throws Exception {
+
+        ResultList<Edition> editions = new ResultList<>();
+        try (TerminologyService service = new TerminologyService()) {
+            editions = service.find("active:true AND branch:" + QueryParserBase.escape(branch), null, Edition.class, null);
+        } catch (Exception e) {
+            logger.error("Error finding edition for branch {}", branch, e);
+            throw e;
+        }
+        return (editions != null) ? editions.getItems() : new ArrayList<Edition>();
+
     }
 }
