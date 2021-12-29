@@ -83,16 +83,16 @@ public class RefsetService {
      * Create a refset with the given parameters .
      *
      * @param user the user
-     * @param refsetEditParameters the paramters for creating the refset
+     * @param refsetParameters the paramters for creating the refset
      * @return the new refset's internal ID
      * @throws Exception the exception
      */
-    public static String createRefset(final User user, final Refset refsetEditParameters) throws Exception {
+    public static String createRefset(final User user, final Refset refsetParameters) throws Exception {
         
         String newInternalRefsetId = null;
-        String refsetConceptId = refsetEditParameters.getRefsetId();
-        String parentConceptId = refsetEditParameters.getParentConceptId();
-        String refsetId = refsetEditParameters.getRefsetId();
+        String refsetConceptId = refsetParameters.getRefsetId();
+        String parentConceptId = refsetParameters.getParentConceptId();
+        String refsetId = refsetParameters.getRefsetId();
         Edition edition = null;
         Project project = null;
         List<String> conceptIdList = new ArrayList<>();
@@ -105,20 +105,20 @@ public class RefsetService {
                 + "' is already used as a refset.";
             }
             
-            project = service.get(refsetEditParameters.getProjectId(), Project.class);
+            project = service.get(refsetParameters.getProjectId(), Project.class);
 
             if (project == null) {
-                throw new Exception("Project Id: " + refsetEditParameters.getProjectId()
+                throw new Exception("Project Id: " + refsetParameters.getProjectId()
                         + " does not exist in the RT2 database");
             }
             
             edition = project.getOrganization().getEdition();
         }
         
-        if (refsetEditParameters.getType().equals(Refset.INTENSIONAL)) {
+        if (refsetParameters.getType().equals(Refset.INTENSIONAL)) {
             
             try {
-                String ecl = getEclFromDefinition(refsetEditParameters.getDefinitionClauses());
+                String ecl = getEclFromDefinition(refsetParameters.getDefinitionClauses());
                 
                 // get the list of concepts from the ECL
                 conceptIdList = RefsetMemberService.getConceptIdsFromEcl(edition.getBranch(), ecl);
@@ -142,7 +142,7 @@ public class RefsetService {
         final String refsetBranch = WorkflowService.createRefsetBranch(edition.getBranch(), refsetConceptId);
         
         // if a new refset concept needs to be created
-        if (refsetEditParameters.getRefsetId() == null) {
+        if (refsetParameters.getRefsetId() == null) {
             
             // if null set the parent to "Simple Type Reference Set"
             if (parentConceptId == null) {
@@ -154,7 +154,7 @@ public class RefsetService {
             final ObjectNode descriptions = mapper.createObjectNode()
                     .set("descriptions", mapper.createArrayNode()
                             .add(mapper.createObjectNode()
-                                    .put("term", refsetEditParameters.getName())
+                                    .put("term", refsetParameters.getName())
                                     .put("typeId", "900000000000013009")
                                     .put("caseSignificance", "CASE_INSENSITIVE")
                                     .put("lang", "en")
@@ -164,7 +164,7 @@ public class RefsetService {
                                     )
                             )
                             .add(mapper.createObjectNode()
-                                    .put("term", refsetEditParameters.getName() + " (foundation metadata concept)")
+                                    .put("term", refsetParameters.getName() + " (foundation metadata concept)")
                                     .put("typeId", "900000000000003001")
                                     .put("caseSignificance", "CASE_INSENSITIVE")
                                     .put("lang", "en")
@@ -236,7 +236,7 @@ public class RefsetService {
             service.setModifiedBy("RT2");
             service.setModifiedFlag(true);
 
-            Refset refset = new Refset(refsetEditParameters);
+            Refset refset = new Refset(refsetParameters);
             refset.setRefsetId(refsetConceptId);
             refset.setLatestVersion(true);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
@@ -246,8 +246,8 @@ public class RefsetService {
             
             String originBranchPath = edition.getBranch();
             
-            if (refsetEditParameters.getVersionDate() != null) {
-                originBranchPath += "/" + getFormattedRefsetDate(refsetEditParameters.getVersionDate());
+            if (refsetParameters.getVersionDate() != null) {
+                originBranchPath += "/" + getFormattedRefsetDate(refsetParameters.getVersionDate());
             }
                     
             refset.setEditOriginBranchPath(edition.getBranch() + originBranchPath);
