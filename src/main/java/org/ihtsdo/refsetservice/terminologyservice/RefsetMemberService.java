@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -62,6 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -144,7 +146,7 @@ public class RefsetMemberService {
     private final static Map<String, Set<String>> refsetTreeNodeCache = new HashMap<>();
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
-    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 650;
+    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 386;
     
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
     private static final int URL_MAX_CHAR_LENGTH = 7500;
@@ -205,7 +207,7 @@ public class RefsetMemberService {
                 concepts = getMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
             }
 
-            logger.debug("******** getRefsetMembers results: " + ModelUtility.toJson(concepts));
+            //logger.debug("******** getRefsetMembers results: " + ModelUtility.toJson(concepts));
         }
 
         return concepts;
@@ -1954,8 +1956,7 @@ public class RefsetMemberService {
                 getConceptAncestors(refset, concepts.getItems());
             }
 
-            logger.debug(
-                    "******** prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
+            //logger.debug("******** prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
         }
 
         return concepts;
@@ -2104,7 +2105,7 @@ public class RefsetMemberService {
         final String encodedSpace = "%20";
 
         // Create Snowstorm URL
-        String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
+        String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset=0&limit=" + (ELASTICSEARCH_MAX_RECORD_LENGTH - 1);
 
         // if this search is for editing then get the concept leaf information
         if (searchParameters.isEditing()) {
@@ -2154,9 +2155,9 @@ public class RefsetMemberService {
         while (hasMorePages) {
    
             // Call Snowstorm
-            logger.debug("searchConcepts URL: " + url);
+            logger.debug("searchConcepts URL: " + url + searchAfter);
     
-            try (final Response response = SnowstormConnection.getResponse(url)) {
+            try (final Response response = SnowstormConnection.getResponse(url + searchAfter)) {
     
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                     throw new Exception(
@@ -2165,21 +2166,25 @@ public class RefsetMemberService {
     
                 final String resultString = response.readEntity(String.class);
                 final JsonNode root = mapper.readTree(resultString.toString());
+                JsonNode conceptNodeBatch = root.get("items");
                 
                 if (root.get("searchAfter") != null) {
-                    searchAfter = root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                }
+                
+                // if the search returned results set the total
+                if (conceptNodeBatch.size() > 0 && members.getTotal() == 0) {
+                    members.setTotal(root.get("total").asInt());
                 }
     
-                JsonNode allConceptNodes = root.get("items");
-    
-                if (allConceptNodes.size() + members.getItems().size() <= ELASTICSEARCH_MAX_RECORD_LENGTH) {
+                if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + members.getItems().size() >= members.getTotal()) {
                     hasMorePages = false;
                 }
     
-                if (allConceptNodes.size() != 0 && !allConceptNodes.get(0).has("error")) {
+                if (conceptNodeBatch.size() != 0 && !conceptNodeBatch.get(0).has("error")) {
     
-                    final Iterator<JsonNode> itemIterator = allConceptNodes.iterator();
-                    final ArrayList<Concept> returnConcepts = new ArrayList<>();
+                    final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
+                    final ArrayList<Concept> conceptBatch = new ArrayList<>();
     
                     // parse items to retrieve matching concepts
                     while (itemIterator.hasNext()) {
@@ -2208,16 +2213,13 @@ public class RefsetMemberService {
                         setConceptPermissions(concept);
                         concept.setMemberOfRefset(searchRefsetMembers);
                         processIntensionalDefinitionException(refset, concept);
-                        returnConcepts.add(concept);
+                        conceptBatch.add(concept);
                     }
     
-                    populateMembershipInformation(refset, returnConcepts);
-                    members.getItems().addAll(returnConcepts);
+                    populateMembershipInformation(refset, conceptBatch);
+                    members.getItems().addAll(conceptBatch);
                     
-                    // if the search returned results set the total
-                    if (allConceptNodes.size() > 0 && members.getTotal() == 0) {
-                        members.setTotal(root.get("total").asInt());
-                    }
+                    
                 }
                 
             } catch (Exception ex) {
@@ -2296,6 +2298,18 @@ public class RefsetMemberService {
 
         return descriptions;
     }
+    
+    public static <T> CompletableFuture<List<T>> allOf(List<CompletableFuture<T>> futuresList) {
+        
+        CompletableFuture<Void> allFuturesResult = CompletableFuture.allOf(futuresList.toArray(new CompletableFuture[futuresList.size()]));
+        
+        return allFuturesResult.thenApply( (value) -> {
+            
+            return futuresList.stream()
+                    .map(future -> future.join())
+                    .collect(Collectors.<T>toList());
+        });
+    }
 
     /**
      * Get the refset member concepts as a list.
@@ -2355,6 +2369,10 @@ public class RefsetMemberService {
 //                    currentList = getConceptsFromSnowstorm(url, refset, lookupParameters);
 //                }
 
+                int descriptionCallCount = 0;
+                final boolean doNotSearch = notSearching;
+                final List<CompletableFuture<String>> completableFutures = new ArrayList<>();
+                
                 // add the descriptions to the children concepts in batches
                 for (int i = 0; i < currentList.getItems().size(); i++) {
 
@@ -2366,19 +2384,39 @@ public class RefsetMemberService {
                         conceptsToProcess.add(concept);
 
                         if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == currentList.getItems().size() - 1) {
-
-                            populateAllLanguageDescriptions(refset, conceptsToProcess);
-
-                            // if this search is for editing then get the
-                            // concept leaf information
-                            if (notSearching && searchParameters.isEditing()) {
-                                populateConceptLeafStatus(refset, conceptsToProcess);
-                            }
-
+                            
+                            descriptionCallCount++;
+                            final List<Concept> threadConcepts = new ArrayList<Concept>(); //new ObjectMapper().readValue(ModelUtility.toJson(conceptsToProcess), (new TypeReference<List<Concept>>() {}));
+                            threadConcepts.addAll(conceptsToProcess);
+                            
+//                            CompletableFuture<String> completableFuture =  CompletableFuture.supplyAsync(() -> {
+//                                
+//                                try {
+                                    populateAllLanguageDescriptions(refset, threadConcepts);
+                                    
+    
+//                                    // if this search is for editing then get the
+//                                    // concept leaf information
+//                                    if (doNotSearch && searchParameters.isEditing()) {
+//                                        populateConceptLeafStatus(refset, threadConcepts);
+//                                    }
+//                                    
+//                                    return "true";
+//                                    } catch (Exception e) {
+//                                        throw new RuntimeException(e);
+//                                    }
+//                                
+//                            }).handle((s, t) -> s != null ? s : "Hello, Stranger!");
+//
+//                            completableFutures.add(completableFuture);
                             conceptsToProcess.clear();
                         }
                     }
                 }
+                
+                //allOf(completableFutures);
+                
+                logger.debug("####### getMemberList descriptionCallCount: " + descriptionCallCount);
 
                 // if the memberCache doesn't have this concept already add it
                 for (Concept concept : currentList.getItems()) {
