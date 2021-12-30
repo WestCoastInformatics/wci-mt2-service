@@ -381,7 +381,7 @@ public class HistoricDataMigrator {
             // Update refset from JSON. If JSON not available to the refset, it
             // means it resides exclusively on Snowstorm.
             if (rttRefsetIds.contains(refset.getRefsetId())) {
-                
+
                 /* Refset lived in RTT as well */
                 final String rttId = rttRefsetSctIdToRttIdMap.get(refset.getRefsetId());
                 final String refsetJsonString = rttIdToRefsetJsonMap.get(rttId);
@@ -400,9 +400,8 @@ public class HistoricDataMigrator {
                     }
                 }
 
-                // If has ECL clauses, add them to db & refset
+                // If has ECL clauses, create and associate with refset (but don't persist)
                 if (rttRefsetToClausesMap.containsKey(rttId)) {
-logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT");
                     for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
                         final DefinitionClause clause =
                                 ModelUtility.fromJson(clauseJson, DefinitionClause.class);
@@ -413,8 +412,6 @@ logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT
 
             } else {
                 /* Refsets in Snowstorm but not RTT */
-                logger.debug("Handling refset that lives on Snowstorm, but not in RTT: "
-                        + refset.getRefsetId());
                 // Defaults for type & narrative
                 refset.setType("EXTENSIONAL");
                 refset.setNarrative("None as refset lives on Snowstorm, but not in RTT");
@@ -550,16 +547,18 @@ logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT
                                     counts.incrementRefsetVersionPairsCounts();
 
                                     if (!uniqueRefsetIds.contains(refsetId)) {
-/*
-                                        logger.debug("Identifying refset (" + refsetId
-                                                + ") for first time in this version - "
-                                                + branchDateFormatter
-                                                        .format(refset.getVersionDate()));
-*/
+                                        /*
+                                         * logger.debug("Identifying refset (" +
+                                         * refsetId +
+                                         * ") for first time in this version - "
+                                         * + branchDateFormatter
+                                         * .format(refset.getVersionDate()));
+                                         */
                                         uniqueRefsetIds.add(refsetId);
                                         counts.incrementUniqueRefsetsCounts();
                                     } else {
-  //                                      logger.debug("Again seeing: " + refsetId);
+                                        // logger.debug("Again seeing: " +
+                                        // refsetId);
                                     }
                                 } catch (Exception e) {
                                     logger.error("Failed with message: " + e.getMessage()
@@ -753,6 +752,7 @@ logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT
 
     private void identifyTopLevelModule(Edition edition, JsonNode codeSystem,
         Set<String> internationalModules) throws Exception {
+
         if ("international edition".equals(edition.getName().toLowerCase())) {
             edition.setTopLevelModule(MODULE_ANCESTOR_CONCEPT_SCTID);
         } else {
@@ -762,7 +762,8 @@ logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT
             Set<String> editionModules = new HashSet<>();
             while (moduleIterator.hasNext()) {
                 JsonNode module = moduleIterator.next();
-                if (!internationalModules.contains(module.get("conceptId").asText())) {
+                if (!internationalModules.contains(module.get("conceptId").asText())
+                        && !module.get("moduleId").asText().equals("900000000000012004")) {
                     editionModules.add(module.get("conceptId").asText());
                 }
             }
@@ -770,8 +771,9 @@ logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT
             if (editionModules.size() == 0) {
                 // If no non-CORE modules found, use the default Module
                 edition.setTopLevelModule(MODULE_ANCESTOR_CONCEPT_SCTID);
-                logger.info("No dedicated modules identified for " + edition.getName() + ": "
-                        + editionModules.toString());
+                logger.debug("No dedicated modules identified for " + edition.getName() + ": "
+                        + editionModules.toString() + ", so adding default: "
+                        + MODULE_ANCESTOR_CONCEPT_SCTID);
             } else if (editionModules.size() == 1) {
                 // If only one non-CORE modules found, use it
                 edition.setTopLevelModule(editionModules.iterator().next());
@@ -784,6 +786,16 @@ logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT
                     if (children.contains(moduleId)) {
                         childrenModules.add(moduleId);
                     }
+                }
+
+                // TODO: Remove Hard coded solution for Netherlands
+                if (edition.getShortName().equals("SNOMEDCT-NL")) {
+                    childrenModules.remove("15561000146104"); // 15561000146104
+                                                              // - Represents
+                                                              // Patient
+                                                              // Friendly Terms
+                } else if (edition.getShortName().equals("SNOMEDCT-AU")) {
+                    childrenModules.add("32570231000036109");
                 }
 
                 if (childrenModules.size() == 0 || childrenModules.size() > 1) {
@@ -936,10 +948,9 @@ logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT
             final Map<String, Project> projectsAdded = new HashMap<>();
             int count = 0;
             int ignoreCounter = 0;
-            
-            logger.debug("444m: size of rttRefsetToClausesMap: " + rttRefsetToClausesMap.size());
-            for (Refset refset : snowstormRefsets) {
 
+            for (Refset refset : snowstormRefsets) {
+                String rttId = null;
                 final Edition edition = refsetEditions.get(refset.getRefsetId());
 
                 if (refsetsToIgnore.contains(refset.getRefsetId())) {
@@ -954,39 +965,24 @@ logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT
                      * Refset in RTT, so pull project, clauses, & Org data from
                      * there
                      */
-                    projectCount = processRefsetInRTT(refset, edition, refsetsAdded, projectsAdded,
+                    rttId = processRefsetInRTT(refset, edition, refsetsAdded, projectsAdded,
                             defaultEditionProjects, projectCount);
                 }
 
                 service.add(refset);
 
+                // If has ECL clauses, add them to db & refset
+                if (rttRefsetToClausesMap.containsKey(rttId)) {
+                    logger.debug("Adding clause from RttId '" + rttId);
+                    Set<DefinitionClause> clauses = addClause(rttId);
+                    refset.getDefinitionClauses().addAll(clauses);
+                    service.update(refset);
+                }
+
                 if (++count % 250 == 0) {
                     logger.info("Imported + " + count + " refsets thus far");
                 }
 
-            }
-
-            logger.debug("111A: Clauses");
-            logger.debug("111b with rttRefsetToClausesMap.size(): " + rttRefsetToClausesMap.size());
-            logger.debug("111Z with clausesRefsetMap.size(): " + clausesRefsetMap.size());
-            logger.debug("222A: Projects");
-            logger.debug("222Y with rttIdToRefsetJsonMap.size(): " + rttIdToRefsetJsonMap.size());
-            logger.debug("222Z with rttRefsetSctIdToRttIdMap.size(): "
-                    + rttRefsetSctIdToRttIdMap.size());
-            logger.debug("333A: Refses");
-            logger.debug(
-                    "333Z with rttIdToProjectsJsonMap.size(): " + rttIdToProjectsJsonMap.size());
-
-            
-            // Persist Clauses
-            for (DefinitionClause clause : clausesRefsetMap.keySet()) {
-                Refset refset = clausesRefsetMap.get(clause);
-logger.debug("555z: adding clause to refset: " + refset.getRefsetId());
-                final String rttId = rttRefsetSctIdToRttIdMap.get(refset.getRefsetId());
-                setMetadata(clause, metadataMap.get("refset-" + rttId));
-                service.add(clause);
-                refset.getDefinitionClauses().add(clause);
-                service.update(refset);
             }
 
             logger.info("Adding a dedicated UAT Training Project for each Organization");
@@ -1029,11 +1025,9 @@ logger.debug("555z: adding clause to refset: " + refset.getRefsetId());
         }
     }
 
-    private int processRefsetInRTT(Refset refset, Edition edition, Set<String> refsetsAdded,
+    private String processRefsetInRTT(Refset refset, Edition edition, Set<String> refsetsAdded,
         Map<String, Project> projectsAdded, Map<String, Project> defaultEditionProjects,
         int projectCount) throws Exception {
-        // TODO: Jesse - rttRefsetSctIdToRttIdMap will have multiple refsets
-        // associated with a single RefsetId
         final String rttId = rttRefsetSctIdToRttIdMap.get(refset.getRefsetId());
         final String projectId = rttIdToRttProjectIdMap.get(rttId);
 
@@ -1066,23 +1060,6 @@ logger.debug("555z: adding clause to refset: " + refset.getRefsetId());
             projectsAdded.put(rttProject.getName(), project);
         }
 
-        // If has ECL clauses, add them to db & refset
-        if (rttRefsetToClausesMap.containsKey(rttId)) {
-logger.debug("444a RttId '" + rttId + "' has clauses");
-            try (final TerminologyService service = new TerminologyService()) {
-                for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
-                    final DefinitionClause clause =
-                            ModelUtility.fromJson(clauseJson, DefinitionClause.class);
-
-                    setMetadata(clause, metadataMap.get("refset-" + rttId));
-                    service.add(clause);
-                    refset.getDefinitionClauses().add(clause);
-                }
-            } catch (Exception e) {
-                throw e;
-            }
-        }
-
         if (!refsetsAdded.contains(refset.getRefsetId())) {
             refsetsAdded.add(refset.getRefsetId());
             counts.incrementUniqueRttMetadataCount();
@@ -1092,7 +1069,7 @@ logger.debug("444a RttId '" + rttId + "' has clauses");
         counts.incrementRttMetadataCount();
         refset.setProject(projectsAdded.get(rttProject.getName()));
         setMetadata(refset, metadataMap.get("refset-" + rttId));
-        return 0;
+        return rttId;
     }
 
     private int processRefsetNotInRTT(Refset refset, Edition edition, Set<String> refsetsAdded,
@@ -1204,6 +1181,28 @@ logger.debug("444a RttId '" + rttId + "' has clauses");
             counts.incrementOrgsImportedCount();
 
             return org;
+        }
+    }
+
+    private Set<DefinitionClause> addClause(String rttId) throws Exception {
+
+        Set<DefinitionClause> refsetClauses = new HashSet<>();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+    
+            service.setModifiedBy("Migration");
+            service.setModifiedFlag(true);
+
+            for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
+                final DefinitionClause clause =
+                        ModelUtility.fromJson(clauseJson, DefinitionClause.class);
+                
+                setMetadata(clause, metadataMap.get("refset-" + rttId));
+                DefinitionClause persistedClause = service.add(clause);
+                refsetClauses.add(persistedClause);
+            }
+
+            return refsetClauses;
         }
     }
 
