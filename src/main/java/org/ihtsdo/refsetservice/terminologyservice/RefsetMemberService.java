@@ -1968,8 +1968,6 @@ public class RefsetMemberService {
                         populateAllLanguageDescriptions(refset, concepts.getItems());
                     }
                 }
-                
-                getConceptAncestors(refset, allConceptList);
             }
 
             //logger.debug("******** prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
@@ -2111,9 +2109,7 @@ public class RefsetMemberService {
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static ConceptResultList searchConcepts(final Refset refset,
-        final SearchParameters searchParameters, final boolean searchRefsetMembers)
-        throws MalformedURLException, Exception {
+    public static ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final boolean searchRefsetMembers) throws MalformedURLException, Exception {
 
         ConceptResultList members = new ConceptResultList();
         final ObjectMapper mapper = new ObjectMapper();
@@ -2189,8 +2185,10 @@ public class RefsetMemberService {
                 }
                 
                 // if the search returned results set the total
-                if (conceptNodeBatch.size() > 0 && members.getTotal() == 0) {
+                if (!members.isTotalKnown()) {
+                    
                     members.setTotal(root.get("total").asInt());
+                    members.setTotalKnown(true);
                 }
     
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + members.getItems().size() >= members.getTotal()) {
@@ -2234,14 +2232,11 @@ public class RefsetMemberService {
     
                     populateMembershipInformation(refset, conceptBatch);
                     members.getItems().addAll(conceptBatch);
-                    
-                    
                 }
                 
             } catch (Exception ex) {
 
-                logger.error(
-                        "searchConcepts Could not retrieve concepts matching term: " + ex.getMessage());
+                logger.error("searchConcepts Could not retrieve concepts matching term: " + ex.getMessage());
                 ex.printStackTrace();
             }
         }
@@ -2335,9 +2330,7 @@ public class RefsetMemberService {
      * @return the refset member concepts
      * @throws Exception the exception
      */
-    public static ConceptResultList getMemberList(final Refset refset,
-        final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
-        throws Exception {
+    public static ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters) throws Exception {
 
         // 2 Snowstorm calls: 1) Memberlist and 2) Descriptions
         ConceptResultList members = new ConceptResultList();

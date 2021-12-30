@@ -1861,4 +1861,34 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
+    
+    /**
+     * Returns the ancestor path concepts for a refset member.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param conceptId the ID of the member concept
+     * @return the concept with the ancestor path filled in
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}/ancestorConcepts", produces = "application/json")
+    public @ResponseBody Concept getMemberAncestorConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId) throws Exception {
+
+        try {
+
+            logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
+            final User user = SecurityService.getUserFromSession();
+            final Refset refset = RefsetService.getRefset(user, refsetInternalId);
+            final Concept concept = new Concept();
+            concept.setCode(conceptId);
+            
+            RefsetMemberService.getConceptAncestors(refset, Arrays.asList(concept));
+            
+            return concept;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
 }
