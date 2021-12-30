@@ -91,7 +91,6 @@ public class RefsetService {
         String newInternalRefsetId = null;
         String refsetConceptId = refsetEditParameters.getRefsetId();
         String parentConceptId = refsetEditParameters.getParentConceptId();
-        String refsetId = refsetEditParameters.getRefsetId();
         Edition edition = null;
         Project project = null;
         List<String> conceptIdList = new ArrayList<>();
@@ -99,8 +98,8 @@ public class RefsetService {
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
 
-            if (refsetId != null && doesRefsetExist(refsetId, null)) {
-                return "Error - Concept Id '" + refsetId
+            if (refsetConceptId != null && doesRefsetExist(refsetConceptId, null)) {
+                return "Error - Concept Id '" + refsetConceptId
                 + "' is already used as a refset.";
             }
             
@@ -270,6 +269,8 @@ public class RefsetService {
             // create an edit history entry based on the new refset version.
             createRefsetEditHistory(user, newInternalRefsetId);
             
+            RefsetMemberService.refsetsUpdatedMembers.put(newInternalRefsetId, new HashMap<>());
+
             if (refset.getType().equals(Refset.INTENSIONAL)) {
                 
                 // add the list of concepts as members to the refset

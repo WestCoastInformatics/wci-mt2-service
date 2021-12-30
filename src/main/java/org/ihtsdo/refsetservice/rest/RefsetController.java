@@ -489,11 +489,8 @@ public class RefsetController extends BaseController {
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
         
-        final String tempRefsetId = refsetParameters.getRefsetId();
-        RefsetMemberService.refsetsBeingUpdated.add(tempRefsetId);
-        RefsetMemberService.refsetsUpdatedMembers.put(tempRefsetId, new HashMap<>());
-        refsetParameters.setRefsetId(null);
-        
+        String newRefsetInternalId = null;
+
         try {
 
             logger.debug("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
@@ -505,6 +502,7 @@ public class RefsetController extends BaseController {
                 return "{\"error\": \"" + status + "\"}";
             }
 
+            newRefsetInternalId = status;
             return "{\"refsetInternalId\": \"" + status + "\"}";
 
         } catch (final Exception e) {
@@ -514,7 +512,7 @@ public class RefsetController extends BaseController {
         }
         
         finally {
-            RefsetMemberService.refsetsBeingUpdated.remove(tempRefsetId);
+            RefsetMemberService.refsetsBeingUpdated.remove(newRefsetInternalId);
         }
     }
     

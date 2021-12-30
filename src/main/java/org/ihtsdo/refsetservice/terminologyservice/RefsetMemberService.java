@@ -3444,6 +3444,10 @@ public class RefsetMemberService {
                 throw new Exception("Refset Internal Id: " + refsetInternalId
                         + " does not exist in the RT2 database");
             }
+            
+            if (conceptIds.size() == 0) {
+                return unaddedConcepts;
+            }
 
             final String refsetId = refset.getRefsetId();
 
@@ -3468,6 +3472,7 @@ public class RefsetMemberService {
                 
                 for (; searchIndex < conceptsToSearch.size(); searchIndex++) {
                     
+                    //logger.debug("addRefsetMembers searchIndex: " + searchIndex + " :: conceptsToSearch.size(): " + conceptsToSearch.size() + " :: conceptsToSearch.get(searchIndex): " + conceptsToSearch.get(searchIndex));
                     final String conceptId = conceptsToSearch.get(searchIndex);
                     final Map<String, String> status = new HashMap<>();
                     status.put("operation", "Added");
@@ -3732,6 +3737,10 @@ public class RefsetMemberService {
         List<String> unremovedConcepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
+        
+        if (conceptIds.isEmpty()) {
+            return unremovedConcepts;
+        }
 
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
