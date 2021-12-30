@@ -938,9 +938,6 @@ logger.debug("555a: refset id '" + refset.getRefsetId() + "' also resides in RTT
             int ignoreCounter = 0;
             
             logger.debug("444m: size of rttRefsetToClausesMap: " + rttRefsetToClausesMap.size());
-            for (String rttId : rttRefsetToClausesMap.keySet()) {
-                logger.debug("444n: " + rttId);
-            }
             for (Refset refset : snowstormRefsets) {
 
                 final Edition edition = refsetEditions.get(refset.getRefsetId());
@@ -1069,10 +1066,9 @@ logger.debug("555z: adding clause to refset: " + refset.getRefsetId());
             projectsAdded.put(rttProject.getName(), project);
         }
 
-logger.debug("444a does rttId '" + rttId + "' have any clauses?");
         // If has ECL clauses, add them to db & refset
         if (rttRefsetToClausesMap.containsKey(rttId)) {
-logger.debug("444b YES!!!");
+logger.debug("444a RttId '" + rttId + "' has clauses");
             try (final TerminologyService service = new TerminologyService()) {
                 for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
                     final DefinitionClause clause =
@@ -1148,7 +1144,7 @@ logger.debug("444b YES!!!");
     private String translateRttOrg(String name) {
         if (!debugRttOrgTranslations.contains(name)) {
             debugRttOrgTranslations.add(name);
-            logger.debug("First time seeing: " + name);
+            logger.debug("In 'translateRttOrg()' ... and First time seeing: " + name);
         }
 
         String shortName = null;
