@@ -315,7 +315,6 @@ refsets_id	negated	value
 12161064	0	"<< 195967001 |Asthma (disorder)|"
 12161066	0	"<<12738006 | Brain structure (body structure) |"
 12176123	0	"<63371000052103 | Address type (qualifier value) |"
-12210153	0	"<446609009 | Simple type reference set (foundation metadata concept) |"
 12260614	0	"<<736542009 | Pharmaceutical dose form (dose form) |"
 12278663	0	"<< 303315009 |Spider venom (substance)|"
 12278664	0	"<< 8230009 |Poultry (substance)|"
@@ -428,13 +427,12 @@ OR << 465982004 | Surgical hood (physical object) |"
 23914224	0	"<<367336001 OR <<788751009 OR <<234336002 OR <<86553008 OR <<76334006 OR <<108290001 OR <<312235007 OR <<265764009 OR <<313039003"
 23914226	0	"<<444077007 OR <<76978006 OR <<30662005 OR <<414464004 OR <<122435008 OR <<9718006 OR <<122433001 OR <<118147004 OR <<88667002 OR << 60170009 OR << 61911006 OR << 871555000 OR 
 << 871559006 OR << 871556004 OR << 871557008 OR << 871558003 OR << 871560001 OR << 1240461000000109 OR << 1240471000000102"
-23914227	0	"<<840535000 OR <<840536004 OR <<840533007 OR << 870361009 OR << 870362002 OR << 1240411000000107 OR <<1119343008"
-23914228	0	"<<1144997007 OR  <<1144998002 OR <<840534001 OR <<1119350007 OR <<409524006 OR <<422181004 OR <<449399005 OR <<386242000 OR <<225368008 OR <<409529001 OR <<409686004 OR <<449390009 OR <<122467006 OR <<77248004 OR <<370832005 OR <<361235007 OR <<170499009 OR <<170500000 OR <<40174006 OR <<225995005 OR <<275827007 OR <<38883000 OR <<29537000 OR <<736762004 OR <<409525007 OR <<410410006 OR <<409522005 OR <<409684001 OR <<409583003 OR <<243791004"
+23914227	0	"<<840535000 OR <<840536004 OR <<840533007 OR << 870361009 OR << 870362002 OR << 1240411000000107 OR <<1119343008 OR << 1155866009"
+23914228	0	"<<1157196000  OR <<1144997007 OR <<1157197009 OR <<1157108008 OR <<1144998002 OR << 1162646009 OR << 1156257007 OR << 1157107003 OR <<840534001 OR <<1119350007 OR << 1162645008  OR <<409524006 OR <<422181004 OR <<449399005 OR <<386242000 OR <<225368008 OR <<409529001 OR <<409686004 OR <<449390009 OR <<122467006 OR <<77248004 OR <<370832005 OR <<361235007 OR <<170499009 OR <<170500000 OR <<40174006 OR <<225995005 OR <<275827007 OR <<38883000 OR <<29537000 OR <<736762004 OR <<409525007 OR <<410410006 OR <<409522005 OR <<409684001 OR <<409583003 OR <<243791004"
 23914229	0	"<<698608004 OR <<385820004 OR << 736017006 OR << 223426009 OR 
 << 868263005"
 23914230	0	"<<183452005 OR <<305376003 OR <<305351004 OR <<305360007 OR <<32485007 OR <<417005 OR << 107724000 OR << 397821002 OR << 710112000 OR << 429202003"
-23914231	0	"<<40617009 OR <<233573008 OR <<447996002 OR <<243141005 OR <<428311008 OR <<371908008 OR <<371907003 OR <<11140008 OR << 229301009 OR << 431182000 OR << 697984004 OR 
-<< 829831000000100"
+23914231	0	"<<40617009 OR <<233573008 OR <<447996002 OR <<243141005 OR <<428311008 OR <<371908008 OR <<371907003 OR <<11140008 OR << 229301009 OR << 431182000 OR << 697984004 OR << 829831000000100 OR <<1156748002 OR <<1156747007"
 23914232	0	"<< 718447001 OR <<79031000119101 OR <<931000119107 OR <<444932008 OR <<763326004 OR <<419991009 OR <<405496006 OR <<22803001 OR <<718085007 OR <<128258000 OR << 371825009 OR << 371820004"
 23914244	0	"<< 21522001 OR << 84387000 OR << 131148009 OR << 29857009 OR << 43724002 OR << 9826008 OR << 49727002 OR << 62315008 OR << 3006004 OR << 267036007 OR << 271807003 OR << 84229001 OR << 103001002 OR << 386661006 OR << 25064002 OR << 66857006 OR << 248567008 OR << 57676002 OR << 79890006 OR << 44169009 OR << 36955009 OR << 30746006 OR << 367391008 OR << 68962001 OR << 68235000 OR << 64531003 OR << 422587007 OR << 162397003 OR << 38880002 OR << 91175000 OR << 46742003 OR << 282145008 OR << 422400008 OR << 56018004 OR << 3415004 OR << 82272006 OR <<• 23924001 OR << 44077006 OR << 26544005"
 23914245	0	"<<260373001 OR <<260415000 OR <<419984006 OR <<125154007 OR << 895231008 OR << 1240581000000104 OR << 1240591000000102 OR << 897035006 OR << 897034005"
@@ -802,21 +800,7 @@ R 405813007 |Procedure site - Direct (attribute)|=   <113091000 | Magnetic reson
 60063455	0	"<<  19829001 |Disorder of lung|  MINUS <<  301867009 |Edema of trunk|"
 60063456	0	"<< 19829001 |Disorder of lung| MINUS (<< 301867009 |Edema of trunk| OR 12240991000119102)"
 60063456	0	"<<12738006 | Brain structure (body structure) |"
-60159107	0	"<< 1142182006 OR
-<< 1142181004 OR
-<< 1142180003 OR
-<< 1145003007 OR
-<< 1145035007 OR
-<< 1145034006 OR
-<< 1145026000 OR
-<< 1145028004 OR
-<< 1145031003 OR
-<< 1145023008 OR
-<< 1145033000 OR
-<< 1145030002 OR
-<< 1145022003 OR
-<< 1145032005 OR
-<< 1145029007"
+60159107	0	"<< 1142182006 OR << 1142181004 OR << 1145003007 OR << 1145035007 OR << 1145034006 OR << 1145023008 OR << 1145033000 OR << 1145030002 OR << 1145022003 OR << 1145032005 OR << 1145029007 OR <<1157195001 OR <<1157106007 OR <<1162644007 OR <<1157198004 OR <<1157200005 OR <<1157199007 OR <<1157201009 OR <<1157113007 OR <<1157120000 OR <<1162648005 OR <<1162650002 OR <<1157110005 OR <<1157118003 OR <<1162647000 OR <<1162649002 OR <<1156270003 OR <<1156746003 OR <<1156256003 OR <<1156267002 OR <<1156265005"
 60159150	0	"<<716186003 |No known allergy (situation)|"
 62504511	0	"<<716186003 |No known allergy (situation)|"
 62796103	0	<<363346000
@@ -846,7 +830,6 @@ OR << 275887009 |Scaly scalp (finding)| )"
 64499660	0	"<< 73211009 |Diabetes mellitus| OR (< 64572001 |Disorder| : * = << 73211009 |Diabetes mellitus|)"
 64499661	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
 64499662	0	"<< 185823004 |Finding of skin texture|"
-64499662	0	"< 297971001 |Finding of sensation of skin (finding)|"
 64499664	0	"< 410720000: [0..0] 363698007 = *"
 64499669	0	"(< 185823004 |Finding of skin texture (finding)|: 363698007 = 39937001) MINUS (<< 366649008 OR << 297947008 OR 403197009 OR 274672009)"
 64525858	0	"<410720000 | Pain by sensation quality (finding)|"
@@ -868,7 +851,6 @@ OR << 275887009 |Scaly scalp (finding)| )"
 ( [0..0] 363698007 |Finding site| = * )"
 65008754	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
 65008756	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
-65010654	0	"< 410720000 : [0..0]363698007 |Finding site|=*"
 65010655	0	"((<185823004 |Finding of skin texture|:[0..0]363698007 |Finding site|=<20795001) MINUS <<366649008) MINUS <<297947008"
 65010657	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
 65010659	0	"< 185823004 |Finding of skin texture (finding)|"
@@ -993,3 +975,99 @@ OR << 275887009 |Scaly scalp (finding)| )"
 72391753	0	"<< 84757009 |Epilepsy|"
 72589654	0	"<< 414545008 |Ischemic heart disease|"
 72712155	0	"<<247441003 |Erythema (finding)|"
+73614803	0	"< 118733005"
+73614828	0	"<< 1142182006 OR
+<< 1142181004 OR
+<< 1142180003 OR
+<< 1145003007 OR
+<< 1145035007 OR
+<< 1145034006 OR
+<< 1145026000 OR
+<< 1145028004 OR
+<< 1145031003 OR
+<< 1145023008 OR
+<< 1145033000 OR
+<< 1145030002 OR
+<< 1145022003 OR
+<< 1145032005 OR
+<< 1145029007"
+73614829	0	"<< 1142182006 OR
+<< 1142181004 OR
+<< 1142180003 OR
+<< 1145003007 OR
+<< 1145035007 OR
+<< 1145034006 OR
+<< 1145026000 OR
+<< 1145028004 OR
+<< 1145031003 OR
+<< 1145023008 OR
+<< 1145033000 OR
+<< 1145030002 OR
+<< 1145022003 OR
+<< 1145032005 OR
+<< 1145029007"
+73614834	0	"<< 1142182006 OR << 1142181004 OR << 1145003007 OR << 1145035007 OR << 1145034006 OR << 1145031003 OR << 1145023008 OR << 1145033000 OR << 1145030002 OR << 1145022003 OR << 1145032005 OR << 1145029007"
+73747663	0	"<<716186003 |No known allergy (situation)|"
+74410404	0	<<2342007
+74410405	0	<<2342007
+74446153	0	"^ 816080008 |International Patient Summary| AND < 404684003 | Clinical finding |"
+74446154	0	"<< 50043002 | Disorder of respiratory system (disorder) |"
+74446154	0	"<<118669005 | Procedure on respiratory system (procedure) |"
+74446154	0	"<<183447000 | Admission to respiratory intensive care unit (procedure) |"
+74446154	0	"<<410205005 | Respiratory care assessment (procedure) |"
+74446154	0	"<<410207002 | Respiratory care management (procedure) |"
+74446154	0	"<<408501008 | Emergency hospital admission for chronic obstructive pulmonary disease (procedure) |"
+74446154	0	"<<410198006 | Respiratory function management (regime/therapy) |"
+74446154	0	"<<409523000 | Standard respiratory precautions (procedure) |"
+74446154	0	"<<183507005 | Non-urgent respiratory admission (procedure) |"
+74446154	0	"<<363021009 | Complication of respiratory therapy procedure (disorder) |"
+74446154	0	"<<23426006 | Measurement of respiratory function (procedure) |"
+74446155	0	"(<404684003 |Clinical finding (finding)|:*=<<122489005 |Urinary system structure (body structure)|) OR (<71388002 |Procedure (procedure)|:*=<<122489005 |Urinary system structure (body structure)|) OR (<<122489005 |Urinary system structure (body structure)|)"
+75277453	0	<<368208006
+77024206	0	"<<185823004 |Finding of skin texture (finding)|"
+77024212	0	"<<763087004 |Medicinal product categorized by therapeutic role (product)|"
+77271204	0	"^ 816080008 |International Patient Summary| AND < 404684003 | Clinical finding (finding) |"
+77271205	0	"<<418272005|Computed tomography angiography with contrast (procedure)|"
+77301963	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+77373553	0	"*: 733725009 |Has concentration strength numerator unit| = *"
+77373558	0	"< 410720000 | Pain by sensation quality (finding) |"
+78115554	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+79620954	0	<250373003
+79620955	0	<115671006
+79620956	0	<4422003
+79620957	0	<19830006
+79620962	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+79620963	0	"<<105590001 |substance (substance)|"
+79916153	0	"< 185823004 |Finding of skin texture (finding)|"
+79920403	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+79920404	0	"< 185823004 MINUS (297948003 OR 297947008 OR 366649008 OR 277797007 OR 271815000 OR 85345005 OR 248194004 OR 10360000 OR 248195003)"
+79934903	0	"< 284548004 |Hospital department|"
+79934904	0	"< 394658006 |Clinical specialty|"
+79938553	0	"< 410720000 | Pain by sensation quality (finding) | : [0..0] 363698007 |Finding site (attribute)| = *"
+79938554	0	"(< 185823004 MINUS (297948003 OR 297947008 OR 366649008 OR 277797007 OR 271815000 OR 85345005 OR 248194004 OR 10360000 OR 248195003))"
+79938555	0	"<185823004 | Finding of skin texture (finding) |  MINUS   ( <<  366649008 |Finding of thickness of skin (finding)| OR << 297947008 | Finding of consistency of skin (finding) | OR << 248194004 |Wrinkled face (finding)|)"
+80003107	0	"< 410720000 | Pain by sensation quality (finding) | MINUS (< 410720000 | Pain by sensation quality (finding) |: {363698007 |Finding site (attribute)|=*})"
+80003108	0	"< 185823004 |Finding of skin texture (finding)|"
+80003108	1	"<< 297947008 |Finding of consistency of skin (finding)|"
+80003108	1	"<< 366649008 |Finding of thickness of skin (finding)|"
+80003108	1	"<< 248194004 |Wrinkled face (finding)|"
+80003110	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+80003112	0	"< 185823004"
+80003116	0	"<410720000 |Pain by sensation quality (finding)| : [0..0] 363698007 |Finding site (attribute)|  = *"
+80003118	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+80003120	0	"< 387713003 |Surgical procedure (procedure)|: {<< 424226004 |Using device (attribute)| = << 86174004 |Laparoscope,device (physical object)|} AND { <<405813007 |sitio del procedimiento - directo (atributo)| = <<34707002 |estructura de la vía biliar (estructura corporal)|}"
+80098804	0	"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+80098807	0	"< 404684003 |clinical finding|: 363714003 |Interprets (attribute)| = <<364530004 |Skin texture (observable entity)|"
+80098807	1	"<<297947008 |Finding of consistency of skin (finding)|"
+80098807	1	"<<366649008 |Finding of thickness of skin (finding)|"
+80098807	1	"<<248194004 |Wrinkled face (finding)|"
+80098807	1	"<<275887009 |Scaly scalp (finding)|"
+80098808	0	"< 185823004 | Finding of skin texture (finding) |"
+80098810	0	"<410720000: 363698007 |Finding site (attribute)| !=*"
+80193803	0	"(<185823004 |Finding of skin texture| : 363698007 |Finding site| =  >>20795001 |Structure of skin region|) MINUS (<<297947008 |Finding of consistency of skin (finding)| OR <<366649008 |Finding of thickness of skin (finding)|)"
+80210555	0	"< 410720000 | Pain by sensation quality (finding) |"
+80210555	1	"<< 279001004 |Pain finding at anatomical site (finding)|"
+80210555	1	"<<55145008 | Stabbing pain |"
+80210556	1	"<< 366649008 |Finding of thickness of skin (finding)|"
+80210556	1	"<< 297947008 |Finding of consistency of skin (finding)|"
+80210556	0	"< 185823004 |Finding of skin texture (finding)| : 363698007 |Finding site (attribute)| != < 20795001 |Structure of skin region (body structure)|"
