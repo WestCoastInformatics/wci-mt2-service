@@ -743,19 +743,32 @@ public final class IndexUtility {
                         final int startPosition = finalQuery.indexOf(dateFieldName);
                         // 11 = : + number of characters in date (10)
                         final int endPosition = startPosition + dateFieldName.length() + 11;
-                        final String[] dateQuery = finalQuery.substring(startPosition, endPosition).split(":");
+                        final String dateSubString = finalQuery.substring(startPosition, endPosition);
+                        final String[] dateQuery = dateSubString.split(":");
 
-                        dateSegments.put(finalQuery.substring(startPosition, endPosition), dateQueryFormat
-                                .replace("#DATE_FIELD_NAME#", dateQuery[0]).replace("#DATE#", dateQuery[1]));
+                        dateSegments.put(dateSubString, dateQueryFormat.replace("#DATE_FIELD_NAME#", dateQuery[0]).replace("#DATE#", dateQuery[1]));
                     }
                 }
 
                 String dateFreeQueryString = finalQuery;
-                StringBuilder dateRangeQueryString = new StringBuilder();
+                String dateRangeQueryString = "";
+                
                 for (Map.Entry<String, String> dateSegment : dateSegments.entrySet()) {
-                    dateFreeQueryString = dateFreeQueryString.replace(dateSegment.getKey(), "");
-                    dateRangeQueryString.append(dateSegment.getValue());
+                    
+                    String joinString = "";
+                    
+                    if (dateFreeQueryString.contains(" AND " + dateSegment.getKey())) {
+                        joinString = " AND ";
+                        
+                    } else if (dateFreeQueryString.contains(" OR " + dateSegment.getKey())) {
+                        joinString = " OR ";
+                    }
+                    
+                    dateFreeQueryString = dateFreeQueryString.replace(joinString + dateSegment.getKey(), "");
+                    dateRangeQueryString += dateSegment.getValue() + " , ";
                 }
+                
+                dateRangeQueryString = StringUtils.removeEnd(dateRangeQueryString, " , ");
 
                 // Remove leading AND OR and clear out empty query_string
                 dateFreeQueryString = dateFreeQueryString.replace("() AND", "").replace("( AND", " (")
@@ -949,7 +962,7 @@ public final class IndexUtility {
                 return regexMatcher.group(0).contains(field + ":");
             })) {
                 
-                logger.debug("******** WILDCARD MATCH: " + regexMatcher.group(0));
+                logger.debug("******** WILDCARD MATCH: " + regexMatcher.group(1));
                 // if the end position of the match isn't the end of the string then append a wildcard between the match and the rest of the string
                 if (regexMatcher.end(1) < wildcardQuery.length() - 1) {
                     wildcardQuery = wildcardQuery.substring(0, regexMatcher.end(1) + matchIndexCounter) + "*" + wildcardQuery.substring(regexMatcher.end(1) + matchIndexCounter);

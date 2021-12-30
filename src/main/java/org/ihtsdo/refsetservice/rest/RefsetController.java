@@ -489,11 +489,8 @@ public class RefsetController extends BaseController {
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
         
-        final String tempRefsetId = refsetParameters.getRefsetId();
-        RefsetMemberService.refsetsBeingUpdated.add(tempRefsetId);
-        RefsetMemberService.refsetsUpdatedMembers.put(tempRefsetId, new HashMap<>());
-        refsetParameters.setRefsetId(null);
-        
+        String newRefsetInternalId = null;
+
         try {
 
             logger.debug("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
@@ -505,6 +502,7 @@ public class RefsetController extends BaseController {
                 return "{\"error\": \"" + status + "\"}";
             }
 
+            newRefsetInternalId = status;
             return "{\"refsetInternalId\": \"" + status + "\"}";
 
         } catch (final Exception e) {
@@ -514,7 +512,7 @@ public class RefsetController extends BaseController {
         }
         
         finally {
-            RefsetMemberService.refsetsBeingUpdated.remove(tempRefsetId);
+            RefsetMemberService.refsetsBeingUpdated.remove(newRefsetInternalId);
         }
     }
     
@@ -1854,6 +1852,36 @@ public class RefsetController extends BaseController {
             } else {
                 return "Not Cached";
             }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Returns the ancestor path concepts for a refset member.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param conceptId the ID of the member concept
+     * @return the concept with the ancestor path filled in
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}/ancestorConcepts", produces = "application/json")
+    public @ResponseBody Concept getMemberAncestorConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId) throws Exception {
+
+        try {
+
+            logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
+            final User user = SecurityService.getUserFromSession();
+            final Refset refset = RefsetService.getRefset(user, refsetInternalId);
+            final Concept concept = new Concept();
+            concept.setCode(conceptId);
+            
+            RefsetMemberService.getConceptAncestors(refset, Arrays.asList(concept));
+            
+            return concept;
 
         } catch (final Exception e) {
 

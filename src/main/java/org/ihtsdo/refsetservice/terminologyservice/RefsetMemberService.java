@@ -1749,12 +1749,15 @@ public class RefsetMemberService {
                 SnowstormConnection.BASE_URL + getBranchPath(refset) + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
 
         boolean firstTime = true;
+        
         for (Concept concept : conceptsToProcess) {
+            
             if (firstTime) {
                 firstTime = false;
             } else {
                 conceptIds.append(",");
             }
+            
             conceptIds.append(concept.getCode());
         }
 
@@ -1951,9 +1954,20 @@ public class RefsetMemberService {
             concepts = searchConcepts(refset, searchParameters, searchRefsetMembers);
 
             if (searchRefsetMembers) {
-
-                populateAllLanguageDescriptions(refset, concepts.getItems());
-                getConceptAncestors(refset, concepts.getItems());
+                
+                final List<Concept> allConceptList = concepts.getItems();
+                final List<Concept> conceptsToProcess = new ArrayList<>();
+                int i = 0;
+                
+                for (final Concept concept : allConceptList) {
+                    
+                    conceptsToProcess.add(concept);
+                    i++;
+                    
+                    if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == allConceptList.size() - 1) {
+                        populateAllLanguageDescriptions(refset, concepts.getItems());
+                    }
+                }
             }
 
             //logger.debug("******** prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
@@ -2095,9 +2109,7 @@ public class RefsetMemberService {
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static ConceptResultList searchConcepts(final Refset refset,
-        final SearchParameters searchParameters, final boolean searchRefsetMembers)
-        throws MalformedURLException, Exception {
+    public static ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final boolean searchRefsetMembers) throws MalformedURLException, Exception {
 
         ConceptResultList members = new ConceptResultList();
         final ObjectMapper mapper = new ObjectMapper();
@@ -2173,8 +2185,10 @@ public class RefsetMemberService {
                 }
                 
                 // if the search returned results set the total
-                if (conceptNodeBatch.size() > 0 && members.getTotal() == 0) {
+                if (!members.isTotalKnown()) {
+                    
                     members.setTotal(root.get("total").asInt());
+                    members.setTotalKnown(true);
                 }
     
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + members.getItems().size() >= members.getTotal()) {
@@ -2218,14 +2232,11 @@ public class RefsetMemberService {
     
                     populateMembershipInformation(refset, conceptBatch);
                     members.getItems().addAll(conceptBatch);
-                    
-                    
                 }
                 
             } catch (Exception ex) {
 
-                logger.error(
-                        "searchConcepts Could not retrieve concepts matching term: " + ex.getMessage());
+                logger.error("searchConcepts Could not retrieve concepts matching term: " + ex.getMessage());
                 ex.printStackTrace();
             }
         }
@@ -2319,9 +2330,7 @@ public class RefsetMemberService {
      * @return the refset member concepts
      * @throws Exception the exception
      */
-    public static ConceptResultList getMemberList(final Refset refset,
-        final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
-        throws Exception {
+    public static ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters) throws Exception {
 
         // 2 Snowstorm calls: 1) Memberlist and 2) Descriptions
         ConceptResultList members = new ConceptResultList();
@@ -3435,6 +3444,10 @@ public class RefsetMemberService {
                 throw new Exception("Refset Internal Id: " + refsetInternalId
                         + " does not exist in the RT2 database");
             }
+            
+            if (conceptIds.size() == 0) {
+                return unaddedConcepts;
+            }
 
             final String refsetId = refset.getRefsetId();
 
@@ -3446,6 +3459,7 @@ public class RefsetMemberService {
             final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", \"activeFilter\": true, ";
             final List<String> conceptsToSearch = new ArrayList<>(conceptIds);
             final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
+            final List<String> validatedConcepts = new ArrayList<>();
             boolean searchAgain = true;
             int searchIndex = 0;
             int loopNumber = 1;
@@ -3458,10 +3472,11 @@ public class RefsetMemberService {
                 
                 for (; searchIndex < conceptsToSearch.size(); searchIndex++) {
                     
+                    //logger.debug("addRefsetMembers searchIndex: " + searchIndex + " :: conceptsToSearch.size(): " + conceptsToSearch.size() + " :: conceptsToSearch.get(searchIndex): " + conceptsToSearch.get(searchIndex));
                     final String conceptId = conceptsToSearch.get(searchIndex);
                     final Map<String, String> status = new HashMap<>();
                     status.put("operation", "Added");
-                    status.put("status", "Success");
+                    status.put("status", "Failed");
                     conceptsStatus.put(conceptId, status);
                     bodyConceptIds += "\"" + conceptId + "\",";
                     
@@ -3473,12 +3488,13 @@ public class RefsetMemberService {
                     }
                 }
                 
+                logger.debug("addRefsetMembers searchIndex :: loopNumber :: batch size: " + searchIndex + " :: " + loopNumber + " :: " + (searchIndex / loopNumber));
                 bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
                 
                 final String memberSearchBody = bodyBase + bodyConceptIds + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\"}";
                 Iterator<JsonNode> iterator = null;
                 
-                logger.debug("addRefsetMembers member search body: " + memberSearchBody);
+                //logger.debug("addRefsetMembers member search body: " + memberSearchBody);
                 
                 try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
 
@@ -3498,6 +3514,11 @@ public class RefsetMemberService {
                         final JsonNode conceptNode = iterator.next();
                         final String conceptId = conceptNode.get("conceptId").asText();
                         conceptIds.remove(conceptId);
+                        
+                        final Map<String, String> status = new HashMap<>();
+                        status.put("operation", "Added");
+                        status.put("status", "Already Member");
+                        conceptsStatus.put(conceptId, status);
                     }
                 }
                 
@@ -3505,7 +3526,7 @@ public class RefsetMemberService {
                 if (conceptIds.size() > 0) {
                     
                     final String conceptVerificationBody = bodyBase + bodyConceptIds + "}";
-                    logger.debug("addRefsetMembers bulk verification body: " + conceptVerificationBody);
+                    //logger.debug("addRefsetMembers bulk verification body: " + conceptVerificationBody);
                     
                     try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, conceptVerificationBody)) {
                         
@@ -3518,38 +3539,44 @@ public class RefsetMemberService {
                         
                         final JsonNode root = mapper.readTree(resultString.toString());
                         iterator = root.get("items").iterator();
-                        final List<String> validatedConcepts = new ArrayList<>();
                         
                         while (iterator != null && iterator.hasNext()) {
 
                             final JsonNode conceptNode = iterator.next();
                             final String conceptId = conceptNode.get("conceptId").asText();
                             validatedConcepts.add(conceptId);
+                            
+                            final Map<String, String> status = new HashMap<>();
+                            status.put("operation", "Added");
+                            status.put("status", "Success");
+                            conceptsStatus.put(conceptId, status);
                         }
-                        
-                        // gather any input concept not in the validated list 
-                        final List<String> invalidConcepts = conceptIds.stream()
-                            .filter((inputConceptId) -> { 
-                                
-                                boolean found = validatedConcepts.contains(inputConceptId);
-                                
-                                if (found) {
-                                    return false;
-                                } else {
-                                    
-                                    logger.debug("The ID " + inputConceptId + " is not a valid concept.");
-                                    return true;
-                                }
-                            })
-                            .collect(Collectors.toList());
-                        
-                        logger.debug("********* invalidConcepts: " + invalidConcepts);
-                        unaddedConcepts.addAll(invalidConcepts);
-                        conceptIds.removeAll(invalidConcepts);
                     }
                 }
             }
-             
+            
+            // gather any input concept not in the validated list 
+            final List<String> invalidConcepts = conceptIds.stream()
+                .filter((inputConceptId) -> { 
+                    
+                    boolean found = validatedConcepts.contains(inputConceptId);
+                    
+                    if (found) {
+                        return false;
+                    } else {
+                        
+                        logger.debug("The ID " + inputConceptId + " is not a valid concept.");
+                        return true;
+                    }
+                })
+                .collect(Collectors.toList());
+            
+            logger.debug("********* invalidConcepts: " + invalidConcepts);
+            unaddedConcepts.addAll(invalidConcepts);
+            conceptIds.removeAll(invalidConcepts);
+            
+            logger.debug("addRefsetMembers about to add concept size: " + conceptIds.size());
+            
             if (conceptIds.size() == 1) {
                 unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0)));
             } else {
@@ -3710,6 +3737,10 @@ public class RefsetMemberService {
         List<String> unremovedConcepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
+        
+        if (conceptIds.isEmpty()) {
+            return unremovedConcepts;
+        }
 
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
@@ -3743,7 +3774,7 @@ public class RefsetMemberService {
                     final String conceptId = conceptsToSearch.get(searchIndex);
                     final Map<String, String> status = new HashMap<>();
                     status.put("operation", "Removed");
-                    status.put("status", "Success");
+                    status.put("status", "Failed");
                     conceptsStatus.put(conceptId, status);
                     bodyConceptIds += conceptId + ",";
                     
@@ -3803,6 +3834,11 @@ public class RefsetMemberService {
                         
                         memberUpdateArray.add(memberBody);
                     }
+                    
+                    final Map<String, String> status = new HashMap<>();
+                    status.put("operation", "Removed");
+                    status.put("status", "Success");
+                    conceptsStatus.put(conceptNode.get("conceptId").asText(), status);
                 }
             }
             
@@ -3990,7 +4026,7 @@ public class RefsetMemberService {
             logger.debug("getConceptIdsFromEcl URL: " + url + searchAfter);
 
             // update the concept with the new data
-            try (final Response response = SnowstormConnection.getResponse(url)) {
+            try (final Response response = SnowstormConnection.getResponse(url + searchAfter)) {
 
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -4005,6 +4041,20 @@ public class RefsetMemberService {
                 final Iterator<JsonNode> iterator = items.iterator();
                 totalReturned += items.size();
                 
+                if (total == 0) {
+                    total = root.get("total").asInt();
+                }
+                
+                logger.debug("getConceptIdsFromEcl total: " + total);
+                logger.debug("getConceptIdsFromEcl totalReturned: " + totalReturned);
+                logger.debug("getConceptIdsFromEcl concepts.size(): " + concepts.size());
+
+                if (totalReturned == 0 || totalReturned >= total) {
+                    keepSearching = false;
+                } else {
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                }
+                
                 logger.debug("getConceptIdsFromEcl totalReturned so far: " + totalReturned);
 
                 // loop thru the returned concepts add them to the list
@@ -4018,18 +4068,6 @@ public class RefsetMemberService {
                     }
 
                     concepts.add(conceptId);
-                }
-
-                if (total == 0) {
-                    
-                    keepSearching = false;
-                    total = root.get("total").asInt();
-                }
-
-                if (total <= ELASTICSEARCH_MAX_RECORD_LENGTH || totalReturned == total || root.get("searchAfter") == null) {
-                    keepSearching = false;
-                } else {
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
                 }
             }
         }
