@@ -264,7 +264,7 @@ public class RefsetService {
             
             // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
             WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, refset, "");
-            refset = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, refset, "", WorkflowService.IN_EDIT);
+            refset = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, refset, "", WorkflowService.IN_EDIT, user.getUserName());
             
             // create an edit history entry based on the new refset version.
             createRefsetEditHistory(user, newInternalRefsetId);
@@ -1225,7 +1225,7 @@ public class RefsetService {
             if (query != null && !query.equals("")) {
 
                 final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
-                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset", "editionShortName");
+                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset", "editionShortName", "assignedUser");
                 String[] queryParts = query.split(" AND ");
                 String filterQuery = "";
                 String termQuery = "";
@@ -1466,7 +1466,7 @@ public class RefsetService {
             
             // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
             WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, newRefsetVersion, "");
-            newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT);
+            newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT, user.getUserName());
             
             // create an edit history entry based on the new refset version.
             createRefsetEditHistory(user, newInternalRefsetId);
@@ -1674,11 +1674,6 @@ public class RefsetService {
         
         // Edit permissions
         if (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-            
-            // set the assigned user for the refset if it is being edited or reviewed
-            if (Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_REVIEW).contains(refset.getWorkflowStatus())) {
-                refset.setAssignedUser(WorkflowService.getAssignedUserName(refset));
-            }
                 
             final List<String> allowedStatuses = WorkflowService.getAllowedStatuses(user, refset);
             

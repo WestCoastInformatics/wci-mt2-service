@@ -107,7 +107,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     private boolean latestVersion;
 
     /** The assigned user. */
-    @Transient
+    @Column(nullable = true)
     private String assignedUser;
     
     /** The flag for if a user can download this refset. */
@@ -1000,7 +1000,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the assigned user
      */
-    @JsonGetter()
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "assignedUserSort", searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
     public String getAssignedUser() {
         return assignedUser;
     }

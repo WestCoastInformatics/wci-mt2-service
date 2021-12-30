@@ -300,15 +300,16 @@ public final class WorkflowService {
      * @param refset the refset
      * @param notes the workflow status notes
      * @param nextStatus the new workflow status
+     * @param assignedUser the user the refset is assigned to, or null
      * @return the updated refset
      * @throws Exception the exception
      */
     public static Refset setWorkflowStatus(final User user, final String action,
-        final Refset refset, final String notes, final String nextStatus) throws Exception {
+        final Refset refset, final String notes, final String nextStatus, final String assignedUser) throws Exception {
 
         if (WorkflowService.getAllowedActions(user, refset).contains(action)) {
 
-            final Refset updatedRefset = setRefsetWorkflowStatus(user, refset, nextStatus);
+            final Refset updatedRefset = setRefsetWorkflowStatus(user, refset, nextStatus, assignedUser);
             addWorkflowHistory(user, action, refset, notes);
             return updatedRefset;
         } else {
@@ -343,6 +344,7 @@ public final class WorkflowService {
         logger.debug("WORKFLOW_PERMUTATIONS: " + ModelUtility.toJson(WORKFLOW_PERMUTATIONS));
         
         String nextStatus = null;
+        String assignedUser = null;
         
         // loop thru the roles to find a match for the action and current status. !! This only works if any multiple matches between role, current status, and action go to the same next status !! 
         for (final String role: roles) {
@@ -360,8 +362,12 @@ public final class WorkflowService {
             }
         }
         
+        if (Arrays.asList(EDIT, REVIEW).contains(action)) {
+            assignedUser = user.getUserName();
+        }
+        
         logger.debug("currentStatus: " + currentStatus + " ; nextStatus: " + nextStatus);
-        final Refset updatedRefset = setWorkflowStatus(user, action, refset, notes, nextStatus);
+        final Refset updatedRefset = setWorkflowStatus(user, action, refset, notes, nextStatus, assignedUser);
 
         // if edits have just been completed then merge the edit branch into the
         // refset branch and delete the edit branch
@@ -418,11 +424,12 @@ public final class WorkflowService {
      * @param user the user
      * @param refset the refset
      * @param status the new workflow status
+     * @param assignedUser the user the refset is assigned to, or null
      * @return the updated refset
      * @throws Exception the exception
      */
     public static Refset setRefsetWorkflowStatus(final User user, final Refset refset,
-        final String status) throws Exception {
+        final String status, final String assignedUser) throws Exception {
 
         final long start = System.currentTimeMillis();
         
@@ -432,6 +439,7 @@ public final class WorkflowService {
             service.setModifiedFlag(true);
 
             refset.setWorkflowStatus(status);
+            refset.setAssignedUser(assignedUser);
 
             // Published is the final status so set the version information
             if (status.equals(PUBLISHED)) {
