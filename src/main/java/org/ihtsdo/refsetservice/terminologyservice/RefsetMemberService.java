@@ -3471,7 +3471,7 @@ public class RefsetMemberService {
                     final String conceptId = conceptsToSearch.get(searchIndex);
                     final Map<String, String> status = new HashMap<>();
                     status.put("operation", "Added");
-                    status.put("status", "Success");
+                    status.put("status", "Failed");
                     conceptsStatus.put(conceptId, status);
                     bodyConceptIds += "\"" + conceptId + "\",";
                     
@@ -3509,6 +3509,11 @@ public class RefsetMemberService {
                         final JsonNode conceptNode = iterator.next();
                         final String conceptId = conceptNode.get("conceptId").asText();
                         conceptIds.remove(conceptId);
+                        
+                        final Map<String, String> status = new HashMap<>();
+                        status.put("operation", "Added");
+                        status.put("status", "Already Member");
+                        conceptsStatus.put(conceptId, status);
                     }
                 }
                 
@@ -3535,6 +3540,11 @@ public class RefsetMemberService {
                             final JsonNode conceptNode = iterator.next();
                             final String conceptId = conceptNode.get("conceptId").asText();
                             validatedConcepts.add(conceptId);
+                            
+                            final Map<String, String> status = new HashMap<>();
+                            status.put("operation", "Added");
+                            status.put("status", "Success");
+                            conceptsStatus.put(conceptId, status);
                         }
                     }
                 }
@@ -3755,7 +3765,7 @@ public class RefsetMemberService {
                     final String conceptId = conceptsToSearch.get(searchIndex);
                     final Map<String, String> status = new HashMap<>();
                     status.put("operation", "Removed");
-                    status.put("status", "Success");
+                    status.put("status", "Failed");
                     conceptsStatus.put(conceptId, status);
                     bodyConceptIds += conceptId + ",";
                     
@@ -3815,6 +3825,11 @@ public class RefsetMemberService {
                         
                         memberUpdateArray.add(memberBody);
                     }
+                    
+                    final Map<String, String> status = new HashMap<>();
+                    status.put("operation", "Removed");
+                    status.put("status", "Success");
+                    conceptsStatus.put(conceptNode.get("conceptId").asText(), status);
                 }
             }
             
