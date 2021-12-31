@@ -321,7 +321,7 @@ public class HistoricDataMigrator {
             List<Edition> editions = service.getAll(Edition.class);
 
             for (Edition edition : editions) {
-                if (testing && !edition.getName().contains("Belgi")) {
+                if (testing && !edition.getName().contains("Library of Medicine")) {
                     continue;
                 }
                 SortedMap<Date, String> children = new TreeMap<>();
@@ -1103,10 +1103,10 @@ public class HistoricDataMigrator {
 
         if (!defaultEditionProjects.containsKey(edition.getId())) {
             // Create default project
-            final String projectName = "Default project for " + refset.getEditionName();
+            final String projectName = "Default project for " + orgName;
             final String projectDescription =
                     "This project was created to support non-RTT based refsets for "
-                            + refset.getEditionName() + ".";
+                            + orgName + ".";
 
             final Project project = addProject(org, projectName, projectDescription, defaultMeta);
             projectCount++;
