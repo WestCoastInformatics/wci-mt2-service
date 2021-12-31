@@ -348,10 +348,18 @@ public class HistoricDataMigrator {
                         // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
                         if (childDate.matches("^[0-9].*$")) {
                             Date branchDate = branchDateFormatter.parse(childDate);
-                            children.put(branchDate, childBranch);
+                            if (branchDate.before(new Date())) {
+                                children.put(branchDate, childBranch);
+                            } else {
+                                logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as it's branchDate is in the future");
+                            }
                         }
                     }
 
+                    logger.debug("Branch Dates for edition: " + edition.getName());
+                    for (Date child : children.keySet()) {
+                        logger.debug("Child: " + child.toString() + " with bracnh: " + children.get(child));
+                    }
                     retMap.put(edition.getId(), children);
                 }
             }
