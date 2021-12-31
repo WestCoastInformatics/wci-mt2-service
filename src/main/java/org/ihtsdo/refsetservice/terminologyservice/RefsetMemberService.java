@@ -559,7 +559,7 @@ public class RefsetMemberService {
         }
 
         String url = SnowstormConnection.BASE_URL + "multisearch/descriptions/referencesets?active=true&offset=0&limit=1&term="
-            + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery));
+            + StringUtility.encodeValue(snowstormQuery);
 
         logger.debug("Snowstorm URL: " + url);
 
@@ -621,7 +621,7 @@ public class RefsetMemberService {
         snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
 
         String url = SnowstormConnection.BASE_URL + "multisearch/descriptions?active=true&offset=0&limit=10000" + "&ecl=" + StringUtility.encodeValue(ecl) + "&term="
-            + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery));
+            + StringUtility.encodeValue(snowstormQuery);
 
         try (Response response = SnowstormConnection.getResponse(url)) {
 
@@ -2146,7 +2146,7 @@ public class RefsetMemberService {
         if (!searchEcl) {
 
             url += "&term=" + StringUtility
-                    .encodeValue(QueryParserBase.escape(searchParameters.getQuery()));
+                    .encodeValue(searchParameters.getQuery());
 
             if (searchRefsetMembers) {
                 url += "&ecl=" + encodedCaret + refset.getRefsetId();
@@ -2172,8 +2172,9 @@ public class RefsetMemberService {
             try (final Response response = SnowstormConnection.getResponse(url + searchAfter)) {
     
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                    throw new Exception(
-                            "call to url '" + url + "' wasn't successful. " + response.toString());
+                    
+                    hasMorePages = false;
+                    throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
                 }
     
                 final String resultString = response.readEntity(String.class);
@@ -3798,6 +3799,8 @@ public class RefsetMemberService {
 
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                        
+                        searchAgain = false;
                         throw new Exception("call to url '" + memberSearchUrl + "' wasn't successful. " + response.toString());
                     }
 
