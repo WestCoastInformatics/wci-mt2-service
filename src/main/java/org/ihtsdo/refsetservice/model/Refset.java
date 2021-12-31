@@ -146,6 +146,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private String parentConceptId;
     
+    /** The complete branch path of the refset. */
+    @Transient
+    private String branchPath;
+    
     /** The concept members added through inclusion clauses. */
     @Transient
     private List<String> inclusionConcepts = new ArrayList<>();
@@ -287,6 +291,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         locked = other.isLocked();
         availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
+        branchPath = other.getBranchPath();
         latestVersion = other.isLatestVersion();
         feedbackVisible = other.isFeedbackVisible();
         versionList = other.getVersionList();
@@ -996,6 +1001,25 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
+     * Returns the complete branch path of the refset.
+     *
+     * @return the branch path
+     */
+    @JsonGetter()
+    public String getBranchPath() {
+        return branchPath;
+    }
+    
+    /**
+     * Sets the complete branch path of the refset.
+     *
+     * @param branchPath the branch path to set
+     */
+    public void setBranchPath(final String branchPath) {
+        this.branchPath = branchPath;
+    }
+    
+    /**
      * Returns the user assigned to work on the refset.
      *
      * @return the assigned user
@@ -1132,6 +1156,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((versionList == null) ? 0 : versionList.hashCode());
         result = prime * result + ((assignedUser == null) ? 0 : assignedUser.hashCode());
         result = prime * result + ((parentConceptId == null) ? 0 : parentConceptId.hashCode());
+        result = prime * result + ((branchPath == null) ? 0 : branchPath.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + ((inclusionConcepts == null) ? 0 : inclusionConcepts.hashCode());
         result = prime * result + ((exclusionConcepts == null) ? 0 : exclusionConcepts.hashCode());
@@ -1216,6 +1241,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
                 return false;
             }
         } else if (!parentConceptId.equals(other.parentConceptId)) {
+            return false;
+        }
+        
+        if (branchPath == null) {
+            if (other.branchPath != null) {
+                return false;
+            }
+        } else if (!branchPath.equals(other.branchPath)) {
             return false;
         }
         

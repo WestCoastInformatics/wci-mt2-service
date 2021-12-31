@@ -1180,8 +1180,8 @@ public class RefsetService {
             }
 
             refset = setRefsetPermissions(user, refset);
-            refset.setVersionList(
-                    getSortedRefsetVersionList(refset.getRefsetId(), service));
+            refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
+            refset.setBranchPath(getBranchPath(refset));
 
             logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
             return refset;
