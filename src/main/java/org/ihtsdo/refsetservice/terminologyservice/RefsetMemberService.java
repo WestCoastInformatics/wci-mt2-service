@@ -3835,10 +3835,12 @@ public class RefsetMemberService {
                         memberUpdateArray.add(memberBody);
                     }
                     
+                    logger.debug("removeRefsetMembers conceptNode: " + ModelUtility.toJson(conceptNode)); 
+                    
                     final Map<String, String> status = new HashMap<>();
                     status.put("operation", "Removed");
                     status.put("status", "Success");
-                    conceptsStatus.put(conceptNode.get("conceptId").asText(), status);
+                    conceptsStatus.put(conceptNode.get("referencedComponentId").asText(), status);
                 }
             }
             
