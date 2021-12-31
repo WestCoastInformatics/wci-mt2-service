@@ -51,6 +51,9 @@ public class SecurityService implements AutoCloseable {
 	
 	/** The handler. */
 	public static final String SESSION_USER_OBJECT_KEY = "RT2_USER_OBJECT";
+	
+	/** The handler. */
+	public static final String GUEST_USERNAME = "nonLoggedInUser";
 
 	/** The timeout. */
 	private static int timeout;
@@ -91,7 +94,7 @@ public class SecurityService implements AutoCloseable {
             return testUser;
         }
         
-        final User nonLoggedInUser = new User("nonLoggedInUser", "Non Logged In User", "", new HashSet<String>());
+        final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", new HashSet<String>());
         logger.debug("******** SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
         
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
