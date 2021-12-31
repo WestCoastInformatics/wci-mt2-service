@@ -1007,7 +1007,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("******** searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts);
             
-            ResultList<Refset> results = RefsetService.searchRefsets(SecurityService.getUserFromSession(), searchParameters, searchConcepts);
+            ResultList<Refset> results = RefsetService.searchRefsets(user, searchParameters, searchConcepts);
            
             return results;
 

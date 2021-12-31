@@ -28,6 +28,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetEditHistory;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -1289,6 +1290,10 @@ public class RefsetService {
                 query += " AND latestVersion: true";
             } else {
                 query = "latestVersion: true";
+            }
+            
+            if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
+                query += " AND privateRefset: false";
             }
 
             logger.debug("******** searchRefsets query: " + query);
