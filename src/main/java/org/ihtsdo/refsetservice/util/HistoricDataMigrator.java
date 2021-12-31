@@ -321,7 +321,7 @@ public class HistoricDataMigrator {
             List<Edition> editions = service.getAll(Edition.class);
 
             for (Edition edition : editions) {
-                if (testing && !edition.getName().contains("Danish")) {
+                if (testing && !edition.getName().contains("Belgi")) {
                     continue;
                 }
                 SortedMap<Date, String> children = new TreeMap<>();
@@ -400,7 +400,8 @@ public class HistoricDataMigrator {
                     }
                 }
 
-                // If has ECL clauses, create and associate with refset (but don't persist)
+                // If has ECL clauses, create and associate with refset (but
+                // don't persist)
                 if (rttRefsetToClausesMap.containsKey(rttId)) {
                     for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
                         final DefinitionClause clause =
@@ -469,7 +470,7 @@ public class HistoricDataMigrator {
                             + " with following code: <<url.replace(\"{branch}\", childBranch)>>\n");
                 }
 
-                logger.info("\t*** Processing Edition: " + edition.getName());
+                logger.info("Processing Edition: " + edition.getName());
 
                 boolean isInternationalEdition =
                         ("international edition".equals(edition.getName().toLowerCase())) ? true
@@ -575,6 +576,8 @@ public class HistoricDataMigrator {
             }
         }
 
+        logger.debug("Finished processing CodeSystems in Snowstorm");
+
         return snowstormRefsets;
     }
 
@@ -673,7 +676,7 @@ public class HistoricDataMigrator {
                             continue;
                         }
 
-                        if (testing && !codeSystem.get("name").asText().contains("Danish")
+                        if (testing && !codeSystem.get("name").asText().contains("Belgi")
                                 && !codeSystem.get("name").asText().contains("Inter")) {
                             continue;
                         }
@@ -719,14 +722,14 @@ public class HistoricDataMigrator {
                         Iterator<String> languages = codeSystem.get("languages").fieldNames();
                         String defaultLanguage = languages.next();
                         edition.setDefaultLanguageCode(defaultLanguage);
-                        String orgDesc = null;
+
                         // Identify Code System Owner
+
                         if (codeSystem.has("owner")) {
                             editionOwnerMap.put(edition.getShortName(),
                                     codeSystem.get("owner").asText());
                             editionOwnerMap.put(edition.getName(),
                                     codeSystem.get("owner").asText());
-                            orgDesc = codeSystem.get("owner").asText();
                         } else {
                             editionOwnerMap.put(edition.getShortName(), edition.getName());
                             editionOwnerMap.put(edition.getName(), edition.getName());
@@ -738,6 +741,9 @@ public class HistoricDataMigrator {
                         setMetadata(edition, defaultMeta);
                         service.add(edition);
 
+                        // TODO: Add a description default value or update
+                        // snowstorm with value per codesystem
+                        final String orgDesc = "";
                         addOrganziation(editionOwnerMap.get(edition.getName()), orgDesc, edition,
                                 defaultMeta);
                     }
@@ -778,6 +784,9 @@ public class HistoricDataMigrator {
                 // If only one non-CORE modules found, use it
                 edition.setTopLevelModule(editionModules.iterator().next());
             } else {
+                logger.debug("Have multiple modules identified for " + edition.getName() + ": "
+                        + editionModules.toString());
+
                 // If multiple non-CORE modules found, TODO: Fill in
                 Set<String> childrenModules = new HashSet<>();
 
@@ -788,7 +797,8 @@ public class HistoricDataMigrator {
                     }
                 }
 
-                // TODO: Remove Hard coded solution for Netherlands
+                // TODO: Remove Hard coded solution for Netherlands and
+                // Australia
                 if (edition.getShortName().equals("SNOMEDCT-NL")) {
                     childrenModules.remove("15561000146104"); // 15561000146104
                                                               // - Represents
@@ -989,7 +999,7 @@ public class HistoricDataMigrator {
             for (String orgName : organizationsAdded.keySet()) {
                 Organization org = organizationsAdded.get(orgName);
 
-                addProject(org, "UAT Training Project",
+                addProject(org, org.getName() + " dedicated UAT Training Project",
                         "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project",
                         defaultMeta);
                 projectCount++;
@@ -1135,6 +1145,12 @@ public class HistoricDataMigrator {
             shortName = "SNOMEDCT";
         } else if (name.equals("TEHIK")) {
             shortName = "SNOMEDCT-EE";
+        } else if (name.equals("NLM")) {
+            shortName = "SNOMEDCT-US";
+        } else if (name.equals("Norway")) {
+            shortName = "SNOMEDCT-NO";
+        } else if (name.equals("HSE")) {
+            shortName = "SNOMEDCT-IE";
         }
 
         if (shortName != null) {
@@ -1187,16 +1203,16 @@ public class HistoricDataMigrator {
     private Set<DefinitionClause> addClause(String rttId) throws Exception {
 
         Set<DefinitionClause> refsetClauses = new HashSet<>();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
-    
+
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
             for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
                 final DefinitionClause clause =
                         ModelUtility.fromJson(clauseJson, DefinitionClause.class);
-                
+
                 setMetadata(clause, metadataMap.get("refset-" + rttId));
                 DefinitionClause persistedClause = service.add(clause);
                 refsetClauses.add(persistedClause);
