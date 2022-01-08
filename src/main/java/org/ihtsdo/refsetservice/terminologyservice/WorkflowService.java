@@ -684,6 +684,8 @@ public final class WorkflowService {
         if (doesBranchExist(refsetBranchPath)) {
 
             mergeBranch(refsetBranchPath, editionBranchPath, comment);
+            RefsetMemberService.clearAllMemberCaches(refsetBranchPath);
+            RefsetMemberService.clearAllMemberCaches(editionBranchPath);
             return true;
         } else {
             return false;
@@ -767,6 +769,8 @@ public final class WorkflowService {
         if (doesBranchExist(refsetBranchPath) && doesBranchExist(editBranchPath)) {
 
             mergeBranch(editBranchPath, refsetBranchPath, comment);
+            RefsetMemberService.clearAllMemberCaches(editBranchPath);
+            RefsetMemberService.clearAllMemberCaches(refsetBranchPath);
             return true;
         } else {
             return false;

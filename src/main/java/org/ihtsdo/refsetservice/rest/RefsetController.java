@@ -1841,11 +1841,12 @@ public class RefsetController extends BaseController {
     public @ResponseBody String getRefsetAncestorCache(@PathVariable(value = "refsetInternalId")
     final String refsetInternalId) throws Exception {
 
-        try {
+        try (TerminologyService service = new TerminologyService()) {
 
             logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
 
-            final Map<String, Set<String>> ancestorsCache = RefsetMemberService.ancestorsCache;
+            final Refset refset = RefsetMemberService.getRefset(SecurityService.getUserFromSession(), service, refsetInternalId);
+            final Map<String, Set<String>> ancestorsCache = RefsetMemberService.getCacheForMemberAncestors(RefsetMemberService.getBranchPath(refset));
             
             if (ancestorsCache.containsKey(refsetInternalId)) {
                 return ModelUtility.toJson(ancestorsCache.get(refsetInternalId));
