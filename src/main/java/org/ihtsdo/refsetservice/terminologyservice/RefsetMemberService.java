@@ -1677,14 +1677,12 @@ public class RefsetMemberService {
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static void populateAllLanguageDescriptions(final Refset refset,
-        final List<Concept> conceptsToProcess) throws MalformedURLException, Exception {
+    public static void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws MalformedURLException, Exception {
 
         final StringBuffer conceptIds = new StringBuffer();
 
         // Create Snowstorm URL
-        final String url =
-                SnowstormConnection.BASE_URL + getBranchPath(refset) + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
+        final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
 
         boolean firstTime = true;
         
@@ -1702,12 +1700,10 @@ public class RefsetMemberService {
         //logger.debug("Get Member Descriptions URL: " + url + "&conceptIds=" + conceptIds);
 
         // Call Snowstorm
-        try (final Response response =
-                SnowstormConnection.getResponse(url + "&conceptIds=" + conceptIds)) {
+        try (final Response response = SnowstormConnection.getResponse(url + "&conceptIds=" + conceptIds)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                throw new Exception(
-                        "call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -1720,9 +1716,11 @@ public class RefsetMemberService {
 
             // Assign descriptions to proper concept
             while (descriptionIterator.hasNext()) {
+                
                 final JsonNode descriptionNode = descriptionIterator.next();
 
                 if (descriptionNode.get("active").asBoolean()) {
+                    
                     String conceptId = descriptionNode.get("conceptId").asText();
 
                     if (!conceptDescriptionNodes.containsKey(conceptId)) {
@@ -1736,26 +1734,23 @@ public class RefsetMemberService {
             // Process and sort each concept's descriptions
             final Map<String, List<Map<String, String>>> conceptDescriptionMap = new HashMap<>();
 
-            final List<String> nonDefaultPreferredTerms =
-                    identifyNonDefaultPreferredTerms(refset.getEdition());
+            final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(refset.getEdition());
 
             for (String conceptId : conceptDescriptionNodes.keySet()) {
+                
                 Set<JsonNode> descriptionNodes = conceptDescriptionNodes.get(conceptId);
                 Set<Map<String, String>> descriptions = new HashSet<>();
 
-                descriptions = processDescriptionNodes(descriptionNodes,
-                        refset.getEdition().getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
+                descriptions = processDescriptionNodes(descriptionNodes, refset.getEdition().getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
 
-                final List<Map<String, String>> sortedDescriptions = sortConceptDescriptions(
-                        conceptId, descriptions, refset, nonDefaultPreferredTerms);
-
+                final List<Map<String, String>> sortedDescriptions = sortConceptDescriptions(conceptId, descriptions, refset, nonDefaultPreferredTerms);
                 conceptDescriptionMap.put(conceptId, sortedDescriptions);
             }
 
             // Populate concept with description-based data
             for (Concept concept : conceptsToProcess) {
-                List<Map<String, String>> descriptions =
-                        conceptDescriptionMap.get(concept.getCode());
+                
+                List<Map<String, String>> descriptions = conceptDescriptionMap.get(concept.getCode());
 
                 if (descriptions == null || descriptions.size() == 0) {
 
@@ -1782,8 +1777,8 @@ public class RefsetMemberService {
                         }
                     }
                 }
-
             }
+            
         } catch (Exception ex) {
             logger.error("Could not retrieve descriptions" + ex.getMessage());
             ex.printStackTrace();
@@ -2340,9 +2335,8 @@ public class RefsetMemberService {
             return branchCache.get(cacheString);
         }
 
-        final String pagingParams =
-                "offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
-                        + (StringUtils.isNotEmpty(searchParameters.getSearchAfter()) ? "&searchAfter=" + searchParameters.getSearchAfter() : ""); 
+        final String pagingParams = "offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
+            + (StringUtils.isNotEmpty(searchParameters.getSearchAfter()) ? "&searchAfter=" + searchParameters.getSearchAfter() : ""); 
 
         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
         final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams + "&active=true";
@@ -2373,7 +2367,7 @@ public class RefsetMemberService {
 //                    currentList = getConceptsFromSnowstorm(url, refset, lookupParameters);
 //                }
 
-            int descriptionCallCount = 0;
+            int snowstormCallCount = 0;
             final boolean doNotSearch = notSearching;
             
             // Change the '30's to '1's to avoid threading 
@@ -2387,7 +2381,7 @@ public class RefsetMemberService {
 
                 if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == currentList.getItems().size() - 1) {
                     
-                    descriptionCallCount++;
+                    snowstormCallCount++;
                     final List<Concept> threadConcepts = new ArrayList<Concept>(); //new ObjectMapper().readValue(ModelUtility.toJson(conceptsToProcess), (new TypeReference<List<Concept>>() {}));
                     threadConcepts.addAll(conceptsToProcess);
                     
@@ -2399,7 +2393,7 @@ public class RefsetMemberService {
                        
                             try {
                     
-                                logger.debug("%%%%%%%%% IN THREAD ID: " + Thread.currentThread().getId());
+                                logger.debug("%%%%%%%%% getMemberList IN THREAD ID: " + Thread.currentThread().getId());
                                 populateAllLanguageDescriptions(refset, threadConcepts);
     
                                 // if this search is for editing then get the concept leaf information
@@ -2421,7 +2415,7 @@ public class RefsetMemberService {
             executor.shutdown();
             executor.awaitTermination(600, TimeUnit.SECONDS);
             
-            logger.debug("####### getMemberList descriptionCallCount: " + descriptionCallCount);
+            logger.debug("####### getMemberList snowstormCallCount: " + snowstormCallCount);
 
             members.getItems().addAll(currentList.getItems());
             members.setTotal(currentList.getTotal());
@@ -2995,50 +2989,76 @@ public class RefsetMemberService {
                 nonDefaultPreferredTerms);
     }
 
-    private static void populateMembershipInformation(Refset refset,
-        List<Concept> conceptsToProcess) throws Exception {
-        String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet="
-                + refset.getRefsetId() + "&limit=1000" + "&offset=0";
-
-        if (conceptsToProcess.size() > 0 && conceptsToProcess.size() <= 500) {
-
-            url += "&referencedComponentId=";
-
-            for (final Concept concept : conceptsToProcess) {
-                url += concept.getCode() + ",";
-            }
-        }
-
-        logger.debug("Get Membership URL for Populate: " + url);
-
-        ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
-        lookupParameters.setGetMembershipInformation(true);
-        ConceptResultList resultList = getConceptsFromSnowstorm(url, refset, lookupParameters, null);
-
-        int conceptsToBeProcessed = conceptsToProcess.size();
-
-        for (Concept lookupConcept : resultList.getItems()) {
-
-            for (Concept conceptToProcess : conceptsToProcess) {
-
-                if (lookupConcept.getCode().equals(conceptToProcess.getCode())) {
+    private static void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
+        
+        final String baseUrl = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&referencedComponentId=";
+        final List<Concept> conceptsToProcess = new ArrayList<>();
+        String conceptIds = "";
+        int snowstormCallCount = 0;
+        
+        // Change the '30's to '1's to avoid threading 
+        final ExecutorService executor = new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        
+        // add the descriptions to the children concepts in batches
+        for (int i = 0; i < concepts.size(); i++) {
+            
+            final Concept concept = concepts.get(i);
+            conceptsToProcess.add(concept);
+            conceptIds += concept.getCode() + ",";
+            
+            if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == concepts.size() - 1) {
+                
+                final String memberUrl = baseUrl + conceptIds;
+                conceptIds = "";
+                snowstormCallCount++;
+                
+                executor.submit(new Runnable() {
                     
-                    conceptToProcess.setMemberOfRefset(lookupConcept.isMemberOfRefset());
-                    conceptToProcess.setMemberEffectiveTime(lookupConcept.getMemberEffectiveTime());
-                    conceptToProcess.setReleased(lookupConcept.isReleased());
-                    conceptsToBeProcessed--;
-                    break;
-                }
-            }
+                    /* see superclass */
+                    @Override
+                    public void run() {
+                   
+                        try {
+                
+                            logger.debug("%%%%%%%%% populateMembershipInformation IN THREAD ID: " + Thread.currentThread().getId());
+                            logger.debug("Get Membership URL for Populate: " + memberUrl);
 
-            if (conceptsToBeProcessed == 0) {
-                break;
+                            final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
+                            lookupParameters.setGetMembershipInformation(true);
+                            final ConceptResultList resultList = getConceptsFromSnowstorm(memberUrl, refset, lookupParameters, null);
+
+                            for (Concept resultConcept : resultList.getItems()) {
+
+                                for (Concept conceptToProcess : conceptsToProcess) {
+
+                                    if (resultConcept.getCode().equals(conceptToProcess.getCode())) {
+                                        
+                                        conceptToProcess.setMemberOfRefset(resultConcept.isMemberOfRefset());
+                                        conceptToProcess.setMemberEffectiveTime(resultConcept.getMemberEffectiveTime());
+                                        conceptToProcess.setReleased(resultConcept.isReleased());
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    
+                });
+                
+                conceptsToProcess.clear();
             }
         }
+        
+        executor.shutdown();
+        executor.awaitTermination(600, TimeUnit.SECONDS);
+        
+        logger.debug("####### populateMembershipInformation snowstormCallCount: " + snowstormCallCount);
     }
     
-    private static String processIntensionalDefinitionException(final Refset refset,
-        final Concept concept) throws Exception {
+    private static String processIntensionalDefinitionException(final Refset refset, final Concept concept) throws Exception {
         
         String conceptExceptionType = "";
         
@@ -3071,8 +3091,7 @@ public class RefsetMemberService {
         return conceptExceptionType;
     }
 
-    public static List<Map<String, String>> getMemberHistory(String referencedComponentId,
-        List<Map<String, String>> versions) throws Exception {
+    public static List<Map<String, String>> getMemberHistory(String referencedComponentId, List<Map<String, String>> versions) throws Exception {
 
         // Note, the system expects that versions are ordered from oldest first
         // to newest last. Failure to adhere to this convention will break the
@@ -3339,8 +3358,7 @@ public class RefsetMemberService {
             final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
 
             if (refset == null) {
-                throw new Exception("Refset Internal Id: " + refsetInternalId
-                        + " does not exist in the RT2 database");
+                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
             
             if (conceptIds.size() == 0) {
