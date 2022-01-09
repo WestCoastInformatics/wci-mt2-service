@@ -126,13 +126,13 @@ public class RefsetMemberService {
     public final static Map<String, Map<String, Map<String, String>>> refsetsUpdatedMembers = new HashMap<>();
     
     /** A cache of the members returned for a specific URL. */
-    private final static Map<String, Map<String, ConceptResultList>> membersCallCache = new HashMap<>();
+    private final static Map<String, Map<String, ConceptResultList>> conceptsCallCache = new HashMap<>();
 
     /** A cache of the details for any concept. */
     private final static Map<String, Map<String, Concept>> conceptDetailsCache = new HashMap<>();
 
     /** A cache of the taxonomy ancestor path for concepts. */
-    private final static Map<String, Map<String, List<Concept>>> taxonomyAncestorCache = new HashMap<>();
+    private final static Map<String, Map<String, List<Concept>>> taxonomySearchAncestorsCache = new HashMap<>();
 
     /** A cache of the children for each tree node. */
     private final static Map<String, Map<String, ConceptResultList>> treeCache = new HashMap<>();
@@ -1639,7 +1639,7 @@ public class RefsetMemberService {
     /**
      * Clear all caches related to refset members.
      *
-     * @param refsetInternalId the internal ID of the refset
+     * @param branchPath the branch to clear the cache collections for
      * @throws Exception the exception
      */
     public static void clearAllMemberCaches(final String branchPath) throws Exception {
@@ -1648,9 +1648,9 @@ public class RefsetMemberService {
             
             logger.debug(" Clearing caches for branch path: " + branchPath);
             
-            membersCallCache.remove(branchPath);
+            conceptsCallCache.remove(branchPath);
             conceptDetailsCache.remove(branchPath);
-            taxonomyAncestorCache.remove(branchPath);
+            taxonomySearchAncestorsCache.remove(branchPath);
             treeCache.remove(branchPath);
             ancestorsCache.remove(branchPath);
             
@@ -1659,9 +1659,9 @@ public class RefsetMemberService {
             
             logger.debug(" Clearing caches for all branches");
             
-            membersCallCache.clear();
+            conceptsCallCache.clear();
             conceptDetailsCache.clear();
-            taxonomyAncestorCache.clear();
+            taxonomySearchAncestorsCache.clear();
             treeCache.clear();
             ancestorsCache.clear();
         }
@@ -1699,9 +1699,9 @@ public class RefsetMemberService {
             conceptIds.append(concept.getCode());
         }
 
-        // Call Snowstorm
-        logger.debug("Get Member Descriptions URL: " + url + "&conceptIds=" + conceptIds);
+        //logger.debug("Get Member Descriptions URL: " + url + "&conceptIds=" + conceptIds);
 
+        // Call Snowstorm
         try (final Response response =
                 SnowstormConnection.getResponse(url + "&conceptIds=" + conceptIds)) {
 
@@ -1888,6 +1888,16 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = getRefset(user, service, refsetInternalId);
+            final String branchPath = getBranchPath(refset);
+            final String cacheString = refset.getId() + searchParameters.toString() + searchRefsetMembers;
+            final Map<String, ConceptResultList> branchCache = getCacheForConceptsCall(branchPath);
+            
+            // check if the concept call has been cached
+            if (branchCache.containsKey(cacheString)) {
+                
+                logger.debug("####### prepareConceptSearch USING CACHE");
+                return branchCache.get(cacheString);
+            }
 
             concepts = searchConcepts(refset, searchParameters, searchRefsetMembers);
 
@@ -1908,6 +1918,8 @@ public class RefsetMemberService {
                 }
             }
 
+            branchCache.put(cacheString, concepts);
+            conceptsCallCache.put(branchPath, branchCache);
             //logger.debug("******** prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
         }
 
@@ -2006,6 +2018,7 @@ public class RefsetMemberService {
         }
 
         branchCache.put(cacheString, concepts);
+        taxonomySearchAncestorsCache.put(branchPath, branchCache);
 
         return concepts;
     }
@@ -2264,8 +2277,8 @@ public class RefsetMemberService {
      */
     public static Map<String, List<Concept>> getCacheForTaxonomySearchAncestors(final String branchPath) throws Exception {
         
-        if (taxonomyAncestorCache.containsKey(branchPath)) {
-            return taxonomyAncestorCache.get(branchPath);
+        if (taxonomySearchAncestorsCache.containsKey(branchPath)) {
+            return taxonomySearchAncestorsCache.get(branchPath);
         } else {
             return new HashMap<>();
         }
@@ -2294,10 +2307,10 @@ public class RefsetMemberService {
      * @return the cache collection
      * @throws Exception the exception
      */
-    public static Map<String, ConceptResultList> getCacheForMembersCall(final String branchPath) throws Exception {
+    public static Map<String, ConceptResultList> getCacheForConceptsCall(final String branchPath) throws Exception {
         
-        if (membersCallCache.containsKey(branchPath)) {
-            return membersCallCache.get(branchPath);
+        if (conceptsCallCache.containsKey(branchPath)) {
+            return conceptsCallCache.get(branchPath);
         } else {
             return new HashMap<>();
         }
@@ -2317,8 +2330,8 @@ public class RefsetMemberService {
         // 2 Snowstorm calls: 1) Memberlist and 2) Descriptions
         ConceptResultList members = new ConceptResultList();
         final String branchPath = getBranchPath(refset);
-        final String cacheString = refset.getId() + searchParameters.toString();
-        final Map<String, ConceptResultList> branchCache = getCacheForMembersCall(branchPath);
+        final String cacheString = refset.getId() + searchParameters.toString() + "true";
+        final Map<String, ConceptResultList> branchCache = getCacheForConceptsCall(branchPath);
         
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
@@ -2415,6 +2428,7 @@ public class RefsetMemberService {
             members.setTotalKnown(true);
             
             branchCache.put(cacheString, members);
+            conceptsCallCache.put(branchPath, branchCache);
 
         } catch (Exception ex) {
             throw new Exception("Could not get refset member list for refset "
@@ -2524,6 +2538,7 @@ public class RefsetMemberService {
         }
 
         branchCache.put(cacheString, conceptResultList);
+        treeCache.put(branchPath, branchCache);
         
         return conceptResultList;
     }
@@ -2561,6 +2576,7 @@ public class RefsetMemberService {
 
             final Concept concept = conceptResultList.getItems().iterator().next();
             branchCache.put(cacheString, concept);
+            conceptDetailsCache.put(branchPath, branchCache);
             
             return concept;
 
@@ -3267,6 +3283,7 @@ public class RefsetMemberService {
                     }
 
                     branchCache.put(cacheString, ancestorsSet);
+                    ancestorsCache.put(branchPath, branchCache);
 
                     return true;
                     
