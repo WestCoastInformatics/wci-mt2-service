@@ -1074,9 +1074,6 @@ public class RefsetController extends BaseController {
 
             return results;
 
-        } catch (final ResponseStatusException rse) {
-            throw rse;
-
         } catch (final Exception e) {
 
             handleException(e);

@@ -138,7 +138,7 @@ public class RefsetService {
         }
         
         // create a refset and edit branch for the new refset
-        final String refsetBranch = WorkflowService.createRefsetBranch(edition.getBranch(), refsetConceptId);
+        final String refsetBranch = WorkflowService.createRefsetBranch(edition.getBranch(), refsetConceptId, edition.getBranch());
         
         // if a new refset concept needs to be created
         if (refsetEditParameters.getRefsetId() == null) {
@@ -1443,7 +1443,7 @@ public class RefsetService {
             Refset refset = getRefset(user, refsetInternalId);
             
             // create a refset and edit branch for the new refset
-            final String refsetBranch = WorkflowService.createRefsetBranch(refset.getEditionBranch(), refset.getRefsetId());
+            final String refsetBranch = WorkflowService.createRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), getBranchPath(refset));
             final String editBranch = WorkflowService.createEditBranch(user, refset.getEditionBranch(), null, refset.getRefsetId());
             
             newRefsetVersion.populateFrom(refset);
@@ -1461,8 +1461,7 @@ public class RefsetService {
                 oldLatestVersionRefset = refset;
 
             } else {
-                oldLatestVersionRefset = service.findSingle(
-                        "refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestVersion: true", Refset.class, null);
+                oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestVersion: true", Refset.class, null);
             }
             
             // Add an object
