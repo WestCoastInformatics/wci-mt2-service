@@ -1813,14 +1813,12 @@ public class RefsetMemberService {
         }
 
         // Call Snowstorm
-        logger.debug("Get Concept Leaf Status URL: " + url + "&conceptIds=" + conceptIds);
+        //logger.debug("Get Concept Leaf Status URL: " + url + "&conceptIds=" + conceptIds);
 
-        try (final Response response =
-                SnowstormConnection.getResponse(url + "&conceptIds=" + conceptIds)) {
+        try (final Response response = SnowstormConnection.getResponse(url + "&conceptIds=" + conceptIds)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                throw new Exception(
-                        "call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -2023,8 +2021,7 @@ public class RefsetMemberService {
      *
      * @param refset the refset
      * @param searchParameters the search parameters
-     * @param searchRefsetMembers Should the search be for members of the refset
-     *            or for all concepts
+     * @param searchRefsetMembers Should the search be for members of the refset or for all concepts
      * @return the concept result list
      * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
@@ -2151,7 +2148,10 @@ public class RefsetMemberService {
                         conceptBatch.add(concept);
                     }
     
-                    populateMembershipInformation(refset, conceptBatch);
+                    if (searchParameters.isEditing()) {
+                        populateMembershipInformation(refset, conceptBatch);
+                    }
+                    
                     members.getItems().addAll(conceptBatch);
                 }
                 
@@ -2327,6 +2327,7 @@ public class RefsetMemberService {
         final String branchPath = getBranchPath(refset);
         final String cacheString = refset.getId() + searchParameters.toString() + "true";
         final Map<String, ConceptResultList> branchCache = getCacheForConceptsCall(branchPath);
+        final String refsetId = refset.getRefsetId();
         
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
@@ -2335,12 +2336,6 @@ public class RefsetMemberService {
             return branchCache.get(cacheString);
         }
 
-        final String pagingParams = "offset=" + (searchParameters.getOffset() * searchParameters.getLimit()) + "&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
-            + (StringUtils.isNotEmpty(searchParameters.getSearchAfter()) ? "&searchAfter=" + searchParameters.getSearchAfter() : ""); 
-
-        // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
-        final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&" + pagingParams + "&active=true";
-        
         try {
 
             boolean notSearching = true;
@@ -2353,19 +2348,65 @@ public class RefsetMemberService {
                 searchParameters.setQuery("");
             }
             
-            ConceptResultList currentList;
+            ConceptResultList currentList = new ConceptResultList();
             // if search term is indicated, find members that match search term
-            //if (searchParameters.getQuery() != null) {
+            if (searchParameters.getQuery() != null && !searchParameters.getQuery().isEmpty()) {
 
                 notSearching = false;
                 currentList = searchConcepts(refset, searchParameters, true);
-//                } else {
-//
-//                    logger.debug("Get Member List URL: " + url);
-//
-//                    // Populate results for member list
-//                    currentList = getConceptsFromSnowstorm(url, refset, lookupParameters);
-//                }
+            } else {
+
+                String searchAfter = "";
+                boolean hasMorePages = true;
+                final String pagingParams = "offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH; 
+                final String acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
+                
+                // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
+                final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refsetId + "&active=true&offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
+                
+                while (hasMorePages) {
+                    
+                    logger.debug("Get Member List URL: " + url + searchAfter);
+    
+                    try (final Response response = SnowstormConnection.getResponse(url + searchAfter, acceptLanguage)) {
+    
+                        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                            
+                            hasMorePages = false;
+                            throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                        }
+    
+                        final String resultString = response.readEntity(String.class);
+    
+                        // Only process payload if Rest call is successful
+                        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                            throw new Exception(Integer.toString(response.getStatus()));
+                        }
+    
+                        final ObjectMapper mapper = new ObjectMapper();
+                        final JsonNode root = mapper.readTree(resultString.toString());
+                        JsonNode conceptNodeBatch = root.get("items");
+                        
+                        // if the search returned results set the total
+                        if (!currentList.isTotalKnown()) {
+                            
+                            currentList.setTotal(root.get("total").asInt());
+                            currentList.setTotalKnown(true);
+                        }
+                        
+                        if (root.get("searchAfter") != null) {
+                            searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                        }
+                        
+                        if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + currentList.getItems().size() >= currentList.getTotal()) {
+                            hasMorePages = false;
+                        }
+    
+                        final ConceptResultList currentMemberBatch = populateConcepts(root, refset, lookupParameters);
+                        currentList.getItems().addAll(currentMemberBatch.getItems());
+                    }
+                }
+            }
 
             int snowstormCallCount = 0;
             final boolean doNotSearch = notSearching;
@@ -2393,7 +2434,7 @@ public class RefsetMemberService {
                        
                             try {
                     
-                                logger.debug("%%%%%%%%% getMemberList IN THREAD ID: " + Thread.currentThread().getId());
+                                //logger.debug("%%%%%%%%% getMemberList IN THREAD ID: " + Thread.currentThread().getId());
                                 populateAllLanguageDescriptions(refset, threadConcepts);
     
                                 // if this search is for editing then get the concept leaf information
@@ -2425,8 +2466,7 @@ public class RefsetMemberService {
             conceptsCallCache.put(branchPath, branchCache);
 
         } catch (Exception ex) {
-            throw new Exception("Could not get refset member list for refset "
-                    + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not get refset member list for refset " + refsetId + " from snowstorm: " + ex.getMessage(), ex);
         }
         
         return members;
@@ -3020,8 +3060,8 @@ public class RefsetMemberService {
                    
                         try {
                 
-                            logger.debug("%%%%%%%%% populateMembershipInformation IN THREAD ID: " + Thread.currentThread().getId());
-                            logger.debug("Get Membership URL for Populate: " + memberUrl);
+                            //logger.debug("%%%%%%%%% populateMembershipInformation IN THREAD ID: " + Thread.currentThread().getId());
+                            //logger.debug("Get Membership URL for Populate: " + memberUrl);
 
                             final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
                             lookupParameters.setGetMembershipInformation(true);

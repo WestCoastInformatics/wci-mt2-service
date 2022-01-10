@@ -1126,7 +1126,7 @@ public class RefsetController extends BaseController {
         ConceptResultList results = new ConceptResultList();
         User user = SecurityService.getUserFromSession();
 
-        logger.debug("*********** getMembers: refsetInternalId: " + refsetInternalId);
+        logger.debug("*********** getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters + " ; taxonomyParameters: " + taxonomyParameters + " ; displayType: " + displayType);
 
         try {
 
