@@ -107,7 +107,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     private boolean latestVersion;
 
     /** The assigned user. */
-    @Transient
+    @Column(nullable = true)
     private String assignedUser;
     
     /** The flag for if a user can download this refset. */
@@ -134,6 +134,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private boolean canView;
     
+    /** The flag for if the refset is locked due to an edit. */
+    @Transient
+    private boolean locked = false;
+    
     /** The list of actions available for the user to perform on this refset. */
     @Transient
     private List<String> availableActions;
@@ -141,6 +145,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The ID of the parent of the underlying refset concept. */
     @Transient
     private String parentConceptId;
+    
+    /** The complete branch path of the refset. */
+    @Transient
+    private String branchPath;
     
     /** The concept members added through inclusion clauses. */
     @Transient
@@ -280,8 +288,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         canReview = other.getCanReview();
         canPublish = other.getCanPublish();
         canView = other.getCanView();
+        locked = other.isLocked();
         availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
+        branchPath = other.getBranchPath();
         latestVersion = other.isLatestVersion();
         feedbackVisible = other.isFeedbackVisible();
         versionList = other.getVersionList();
@@ -901,6 +911,34 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
+     * Sets the flag that shows if the user can view this refset.
+     *
+     * @param canView the canView flag
+     */
+    public void setCanView(final boolean canView) {
+        this.canView = canView;
+    }
+    
+    /**
+     * Gets the flag that shows if the refset is locked due to edits.
+     *
+     * @return the locked flag
+     */
+    @JsonGetter()
+    public boolean isLocked() {
+        return locked;
+    }
+    
+    /**
+     * Sets the flag that shows if the refset is locked due to edits.
+     *
+     * @param locked the locked flag
+     */
+    public void setLocked(final boolean locked) {
+        this.locked = locked;
+    }
+    
+    /**
      * Gets the list of actions available for the user to perform on this refset.
      * 
      * @return the available actions
@@ -922,15 +960,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setAvailableActions(List<String> availableActions) {
         this.availableActions = availableActions;
-    }
-    
-    /**
-     * Sets the flag that shows if the user can view this refset.
-     *
-     * @param canView the canView flag
-     */
-    public void setCanView(final boolean canView) {
-        this.canView = canView;
     }
 
     /**
@@ -972,11 +1001,32 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
+     * Returns the complete branch path of the refset.
+     *
+     * @return the branch path
+     */
+    @JsonGetter()
+    public String getBranchPath() {
+        return branchPath;
+    }
+    
+    /**
+     * Sets the complete branch path of the refset.
+     *
+     * @param branchPath the branch path to set
+     */
+    public void setBranchPath(final String branchPath) {
+        this.branchPath = branchPath;
+    }
+    
+    /**
      * Returns the user assigned to work on the refset.
      *
      * @return the assigned user
      */
-    @JsonGetter()
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "assignedUserSort", searchable = Searchable.YES, projectable = Projectable.NO,
+            sortable = Sortable.YES)
     public String getAssignedUser() {
         return assignedUser;
     }
@@ -1106,6 +1156,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((versionList == null) ? 0 : versionList.hashCode());
         result = prime * result + ((assignedUser == null) ? 0 : assignedUser.hashCode());
         result = prime * result + ((parentConceptId == null) ? 0 : parentConceptId.hashCode());
+        result = prime * result + ((branchPath == null) ? 0 : branchPath.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + ((inclusionConcepts == null) ? 0 : inclusionConcepts.hashCode());
         result = prime * result + ((exclusionConcepts == null) ? 0 : exclusionConcepts.hashCode());
@@ -1117,6 +1168,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (canReview ? 1 : 0);
         result = prime * result + (canPublish ? 1 : 0);
         result = prime * result + (canView ? 1 : 0);
+        result = prime * result + (locked ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
     }
@@ -1189,6 +1241,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
                 return false;
             }
         } else if (!parentConceptId.equals(other.parentConceptId)) {
+            return false;
+        }
+        
+        if (branchPath == null) {
+            if (other.branchPath != null) {
+                return false;
+            }
+        } else if (!branchPath.equals(other.branchPath)) {
             return false;
         }
         
@@ -1305,6 +1365,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         }
         
         if (canView != other.canView) {
+            return false;
+        }
+        
+        if (locked != other.locked) {
             return false;
         }
 

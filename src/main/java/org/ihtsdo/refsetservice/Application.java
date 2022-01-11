@@ -24,6 +24,7 @@ import org.springframework.core.env.AbstractEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.MutablePropertySources;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -34,6 +35,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 })
 @EnableCaching
 @EnableScheduling
+@EnableAsync
 public class Application extends SpringBootServletInitializer {
 
     /** The logger. */

@@ -1,6 +1,5 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,8 +35,6 @@ import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
-import org.ihtsdo.refsetservice.util.RefsetEditParameters;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -62,6 +59,9 @@ public class RefsetService {
     
     /** The refset to language map. */
     private static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
+    
+    /** The module Id of the SIMPLE_TYPE_REFERENCE_SET */ 
+    private static final String SIMPLE_TYPE_REFERENCE_SET_MODULE_ID = "900000000000012004";
     
     static {
 
@@ -100,8 +100,8 @@ public class RefsetService {
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
 
-            if (refsetId != null && doesRefsetExist(refsetId, null)) {
-                return "Error - Concept Id '" + refsetId
+            if (refsetConceptId != null && doesRefsetExist(refsetConceptId, null)) {
+                return "Error - Concept Id '" + refsetConceptId
                 + "' is already used as a refset.";
             }
             
@@ -139,7 +139,7 @@ public class RefsetService {
         }
         
         // create a refset and edit branch for the new refset
-        final String refsetBranch = WorkflowService.createRefsetBranch(edition.getBranch(), refsetConceptId);
+        final String refsetBranch = WorkflowService.createRefsetBranch(edition.getBranch(), refsetConceptId, edition.getBranch());
         
         // if a new refset concept needs to be created
         if (refsetParameters.getRefsetId() == null) {
@@ -266,11 +266,13 @@ public class RefsetService {
             
             // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
             WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, refset, "");
-            refset = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, refset, "", WorkflowService.IN_EDIT);
+            refset = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, refset, "", WorkflowService.IN_EDIT, user.getUserName());
             
             // create an edit history entry based on the new refset version.
             createRefsetEditHistory(user, newInternalRefsetId);
             
+            RefsetMemberService.refsetsUpdatedMembers.put(newInternalRefsetId, new HashMap<>());
+
             if (refset.getType().equals(Refset.INTENSIONAL)) {
                 
                 // add the list of concepts as members to the refset
@@ -1020,29 +1022,31 @@ public class RefsetService {
      * @throws Exception the exception
      */
     public static ConceptResultList getRefsetConcepts(final String branch, final boolean areParentConcepts) throws Exception {
-    
+
         final ConceptResultList results = new ConceptResultList();
         final Set<String> existingRefsetIds = new HashSet<>();
         final String ecl = StringUtility.encodeValue(QueryParserBase.escape("<<" + SIMPLE_TYPE_REFERENCE_SET));
-        final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000";
-        
+        final List<Edition> editions = getEditionForBranch(branch);
+        final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module="
+            + editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(",")) + "," + SIMPLE_TYPE_REFERENCE_SET_MODULE_ID;
+
         logger.debug("getRefsetConcepts URL: " + url);
-        
+
         if (!areParentConcepts) {
-            
+
             try (final TerminologyService service = new TerminologyService()) {
-                
+
                 // get all the existing refsets for latest branch version
-                final ResultList<Refset> refsets = service.find("active: true AND editionBranch: " + QueryParserBase.escape(branch) + " AND (latestVersion: true OR versionStatus: \"" + Refset.IN_DEVELOPMENT + "\")", null, Refset.class, null);
-                
+                final ResultList<Refset> refsets = service.find("latestVersion: true", null, Refset.class, null);
+
                 for (final Refset refset : refsets.getItems()) {
                     existingRefsetIds.add(refset.getRefsetId());
                 }
-                
+
                 logger.debug("getRefsetConcepts existingRefsetIds: " + existingRefsetIds);
             }
         }
-        
+
         // update the concept with the new data
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -1050,35 +1054,35 @@ public class RefsetService {
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                 throw new Exception("Unable to get refset concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
             }
-            
+
             final ObjectMapper mapper = new ObjectMapper();
             final String resultString = response.readEntity(String.class);
             final JsonNode root = mapper.readTree(resultString.toString());
             final Iterator<JsonNode> iterator = root.get("items").iterator();
-            
-            // loop thru the returned member details and inactivate it or add it to the list to delete    
+
+            // loop thru the returned member details and inactivate it or add it to the list to delete
             while (iterator != null && iterator.hasNext()) {
-                
+
                 final JsonNode conceptNode = iterator.next();
                 final Concept concept = new Concept();
                 final String conceptId = conceptNode.get("conceptId").asText();
-                
-                // if this isn't for a parent concept and the refset already exists then skip it 
+
+                // if this isn't for a parent concept and the refset already exists then skip it
                 if (!areParentConcepts && existingRefsetIds.contains(conceptId)) {
-                    continue;                    
+                    continue;
                 }
-                
+
                 concept.setCode(conceptId);
                 concept.setName(conceptNode.get("pt").get("term").asText());
                 concept.setTerminology("SNOMEDCT");
-                
+
                 results.getItems().add(concept);
             }
-            
+
             // sort the results
             Collections.sort(results.getItems(), (o1, o2) -> (o1.getName().compareTo(o2.getName())));
         }
-        
+
         return results;
     }
     
@@ -1177,8 +1181,8 @@ public class RefsetService {
             }
 
             refset = setRefsetPermissions(user, refset);
-            refset.setVersionList(
-                    getSortedRefsetVersionList(refset.getRefsetId(), service));
+            refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
+            refset.setBranchPath(getBranchPath(refset));
 
             logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
             return refset;
@@ -1223,19 +1227,24 @@ public class RefsetService {
             if (query != null && !query.equals("")) {
 
                 final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
-                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset", "editionShortName");
+                        "organizationName", "versionStatus", "versionDate", "modified", "privateRefset", "editionShortName", "assignedUser");
                 String[] queryParts = query.split(" AND ");
                 String filterQuery = "";
                 String termQuery = "";
+                String termQueryForRt2 = "";
 
                 for (final String queryPart : queryParts) {
 
                     String[] keyValue = queryPart.split(":");
 
                     if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
-                        filterQuery += queryPart + " AND ";
+                        
+                        final String value =  QueryParserBase.escape(String.join(":", Arrays.copyOfRange(keyValue, 1, keyValue.length)));
+                        filterQuery += keyValue[0] + ":" + value + " AND ";
                     } else {
+                        
                         termQuery += queryPart + "* AND ";
+                        termQueryForRt2 += QueryParserBase.escape(queryPart) + "* AND ";
                     }
                 }
 
@@ -1243,6 +1252,7 @@ public class RefsetService {
                 if (!termQuery.equals("")) {
                     
                     termQuery = StringUtils.removeEnd(termQuery, " AND ");
+                    termQueryForRt2 = StringUtils.removeEnd(termQueryForRt2, " AND ");
                     Set<String> refsetIds = new HashSet<>(); 
                     
                     // if it was requested search member concepts                    
@@ -1255,16 +1265,16 @@ public class RefsetService {
                     
                     if (!refsetIds.isEmpty()) {
                         
-                        termQuery = "((" + termQuery + ")";
+                        termQueryForRt2 = "((" + termQueryForRt2 + ")";
                         
                         if (!refsetIds.isEmpty()) {
-                            termQuery = termQuery + " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
+                            termQueryForRt2 = termQueryForRt2 + " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
                         }
                                                 
-                        termQuery += ")";
+                        termQueryForRt2 += ")";
                         
                     } else {
-                        termQuery = "(" + termQuery + ")";
+                        termQueryForRt2 = "(" + termQueryForRt2 + ")";
                     }
                 }
                 
@@ -1280,13 +1290,17 @@ public class RefsetService {
                     }
                 }
                 
-                query = filterQuery + termQuery;
+                query = filterQuery + termQueryForRt2;
             }
 
             if (query != null && !query.equals("")) {
                 query += " AND latestVersion: true";
             } else {
                 query = "latestVersion: true";
+            }
+            
+            if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
+                query += " AND privateRefset: false";
             }
 
             logger.debug("******** searchRefsets query: " + query);
@@ -1436,7 +1450,7 @@ public class RefsetService {
             Refset refset = getRefset(user, refsetInternalId);
             
             // create a refset and edit branch for the new refset
-            final String refsetBranch = WorkflowService.createRefsetBranch(refset.getEditionBranch(), refset.getRefsetId());
+            final String refsetBranch = WorkflowService.createRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), getBranchPath(refset));
             final String editBranch = WorkflowService.createEditBranch(user, refset.getEditionBranch(), null, refset.getRefsetId());
             
             newRefsetVersion.populateFrom(refset);
@@ -1454,8 +1468,7 @@ public class RefsetService {
                 oldLatestVersionRefset = refset;
 
             } else {
-                oldLatestVersionRefset = service.findSingle(
-                        "refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestVersion: true", Refset.class, null);
+                oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestVersion: true", Refset.class, null);
             }
             
             // Add an object
@@ -1464,7 +1477,7 @@ public class RefsetService {
             
             // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
             WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, newRefsetVersion, "");
-            newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT);
+            newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT, user.getUserName());
             
             // create an edit history entry based on the new refset version.
             createRefsetEditHistory(user, newInternalRefsetId);
@@ -1672,11 +1685,6 @@ public class RefsetService {
         
         // Edit permissions
         if (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-            
-            // set the assigned user for the refset if it is being edited or reviewed
-            if (Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_REVIEW).contains(refset.getWorkflowStatus())) {
-                refset.setAssignedUser(WorkflowService.getAssignedUserName(refset));
-            }
                 
             final List<String> allowedStatuses = WorkflowService.getAllowedStatuses(user, refset);
             
@@ -1838,5 +1846,26 @@ public class RefsetService {
      */
     public static Date getRefsetDateFromFormattedString(final String date) throws Exception {
         return DateUtility.getDateWithNoTime(date, DateUtility.DATE_FORMAT_REVERSE);
+    }
+    
+    
+    /**
+     * Fetch editions for given branch
+     * 
+     * @param branch the branch
+     * @return List <Edition> list of editions matching branch
+     * @throws Exception
+     */
+    private static List<Edition> getEditionForBranch(final String branch) throws Exception {
+
+        ResultList<Edition> editions = new ResultList<>();
+        try (TerminologyService service = new TerminologyService()) {
+            editions = service.find("active:true AND branch:" + QueryParserBase.escape(branch), null, Edition.class, null);
+        } catch (Exception e) {
+            logger.error("Error finding edition for branch {}", branch, e);
+            throw e;
+        }
+        return (editions != null) ? editions.getItems() : new ArrayList<Edition>();
+
     }
 }

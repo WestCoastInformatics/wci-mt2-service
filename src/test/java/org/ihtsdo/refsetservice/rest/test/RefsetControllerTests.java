@@ -323,7 +323,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // by tags (with punctuation and reverse order)
         String searchTerms[] = new String[] {
                 "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005",
-                "999861000172117", "561000172108", "General / Allergies", "Allergies General", "anim Belgian Edi"
+                "999861000172117", "561000172108", "General / Allergies", "Allergies General",
+                "anim Belgian Edi"
         };
         for (int i = 0; i < searchTerms.length; i++) {
             logger.info("Testing term - " + searchTerms[i]);
@@ -729,8 +730,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // ACTIVE_REFSET_MEMBER of an ACTIVE_REFSET
 
     }
-    
-
 
     // @Test
     // TODO: Fill out once have capability
@@ -922,7 +921,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
     /*
      *
-     * Supporting Methods
+     * Supporting Methods - return the concept from the list that matches with
+     * the conceptId specified
      *
      */
     private Concept identifyMemberFromList(ConceptResultList concepts, String conceptId) {

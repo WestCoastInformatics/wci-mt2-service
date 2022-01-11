@@ -74,6 +74,7 @@ CREATE TABLE `refsets` (
   `narrative` longtext,
   `privateRefset` bit(1) NOT NULL,
   `refsetId` varchar(256) NOT NULL,
+  `assignedUser` varchar(256),
   `type` varchar(256) NOT NULL,
   `versionDate` datetime(6) DEFAULT NULL,
   `versionNotes` longtext,
