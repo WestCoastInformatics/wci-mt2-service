@@ -2641,7 +2641,7 @@ public class RefsetMemberService {
 
         final String refsetInternalId = refset.getId();
         final String branchPath = getBranchPath(refset);
-        final String cacheString = refset.getRefsetId();
+        final String cacheString = refset.getRefsetId() + conceptId;
         final Map<String, Concept> branchCache = getCacheForConceptDetails(branchPath);
         
         // check if the members call has been cached

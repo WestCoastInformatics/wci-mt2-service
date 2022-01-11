@@ -1230,15 +1230,20 @@ public class RefsetService {
                 String[] queryParts = query.split(" AND ");
                 String filterQuery = "";
                 String termQuery = "";
+                String termQueryForRt2 = "";
 
                 for (final String queryPart : queryParts) {
 
                     String[] keyValue = queryPart.split(":");
 
                     if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
-                        filterQuery += queryPart + " AND ";
+                        
+                        final String value =  QueryParserBase.escape(String.join(":", Arrays.copyOfRange(keyValue, 1, keyValue.length)));
+                        filterQuery += keyValue[0] + ":" + value + " AND ";
                     } else {
+                        
                         termQuery += queryPart + "* AND ";
+                        termQueryForRt2 += QueryParserBase.escape(queryPart) + "* AND ";
                     }
                 }
 
@@ -1246,6 +1251,7 @@ public class RefsetService {
                 if (!termQuery.equals("")) {
                     
                     termQuery = StringUtils.removeEnd(termQuery, " AND ");
+                    termQueryForRt2 = StringUtils.removeEnd(termQueryForRt2, " AND ");
                     Set<String> refsetIds = new HashSet<>(); 
                     
                     // if it was requested search member concepts                    
@@ -1258,16 +1264,16 @@ public class RefsetService {
                     
                     if (!refsetIds.isEmpty()) {
                         
-                        termQuery = "((" + termQuery + ")";
+                        termQueryForRt2 = "((" + termQueryForRt2 + ")";
                         
                         if (!refsetIds.isEmpty()) {
-                            termQuery = termQuery + " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
+                            termQueryForRt2 = termQueryForRt2 + " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
                         }
                                                 
-                        termQuery += ")";
+                        termQueryForRt2 += ")";
                         
                     } else {
-                        termQuery = "(" + termQuery + ")";
+                        termQueryForRt2 = "(" + termQueryForRt2 + ")";
                     }
                 }
                 
@@ -1283,7 +1289,7 @@ public class RefsetService {
                     }
                 }
                 
-                query = filterQuery + termQuery;
+                query = filterQuery + termQueryForRt2;
             }
 
             if (query != null && !query.equals("")) {
