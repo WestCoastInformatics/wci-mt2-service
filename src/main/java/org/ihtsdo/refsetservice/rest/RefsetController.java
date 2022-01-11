@@ -1069,7 +1069,7 @@ public class RefsetController extends BaseController {
 
             if (query != null && !query.equals("")) {
 
-                results = RefsetMemberService.searchConcepts(user, refsetInternalId, searchParameters, searchRefsetMembers);
+                results = RefsetMemberService.prepareConceptSearch(user, refsetInternalId, searchParameters, searchRefsetMembers);
             }
 
             return results;
