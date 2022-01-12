@@ -2599,11 +2599,13 @@ public class RefsetMemberService {
             logger.debug("Concept has " + processedTreeNodes.size() + " parents");
         }
 
-        // if returning the starting concept get the details and set the concept
-        // properties appropriately for taxonomy
+        // if returning the starting concept get the details and set the concept properties appropriately for taxonomy
         if (taxonomyParameters.getReturnStartingConcept()) {
 
-            final Concept startingConcept = getConceptDetails(startingConceptId, refset);
+            Concept startingConcept = getConceptDetails(startingConceptId, refset);
+            
+            // make sure this is a fresh object since concept details can be cached and it would otherwise modify objects in that cache and this cache.
+            startingConcept = ModelUtility.fromJson(ModelUtility.toJson(startingConcept), Concept.class);
 
             // set the name and FSN properties appropriately
             for (final Map<String, String> description : startingConcept.getDescriptions()) {
@@ -2613,17 +2615,13 @@ public class RefsetMemberService {
                 }
 
                 // check if this is the english FSN, if so set the FSN property
-                if (description.get(DESCRIPTION_LANGUAGE).equalsIgnoreCase("en")
-                        && description.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
+                if (description.get(DESCRIPTION_LANGUAGE).equalsIgnoreCase("en") && description.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
                     startingConcept.setFsn(description.get(DESCRIPTION_TERM));
                 }
 
-                // check if this is the requested language, if so set the name
-                // property
+                // check if this is the requested language, if so set the name property
                 if (language
-                        .equalsIgnoreCase(description.get(DESCRIPTION_LANGUAGE) + "-X-"
-                                + description.get(LANGUAGE_CODE))
-                        && description.get(DESCRIPTION_TYPE).equalsIgnoreCase("pt")) {
+                        .equalsIgnoreCase(description.get(DESCRIPTION_LANGUAGE) + "-X-" + description.get(LANGUAGE_CODE)) && description.get(DESCRIPTION_TYPE).equalsIgnoreCase("pt")) {
                     startingConcept.setName(description.get(DESCRIPTION_TERM));
                 }
             }
@@ -2636,6 +2634,7 @@ public class RefsetMemberService {
         }
 
         branchCache.put(cacheString, conceptResultList);
+        logger.debug("$$$$$$$$$$$$$$$$ branchCache: " + branchCache);
         treeCache.put(branchPath, branchCache);
         
         return conceptResultList;
@@ -2894,7 +2893,6 @@ public class RefsetMemberService {
                     defined = true;
                 }
                 
-                // As this method is used for more than just taxonomy, don't assume cache set for refset version by checking for key.
                 if (branchCache.containsKey(cacheString) && branchCache.get(cacheString).contains(conceptNode.get("conceptId").asText())) {
                     concept.setHasDescendantRefsetMembers(true);
                 }
