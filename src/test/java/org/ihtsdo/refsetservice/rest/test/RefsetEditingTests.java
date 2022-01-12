@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @AutoConfigureMockMvc
 public class RefsetEditingTests extends AbstractRefsetTests {
+
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetEditingTests.class);
 
@@ -38,7 +39,9 @@ public class RefsetEditingTests extends AbstractRefsetTests {
      */
     @BeforeEach
     public void setUp(TestInfo info) {
+
         if (getUtil == null) {
+
             getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
             exportUtil = new ExportUnitTestUtilities(mvc);
             workflowUtil = new WorkflowUnitTestUtilities(mvc, baseUrl, REFSET_FILE_PATH);
@@ -49,18 +52,21 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         baseUrl = "/refset";
 
         try {
+
             if (testingProjectId == null) {
+
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
-                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
-                        MAIN_TESTING_REFSET_VERSION);
+                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
             }
 
             if (editUtil == null) {
-                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT,
-                        testingProjectId, testingEditionId);
+
+                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
             }
+
         } catch (Exception e) {
+
             e.printStackTrace();
         }
 
@@ -77,8 +83,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         // the data to create a refset from a list of Ids
         final String memberConceptIds = "53527002,226528004,404684003,260385009";
 
-        Map<String, String> refsetConcept = editUtil.defineExtensionalRefsetConcept(
-                "testCreateFromListonNewRefsetConcept", memberConceptIds);
+        Map<String, String> refsetConcept = editUtil.defineExtensionalRefsetConcept("testCreateFromListonNewRefsetConcept", memberConceptIds);
 
         String refsetInternalId = editUtil.createRefset(refsetConcept);
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
@@ -100,8 +105,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         // the data to create a refset from a list of Ids
         final String memberConceptIds = "53527002,226528004,404684003,260385009";
 
-        Map<String, String> refsetConcept = editUtil.defineExtensionalRefsetConcept(
-                "testCreateFromListonNewRefsetConcept", memberConceptIds);
+        Map<String, String> refsetConcept = editUtil.defineExtensionalRefsetConcept("testCreateFromListonNewRefsetConcept", memberConceptIds);
 
         String refsetInternalId = editUtil.createRefset(refsetConcept);
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
@@ -111,40 +115,19 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     }
 
     /**
-     * earlier createRefsetFromExisting test public void
-     * testCreateRefsetFromExistingConcept() throws Exception { // TODO: Review
-     * purpose // the data to create a refset from an existing concept (but
-     * can't be a // refset already in RT2) final Map<String, String>
-     * refsetExistingConcept = new HashMap<>();
-     * refsetExistingConcept.put("refsetId", "762103008");
-     * refsetExistingConcept.put("name", "OWL ontology reference set");
-     * refsetExistingConcept.put("parentConceptId", "446609009");
-     * refsetExistingConcept.put("moduleId", "900000000000207008");
-     * refsetExistingConcept.put("editionId", testingEditionId);
-     * refsetExistingConcept.put("projectId", testingProjectId);
-     * refsetExistingConcept.put("narrative", "Test.");
-     * refsetExistingConcept.put("type", "EXTENSIONAL");
-     * refsetExistingConcept.put("privateRefset", "false");
-     * refsetExistingConcept.put("localSet", "false");
-     * refsetExistingConcept.put("refsetDeleteStatus", "deleted"); // DO NOT
-     * LEAVE THIS UNCOMMENTED - for one test we will try to remove a // member
-     * that has already been published //
-     * refsetExistingConcept.put("additionalMemberIdsToRemove", // "734147008");
+     * earlier createRefsetFromExisting test public void testCreateRefsetFromExistingConcept() throws Exception { // TODO: Review purpose // the data to create a refset from
+     * an existing concept (but can't be a // refset already in RT2) final Map<String, String> refsetExistingConcept = new HashMap<>(); refsetExistingConcept.put("refsetId",
+     * "762103008"); refsetExistingConcept.put("name", "OWL ontology reference set"); refsetExistingConcept.put("parentConceptId", "446609009");
+     * refsetExistingConcept.put("moduleId", "900000000000207008"); refsetExistingConcept.put("editionId", testingEditionId); refsetExistingConcept.put("projectId",
+     * testingProjectId); refsetExistingConcept.put("narrative", "Test."); refsetExistingConcept.put("type", "EXTENSIONAL"); refsetExistingConcept.put("privateRefset",
+     * "false"); refsetExistingConcept.put("localSet", "false"); refsetExistingConcept.put("refsetDeleteStatus", "deleted"); // DO NOT LEAVE THIS UNCOMMENTED - for one test we
+     * will try to remove a // member that has already been published // refsetExistingConcept.put("additionalMemberIdsToRemove", // "734147008");
      * 
-     * // prepare the call to create refset from an existing concept final
-     * ObjectNode refsetExistingConceptBody = new
-     * ObjectMapper().createObjectNode() .put("refsetId",
-     * refsetExistingConcept.get("refsetId")) .put("name",
-     * refsetExistingConcept.get("name")) .put("parentConceptId",
-     * refsetExistingConcept.get("parentConceptId")) .put("moduleId",
-     * refsetExistingConcept.get("moduleId")) .put("editionId",
-     * refsetExistingConcept.get("editionId")) .put("projectId",
-     * refsetExistingConcept.get("projectId")) .put("narrative",
-     * refsetExistingConcept.get("narrative")) .put("type",
-     * refsetExistingConcept.get("type")) .put("privateRefset",
-     * Boolean.parseBoolean(refsetExistingConcept.get("privateRefset")))
-     * .put("localSet",
-     * Boolean.parseBoolean(refsetExistingConcept.get("localSet")));
+     * // prepare the call to create refset from an existing concept final ObjectNode refsetExistingConceptBody = new ObjectMapper().createObjectNode() .put("refsetId",
+     * refsetExistingConcept.get("refsetId")) .put("name", refsetExistingConcept.get("name")) .put("parentConceptId", refsetExistingConcept.get("parentConceptId"))
+     * .put("moduleId", refsetExistingConcept.get("moduleId")) .put("editionId", refsetExistingConcept.get("editionId")) .put("projectId",
+     * refsetExistingConcept.get("projectId")) .put("narrative", refsetExistingConcept.get("narrative")) .put("type", refsetExistingConcept.get("type")) .put("privateRefset",
+     * Boolean.parseBoolean(refsetExistingConcept.get("privateRefset"))) .put("localSet", Boolean.parseBoolean(refsetExistingConcept.get("localSet")));
      * 
      * refsetExistingConcept.put("body", refsetExistingConceptBody.toString());
      * 
@@ -159,9 +142,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     @Test
     public void testCreateFromFileList() throws Exception {
 
-        Map<String, String> refsetConcept =
-                editUtil.defineExtensionalRefsetConcept("testCreateFromFileList", "list",
-                        MEMBER_ID_LIST_FILE_NAME, MEMBER_ID_LIST_FILE_PATH);
+        Map<String, String> refsetConcept = editUtil.defineExtensionalRefsetConcept("testCreateFromFileList", "list", MEMBER_ID_LIST_FILE_NAME, MEMBER_ID_LIST_FILE_PATH);
 
         String refsetInternalId = editUtil.createRefset(refsetConcept);
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
@@ -178,8 +159,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     @Test
     public void testCreateFromFileRF2() throws Exception {
 
-        Map<String, String> refsetConcept = editUtil.defineExtensionalRefsetConcept(
-                "testCreateFromFileRF2", "rf2", MEMBER_ID_RF2_FILE_NAME, MEMBER_ID_RF2_FILE);
+        Map<String, String> refsetConcept = editUtil.defineExtensionalRefsetConcept("testCreateFromFileRF2", "rf2", MEMBER_ID_RF2_FILE_NAME, MEMBER_ID_RF2_FILE);
 
         String refsetInternalId = editUtil.createRefset(refsetConcept);
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
@@ -195,11 +175,11 @@ public class RefsetEditingTests extends AbstractRefsetTests {
      */
     @Test
     public void testCreateFromECL() throws Exception {
+
         // the data to create a refset from an ECL
         final String ecl = "<<226528004 | Whiskey (substance) |";
 
-        Map<String, String> refsetConcept =
-                editUtil.defineIntensionalRefsetConcept("testCreateFromECL", ecl);
+        Map<String, String> refsetConcept = editUtil.defineIntensionalRefsetConcept("testCreateFromECL", ecl);
 
         String refsetInternalId = editUtil.createRefset(refsetConcept);
         JsonNode membersNode = editUtil.populateRefset(refsetInternalId, refsetConcept);
@@ -209,8 +189,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     }
 
     /**
-     * Test creating, modifying, and deleting a new version of an existing
-     * refset in edit mode.
+     * Test creating, modifying, and deleting a new version of an existing refset in edit mode.
      *
      * @throws Exception the exception
      */
@@ -219,8 +198,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     public void testCreateNewVersionWithChangesFromPublished() throws Exception {
 
         // ADD NEW VERSION
-        final String newRefsetInternalId =
-                editUtil.createNewRefsetVersion(mainTestingRefsetInternalId);
+        final String newRefsetInternalId = editUtil.createNewRefsetVersion(mainTestingRefsetInternalId);
         assertThat(newRefsetInternalId).isNotEqualTo(mainTestingRefsetInternalId);
         logger.info("New Version Internal ID - " + newRefsetInternalId);
 
@@ -247,8 +225,10 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
             // Must have 0 or 1 tags to work. Add if there exists one
             for (String tag : tags) {
+
                 modifyData.put("tags", tag);
             }
+
         }
 
         // MODIFY NEW VERSION
@@ -288,6 +268,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
             assertThat(refset).isNotNull();
             assertThat(refset.isLatestVersion()).isTrue();
         }
+
     }
 
     /**
@@ -324,6 +305,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     }
 
     public void testCreateInvalids() throws Exception {
+
         // TODO: Determine approach
     }
 
