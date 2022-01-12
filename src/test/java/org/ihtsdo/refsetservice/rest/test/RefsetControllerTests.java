@@ -441,7 +441,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testRefsetConcepts() throws Exception {
 
-        final String branch = "MAIN/2020-07-31";
+        final String branch = "MAIN";
 
         // call the api to get the refset concept list for refset parents
         final ConceptResultList existingRefsetConcepts = getUtil.getRefsetConcepts(branch, RefsetConceptsType.ALL_REFSET_CONCEPTS);
