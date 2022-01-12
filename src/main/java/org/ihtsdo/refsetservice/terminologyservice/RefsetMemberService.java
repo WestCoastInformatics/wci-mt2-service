@@ -2483,7 +2483,7 @@ public class RefsetMemberService {
                 if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == currentList.getItems().size() - 1) {
                     
                     snowstormCallCount++;
-                    final List<Concept> threadConcepts = new ArrayList<Concept>(); //new ObjectMapper().readValue(ModelUtility.toJson(conceptsToProcess), (new TypeReference<List<Concept>>() {}));
+                    final List<Concept> threadConcepts = new ArrayList<Concept>();
                     threadConcepts.addAll(conceptsToProcess);
                     
                     executor.submit(new Runnable() {
@@ -3111,6 +3111,8 @@ public class RefsetMemberService {
                 final String memberUrl = baseUrl + conceptIds;
                 conceptIds = "";
                 snowstormCallCount++;
+                final List<Concept> threadConcepts = new ArrayList<Concept>();
+                threadConcepts.addAll(conceptsToProcess);
                 
                 executor.submit(new Runnable() {
                     
@@ -3129,7 +3131,7 @@ public class RefsetMemberService {
 
                             for (Concept resultConcept : resultList.getItems()) {
 
-                                for (Concept conceptToProcess : conceptsToProcess) {
+                                for (Concept conceptToProcess : threadConcepts) {
 
                                     if (resultConcept.getCode().equals(conceptToProcess.getCode())) {
                                         
