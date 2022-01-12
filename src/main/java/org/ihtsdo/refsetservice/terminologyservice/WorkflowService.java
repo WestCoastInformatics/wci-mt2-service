@@ -717,7 +717,7 @@ public final class WorkflowService {
 
         if (doesBranchExist(editBranchPath)) {
             
-            RefsetMemberService.copyAllMemberCachesToBranch(refsetBranchPath, editBranchPath, "false");
+            RefsetMemberService.copyAllMemberCachesToBranch(refsetBranchPath, editBranchPath, null);
             return editBranchPath;
         } else {
             
@@ -726,7 +726,7 @@ public final class WorkflowService {
             }
             
             editBranchPath = createBranch(refsetBranchPath, EDIT_BRANCH_NAME);
-            RefsetMemberService.copyAllMemberCachesToBranch(refsetBranchPath, editBranchPath, "false");
+            RefsetMemberService.copyAllMemberCachesToBranch(refsetBranchPath, editBranchPath, null);
             
             return editBranchPath;
         }

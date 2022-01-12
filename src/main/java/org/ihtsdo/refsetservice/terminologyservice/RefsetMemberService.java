@@ -1910,6 +1910,8 @@ public class RefsetMemberService {
         
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
+            
+            logger.debug("####### getConceptAncestors USING CACHE");
             return branchCache.get(cacheString);
         }
 
@@ -2483,7 +2485,7 @@ public class RefsetMemberService {
                 if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == currentList.getItems().size() - 1) {
                     
                     snowstormCallCount++;
-                    final List<Concept> threadConcepts = new ArrayList<Concept>(); //new ObjectMapper().readValue(ModelUtility.toJson(conceptsToProcess), (new TypeReference<List<Concept>>() {}));
+                    final List<Concept> threadConcepts = new ArrayList<Concept>();
                     threadConcepts.addAll(conceptsToProcess);
                     
                     executor.submit(new Runnable() {
@@ -2554,6 +2556,8 @@ public class RefsetMemberService {
         
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
+            
+            logger.debug("####### getMemberTaxonomy USING CACHE");
             return branchCache.get(cacheString);
         }
 
@@ -2646,6 +2650,8 @@ public class RefsetMemberService {
         
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
+            
+            logger.debug("####### getConceptDetails USING CACHE");
             return branchCache.get(cacheString);
         }
 
@@ -3091,7 +3097,7 @@ public class RefsetMemberService {
 
     private static void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
         
-        final String baseUrl = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&referencedComponentId=";
+        final String baseUrl = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&active=true&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&referencedComponentId=";
         final List<Concept> conceptsToProcess = new ArrayList<>();
         String conceptIds = "";
         int snowstormCallCount = 0;
@@ -3111,6 +3117,8 @@ public class RefsetMemberService {
                 final String memberUrl = baseUrl + conceptIds;
                 conceptIds = "";
                 snowstormCallCount++;
+                final List<Concept> threadConcepts = new ArrayList<Concept>();
+                threadConcepts.addAll(conceptsToProcess);
                 
                 executor.submit(new Runnable() {
                     
@@ -3121,7 +3129,7 @@ public class RefsetMemberService {
                         try {
                 
                             //logger.debug("%%%%%%%%% populateMembershipInformation IN THREAD ID: " + Thread.currentThread().getId());
-                            //logger.debug("Get Membership URL for Populate: " + memberUrl);
+                            logger.debug("Get Membership URL for Populate: " + memberUrl);
 
                             final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
                             lookupParameters.setGetMembershipInformation(true);
@@ -3129,7 +3137,7 @@ public class RefsetMemberService {
 
                             for (Concept resultConcept : resultList.getItems()) {
 
-                                for (Concept conceptToProcess : conceptsToProcess) {
+                                for (Concept conceptToProcess : threadConcepts) {
 
                                     if (resultConcept.getCode().equals(conceptToProcess.getCode())) {
                                         
@@ -3365,6 +3373,8 @@ public class RefsetMemberService {
             
             // check if the members call has been cached
             if (branchCache.containsKey(cacheString)) {
+                
+                logger.debug("####### cacheMemberAncestors USING CACHE");
                 return true;
             }
 
