@@ -32,8 +32,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @AutoConfigureMockMvc
 public class RefsetPublishTest extends AbstractRefsetTests {
+
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetPublishTest.class);
+
+    static private boolean firstTimeSetup = true;
 
     /**
      * Sets the up.
@@ -42,6 +45,7 @@ public class RefsetPublishTest extends AbstractRefsetTests {
     public void setUp(TestInfo info) {
 
         if (getUtil == null) {
+
             getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
             exportUtil = new ExportUnitTestUtilities(mvc);
             workflowUtil = new WorkflowUnitTestUtilities(mvc, baseUrl, REFSET_FILE_PATH);
@@ -52,19 +56,20 @@ public class RefsetPublishTest extends AbstractRefsetTests {
         baseUrl = "/refset";
 
         try {
-            if (testingProjectId == null) {
+
+            if (firstTimeSetup) {
+
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
-                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID,
-                        MAIN_TESTING_REFSET_VERSION);
-            }
+                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
 
-            if (editUtil == null) {
-                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT,
-                        testingProjectId, testingEditionId);
+                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
+
+                firstTimeSetup = false;
             }
 
         } catch (Exception e) {
+
             e.printStackTrace();
         }
 
@@ -76,6 +81,7 @@ public class RefsetPublishTest extends AbstractRefsetTests {
      */
     @Test
     public void testOnExistingRefsetWithNrcBranch() throws Exception {
+
         // Refset - 500201000057102 (Address type reference set)
         final String refsetId = "500201000057102";
         final String versionDate = "20201130";
@@ -84,24 +90,22 @@ public class RefsetPublishTest extends AbstractRefsetTests {
 
         // verify the new version
         try (final TerminologyService service = new TerminologyService()) {
+
             refsetInternalId = getUtil.getRefsetInternalId(refsetId, versionDate);
             Refset refset = service.get(refsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
             releaseBranchPath = refset.getEdition().getBranch();
 
-            logger.debug(
-                    "Have internalId: " + refsetInternalId + " and branch: " + releaseBranchPath);
+            logger.debug("Have internalId: " + refsetInternalId + " and branch: " + releaseBranchPath);
         } catch (Exception e) {
+
             throw e;
         }
 
         /* Mimic Start Editing */
         // Verify number of members at start
-        callSnow("000 - POST",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members",
-                "Search for reference set ids",
-                "to determine number of members on release branch prior to editing",
-                generateGetMembersPayload(releaseBranchPath, refsetId));
+        callSnow("000 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members", "Search for reference set ids",
+            "to determine number of members on release branch prior to editing", generateGetMembersPayload(releaseBranchPath, refsetId));
 
         List<Concept> members = getMembers(refsetInternalId);
         assertThat(members.size()).isEqualTo(5);
@@ -110,142 +114,102 @@ public class RefsetPublishTest extends AbstractRefsetTests {
         // cycle i.e., since last release/publication
         final String refsetBranchName = "refset-" + refsetId;
 
-        callSnow("111 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches",
-                "createBranch", "to create the refset branch under the release branch",
-                generateNewBranchPayload(refsetBranchName, releaseBranchPath));
+        callSnow("111 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches", "createBranch", "to create the refset branch under the release branch",
+            generateNewBranchPayload(refsetBranchName, releaseBranchPath));
 
-        callSnow("222 - POST",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members",
-                "Search for reference set ids",
-                "to determine number of members on refset branch prior to editing",
-                generateGetMembersPayload(refsetBranchName, refsetId));
+        callSnow("222 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members", "Search for reference set ids",
+            "to determine number of members on refset branch prior to editing", generateGetMembersPayload(refsetBranchName, refsetId));
 
         // Create Edit branch
         final String refsetBranchPath = releaseBranchPath + "/" + refsetBranchName;
         final String editBranchName = "edit";
         final String editBranchPath = refsetBranchPath + "/" + editBranchName;
 
-        callSnow("333 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches",
-                "createBranch", "to create the edit branch under the refset branch",
-                generateNewBranchPayload(editBranchName, refsetBranchPath));
+        callSnow("333 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches", "createBranch", "to create the edit branch under the refset branch",
+            generateNewBranchPayload(editBranchName, refsetBranchPath));
 
-        callSnow("444 - POST",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members",
-                "Search for reference set ids",
-                "to determine number of members on edit branch prior to editing",
-                generateGetMembersPayload(editBranchPath, refsetId));
+        callSnow("444 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members", "Search for reference set ids",
+            "to determine number of members on edit branch prior to editing", generateGetMembersPayload(editBranchPath, refsetId));
 
         // populate
         // TODO: Update RefsetMemberService.addMembers() to use editionBranch +
-        callSnow("555 - ADD MEMBERS - POST",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/{branch}/members",
-                "Create a refseterence set member", "to create a member on the edit branch",
-                generateAddMemberPayload(editBranchPath, "404684003", refsetId));
+        callSnow("555 - ADD MEMBERS - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/{branch}/members", "Create a refseterence set member", "to create a member on the edit branch",
+            generateAddMemberPayload(editBranchPath, "404684003", refsetId));
 
-        callSnow("666 - POST",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members",
-                "Search for reference set ids",
-                "to determine number of members on edit branch after editing",
-                generateGetMembersPayload(editBranchPath, refsetId));
+        callSnow("666 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members", "Search for reference set ids",
+            "to determine number of members on edit branch after editing", generateGetMembersPayload(editBranchPath, refsetId));
 
         /* Mimic Ready for Review */
         // Merge/promote edit branch to review branch
         String comment = "The refset is at ready_for_review";
 
-        callSnow("777 - POST",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members",
-                "Search for reference set ids",
-                "to determine number of members on refset branch prior to merging",
-                generateGetMembersPayload(refsetBranchPath, refsetId));
+        callSnow("777 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members", "Search for reference set ids",
+            "to determine number of members on refset branch prior to merging", generateGetMembersPayload(refsetBranchPath, refsetId));
 
-        callSnow("888 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/merges",
-                "Perform a branch rebase or promotion",
-                "to promote the content in the edit branch to the refset branch (with a merge comment: "
-                        + comment + ")",
-                generateMergePayload(editBranchPath, refsetBranchPath, comment));
+        callSnow("888 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/merges", "Perform a branch rebase or promotion",
+            "to promote the content in the edit branch to the refset branch (with a merge comment: " + comment + ")", generateMergePayload(editBranchPath, refsetBranchPath, comment));
 
-        callSnow("999 - POST",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members",
-                "Search for reference set ids",
-                "to determine number of members on refset branch after merging",
-                generateGetMembersPayload(refsetBranchPath, refsetId));
+        callSnow("999 - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members", "Search for reference set ids",
+            "to determine number of members on refset branch after merging", generateGetMembersPayload(refsetBranchPath, refsetId));
 
         // Delete edit branch - If/when the refset goes back into "IN_EDIT", a
         // new branch will be created for that specific edit
-        comment =
-                "The refset editing cycle is done. Delete refset branch from about-to-be-published release branch.";
+        comment = "The refset editing cycle is done. Delete refset branch from about-to-be-published release branch.";
 
-        callSnow("AAA - DELETE",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/admin/" + editBranchPath
-                        + "/actions/hard-delete",
-                "Hard delete a branch including its content and history",
-                "to remove the edit branch. A new one will be created if more editing occurs.",
-                generateDeletePayload(editBranchPath));
+        callSnow("AAA - DELETE", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/admin/" + editBranchPath + "/actions/hard-delete", "Hard delete a branch including its content and history",
+            "to remove the edit branch. A new one will be created if more editing occurs.", generateDeletePayload(editBranchPath));
 
         /* Mimic Ready for Pub */
         // Merge review branch to code system branch
         // Merge/promote edit branch to review branch
 
-        callSnow("BBB - POST",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members",
-                "Search for reference set ids",
-                "to determine number of members on release branch prior to merging",
-                generateGetMembersPayload(releaseBranchPath, refsetId));
+        callSnow("BBB - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members", "Search for reference set ids",
+            "to determine number of members on release branch prior to merging", generateGetMembersPayload(releaseBranchPath, refsetId));
 
         comment = "The refset is at ready_for_publication";
 
-        callSnow("CCC - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/merges",
-                "Perform a branch rebase or promotion",
-                "to promote the content in the edit branch to the refset branch (with a merge comment: "
-                        + comment + ")",
-                generateMergePayload(refsetBranchPath, releaseBranchPath, comment));
+        callSnow("CCC - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/merges", "Perform a branch rebase or promotion",
+            "to promote the content in the edit branch to the refset branch (with a merge comment: " + comment + ")", generateMergePayload(refsetBranchPath, releaseBranchPath, comment));
 
-        callSnow("DDD - POST",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members",
-                "Search for reference set ids",
-                "to determine number of members on release branch after merging",
-                generateGetMembersPayload(releaseBranchPath, refsetId));
+        callSnow("DDD - POST", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/{branch}/members", "Search for reference set ids",
+            "to determine number of members on release branch after merging", generateGetMembersPayload(releaseBranchPath, refsetId));
 
         // Delete refset branch - This is done once we are notified that
-        comment =
-                "The refset editing cycle is done. Delete refset branch from about-to-be-published release branch.";
+        comment = "The refset editing cycle is done. Delete refset branch from about-to-be-published release branch.";
 
-        callSnow("EEE - DELETE",
-                "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/admin/"
-                        + refsetBranchPath + "/actions/hard-delete",
-                "Hard delete a branch including its content and history",
-                "to remove the refset branch. A new one will be created during next edit cycle (after current one published).",
-                generateDeletePayload(refsetBranchPath));
+        callSnow("EEE - DELETE", "https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/admin/" + refsetBranchPath + "/actions/hard-delete",
+            "Hard delete a branch including its content and history", "to remove the refset branch. A new one will be created during next edit cycle (after current one published).",
+            generateDeletePayload(refsetBranchPath));
     }
 
-    private String generateAddMemberPayload(String editBranchPath, String conceptId,
-        String refsetId) {
+    private String generateAddMemberPayload(String editBranchPath, String conceptId, String refsetId) {
 
-        return "\nBranch: " + editBranchPath + "\n{\n" + " \"refsetId\": \"" + refsetId + "\",\n"
-                + " \"referencedComponentId\": \"" + conceptId + "\"\n" + "}";
+        return "\nBranch: " + editBranchPath + "\n{\n" + " \"refsetId\": \"" + refsetId + "\",\n" + " \"referencedComponentId\": \"" + conceptId + "\"\n" + "}";
     }
 
     private String generateGetMembersPayload(String branch, String refsetId) {
+
         return "\nBranch: " + branch + " \nRefsetId: " + refsetId;
     }
 
     private String generateDeletePayload(String branchToDelete) {
+
         return "\nBranch to Delete: " + branchToDelete;
     }
 
     private String generateMergePayload(String fromBranch, String toBranch, String comment) {
-        return "\n{\n" + " \"commitComment\": \"" + comment + "\",\n" + " \"source\": \""
-                + fromBranch + "\",\n" + " \"target\": \"" + toBranch + "\"\n" + "}";
+
+        return "\n{\n" + " \"commitComment\": \"" + comment + "\",\n" + " \"source\": \"" + fromBranch + "\",\n" + " \"target\": \"" + toBranch + "\"\n" + "}";
 
     }
 
     private String generateNewBranchPayload(String newBranch, String parentBranch) {
-        return "\n{\n" + "  \"metadata\": {},\n" + "  \"name\": \"" + newBranch + "\",\n"
-                + "  \"parent\": \"" + parentBranch + "\"\n" + "}";
+
+        return "\n{\n" + "  \"metadata\": {},\n" + "  \"name\": \"" + newBranch + "\",\n" + "  \"parent\": \"" + parentBranch + "\"\n" + "}";
     }
 
-    private void callSnow(String url, String restType, String snowMethodDescription, String reason,
-        String payload) throws Exception {
+    private void callSnow(String url, String restType, String snowMethodDescription, String reason, String payload) throws Exception {
+
         logger.info(" Making " + restType + " call on method " + snowMethodDescription);
         logger.info("In order to be able to: " + reason);
         logger.info(" on URL  " + url);
@@ -253,19 +217,18 @@ public class RefsetPublishTest extends AbstractRefsetTests {
     }
 
     private List<Concept> getMembers(String refsetInternalId) throws Exception {
+
         MvcResult result = null;
         String content = null;
 
         logger.debug("  Find members for refset internal id: " + refsetInternalId);
-        final String url =
-                "/refset/" + refsetInternalId + "/members?limit=500&offset=0&displayType=list";
+        final String url = "/refset/" + refsetInternalId + "/members?limit=500&offset=0&displayType=list";
         logger.info("Testing url - " + url);
 
         result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
-        ConceptResultList members =
-                new ObjectMapper().readValue(content, (ConceptResultList.class));
+        ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
 
         // Testing Results
         assertThat(members).isNotNull();

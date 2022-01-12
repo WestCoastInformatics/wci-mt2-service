@@ -53,6 +53,8 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
     /** The users . */
     private static List<String> users = new ArrayList<>(Arrays.asList(AUTHOR_USER, REVIEWER_USER, ADMIN_USER));
 
+    static private boolean firstTimeSetup = true;
+
     /**
      * Sets the up.
      */
@@ -72,16 +74,15 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
 
         try {
 
-            if (testingProjectId == null) {
+            if (firstTimeSetup) {
 
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
                 mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
-            }
-
-            if (editUtil == null) {
 
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
+
+                firstTimeSetup = false;
             }
 
         } catch (Exception e) {

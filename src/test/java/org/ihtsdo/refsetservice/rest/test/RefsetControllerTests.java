@@ -104,7 +104,9 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     // by tags
     private static final String membersSearchQueryList[] = new String[] {
         "human", "Animal", "HAIR", "Non", "niet", "menselijk", "dierenhaar", "poil", "dierlijk", "haar", "276310004", "412393015", "1495334015"
-    };;
+    };
+
+    static private boolean firstTimeSetup = true;
 
     /**
      * Sets the up.
@@ -119,12 +121,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
             workflowUtil = new WorkflowUnitTestUtilities(mvc, baseUrl, REFSET_FILE_PATH);
         }
 
-        // skip @BeforeEach in testRttMigration
-        if (info.getDisplayName().equals("testRttMigration()")) {
-
-            return;
-        }
-
         // Setup Utility classes
         objectMapper = new ObjectMapper();
         JacksonTester.initFields(this, objectMapper);
@@ -132,56 +128,56 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         try {
 
-            if (testingProjectId == null) {
+            if (firstTimeSetup) {
 
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
                 mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
-            }
-
-            if (editUtil == null) {
 
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
+
+                // Ensure have the export directory created on testing system
+
+                String exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
+                File f = new File(exportFileDir);
+
+                if (!f.exists()) {
+
+                    throw new Exception("Tests with Export because the expected export directory doesn't exist: " + exportFileDir);
+                }
+
+                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
+
+                inactiveRefsetInternalId = getUtil.getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
+
+                firstConceptDescList.add("Venom (substance)");
+                firstConceptDescList.add("Venom");
+                firstConceptDescList.add("venin");
+                firstConceptDescList.add("gif");
+
+                firstConceptParentDescList.add("Animal agent (substance)");
+                firstConceptParentDescList.add("Animal agent");
+                firstConceptParentDescList.add("produit animal");
+                firstConceptParentDescList.add("dierlijk product");
+
+                secondConceptDescList.add("Sheep wool (substance)");
+                secondConceptDescList.add("Sheep wool");
+                secondConceptDescList.add("schapenwol");
+                secondConceptDescList.add("laine de mouton");
+
+                inactiveConceptDescList.add("Entire sclerocorneal junction (body structure)");
+                inactiveConceptDescList.add("Entire sclerocorneal junction");
+
+                detailSearchNonAcceptableConceptDescList.add("Non-human hair - material (substance)");
+                detailSearchNonAcceptableConceptDescList.add("Animal hair");
+                detailSearchNonAcceptableConceptDescList.add("dierlijk haar");
+                detailSearchNonAcceptableConceptDescList.add("poil animal");
+
+                conceptSearchDescList.add("Brazilian pemphigus foliaceus");
+
+                firstTimeSetup = false;
             }
 
-            String exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
-
-            // Ensure have the export directory created on testing system
-            File f = new File(exportFileDir);
-
-            if (!f.exists()) {
-
-                throw new Exception("Tests with Export because the expected export directory doesn't exist: " + exportFileDir);
-            }
-
-            mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
-
-            inactiveRefsetInternalId = getUtil.getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
-
-            firstConceptDescList.add("Venom (substance)");
-            firstConceptDescList.add("Venom");
-            firstConceptDescList.add("venin");
-            firstConceptDescList.add("gif");
-
-            firstConceptParentDescList.add("Animal agent (substance)");
-            firstConceptParentDescList.add("Animal agent");
-            firstConceptParentDescList.add("produit animal");
-            firstConceptParentDescList.add("dierlijk product");
-
-            secondConceptDescList.add("Sheep wool (substance)");
-            secondConceptDescList.add("Sheep wool");
-            secondConceptDescList.add("schapenwol");
-            secondConceptDescList.add("laine de mouton");
-
-            inactiveConceptDescList.add("Entire sclerocorneal junction (body structure)");
-            inactiveConceptDescList.add("Entire sclerocorneal junction");
-
-            detailSearchNonAcceptableConceptDescList.add("Non-human hair - material (substance)");
-            detailSearchNonAcceptableConceptDescList.add("Animal hair");
-            detailSearchNonAcceptableConceptDescList.add("dierlijk haar");
-            detailSearchNonAcceptableConceptDescList.add("poil animal");
-
-            conceptSearchDescList.add("Brazilian pemphigus foliaceus");
         } catch (Exception e) {
 
             e.printStackTrace();

@@ -34,6 +34,8 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetEditingTests.class);
 
+    static private boolean firstTimeSetup = true;
+
     /**
      * Sets the up.
      */
@@ -53,16 +55,15 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
         try {
 
-            if (testingProjectId == null) {
+            if (firstTimeSetup) {
 
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
                 mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
-            }
-
-            if (editUtil == null) {
 
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
+
+                firstTimeSetup = false;
             }
 
         } catch (Exception e) {
