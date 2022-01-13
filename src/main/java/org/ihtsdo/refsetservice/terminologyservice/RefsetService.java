@@ -1,5 +1,7 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,6 +13,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
@@ -1204,6 +1208,7 @@ public class RefsetService {
             final long start = System.currentTimeMillis();
             ResultList<Refset> results = new ResultList<Refset>();
             String query = searchParameters.getQuery();
+            final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!(){}[]^\"~*?:\\/") + "]+?"; 
 
             final PfsParameter pfs = new PfsParameter();
 
@@ -1225,6 +1230,9 @@ public class RefsetService {
 
             if (query != null && !query.equals("")) {
 
+                query = URLDecoder.decode(query, StandardCharsets.UTF_8);
+                searchParameters.setQuery(query);
+                
                 final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
                         "organizationName", "versionStatus", "versionDate", "modified", "privateRefset", "editionShortName", "assignedUser");
                 String[] queryParts = query.split(" AND ");
@@ -1238,12 +1246,13 @@ public class RefsetService {
 
                     if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
                         
-                        final String value =  QueryParserBase.escape(String.join(":", Arrays.copyOfRange(keyValue, 1, keyValue.length)));
+                        final String value =  (String.join(":", Arrays.copyOfRange(keyValue, 1, keyValue.length))).replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0");
                         filterQuery += keyValue[0] + ":" + value + " AND ";
+                        
                     } else {
                         
                         termQuery += queryPart + "* AND ";
-                        termQueryForRt2 += QueryParserBase.escape(queryPart) + "* AND ";
+                        termQueryForRt2 += queryPart.replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0") + "* AND ";
                     }
                 }
 
@@ -1256,6 +1265,7 @@ public class RefsetService {
                     
                     // if it was requested search member concepts                    
                     if (searchConcepts) {
+                        
                         refsetIds.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
                         
                         // search descriptions of Simple type reference set (foundation metadata concept) "<446609009"

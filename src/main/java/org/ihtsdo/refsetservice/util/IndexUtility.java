@@ -947,7 +947,7 @@ public final class IndexUtility {
         }
         
         String wildcardQuery = query;
-        Pattern regex = Pattern.compile("[a-zA-Z0-9_]+:[\"\\s]*([-a-zA-Z0-9_\\s]*?)(?:\\)|\\sAND?|\\sOR|\"|$)");
+        Pattern regex = Pattern.compile("[a-zA-Z0-9_]+:[\"\\s]*([" + Pattern.quote("+@$.#=&|><!{}[]^~*?\\/") + "\\-a-zA-Z0-9_\\s]*?)(?:\\)|\\sAND?|\\sOR|\"|$)");
         Matcher regexMatcher = regex.matcher(wildcardQuery);
         Set<String> stringFieldNames = IndexUtility.getIndexedFieldNames(clazz, "string");
         int matchIndexCounter = 0;
