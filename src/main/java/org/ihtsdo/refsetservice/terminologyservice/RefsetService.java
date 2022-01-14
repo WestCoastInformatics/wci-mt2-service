@@ -1028,10 +1028,14 @@ public class RefsetService {
 
         final ConceptResultList results = new ConceptResultList();
         final Set<String> existingRefsetIds = new HashSet<>();
-        final String ecl = StringUtility.encodeValue(QueryParserBase.escape("<<" + SIMPLE_TYPE_REFERENCE_SET));
+        String ecl = StringUtility.encodeValue(QueryParserBase.escape("<<" + SIMPLE_TYPE_REFERENCE_SET));
+        
+        if (!areParentConcepts) { 
+            ecl = StringUtility.encodeValue(QueryParserBase.escape("<" + SIMPLE_TYPE_REFERENCE_SET));
+        }
         final List<Edition> editions = getEditionForBranch(branch);
-        final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module="
-            + editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(",")) + "," + SIMPLE_TYPE_REFERENCE_SET_MODULE_ID;
+        final String modules = editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(",")) + "," + SIMPLE_TYPE_REFERENCE_SET_MODULE_ID;
+        final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module=" + modules;
 
         logger.debug("getRefsetConcepts URL: " + url);
 
