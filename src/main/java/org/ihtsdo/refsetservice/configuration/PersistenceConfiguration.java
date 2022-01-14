@@ -50,7 +50,7 @@ public class PersistenceConfiguration {
 
             @Override
             public void migrate(final Flyway flyway) {
-                logger.debug("******* SHOULD BE MIGRATING");
+                logger.debug("customMigrationStrategy SHOULD BE MIGRATING");
                 flyway.migrate();
             }
         };
@@ -68,7 +68,7 @@ public class PersistenceConfiguration {
     public Flyway customFlyway() throws Exception {
 
         final Properties config = PropertyUtility.getProperties();
-        logger.debug("******* customFlyway config: ", config);
+        logger.debug("customFlyway customFlyway config: ", config);
 
         final String dbName = properties
                 .getProperty("app.db_name");

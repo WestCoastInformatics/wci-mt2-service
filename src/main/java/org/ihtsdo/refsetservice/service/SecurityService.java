@@ -80,7 +80,7 @@ public class SecurityService implements AutoCloseable {
         
         if (object != null) {
             
-            logger.debug("******** SESSION USER: " + ModelUtility.toJson(object));
+            logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(object));
             return (User) object;
         }
         
@@ -90,12 +90,12 @@ public class SecurityService implements AutoCloseable {
             final User testUser = new User("unitTestUser", "Unit Test User", "", new HashSet<String>());
             testUser.getRoles().add(User.ROLE_AUTHOR);
             testUser.getRoles().add(User.ROLE_REVIEWER);
-            logger.debug("******** SESSION USER: " + ModelUtility.toJson(testUser));
+            logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(testUser));
             return testUser;
         }
         
         final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", new HashSet<String>());
-        logger.debug("******** SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
+        logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
         
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
         
@@ -107,16 +107,16 @@ public class SecurityService implements AutoCloseable {
         
         Cookie[] cookies = requestAttributes.getRequest().getCookies();
         HttpServletResponse response = ((ServletRequestAttributes)requestAttributes).getResponse();
-        logger.debug("****************** cookies: " + ModelUtility.toJson(cookies));
-        logger.debug("****************** Builder Host: " + builder.build().toString());
-        logger.debug("****************** getServerName: " + requestAttributes.getRequest().getServerName());
-        logger.debug("****************** getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
+        logger.debug("getUserFromSession cookies: " + ModelUtility.toJson(cookies));
+        logger.debug("getUserFromSession Builder Host: " + builder.build().toString());
+        logger.debug("getUserFromSession getServerName: " + requestAttributes.getRequest().getServerName());
+        logger.debug("getUserFromSession getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
         
         for (int i = 0; i < cookies.length ; i++) {
             
             if (cookies[i].getName().contains("ims-ihtsdo")) {
                 
-                logger.debug("****************** ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+                logger.debug("getUserFromSession ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
                 Cookie cookie = new Cookie(cookies[i].getName(), null);
                 cookie.setPath("/"); //cookies[i].getPath()
                 cookie.setDomain(".ihtsdotools.org"); //cookies[i].getDomain()
@@ -127,7 +127,7 @@ public class SecurityService implements AutoCloseable {
                 
             } else if (cookies[i].getName().contains("rt2-auth")) {
                 
-                logger.debug("****************** rt2 auth cookie: " + ModelUtility.toJson(cookies[i]));
+                logger.debug("getUserFromSession rt2 auth cookie: " + ModelUtility.toJson(cookies[i]));
                 Cookie cookie = new Cookie(cookies[i].getName(), null);
                 cookie.setPath("/"); //cookies[i].getPath()
                 cookie.setDomain(cookies[i].getDomain()); //cookies[i].getDomain()
