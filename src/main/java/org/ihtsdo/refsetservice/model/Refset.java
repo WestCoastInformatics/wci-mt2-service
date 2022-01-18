@@ -102,7 +102,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = false)
     private boolean localSet;
 
-    /** The latest verions flag. */
+    /** The latest version flag. */
     @Column(nullable = true)
     private boolean latestVersion;
 
@@ -118,21 +118,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private boolean feedbackVisible;
     
-    /** The flag for if a user can edit this refset. */
+    /** The list of user roles for this refset. */
     @Transient
-    private boolean canEdit;
-    
-    /** The flag for if a user can review this refset. */
-    @Transient
-    private boolean canReview;
-    
-    /** The flag for if a user can publish this refset. */
-    @Transient
-    private boolean canPublish;
-    
-    /** The flag for if a user can view this refset. */
-    @Transient
-    private boolean canView;
+    private List<String> roles;
     
     /** The flag for if the refset is locked due to an edit. */
     @Transient
@@ -149,14 +137,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The complete branch path of the refset. */
     @Transient
     private String branchPath;
-    
-    /** The concept members added through inclusion clauses. */
-    @Transient
-    private List<String> inclusionConcepts = new ArrayList<>();
-    
-    /** The concept members added through exclusion clauses. */
-    @Transient
-    private List<String> exclusionConcepts = new ArrayList<>();
     
     /** The descriptions. */
     @Transient
@@ -284,10 +264,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         assignedUser = other.getAssignedUser();
         privateRefset = other.isPrivateRefset();
         downloadable = other.isDownloadable();
-        canEdit = other.getCanEdit();
-        canReview = other.getCanReview();
-        canPublish = other.getCanPublish();
-        canView = other.getCanView();
         locked = other.isLocked();
         availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
@@ -295,8 +271,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         latestVersion = other.isLatestVersion();
         feedbackVisible = other.isFeedbackVisible();
         versionList = other.getVersionList();
-        inclusionConcepts = other.getInclusionConcepts();
-        exclusionConcepts = other.getExclusionConcepts();
+        roles = other.getRoles();
         descriptions = other.getDescriptions();
         definitionClauses = new ArrayList<DefinitionClause>(other.getDefinitionClauses());
         tags = new HashSet<String>(other.getTags());
@@ -481,44 +456,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
-     * Gets the inclusion concepts.
-     *
-     * @return the inclusion concepts
-     */
-    @JsonGetter()
-    public List<String> getInclusionConcepts() {
-        return inclusionConcepts;
-    }
-
-    /**
-     * Sets the inclusion concepts.
-     *
-     * @param inclusionConcepts the inclusion concepts
-     */
-    public void setInclusionConcepts(List<String> inclusionConcepts) {
-        this.inclusionConcepts = inclusionConcepts;
-    }
-    
-    /**
-     * Gets the exclusion concepts.
-     *
-     * @return the exclusion concepts
-     */
-    @JsonGetter()
-    public List<String> getExclusionConcepts() {
-        return exclusionConcepts;
-    }
-    
-    /**
-     * Sets the exclusion concepts.
-     *
-     * @param exclusionConcepts the exclusion concepts
-     */
-    public void setExclusionConcepts(List<String> exclusionConcepts) {
-        this.exclusionConcepts = exclusionConcepts;
-    }
-    
-    /**
      * Gets the descriptions.
      *
      * @return the descriptions
@@ -555,6 +492,26 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setVersionList(List<Map<String, String>> versionList) {
         this.versionList = versionList;
+    }
+    
+    /**
+     * @return the roles
+     */
+    @JsonGetter()
+    public List<String> getRoles() {
+        
+        if (roles == null) {
+            roles = new ArrayList<>();
+        }
+        
+        return roles;
+    }
+    
+    /**
+     * @param roles the roles
+     */
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
     
     /**
@@ -844,82 +801,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
-     * Gets the flag that shows if the user can edit this refset.
-     *
-     * @return the canEdit flag
-     */
-    @JsonGetter()
-    public boolean getCanEdit() {
-        return canEdit;
-    }
-    
-    /**
-     * Sets the flag that shows if the user can edit this refset.
-     *
-     * @param canEdit the canEdit flag
-     */
-    public void setCanEdit(final boolean canEdit) {
-        this.canEdit = canEdit;
-    }
-    
-    /**
-     * Gets the flag that shows if the user can review this refset.
-     *
-     * @return the canReview flag
-     */
-    @JsonGetter()
-    public boolean getCanReview() {
-        return canReview;
-    }
-    
-    /**
-     * Sets the flag that shows if the user can review this refset.
-     *
-     * @param canReview the canReview flag
-     */
-    public void setCanReview(final boolean canReview) {
-        this.canReview = canReview;
-    }
-    
-    /**
-     * Gets the flag that shows if the user can publish this refset.
-     *
-     * @return the canPublish flag
-     */
-    @JsonGetter()
-    public boolean getCanPublish() {
-        return canPublish;
-    }
-    
-    /**
-     * Sets the flag that shows if the user can publish this refset.
-     *
-     * @param canPublish the canPublish flag
-     */
-    public void setCanPublish(final boolean canPublish) {
-        this.canPublish = canPublish;
-    }
-    
-    /**
-     * Gets the flag that shows if the user can view this refset.
-     *
-     * @return the canView flag
-     */
-    @JsonGetter()
-    public boolean getCanView() {
-        return canView;
-    }
-    
-    /**
-     * Sets the flag that shows if the user can view this refset.
-     *
-     * @param canView the canView flag
-     */
-    public void setCanView(final boolean canView) {
-        this.canView = canView;
-    }
-    
-    /**
      * Gets the flag that shows if the refset is locked due to edits.
      *
      * @return the locked flag
@@ -1063,6 +944,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the project ID
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @IndexingDependency(derivedFrom = @ObjectPath({@PropertyValue(propertyName = "project")}))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getProjectId() {
         return project == null ? null : project.getId();
     }
@@ -1158,16 +1042,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((parentConceptId == null) ? 0 : parentConceptId.hashCode());
         result = prime * result + ((branchPath == null) ? 0 : branchPath.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
-        result = prime * result + ((inclusionConcepts == null) ? 0 : inclusionConcepts.hashCode());
-        result = prime * result + ((exclusionConcepts == null) ? 0 : exclusionConcepts.hashCode());
+        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (downloadable ? 1 : 0);
         result = prime * result + (feedbackVisible ? 1 : 0);
         result = prime * result + (latestVersion ? 1 : 0);
-        result = prime * result + (canEdit ? 1 : 0);
-        result = prime * result + (canReview ? 1 : 0);
-        result = prime * result + (canPublish ? 1 : 0);
-        result = prime * result + (canView ? 1 : 0);
         result = prime * result + (locked ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
@@ -1252,22 +1131,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
             return false;
         }
         
-        if (inclusionConcepts == null) {
-            if (other.inclusionConcepts != null) {
-                return false;
-            }
-        } else if (!inclusionConcepts.equals(other.inclusionConcepts)) {
-            return false;
-        }
-        
-        if (exclusionConcepts == null) {
-            if (other.exclusionConcepts != null) {
-                return false;
-            }
-        } else if (!exclusionConcepts.equals(other.exclusionConcepts)) {
-            return false;
-        }
-        
         if (descriptions == null) {
             if (other.descriptions != null) {
                 return false;
@@ -1305,6 +1168,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
                 return false;
             }
         } else if (!versionNotes.equals(other.versionNotes)) {
+            return false;
+        }
+        
+        if (roles == null) {
+            if (other.roles != null) {
+                return false;
+            }
+        } else if (!roles.equals(other.roles)) {
             return false;
         }
 
@@ -1349,22 +1220,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         }
         
         if (feedbackVisible != other.feedbackVisible) {
-            return false;
-        }
-        
-        if (canEdit != other.canEdit) {
-            return false;
-        }
-        
-        if (canReview != other.canReview) {
-            return false;
-        }
-        
-        if (canPublish != other.canPublish) {
-            return false;
-        }
-        
-        if (canView != other.canView) {
             return false;
         }
         

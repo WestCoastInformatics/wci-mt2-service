@@ -49,8 +49,11 @@ public class SecurityService implements AutoCloseable {
 	/** The handler. */
 	private static SecurityServiceHandler handler = null;
 	
-	/** The handler. */
+	/** The session key for the user object. */
 	public static final String SESSION_USER_OBJECT_KEY = "RT2_USER_OBJECT";
+	
+	/** The session key for the list of user projects. */
+	public static final String SESSION_USER_PROJECTS = "RT2_USER_PROJECTS";
 	
 	/** The handler. */
 	public static final String GUEST_USERNAME = "nonLoggedInUser";
@@ -88,8 +91,9 @@ public class SecurityService implements AutoCloseable {
         if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
             
             final User testUser = new User("unitTestUser", "Unit Test User", "", new HashSet<String>());
-            testUser.getRoles().add(User.ROLE_AUTHOR);
-            testUser.getRoles().add(User.ROLE_REVIEWER);
+            testUser.getRoles().add("ROLE_rt2-all-all-author");
+            testUser.getRoles().add("ROLE_rt2-all-all-reviewer");
+            testUser.getRoles().add("ROLE_rt2-all-all-admin");
             logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(testUser));
             return testUser;
         }
@@ -198,11 +202,15 @@ public class SecurityService implements AutoCloseable {
 	 * @throws Exception
 	 */
 	public User authenticate(final String userName, final String password) throws Exception {
+	    
 		// Check userName and password are not null
-		if (userName == null || userName.isEmpty())
+		if (userName == null || userName.isEmpty()) {
 			throw new LocalException("Invalid userName: null");
-		if (password == null || password.isEmpty())
+		}
+		
+		if (password == null || password.isEmpty()) {
 			throw new LocalException("Invalid password: null");
+		}
 
 		Properties config = PropertyUtility.getProperties();
 
@@ -292,103 +300,6 @@ public class SecurityService implements AutoCloseable {
 		removeFromSession(SESSION_USER_OBJECT_KEY);
 	}
 
-	/* see superclass */
-	//@Override
-	public String getUsernameForToken(final String authToken) throws Exception {
-		// use guest user for null auth token
-		if (authToken == null)
-			throw new LocalException(
-					"Attempt to access a service without an AuthToken, the user is likely not logged in.");
-
-		final boolean allowGuest = (StringUtils.isNotBlank(PropertyUtility.getProperties().getProperty("security.guest.disabled")))
-				? "true".equals(PropertyUtility.getProperties().getProperty("security.guest.disabled"))
-				: false;
-		
-		// handle guest user unless
-		if (authToken.equals("guest") && allowGuest) {
-			return "guest";
-		}
-
-		// Replace double quotes in auth token.
-		final String parsedToken = authToken.replace("\"", "");
-
-		// Check auth token against the userName map
-		if (tokenUsernameMap.containsKey(parsedToken)) {
-			String userName = tokenUsernameMap.get(parsedToken);
-
-			// Validate that the user has not timed out.
-			if (handler.timeoutUser(userName)) {
-
-				if (tokenTimeoutMap.get(parsedToken) == null) {
-					throw new LocalException("No login timeout set for authToken.");
-				}
-
-				if (tokenTimeoutMap.get(parsedToken).before(new Date())) {
-					throw new LocalException("AuthToken has expired. Please reload and log in again.");
-				}
-				tokenTimeoutMap.put(parsedToken, new Date(new Date().getTime() + timeout));
-			}
-			return userName;
-		} else {
-			throw new LocalException("AuthToken does not have a valid userName.");
-		}
-	}
-
-	public Set<String> getApplicationRoleForToken(final String authToken) throws Exception {
-		if (authToken == null) {
-			throw new LocalException(
-					"Attempt to access a service without an AuthToken, the user is likely not logged in.");
-		}
-		
-		final boolean allowGuest = (StringUtils.isNotBlank(PropertyUtility.getProperties().getProperty("security.guest.disabled")))
-				? "true".equals(PropertyUtility.getProperties().getProperty("security.guest.disabled"))
-				: false;
-				
-		// Handle "guest" user
-		if (authToken.equals("guest") && allowGuest) {
-			return new HashSet<>(Arrays.asList(User.ROLE_USER));
-		}
-
-		final String parsedToken = authToken.replace("\"", "");
-		final String userName = getUsernameForToken(parsedToken);
-
-		// check for null userName
-		if (userName == null) {
-			throw new LocalException("Unable to find user for the AuthToken");
-		}
-		final User user = getUser(userName.toLowerCase());
-		if (user == null) {
-			return new HashSet<>(Arrays.asList(User.ROLE_USER));
-			// throw new
-			// LocalException("Unable to obtain user information for userName = " +
-			// userName);
-		}
-		return user.getRoles();
-	}
-
-//	// TODO: fix if required
-//	public List<String> getUserRoleForToken(final String authToken, final String projectId) throws Exception {
-//		if (authToken == null) {
-//			throw new LocalException(
-//					"Attempt to access a service without an AuthToken, the user is likely not logged in.");
-//		}
-//		if (projectId == null) {
-//			throw new Exception("Unexpected null project id");
-//		}
-//
-//		final String userName = getUsernameForToken(authToken);
-//		//final ProjectService service = new ProjectService();
-//		String result = null;
-//		try (final TerminologyService service = new TerminologyService();)
-//		{
-//			// result = service.getProject(projectId).getUserRoleMap().get(getUser(userName));
-//			if (result == null) {
-//				result = UserRole.VIEWER;
-//			}
-//		}
-//		return result;
-//	}
-
 	/**
 	 * 
 	 * @param id
@@ -462,229 +373,10 @@ public class SecurityService implements AutoCloseable {
 		}
 	}
 
-	// TODO: Fix if required
-	// public UserList getUsers() {
-	//		javax.persistence.Query query = manager.createQuery("select u from UserJpa u");
-	//		final List<User> m = query.getResultList();
-	//		final UserListJpa mapUserList = new UserListJpa();
-	//		mapUserList.setObjects(m);
-	//		mapUserList.setTotalCount(m.size());
-	//		return mapUserList;
-	// }
-
-//	/* see superclass */
-//	@SuppressWarnings("unchecked")
-//	@Override
-//	public UserList findUsersForQuery(String query, PfsParameter pfs) throws Exception {
-//		logger.info("Security Service - find users " + query + ", pfs= " + pfs);
-//
-//		if (query == null || query.replace("*", "").length() < 3) {
-//			try {
-//				int[] totalCt = new int[1];
-//				final List<User> list = (List<User>) getQueryResults(
-//						query == null || query.isEmpty() ? "id:[* TO *]" : query, UserJpa.class, UserJpa.class, pfs,
-//						totalCt);
-//				final UserList result = new UserListJpa();
-//				result.setTotalCount(totalCt[0]);
-//				result.setObjects(list);
-//				for (final User user : result.getObjects()) {
-//					handleLazyInit(user);
-//				}
-//				return result;
-//			} catch (ParseException e) {
-//				// On parse error, return empty results
-//				return new UserListJpa();
-//			}
-//		} else {
-//			logger.info("Security Service - autocomplete users by name " + query);
-//			return autocompleteHelper(query, pfs, UserJpa.class);
-//		}
-//	}
-
 	@Override
 	public void close() throws Exception {
 		// TODO Auto-generated method stub
 		
 	}
-
-	
-	
-	/**
-	 * Authorize the users application role.
-	 *
-	 * @param authToken       the auth token
-	 * @param perform         the perform
-	 * @param requiredAppRole the auth role
-	 * @return the username
-	 * @throws Exception the exception
-	 */
-	public String authorizeApp(String authToken, String perform,
-			String requiredAppRole) throws Exception {
-
-		// Verify the user has the privileges of the required app role
-		final Set<String> roles = getApplicationRoleForToken(authToken);
-
-		boolean hasRole = false;
-
-		if (roles.contains(User.ROLE_USER) && requiredAppRole == User.ROLE_USER)
-			hasRole = true;
-		else if (roles.contains(User.ROLE_AUTHOR)
-				&& (requiredAppRole == User.ROLE_USER || requiredAppRole == User.ROLE_AUTHOR))
-			hasRole = true;
-		else if (roles.contains(User.ROLE_REVIEWER) && (requiredAppRole == User.ROLE_USER
-				|| requiredAppRole == User.ROLE_AUTHOR || requiredAppRole == User.ROLE_REVIEWER))
-			hasRole = true;
-		else if (roles.contains(User.ROLE_LEAD)
-				&& (requiredAppRole == User.ROLE_USER || requiredAppRole == User.ROLE_AUTHOR
-						|| requiredAppRole == User.ROLE_REVIEWER || requiredAppRole == User.ROLE_LEAD))
-			hasRole = true;
-		else if (roles.contains(User.ROLE_ADMIN))
-			hasRole = true;
-		else
-			hasRole = false;
-		
-		if (!hasRole) {
-			throw new Exception("User does not have permissions to " + perform + ".");
-		}
-	
-		final String userName = getUsernameForToken(authToken);
-		return userName;
-	}
-	
-	
-	// /* see superclass */
-	// @Override
-	// public void removeUserPreferences(Long id) {
-	// logger.debug("Security Service - remove user preferences " + id);
-	// tx = manager.getTransaction();
-	// // retrieve this user
-	// final UserPreferences mu = manager.find(UserPreferencesJpa.class, id);
-	// try {
-	// if (getTransactionPerOperation()) {
-	// tx.begin();
-	// if (manager.contains(mu)) {
-	// manager.remove(mu);
-	// } else {
-	// manager.remove(manager.merge(mu));
-	// }
-	// tx.commit();
-	//
-	// } else {
-	// if (manager.contains(mu)) {
-	// manager.remove(mu);
-	// } else {
-	// manager.remove(manager.merge(mu));
-	// }
-	// }
-	// } catch (Exception e) {
-	// if (tx.isActive()) {
-	// tx.rollback();
-	// }
-	// throw e;
-	// }
-	//
-	// }
-
-	// /* see superclass */
-	// @Override
-	// public void updateUserPreferences(UserPreferences userPreferences) {
-	// logger.debug("Security Service - update user preferences " +
-	// userPreferences);
-	// try {
-	// if (getTransactionPerOperation()) {
-	// tx = manager.getTransaction();
-	// tx.begin();
-	// manager.merge(userPreferences);
-	// tx.commit();
-	// } else {
-	// manager.merge(userPreferences);
-	// }
-	// } catch (Exception e) {
-	// if (tx.isActive()) {
-	// tx.rollback();
-	// }
-	// throw e;
-	// }
-	// }
-
-	// /**
-	// * Handle lazy init.
-	// *
-	// * @param user the user
-	// */
-	// @Override
-	// public void handleLazyInit(User user) {
-	// if (user.getProjectRoleMap() != null) {
-	// user.getProjectRoleMap().size();
-	// }
-	// if (user.getUserPreferences() != null) {
-	// user.getUserPreferences().getLastProjectId();
-	// }
-	// if (user.getUserPreferences() != null &&
-	// user.getUserPreferences().getLanguageDescriptionTypes() != null
-	// && user.getUserPreferences().getLanguageDescriptionTypes().size() > 0) {
-	// user.getUserPreferences().getLanguageDescriptionTypes().get(0).getDescriptionType().getName();
-	// }
-	// }
-
-	// /* see superclass */
-	// @Override
-	// public UserList autocompleteUsersName(String name, PfsParameter pfs) throws
-	// Exception {
-	// logger.info("Security Service - autocomplete user's name " + name);
-	// return autocompleteHelper(name, pfs, UserJpa.class);
-	// }
-
-	// /**
-	// *
-	// * @param <T>
-	// * @param name
-	// * @param clazz
-	// * @return
-	// */
-	// private <T extends User> UserList autocompleteHelper(String name,
-	// PfsParameter pfs, Class<T> clazz)
-	// throws Exception {
-	//
-	// if (name == null) {
-	// return new UserListJpa();
-	// }
-	//
-	// final String EDGE_NGRAM_INDEX = "nameEdgeNGram";
-	// final String NGRAM_INDEX = "nameNGram";
-	//
-	// final FullTextEntityManager fullTextEntityManager =
-	// Search.getFullTextEntityManager(manager);
-	//
-	// final QueryBuilder queryBuilder =
-	// fullTextEntityManager.getSearchFactory().buildQueryBuilder().forEntity(clazz)
-	// .get();
-	//
-	// final Query query =
-	// queryBuilder.phrase().withSlop(2).onField(NGRAM_INDEX).andField(EDGE_NGRAM_INDEX)
-	// .boostedTo(0).andField("name").boostedTo(5).sentence(name.toLowerCase()).createQuery();
-	//
-	// final BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
-	// booleanQuery.add(query, BooleanClause.Occur.MUST);
-	//
-	// final FullTextQuery fullTextQuery = IndexUtility.applyPfsToLuceneQuery(clazz,
-	// clazz,
-	// booleanQuery.build().toString(), pfs, manager);
-	//
-	// @SuppressWarnings("unchecked")
-	// final List<User> results = fullTextQuery.getResultList();
-	//
-	// final UserList list = new UserListJpa();
-	// list.setTotalCount(fullTextQuery.getResultSize());
-	// for (User user : results) {
-	// handleLazyInit(user);
-	// }
-	// // exclude duplicates
-	// list.getObjects().addAll(results.stream().distinct().collect(Collectors.toList()));
-	//
-	// return list;
-	//
-	// }
-
 
 }

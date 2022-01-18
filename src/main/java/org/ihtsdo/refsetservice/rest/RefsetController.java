@@ -955,7 +955,7 @@ public class RefsetController extends BaseController {
             logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
             
             User user = SecurityService.getUserFromSession();
-            ResultList<Project> results = RefsetService.searchProjects(searchParameters);
+            ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
 
             //logger.debug("getProjects results: " + ModelUtility.toJson(results));
             return results;

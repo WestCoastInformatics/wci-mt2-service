@@ -18,6 +18,8 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -38,6 +40,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Indexed
 public class User extends AbstractHasModified implements Comparable<User> {
 
+    /** The logger. */
+    private static Logger logger = LoggerFactory.getLogger(User.class);
+    
     /** The username. */
 	@Column(nullable = false, unique = true, length = 250)
     private String userName;
@@ -74,6 +79,9 @@ public class User extends AbstractHasModified implements Comparable<User> {
     
     /** The user role. */
     public static final String ROLE_USER = "USER";
+    
+    /** The user role. */
+    public static final String ROLE_VIEWER = "VIEWER";
 
     /**
      * Instantiates an empty {@link User}.
@@ -223,25 +231,39 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * Check if the user has the specified role on the refset.
      *
      * @param roleToCheck the role to look for
-     * @param refset the refset to check permissions against
+     * @param project the project to check permissions against
      * @return if the user has the specified role on the refset
      * @throws Exception the exception
      */
-    public boolean doesUserHavePermission(final String roleToCheck,
-            final Refset refset) throws Exception {
+    public boolean doesUserHavePermission(final String roleToCheck, final Project project) throws Exception {
 
-        final String edition = refset.getEditionShortName().replaceFirst("SNOMEDCT-?", "");
+        final String editionName = project.getOrganization().getEdition().getShortName().replaceFirst("SNOMEDCT-?", "").toLowerCase();
+        final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
+        
         for (final String role : roles) {
-            /*
-             * TODO: Making a demo solution for this as actual permission definition is TBD
-             *
-            if (role.contains("-all-" + roleToCheck.toLowerCase()) || role.contains("-" + edition + "-" + roleToCheck.toLowerCase())) {
-                return true;
-            }
-            */
-            if (role.equals(roleToCheck)) {
-                return true;
-            }
+
+            final String lowerCasedRole = role.toLowerCase();
+            final int indexFirstHyphen = lowerCasedRole.indexOf("-");
+            final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
+            //logger.debug("******** doesUserHavePermission editionPart: " + editionPart);
+            
+            // first check the edition permissions
+            if (editionPart.equals("all") || editionPart.equals(editionName)) {
+                
+                final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
+                final String projectName = project.getName().toLowerCase().replace(" ", "_");
+                //logger.debug("******** doesUserHavePermission projectPart: " + projectPart);
+                
+                // then check the project level permissions
+                if (projectPart.equals("all") || projectPart.equals(projectName)) {
+                    
+                    //logger.debug("******** doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
+                    // last check for the role or if they have any permission at this level they have the VIEWER role
+                    if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
+                        return true;
+                    }
+                }
+            }    
         }
 
         return false;

@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -60,6 +62,9 @@ public class RefsetService {
     
     /** The refset to language map. */
     private static final Map<String, String> refsetToLanguagesMap = new HashMap<>();
+    
+    /** The project list cache. */
+    private static final LinkedHashMap<String, Project> projectCache = new LinkedHashMap<>();
     
     /** The refset to language map. */
     private static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
@@ -1197,6 +1202,61 @@ public class RefsetService {
     }
     
     /**
+     * Gets a list of projects ordered by name.
+     *
+     * @return the list of found refsets
+     * @throws Exception the exception
+     */
+    public static LinkedHashMap<String, Project> getUserProjects(final User user) throws Exception {
+        
+        @SuppressWarnings("unchecked")
+        LinkedHashMap<String, Project> userProjects = (LinkedHashMap<String, Project>)SecurityService.getFromSession(SecurityService.SESSION_USER_PROJECTS);
+        
+        if (userProjects != null) {
+            return userProjects;
+        } else {
+            
+            userProjects = new LinkedHashMap<>();
+            final LinkedHashMap<String, Project> projects = getOrderedProjects();
+            
+            for (Project project : projects.values()) {
+                
+                setProjectPermissions(user, project);
+                userProjects.put(project.getId(), project);
+            }
+            
+            return userProjects;
+        }
+    }
+    
+    /**
+     * Gets a list of projects ordered by name.
+     *
+     * @return the list of found refsets
+     * @throws Exception the exception
+     */
+    public static LinkedHashMap<String, Project> getOrderedProjects() throws Exception {
+        
+        if (projectCache.size() == 0) {
+            
+            try (TerminologyService service = new TerminologyService()) {
+                
+                final PfsParameter pfs = new PfsParameter();
+                pfs.setAscending(true);
+                pfs.setSortFields(Arrays.asList("name", "id"));
+                
+                final ResultList<Project> results = service.find("", pfs, Project.class, null);
+                
+                for (Project project : results.getItems()) {
+                    projectCache.put(project.getId(), project);
+                }
+            }
+        }
+        
+        return ModelUtility.fromJson(ModelUtility.toJson(projectCache), new TypeReference<LinkedHashMap<String, Project>>() {/**/});
+    }
+    
+    /**
      * Searches for refset with filters and member concept search.
      *
      * @param user the user
@@ -1305,12 +1365,34 @@ public class RefsetService {
                 
                 query = filterQuery + termQueryForRt2;
             }
-
+            
             if (query != null && !query.equals("")) {
                 query += " AND latestVersion: true";
             } else {
                 query = "latestVersion: true";
             }
+            
+            String projectFilter = " AND (";
+            
+            @SuppressWarnings("unchecked")
+            LinkedHashMap<String, Project> userProjects = getUserProjects(user);
+            
+            for (Project project : userProjects.values()) {
+                
+                if (!project.isPrivateProject() || project.getRoles().contains(User.ROLE_VIEWER)) {
+                    
+                    projectFilter += "(projectId:" + project.getId();
+                    
+                    // if the user isn't allowed to view private refsets for this project restrict them
+                    if (!project.getRoles().contains(User.ROLE_VIEWER)) {
+                        projectFilter += " AND privateRefset: false";
+                    }
+                    
+                    projectFilter +=  ") OR ";
+                }
+            }
+            
+            query += StringUtils.removeEnd(projectFilter, " OR ") + ")";
             
             if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
                 query += " AND privateRefset: false";
@@ -1552,11 +1634,12 @@ public class RefsetService {
     /**
      * Search Projects.
      *
+     * @param user the user
      * @param searchParameters the search parameters
      * @return the list of projects
      * @throws Exception the exception
      */
-    public static ResultList<Project> searchProjects(final SearchParameters searchParameters) throws Exception {
+    public static ResultList<Project> searchProjects(final User user, final SearchParameters searchParameters) throws Exception {
         
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1589,6 +1672,17 @@ public class RefsetService {
             results = service.find(query, pfs, Project.class, null);
             results.setTimeTaken(System.currentTimeMillis() - start);
             results.setTotalKnown(true);
+            
+            final List<Project> projectList = new ArrayList<>(results.getItems());
+            
+            for (Project project : projectList) {
+                
+                project = setProjectPermissions(user, project);
+                
+                if (!project.getRoles().contains(User.ROLE_VIEWER)) {
+                    results.getItems().remove(project);
+                }
+            }
 
             return results;
         }
@@ -1674,12 +1768,27 @@ public class RefsetService {
             refset = service.get(refsetInternalId, Refset.class);
             
             if (refset == null) {
-                throw new Exception("Refset Internal Id: " + refsetInternalId
-                        + " does not exist in the RT2 database");
+                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
         }
         
         return refset;
+    }
+    
+    /**
+     * Set the user permissions for a refset.
+     *
+     * @param user the user
+     * @param project the project
+     * @return the refset with permissions
+     * @throws Exception the exception
+     */
+    public static Project setProjectPermissions(final User user, final Project project) throws Exception {
+        
+        final List<String> roles = project.getRoles();
+        setRoles(user, project, roles);
+       
+        return project;
     }
     
     /**
@@ -1694,35 +1803,44 @@ public class RefsetService {
         
         refset.setDownloadable(true);
         refset.setFeedbackVisible(true);
-        refset.setCanView(true);
-        
-        // Edit permissions
-        if (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-                
-            final List<String> allowedStatuses = WorkflowService.getAllowedStatuses(user, refset);
-            
-            if (allowedStatuses.contains(WorkflowService.IN_EDIT)) {
-                refset.setCanEdit(true);
-            } else {
-                refset.setCanEdit(false);
-            }
-            
-            if (allowedStatuses.contains(WorkflowService.IN_REVIEW)) {
-                refset.setCanReview(true);
-            } else {
-                refset.setCanReview(false);
-            }
-            
-            if (allowedStatuses.contains(WorkflowService.READY_FOR_PUBLICATION)) {
-                refset.setCanPublish(true);
-            } else {
-                refset.setCanPublish(false);
-            }
-        }
-        
         refset.setAvailableActions(WorkflowService.getAllowedActions(user, refset));
+
+        final Project project = refset.getProject();
+        final List<String> roles = refset.getRoles();
+        setRoles(user, project, roles);
        
         return refset;
+    }
+    
+    /**
+     * set the list of roles a user has for a project.
+     *
+     * @param user the user
+     * @param project the project
+     * @param roles the role list to populate
+     * @return the list of roles for the project
+     * @throws Exception the exception
+     */
+    public static List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception {
+        
+        
+        if (user.doesUserHavePermission(User.ROLE_VIEWER, project)) {
+            roles.add(User.ROLE_VIEWER);
+        }
+ 
+        if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
+            roles.add(User.ROLE_AUTHOR);
+        }
+        
+        if (user.doesUserHavePermission(User.ROLE_REVIEWER, project)) {
+            roles.add(User.ROLE_REVIEWER);
+        }
+        
+        if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
+            roles.add(User.ROLE_ADMIN);
+        }
+       
+        return roles;
     }
 
     /**
