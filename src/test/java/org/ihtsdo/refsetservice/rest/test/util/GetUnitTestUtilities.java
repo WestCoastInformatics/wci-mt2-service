@@ -346,7 +346,7 @@ public class GetUnitTestUtilities {
     public ConceptResultList searchMembers(String refsetId, String searchTerm) {
         try {
             final String url = "/refset/" + refsetId + "/members?limit=500&offset=0&query="
-                    + searchTerm + "&displayType=list";
+                    + searchTerm + "&displayType=list&editing=true";
 
             logger.info("Testing url - " + url);
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();

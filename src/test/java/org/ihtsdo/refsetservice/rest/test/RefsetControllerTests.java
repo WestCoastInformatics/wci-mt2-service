@@ -444,7 +444,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         final String branch = "MAIN";
 
         // call the api to get the refset concept list for refset parents
-        final ConceptResultList existingRefsetConcepts = getUtil.getRefsetConcepts(branch, RefsetConceptsType.ALL_REFSET_CONCEPTS);
+        // TODO: SHouldn't we get back 38 concepts? Per browser, there are 39 concepts under << |Simple Type Refset|, so one is missing in our list. Versioning???
+        final ConceptResultList existingRefsetConcepts = getUtil.getRefsetConcepts(branch, RefsetConceptsType.ALL_SIMPLE_TYPE_CONCEPTS);
 
         final Concept existingRefsetConcept = identifyMemberFromList(existingRefsetConcepts, GPS_REFSET_ID);
         assertThat(existingRefsetConcept).isNotNull();
