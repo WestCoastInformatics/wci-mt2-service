@@ -42,44 +42,44 @@ public class User extends AbstractHasModified implements Comparable<User> {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(User.class);
-    
+
     /** The username. */
-	@Column(nullable = false, unique = true, length = 250)
+    @Column(nullable = false, unique = true, length = 250)
     private String userName;
 
     /** The user's full name. */
-	@Column(nullable = false, length = 250)
+    @Column(nullable = false, length = 250)
     private String name;
-    
+
     /** The user's email. */
-	@Column(nullable = false, length = 250)
+    @Column(nullable = false, length = 250)
     private String email;
-	
-	/** The auth token. */
-	@Transient
-	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
-	private String authToken;
-    
+
+    /** The auth token. */
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String authToken;
+
     /** A list of the roles this user has. */
-	@ElementCollection
-	@Fetch(FetchMode.JOIN)
+    @ElementCollection
+    @Fetch(FetchMode.JOIN)
     private Set<String> roles = new HashSet<>();
-    
+
     /** The admin role. */
     public static final String ROLE_ADMIN = "ADMIN";
-    
+
     /** The lead role. */
     public static final String ROLE_LEAD = "LEAD";
-    
+
     /** The reviewer role. */
     public static final String ROLE_REVIEWER = "REVIEWER";
-    
+
     /** The author role. */
     public static final String ROLE_AUTHOR = "AUTHOR";
-    
+
     /** The user role. */
     public static final String ROLE_USER = "USER";
-    
+
     /** The user role. */
     public static final String ROLE_VIEWER = "VIEWER";
 
@@ -87,6 +87,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * Instantiates an empty {@link User}.
      */
     public User() {
+
         // n/a
     }
 
@@ -99,7 +100,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @param roles the roles this user has
      */
     public User(final String userName, final String name, final String email, final Set<String> roles) {
-        
+
         this.userName = userName;
         this.name = name;
         this.email = email;
@@ -112,6 +113,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @param other the other
      */
     public User(final User other) {
+
         populateFrom(other);
     }
 
@@ -136,9 +138,10 @@ public class User extends AbstractHasModified implements Comparable<User> {
      */
     @FullTextField(analyzer = "standard")
     @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-	public String getUserName() {
-		return userName;
-	}
+    public String getUserName() {
+
+        return userName;
+    }
 
     /**
      * Sets the userName.
@@ -146,6 +149,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @param userName the userName
      */
     public void setUserName(final String userName) {
+
         this.userName = userName;
     }
 
@@ -155,6 +159,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @return the name
      */
     public String getName() {
+
         return name;
     }
 
@@ -164,15 +169,17 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @param name the name
      */
     public void setName(final String name) {
+
         this.name = name;
     }
-    
+
     /**
      * Returns the email.
      *
      * @return the email
      */
     public String getEmail() {
+
         return email;
     }
 
@@ -182,36 +189,40 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @param email the email
      */
     public void setEmail(final String email) {
+
         this.email = email;
     }
-    
+
     /**
      * Sets the authentication token.
      * 
      * @return
      */
-	public String getAuthToken() {
-		return authToken;
-	}
+    public String getAuthToken() {
 
-	/**
-	 * Returns the authentication token.
-	 * 
-	 * @param authToken
-	 */
-	public void setAuthToken(String authToken) {
-		this.authToken = authToken;
-	}
+        return authToken;
+    }
+
+    /**
+     * Returns the authentication token.
+     * 
+     * @param authToken
+     */
+    public void setAuthToken(String authToken) {
+
+        this.authToken = authToken;
+    }
 
     /**
      * Gets the roles.
      *
      * @return the roles
      */
-    //@GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    // @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public Set<String> getRoles() {
 
         if (roles == null) {
+
             roles = new HashSet<>();
         }
 
@@ -224,9 +235,10 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @param roles the roles to set
      */
     public void setRoles(Set<String> roles) {
+
         this.roles = roles;
     }
-    
+
     /**
      * Check if the user has the specified role on the refset.
      *
@@ -236,44 +248,49 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @throws Exception the exception
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Project project) throws Exception {
-        
-        String editionName =  project.getOrganization().getEdition().getShortName().toLowerCase();
+
+        String editionName = project.getOrganization().getEdition().getShortName().toLowerCase();
+
         if (!project.getOrganization().getEdition().getShortName().equals("SNOMEDCT")) {
 
             editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
         }
-        
+
         final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
-        
+
         for (final String role : roles) {
 
             final String lowerCasedRole = role.toLowerCase();
             final int indexFirstHyphen = lowerCasedRole.indexOf("-");
             final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
-            //logger.debug("******** doesUserHavePermission editionPart: " + editionPart);
-            
+            // logger.debug("******** doesUserHavePermission editionPart: " + editionPart);
+
             // first check the edition permissions
             if (editionPart.equals("all") || editionPart.equals(editionName)) {
-                
+
                 final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
                 final String projectName = project.getName().toLowerCase().replace(" ", "_");
-                //logger.debug("******** doesUserHavePermission projectPart: " + projectPart);
-                
+                // logger.debug("******** doesUserHavePermission projectPart: " + projectPart);
+
                 // then check the project level permissions
                 if (projectPart.equals("all") || projectPart.equals(projectName)) {
-                    
-                    //logger.debug("******** doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
+
+                    // logger.debug("******** doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
                     // last check for the role or if they have any permission at this level they have the VIEWER role
                     if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
+
                         return true;
                     }
+
                 }
-            }    
+
+            }
+
         }
 
         return false;
     }
-    
+
     /**
      * Hash code.
      *
@@ -282,7 +299,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
     /* see superclass */
     @Override
     public int hashCode() {
-        
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((userName == null) ? 0 : userName.hashCode());
@@ -304,14 +321,17 @@ public class User extends AbstractHasModified implements Comparable<User> {
     public boolean equals(final Object obj) {
 
         if (this == obj) {
+
             return true;
         }
 
         if (obj == null) {
+
             return false;
         }
 
         if (getClass() != obj.getClass()) {
+
             return false;
         }
 
@@ -320,36 +340,48 @@ public class User extends AbstractHasModified implements Comparable<User> {
         if (userName == null) {
 
             if (other.userName != null) {
+
                 return false;
             }
+
         } else if (!userName.equals(other.userName)) {
+
             return false;
         }
 
         if (name == null) {
 
             if (other.name != null) {
+
                 return false;
             }
+
         } else if (!name.equals(other.name)) {
+
             return false;
         }
-        
+
         if (email == null) {
-            
+
             if (other.email != null) {
+
                 return false;
             }
+
         } else if (!email.equals(other.email)) {
+
             return false;
         }
-        
+
         if (roles == null) {
 
             if (other.roles != null) {
+
                 return false;
             }
+
         } else if (!roles.equals(other.roles)) {
+
             return false;
         }
 
@@ -365,6 +397,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
     /* see superclass */
     @Override
     public int compareTo(final User o) {
+
         // Handle null
         return (name + roles.toString()).compareToIgnoreCase(o.getName() + o.getRoles().toString());
     }
@@ -378,4 +411,3 @@ public class User extends AbstractHasModified implements Comparable<User> {
 
     }
 }
-
