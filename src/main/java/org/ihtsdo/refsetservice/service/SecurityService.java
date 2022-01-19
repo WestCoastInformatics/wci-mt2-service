@@ -91,9 +91,9 @@ public class SecurityService implements AutoCloseable {
         if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
             
             final User testUser = new User("unitTestUser", "Unit Test User", "", new HashSet<String>());
-            testUser.getRoles().add("ROLE_rt2-all-all-author");
-            testUser.getRoles().add("ROLE_rt2-all-all-reviewer");
-            testUser.getRoles().add("ROLE_rt2-all-all-admin");
+            testUser.getRoles().add("all-all-author");
+            testUser.getRoles().add("all-all-reviewer");
+            testUser.getRoles().add("all-all-admin");
             logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(testUser));
             return testUser;
         }

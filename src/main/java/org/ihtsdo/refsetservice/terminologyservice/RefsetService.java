@@ -1823,21 +1823,28 @@ public class RefsetService {
      */
     public static List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception {
         
-        
-        if (user.doesUserHavePermission(User.ROLE_VIEWER, project)) {
-            roles.add(User.ROLE_VIEWER);
-        }
+        boolean giveViewerRole = false;
  
         if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
+            
             roles.add(User.ROLE_AUTHOR);
+            giveViewerRole = true;
         }
         
         if (user.doesUserHavePermission(User.ROLE_REVIEWER, project)) {
+            
             roles.add(User.ROLE_REVIEWER);
+            giveViewerRole = true;
         }
         
         if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
+            
             roles.add(User.ROLE_ADMIN);
+            giveViewerRole = true;
+        }
+        
+        if (user.doesUserHavePermission(User.ROLE_VIEWER, project) || giveViewerRole) {
+            roles.add(User.ROLE_VIEWER);
         }
        
         return roles;
