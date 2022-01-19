@@ -236,8 +236,13 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @throws Exception the exception
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Project project) throws Exception {
+        
+        String editionName =  project.getOrganization().getEdition().getShortName().toLowerCase();
+        if (!project.getOrganization().getEdition().getShortName().equals("SNOMEDCT")) {
 
-        final String editionName = project.getOrganization().getEdition().getShortName().replaceFirst("SNOMEDCT-?", "").toLowerCase();
+            editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
+        }
+        
         final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
         
         for (final String role : roles) {
