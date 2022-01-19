@@ -15,6 +15,7 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.PfsParameter;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
@@ -998,24 +999,23 @@ public final class WorkflowService {
     }
 
     /**
-     * Get a list of workflow statuses that are allowed for the current user and
-     * state of the refset.
+     * Get a list of workflow statuses that are allowed for the current user and state of the refset.
      *
      * @param user the user
      * @param refset the refset
      * @return the list of allowed statuses
      * @throws Exception the exception
      */
-    public static List<String> getAllowedStatuses(final User user, final Refset refset)
-        throws Exception {
+    public static List<String> getAllowedStatuses(final User user, final Refset refset) throws Exception {
 
         final List<String> allowedStatuses = new ArrayList<>();
         final String currentStatus = refset.getWorkflowStatus();
+        final Project project = refset.getProject();
 
         // Authors can start an edit cycle on Published refsets
         if (refset.getVersionStatus().equals(PUBLISHED)) {
             
-            if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+            if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
                 
                 allowedStatuses.add(READY_FOR_EDIT);
                 allowedStatuses.add(IN_EDIT);
@@ -1025,20 +1025,18 @@ public final class WorkflowService {
         }
 
         // only the assigned user can edit or review
-        if (!user.getUserName().equals(refset.getAssignedUser())
-                && Arrays.asList(IN_EDIT, IN_REVIEW).contains(currentStatus)) {
+        if (!user.getUserName().equals(refset.getAssignedUser()) && Arrays.asList(IN_EDIT, IN_REVIEW).contains(currentStatus)) {
             return allowedStatuses;
         }
 
         // set status permissions for AUTHORS
-        if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+        if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
 
             if (Arrays.asList(REVIEW_COMPLETED, READY_FOR_PUBLICATION).contains(currentStatus)) {
                 allowedStatuses.add(READY_FOR_EDIT);
             }
 
-            if (Arrays.asList(READY_FOR_EDIT, READY_FOR_REVIEW, REVIEW_COMPLETED)
-                    .contains(currentStatus)) {
+            if (Arrays.asList(READY_FOR_EDIT, READY_FOR_REVIEW, REVIEW_COMPLETED).contains(currentStatus)) {
                 allowedStatuses.add(IN_EDIT);
             }
 
@@ -1056,7 +1054,7 @@ public final class WorkflowService {
         }
 
         // set status permissions for REVIEWERS
-        if (user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
+        if (user.doesUserHavePermission(User.ROLE_REVIEWER, project)) {
 
             if (Arrays.asList(IN_REVIEW).contains(currentStatus)) {
                 allowedStatuses.add(READY_FOR_EDIT);
@@ -1072,7 +1070,7 @@ public final class WorkflowService {
         }
 
         // set status permissions for ADMINS
-        if (user.doesUserHavePermission(User.ROLE_ADMIN, refset)) {
+        if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
 
             if (Arrays.asList(READY_FOR_PUBLICATION).contains(currentStatus)) {
                 allowedStatuses.add(READY_FOR_EDIT);
@@ -1083,23 +1081,21 @@ public final class WorkflowService {
     }
 
     /**
-     * Get a list of workflow actions that are allowed for the current user and
-     * state of the refset.
+     * Get a list of workflow actions that are allowed for the current user and state of the refset.
      *
      * @param user the user
      * @param refset the refset
      * @return the list of allowed actions
      * @throws Exception the exception
      */
-    public static List<String> getAllowedActions(final User user, final Refset refset)
-        throws Exception {
+    public static List<String> getAllowedActions(final User user, final Refset refset) throws Exception {
 
         final List<String> allowedActions = new ArrayList<>();
         final String currentStatus = refset.getWorkflowStatus();
+        final Project project = refset.getProject();
         
         // Authors can start an edit cycle on Published refsets
-        if (refset.getVersionStatus().equals(PUBLISHED)
-                && user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+        if (refset.getVersionStatus().equals(PUBLISHED) && user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
             allowedActions.add(EDIT);
             
         } else if (currentStatus == null) {
@@ -1109,7 +1105,7 @@ public final class WorkflowService {
             
             if (currentStatus.equals(READY_FOR_EDIT)) {
     
-                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
                     allowedActions.add(EDIT);
                     allowedActions.add(REQUEST_REVIEW);
                     allowedActions.add(REQUEST_PUBLICATION);
@@ -1119,7 +1115,7 @@ public final class WorkflowService {
             else if (currentStatus.equals(IN_EDIT)) {
     
                 // only the assigned user can edit
-                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset) && user.getUserName().equals(refset.getAssignedUser())) {
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, project) && user.getUserName().equals(refset.getAssignedUser())) {
     
                     allowedActions.add(CANCEL_EDIT);
                     allowedActions.add(FINISH_EDIT);
@@ -1130,11 +1126,11 @@ public final class WorkflowService {
 
             else if (currentStatus.equals(READY_FOR_REVIEW)) {
             
-                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
                     allowedActions.add(WITHDRAW);
                 }
                 
-                if (user.doesUserHavePermission(User.ROLE_REVIEWER, refset)) {
+                if (user.doesUserHavePermission(User.ROLE_REVIEWER, project)) {
                     allowedActions.add(REVIEW);
                 }
             }
@@ -1142,7 +1138,7 @@ public final class WorkflowService {
             else if (currentStatus.equals(IN_REVIEW)) {
     
                 // only the assigned user can review
-                if (user.doesUserHavePermission(User.ROLE_REVIEWER, refset) && user.getUserName().equals(refset.getAssignedUser())) {
+                if (user.doesUserHavePermission(User.ROLE_REVIEWER, project) && user.getUserName().equals(refset.getAssignedUser())) {
     
                     allowedActions.add(REJECT_REVIEW);
                     allowedActions.add(ACCEPT_REVIEW);
@@ -1152,7 +1148,7 @@ public final class WorkflowService {
 
             else if (currentStatus.equals(REVIEW_COMPLETED)) {
     
-                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset)) {
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
                     allowedActions.add(EDIT);
                     allowedActions.add(REQUEST_REVIEW);
                     allowedActions.add(REQUEST_PUBLICATION);
@@ -1161,7 +1157,7 @@ public final class WorkflowService {
 
             else if (currentStatus.equals(READY_FOR_PUBLICATION)) {
     
-                if (user.doesUserHavePermission(User.ROLE_AUTHOR, refset) || user.doesUserHavePermission(User.ROLE_ADMIN, refset)) {
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, project) || user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
                     allowedActions.add(FAILS_RVF);
                 }
             }

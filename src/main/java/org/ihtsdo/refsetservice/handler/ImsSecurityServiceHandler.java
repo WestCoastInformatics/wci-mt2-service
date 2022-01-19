@@ -20,8 +20,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
     /** The logger. */
-    @SuppressWarnings("unused")
     private static Logger logger = LoggerFactory.getLogger(DefaultSearchHandler.class);
+    
+    /** The logger. */
+    private static final String rt2RolePrefix = "ROLE_rt2-";
 
     /** The properties. */
     @SuppressWarnings("unused")
@@ -36,6 +38,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             throw new WebApplicationException("IMS Authentication failed with invalid parameters.");
         }
 
+        // this section is if a local login page is used as opposed to IMS single signon
         if (!password.contains("login") && !password.contains("roles")) {
 
             logger.debug("Demo Password: " + password);
@@ -67,70 +70,41 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
             user.setModifiedBy(user.getUserName());
             return user;
+        } 
+        
+        // This is for IMS login
+        else {
 
-        } else {
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode doc = mapper.readTree(password);
-            // ex: {"login": "jsmith", "password": null, "firstName": "John", "lastName": "Smith", "email": "", "langKey": null, "roles": ["ROLE_us-crs-requestor"]}
-            final JsonNode userDoc = doc.get("userData");
-
-            logger.info("JsonNode userDoc {}", userDoc);
-
-            // Construct user from document
             final User user = new User();
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode imsNode = mapper.readTree(password);
+            final JsonNode userNode = imsNode.get("userData");
+            // ex: {"login": "jsmith", "roles": ["ROLE_rt2-<CODE SYSTEM>-<PROJECT>-<ROLE>", "ROLE_rt2-all-all-author", "ROLE_rt2-us-training-reviewer"]}
 
-            user.setName(
-                    userDoc.get("firstName").asText() + " " + userDoc.get("lastName").asText());
-            user.setUserName(userDoc.get("login").asText());
-            user.setEmail(userDoc.get("email").asText());
-            // user.getRoles().add(User.ROLE_USER);
+            logger.info("authenticate userNode: ", userNode);
 
-            final Iterator<JsonNode> roleIterator = userDoc.get("roles").elements();
-            final List<String> wciUsers = Arrays.asList("jefron", "twhalen", "twilliams2", "wboeger", "ajones", "swhalen", "nmarques", "rwood", "dshapiro");
+            user.setName(userNode.get("firstName").asText() + " " + userNode.get("lastName").asText());
+            user.setUserName(userNode.get("login").asText());
+            user.setEmail(userNode.get("email").asText());
+
+            final Iterator<JsonNode> roleIterator = userNode.get("roles").elements();
             
             // boolean authorCredentialsMatched = false;
             while (roleIterator.hasNext()) {
 
-                JsonNode role = roleIterator.next();
-                logger.debug("role: " + role.asText());
-
-                /*
-                 * if ("ROLE_refset-administrators".equals(role.asText())) {
-                 * user.getRoles().add(User.ROLE_ADMIN); }
-                 */
-                /*
-                 * // TODO - !!!!!! JUST FOR TESTING - REMOVE BEFORE PROD !!!!!!
-                 * if (user.getUserName().equals("refset-dev")) {
-                 * 
-                 * logger.
-                 * debug(" Using refset-dev creds and making Authour & Reviewer"
-                 * ); user.getRoles().add(User.ROLE_AUTHOR);
-                 * user.getRoles().add(User.ROLE_REVIEWER);
-                 * authorCredentialsMatched = true; break; }
-                 */
+                JsonNode roleNode = roleIterator.next();
+                String role = roleNode.asText();
                 
-                if ("ROLE_us-crs-requestor".equals(role.asText())) {
+                logger.debug("role: " + role);
 
-                    user.getRoles().add(User.ROLE_REVIEWER);
-                    break;
+                if (role.startsWith(rt2RolePrefix)) {
+                    user.getRoles().add(role.substring(rt2RolePrefix.length()));
                 }
-            }
-            
-            // TODO - ONLY UNTIL IMS ROLES RESOVLED
-            if (user.getUserName().equals("refset-dev")) {
-                
-               user.getRoles().add(User.ROLE_REVIEWER);
-               
-            } else if (wciUsers.contains(user.getUserName())) {
-                user.getRoles().add(User.ROLE_AUTHOR);
-            } else {
-                user.getRoles().add(User.ROLE_REVIEWER);
             }
 
             user.setModifiedBy(user.getUserName());
 
-            logger.debug("!!!!!!!!!!!!! user is: " + user);
+            logger.debug("!!!!!!!!!!!!! authenticate user is: " + user);
             return user;
         }
     }

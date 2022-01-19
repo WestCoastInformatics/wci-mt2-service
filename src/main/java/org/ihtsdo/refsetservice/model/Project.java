@@ -10,11 +10,15 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -24,6 +28,8 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+
+import com.fasterxml.jackson.annotation.JsonGetter;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -51,6 +57,10 @@ public class Project extends AbstractHasModified {
     /** The private flag. */
     @Column(nullable = false)
     private boolean privateProject;
+    
+    /** The list of user roles for this project. */
+    @Transient
+    private List<String> roles;
 
     /**
      * Instantiates an empty {@link Project}.
@@ -90,6 +100,7 @@ public class Project extends AbstractHasModified {
         organization = other.getOrganization();
         description = other.getDescription();
         privateProject = other.isPrivateProject();
+        roles = other.getRoles();
     }
 
     /**
@@ -166,6 +177,26 @@ public class Project extends AbstractHasModified {
     public void setPrivateProject(final boolean privateProject) {
         this.privateProject = privateProject;
     }
+    
+    /**
+     * @return the roles
+     */
+    @JsonGetter()
+    public List<String> getRoles() {
+        
+        if (roles == null) {
+            roles = new ArrayList<>();
+        }
+        
+        return roles;
+    }
+    
+    /**
+     * @param roles the roles
+     */
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
+    }
 
     /**
      * Hash code.
@@ -180,6 +211,7 @@ public class Project extends AbstractHasModified {
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
         result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         result = prime * result + (privateProject ? 1 : 0);
         return result;
     }
@@ -228,6 +260,14 @@ public class Project extends AbstractHasModified {
                 return false;
             }
         } else if (!organization.equals(other.organization)) {
+            return false;
+        }
+
+        if (roles == null) {
+            if (other.roles != null) {
+                return false;
+            }
+        } else if (!roles.equals(other.roles)) {
             return false;
         }
         

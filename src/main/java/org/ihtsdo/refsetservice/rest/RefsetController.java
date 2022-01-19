@@ -121,7 +121,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
+            //logger.debug("getRefset: refsetInternalId: " + refsetInternalId);
             
             User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(user, refsetInternalId);
@@ -164,7 +164,7 @@ public class RefsetController extends BaseController {
             String returnString = true + "";
             User user = SecurityService.getUserFromSession();
             final boolean isLocked = RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId);
-            logger.debug("*********** isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
+            //logger.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
             
             if (!isLocked) {
                 
@@ -195,7 +195,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
+            //logger.debug("updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
 
             try (TerminologyService service = new TerminologyService()) {
@@ -206,7 +206,7 @@ public class RefsetController extends BaseController {
                 service.setModifiedBy("restApi");
                 service.update(refset);
 
-                logger.debug("*********** updateActive: refset: " + ModelUtility.toJson(refset));
+                //logger.debug("updateActive: refset: " + ModelUtility.toJson(refset));
 
                 return refset;
             }
@@ -246,7 +246,7 @@ public class RefsetController extends BaseController {
             List<String> unaddedConcepts;
             final User user = SecurityService.getUserFromSession(); 
             
-            logger.debug("*********** addRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
+            logger.debug("addRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
               
             // create the list of concepts based on what was passed in
             if (conceptIds != null && !conceptIds.equals("")) {
@@ -260,7 +260,7 @@ public class RefsetController extends BaseController {
                 conceptIdList = RefsetService.getConceptIdsFromFile(conceptFile, fileType);
             }
          
-            logger.debug("*********** addRefsetMembers: conceptIdList: " + conceptIdList);
+            logger.debug("addRefsetMembers: conceptIdList: " + conceptIdList);
             
             // add the list of concepts as members to the refset
             unaddedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, conceptIdList);
@@ -277,7 +277,7 @@ public class RefsetController extends BaseController {
                 error = StringUtils.removeEnd(error, ", ");
             }
             
-            logger.debug("*********** addRefsetMembers: Finished with " + unaddedConcepts.size() + " invaild concepts");
+            logger.debug("addRefsetMembers: Finished with " + unaddedConcepts.size() + " invaild concepts");
             
             if (error.equals("")) {
                 return "{\"status\": \"All concepts added.\"}";
@@ -321,7 +321,7 @@ public class RefsetController extends BaseController {
             String conceptsToRemove = null;
             User user = SecurityService.getUserFromSession();
 
-            logger.debug("*********** removeRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
+            logger.debug("removeRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
             
             String error = "";
             
@@ -337,7 +337,7 @@ public class RefsetController extends BaseController {
                 conceptsToRemove = String.join(",", RefsetService.getConceptIdsFromFile(conceptFile, fileType));
             }
          
-            logger.debug("*********** removeRefsetMembers: conceptIds: " + conceptIds);
+            logger.debug("removeRefsetMembers: conceptIds: " + conceptIds);
             
             // add the list of concepts as members to the refset
             final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, conceptsToRemove);
@@ -398,7 +398,7 @@ public class RefsetController extends BaseController {
             List<String> conceptIdList = new ArrayList<>();
             final User user = SecurityService.getUserFromSession(); 
             
-            logger.debug("*********** addRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType + " ; definitionExceptionType: " + definitionExceptionType);
+            logger.debug("addRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType + " ; definitionExceptionType: " + definitionExceptionType);
                
             String inclusionEcl = ecl;
             
@@ -453,7 +453,7 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             final User user = SecurityService.getUserFromSession(); 
-            logger.debug("*********** removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; definitionExceptionId: " + definitionExceptionId);
+            logger.debug("removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; definitionExceptionId: " + definitionExceptionId);
                
             final String status = RefsetService.removeDefinitionException(user, refsetInternalId, definitionExceptionId);
             
@@ -493,7 +493,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
+            logger.debug("createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
             User user = SecurityService.getUserFromSession();
             final String status = RefsetService.createRefset(user, refsetParameters);
@@ -534,7 +534,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
+            logger.debug("modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             User user = SecurityService.getUserFromSession();
@@ -588,7 +588,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("******** getWorkflowHistory refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
+            //logger.debug("getWorkflowHistory refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
             
             User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(user, refsetInternalId);
@@ -620,7 +620,7 @@ public class RefsetController extends BaseController {
         
         try {
 
-            logger.debug("*********** setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; action: " + action + " ; notes: " + notes);
+            logger.debug("setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; action: " + action + " ; notes: " + notes);
             
             User user = SecurityService.getUserFromSession();
             Refset refset = RefsetService.getRefset(user, refsetInternalId);
@@ -644,11 +644,11 @@ public class RefsetController extends BaseController {
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
                 
-                logger.debug("*********** setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
+                logger.debug("setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
                 return refset;
             } else {
                 
-                logger.debug("*********** setWorkflowStatus: did not update workflow status.");
+                logger.debug("setWorkflowStatus: did not update workflow status.");
                 return null;
             }
 
@@ -673,7 +673,7 @@ public class RefsetController extends BaseController {
         
         try {
 
-            logger.debug("*********** updateWorkflowNote: refsetInternalId: " + refsetInternalId + " ;notes: " + notes);
+            //logger.debug("updateWorkflowNote: refsetInternalId: " + refsetInternalId + " ;notes: " + notes);
             User user = SecurityService.getUserFromSession();
             
             Refset refset = RefsetService.getRefset(user, refsetInternalId);
@@ -713,7 +713,7 @@ public class RefsetController extends BaseController {
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
-            logger.debug("*********** completeAllRefsetPublications: versionDate: " + versionDate + " ; editionShortName (codeSystem): " + codeSystem);
+            logger.debug("completeAllRefsetPublications: versionDate: " + versionDate + " ; editionShortName (codeSystem): " + codeSystem);
             
             final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, codeSystem);
             String error = "";
@@ -765,7 +765,7 @@ public class RefsetController extends BaseController {
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
-            logger.debug("*********** failRefsetPublications: refset IDs: " + refsetIds + " ; notes: " + notes);
+            logger.debug("failRefsetPublications: refset IDs: " + refsetIds + " ; notes: " + notes);
             
             final List<String> refsetsNotUpdated = WorkflowService.setBatchWorkflowStatusByAction(service, user, refsetIds, WorkflowService.FAILS_RVF, notes);
             String error = "";
@@ -811,7 +811,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
+            logger.debug("createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
             
             final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refsetInternalId);
@@ -842,7 +842,7 @@ public class RefsetController extends BaseController {
         
         try {
 
-            logger.debug("*********** inactiveRefset: refsetInternalId: " + refsetInternalId);
+            //logger.debug("inactiveRefset: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
             
             final String status = RefsetService.inactivateRefset(user, refsetInternalId);
@@ -869,7 +869,7 @@ public class RefsetController extends BaseController {
         
         try {
 
-            logger.debug("*********** deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
+            //logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
             
             final String status = RefsetService.deleteInDevelopmentVersion(user, refsetInternalId, true);
@@ -904,14 +904,14 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** getProject: projectId: " + projectId);
+            //logger.debug("getProject: projectId: " + projectId);
             User user = SecurityService.getUserFromSession();
 
             try (TerminologyService service = new TerminologyService()) {
 
                 final Project project = RefsetService.getProject(projectId);
 
-                logger.debug("*********** getProject: project: " + ModelUtility.toJson(project));
+                //logger.debug("getProject: project: " + ModelUtility.toJson(project));
 
                 return project;
             }
@@ -952,12 +952,12 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("******** getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
+            logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
             
             User user = SecurityService.getUserFromSession();
-            ResultList<Project> results = RefsetService.searchProjects(searchParameters);
+            ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
 
-            logger.debug("******** getProjects results: " + ModelUtility.toJson(results));
+            //logger.debug("getProjects results: " + ModelUtility.toJson(results));
             return results;
 
         } catch (final ResponseStatusException rse) {
@@ -1005,7 +1005,7 @@ public class RefsetController extends BaseController {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            logger.debug("******** searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts);
+            logger.debug("searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts);
             
             ResultList<Refset> results = RefsetService.searchRefsets(user, searchParameters, searchConcepts);
            
@@ -1064,7 +1064,7 @@ public class RefsetController extends BaseController {
             ConceptResultList results = new ConceptResultList();
             String query = searchParameters.getQuery();
 
-            logger.debug("*********** taxonomySearch: searchConcepts: " + refsetInternalId + " ; searchParameters: "
+            logger.debug("taxonomySearch: searchConcepts: " + refsetInternalId + " ; searchParameters: "
                     + ModelUtility.toJson(searchParameters) + " ; searchRefsetMembers: " + searchRefsetMembers);
 
             if (query != null && !query.equals("")) {
@@ -1123,7 +1123,7 @@ public class RefsetController extends BaseController {
         ConceptResultList results = new ConceptResultList();
         User user = SecurityService.getUserFromSession();
 
-        logger.debug("*********** getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters + " ; taxonomyParameters: " + taxonomyParameters + " ; displayType: " + displayType);
+        logger.debug("getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters + " ; taxonomyParameters: " + taxonomyParameters + " ; displayType: " + displayType);
 
         try {
 
@@ -1163,7 +1163,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** cacheMemberAncestors: refsetInternalId: " + refsetInternalId);
+            //logger.debug("cacheMemberAncestors: refsetInternalId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -1180,7 +1180,7 @@ public class RefsetController extends BaseController {
                         returnJson = returnJson.replace("<RESULT>", "false");
                     }
 
-                    logger.debug("******** cacheMemberAncestors results: " + returnJson);
+                    //logger.debug("cacheMemberAncestors results: " + returnJson);
 
                     return returnJson;
 
@@ -1252,7 +1252,7 @@ public class RefsetController extends BaseController {
         try {
 
             User user = SecurityService.getUserFromSession();
-            logger.debug("*********** exportRefset: refsetInternalId: " + refsetInternalId
+            logger.debug("exportRefset: refsetInternalId: " + refsetInternalId
                     + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: "
                     + fileNameDate + " ; startEffectiveTime: " + startEffectiveTime
                     + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: "
@@ -1283,7 +1283,7 @@ public class RefsetController extends BaseController {
                                     exportType, languageId, fileNameDate, startEffectiveTime,
                                     transientEffectiveTime, exportMetadata, withNames);
                         }
-                        logger.debug("******** results: " + uri);
+                        logger.debug("results: " + uri);
                         url = "{\"url\": \"" + uri + "\"}";
 
                     } else if (format.equals("sctids")) {
@@ -1330,7 +1330,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("****** downloadExport: fileName: " + fileName);
+            logger.debug("downloadExport: fileName: " + fileName);
 
             User user = SecurityService.getUserFromSession();
             Path filePath = Paths.get(EXPORT_FILE_DIR + fileName);
@@ -1406,7 +1406,7 @@ public class RefsetController extends BaseController {
         try {
 
             User user = SecurityService.getUserFromSession();
-            logger.debug("*********** getMemberHistory: memberId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
+            logger.debug("getMemberHistory: memberId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -1423,7 +1423,7 @@ public class RefsetController extends BaseController {
                 final List<Map<String, String>> memberHistory =
                         RefsetMemberService.getMemberHistory(conceptId, versions);
 
-                logger.debug("*********** getMemberHistory: member: " + ModelUtility.toJson(memberHistory));
+                logger.debug("getMemberHistory: member: " + ModelUtility.toJson(memberHistory));
 
                 ResultList<Map<String, String>> results = new ResultList<>(memberHistory);
                 results.setTotalKnown(true);
@@ -1464,7 +1464,7 @@ public class RefsetController extends BaseController {
         try {
 
             User user = SecurityService.getUserFromSession();
-            logger.debug("*********** getConceptDetails: conceptId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
+            //logger.debug("getConceptDetails: conceptId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
             
             try (TerminologyService service = new TerminologyService()) {
 
@@ -1477,7 +1477,7 @@ public class RefsetController extends BaseController {
 
                 final Concept concept = RefsetMemberService.getConceptDetails(conceptId, refset);
 
-                logger.debug("*********** getConceptDetails: concept: " + ModelUtility.toJson(concept));
+                //logger.debug("getConceptDetails: concept: " + ModelUtility.toJson(concept));
 
                 return concept;
             }
@@ -1509,12 +1509,12 @@ public class RefsetController extends BaseController {
                     return "Database not empty, migration cancelled";
                 }
 
-                logger.info("*********** Starting RTT data migration");
+                logger.info("migrateRttData Starting RTT data migration");
 
                 HistoricDataMigrator migrator = new HistoricDataMigrator();
                 migrator.migrate();
 
-                logger.info("*********** Finished RTT data migration");
+                logger.info("migrateRttData Finished RTT data migration");
 
                 return message + "RTT data migration completed successfully";
             }
@@ -1544,7 +1544,6 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** getVersionStatuses ");
             User user = SecurityService.getUserFromSession();
 
             try (TerminologyService service = new TerminologyService()) {
@@ -1589,7 +1588,6 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** getVersions ");
             User user = SecurityService.getUserFromSession();
 
             try (TerminologyService service = new TerminologyService()) {
@@ -1650,7 +1648,6 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** getEditions ");
             User user = SecurityService.getUserFromSession();
 
             try (TerminologyService service = new TerminologyService()) {
@@ -1665,7 +1662,7 @@ public class RefsetController extends BaseController {
                 results.setTimeTaken(System.currentTimeMillis() - start);
                 results.setTotalKnown(true);
 
-                logger.debug("******** results: " + ModelUtility.toJson(results));
+                logger.debug("getEditions results: " + ModelUtility.toJson(results));
                 List<Edition> editionList = results.getItems();
                 editionList.sort(new Comparator<Edition>() {
 
@@ -1714,12 +1711,12 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** getRefsetConcepts: branch: " + branch + "; areParentConcepts: " + areParentConcepts);
+            //logger.debug("getRefsetConcepts: branch: " + branch + "; areParentConcepts: " + areParentConcepts);
 
             User user = SecurityService.getUserFromSession();
             ConceptResultList results = RefsetService.getRefsetConcepts(branch, areParentConcepts);
             
-            logger.debug("*********** getRefsetConcepts: results: " + ModelUtility.toJson(results));
+            //logger.debug("getRefsetConcepts: results: " + ModelUtility.toJson(results));
 
             return results;
 
@@ -1749,12 +1746,12 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** getBranchVersions - branch: " + branch);
+            //logger.debug("getBranchVersions - branch: " + branch);
 
             User user = SecurityService.getUserFromSession();
             final ResultList<String> results = RefsetService.getBranchVersions(branch);
             
-            logger.debug("*********** getBranchVersions - results: " + results);
+            //logger.debug("getBranchVersions - results: " + results);
             
             return results;
 
@@ -1783,7 +1780,6 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** getOrganizations ");
             User user = SecurityService.getUserFromSession();
 
             try (TerminologyService service = new TerminologyService()) {
@@ -1798,7 +1794,7 @@ public class RefsetController extends BaseController {
                 results.setTimeTaken(System.currentTimeMillis() - start);
                 results.setTotalKnown(true);
 
-                logger.debug("******** results: " + ModelUtility.toJson(results));
+                //logger.debug("results: " + ModelUtility.toJson(results));
                 List<Organization> organizationList = results.getItems();
                 organizationList.sort(new Comparator<Organization>() {
 
@@ -1840,7 +1836,7 @@ public class RefsetController extends BaseController {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
+            logger.debug("getRefsetAncestorCache: refsetInternalId: " + refsetInternalId);
 
             final Refset refset = RefsetMemberService.getRefset(SecurityService.getUserFromSession(), service, refsetInternalId);
             final Map<String, Set<String>> ancestorsCache = RefsetMemberService.getCacheForMemberAncestors(RefsetMemberService.getBranchPath(refset));
@@ -1871,7 +1867,7 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.debug("*********** getRefset: refsetInternalId: " + refsetInternalId);
+            logger.debug("getMemberAncestorConcepts: refsetInternalId: " + refsetInternalId + " ; conceptId: " + conceptId);
             final User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(user, refsetInternalId);
             final Concept concept = new Concept();
