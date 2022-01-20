@@ -108,15 +108,15 @@ abstract public class AbstractRefsetTests extends BaseTest {
     /** The base url. */
     protected static String baseUrl = "/refset";
 
-    protected GetUnitTestUtilities getUtil;
+    protected static GetUnitTestUtilities getUtil;
 
-    protected ExportUnitTestUtilities exportUtil;
+    protected static ExportUnitTestUtilities exportUtil;
 
-    protected WorkflowUnitTestUtilities workflowUtil;
+    protected static WorkflowUnitTestUtilities workflowUtil;
 
-    protected SnowstormUnitTestUtilities snowUtil;
+    protected static SnowstormUnitTestUtilities snowUtil;
 
-    protected EditUnitTestUtilities editUtil;
+    protected static EditUnitTestUtilities editUtil;
 
     protected void validateRefsetMetadata(Refset refset) {
 
