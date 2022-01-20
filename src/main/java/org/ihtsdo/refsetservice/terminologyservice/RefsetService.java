@@ -1025,7 +1025,7 @@ public class RefsetService {
      * Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.
      *
      * @param branch the branch to retrieve the concepts from
-     * @param areParentConcepts Do these concepts represent parent concepts for a new refset, or will they be the underlying concepts for a the refset itself
+     * @param areParentConcepts  Do these concepts represent parent concepts for a new refset, or will they be the underlying concepts for a the refset itself
      * @return the list of refset concepts
      * @throws Exception the exception
      */
@@ -1044,6 +1044,7 @@ public class RefsetService {
 
         logger.debug("getRefsetConcepts URL: " + url);
 
+        // If we are looking for concepts to represent a refset, then we are filtering out those concept that are currently refsets   
         if (!areParentConcepts) {
 
             try (final TerminologyService service = new TerminologyService()) {
