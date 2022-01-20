@@ -23,6 +23,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
+import org.ihtsdo.refsetservice.rest.test.util.SnowstormUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.WorkflowUnitTestUtilities;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -55,7 +56,9 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static String testingEditionId = null;
 
-    protected static String mainTestingRefsetInternalId = "";
+    protected static String mainCoreTestingRefsetInternalId = "";
+
+    protected static String mainNrcTestingRefsetInternalId = "";
 
     protected static final String SNOMED_ROOT = "138875005";
 
@@ -74,9 +77,13 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String INVALID_INTERNAL_REFSET_ID = "12345678901234567890";
 
-    protected static final String MAIN_TESTING_REFSET_ID = "561000172108"; // Belgian
+    protected static final String MAIN_NRC_TESTING_REFSET_ID = "561000172108"; // Belgian
 
-    protected static final String MAIN_TESTING_REFSET_VERSION = "20200915";
+    protected static final String MAIN_NRC_TESTING_REFSET_VERSION = "20200915";
+
+    protected static final String MAIN_CORE_TESTING_REFSET_ID = "721145008"; // Belgian
+
+    protected static final String MAIN_CORE_TESTING_REFSET_VERSION = "20210731";
 
     protected static final String MEMBER_ID_LIST_FILE_NAME = "member_concept_id_list.txt";
 
@@ -106,6 +113,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected ExportUnitTestUtilities exportUtil;
     
     protected WorkflowUnitTestUtilities workflowUtil;
+
+    protected SnowstormUnitTestUtilities snowUtil;
 
     protected EditUnitTestUtilities editUtil;
 
@@ -141,7 +150,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
             // Version Date
             assertThat(refset.getVersionDate()).isEqualToIgnoringHours("2021-07-31");
         } else {
-            assertThat(refset.getRefsetId()).isEqualTo(MAIN_TESTING_REFSET_ID);
+            assertThat(refset.getRefsetId()).isEqualTo(MAIN_NRC_TESTING_REFSET_ID);
 
             assertThat(refset.getName()).isEqualToIgnoringCase(
                     "Belgian simple reference set for translated animal materials");

@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -297,7 +298,7 @@ public class GetUnitTestUtilities {
         // refset concepts, false for existing
         try {
             boolean areParentConceptsRequest =
-                    (refsetConceptType.equals(RefsetConceptsType.NEW_REFSET_CONCEPTS)) ? true
+                    (refsetConceptType.equals(RefsetConceptsType.ALL_SIMPLE_TYPE_CONCEPTS)) ? true
                             : false;
 
             final String url = "/general/refsetConcepts?branch=" + branch + "&areParentConcepts="
@@ -463,6 +464,48 @@ public class GetUnitTestUtilities {
             e.printStackTrace();
 
             return null;
+        }
+    }
+
+    public Concept getAncestorPath(String conceptId, String internalRefsetId) {
+
+        try {
+            final String url = "/refset/" + internalRefsetId + "/member/" + conceptId + "/ancestorConcepts";
+            logger.info("Testing url - " + url);
+
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+
+            Concept returnedconcept = new ObjectMapper().readValue(content, Concept.class);
+            return returnedconcept;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            return null;
+        }
+    }
+
+    public boolean setupAncestorCache(String internalRefsetId) {
+
+        try {
+            final String url = "/ancestors/" + internalRefsetId;
+            logger.info("Testing url - " + url);
+
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+
+            final JsonNode root = new ObjectMapper().readTree(content);
+            final boolean success = root.get("success").asBoolean();
+
+            return success;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            return false;
         }
     }
 }

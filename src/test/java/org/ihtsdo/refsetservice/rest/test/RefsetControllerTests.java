@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -59,12 +61,14 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     private static final String GPS_REFSET_ID = "787778008";
 
     // With 2 parents, 6 children and 0 defing rels
-    private static final String FIRST_CONCEPT_ID = "37663002";
+    private static final String FIRST_MAIN_NRC_REFSET_CONCEPT_ID = "37663002";
 
     // With 1 parents, 0 children and 0 defing rels
-    private static final String SECOND_CONCEPT_ID = "260206005";
+    private static final String SECOND_MAIN_NRC_REFSET_CONCEPT_ID = "260206005";
 
-    private static final String DETAILS_SEARCH_CONCEPT_ID = "276310004";
+    private static final String FIRST_MAIN_CORE_REFSET_CONCEPT_ID = "118690002";
+
+    private static final String DETAILS_MAIN_NRC_REFSET_SEARCH_CONCEPT_ID = "276310004";
 
     private static String inactiveRefsetInternalId;
 
@@ -132,8 +136,9 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
-                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
-
+                mainNrcTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
+                mainCoreTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
+                
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
 
                 // Ensure have the export directory created on testing system
@@ -146,7 +151,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
                     throw new Exception("Tests with Export because the expected export directory doesn't exist: " + exportFileDir);
                 }
 
-                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
+                mainNrcTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
 
                 inactiveRefsetInternalId = getUtil.getRefsetInternalId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
 
@@ -207,7 +212,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testRefset() throws Exception {
 
-        final Refset refset = getUtil.getRefsetFromInternalId(mainTestingRefsetInternalId);
+        final Refset refset = getUtil.getRefsetFromInternalId(mainNrcTestingRefsetInternalId);
 
         validateRefsetMetadata(refset);
     }
@@ -282,37 +287,37 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // Test by name
         refsetList = getUtil.searchDirectory("query=name:animal");
-        refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by partial name
         refsetList = getUtil.searchDirectory("query=name:ani");
-        refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by alternate refset name (using translation)
         refsetList = getUtil.searchDirectory("query=name:ensemble de référence simple belge pour les matières animales traduites");
-        refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by partial alternate refset name (using translation)
         refsetList = getUtil.searchDirectory("query=name:atière");
-        refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by edition name
         refsetList = getUtil.searchDirectory("query=editionName:Belgian Edition");
-        refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by combination
         refsetList = getUtil.searchDirectory("name:animal AND editionName:Belgian Edition");
-        refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by combination with partials
         refsetList = getUtil.searchDirectory("name:anim AND editionName:Belgian Edi");
-        refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by term per language (at least on non-pt)
@@ -330,7 +335,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
             logger.info("Testing term - " + searchTerms[i]);
             refsetList = getUtil.searchDirectory(searchTerms[i]);
 
-            refsetIdentified = validateRefsetExists(refsetList, MAIN_TESTING_REFSET_ID);
+            refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
             validateRefsetMetadata(refsetIdentified);
         }
 
@@ -354,7 +359,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testExportSctidList() throws Exception {
 
-        final JsonNode root = exportUtil.exportSctIds(mainTestingRefsetInternalId);
+        final JsonNode root = exportUtil.exportSctIds(mainNrcTestingRefsetInternalId);
 
         // Validate
         validateExportFiles(root, LIST_OF_SCTIDS_FILE);
@@ -370,9 +375,9 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // Clear content on AWS first to ensure actually are generating export
         // rather than just returning cached content
-        exportUtil.deleteRefsetExportsFromAws(MAIN_TESTING_REFSET_ID, TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
+        exportUtil.deleteRefsetExportsFromAws(MAIN_NRC_TESTING_REFSET_ID, TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
 
-        final JsonNode root = exportUtil.exportRf2Snapshot(mainTestingRefsetInternalId, TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
+        final JsonNode root = exportUtil.exportRf2Snapshot(mainNrcTestingRefsetInternalId, TESTING_REFSET_SNAPSHOT_EXPORT_VERSION);
 
         // Validate
         validateExportFiles(root, SNAPSHOT_FILE);
@@ -410,21 +415,21 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testConceptDetails() throws Exception {
 
         // Test normal concept Details Call
-        Concept concept = getUtil.getConceptDetails(FIRST_CONCEPT_ID, mainTestingRefsetInternalId);
+        Concept concept = getUtil.getConceptDetails(FIRST_MAIN_NRC_REFSET_CONCEPT_ID, mainNrcTestingRefsetInternalId);
 
         // doesn't include membership status nor memberEffectiveTime
-        validateConcept(concept, FIRST_CONCEPT_ID, null, false, firstConceptDescList, 0, 0, 0);
+        validateConcept(concept, FIRST_MAIN_NRC_REFSET_CONCEPT_ID, null, false, firstConceptDescList, 0, 0, 0);
 
         // Try second concept
-        concept = getUtil.getConceptDetails(SECOND_CONCEPT_ID, mainTestingRefsetInternalId);
+        concept = getUtil.getConceptDetails(SECOND_MAIN_NRC_REFSET_CONCEPT_ID, mainNrcTestingRefsetInternalId);
 
         // doesn't include membership status nor memberEffectiveTime
-        validateConcept(concept, SECOND_CONCEPT_ID, null, false, secondConceptDescList, 0, 0, 0);
+        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, null, false, secondConceptDescList, 0, 0, 0);
 
         // Test invalid refset is handled gracefully
         try {
 
-            concept = getUtil.getConceptDetails(FIRST_CONCEPT_ID, INVALID_INTERNAL_REFSET_ID);
+            concept = getUtil.getConceptDetails(FIRST_MAIN_NRC_REFSET_CONCEPT_ID, INVALID_INTERNAL_REFSET_ID);
             assertThat(concept).isNull();
         } catch (AssertionError e) {
 
@@ -468,18 +473,18 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testMemberList() throws Exception {
 
-        ConceptResultList members = getUtil.getMembers(mainTestingRefsetInternalId);
+        ConceptResultList members = getUtil.getMembers(mainNrcTestingRefsetInternalId);
 
         // At time last update, 101 members were found in the refsets
         assertThat(members.size()).isEqualTo(101);
 
         // Membership info and descriptions, but no parents/children
-        Concept concept = identifyMemberFromList(members, FIRST_CONCEPT_ID);
-        validateConcept(concept, FIRST_CONCEPT_ID, "20200315", true, firstConceptDescList, 0, 0, 0);
+        Concept concept = identifyMemberFromList(members, FIRST_MAIN_NRC_REFSET_CONCEPT_ID);
+        validateConcept(concept, FIRST_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, firstConceptDescList, 0, 0, 0);
 
         // Membership info and descriptions, but no parents/children
-        concept = identifyMemberFromList(members, SECOND_CONCEPT_ID);
-        validateConcept(concept, SECOND_CONCEPT_ID, "20200315", true, secondConceptDescList, 0, 0, 0);
+        concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
+        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, secondConceptDescList, 0, 0, 0);
     }
 
     /**
@@ -491,12 +496,12 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testSearchMember() throws Exception {
 
         for (int i = 0; i < membersSearchQueryList.length; i++) {
-
-            final ConceptResultList members = getUtil.searchMembers(mainTestingRefsetInternalId, membersSearchQueryList[i]);
-            final Concept concept = identifyMemberFromList(members, DETAILS_SEARCH_CONCEPT_ID);
+            logger.debug("Searching on term: " + membersSearchQueryList[i]);
+            final ConceptResultList members = getUtil.searchMembers(mainNrcTestingRefsetInternalId, membersSearchQueryList[i]);
+            final Concept concept = identifyMemberFromList(members, DETAILS_MAIN_NRC_REFSET_SEARCH_CONCEPT_ID);
 
             // Doesn't include relationships
-            validateConcept(concept, DETAILS_SEARCH_CONCEPT_ID, "20200315", true, detailSearchNonAcceptableConceptDescList, 0, 0, 0);
+            validateConcept(concept, DETAILS_MAIN_NRC_REFSET_SEARCH_CONCEPT_ID, "20200315", true, detailSearchNonAcceptableConceptDescList, 0, 0, 0);
         }
 
     }
@@ -510,13 +515,13 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testSearchTaxonomy() throws Exception {
 
         for (int i = 0; i < membersSearchQueryList.length; i++) {
+            logger.debug("Searching on term: " + membersSearchQueryList[i]);
+            final ConceptResultList members = getUtil.searchTaxonomy(mainNrcTestingRefsetInternalId, membersSearchQueryList[i]);
 
-            final ConceptResultList members = getUtil.searchTaxonomy(mainTestingRefsetInternalId, membersSearchQueryList[i]);
-
-            final Concept concept = identifyMemberFromList(members, DETAILS_SEARCH_CONCEPT_ID);
+            final Concept concept = identifyMemberFromList(members, DETAILS_MAIN_NRC_REFSET_SEARCH_CONCEPT_ID);
 
             // Doesn't include membership status nor memberEffectiveTime
-            validateConcept(concept, DETAILS_SEARCH_CONCEPT_ID, null, false, detailSearchNonAcceptableConceptDescList, 0, -1, 0);
+            validateConcept(concept, DETAILS_MAIN_NRC_REFSET_SEARCH_CONCEPT_ID, null, false, detailSearchNonAcceptableConceptDescList, 0, -1, 0);
         }
 
     }
@@ -536,13 +541,13 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         for (int i = 0; i < searchTerms.length; i++) {
 
-            final ConceptResultList members = getUtil.searchConcepts(mainTestingRefsetInternalId, membersSearchQueryList[i]);
+            final ConceptResultList members = getUtil.searchConcepts(mainNrcTestingRefsetInternalId, membersSearchQueryList[i]);
 
-            final Concept concept = identifyMemberFromList(members, DETAILS_SEARCH_CONCEPT_ID);
+            final Concept concept = identifyMemberFromList(members, DETAILS_MAIN_NRC_REFSET_SEARCH_CONCEPT_ID);
 
             // Doesn't include membership status nor memberEffectiveTime nor
             // descriptions
-            validateConcept(concept, DETAILS_SEARCH_CONCEPT_ID, null, false, new ArrayList<String>(), 0, -1, 0);
+            validateConcept(concept, DETAILS_MAIN_NRC_REFSET_SEARCH_CONCEPT_ID, null, false, new ArrayList<String>(), 0, -1, 0);
         }
 
     }
@@ -560,23 +565,43 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // Animal Agent (105899005) which is a parent to firstConIdToExamine
         // (Venon)
 
+        // Call this first
+        // @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/ancestorCache", produces = "application/json")
+        final boolean cacheSuccess = getUtil.setupAncestorCache(mainNrcTestingRefsetInternalId);
+        assertThat(cacheSuccess).isTrue();
+
+        
         // Search on grandparent
         final List<String> hierarchy = new ArrayList<>();
-        hierarchy.addAll(List.of("105590001", "115668003", "289958009", "256363008", "105899005", FIRST_CONCEPT_ID));
+        hierarchy.addAll(List.of("105590001", "115668003", "289958009", "256363008", "105899005", FIRST_MAIN_NRC_REFSET_CONCEPT_ID));
 
         for (int i = 0; i < hierarchy.size() - 1; i++) {
 
-            final String parentId = hierarchy.get(0);
+            final String parentId = hierarchy.get(i);
             logger.info("Testing parentID: " + parentId);
 
-            final ConceptResultList children = getUtil.getChildren(mainTestingRefsetInternalId, parentId);
+            final ConceptResultList children = getUtil.getChildren(mainNrcTestingRefsetInternalId, parentId);
             final Concept childConcept = identifyMemberFromList(children, hierarchy.get(i + 1));
+            
 
             assertThat(childConcept.getHasDescendantRefsetMembers()).isTrue();
         }
 
     }
 
+    /**
+     * Test getting taxonomy children.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testAncestorPath() throws Exception {
+        // TODO
+        final Concept concept = getUtil.getAncestorPath(FIRST_MAIN_CORE_REFSET_CONCEPT_ID, mainCoreTestingRefsetInternalId);
+        logger.debug("Here with concept: " + concept);
+        assertThat(concept.getParents().contains("118950002"));
+    }
+    
     /**
      * Test getting member history.
      *
