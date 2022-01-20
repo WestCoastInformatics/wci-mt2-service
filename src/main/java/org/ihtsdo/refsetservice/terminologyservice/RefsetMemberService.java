@@ -1873,7 +1873,7 @@ public class RefsetMemberService {
                     conceptsToProcess.add(concept);
                     i++;
                     
-                    if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == allConceptList.size() - 1) {
+                    if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == allConceptList.size()) {
                         populateAllLanguageDescriptions(refset, concepts.getItems());
                     }
                 }
