@@ -59,7 +59,8 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
-                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
+                mainNrcTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
+                mainCoreTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
 
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
 
@@ -199,8 +200,8 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     public void testCreateNewVersionWithChangesFromPublished() throws Exception {
 
         // ADD NEW VERSION
-        final String newRefsetInternalId = editUtil.createNewRefsetVersion(mainTestingRefsetInternalId);
-        assertThat(newRefsetInternalId).isNotEqualTo(mainTestingRefsetInternalId);
+        final String newRefsetInternalId = editUtil.createNewRefsetVersion(mainNrcTestingRefsetInternalId);
+        assertThat(newRefsetInternalId).isNotEqualTo(mainNrcTestingRefsetInternalId);
         logger.info("New Version Internal ID - " + newRefsetInternalId);
 
         final Map<String, String> modifyData = new HashMap<>();
@@ -210,7 +211,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
             Refset refset = service.get(newRefsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
-            assertThat(refset.getRefsetId()).isEqualTo(MAIN_TESTING_REFSET_ID);
+            assertThat(refset.getRefsetId()).isEqualTo(MAIN_NRC_TESTING_REFSET_ID);
             assertThat(refset.getVersionStatus()).isEqualTo(Refset.IN_DEVELOPMENT);
             assertThat(refset.getVersionDate()).isNull();
             assertThat(refset.isLatestVersion()).isTrue();
@@ -254,7 +255,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
             assertThat(refset).isNotNull();
             assertThat(refset.isLatestVersion()).isTrue();
 
-            refset = service.get(mainTestingRefsetInternalId, Refset.class);
+            refset = service.get(mainNrcTestingRefsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
             assertThat(refset.isLatestVersion()).isFalse();
         }
@@ -265,7 +266,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         // validate the original refset is back to the latest version
         try (final TerminologyService service = new TerminologyService()) {
 
-            Refset refset = service.get(mainTestingRefsetInternalId, Refset.class);
+            Refset refset = service.get(mainNrcTestingRefsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
             assertThat(refset.isLatestVersion()).isTrue();
         }
