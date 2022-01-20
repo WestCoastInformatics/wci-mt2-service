@@ -1924,6 +1924,9 @@ public class RefsetMemberService {
                 logger.debug("Inactive concept in taxonomy search: " + concept.getCode());
                 inactiveConcepts.add(concept);
                 continue;
+            } else {
+
+                conceptIds += concept.getCode() + ",";
             }
         }
 
