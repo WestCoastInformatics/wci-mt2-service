@@ -138,7 +138,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
                 mainNrcTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
                 mainCoreTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
-                
+
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
 
                 // Ensure have the export directory created on testing system
@@ -496,6 +496,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testSearchMember() throws Exception {
 
         for (int i = 0; i < membersSearchQueryList.length; i++) {
+
             logger.debug("Searching on term: " + membersSearchQueryList[i]);
             final ConceptResultList members = getUtil.searchMembers(mainNrcTestingRefsetInternalId, membersSearchQueryList[i]);
             final Concept concept = identifyMemberFromList(members, DETAILS_MAIN_NRC_REFSET_SEARCH_CONCEPT_ID);
@@ -515,6 +516,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testSearchTaxonomy() throws Exception {
 
         for (int i = 0; i < membersSearchQueryList.length; i++) {
+
             logger.debug("Searching on term: " + membersSearchQueryList[i]);
             final ConceptResultList members = getUtil.searchTaxonomy(mainNrcTestingRefsetInternalId, membersSearchQueryList[i]);
 
@@ -570,7 +572,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         final boolean cacheSuccess = getUtil.setupAncestorCache(mainNrcTestingRefsetInternalId);
         assertThat(cacheSuccess).isTrue();
 
-        
         // Search on grandparent
         final List<String> hierarchy = new ArrayList<>();
         hierarchy.addAll(List.of("105590001", "115668003", "289958009", "256363008", "105899005", FIRST_MAIN_NRC_REFSET_CONCEPT_ID));
@@ -582,7 +583,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
             final ConceptResultList children = getUtil.getChildren(mainNrcTestingRefsetInternalId, parentId);
             final Concept childConcept = identifyMemberFromList(children, hierarchy.get(i + 1));
-            
 
             assertThat(childConcept.getHasDescendantRefsetMembers()).isTrue();
         }
@@ -596,12 +596,13 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      */
     @Test
     public void testAncestorPath() throws Exception {
+
         // TODO
         final Concept concept = getUtil.getAncestorPath(FIRST_MAIN_CORE_REFSET_CONCEPT_ID, mainCoreTestingRefsetInternalId);
         logger.debug("Here with concept: " + concept);
         assertThat(concept.getParents().contains("118950002"));
     }
-    
+
     /**
      * Test getting member history.
      *

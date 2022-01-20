@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @AutoConfigureMockMvc
 abstract public class AbstractRefsetTests extends BaseTest {
+
     protected final static SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
     /** The config properties. */
@@ -97,7 +98,6 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String TESTING_EDITION_NAME = "International Edition";
 
-
     /** The mvc. */
     @Autowired
     protected MockMvc mvc;
@@ -111,7 +111,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected GetUnitTestUtilities getUtil;
 
     protected ExportUnitTestUtilities exportUtil;
-    
+
     protected WorkflowUnitTestUtilities workflowUtil;
 
     protected SnowstormUnitTestUtilities snowUtil;
@@ -119,21 +119,20 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected EditUnitTestUtilities editUtil;
 
     protected void validateRefsetMetadata(Refset refset) {
+
         assertThat(refset).isNotNull();
 
         if (refset.getRefsetId().equals(INACTIVE_REFSET_ID)) {
+
             assertThat(refset.getRefsetId()).isEqualTo(INACTIVE_REFSET_ID);
 
-            assertThat(refset.getName())
-                    .isEqualToIgnoringCase("Lateralizable body structure reference set");
-            assertThat(refset.getNarrative()).isEqualToIgnoringCase(
-                    "The reference set contains all body structures that can be lateralized.");
+            assertThat(refset.getName()).isEqualToIgnoringCase("Lateralizable body structure reference set");
+            assertThat(refset.getNarrative()).isEqualToIgnoringCase("The reference set contains all body structures that can be lateralized.");
             // assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
             // || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("900000000000012004");
-            assertThat(refset.getEdition().getName())
-                    .isEqualToIgnoringCase("International Edition");
+            assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("International Edition");
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getVersionStatus()).isEqualToIgnoringCase("published");
             assertThat(refset.getVersionNotes()).isNull();
@@ -150,12 +149,11 @@ abstract public class AbstractRefsetTests extends BaseTest {
             // Version Date
             assertThat(refset.getVersionDate()).isEqualToIgnoringHours("2021-07-31");
         } else {
+
             assertThat(refset.getRefsetId()).isEqualTo(MAIN_NRC_TESTING_REFSET_ID);
 
-            assertThat(refset.getName()).isEqualToIgnoringCase(
-                    "Belgian simple reference set for translated animal materials");
-            assertThat(refset.getNarrative()).isEqualToIgnoringCase(
-                    "descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
+            assertThat(refset.getName()).isEqualToIgnoringCase("Belgian simple reference set for translated animal materials");
+            assertThat(refset.getNarrative()).isEqualToIgnoringCase("descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
             // assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
             // || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
@@ -177,21 +175,20 @@ abstract public class AbstractRefsetTests extends BaseTest {
             // Version Date
             assertThat(refset.getVersionDate()).isEqualToIgnoringHours("2020-09-15");
         }
+
     }
 
     // useDescriptions Should the validation use the description array or the
     // concept name for validating descriptions
-    protected void validateConcept(Concept concept, String conceptId, String memberEfectiveTime,
-        boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize,
-        int childSize, boolean useDescriptions) throws ParseException {
+    protected void validateConcept(Concept concept, String conceptId, String memberEfectiveTime, boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize, int childSize,
+        boolean useDescriptions) throws ParseException {
 
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
 
         if (memberEfectiveTime != null) {
 
-            assertThat(concept.getMemberEffectiveTime())
-                    .isEqualTo(SIMPLE_DATE_FORMAT.parseObject(memberEfectiveTime));
+            assertThat(concept.getMemberEffectiveTime()).isEqualTo(SIMPLE_DATE_FORMAT.parseObject(memberEfectiveTime));
             assertThat(concept.isMemberOfRefset()).isEqualTo(isRefsetMember);
         }
 
@@ -200,20 +197,25 @@ abstract public class AbstractRefsetTests extends BaseTest {
             assertThat(concept.getDescriptions().size()).isEqualTo(descriptionList.size());
 
             for (String matchingDesc : descriptionList) {
+
                 validateDescExist(concept.getDescriptions(), matchingDesc);
             }
+
         } else {
 
             assertThat(concept.getName()).isEqualTo(descriptionList.get(0));
 
             if (descriptionList.size() == 2) {
+
                 assertThat(concept.getFsn()).isEqualTo(descriptionList.get(1));
             }
+
         }
 
         assertThat(concept.getRoleGroups().size()).isEqualTo(roleGroupSize);
 
         if (parentSize >= 0) {
+
             assertThat(concept.getParents().size()).isEqualTo(parentSize);
         }
 
@@ -221,31 +223,36 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     }
 
-    protected void validateConcept(Concept concept, String conId, String memberEfectiveTime,
-        boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize,
-        int childSize) throws ParseException {
-        validateConcept(concept, conId, memberEfectiveTime, isRefsetMember, descriptionList,
-                roleGroupSize, parentSize, childSize, true);
+    protected void validateConcept(Concept concept, String conId, String memberEfectiveTime, boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize, int childSize)
+        throws ParseException {
+
+        validateConcept(concept, conId, memberEfectiveTime, isRefsetMember, descriptionList, roleGroupSize, parentSize, childSize, true);
     }
 
     protected void validateDescExist(List<Map<String, String>> descriptions, String matchingTerm) {
+
         boolean descFound = false;
 
         for (Map<String, String> descriptionGroup : descriptions) {
+
             if (descriptionGroup.get(DESCRIPTION_TERM).equalsIgnoreCase(matchingTerm)) {
+
                 descFound = true;
                 break;
             }
+
         }
 
         assertTrue(descFound);
     }
 
     protected void validateExportFiles(JsonNode root, String expectedFilePath) throws IOException {
+
         BufferedReader expectedFileReader = null;
         BufferedReader generatedFileReader = null;
 
         try {
+
             // Get Zipped File
             final String fileUrl = (root.get("url")).asText();
             logger.info("File Url: " + fileUrl);
@@ -267,47 +274,64 @@ abstract public class AbstractRefsetTests extends BaseTest {
             generatedFileReader = new BufferedReader(new FileReader(generatedFile));
 
             String st;
+
             while ((st = generatedFileReader.readLine()) != null) {
+
                 generatedLines.add(st);
             }
 
             // Get test file
             expectedFileReader = new BufferedReader(new FileReader(expectedFilePath));
+
             while ((st = expectedFileReader.readLine()) != null) {
+
                 testLines.add(st);
             }
+
             // Compare two but first disregard the header for the generated
             // contents.
             int j = 0;
+
             for (int i = 0; i < generatedLines.size(); i++) {
+
                 String generatedLine = (String) generatedLines.toArray()[i];
 
                 // If header line, just ignore altogether
                 if (!generatedLine.startsWith("id\teffectiveTime")) {
+
                     String testLine = (String) testLines.toArray()[j++];
 
                     assertThat(testLine).isEqualTo(generatedLine);
                 }
+
             }
 
             assertThat(testLines.size()).isEqualTo(j);
         } finally {
+
             if (expectedFileReader != null) {
+
                 expectedFileReader.close();
             }
 
             if (generatedFileReader != null) {
+
                 generatedFileReader.close();
             }
+
         }
+
     }
 
-    protected Refset validateRefsetExists(final ResultList<Refset> refsetList,
-        final String internalRefsetId) {
+    protected Refset validateRefsetExists(final ResultList<Refset> refsetList, final String internalRefsetId) {
+
         for (Refset r : refsetList.getItems()) {
+
             if (r.getRefsetId().equals(internalRefsetId)) {
+
                 return r;
             }
+
         }
 
         return null;
