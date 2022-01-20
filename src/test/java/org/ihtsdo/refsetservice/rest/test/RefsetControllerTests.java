@@ -600,7 +600,31 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // TODO
         final Concept concept = getUtil.getAncestorPath(FIRST_MAIN_CORE_REFSET_CONCEPT_ID, mainCoreTestingRefsetInternalId);
         logger.debug("Here with concept: " + concept);
-        assertThat(concept.getParents().contains("118950002"));
+        ConceptResultList ancestorList = new ConceptResultList(concept.getParents());
+
+        assertThat(ancestorList.size()).isEqualTo(5);
+
+        // Verify that the main concept isn't added as an ancestor of itself
+        Concept nonAncestor = identifyMemberFromList(ancestorList, FIRST_MAIN_CORE_REFSET_CONCEPT_ID);
+        assertThat(nonAncestor).isNull();
+
+        // Verify that the main concept isn't added as an ancestor of itself
+        Concept ancestor = identifyMemberFromList(ancestorList, "118950002");
+        assertThat(ancestor).isNotNull();
+
+        // Verify all expected ancestors are listed
+        ancestor = identifyMemberFromList(ancestorList, "771329004");
+        assertThat(ancestor).isNotNull();
+
+        ancestor = identifyMemberFromList(ancestorList, "362958002");
+        assertThat(ancestor).isNotNull();
+
+        ancestor = identifyMemberFromList(ancestorList, "362958002");
+        assertThat(ancestor).isNotNull();
+
+        ancestor = identifyMemberFromList(ancestorList, "138875005");
+        assertThat(ancestor).isNotNull();
+
     }
 
     /**
