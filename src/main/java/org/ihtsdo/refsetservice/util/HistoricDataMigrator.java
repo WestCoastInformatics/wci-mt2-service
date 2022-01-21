@@ -440,7 +440,7 @@ public class HistoricDataMigrator {
                 for (String refsetId : latestRefsetCache.keySet()) {
                     if (refset.getRefsetId().equals(refsetId)
                             && refset.getVersionDate().equals(latestRefsetCache.get(refsetId))) {
-                        refset.setLatestVersion(true);
+                        refset.setLatestPublishedVersion(true);
                         break;
                     }
                 }

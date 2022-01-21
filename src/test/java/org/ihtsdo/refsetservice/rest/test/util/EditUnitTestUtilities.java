@@ -446,7 +446,7 @@ public class EditUnitTestUtilities {
 
             Refset refset = service.get(refsetVersionInternalId, Refset.class);
             assertThat(refset).isNotNull();
-            assertTrue(refset.isLatestVersion());
+            assertTrue(refset.isLatestPublishedVersion());
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -102,10 +102,6 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     @Column(nullable = false)
     private boolean localSet;
 
-    /** The latest verions flag. */
-    @Column(nullable = true)
-    private boolean latestVersion;
-
     /** The module ID. */
     @Column(nullable = false, length = 256)
     private String moduleId;
@@ -187,7 +183,6 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         moduleId = other.getModuleId();
         editOriginBranchPath = other.getEditOriginBranchPath();
         privateRefset = other.isPrivateRefset();
-        latestVersion = other.isLatestVersion();
         definitionClauses = new ArrayList<DefinitionClauseEditHistory>(other.getDefinitionClauses());
         tags = new HashSet<String>(other.getTags());
     }
@@ -212,7 +207,6 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         moduleId = other.getModuleId();
         editOriginBranchPath = other.getEditOriginBranchPath();
         privateRefset = other.isPrivateRefset();
-        latestVersion = other.isLatestVersion();
         tags = new HashSet<String>(other.getTags());
     }
 
@@ -499,20 +493,6 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         Collections.sort(definitionClauses, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
         this.definitionClauses = definitionClauses;
     }
-    
-    /**
-     * @return the latestVersion
-     */
-    public boolean isLatestVersion() {
-        return latestVersion;
-    }
-
-    /**
-     * @param latestVersion the latestVersion to set
-     */
-    public void setLatestVersion(boolean latestVersion) {
-        this.latestVersion = latestVersion;
-    }
 
     /**
      * Hash code.
@@ -535,7 +515,6 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         result = prime * result + ((editOriginBranchPath == null) ? 0 : editOriginBranchPath.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
         result = prime * result + (privateRefset ? 1 : 0);
-        result = prime * result + (latestVersion ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
     }
@@ -656,10 +635,6 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         }
 
         if (localSet != other.localSet) {
-            return false;
-        }
-
-        if (latestVersion != other.latestVersion) {
             return false;
         }
 

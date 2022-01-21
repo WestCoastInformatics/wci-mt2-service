@@ -102,9 +102,13 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = false)
     private boolean localSet;
 
-    /** The latest version flag. */
+    /** The latest published version flag. */
     @Column(nullable = true)
-    private boolean latestVersion;
+    private boolean latestPublishedVersion;
+    
+    /** Does this refset have a version in development (this is only true if this is the latest published version). */
+    @Column(nullable = true)
+    private boolean hasVersionInDevelopment;
 
     /** The assigned user. */
     @Column(nullable = true)
@@ -268,7 +272,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
         branchPath = other.getBranchPath();
-        latestVersion = other.isLatestVersion();
+        latestPublishedVersion = other.isLatestPublishedVersion();
+        hasVersionInDevelopment = other.getHasVersionInDevelopment();
         feedbackVisible = other.isFeedbackVisible();
         versionList = other.getVersionList();
         roles = other.getRoles();
@@ -1002,18 +1007,33 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
-     * @return the latestVersion
+     * @return the latestPublishedVersion
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    public boolean isLatestVersion() {
-        return latestVersion;
+    public boolean isLatestPublishedVersion() {
+        return latestPublishedVersion;
     }
 
     /**
-     * @param latestVersion the latestVersion to set
+     * @param latestPublishedVersion the latestPublishedVersion to set
      */
-    public void setLatestVersion(boolean latestVersion) {
-        this.latestVersion = latestVersion;
+    public void setLatestPublishedVersion(boolean latestPublishedVersion) {
+        this.latestPublishedVersion = latestPublishedVersion;
+    }
+    
+    /**
+     * @return Does this refset have a version in development (this is only true if this is the latest published version)
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public boolean getHasVersionInDevelopment() {
+        return hasVersionInDevelopment; 
+    }
+    
+    /**
+     * @param hasVersionInDevelopment set if this refset has a version in development (this is only true if this is the latest published version)
+     */
+    public void setHasVersionInDevelopment(boolean hasVersionInDevelopment) {
+        this.hasVersionInDevelopment = hasVersionInDevelopment;
     }
 
     /**
@@ -1046,7 +1066,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (downloadable ? 1 : 0);
         result = prime * result + (feedbackVisible ? 1 : 0);
-        result = prime * result + (latestVersion ? 1 : 0);
+        result = prime * result + (latestPublishedVersion ? 1 : 0);
+        result = prime * result + (hasVersionInDevelopment ? 1 : 0);
         result = prime * result + (locked ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
@@ -1211,7 +1232,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
             return false;
         }
 
-        if (latestVersion != other.latestVersion) {
+        if (latestPublishedVersion != other.latestPublishedVersion) {
+            return false;
+        }
+        
+        if (hasVersionInDevelopment != other.hasVersionInDevelopment) {
             return false;
         }
         

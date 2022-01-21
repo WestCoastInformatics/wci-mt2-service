@@ -246,7 +246,6 @@ public class RefsetService {
 
             Refset refset = new Refset(refsetEditParameters);
             refset.setRefsetId(refsetConceptId);
-            refset.setLatestVersion(true);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
             refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
             refset.setProject(project);
@@ -983,7 +982,7 @@ public class RefsetService {
             if (otherVersions) {
                 
                 final Refset mostRecentVersion = getLatestRefsetVersion(refsetId);
-                mostRecentVersion.setLatestVersion(true);
+                mostRecentVersion.setLatestPublishedVersion(true);
                 service.update(mostRecentVersion);
                 logger.info("Refset " + mostRecentVersion.getId() + " version marked as latest.");
             }
@@ -1050,10 +1049,14 @@ public class RefsetService {
             try (final TerminologyService service = new TerminologyService()) {
 
                 // get all the existing refsets for latest branch version
-                final ResultList<Refset> refsets = service.find("latestVersion: true", null, Refset.class, null);
+                final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + ")";
+                final ResultList<Refset> refsets = service.find(query, null, Refset.class, null);
 
                 for (final Refset refset : refsets.getItems()) {
-                    existingRefsetIds.add(refset.getRefsetId());
+                    
+                    if (!existingRefsetIds.contains(refset.getRefsetId())) {
+                        existingRefsetIds.add(refset.getRefsetId());
+                    }
                 }
 
                 logger.debug("getRefsetConcepts existingRefsetIds: " + existingRefsetIds);
@@ -1263,10 +1266,11 @@ public class RefsetService {
      * @param user the user
      * @param searchParameters the search parameters
      * @param searchConcepts should refset members be searched
+     * @param showInDevelopment flag on whether to include IN_DEVELOPMENT refsets
      * @return the list of found refsets
      * @throws Exception the exception
      */
-    public static ResultList<Refset> searchRefsets(final User user, final SearchParameters searchParameters, final boolean searchConcepts) throws Exception {
+    public static ResultList<Refset> searchRefsets(final User user, final SearchParameters searchParameters, final boolean searchConcepts, final boolean showInDevelopment) throws Exception {
         
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1368,12 +1372,12 @@ public class RefsetService {
             }
             
             if (query != null && !query.equals("")) {
-                query += " AND latestVersion: true";
+                query += " AND ";
             } else {
-                query = "latestVersion: true";
+                query = "";
             }
             
-            String projectFilter = " AND (";
+            String projectFilter = "(";
             
             @SuppressWarnings("unchecked")
             LinkedHashMap<String, Project> userProjects = getUserProjects(user);
@@ -1398,16 +1402,21 @@ public class RefsetService {
             if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
                 query += " AND privateRefset: false";
             }
+            
+            // if this is the directory then only show the latest published version, if it is the projects then show in development or the latest published version
+            if (showInDevelopment) {
+                query += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
+            } else {
+                query += " AND latestPublishedVersion: true";
+            }
 
             logger.debug("******** searchRefsets query: " + query);
-            
             results = service.find(query, pfs, Refset.class, null);
-
+            
             for (Refset refset : results.getItems()) {
 
                 refset = setRefsetPermissions(user, refset);
-                refset.setVersionList(
-                        RefsetService.getSortedRefsetVersionList(refset.getRefsetId(), service));
+                //refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
             }
             
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -1420,111 +1429,6 @@ public class RefsetService {
     }
     
     /**
-     * Returns a list of all refset IDs.
-     *
-     * @return the list of refset IDs
-     * @throws Exception the exception
-     */
-    public static List<String> getRefsetIds() throws Exception {
-        
-        try (TerminologyService service = new TerminologyService()) {
-
-            List<String> results = new ArrayList<String>();
-            
-
-            final ResultList<Refset> refsets = service.find("latestVersion: true", new PfsParameter(), Refset.class, null);
-            
-            for (final Refset refset : refsets.getItems()) {
-                results.add(refset.getRefsetId());
-            }
-            
-            return results;
-        }
-    }
-    
-    /**
-     * Get a list of refsets containing descriptions matching the search.
-     *
-     * @param searchParameters the search parameters
-     * @return a list of refsets containing descriptions matching the search
-     * @throws Exception the exception
-     */
-    public static String searchRefsetDescriptions(final SearchParameters searchParameters)
-        throws Exception {
-
-        String refsetQuery = "";
-        final String query = searchParameters.getQuery(); 
-                                                          
-        final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
-                "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
-        String snowstormQuery = "";
-        String[] queryParts = query.split(" AND ");
-
-        for (final String queryPart : queryParts) {
-
-            String[] keyValue = queryPart.split(":");
-
-            if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
-                continue;
-            } else {
-
-                snowstormQuery += queryPart + " AND ";
-            }
-        }
-
-        // if there are no query terms just exit the method
-        if (snowstormQuery.equals("")) {
-            return refsetQuery;
-        }
-        
-        // get the list of refset IDs to look up descriptions for
-        final String refsetIds = String.join(",", getRefsetIds());
-        
-        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
-
-        String url = SnowstormConnection.BASE_URL + "concepts?offset=0&limit=3000&term="
-                + StringUtility.encodeValue(QueryParserBase.escape(snowstormQuery))
-                + "&conceptIds=" + refsetIds;
-
-        logger.debug("searchRefsetDescriptions URL: " + url);
-
-        try (Response response = SnowstormConnection.getResponse(url)) {
-
-            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                throw new Exception(
-                        "call to url '" + url + "' wasn't successful. " + response.toString());
-            }
-            
-            final ObjectMapper mapper = new ObjectMapper();
-            final String resultString = response.readEntity(String.class);
-            final JsonNode root = mapper.readTree(resultString.toString());
-            final JsonNode items = root.get("items");
-            final Iterator<JsonNode> iterator = items.iterator();
-
-            // loop thru the returned concepts add them to the list
-            while (iterator != null && iterator.hasNext()) {
-
-                final JsonNode conceptNode = iterator.next();
-                final String refsetId = conceptNode.get("conceptId").asText();
-
-                refsetQuery += refsetId + " OR ";
-            }
-
-            if (!refsetQuery.equals("")) {
-                refsetQuery = "refsetId:(" + StringUtils.removeEnd(refsetQuery, " OR ") + ")";
-            }
-
-        } catch (Exception ex) {
-            throw new Exception(
-                    "Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
-        }
-
-        logger.debug("searchRefsetDescriptions refsetQuery: " + refsetQuery);
-
-        return refsetQuery;
-    }
-    
-    /**
      * Create a new version of a refset.
      *
      * @param user the user
@@ -1534,16 +1438,22 @@ public class RefsetService {
      */
     public static String createNewRefsetVersion(final User user, final String refsetInternalId) throws Exception {
         
+        Refset oldLatestVersionRefset = null;
         Refset newRefsetVersion = new Refset();
         String newInternalRefsetId = "";
         
         try (TerminologyService service = new TerminologyService()) {
-
-            Refset oldLatestVersionRefset = null;
+            
             service.setModifiedBy("RT2");
             service.setModifiedFlag(true);
             
             Refset refset = getRefset(user, refsetInternalId);
+            
+            final ResultList<Refset> results = service.find("versionStatus: (" + Refset.IN_DEVELOPMENT + ") AND refsetId: " + QueryParserBase.escape(refset.getRefsetId()), null, Refset.class, null);
+            
+            if (results.getItems().size() > 0) {
+                throw new Exception("There is already a version of this refset that is 'In Development', and there can only be one");
+            }
             
             // create a refset and edit branch for the new refset
             final String refsetBranch = WorkflowService.createRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), getBranchPath(refset));
@@ -1553,18 +1463,18 @@ public class RefsetService {
 
             // set automatic changed fields
             newRefsetVersion.setVersionDate(null);
-            newRefsetVersion.setLatestVersion(true);
             newRefsetVersion.setId(null);
             newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
+            newRefsetVersion.setLatestPublishedVersion(false);
             newRefsetVersion.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
             newRefsetVersion.setEditOriginBranchPath(refset.getEditionBranch() + "/" + getFormattedRefsetDate(refset.getVersionDate()));
             
             // find the previous latest version
-            if (refset.isLatestVersion()) {
+            if (refset.isLatestPublishedVersion()) {
                 oldLatestVersionRefset = refset;
 
             } else {
-                oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestVersion: true", Refset.class, null);
+                oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestPublishedVersion: true", Refset.class, null);
             }
             
             // Add an object
@@ -1582,9 +1492,9 @@ public class RefsetService {
             if (oldLatestVersionRefset != null) {
                 
                 // update an object
-                oldLatestVersionRefset.setLatestVersion(false);
+                oldLatestVersionRefset.setHasVersionInDevelopment(true);
                 service.update(oldLatestVersionRefset);
-                logger.info("Refset " + oldLatestVersionRefset.getId() + " version marked as not latest.");
+                logger.info("Refset " + oldLatestVersionRefset.getId() + " version marked as having in development version.");
             }
             
             logger.info("Refset " + newRefsetVersion.getRefsetId() + " version ID '" + newInternalRefsetId + "' successfully added");
@@ -1859,22 +1769,15 @@ public class RefsetService {
      * @return the list of version dates sorted in descending order
      * @throws Exception the exception
      */
-    public static List<Map<String, String>> getSortedRefsetVersionList(final String refsetId,
-            final TerminologyService service) throws Exception {
+    public static List<Map<String, String>> getSortedRefsetVersionList(final String refsetId, final TerminologyService service) throws Exception {
         
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-    
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         final List<Map<String, String>> versionList = new ArrayList<>();
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("versionDate");
         pfs.setAscending(false);
     
-        // ResultList<Refset> test = service.find("id:
-        // 78659156-b6d6-4935-bcdf-c4692bcee10d", pfs, Refset.class, null);
-        // logger.debug("******** test: " + ModelUtility.toJson(test));
-    
-        final ResultList<Refset> results = service
-                .find("refsetId: " + QueryParserBase.escape(refsetId), pfs, Refset.class, null);
+        final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refsetId), pfs, Refset.class, null);
     
         for (Refset refset : results.getItems()) {
     
@@ -1883,24 +1786,20 @@ public class RefsetService {
             version.put("refsetInternalId", refset.getId());
     
             boolean inDevelopmentVersionFound = false;
-            if (refset.getVersionStatus().toLowerCase().equals("in development")) {
+            
+            if (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
     
                 if (inDevelopmentVersionFound) {
-                    throw new Exception(
-                            "May only have a single version at 'in development' at any given time, and we found 2nd for refsetId: "
-                                    + refset.getRefsetId());
+                    throw new Exception("May only have a single version at 'in development' at any given time, and we found 2nd for refsetId: " + refset.getRefsetId());
                 }
     
-                version.put("date",
-                        DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
-    
+                version.put("date", DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
                 versionList.add(0, version);
-    
                 inDevelopmentVersionFound = true;
-            } else if ("beta, published".contains(refset.getVersionStatus().toLowerCase())) {
+                
+            } else if (Refset.PUBLISHED.equals(refset.getVersionStatus())) {
     
-                version.put("date", DateUtility.formatDate(refset.getVersionDate(),
-                        DateUtility.DATE_FORMAT_REVERSE, null));
+                version.put("date", DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
     
                 if (versionList.isEmpty()) {
                     versionList.add(version);
@@ -1911,7 +1810,7 @@ public class RefsetService {
     
                     for (Map<String, String> currentVersion : versionList) {
     
-                        final Date dateInspecting = sdf.parse(currentVersion.get("date"));
+                        final Date dateInspecting = simpleDateFormat.parse(currentVersion.get("date"));
     
                         if (dateToInsert.before(dateInspecting)) {
                             break;

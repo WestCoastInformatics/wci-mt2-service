@@ -974,6 +974,7 @@ public class RefsetController extends BaseController {
      * Search Directory.
      *
      * @param searchParameters the search parameters
+     * @param showInDevelopment flag on whether to include IN_DEVELOPMENT refsets
      * @param bindingResult the binding result
      * @return the string
      * @throws Exception the exception
@@ -993,7 +994,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = "application/json")
-    public @ResponseBody ResultList<Refset> searchDirectory(final SearchParameters searchParameters, final boolean searchConcepts,
+    public @ResponseBody ResultList<Refset> searchDirectory(final SearchParameters searchParameters, final boolean searchConcepts, final boolean showInDevelopment,
         final BindingResult bindingResult, HttpServletRequest request) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -1005,9 +1006,9 @@ public class RefsetController extends BaseController {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            logger.debug("searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts);
+            logger.debug("searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + showInDevelopment);
             
-            ResultList<Refset> results = RefsetService.searchRefsets(user, searchParameters, searchConcepts);
+            ResultList<Refset> results = RefsetService.searchRefsets(user, searchParameters, searchConcepts, showInDevelopment);
            
             return results;
 

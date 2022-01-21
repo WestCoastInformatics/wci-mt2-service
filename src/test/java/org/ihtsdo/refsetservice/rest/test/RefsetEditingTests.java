@@ -214,7 +214,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
             assertThat(refset.getRefsetId()).isEqualTo(MAIN_NRC_TESTING_REFSET_ID);
             assertThat(refset.getVersionStatus()).isEqualTo(Refset.IN_DEVELOPMENT);
             assertThat(refset.getVersionDate()).isNull();
-            assertThat(refset.isLatestVersion()).isTrue();
+            assertThat(refset.isLatestPublishedVersion()).isTrue();
             assertThat(refset.getTags().size()).isLessThanOrEqualTo(1);
 
             modifyData.put("workflowStatus", refset.getWorkflowStatus());
@@ -253,11 +253,11 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
             // Validate refset versioning
             assertThat(refset).isNotNull();
-            assertThat(refset.isLatestVersion()).isTrue();
+            assertThat(refset.isLatestPublishedVersion()).isTrue();
 
             refset = service.get(mainNrcTestingRefsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
-            assertThat(refset.isLatestVersion()).isFalse();
+            assertThat(refset.isLatestPublishedVersion()).isFalse();
         }
 
         // DELETE NEW VERSION
@@ -268,7 +268,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
             Refset refset = service.get(mainNrcTestingRefsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
-            assertThat(refset.isLatestVersion()).isTrue();
+            assertThat(refset.isLatestPublishedVersion()).isTrue();
         }
 
     }

@@ -215,11 +215,22 @@ public final class WorkflowService {
             refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(versionDate));
             refset.setWorkflowStatus(PUBLISHED);
             refset.setVersionStatus(PUBLISHED);
+            refset.setLatestPublishedVersion(true);
             
             service.update(refset);
             
             if (!refset.getWorkflowStatus().equals(PUBLISHED)) {
                 throw new Exception("Refset was not able to have publication completed " + refset.getId());
+            }
+            
+            Refset oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestPublishedVersion: true", Refset.class, null);
+            
+            if (oldLatestVersionRefset != null) {
+                
+                oldLatestVersionRefset.setLatestPublishedVersion(false);
+                oldLatestVersionRefset.setHasVersionInDevelopment(false);
+                service.update(oldLatestVersionRefset);
+                logger.info("Refset " + oldLatestVersionRefset.getId() + " version marked as not latest.");
             }
             
         } catch(Exception e) {
@@ -271,7 +282,7 @@ public final class WorkflowService {
         
         List<String> refsetsNotUpdated = new ArrayList<>();
         
-        final ResultList<Refset> results = service.find("refsetId:(" + refsetIds.replace(",", " OR ") + ") AND latestVersion: true", new PfsParameter(), Refset.class, null);
+        final ResultList<Refset> results = service.find("refsetId:(" + refsetIds.replace(",", " OR ") + ") AND versionStatus: (" + Refset.IN_DEVELOPMENT + ")", new PfsParameter(), Refset.class, null);
         
         for (final Refset refset: results.getItems()) {
             
@@ -337,7 +348,7 @@ public final class WorkflowService {
     public static Refset setWorkflowStatusByAction(final User user, final String action, final Refset refset, final String notes) throws Exception {
 
         final String currentStatus = refset.getWorkflowStatus();
-        Set<String> roles = user.getRoles();
+        List<String> roles = RefsetService.setRoles(user, refset.getProject(), new ArrayList<>());
 
         // get the next status based on the user, current status, and supplied action
         logger.debug("WORKFLOW_PERMUTATIONS: " + ModelUtility.toJson(WORKFLOW_PERMUTATIONS));
