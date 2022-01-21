@@ -649,10 +649,12 @@ public class HistoricDataMigrator {
     private Set<String> createEditionsFromSnowstorm() throws Exception {
         Set<String> internationalModules = null;
         final String url = SnowstormConnection.BASE_URL + "codesystems";
+        logger.debug("createEditionsFromSnowstorm url: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = response.readEntity(String.class);
+            logger.debug("createEditionsFromSnowstorm resultString: " + resultString);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
