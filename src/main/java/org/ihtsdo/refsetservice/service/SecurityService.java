@@ -111,40 +111,32 @@ public class SecurityService implements AutoCloseable {
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
 
         Cookie[] cookies = requestAttributes.getRequest().getCookies();
-        HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
-        logger.debug("getUserFromSession cookies: " + ModelUtility.toJson(cookies));
-        logger.debug("getUserFromSession Builder Host: " + builder.build().toString());
-        logger.debug("getUserFromSession getServerName: " + requestAttributes.getRequest().getServerName());
-        logger.debug("getUserFromSession getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
+        
+        if (cookies != null) { 
+            
+            HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
+            logger.debug("getUserFromSession cookies: " + ModelUtility.toJson(cookies));
+            logger.debug("getUserFromSession Builder Host: " + builder.build().toString());
+            logger.debug("getUserFromSession getServerName: " + requestAttributes.getRequest().getServerName());
+            logger.debug("getUserFromSession getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
 
-        for (int i = 0; i < cookies.length; i++) {
+            for (int i = 0; i < cookies.length; i++) {
 
-            if (cookies[i].getName().contains("ims-ihtsdo")) {
+                if (cookies[i].getName().contains("ims-ihtsdo")) {
 
-                logger.debug("getUserFromSession ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
-                Cookie cookie = new Cookie(cookies[i].getName(), null);
-                cookie.setPath("/"); // cookies[i].getPath()
-                cookie.setDomain(".ihtsdotools.org"); // cookies[i].getDomain()
-                cookie.setHttpOnly(cookies[i].isHttpOnly());
-                cookie.setMaxAge(0);
-                response.addCookie(cookie);
-                break;
-
-            } else if (cookies[i].getName().contains("rt2-auth")) {
-
-                logger.debug("getUserFromSession rt2 auth cookie: " + ModelUtility.toJson(cookies[i]));
-                Cookie cookie = new Cookie(cookies[i].getName(), null);
-                cookie.setPath("/"); // cookies[i].getPath()
-                cookie.setDomain(cookies[i].getDomain()); // cookies[i].getDomain()
-                cookie.setHttpOnly(cookies[i].isHttpOnly());
-                cookie.setMaxAge(0);
-                response.addCookie(cookie);
+                    logger.debug("getUserFromSession ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+                    Cookie cookie = new Cookie(cookies[i].getName(), null);
+                    cookie.setPath("/"); // cookies[i].getPath()
+                    cookie.setDomain(".ihtsdotools.org"); // cookies[i].getDomain()
+                    cookie.setHttpOnly(cookies[i].isHttpOnly());
+                    cookie.setMaxAge(0);
+                    response.addCookie(cookie);
+                    break;
+                }
             }
-
         }
 
         return nonLoggedInUser;
-        // return null;
     }
 
     /**
