@@ -23,7 +23,6 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
-import org.ihtsdo.refsetservice.rest.test.util.SnowstormUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.WorkflowUnitTestUtilities;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -113,8 +112,6 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected static ExportUnitTestUtilities exportUtil;
 
     protected static WorkflowUnitTestUtilities workflowUtil;
-
-    protected static SnowstormUnitTestUtilities snowUtil;
 
     protected static EditUnitTestUtilities editUtil;
 
