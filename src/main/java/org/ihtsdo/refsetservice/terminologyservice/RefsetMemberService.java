@@ -1201,7 +1201,7 @@ public class RefsetMemberService {
         
         final String pagingParams = "&limit=" + limit + "&searchAfter=" + searchAfter;
 
-        String url = SnowstormConnection.BASE_URL + "browser/" + branchPath + "/members?referenceSet=" + refsetId + "&" + pagingParams;
+        String url = SnowstormConnection.BASE_URL + "" + branchPath + "/members?referenceSet=" + refsetId + "&" + pagingParams;
 
         logger.debug("Snowstorm URL: " + url);
 
@@ -1229,10 +1229,9 @@ public class RefsetMemberService {
      * @return the URL of the file containing the member list
      * @throws Exception the exception
      */
-    public static String exportRefsetSctidList(final String refsetInternalId,
-        final boolean exportMetadata) throws Exception {
+    public static String exportRefsetSctidList(final String refsetInternalId, final boolean exportMetadata) throws Exception {
 
-        int limit = 10000;
+        int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
         boolean hasMorePages = true;
         StringBuilder fileLines = new StringBuilder();
         String zipOutputPath = EXPORT_FILE_DIR;
@@ -1247,15 +1246,12 @@ public class RefsetMemberService {
             final Refset refset = service.get(refsetInternalId, Refset.class);
 
             if (refset == null) {
-                throw new Exception("Refset Internal Id: " + refsetInternalId
-                        + " does not exist in the RT2 database");
+                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
 
-            refsetFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset)
-                    + "_member_ids.txt";
+            refsetFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + "_member_ids.txt";
             zipOutputPath += refsetFileName.replace(".txt", ".zip");
-            tempDirectoryPath =
-                    Files.createTempDirectory("sctidList-" + refsetFileName.replace(".txt", ""));
+            tempDirectoryPath = Files.createTempDirectory("sctidList-" + refsetFileName.replace(".txt", ""));
             sctidsFilePath = tempDirectoryPath.toString() + File.separator + refsetFileName;
 
             logger.debug("SCTID txt output path = " + sctidsFilePath);
@@ -1270,16 +1266,27 @@ public class RefsetMemberService {
             while (hasMorePages) {
 
                 final String resultString = getMemberSctids(refset.getRefsetId(), limit, searchAfter, getBranchPath(refset));
-
+                //logger.debug("exportRefsetSctidList: resultString" + resultString);
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString);
-                searchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asText() : "");
                 final JsonNode items = root.get("items");
                 final Iterator<JsonNode> iterator = items.iterator();
+                logger.debug("exportRefsetSctidList items.size(): " + items.size());
+                
+                
+                if (root.get("searchAfter") != null) {
+                    searchAfter = root.get("searchAfter").asText();
+                } else {
+                    searchAfter = "";
+                }
+                
+                logger.debug("exportRefsetSctidList searchAfter: " + searchAfter);
 
                 if (items.size() < limit) {
                     hasMorePages = false;
                 }
+                
+                logger.debug("exportRefsetSctidList hasMorePages: " + hasMorePages);
 
                 while (iterator.hasNext()) {
 
@@ -1291,15 +1298,14 @@ public class RefsetMemberService {
             }
 
         } catch (Exception ex) {
-            throw new Exception(
-                    "Could not get refset member data from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not get refset member data from snowstorm: " + ex.getMessage(), ex);
         }
 
         // print the sctids file
         try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsFilePath);
-                final OutputStreamWriter sctidsOutputStreamWriter =
-                        new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
-                final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
+            
+            final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
+            final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
 
             sctidsWriter.print(fileLines);
 
