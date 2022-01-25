@@ -276,6 +276,8 @@ public class HistoricDataMigrator {
 
     private Map<DefinitionClause, Refset> clausesRefsetMap = new HashMap<>();
 
+    private Set<String> projectsToIgnore = new HashSet<>();
+
     public void migrate() throws Exception {
         Set<String> internationalModules = createEditionsFromSnowstorm();
         logger.debug("Num internationalModules: " + internationalModules.size());
@@ -321,7 +323,9 @@ public class HistoricDataMigrator {
             List<Edition> editions = service.getAll(Edition.class);
 
             for (Edition edition : editions) {
-                if (testing && !edition.getName().contains("Library of Medicine")) {
+
+                if (testing && !edition.getName().contains("United") && !edition.getName().contains("International")) {
+
                     continue;
                 }
                 SortedMap<Date, String> children = new TreeMap<>();
@@ -344,21 +348,30 @@ public class HistoricDataMigrator {
                             childDate = childDate.substring(1);
                         }
 
+                        // logger.debug(" Found Snowstorm Child Branch: " + childBranch);
+
                         // Since grabbing all children branches, avoid
                         // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
-                        if (childDate.matches("^[0-9].*$")) {
+                        boolean childAdded = false;
+
+                        if (childDate.matches(".*\\d{4}-\\d{2}-\\d{2}$")) {
+
                             Date branchDate = branchDateFormatter.parse(childDate);
                             if (branchDate.before(new Date())) {
                                 children.put(branchDate, childBranch);
-                            } else {
-                                logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as it's branchDate is in the future");
+                                childAdded = true;
                             }
                         }
+
+                        if (!childAdded) {
+                            logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official release branch");
+                        }
+
                     }
 
                     logger.debug("Branch Dates for edition: " + edition.getName());
                     for (Date child : children.keySet()) {
-                        logger.debug("Child: " + child.toString() + " with bracnh: " + children.get(child));
+                        logger.debug("Child: " + child.toString() + " with branch: " + children.get(child));
                     }
                     retMap.put(edition.getId(), children);
                 }
@@ -487,11 +500,7 @@ public class HistoricDataMigrator {
                 for (Date branchDate : branchChildrenByEdition.get(editionId).keySet()) {
                     final String childBranch =
                             branchChildrenByEdition.get(editionId).get(branchDate);
-                    if (testing && isInternationalEdition
-                            && (childBranch.contains("200") || (!childBranch.endsWith("0")
-                                    && !childBranch.endsWith("1") && !childBranch.endsWith("9")))) {
-                        continue;
-                    }
+                   
 
                     try (final Response response =
                             SnowstormConnection.getResponse(url.replace("{branch}", childBranch))) {
@@ -909,9 +918,12 @@ public class HistoricDataMigrator {
                 switch (processType) {
                     case REFSET:
                         final String refsetJson = lineToRefsetJson(line, lineNumber++);
-                        rttIdToRefsetJsonMap.put(line.split(SPLIT_CHARACTER)[0], refsetJson);
-                        rttRefsetSctIdToRttIdMap.put(line.split(SPLIT_CHARACTER)[8],
-                                line.split(SPLIT_CHARACTER)[0]);
+                        
+                        if (refsetJson != null) {
+                            rttIdToRefsetJsonMap.put(line.split(SPLIT_CHARACTER)[0], refsetJson);
+                            rttRefsetSctIdToRttIdMap.put(line.split(SPLIT_CHARACTER)[8],
+                                    line.split(SPLIT_CHARACTER)[0]);
+                        }
                         break;
 
                     case CLAUSE:
@@ -932,7 +944,12 @@ public class HistoricDataMigrator {
 
                     case PROJECT:
                         final String projectJson = lineToProjectJson(line, lineNumber++);
-                        rttIdToProjectsJsonMap.put(line.split(SPLIT_CHARACTER)[0], projectJson);
+                        if (projectJson != null) {
+
+                            rttIdToProjectsJsonMap.put(line.split(SPLIT_CHARACTER)[0], projectJson);
+                        } else {
+                            projectsToIgnore .add(line.split(SPLIT_CHARACTER)[0]);
+                        }
                         break;
 
                     default:
@@ -1247,6 +1264,12 @@ public class HistoricDataMigrator {
         String modifiedBy;
         final StringBuffer buf = new StringBuffer();
 
+        if (line.toLowerCase().contains("wci")) {
+
+            logger.debug("Ignoring project line that has the word 'WCI' in it: " + line);
+            return null;
+        }
+
         try {
             if (line.split(SPLIT_CHARACTER)[1].startsWith("\"")) {
                 // If description has commas (and some do), can't rely on
@@ -1362,6 +1385,12 @@ public class HistoricDataMigrator {
 
             updatedLine = updatedLine.replace("\"", "");
             final String values[] = updatedLine.split(SPLIT_CHARACTER);
+            
+            if (projectsToIgnore.contains(values[27])) {
+                logger.info("Line is for a WCI refset project. Will not add refset: " + line);
+                return null;
+            }
+            
             final StringBuffer buf = new StringBuffer();
             final String rttRefsetId = values[0];
 
