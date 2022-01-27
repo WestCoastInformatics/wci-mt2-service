@@ -1,4 +1,4 @@
-/**
+ /**
  * 
  */
 package org.ihtsdo.refsetservice.terminologyservice;
@@ -140,17 +140,20 @@ public class RefsetMemberService {
     /** A cache of the children for each tree node. */
     public final static Map<String, Map<String, Set<String>>> ancestorsCache = new HashMap<>();
 
-
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 386;
     
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
     private static final int URL_MAX_CHAR_LENGTH = 7500;
     
-    /** The masx number of record elasticsearch will return without erroring. */
+    /** The max number of record elasticsearch will return without erroring. */
     private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
 
+    /** The column index of the concept ID in an RF2 file. */
     public static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
+    
+    /** The number of milliseconds to stop processing records to avoid a gateway timeout. */
+    public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
 
     private static boolean returnEmptyCache = true;
 
@@ -2059,6 +2062,7 @@ public class RefsetMemberService {
 
         String searchAfter = "";
         boolean hasMorePages = true;
+        final long start = System.currentTimeMillis();
 
         while (hasMorePages) {
    
@@ -2089,6 +2093,10 @@ public class RefsetMemberService {
                 }
     
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + members.getItems().size() >= members.getTotal()) {
+                    hasMorePages = false;
+                }
+                
+                if (System.currentTimeMillis() - start > TIMEOUT_MILLISECOND_THRESHOLD) {
                     hasMorePages = false;
                 }
     
@@ -2429,8 +2437,7 @@ public class RefsetMemberService {
 
                 String searchAfter = "";
                 final long start = System.currentTimeMillis();
-                boolean hasMorePages = true;
-                final String pagingParams = "offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH; 
+                boolean hasMorePages = true; 
                 final String acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
                 
                 // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
@@ -2473,8 +2480,8 @@ public class RefsetMemberService {
                         if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + currentList.getItems().size() >= currentList.getTotal()) {
                             hasMorePages = false;
                         }
-                        
-                        if (System.currentTimeMillis() - start > 60000) {
+
+                        if (System.currentTimeMillis() - start > TIMEOUT_MILLISECOND_THRESHOLD) {
                             hasMorePages = false;
                         }
     
@@ -3375,10 +3382,13 @@ public class RefsetMemberService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
+            final long start = System.currentTimeMillis();
             final Refset refset = service.get(refsetInternalId, Refset.class);
             
             if (refset == null) {
-                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+                
+                logger.error("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+                return true;
             }
             
             final String branchPath = getBranchPath(refset);
@@ -3391,51 +3401,101 @@ public class RefsetMemberService {
                 logger.debug("####### cacheMemberAncestors USING CACHE");
                 return true;
             }
-
-            try {
-
-                // Get ancestors of all members via ecl e.g. >(^723264001)
-                final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?ecl=%3E(%5E" + refset.getRefsetId() + ")&limit=1000";
-
-                logger.debug("******** cacheMemberAncestors URL: " + url);
-
-                try (final Response response = SnowstormConnection.getResponse(url)) {
-                    
-                    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                        throw new Exception("Call to url '" + url + "' wasn't successful. " + response.getStatus() + ": " + response.toString());
-                    }
-
-                    final String resultString = response.readEntity(String.class);
-
-                    final ObjectMapper mapper = new ObjectMapper();
-                    final JsonNode root = mapper.readTree(resultString.toString());
-                    final JsonNode allResultNodes = root.get("items");
-                    final Iterator<JsonNode> resultsIterator = allResultNodes.iterator();
-                    final Set<String> ancestorsSet = new HashSet<>();
-
-                    while (resultsIterator.hasNext()) {
-
-                        final JsonNode resultNode = resultsIterator.next();
-
-                        if (!resultNode.has("conceptId")) {
-                            throw new Exception("Result wasn't as expected with resultNode: " + resultNode);
-                        }
-
-                        ancestorsSet.add(resultNode.get("conceptId").asText());
-                    }
-
-                    branchCache.put(cacheString, ancestorsSet);
-                    ancestorsCache.put(branchPath, branchCache);
-
-                    return true;
-                    
-                } catch (Exception ex) {
-                    throw new Exception("Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
+            
+            final String memberCountUrl = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&active=true&limit=1";
+            
+            // See how many members the refset has - if it is more than 100k we can not cache the ancestors
+            try (final Response response = SnowstormConnection.getResponse(memberCountUrl)) {
+                
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                    throw new Exception("Call to url '" + memberCountUrl + "' wasn't successful. " + response.getStatus() + ": " + response.toString());
                 }
 
-            } catch (Exception ex) {
-                throw new Exception("Could not cache the ancestors of refset " + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
+                final String resultString = response.readEntity(String.class);
+
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString.toString());
+                int memberTotal = root.get("total").asInt();
+                
+                if (memberTotal > 100000) {
+                    
+                    logger.warn("Could not cache the ancestors of refset " + refset.getRefsetId() + " because it has too many members: " + memberTotal);
+                    branchCache.put(cacheString, new HashSet<String>());
+                    ancestorsCache.put(branchPath, branchCache);
+                    return true;
+                }
+                
+            } catch (Exception e) {
+                logger.error("Could not cache the ancestors of refset " + refset.getRefsetId() + " from snowstorm: " + e.getMessage(), e);
             }
+
+            // Get ancestors of all members via ecl e.g. >(^723264001)
+            final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?ecl=%3E(%5E" + refset.getRefsetId() + ")&limit=1000&offset=";
+            final List<Set<String>> ancestorsSetBatches = new ArrayList<>(Collections.nCopies(10, new HashSet<>()));
+            
+            // Change the '10's to '1's to avoid threading 
+            final ExecutorService executor = new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(10), new ThreadPoolExecutor.CallerRunsPolicy());
+            
+            // add the descriptions to the children concepts in batches
+            for (int i = 0; i < ancestorsSetBatches.size(); i++) {
+
+                final Set<String> ancestorsSet = ancestorsSetBatches.get(i);
+                final int offset = 1000 * i;
+                logger.debug("cacheMemberAncestors URL: " + url + offset);
+                
+                executor.submit(new Runnable() {
+                    
+                    /* see superclass */
+                    @Override
+                    public void run() {
+                   
+                        try (final Response response = SnowstormConnection.getResponse(url + offset)) {
+                            
+                            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                                throw new Exception("Call to url '" + url + offset + "' wasn't successful. " + response.getStatus() + ": " + response.toString());
+                            }
+
+                            final String resultString = response.readEntity(String.class);
+
+                            final ObjectMapper mapper = new ObjectMapper();
+                            final JsonNode root = mapper.readTree(resultString.toString());
+                            final JsonNode allResultNodes = root.get("items");
+                            final Iterator<JsonNode> resultsIterator = allResultNodes.iterator();
+
+                            while (resultsIterator.hasNext()) {
+
+                                final JsonNode resultNode = resultsIterator.next();
+
+                                if (!resultNode.has("conceptId")) {
+                                    throw new Exception("Result wasn't as expected with resultNode: " + resultNode);
+                                }
+
+                                ancestorsSet.add(resultNode.get("conceptId").asText());
+                            }
+                        } catch (Exception e) {
+                            logger.error("Could not cache the ancestors of refset " + refset.getRefsetId() + " from snowstorm: " + e.getMessage(), e);
+                        }
+                    }
+                    
+                });
+            }
+            
+            executor.shutdown();
+            executor.awaitTermination(120, TimeUnit.SECONDS);
+            
+            final Set<String> ancestorsSet = new HashSet<>();
+            
+            for (Set<String> ancestorsBatch : ancestorsSetBatches) {
+                ancestorsSet.addAll(ancestorsBatch);
+            }
+            
+            branchCache.put(cacheString, ancestorsSet);
+            ancestorsCache.put(branchPath, branchCache);
+            
+            logger.debug("cacheMemberAncestors Time Taken: " + (System.currentTimeMillis() - start));
+            logger.debug("cacheMemberAncestors Number of Ancestors: " + ancestorsSet.size());
+
+            return true;
         }
     }
     
