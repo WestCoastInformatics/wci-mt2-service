@@ -2428,6 +2428,7 @@ public class RefsetMemberService {
             } else {
 
                 String searchAfter = "";
+                final long start = System.currentTimeMillis();
                 boolean hasMorePages = true;
                 final String pagingParams = "offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH; 
                 final String acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
@@ -2470,6 +2471,10 @@ public class RefsetMemberService {
                         }
                         
                         if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + currentList.getItems().size() >= currentList.getTotal()) {
+                            hasMorePages = false;
+                        }
+                        
+                        if (System.currentTimeMillis() - start > 60000) {
                             hasMorePages = false;
                         }
     
@@ -2643,7 +2648,6 @@ public class RefsetMemberService {
         }
 
         branchCache.put(cacheString, conceptResultList);
-        logger.debug("$$$$$$$$$$$$$$$$ branchCache: " + branchCache);
         treeCache.put(branchPath, branchCache);
         
         return conceptResultList;
@@ -2839,35 +2843,37 @@ public class RefsetMemberService {
             final Concept concept = new Concept();
             ConceptLookupParameters missingLookupParameters = identifyContentPopulated(concept, refset, lookupParameters);
 
-            String name = null;
+            String name = "";
             boolean memberStatus = false;
             boolean defined = false;
 
-            // if this has a referenced component it is an active refset
-            // member, otherwise
-            // it at this point it is not known if it is a member
+            // if this has a referenced component it is an active refset member, otherwise it at this point it is not known if it is a member
             if (conceptNode.has("referencedComponentId")) {
+                
+                final JsonNode referencedComponent = conceptNode.get("referencedComponent");
 
                 // Read member-representation of basic concept content
-                if (conceptNode.get("referencedComponent").get("pt") != null) {
-                    name = conceptNode.get("referencedComponent").get("pt").get("term").asText();
+                if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
+                    name = referencedComponent.get("pt").get("term").asText();
                 } else {
-                    name = conceptNode.get("referencedComponent").get("term").asText();
+                    
+                    if (referencedComponent.get("term") != null) {
+                        name = referencedComponent.get("term").asText();
+                    }
                 }
 
                 // Add FSN if required
-                if (missingLookupParameters.isGetFsn() && conceptNode.get("referencedComponent").get("fsn") != null) {
+                if (missingLookupParameters.isGetFsn() && referencedComponent.get("fsn") != null) {
 
-                    if (conceptNode.get("referencedComponent").get("fsn") != null) {
-                        concept.setFsn(conceptNode.get("referencedComponent").get("fsn").get("term").asText());
+                    if (referencedComponent.get("fsn") != null && referencedComponent.get("fsn").get("term") != null) {
+                        concept.setFsn(referencedComponent.get("fsn").get("term").asText());
                     } else {
                         concept.setFsn(name);
                     }
                 }
 
                 // concept status - not membership status
-                concept.setActive(
-                        conceptNode.get("referencedComponent").get("active").asBoolean());
+                concept.setActive(referencedComponent.get("active").asBoolean());
 
                 // grab all membership info
                 memberStatus = conceptNode.get("active").asBoolean();
@@ -2881,16 +2887,17 @@ public class RefsetMemberService {
             } else if (conceptNode.has("conceptId")) {
 
                 // Concept is General (and is a child of the node opened) Read general-representation of basic concept content
-                if (conceptNode.get("pt") != null) {
+                if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
                     name = conceptNode.get("pt").get("term").asText();
-                } else {
+                    
+                } else if (conceptNode.get("term") != null) {
                     name = conceptNode.get("term").asText();
                 }
 
                 // Add FSN if required
                 if (missingLookupParameters.isGetFsn() && conceptNode.get("fsn") != null) {
 
-                    if (conceptNode.get("fsn") != null) {
+                    if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
                         concept.setFsn(conceptNode.get("fsn").get("term").asText());
                     } else {
                         concept.setFsn(name);
@@ -3395,7 +3402,7 @@ public class RefsetMemberService {
                 try (final Response response = SnowstormConnection.getResponse(url)) {
                     
                     if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                        throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                        throw new Exception("Call to url '" + url + "' wasn't successful. " + response.getStatus() + ": " + response.toString());
                     }
 
                     final String resultString = response.readEntity(String.class);
@@ -3411,8 +3418,7 @@ public class RefsetMemberService {
                         final JsonNode resultNode = resultsIterator.next();
 
                         if (!resultNode.has("conceptId")) {
-                            throw new Exception(
-                                    "Result wasn't as expected with resultNode: " + resultNode);
+                            throw new Exception("Result wasn't as expected with resultNode: " + resultNode);
                         }
 
                         ancestorsSet.add(resultNode.get("conceptId").asText());
