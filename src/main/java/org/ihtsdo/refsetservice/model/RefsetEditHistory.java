@@ -106,9 +106,9 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     @Column(nullable = false, length = 256)
     private String moduleId;
     
-    /** The branch and version for originating content from when editing. */
+    /** The edit branch ID. */
     @Column(nullable = true, length = 256)
-    private String editOriginBranchPath;
+    private String editBranchId;
 
     /** The external URL. */
     @Column(nullable = true, length = 4000)
@@ -181,7 +181,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         workflowStatus = other.getWorkflowStatus();
         externalUrl = other.getExternalUrl();
         moduleId = other.getModuleId();
-        editOriginBranchPath = other.getEditOriginBranchPath();
+        editBranchId = other.getEditBranchId();
         privateRefset = other.isPrivateRefset();
         definitionClauses = new ArrayList<DefinitionClauseEditHistory>(other.getDefinitionClauses());
         tags = new HashSet<String>(other.getTags());
@@ -205,7 +205,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         workflowStatus = other.getWorkflowStatus();
         externalUrl = other.getExternalUrl();
         moduleId = other.getModuleId();
-        editOriginBranchPath = other.getEditOriginBranchPath();
+        editBranchId = other.getEditBranchId();
         privateRefset = other.isPrivateRefset();
         tags = new HashSet<String>(other.getTags());
     }
@@ -434,21 +434,21 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     }
 
     /**
-     * Gets the branch and version for originating content from when editing.
+     * Gets the edit branch ID.
      *
-     * @return the editOriginBranchPath
+     * @return the edit branch ID
      */
-    public String getEditOriginBranchPath() {
-        return editOriginBranchPath;
+    public String getEditBranchId() {
+        return editBranchId;
     }
 
     /**
-     * Sets the branch and version for originating content from when editing.
+     * Sets the edit branch ID.
      *
-     * @param editOriginBranchPath the editOriginBranchPath to set
+     * @param editBranchId the edit branch ID to set
      */
-    public void setEditOriginBranchPath(final String editOriginBranchPath) {
-        this.editOriginBranchPath = editOriginBranchPath;
+    public void setEditBranchId(final String editBranchId) {
+        this.editBranchId = editBranchId;
     }
     
     /**
@@ -512,7 +512,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         result = prime * result + ((narrative == null) ? 0 : narrative.hashCode());
         result = prime * result + ((versionNotes == null) ? 0 : versionNotes.hashCode());
         result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
-        result = prime * result + ((editOriginBranchPath == null) ? 0 : editOriginBranchPath.hashCode());
+        result = prime * result + ((editBranchId == null) ? 0 : editBranchId.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
@@ -614,11 +614,11 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
             return false;
         }
         
-        if (editOriginBranchPath == null) {
-            if (other.editOriginBranchPath != null) {
+        if (editBranchId == null) {
+            if (other.editBranchId != null) {
                 return false;
             }
-        } else if (!editOriginBranchPath.equals(other.editOriginBranchPath)) {
+        } else if (!editBranchId.equals(other.editBranchId)) {
             return false;
         }
 

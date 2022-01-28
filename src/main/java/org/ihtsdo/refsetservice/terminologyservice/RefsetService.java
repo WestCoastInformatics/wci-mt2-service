@@ -235,7 +235,8 @@ public class RefsetService {
             logger.debug("Create Refset: newly created refset concept ID: " + refsetConceptId + ". Time: " + (System.currentTimeMillis() - start));
         }
         
-        final String editBranch = WorkflowService.createEditBranch(user, edition.getBranch(), null, refsetConceptId);
+        final String branchId = WorkflowService.generateEditBranchId();
+        final String editBranch = WorkflowService.createEditBranch(user, edition.getBranch(), null, refsetConceptId, branchId);
         
         // add the new refset to the database
         try (final TerminologyService service = new TerminologyService()) {
@@ -250,14 +251,7 @@ public class RefsetService {
             refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
             refset.setProject(project);
             refset.setVersionDate(null);
-            
-            String originBranchPath = edition.getBranch();
-            
-            if (refsetEditParameters.getVersionDate() != null) {
-                originBranchPath += "/" + getFormattedRefsetDate(refsetEditParameters.getVersionDate());
-            }
-                    
-            refset.setEditOriginBranchPath(edition.getBranch() + originBranchPath);
+            refset.setEditBranchId(branchId);
             
             if (refset.getType().equals(Refset.INTENSIONAL)) {
                 
@@ -277,6 +271,13 @@ public class RefsetService {
             
             // create an edit history entry based on the new refset version.
             createRefsetEditHistory(user, newInternalRefsetId);
+            
+            // if cloning a refset this is where extensional members are copied over
+            //String originBranchPath = edition.getBranch();
+            
+            //if (refsetEditParameters.getVersionDate() != null) {
+                //originBranchPath += "/" + getFormattedRefsetDate(refsetEditParameters.getVersionDate());
+            //}
             
             RefsetMemberService.refsetsUpdatedMembers.put(newInternalRefsetId, new HashMap<>());
 
@@ -429,10 +430,6 @@ public class RefsetService {
         try (TerminologyService service = new TerminologyService()) {
 
             Refset refset = getRefset(user, refsetInternalId);
-            
-            if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
-                throw new Exception("Refset is not in the proper status to have history saved " + refsetInternalId);
-            }
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -440,6 +437,7 @@ public class RefsetService {
             RefsetEditHistory history = new RefsetEditHistory();
             history.populateFrom(refset);
             history.setId(null);
+            history.setEditBranchId(null);
             
             // if this is an intensional refset save the definition
             if (refset.getType().equals(Refset.INTENSIONAL)) {
@@ -480,8 +478,7 @@ public class RefsetService {
 
             Refset refset = getRefset(user, refsetInternalId);
             
-            RefsetEditHistory history = service.findSingle(
-                "refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + "", RefsetEditHistory.class, null);
+            RefsetEditHistory history = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + "", RefsetEditHistory.class, null);
 
             if (history == null) {
                 return;
@@ -499,11 +496,12 @@ public class RefsetService {
             refset.setVersionStatus(history.getVersionStatus());
             refset.setExternalUrl(history.getExternalUrl());
             refset.setModuleId(history.getModuleId());
-            refset.setEditOriginBranchPath(history.getEditOriginBranchPath());
+            refset.setEditBranchId(null);
             refset.setPrivateRefset(history.isPrivateRefset());
             refset.setTags(new HashSet<String>(history.getTags()));
             refset.setDefinitionClauses(new ArrayList<>());
             refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
+            refset.setAssignedUser(null);
             
             service.update(refset);
             
@@ -544,8 +542,7 @@ public class RefsetService {
        
         try (TerminologyService service = new TerminologyService()) {
 
-            RefsetEditHistory history = service.findSingle(
-                "refsetId:" + QueryParserBase.escape(refsetId) + "", RefsetEditHistory.class, null);
+            RefsetEditHistory history = service.findSingle("refsetId:" + QueryParserBase.escape(refsetId) + "", RefsetEditHistory.class, null);
 
             if (history == null) {
                 return;
@@ -930,7 +927,7 @@ public class RefsetService {
      *
      * @param user the user
      * @param refsetInternalId the internal refset ID
-     * @param deleteConcept if the underyling refset concept should be deleted
+     * @param deleteConcept if the underlying refset concept should be deleted
      * @return the status of the operation
      * @throws Exception the exception
      */
@@ -948,12 +945,10 @@ public class RefsetService {
             final Refset refset = service.get(refsetInternalId, Refset.class);
             
             if (refset == null) {
-                throw new Exception("Refset Internal Id: " + refsetInternalId
-                        + " does not exist in the RT2 database");
+                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
                 
             } else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-                throw new Exception("Refset Internal Id: " + refsetInternalId
-                        + " is not 'In Development' and can not be removed.");
+                throw new Exception("Refset Internal Id: " + refsetInternalId + " is not 'In Development' and can not be removed.");
             }
             
             refsetId = refset.getRefsetId();
@@ -964,7 +959,7 @@ public class RefsetService {
             }
             
             // remove the edit and refset branches with all terminology changes
-            WorkflowService.deleteEditBranch(user, refset.getEditionBranch(), refsetId);
+            WorkflowService.deleteEditBranch(user, refset.getEditionBranch(), refsetId, refset.getEditBranchId());
             WorkflowService.deleteRefsetBranch(refset.getEditionBranch(), refsetId);
             
             // remove any workflow history that exists
@@ -1455,19 +1450,21 @@ public class RefsetService {
                 throw new Exception("There is already a version of this refset that is 'In Development', and there can only be one");
             }
             
-            // create a refset and edit branch for the new refset
-            final String refsetBranch = WorkflowService.createRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), getBranchPath(refset));
-            final String editBranch = WorkflowService.createEditBranch(user, refset.getEditionBranch(), null, refset.getRefsetId());
-            
             newRefsetVersion.populateFrom(refset);
 
             // set automatic changed fields
+            final String branchId = WorkflowService.generateEditBranchId();
             newRefsetVersion.setVersionDate(null);
             newRefsetVersion.setId(null);
             newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
             newRefsetVersion.setLatestPublishedVersion(false);
             newRefsetVersion.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
-            newRefsetVersion.setEditOriginBranchPath(refset.getEditionBranch() + "/" + getFormattedRefsetDate(refset.getVersionDate()));
+            newRefsetVersion.setEditBranchId(refset.getEditionBranch() + "/" + getFormattedRefsetDate(refset.getVersionDate()));
+            newRefsetVersion.setEditBranchId(branchId);
+            
+            // create a refset and edit branch for the new refset
+            final String refsetBranch = WorkflowService.createRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), getBranchPath(refset));
+            final String editBranch = WorkflowService.createEditBranch(user, refset.getEditionBranch(), null, refset.getRefsetId(), branchId);
             
             // find the previous latest version
             if (refset.isLatestPublishedVersion()) {
@@ -1631,10 +1628,10 @@ public class RefsetService {
             branchPath = refset.getEditionBranch() + pathDate;
         } else {
             
-            branchPath = refset.getEdition().getBranch() + "/" + WorkflowService.REFSET_BRANCH_PREFIX + refset.getRefsetId();
-            
             if (refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
-                branchPath += "/" + WorkflowService.EDIT_BRANCH_NAME ;
+                branchPath = WorkflowService.getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId());
+            } else {
+                branchPath = WorkflowService.getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
             }
         }
 
