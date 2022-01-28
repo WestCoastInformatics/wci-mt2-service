@@ -401,8 +401,8 @@ public final class WorkflowService {
         
         else if (currentStatus.equals(IN_EDIT) && (Arrays.asList(CANCEL_EDIT).contains(action))) {
             
-            refset.setEditBranchId(null);
             RefsetMemberService.clearAllMemberCaches(getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId()));
+            refset.setEditBranchId(null);
             restoreHistory = true;
             //deleteEditBranch(user, refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId());
         }
