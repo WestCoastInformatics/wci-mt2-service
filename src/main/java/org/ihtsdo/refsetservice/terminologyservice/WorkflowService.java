@@ -389,7 +389,7 @@ public final class WorkflowService {
                 
                 refset.setEditBranchId(null);
                 RefsetService.removeRefsetEditHistory(user, refset.getRefsetId());
-                //deleteEditBranch(user, refset.getEditionBranch(), refset.getRefsetId(), refset.getEditOriginBranchPath());
+                //deleteEditBranch(user, refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId());
             } else {
 
                 final String message = "Unable to merge edit into refset branch for refset " + refset.getRefsetId() + " because the edit branch doesn't exist.";
@@ -402,8 +402,9 @@ public final class WorkflowService {
         else if (currentStatus.equals(IN_EDIT) && (Arrays.asList(CANCEL_EDIT).contains(action))) {
             
             refset.setEditBranchId(null);
+            RefsetMemberService.clearAllMemberCaches(getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId()));
             restoreHistory = true;
-            //deleteEditBranch(user, refset.getEditionBranch(), refset.getRefsetId(), refset.getEditOriginBranchPath());
+            //deleteEditBranch(user, refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId());
         }
 
         // else if this is the start of edits create the refset edit branch
