@@ -274,7 +274,7 @@ public class GetUnitTestUtilities {
 
             String url = baseUrl
 
-                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:" + searchTerm;
+                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&" + searchTerm;
             logger.info("Testing url - " + url);
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
