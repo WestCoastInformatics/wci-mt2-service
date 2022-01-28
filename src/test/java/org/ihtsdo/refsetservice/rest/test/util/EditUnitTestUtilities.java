@@ -1,7 +1,6 @@
 package org.ihtsdo.refsetservice.rest.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -13,8 +12,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.slf4j.Logger;
@@ -200,8 +202,7 @@ public class EditUnitTestUtilities {
 
         try {
             // make the call to create refset from a new concept
-            logger.debug("po");
-            logger.debug("iwth : " + refsetDetail.get("body"));
+            logger.debug("with : " + refsetDetail.get("body"));
             final MvcResult result = mvc.perform(post(baseUrl).content(refsetDetail.get("body"))
                     .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk()).andReturn();
@@ -425,10 +426,11 @@ public class EditUnitTestUtilities {
 
     /**
      * deleteNewRefsetVerion
+     * @return 
      *
      * @throws Exception the exception
      */
-    public void deleteRefsetVersion(String refsetVersionInternalId) {
+    public boolean deleteRefsetVersion(String refsetVersionInternalId) {
 
         try (final TerminologyService service = new TerminologyService()) {
             // DELETE NEW VERSION
@@ -439,16 +441,55 @@ public class EditUnitTestUtilities {
             final JsonNode deleteRoot = new ObjectMapper().readTree(deleteContent);
             final JsonNode deleteNode = deleteRoot;
 
-            assertTrue(deleteNode.has("status"));
-            assertTrue(deleteNode.get("status").asText().equals("deleted"));
+            assertThat(deleteNode.has("status")).isTrue();
+            assertThat(deleteNode.get("status").asText()).isEqualTo("deleted");
 
             // verify the original refset is back to the latest version
 
             Refset refset = service.get(refsetVersionInternalId, Refset.class);
             assertThat(refset).isNotNull();
-            assertTrue(refset.isLatestPublishedVersion());
+            assertThat(refset.isLatestPublishedVersion()).isTrue();
+            
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
+            
+            return false;
+        }
+    }
+
+    /**
+     * deleteNewRefsetVerion
+     *
+     * @throws Exception the exception
+     */
+    public boolean addMembers(String refsetInternalId, List<String> conceptIds) {
+        String urlConceptIds = "";
+        
+        for (String conceptId : conceptIds) {
+            urlConceptIds += conceptId + ",";
+        }
+        
+        urlConceptIds = StringUtils.removeEnd(urlConceptIds, ",");
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final String url = baseUrl + "/" + refsetInternalId + "/editVersion?conceptIds=" + conceptIds;
+
+            final MvcResult result = mvc.perform(post(url).contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+
+            final JsonNode root = new ObjectMapper().readTree(content);
+            assertThat(root.has("status")).isTrue();
+            assertThat(root.get("status").asText()).isEqualTo("All concepts added.");
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            
+            return false;
         }
     }
 
