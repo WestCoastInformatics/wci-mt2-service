@@ -268,13 +268,13 @@ public class GetUnitTestUtilities {
 
     }
 
-    public ResultList<Refset> searchDirectory(String string) {
+    public ResultList<Refset> searchDirectory(String searchTerm) {
 
         try {
 
             String url = baseUrl
 
-                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=name:animal";
+                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&" + searchTerm;
             logger.info("Testing url - " + url);
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
@@ -345,11 +345,11 @@ public class GetUnitTestUtilities {
 
     }
 
-    public ConceptResultList getMembers(String refsetId) {
+    public ConceptResultList getMembers(String internalRefsetId) {
 
         try {
 
-            final String url = "/refset/" + refsetId + "/members?limit=100000&offset=0&displayType=list";
+            final String url = "/refset/" + internalRefsetId + "/members?limit=100000&offset=0&displayType=list";
             logger.info("Testing url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -370,37 +370,11 @@ public class GetUnitTestUtilities {
 
     }
 
-    public ConceptResultList searchMembers(String refsetId, String searchTerm) {
+    public ConceptResultList searchMembers(String internalRefsetId, String searchTerm) {
 
         try {
 
-            final String url = "/refset/" + refsetId + "/members?limit=500&offset=0&query=" + searchTerm + "&displayType=list&editing=true";
-
-            logger.info("Testing url - " + url);
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-            final String content = result.getResponse().getContentAsString();
-
-            logger.info(" content = " + content);
-            final ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
-
-            // Testing Results
-            assertThat(members).isNotNull();
-            return members;
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return null;
-        }
-
-    }
-
-    public ConceptResultList searchTaxonomy(String refsetId, String searchTerm) {
-
-        try {
-
-            final String url = "/refset/" + refsetId + "/taxonomySearch?limit=100000&offset=0&query=" + searchTerm;
+            final String url = "/refset/" + internalRefsetId + "/members?limit=500&offset=0&query=" + searchTerm + "&displayType=list&editing=true";
 
             logger.info("Testing url - " + url);
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -422,11 +396,37 @@ public class GetUnitTestUtilities {
 
     }
 
-    public ConceptResultList searchConcepts(String refsetId, String searchTerm) {
+    public ConceptResultList searchTaxonomy(String internalRefsetId, String searchTerm) {
 
         try {
 
-            final String url = "/refset/" + refsetId + "/conceptSearch?limit=500&offset=0&query=" + searchTerm;
+            final String url = "/refset/" + internalRefsetId + "/taxonomySearch?limit=100000&offset=0&query=" + searchTerm;
+
+            logger.info("Testing url - " + url);
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+
+            logger.info(" content = " + content);
+            final ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
+
+            // Testing Results
+            assertThat(members).isNotNull();
+            return members;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return null;
+        }
+
+    }
+
+    public ConceptResultList searchConcepts(String internalRefsetId, String searchTerm) {
+
+        try {
+
+            final String url = "/refset/" + internalRefsetId + "/conceptSearch?limit=500&offset=0&query=" + searchTerm;
 
             logger.info("Testing url - " + url);
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();

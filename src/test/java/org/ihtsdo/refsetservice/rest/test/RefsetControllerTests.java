@@ -296,14 +296,14 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         validateRefsetMetadata(refsetIdentified);
 
         // Test by alternate refset name (using translation)
-        refsetList = getUtil.searchDirectory("query=name:ensemble de référence simple belge pour les matières animales traduites");
-        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
-        validateRefsetMetadata(refsetIdentified);
+//        refsetList = getUtil.searchDirectory("query=name:ensemble de référence simple belge pour les matières animales traduites");
+//        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
+//        validateRefsetMetadata(refsetIdentified);
 
         // Test by partial alternate refset name (using translation)
-        refsetList = getUtil.searchDirectory("query=name:atière");
-        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
-        validateRefsetMetadata(refsetIdentified);
+//        refsetList = getUtil.searchDirectory("query=name:atière");
+//        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
+//        validateRefsetMetadata(refsetIdentified);
 
         // Test by edition name
         refsetList = getUtil.searchDirectory("query=editionName:Belgian Edition");
