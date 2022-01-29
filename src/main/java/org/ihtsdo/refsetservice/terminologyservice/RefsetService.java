@@ -1349,6 +1349,8 @@ public class RefsetService {
                     } else {
                         termQueryForRt2 = "(" + termQueryForRt2 + ")";
                     }
+                    
+                    termQueryForRt2 = "tags: " + termQueryForRt2;
                 }
                 
                 // if the filter query isn't empty then prepare the query with wildcards
