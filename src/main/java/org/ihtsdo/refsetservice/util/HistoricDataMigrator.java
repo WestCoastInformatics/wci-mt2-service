@@ -252,6 +252,10 @@ public class HistoricDataMigrator {
 
     ClassPathResource refsetsResource = new ClassPathResource("service/rtt-migration/refsets.txt");
 
+    ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("service/rtt-migration/ignoredCodeSystems.txt");
+
+    ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("service/rtt-migration/undefinedDefaultLangRefsets.txt");
+
     /** The metadata map. */
     private final Map<String, Metadata> metadataMap = new HashMap<>();
 
@@ -747,6 +751,9 @@ public class HistoricDataMigrator {
         final String url = SnowstormConnection.BASE_URL + "codesystems";
         logger.debug("createEditionsFromSnowstorm url: " + url);
 
+        List<String> ignoredCodeSystemNames = identifyCodeSystemsToIgnore();
+        Map<String, Set<String>> undefinedDefaultLanguageRefsets = identifyUndefinedDefaultLanguageRefsets();
+
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = response.readEntity(String.class);
@@ -771,18 +778,18 @@ public class HistoricDataMigrator {
 
                         JsonNode codeSystem = codeSystems.next();
 
+                        // Check for invalid or ignored code systems
                         if (!codeSystem.has("name")) {
 
                             logger.info("Skipping odd code system without a name'" + codeSystem.asText());
                             continue;
-                        }
+                        } else if (ignoredCodeSystemNames.contains(codeSystem.get("name").asText().toLowerCase())) {
 
-                        if ("kk".equalsIgnoreCase(codeSystem.get("name").asText()) || "wci".equalsIgnoreCase(codeSystem.get("name").asText())) {
-
-                            logger.info("Skipping odd code system '" + codeSystem.get("name") + "' as was likely for testing");
+                            logger.info("Code System '" + codeSystem.get("name") + "' is defined as to-be-ignored");
                             continue;
                         }
 
+                        // Testing
                         if (testing && !codeSystem.get("name").asText().contains("Belgi") && !codeSystem.get("name").asText().contains("Inter")) {
 
                             continue;
@@ -795,12 +802,7 @@ public class HistoricDataMigrator {
                         edition.setShortName(codeSystem.get("shortName").asText());
                         edition.setBranch(codeSystem.get("branchPath").asText());
 
-                        // Identify Edition's Default Lang Refsets - Per Kai, use the Codesystem's refset member aggregation endpoint
-                        // example https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/MAIN/SNOMEDCT-BE/members
-                        //
-                        // The results contain a "referenceSets" list of reference sets that have active members on that branch. These can be filtered by
-                        // "referenceSetType" = 900000000000506000 |Language type reference set (foundation metadata concept)|".
-                        // This is how the browser populates the description search "Language Refsets" dropdown.
+                        // Identify Edition's Default Language Refsets
                         if (codeSystem.has("defaultLanguageReferenceSets")) {
 
                             final JsonNode defaultLanguageReferenceSets = codeSystem.get("defaultLanguageReferenceSets");
@@ -811,19 +813,12 @@ public class HistoricDataMigrator {
                                 edition.getDefaultLanguageRefsets().add(defaultLanguageReferencesSetIterator.next().asText());
                             }
 
-                        } else if (edition.getName().equals("Common French Translation")) {
+                        } else {
 
-                            edition.getDefaultLanguageRefsets().add(CFR_LANGUAGE_REFSET_ID);
-                        } else if (edition.getName().equals("Netherlands Edition")) {
+                            edition.getDefaultLanguageRefsets().addAll(undefinedDefaultLanguageRefsets.get(edition.getName()));
+                            logger.debug("No defined Default Language Refsets for " + edition.getName() + ": " + edition.getName() + ", so adding from txt file: "
+                                + undefinedDefaultLanguageRefsets.get(edition.getName()));
 
-                            edition.getDefaultLanguageRefsets().add(NL_LANGUAGE_REFSET_ID);
-                        }
-
-                        // Add the US English as default in all cases except
-                        // where CA or UK is used
-                        if (!edition.getDefaultLanguageRefsets().contains(UK_LANGUAGE_REFSET_ID)) {
-
-                            edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET_ID);
                         }
 
                         // Identify Edition's defaultLanguageCode - Per Kai, transform first language in set as defaultLangCode
@@ -837,7 +832,6 @@ public class HistoricDataMigrator {
                         edition.setDefaultLanguageCode(defaultLanguage);
 
                         // Identify Code System Owner
-
                         if (codeSystem.has("owner")) {
 
                             editionOwnerMap.put(edition.getShortName(), codeSystem.get("owner").asText());
@@ -870,6 +864,66 @@ public class HistoricDataMigrator {
         }
 
         return internationalModules;
+    }
+
+    private List<String> identifyCodeSystemsToIgnore() {
+
+        BufferedReader reader;
+        List<String> codeSystemNames = new ArrayList<>();
+
+        try {
+
+            reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
+
+            String line = reader.readLine();
+
+            while (line != null) {
+
+                codeSystemNames.add(line.toLowerCase());
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return codeSystemNames;
+    }
+
+    private Map<String, Set<String>> identifyUndefinedDefaultLanguageRefsets() {
+
+        BufferedReader reader;
+        Map<String, Set<String>> defaultLanguageRefsetMap = new HashMap<>();
+
+        try {
+
+            reader = new BufferedReader(new InputStreamReader(undefinedDefaultLangRefsetsResource.getInputStream()));
+
+            String line = reader.readLine();
+
+            while (line != null) {
+
+                String[] columns = line.split("\t");
+                defaultLanguageRefsetMap.put(columns[0], new HashSet<String>());
+
+                for (int i = 1; i < columns.length; i++) {
+
+                    defaultLanguageRefsetMap.get(columns[0]).add(columns[i]);
+                }
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return defaultLanguageRefsetMap;
     }
 
     private void identifyTopLevelModule(Edition edition, JsonNode codeSystem, Set<String> internationalModules) throws Exception {
@@ -934,6 +988,7 @@ public class HistoricDataMigrator {
 
                     childrenModules.add("32570231000036109");
                 }
+
                 // TODO: Handle hard coded solution for Norway & US
                 if (edition.getShortName().equals("SNOMEDCT-NO")) {
 
@@ -1144,12 +1199,12 @@ public class HistoricDataMigrator {
                     ignoreCounter++;
                     continue;
                 } else if (!rttRefsetIds.contains(refset.getRefsetId())) {
-
+                    logger.debug(" AAA - Here with refset: " + refset.getRefsetId());
                     /* Refset not in RTT */
                     projectCount = processRefsetNotInRTT(refset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, projectCount);
                     service.add(refset);
                     processClauses(rttId, refset);
-                    throw new Exception ("IS this line ever hit?");
+                    //throw new Exception("IS this line ever hit?");
 
                 } else {
 
