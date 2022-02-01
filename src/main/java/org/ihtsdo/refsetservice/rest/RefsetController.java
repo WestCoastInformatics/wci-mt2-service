@@ -1596,7 +1596,7 @@ public class RefsetController extends BaseController {
                 ResultList<Refset> refsets = new ResultList<Refset>();
                 final PfsParameter pfs = new PfsParameter();
                 final QueryParameter query = new QueryParameter();
-                query.setQuery("_exists_:versionDate");
+                query.setQuery("_exists_:versionDate AND latestPublishedVersion: true");
 
                 refsets = service.find(query, pfs, Refset.class, null);
 

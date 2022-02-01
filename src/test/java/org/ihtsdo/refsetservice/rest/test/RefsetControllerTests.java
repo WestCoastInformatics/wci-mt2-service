@@ -286,24 +286,24 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         Refset refsetIdentified;
 
         // Test by name
-        refsetList = getUtil.searchDirectory("query=name:animal");
+        refsetList = getUtil.searchDirectory("query=animal");
         refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by partial name
-        refsetList = getUtil.searchDirectory("query=name:ani");
+        refsetList = getUtil.searchDirectory("query=ani");
         refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by alternate refset name (using translation)
-//        refsetList = getUtil.searchDirectory("query=name:ensemble de référence simple belge pour les matières animales traduites");
-//        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
-//        validateRefsetMetadata(refsetIdentified);
+        refsetList = getUtil.searchDirectory("query=ensemble de référence simple belge pour les matières animales traduites");
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
+        validateRefsetMetadata(refsetIdentified);
 
         // Test by partial alternate refset name (using translation)
-//        refsetList = getUtil.searchDirectory("query=name:atière");
-//        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
-//        validateRefsetMetadata(refsetIdentified);
+        refsetList = getUtil.searchDirectory("query=matiè");
+        refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
+        validateRefsetMetadata(refsetIdentified);
 
         // Test by edition name
         refsetList = getUtil.searchDirectory("query=editionName:Belgian Edition");
@@ -311,12 +311,12 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         validateRefsetMetadata(refsetIdentified);
 
         // Test by combination
-        refsetList = getUtil.searchDirectory("name:animal AND editionName:Belgian Edition");
+        refsetList = getUtil.searchDirectory("animal AND editionName:Belgian Edition");
         refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
         // Test by combination with partials
-        refsetList = getUtil.searchDirectory("name:anim AND editionName:Belgian Edi");
+        refsetList = getUtil.searchDirectory("anim AND editionName:Belgian Edi");
         refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refsetIdentified);
 
