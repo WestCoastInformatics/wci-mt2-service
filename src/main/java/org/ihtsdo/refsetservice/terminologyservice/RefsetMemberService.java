@@ -788,7 +788,7 @@ public class RefsetMemberService {
     @SuppressWarnings({
             "null", "unused"
     })
-    public static String exportRefsetRf2Delta(final String refsetInternalId, final String type,
+    public static String exportRefsetRf2Delta(final User user, final String refsetInternalId, final String type,
         final String languageId, final String fileNameDate, final String startEffectiveTime,
         final String transientEffectiveTime, final boolean exportMetadata, boolean withNames)
         throws Exception {
@@ -806,6 +806,7 @@ public class RefsetMemberService {
         try (final TerminologyService service = new TerminologyService()) {
             
             final Refset refset = service.get(refsetInternalId, Refset.class);
+            RefsetService.setRefsetPermissions(user, refset);
 
             if (refset == null) {
                 throw new Exception("Refset Internal Id: " + refsetInternalId
@@ -826,7 +827,7 @@ public class RefsetMemberService {
             if (!S3ConnectionWrapper.isInS3Cache(deltaAwsVersionedPath, deltaRt2VersionFileName)) {
 
                 // determine all snapshot versions that will contribute to the delta
-                List<Map<String, String>> versionMap = RefsetService.getSortedRefsetVersionList(refset.getRefsetId(), service);
+                List<Map<String, String>> versionMap = RefsetService.getSortedRefsetVersionList(refset, service);
                 Map<String, String> versionToRefsetInternalId = new HashMap<>();
                 List<String> versionsInScope = new ArrayList<>();
                 
