@@ -280,6 +280,8 @@ public class HistoricDataMigrator {
 
     private final String testingEdition = "Zealand";
 
+    private final String testingRefset = "21000210109";
+
     private final Map<String, String> editionOwnerMap = new HashMap<>();
 
     private Set<String> rttRefsetIds = null;
@@ -750,7 +752,7 @@ public class HistoricDataMigrator {
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = response.readEntity(String.class);
-            // logger.debug("createEditionsFromSnowstorm resultString: " + resultString);
+            logger.debug("createEditionsFromSnowstorm resultString: " + resultString);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
@@ -1184,7 +1186,10 @@ public class HistoricDataMigrator {
             // Preprocess Snowstorm refsets for analysis purposes
             // Adding refsets identified on snowstorm
             for (Refset snowRefset : snowstormRefsets) {
-
+                if (testing && testingRefset != null && !testingRefset.equals(snowRefset.getRefsetId()) ) {
+                    continue;
+                }
+                
                 if (!refsetVersionsPreProcessed.containsKey(snowRefset.getRefsetId())) {
 
                     refsetVersionsPreProcessed.put(snowRefset.getRefsetId(), new HashSet<Refset>());
@@ -1241,6 +1246,9 @@ public class HistoricDataMigrator {
 
             // Adding refsets from RTT
             for (String refsetId : rttRefsetIds) {
+                if (testing && testingRefset != null && !testingRefset.equals(refsetId) ) {
+                    continue;
+                }
 
                 final Edition edition = refsetEditions.get(refsetId);
 
@@ -1355,7 +1363,7 @@ public class HistoricDataMigrator {
 
             if (!organizationsAdded.containsKey(translatedOrgName)) {
 
-                logger.debug("    EEE - Adding org used in RTT but not defined in Snowstorm: " + translatedOrgName);
+                logger.debug("    HHH3 - And persisting used in RTT but not defined in Snowstorm: " + translatedOrgName);
                 org = addOrganziation(translatedOrgName, null, edition, defaultMeta);
                 organizationsAdded.put(translatedOrgName, org);
             } else {
@@ -1389,7 +1397,6 @@ public class HistoricDataMigrator {
 
             service.add(rttRefset);
             processClauses(rttId, rttRefset);
-            identifyMemberCount(rttRefset);
         }
 
     }
@@ -1703,17 +1710,18 @@ public class HistoricDataMigrator {
 
                 narrative = updatedLine.split(SPLIT_CHARACTER)[9];
             }
-
+            
             // Clean up name if has commas (which some do)
             if (updatedLine.split(SPLIT_CHARACTER)[17].startsWith("\"")) {
 
                 // Can't rely on splitting on comma. Must identify name portion
                 // and then remove from line before finding other values
-                final int descStartIdx = updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[17]);
-                final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
+                final int nameStartIdx = updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[17]);
+                final int nameEndIdx = updatedLine.substring(nameStartIdx + 1).indexOf("\"");
+                final String name = updatedLine.substring(nameStartIdx + 1, nameStartIdx + nameEndIdx + 1);
 
                 // Cleanup line to remove ',' in narrative
-                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(",", "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
+                updatedLine = updatedLine.substring(0, nameStartIdx) + name.replaceAll(",", "") + updatedLine.substring(nameStartIdx + nameEndIdx + 2);
             }
 
             updatedLine = updatedLine.replace("\"", "");
@@ -1751,9 +1759,9 @@ public class HistoricDataMigrator {
 
             if (narrative.equals(values[17])) {
 
-                logger.debug("Had to update narrative to not make it identical as name for name: " + values[17]);
-                narrative = "Default description for refset is same as name: " + narrative;
-            }
+                logger.debug("Name and narrative the same, so clearing narrative for: " +  values[17] );
+                narrative = "";
+            } 
 
             // Begin RefsetJson
             buf.append("{");
