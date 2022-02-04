@@ -1186,10 +1186,12 @@ public class HistoricDataMigrator {
             // Preprocess Snowstorm refsets for analysis purposes
             // Adding refsets identified on snowstorm
             for (Refset snowRefset : snowstormRefsets) {
-                if (testing && testingRefset != null && !testingRefset.equals(snowRefset.getRefsetId()) ) {
+
+                if (testing && testingRefset != null && !testingRefset.equals(snowRefset.getRefsetId())) {
+
                     continue;
                 }
-                
+
                 if (!refsetVersionsPreProcessed.containsKey(snowRefset.getRefsetId())) {
 
                     refsetVersionsPreProcessed.put(snowRefset.getRefsetId(), new HashSet<Refset>());
@@ -1221,9 +1223,10 @@ public class HistoricDataMigrator {
 
                         projectCount = processRefsetNotInRTT(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, projectCount);
                         service.add(snowRefset);
-                        
-                        identifyMemberCount(snowRefset);
-                        
+
+                        /* Don't need member count anymore */
+                        // identifyMemberCount(snowRefset);
+
                         processClauses(rttId, snowRefset);
 
                         if (!refsetVersionsProcessed.containsKey(snowRefset.getRefsetId())) {
@@ -1246,7 +1249,9 @@ public class HistoricDataMigrator {
 
             // Adding refsets from RTT
             for (String refsetId : rttRefsetIds) {
-                if (testing && testingRefset != null && !testingRefset.equals(refsetId) ) {
+
+                if (testing && testingRefset != null && !testingRefset.equals(refsetId)) {
+
                     continue;
                 }
 
@@ -1363,7 +1368,7 @@ public class HistoricDataMigrator {
 
             if (!organizationsAdded.containsKey(translatedOrgName)) {
 
-                logger.debug("    HHH3 - And persisting used in RTT but not defined in Snowstorm: " + translatedOrgName);
+                logger.debug("    HHH3 - And persisting Org used in RTT but not defined in Snowstorm: " + translatedOrgName);
                 org = addOrganziation(translatedOrgName, null, edition, defaultMeta);
                 organizationsAdded.put(translatedOrgName, org);
             } else {
@@ -1373,7 +1378,8 @@ public class HistoricDataMigrator {
 
             if (!projectsAdded.containsKey(rttProject.getName())) {
 
-                logger.debug("    FFF - Adding project '" + rttProject.getName() + "'    which used in RTT but not defined in Snowstorm to Code System: " + translatedOrgName);
+                logger.debug("    FFF - Adding project '" + rttProject.getName() + "'    which used in RTT but not defined in Snowstorm to Code System: " + translatedOrgName
+                    + " in support of RefsetId: " + rttId);
                 final Project project = addProject(org, rttProject.getName(), rttProject.getDescription(), projectMeta);
                 projectCount++;
 
@@ -1410,10 +1416,11 @@ public class HistoricDataMigrator {
             members = RefsetMemberService.getRefsetMembers(SecurityService.getUserFromSession(), rttRefset.getId(), new SearchParameters(), "list", null);
             logger.debug("MMM - refsetId/VersionDate '" + rttRefset.getRefsetId() + "/" + rttRefset.getVersionDate() + "' Member Count: " + members.getTotal());
         } catch (Exception e) {
+
             logger.error("Failed calling RefsetMemberService.getRefsetMembers()");
             e.printStackTrace();
         }
-        
+
     }
 
     private int processRefsetNotInRTT(Refset refset, Edition edition, Set<String> refsetsAdded, Map<String, Project> projectsAdded, Map<String, Project> defaultEditionProjects, int projectCount)
@@ -1504,7 +1511,7 @@ public class HistoricDataMigrator {
 
             return editionOwnerMap.get(shortName);
 
-        } else if (name.toLowerCase().contains("india") || name.toLowerCase().contains("canad") || name.toLowerCase().contains("Conteir")) {
+        } else if (name.toLowerCase().contains("india") || name.toLowerCase().contains("canad") || name.toLowerCase().contains("conteir")) {
 
             logger.debug("HHH-2  -  Ignoring refsets from this organization as either a project without a Snowstorm Code System or is a traiining project : " + name);
             return null;
@@ -1710,7 +1717,7 @@ public class HistoricDataMigrator {
 
                 narrative = updatedLine.split(SPLIT_CHARACTER)[9];
             }
-            
+
             // Clean up name if has commas (which some do)
             if (updatedLine.split(SPLIT_CHARACTER)[17].startsWith("\"")) {
 
@@ -1759,9 +1766,9 @@ public class HistoricDataMigrator {
 
             if (narrative.equals(values[17])) {
 
-                logger.debug("Name and narrative the same, so clearing narrative for: " +  values[17] );
+                logger.debug("Name and narrative the same, so clearing narrative for: " + values[17]);
                 narrative = "";
-            } 
+            }
 
             // Begin RefsetJson
             buf.append("{");
