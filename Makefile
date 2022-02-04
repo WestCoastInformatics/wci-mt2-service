@@ -34,4 +34,4 @@ install:
 
 # Publish artifacts to nexus (requires a local .gradle/gradle.properties propery configured)
 release:
-	./gradlew uploadArchives
+	./gradlew clean uploadArchives

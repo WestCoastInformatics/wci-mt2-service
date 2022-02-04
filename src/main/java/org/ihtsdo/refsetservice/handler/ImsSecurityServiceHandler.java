@@ -1,9 +1,11 @@
 package org.ihtsdo.refsetservice.handler;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.ws.rs.WebApplicationException;
 
@@ -89,6 +91,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
             final Iterator<JsonNode> roleIterator = userNode.get("roles").elements();
             
+            
             // boolean authorCredentialsMatched = false;
             while (roleIterator.hasNext()) {
 
@@ -100,6 +103,14 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                 if (role.startsWith(rt2RolePrefix)) {
                     user.getRoles().add(role.substring(rt2RolePrefix.length()));
                 }
+            }
+            
+            // TODO remove before next UAT push. added 2/2/2022
+            if (user.getUserName().equals("twhalen")) {
+                
+                Set<String> timRoles = new HashSet<>();
+                timRoles.add("be-all-author");
+                user.setRoles(timRoles);
             }
 
             user.setModifiedBy(user.getUserName());

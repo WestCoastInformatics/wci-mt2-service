@@ -1405,9 +1405,11 @@ public class RefsetService {
                     
                     projectFilter += "(projectId:" + project.getId();
                     
-                    // if the user isn't allowed to view private refsets for this project restrict them
+                    // if the user isn't allowed to view private refsets for this project restrict them, otherwise show in development or the latest published version
                     if (!project.getRoles().contains(User.ROLE_VIEWER)) {
-                        projectFilter += " AND privateRefset: false";
+                        projectFilter += " AND privateRefset: false AND latestPublishedVersion: true";
+                    } else {
+                        projectFilter += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
                     }
                     
                     projectFilter +=  ") OR ";
@@ -1421,11 +1423,11 @@ public class RefsetService {
             }
             
             // if this is the directory then only show the latest published version, if it is the projects then show in development or the latest published version
-            if (showInDevelopment) {
-                query += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
-            } else {
-                query += " AND latestPublishedVersion: true";
-            }
+//            if (showInDevelopment) {
+//                query += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
+//            } else {
+//                query += " AND latestPublishedVersion: true";
+//            }
 
             logger.debug("******** searchRefsets query: " + query);
             results = service.find(query, pfs, Refset.class, null);
