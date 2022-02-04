@@ -1280,7 +1280,7 @@ public class RefsetController extends BaseController {
                                     languageId, fileNameDate, startEffectiveTime,
                                     transientEffectiveTime, exportMetadata, withNames);
                         } else {
-                            uri = RefsetMemberService.exportRefsetRf2Delta(refsetInternalId,
+                            uri = RefsetMemberService.exportRefsetRf2Delta(user, refsetInternalId,
                                     exportType, languageId, fileNameDate, startEffectiveTime,
                                     transientEffectiveTime, exportMetadata, withNames);
                         }
@@ -1418,8 +1418,8 @@ public class RefsetController extends BaseController {
                     throw new Exception("Unable to retrieve refset " + refsetInternalId);
                 }
 
-                final List<Map<String, String>> versions =
-                        RefsetService.getSortedRefsetVersionList(refset.getRefsetId(), service);
+                RefsetService.setRefsetPermissions(user, refset);
+                final List<Map<String, String>> versions = RefsetService.getSortedRefsetVersionList(refset, service);
 
                 final List<Map<String, String>> memberHistory =
                         RefsetMemberService.getMemberHistory(conceptId, versions);

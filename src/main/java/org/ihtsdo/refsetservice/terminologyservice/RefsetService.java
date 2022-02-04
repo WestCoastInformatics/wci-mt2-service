@@ -1212,7 +1212,7 @@ public class RefsetService {
             }
 
             refset = setRefsetPermissions(user, refset);
-            refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
+            refset.setVersionList(getSortedRefsetVersionList(refset, service));
             refset.setBranchPath(getBranchPath(refset));
 
             logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
@@ -1435,7 +1435,7 @@ public class RefsetService {
             for (Refset refset : results.getItems()) {
 
                 refset = setRefsetPermissions(user, refset);
-                //refset.setVersionList(getSortedRefsetVersionList(refset.getRefsetId(), service));
+                //refset.setVersionList(getSortedRefsetVersionList(refset, service));
             }
             
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -1790,43 +1790,43 @@ public class RefsetService {
      * @return the list of version dates sorted in descending order
      * @throws Exception the exception
      */
-    public static List<Map<String, String>> getSortedRefsetVersionList(final String refsetId, final TerminologyService service) throws Exception {
+    public static List<Map<String, String>> getSortedRefsetVersionList(final Refset refset, final TerminologyService service) throws Exception {
         
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         final List<Map<String, String>> versionList = new ArrayList<>();
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("versionDate");
         pfs.setAscending(false);
+        
+        final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refset.getRefsetId()), pfs, Refset.class, null);
     
-        final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refsetId), pfs, Refset.class, null);
-    
-        for (Refset refset : results.getItems()) {
+        for (Refset refsetVersion : results.getItems()) {
     
             final Map<String, String> version = new HashMap<>();
-            version.put("status", refset.getVersionStatus());
-            version.put("refsetInternalId", refset.getId());
+            version.put("status", refsetVersion.getVersionStatus());
+            version.put("refsetInternalId", refsetVersion.getId());
     
             boolean inDevelopmentVersionFound = false;
             
-            if (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+            if (refsetVersion.getVersionStatus().equals(Refset.IN_DEVELOPMENT) && refset.getRoles().contains(User.ROLE_VIEWER)) {
     
                 if (inDevelopmentVersionFound) {
-                    throw new Exception("May only have a single version at 'in development' at any given time, and we found 2nd for refsetId: " + refset.getRefsetId());
+                    throw new Exception("May only have a single version at 'in development' at any given time, and we found 2nd for refsetId: " + refsetVersion.getRefsetId());
                 }
     
                 version.put("date", DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
                 versionList.add(0, version);
                 inDevelopmentVersionFound = true;
                 
-            } else if (Refset.PUBLISHED.equals(refset.getVersionStatus())) {
+            } else if (Refset.PUBLISHED.equals(refsetVersion.getVersionStatus())) {
     
-                version.put("date", DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
+                version.put("date", DateUtility.formatDate(refsetVersion.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
     
                 if (versionList.isEmpty()) {
                     versionList.add(version);
                 } else {
     
-                    final Date dateToInsert = refset.getVersionDate();
+                    final Date dateToInsert = refsetVersion.getVersionDate();
                     int versionIndex = (inDevelopmentVersionFound) ? 1 : 0;
     
                     for (Map<String, String> currentVersion : versionList) {
