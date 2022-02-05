@@ -1212,7 +1212,7 @@ public class RefsetService {
             }
 
             refset = setRefsetPermissions(user, refset);
-            refset.setVersionList(getSortedRefsetVersionList(refset, service));
+            refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
             refset.setBranchPath(getBranchPath(refset));
 
             logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
@@ -1435,7 +1435,7 @@ public class RefsetService {
             for (Refset refset : results.getItems()) {
 
                 refset = setRefsetPermissions(user, refset);
-                //refset.setVersionList(getSortedRefsetVersionList(refset, service));
+                //refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
             }
             
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -1787,60 +1787,45 @@ public class RefsetService {
      *
      * @param refsetId the refset Id
      * @param service the Terminology Service
+     * @param sortAscending should the versions be sorted in ascending order
      * @return the list of version dates sorted in descending order
      * @throws Exception the exception
      */
-    public static List<Map<String, String>> getSortedRefsetVersionList(final Refset refset, final TerminologyService service) throws Exception {
+    public static List<Map<String, String>> getSortedRefsetVersionList(final Refset refset, final TerminologyService service, final boolean sortAscending) throws Exception {
         
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         final List<Map<String, String>> versionList = new ArrayList<>();
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("versionDate");
-        pfs.setAscending(false);
+        pfs.setAscending(sortAscending);
+        Map<String, String> inDevelopmentVersion = null;
         
         final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refset.getRefsetId()), pfs, Refset.class, null);
+        
     
         for (Refset refsetVersion : results.getItems()) {
     
             final Map<String, String> version = new HashMap<>();
             version.put("status", refsetVersion.getVersionStatus());
             version.put("refsetInternalId", refsetVersion.getId());
-    
-            boolean inDevelopmentVersionFound = false;
             
             if (refsetVersion.getVersionStatus().equals(Refset.IN_DEVELOPMENT) && refset.getRoles().contains(User.ROLE_VIEWER)) {
     
-                if (inDevelopmentVersionFound) {
-                    throw new Exception("May only have a single version at 'in development' at any given time, and we found 2nd for refsetId: " + refsetVersion.getRefsetId());
-                }
-    
                 version.put("date", DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
-                versionList.add(0, version);
-                inDevelopmentVersionFound = true;
+                inDevelopmentVersion = new HashMap<>(version);
                 
             } else if (Refset.PUBLISHED.equals(refsetVersion.getVersionStatus())) {
     
                 version.put("date", DateUtility.formatDate(refsetVersion.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
-    
-                if (versionList.isEmpty()) {
-                    versionList.add(version);
+                versionList.add(version);
+            }
+            
+            if (inDevelopmentVersion != null) {
+                
+                if (sortAscending) {
+                    versionList.add(inDevelopmentVersion);
                 } else {
-    
-                    final Date dateToInsert = refsetVersion.getVersionDate();
-                    int versionIndex = (inDevelopmentVersionFound) ? 1 : 0;
-    
-                    for (Map<String, String> currentVersion : versionList) {
-    
-                        final Date dateInspecting = simpleDateFormat.parse(currentVersion.get("date"));
-    
-                        if (dateToInsert.before(dateInspecting)) {
-                            break;
-                        }
-    
-                        versionIndex++;
-                    }
-    
-                    versionList.add(versionIndex, version);
+                    versionList.add(0, inDevelopmentVersion);
                 }
             }
         }

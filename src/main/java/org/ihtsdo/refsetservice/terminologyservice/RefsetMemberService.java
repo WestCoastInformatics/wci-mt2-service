@@ -827,7 +827,7 @@ public class RefsetMemberService {
             if (!S3ConnectionWrapper.isInS3Cache(deltaAwsVersionedPath, deltaRt2VersionFileName)) {
 
                 // determine all snapshot versions that will contribute to the delta
-                List<Map<String, String>> versionMap = RefsetService.getSortedRefsetVersionList(refset, service);
+                List<Map<String, String>> versionMap = RefsetService.getSortedRefsetVersionList(refset, service, true);
                 Map<String, String> versionToRefsetInternalId = new HashMap<>();
                 List<String> versionsInScope = new ArrayList<>();
                 
@@ -3233,109 +3233,104 @@ public class RefsetMemberService {
 
             for (Map<String, String> version : versions) {
 
-                if ("beta, published, ind development"
-                        .contains(version.get("status").toLowerCase())) {
+                String refsetInternalId = version.get("refsetInternalId");
+                String branchDate = version.get("date");
 
-                    String refsetInternalId = version.get("refsetInternalId");
-                    String branchDate = version.get("date");
+                logger.debug("Processing history on: " + branchDate
+                        + " using internalRefsetId: " + refsetInternalId);
 
-                    logger.debug("Processing history on: " + branchDate
-                            + " using internalRefsetId: " + refsetInternalId);
+                final Refset refset = service.get(refsetInternalId, Refset.class);
 
-                    final Refset refset = service.get(refsetInternalId, Refset.class);
+                if (refset == null) {
+                    throw new Exception("Refset Internal Id: " + refsetInternalId
+                            + " does not exist in the RT2 database");
+                }
 
-                    if (refset == null) {
-                        throw new Exception("Refset Internal Id: " + refsetInternalId
-                                + " does not exist in the RT2 database");
+                final String url = SnowstormConnection.BASE_URL + RefsetService.getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&referencedComponentId=" + referencedComponentId;
+
+                logger.debug("Get Membership History URL: " + url);
+
+                try (final Response response = SnowstormConnection.getResponse(url)) {
+
+                    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                        throw new Exception("call to url '" + url + "' wasn't successful. "
+                                + response.toString());
                     }
 
-                    final String url = SnowstormConnection.BASE_URL + getBranchPath(refset)
-                            + "/members?referenceSet=" + refset.getRefsetId()
-                            + "&referencedComponentId=" + referencedComponentId;
+                    final String resultString = response.readEntity(String.class);
+                    final ObjectMapper mapper = new ObjectMapper();
+                    final JsonNode root = mapper.readTree(resultString.toString());
+                    final JsonNode node = root.get("items");
+                    String currentVersionDate = null;
+                    Iterator<JsonNode> iterator = node.iterator();
+                    String currentStatus = null;
 
-                    logger.debug("Get Membership History URL: " + url);
+                    if (iterator.hasNext()) {
 
-                    try (final Response response = SnowstormConnection.getResponse(url)) {
+                        JsonNode memberNode = iterator.next();
 
-                        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                            throw new Exception("call to url '" + url + "' wasn't successful. "
-                                    + response.toString());
-                        }
+                        // Calculate the version date and ensure it has
+                        // proper format yyyy-mm-dd
+                        currentVersionDate = memberNode.get("releasedEffectiveTime").asText();
+                        currentVersionDate = currentVersionDate.substring(0, 4) + "-"
+                                + currentVersionDate.substring(4, 6) + "-"
+                                + currentVersionDate.substring(6);
+                        if (memberNode.has("active")) {
 
-                        final String resultString = response.readEntity(String.class);
-                        final ObjectMapper mapper = new ObjectMapper();
-                        final JsonNode root = mapper.readTree(resultString.toString());
-                        final JsonNode node = root.get("items");
-                        String currentVersionDate = null;
-                        Iterator<JsonNode> iterator = node.iterator();
-                        String currentStatus = null;
-
-                        if (iterator.hasNext()) {
-
-                            JsonNode memberNode = iterator.next();
-
-                            // Calculate the version date and ensure it has
-                            // proper format yyyy-mm-dd
-                            currentVersionDate = memberNode.get("releasedEffectiveTime").asText();
-                            currentVersionDate = currentVersionDate.substring(0, 4) + "-"
-                                    + currentVersionDate.substring(4, 6) + "-"
-                                    + currentVersionDate.substring(6);
-                            if (memberNode.has("active")) {
-
-                                if (memberNode.get("active").asBoolean()) {
-                                    currentStatus = "Active";
-                                } else {
-                                    currentStatus = "Inactive";
-                                }
-                            }
-                        }
-
-                        // have reached to the point prior to the concept
-                        // becoming a member, so can cancel searching further
-                        // versions
-                        if (currentStatus == null) {
-                            continue;
-                        }
-
-                        if (previousStatus == null) {
-                            // First time encountering a membership status, thus
-                            // first time added
-
-                            Map<String, String> historyEntry = new HashMap<>();
-
-                            historyEntry.put("version", currentVersionDate);
-
-                            if ("active".equals(currentStatus.toLowerCase())) {
-                                historyEntry.put("change", "Added");
+                            if (memberNode.get("active").asBoolean()) {
+                                currentStatus = "Active";
                             } else {
-                                historyEntry.put("change", "Added as Inactive");
+                                currentStatus = "Inactive";
                             }
-
-                            memberHistory.add(historyEntry);
-
-                        } else if (!currentStatus.equals(previousStatus)) {
-                            // if the previous status wasn't null and the
-                            // current
-                            // status doesn't match it, then set the last status
-
-                            Map<String, String> historyEntry = new HashMap<>();
-                            historyEntry.put("version", currentVersionDate);
-
-                            if (currentStatus.equals("Active")) {
-                                historyEntry.put("change", "Activated");
-                            } else {
-                                historyEntry.put("change", "Inactivated");
-                            }
-
-                            memberHistory.add(historyEntry);
-
                         }
-                        previousStatus = currentStatus;
-
-                    } catch (Exception ex) {
-                        throw new Exception("Could not grab refset members for refset "
-                                + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
                     }
+
+                    // have reached to the point prior to the concept
+                    // becoming a member, so can cancel searching further
+                    // versions
+                    if (currentStatus == null) {
+                        continue;
+                    }
+
+                    if (previousStatus == null) {
+                        // First time encountering a membership status, thus
+                        // first time added
+
+                        Map<String, String> historyEntry = new HashMap<>();
+
+                        historyEntry.put("version", currentVersionDate);
+
+                        if ("active".equals(currentStatus.toLowerCase())) {
+                            historyEntry.put("change", "Added");
+                        } else {
+                            historyEntry.put("change", "Added as Inactive");
+                        }
+
+                        memberHistory.add(historyEntry);
+
+                    } else if (!currentStatus.equals(previousStatus)) {
+                        // if the previous status wasn't null and the
+                        // current
+                        // status doesn't match it, then set the last status
+
+                        Map<String, String> historyEntry = new HashMap<>();
+                        historyEntry.put("version", currentVersionDate);
+
+                        if (currentStatus.equals("Active")) {
+                            historyEntry.put("change", "Activated");
+                        } else {
+                            historyEntry.put("change", "Inactivated");
+                        }
+
+                        memberHistory.add(historyEntry);
+
+                    }
+                    previousStatus = currentStatus;
+
+                } catch (Exception ex) {
+                    
+                    logger.error("Could not grab refset members for refset " + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
+                    continue;
                 }
             }
         }

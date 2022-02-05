@@ -1419,7 +1419,7 @@ public class RefsetController extends BaseController {
                 }
 
                 RefsetService.setRefsetPermissions(user, refset);
-                final List<Map<String, String>> versions = RefsetService.getSortedRefsetVersionList(refset, service);
+                final List<Map<String, String>> versions = RefsetService.getSortedRefsetVersionList(refset, service, true);
 
                 final List<Map<String, String>> memberHistory =
                         RefsetMemberService.getMemberHistory(conceptId, versions);
