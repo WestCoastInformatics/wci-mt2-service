@@ -846,6 +846,7 @@ public class HistoricDataMigrator {
                         // TODO: Add a description default value or update
                         // snowstorm with value per codesystem
                         final String orgDesc = "";
+                        
                         addOrganziation(editionOwnerMap.get(edition.getName()), orgDesc, edition, defaultMeta);
                     }
 
@@ -1276,6 +1277,13 @@ public class HistoricDataMigrator {
 
                     // only process those refsets that aren't in Snowstorm
                     logger.debug(" DDD - Here with RTT refset: " + rttRefset.getRefsetId() + " and version: " + sdf.parse(rttRefsetToEffectiveDateMap.get(rttId)));
+                    
+                    // TODO Temp fix so there are no refsets or orgs without editions
+                    if (edition == null || edition.getId() == null || edition.getId().equals("")) {
+                        
+                        logger.debug("Skipping refset with no Edition: " + rttRefset.getRefsetId());
+                        continue;
+                    }
                     processRefsetInRTT(rttId, projectId, rttRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, projectCount);
                 }
 
