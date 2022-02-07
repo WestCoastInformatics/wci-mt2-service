@@ -284,7 +284,9 @@ public class HistoricDataMigrator {
 
     private final Map<String, String> editionOwnerMap = new HashMap<>();
 
-    private Set<String> rttRefsetIds = null;
+    private Set<String> rttRefsetIds = new HashSet<>();
+
+    private boolean supportRtt = false;
 
     private Map<String, Edition> refsetEditions = new HashMap<>();
 
@@ -315,17 +317,21 @@ public class HistoricDataMigrator {
         // Read refset metadata and associated information (projects & ECLs)
         parseRttData();
 
-        // Skip those refsets that live on SnowS, but are not yet in RTT DB dmp
-        // file that we are using
-        for (Refset refset : snowstormRefsets) {
+        if (supportRtt) {
 
-            if (!rttRefsetSctIdToRttIdMap.keySet().contains(refset.getRefsetId())) {
+            // Skip those refsets that live on SnowS, but are not yet in RTT DB dmp
+            // file that we are using
+            for (Refset refset : snowstormRefsets) {
 
-                if (internationalRefsets.contains(refset.getRefsetId())) {
+                if (!rttRefsetSctIdToRttIdMap.keySet().contains(refset.getRefsetId())) {
 
-                    refsetsToIgnore.add(refset.getRefsetId());
+                    if (internationalRefsets.contains(refset.getRefsetId())) {
 
-                    logger.debug("Going to ignore Int'l refsets supported in " + refset.getEditionName() + " - " + refset.getRefsetId() + " - " + refset.getName());
+                        refsetsToIgnore.add(refset.getRefsetId());
+
+                        logger.debug("Going to ignore Int'l refsets supported in " + refset.getEditionName() + " - " + refset.getRefsetId() + " - " + refset.getName());
+                    }
+
                 }
 
             }
@@ -402,7 +408,8 @@ public class HistoricDataMigrator {
 
                         if (!childAdded) {
 
-                            logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official release branch");
+                            // logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official release
+                            // branch");
                         }
 
                     }
@@ -445,56 +452,66 @@ public class HistoricDataMigrator {
             // For now, default all refsets to PUBLIC
             refset.setPrivateRefset(false);
 
-            // Update refset from JSON. If JSON not available to the refset, it
-            // means it resides exclusively on Snowstorm.
-            if (rttRefsetIds.contains(refset.getRefsetId())) {
+            if (!supportRtt) {
 
-                /* Refset lived in RTT as well */
-                final Set<String> rttIds = rttRefsetSctIdToRttIdMap.get(refset.getRefsetId());
-
-                for (String rttId : rttIds) {
-
-                    final String refsetJsonString = rttIdToRefsetJsonMap.get(rttId);
-
-                    final ObjectMapper mapper = new ObjectMapper();
-                    final JsonNode refsetJson = mapper.readTree(refsetJsonString);
-
-                    refset.setType(refsetJson.get("type").asText());
-                    refset.setNarrative(refsetJson.get("narrative").asText());
-
-                    // Tags
-                    if (refsetJson.has("tags")) {
-
-                        Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
-
-                        while (tagsIterator.hasNext()) {
-
-                            refset.getTags().add(tagsIterator.next().asText());
-                        }
-
-                    }
-
-                    // If has ECL clauses, create and associate with refset (but
-                    // don't persist)
-                    if (rttRefsetToClausesMap.containsKey(rttId)) {
-
-                        for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
-
-                            final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
-
-                            clausesRefsetMap.put(clause, refset);
-                        }
-
-                    }
-
-                }
+                // Defaults for type (extensional) & narrative (blank)
+                refset.setType("EXTENSIONAL");
+                refset.setNarrative("");
 
             } else {
 
-                /* Refsets in Snowstorm but not RTT */
-                // Defaults for type & narrative
-                refset.setType("EXTENSIONAL");
-                refset.setNarrative("None as refset lives on Snowstorm, but not in RTT");
+                // Update refset from JSON. If JSON not available to the refset, it
+                // means it resides exclusively on Snowstorm.
+                if (rttRefsetIds.contains(refset.getRefsetId())) {
+
+                    /* Refset lived in RTT as well */
+                    final Set<String> rttIds = rttRefsetSctIdToRttIdMap.get(refset.getRefsetId());
+
+                    for (String rttId : rttIds) {
+
+                        final String refsetJsonString = rttIdToRefsetJsonMap.get(rttId);
+
+                        final ObjectMapper mapper = new ObjectMapper();
+                        final JsonNode refsetJson = mapper.readTree(refsetJsonString);
+
+                        refset.setType(refsetJson.get("type").asText());
+                        refset.setNarrative(refsetJson.get("narrative").asText());
+
+                        // Tags
+                        if (refsetJson.has("tags")) {
+
+                            Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
+
+                            while (tagsIterator.hasNext()) {
+
+                                refset.getTags().add(tagsIterator.next().asText());
+                            }
+
+                        }
+
+                        // If has ECL clauses, create and associate with refset (but
+                        // don't persist)
+                        if (rttRefsetToClausesMap.containsKey(rttId)) {
+
+                            for (String clauseJson : rttRefsetToClausesMap.get(rttId)) {
+
+                                final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
+
+                                clausesRefsetMap.put(clause, refset);
+                            }
+
+                        }
+
+                    }
+
+                } else {
+
+                    /* Refsets in Snowstorm but not RTT */
+                    // Defaults for type & narrative
+                    refset.setType("EXTENSIONAL");
+                    refset.setNarrative("None as refset lives on Snowstorm, but not in RTT");
+                }
+
             }
 
             // Keep track of the latest version per refsetId
@@ -846,7 +863,7 @@ public class HistoricDataMigrator {
                         // TODO: Add a description default value or update
                         // snowstorm with value per codesystem
                         final String orgDesc = "";
-                        
+
                         addOrganziation(editionOwnerMap.get(edition.getName()), orgDesc, edition, defaultMeta);
                     }
 
@@ -1248,43 +1265,48 @@ public class HistoricDataMigrator {
 
             }
 
-            // Adding refsets from RTT
-            for (String refsetId : rttRefsetIds) {
+            if (supportRtt) {
 
-                if (testing && testingRefset != null && !testingRefset.equals(refsetId)) {
+                // Adding refsets from RTT
+                for (String refsetId : rttRefsetIds) {
 
-                    continue;
-                }
+                    if (testing && testingRefset != null && !testingRefset.equals(refsetId)) {
 
-                final Edition edition = refsetEditions.get(refsetId);
-
-                final Set<String> rttIds = rttRefsetSctIdToRttIdMap.get(refsetId);
-
-                for (String rttId : rttIds) {
-
-                    final String refsetJsonString = rttIdToRefsetJsonMap.get(rttId);
-                    final String projectId = rttIdToRttProjectIdMap.get(rttId);
-
-                    final Refset rttRefset = ModelUtility.fromJson(refsetJsonString, Refset.class);
-                    final Date versionDate = sdf.parse(rttRefsetToEffectiveDateMap.get(rttId));
-
-                    if (refsetVersionsProcessed.containsKey(rttRefset.getRefsetId()) && refsetVersionsProcessed.get(rttRefset.getRefsetId()).contains(versionDate)) {
-
-                        logger.info(
-                            " CCC - Duplicate refsetId/VersionDate found in Snowstorm and in RTT (" + rttRefset.getRefsetId() + "/" + versionDate + ", so only processing the one from Snowstorm");
                         continue;
                     }
 
-                    // only process those refsets that aren't in Snowstorm
-                    logger.debug(" DDD - Here with RTT refset: " + rttRefset.getRefsetId() + " and version: " + sdf.parse(rttRefsetToEffectiveDateMap.get(rttId)));
-                    
-                    // TODO Temp fix so there are no refsets or orgs without editions
-                    if (edition == null || edition.getId() == null || edition.getId().equals("")) {
-                        
-                        logger.debug("Skipping refset with no Edition: " + rttRefset.getRefsetId());
-                        continue;
+                    final Edition edition = refsetEditions.get(refsetId);
+
+                    final Set<String> rttIds = rttRefsetSctIdToRttIdMap.get(refsetId);
+
+                    for (String rttId : rttIds) {
+
+                        final String refsetJsonString = rttIdToRefsetJsonMap.get(rttId);
+                        final String projectId = rttIdToRttProjectIdMap.get(rttId);
+
+                        final Refset rttRefset = ModelUtility.fromJson(refsetJsonString, Refset.class);
+                        final Date versionDate = sdf.parse(rttRefsetToEffectiveDateMap.get(rttId));
+
+                        if (refsetVersionsProcessed.containsKey(rttRefset.getRefsetId()) && refsetVersionsProcessed.get(rttRefset.getRefsetId()).contains(versionDate)) {
+
+                            logger.info(
+                                " CCC - Duplicate refsetId/VersionDate found in Snowstorm and in RTT (" + rttRefset.getRefsetId() + "/" + versionDate + ", so only processing the one from Snowstorm");
+                            continue;
+                        }
+
+                        // only process those refsets that aren't in Snowstorm
+                        logger.debug(" DDD - Here with RTT refset: " + rttRefset.getRefsetId() + " and version: " + sdf.parse(rttRefsetToEffectiveDateMap.get(rttId)));
+
+                        // TODO Temp fix so there are no refsets or orgs without editions
+                        if (edition == null || edition.getId() == null || edition.getId().equals("")) {
+
+                            logger.debug("Skipping refset with no Edition: " + rttRefset.getRefsetId());
+                            continue;
+                        }
+
+                        processRefsetInRTT(rttId, projectId, rttRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, projectCount);
                     }
-                    processRefsetInRTT(rttId, projectId, rttRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, projectCount);
+
                 }
 
             }
@@ -1452,7 +1474,7 @@ public class HistoricDataMigrator {
 
             // Create default project
             final String projectName = "Default project for " + orgName;
-            final String projectDescription = "This project was created to support non-RTT based refsets for " + orgName + ".";
+            final String projectDescription = "This is a default project to support initial Snowstorm-based refsets for " + orgName + ".";
 
             final Project project = addProject(org, projectName, projectDescription, defaultMeta);
             projectCount++;
@@ -1825,6 +1847,11 @@ public class HistoricDataMigrator {
      * @throws Exception the exception
      */
     private void parseRttData() throws Exception {
+
+        if (!supportRtt) {
+
+            return;
+        }
 
         populateFromFile(clausesResource, FileProcessType.CLAUSE);
         populateFromFile(projectsResource, FileProcessType.PROJECT);
