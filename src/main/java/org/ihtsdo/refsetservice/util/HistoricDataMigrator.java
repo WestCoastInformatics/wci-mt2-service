@@ -245,6 +245,8 @@ public class HistoricDataMigrator {
 
     ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("rtt-migration/ignoredCodeSystems.txt");
 
+    ClassPathResource ignoredRefsetsResource = new ClassPathResource("rtt-migration/ignoredRefsets.txt");
+
     ClassPathResource refsetToProjectsResource = new ClassPathResource("rtt-migration/refsetToProjects.txt");
 
     ClassPathResource refsetToClausesResource = new ClassPathResource("rtt-migration/refsetToClauses.txt");
@@ -563,6 +565,8 @@ public class HistoricDataMigrator {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
+            List<String> ignoredRefsets = identifyRefsetsToIgnore();
+
             logger.info("---> Starting to identify Refsets on Snowstorm by edition/version pair");
 
             for (String editionId : branchChildrenByEdition.keySet()) {
@@ -618,6 +622,11 @@ public class HistoricDataMigrator {
 
                             final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
+
+                            if (ignoredRefsets.contains(refsetId)) {
+
+                                continue;
+                            }
 
                             /*-
                              *  Only process refset are either
@@ -765,7 +774,7 @@ public class HistoricDataMigrator {
 
         Set<String> internationalModules = null;
         final String url = SnowstormConnection.BASE_URL + "codesystems";
-        logger.debug("createEditionsFromSnowstorm url: " + url);
+        // logger.debug("createEditionsFromSnowstorm url: " + url);
 
         List<String> ignoredCodeSystemNames = identifyCodeSystemsToIgnore();
         Map<String, Set<String>> undefinedDefaultLanguageRefsets = identifyUndefinedDefaultLanguageRefsets();
@@ -1163,13 +1172,13 @@ public class HistoricDataMigrator {
 
             }
 
-            Map<String, String> refsetsToProjectInfoMap = readRttRefsetsToProjectsMap();
-            Map<String, String> refsetsToClausesInfoMap = readRttRefsetsToClausesMap();
+            Map<String, String> refsetToProjectsInfoMap = readRttRefsetsToProjectsMap();
+            Map<String, String> refsetToClausesInfoMap = readRttRefsetsToClausesMap();
 
             // Adding refsets identified on snowstorm
             for (String refsetSctId : refsetVersionsPreProcessed.keySet()) {
 
-                if (refsetsToClausesInfoMap.containsKey(refsetSctId)) {
+                if (refsetToClausesInfoMap.containsKey(refsetSctId)) {
 
                     logger.debug("LLL - Have clause on refset: " + refsetSctId);
                 }
@@ -1189,9 +1198,9 @@ public class HistoricDataMigrator {
                     } else {
 
                         // Add Refset. Keep track of which are added this way as to not add them from RTT as well
-                        logger.debug(" BBBQ - Persisting Snowstorm refset: " + snowRefset.getRefsetId() + " with version: " + snowRefset.getVersionDate());
+                        logger.debug(" BBB - Persisting Snowstorm refset: " + snowRefset.getRefsetId() + " with version: " + snowRefset.getVersionDate());
 
-                        projectCount = processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, refsetsToProjectInfoMap, projectCount);
+                        projectCount = processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, refsetToProjectsInfoMap, projectCount);
                         service.add(snowRefset);
 
                         /* Don't need member count anymore */
@@ -1406,7 +1415,7 @@ public class HistoricDataMigrator {
     }
 
     private int processSnowstormRefset(Refset refset, Edition edition, Set<String> refsetsAdded, Map<String, Project> projectsAdded, Map<String, Project> defaultEditionProjects,
-        Map<String, String> refsetsToProjectInfoMap, int projectCount) throws Exception {
+        Map<String, String> refsetToProjectsInfoMap, int projectCount) throws Exception {
 
         final String editionName = edition.getName();
         final String editionShortName = edition.getShortName();
@@ -1417,7 +1426,7 @@ public class HistoricDataMigrator {
             throw new Exception("Orgnaization based on edition '" + edition + "' should have been created already");
         }
 
-        Project project = defineRefsetProject(refset, edition, projectsAdded, defaultEditionProjects, refsetsToProjectInfoMap, editionName, editionName);
+        Project project = defineRefsetProject(refset, edition, projectsAdded, defaultEditionProjects, refsetToProjectsInfoMap, editionName, editionName);
 
         if (!refsetsAdded.contains(refset.getRefsetId())) {
 
@@ -1439,18 +1448,32 @@ public class HistoricDataMigrator {
         return projectCount;
     }
 
-    private Project defineRefsetProject(Refset refset, Edition edition, Map<String, Project> projectsAdded, Map<String, Project> defaultEditionProjects, Map<String, String> refsetsToProjectInfoMap,
+    private Project defineRefsetProject(Refset refset, Edition edition, Map<String, Project> projectsAdded, Map<String, Project> defaultEditionProjects, Map<String, String> refsetToProjectsInfoMap,
         String editionName, String ShortName) throws Exception {
 
         String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(ShortName);
         final Organization org = organizationsAdded.get(orgName);
 
         // Was part of project on RTT, so pull in project information
-        if (refsetsToProjectInfoMap.containsKey(refset.getId())) {
+        if (refsetToProjectsInfoMap.containsKey(refset.getRefsetId())) {
 
-            logger.debug("JJJ - found refset (" + refset.getId() + ") with corresponding RTT project: " + refsetsToProjectInfoMap.containsKey(refset.getId()));
-            String projectInfo = refsetsToProjectInfoMap.get(refset.getId());
-            String[] projectDetails = projectInfo.split("\t");
+            String projectInfo = refsetToProjectsInfoMap.get(refset.getRefsetId());
+            logger.debug("JJJ - found refset (" + refset.getRefsetId() + ") with corresponding RTT project: " + projectInfo);
+
+            String[] projectDetails = projectInfo.split(",");
+            for (int i = 0; i < 2; i++) {
+
+                if (projectDetails[i].startsWith("\"")) {
+
+                    projectDetails[i] = projectDetails[i].substring(1);
+                }
+
+                if (projectDetails[i].endsWith("\"")) {
+
+                    projectDetails[i] = projectDetails[i].substring(0, projectDetails[i].length() - 1);
+                }
+
+            }
 
             if (projectsAdded.containsKey(projectDetails[0])) {
 
@@ -1458,7 +1481,7 @@ public class HistoricDataMigrator {
                 return projectsAdded.get(projectDetails[0]);
             }
 
-            final Project project = addProject(org, projectDetails[0], projectDetails[1], defaultMeta);
+            final Project project = addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1], defaultMeta);
 
             return project;
         }
@@ -1878,6 +1901,33 @@ public class HistoricDataMigrator {
         return codeSystemNames;
     }
 
+    private List<String> identifyRefsetsToIgnore() {
+
+        BufferedReader reader;
+        List<String> refsetsToIgnore = new ArrayList<>();
+
+        try {
+
+            reader = new BufferedReader(new InputStreamReader(ignoredRefsetsResource.getInputStream()));
+
+            String line = reader.readLine();
+
+            while (line != null) {
+
+                refsetsToIgnore.add(line);
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return refsetsToIgnore;
+    }
+
     private Map<String, String> readRttRefsetsToClausesMap() {
 
         BufferedReader reader;
@@ -1891,8 +1941,7 @@ public class HistoricDataMigrator {
 
             while (line != null && !line.trim().isEmpty()) {
 
-                String[] columns = line.split("\t");
-                refsetToClausesInfoMap.put(columns[0], "");
+                refsetToClausesInfoMap.put(line, "");
 
                 line = reader.readLine();
             }
@@ -1919,8 +1968,12 @@ public class HistoricDataMigrator {
 
             while (line != null && !line.isEmpty()) {
 
-                String[] columns = line.split("\t");
-                refsetToProjectsInfoMap.put(columns[0], line.substring(line.indexOf(",")));
+                String[] columns = line.split(",");
+
+                if (!refsetToProjectsInfoMap.containsKey(columns[0])) {
+
+                    refsetToProjectsInfoMap.put(columns[0], line.substring(line.indexOf(",") + 1));
+                }
 
                 line = reader.readLine();
             }
@@ -1929,6 +1982,9 @@ public class HistoricDataMigrator {
         } catch (IOException e) {
 
             e.printStackTrace();
+        }
+        for (String key : refsetToProjectsInfoMap.keySet()) {
+            logger.debug("111 - " + key);
         }
 
         return refsetToProjectsInfoMap;
