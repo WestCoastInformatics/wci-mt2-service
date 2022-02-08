@@ -237,15 +237,19 @@ public class HistoricDataMigrator {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(HistoricDataMigrator.class);
 
-    ClassPathResource projectsResource = new ClassPathResource("service/rtt-migration/projects.txt");
+    ClassPathResource projectsResource = new ClassPathResource("rtt-migration/projects.txt");
 
-    ClassPathResource clausesResource = new ClassPathResource("service/rtt-migration/clauses.txt");
+    ClassPathResource clausesResource = new ClassPathResource("rtt-migration/clauses.txt");
 
-    ClassPathResource refsetsResource = new ClassPathResource("service/rtt-migration/refsets.txt");
+    ClassPathResource refsetsResource = new ClassPathResource("rtt-migration/refsets.txt");
 
-    ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("service/rtt-migration/ignoredCodeSystems.txt");
+    ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("rtt-migration/ignoredCodeSystems.txt");
 
-    ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("service/rtt-migration/undefinedDefaultLangRefsets.txt");
+    ClassPathResource refsetToProjectsResource = new ClassPathResource("rtt-migration/refsetToProjects.txt");
+
+    ClassPathResource refsetToClausesResource = new ClassPathResource("rtt-migration/refsetToClauses.txt");
+
+    ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("rtt-migration/undefinedDefaultLangRefsets.txt");
 
     /** The metadata map. */
     private final Map<String, Metadata> metadataMap = new HashMap<>();
@@ -879,66 +883,6 @@ public class HistoricDataMigrator {
         return internationalModules;
     }
 
-    private List<String> identifyCodeSystemsToIgnore() {
-
-        BufferedReader reader;
-        List<String> codeSystemNames = new ArrayList<>();
-
-        try {
-
-            reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
-
-            String line = reader.readLine();
-
-            while (line != null) {
-
-                codeSystemNames.add(line.toLowerCase());
-
-                line = reader.readLine();
-            }
-
-            reader.close();
-        } catch (IOException e) {
-
-            e.printStackTrace();
-        }
-
-        return codeSystemNames;
-    }
-
-    private Map<String, Set<String>> identifyUndefinedDefaultLanguageRefsets() {
-
-        BufferedReader reader;
-        Map<String, Set<String>> defaultLanguageRefsetMap = new HashMap<>();
-
-        try {
-
-            reader = new BufferedReader(new InputStreamReader(undefinedDefaultLangRefsetsResource.getInputStream()));
-
-            String line = reader.readLine();
-
-            while (line != null) {
-
-                String[] columns = line.split("\t");
-                defaultLanguageRefsetMap.put(columns[0], new HashSet<String>());
-
-                for (int i = 1; i < columns.length; i++) {
-
-                    defaultLanguageRefsetMap.get(columns[0]).add(columns[i]);
-                }
-
-                line = reader.readLine();
-            }
-
-            reader.close();
-        } catch (IOException e) {
-
-            e.printStackTrace();
-        }
-
-        return defaultLanguageRefsetMap;
-    }
-
     private void identifyTopLevelModule(Edition edition, JsonNode codeSystem, Set<String> internationalModules) throws Exception {
 
         if ("international edition".equals(edition.getName().toLowerCase())) {
@@ -1219,8 +1163,16 @@ public class HistoricDataMigrator {
 
             }
 
+            Map<String, String> refsetsToProjectInfoMap = readRttRefsetsToProjectsMap();
+            Map<String, String> refsetsToClausesInfoMap = readRttRefsetsToClausesMap();
+
             // Adding refsets identified on snowstorm
             for (String refsetSctId : refsetVersionsPreProcessed.keySet()) {
+
+                if (refsetsToClausesInfoMap.containsKey(refsetSctId)) {
+
+                    logger.debug("LLL - Have clause on refset: " + refsetSctId);
+                }
 
                 for (Refset snowRefset : refsetVersionsPreProcessed.get(refsetSctId)) {
 
@@ -1237,9 +1189,9 @@ public class HistoricDataMigrator {
                     } else {
 
                         // Add Refset. Keep track of which are added this way as to not add them from RTT as well
-                        logger.debug(" BBB - Persisting Snowstorm refset: " + snowRefset.getRefsetId() + " with version: " + snowRefset.getVersionDate());
+                        logger.debug(" BBBQ - Persisting Snowstorm refset: " + snowRefset.getRefsetId() + " with version: " + snowRefset.getVersionDate());
 
-                        projectCount = processRefsetNotInRTT(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, projectCount);
+                        projectCount = processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, refsetsToProjectInfoMap, projectCount);
                         service.add(snowRefset);
 
                         /* Don't need member count anymore */
@@ -1453,35 +1405,19 @@ public class HistoricDataMigrator {
 
     }
 
-    private int processRefsetNotInRTT(Refset refset, Edition edition, Set<String> refsetsAdded, Map<String, Project> projectsAdded, Map<String, Project> defaultEditionProjects, int projectCount)
-        throws Exception {
+    private int processSnowstormRefset(Refset refset, Edition edition, Set<String> refsetsAdded, Map<String, Project> projectsAdded, Map<String, Project> defaultEditionProjects,
+        Map<String, String> refsetsToProjectInfoMap, int projectCount) throws Exception {
 
-        final String name = edition.getName();
-        final String shortName = edition.getShortName();
+        final String editionName = edition.getName();
+        final String editionShortName = edition.getShortName();
 
         // Identify Org Name
-        if (!editionOwnerMap.containsKey(name) && !editionOwnerMap.containsKey(shortName) || !organizationsAdded.containsKey(editionOwnerMap.get(name))) {
+        if (!editionOwnerMap.containsKey(editionName) && !editionOwnerMap.containsKey(editionShortName) || !organizationsAdded.containsKey(editionOwnerMap.get(editionName))) {
 
             throw new Exception("Orgnaization based on edition '" + edition + "' should have been created already");
         }
 
-        String orgName = editionOwnerMap.get(name) != null ? editionOwnerMap.get(name) : editionOwnerMap.get(shortName);
-
-        // Create edition
-        final Organization org = organizationsAdded.get(orgName);
-
-        if (!defaultEditionProjects.containsKey(edition.getId())) {
-
-            // Create default project
-            final String projectName = "Default project for " + orgName;
-            final String projectDescription = "This is a default project to support initial Snowstorm-based refsets for " + orgName + ".";
-
-            final Project project = addProject(org, projectName, projectDescription, defaultMeta);
-            projectCount++;
-
-            defaultEditionProjects.put(edition.getId(), project);
-            projectsAdded.put(project.getName(), project);
-        }
+        Project project = defineRefsetProject(refset, edition, projectsAdded, defaultEditionProjects, refsetsToProjectInfoMap, editionName, editionName);
 
         if (!refsetsAdded.contains(refset.getRefsetId())) {
 
@@ -1491,10 +1427,57 @@ public class HistoricDataMigrator {
         }
 
         counts.incrementNoMetadataCount();
-        refset.setProject(defaultEditionProjects.get(edition.getId()));
+        refset.setProject(project);
         setMetadata(refset, defaultMeta);
 
+        if (!projectsAdded.containsKey(project.getName())) {
+
+            projectsAdded.put(project.getName(), project);
+            projectCount++;
+        }
+
         return projectCount;
+    }
+
+    private Project defineRefsetProject(Refset refset, Edition edition, Map<String, Project> projectsAdded, Map<String, Project> defaultEditionProjects, Map<String, String> refsetsToProjectInfoMap,
+        String editionName, String ShortName) throws Exception {
+
+        String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(ShortName);
+        final Organization org = organizationsAdded.get(orgName);
+
+        // Was part of project on RTT, so pull in project information
+        if (refsetsToProjectInfoMap.containsKey(refset.getId())) {
+
+            logger.debug("JJJ - found refset (" + refset.getId() + ") with corresponding RTT project: " + refsetsToProjectInfoMap.containsKey(refset.getId()));
+            String projectInfo = refsetsToProjectInfoMap.get(refset.getId());
+            String[] projectDetails = projectInfo.split("\t");
+
+            if (projectsAdded.containsKey(projectDetails[0])) {
+
+                // Already added project, so just return
+                return projectsAdded.get(projectDetails[0]);
+            }
+
+            final Project project = addProject(org, projectDetails[0], projectDetails[1], defaultMeta);
+
+            return project;
+        }
+
+        // No project associated with refset, so use default Edition Project
+
+        // Create edition
+        if (!defaultEditionProjects.containsKey(edition.getId())) {
+
+            // Create default project
+            final String projectName = "Default project for " + orgName;
+            final String projectDescription = "This is a default project to support initial Snowstorm-based refsets for " + orgName + ".";
+
+            final Project project = addProject(org, projectName, projectDescription, defaultMeta);
+
+            defaultEditionProjects.put(edition.getId(), project);
+        }
+
+        return defaultEditionProjects.get(edition.getId());
     }
 
     private String translateRttOrg(String name) {
@@ -1866,5 +1849,121 @@ public class HistoricDataMigrator {
         object.setModified(metadata.getModified());
         object.setCreated(metadata.getModified());
         object.setModifiedBy(metadata.getModifiedBy());
+    }
+
+    private List<String> identifyCodeSystemsToIgnore() {
+
+        BufferedReader reader;
+        List<String> codeSystemNames = new ArrayList<>();
+
+        try {
+
+            reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
+
+            String line = reader.readLine();
+
+            while (line != null) {
+
+                codeSystemNames.add(line.toLowerCase());
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return codeSystemNames;
+    }
+
+    private Map<String, String> readRttRefsetsToClausesMap() {
+
+        BufferedReader reader;
+        Map<String, String> refsetToClausesInfoMap = new HashMap<>();
+
+        try {
+
+            reader = new BufferedReader(new InputStreamReader(refsetToClausesResource.getInputStream()));
+
+            String line = reader.readLine();
+
+            while (line != null && !line.trim().isEmpty()) {
+
+                String[] columns = line.split("\t");
+                refsetToClausesInfoMap.put(columns[0], "");
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return refsetToClausesInfoMap;
+    }
+
+    private Map<String, String> readRttRefsetsToProjectsMap() {
+
+        BufferedReader reader;
+        Map<String, String> refsetToProjectsInfoMap = new HashMap<>();
+
+        try {
+
+            reader = new BufferedReader(new InputStreamReader(refsetToProjectsResource.getInputStream()));
+
+            String line = reader.readLine();
+
+            while (line != null && !line.isEmpty()) {
+
+                String[] columns = line.split("\t");
+                refsetToProjectsInfoMap.put(columns[0], line.substring(line.indexOf(",")));
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return refsetToProjectsInfoMap;
+    }
+
+    private Map<String, Set<String>> identifyUndefinedDefaultLanguageRefsets() {
+
+        BufferedReader reader;
+        Map<String, Set<String>> defaultLanguageRefsetMap = new HashMap<>();
+
+        try {
+
+            reader = new BufferedReader(new InputStreamReader(undefinedDefaultLangRefsetsResource.getInputStream()));
+
+            String line = reader.readLine();
+
+            while (line != null) {
+
+                String[] columns = line.split("\t");
+                defaultLanguageRefsetMap.put(columns[0], new HashSet<String>());
+
+                for (int i = 1; i < columns.length; i++) {
+
+                    defaultLanguageRefsetMap.get(columns[0]).add(columns[i]);
+                }
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return defaultLanguageRefsetMap;
     }
 }
