@@ -774,7 +774,7 @@ public class HistoricDataMigrator {
 
         Set<String> internationalModules = null;
         final String url = SnowstormConnection.BASE_URL + "codesystems";
-        // logger.debug("createEditionsFromSnowstorm url: " + url);
+        logger.debug("createEditionsFromSnowstorm url: " + url);
 
         List<String> ignoredCodeSystemNames = identifyCodeSystemsToIgnore();
         Map<String, Set<String>> undefinedDefaultLanguageRefsets = identifyUndefinedDefaultLanguageRefsets();
@@ -782,7 +782,8 @@ public class HistoricDataMigrator {
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = response.readEntity(String.class);
-            logger.debug("createEditionsFromSnowstorm resultString: " + resultString);
+            // logger.debug("createEditionsFromSnowstorm resultString: " + resultString);
+
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
@@ -1461,6 +1462,7 @@ public class HistoricDataMigrator {
             logger.debug("JJJ - found refset (" + refset.getRefsetId() + ") with corresponding RTT project: " + projectInfo);
 
             String[] projectDetails = projectInfo.split(",");
+
             for (int i = 0; i < 2; i++) {
 
                 if (projectDetails[i].startsWith("\"")) {
@@ -1982,9 +1984,6 @@ public class HistoricDataMigrator {
         } catch (IOException e) {
 
             e.printStackTrace();
-        }
-        for (String key : refsetToProjectsInfoMap.keySet()) {
-            logger.debug("111 - " + key);
         }
 
         return refsetToProjectsInfoMap;
