@@ -771,8 +771,9 @@ public final class IndexUtility {
                 dateRangeQueryString = StringUtils.removeEnd(dateRangeQueryString, " , ");
 
                 // Remove leading AND OR and clear out empty query_string
-                dateFreeQueryString = dateFreeQueryString.replace("() AND", "").replace("( AND", " (")
-                        .replace("( OR", " (").replace("() OR", "");
+                dateFreeQueryString = dateFreeQueryString.replace("() AND", "").replace("( AND", " (").replace("( OR", " (").replace("() OR", "");
+                dateFreeQueryString = StringUtils.removeStart(dateFreeQueryString, " AND ");
+                dateFreeQueryString = StringUtils.removeStart(dateFreeQueryString, " OR ");
 
                 final String queryString =
                         "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""

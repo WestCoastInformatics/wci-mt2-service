@@ -102,7 +102,8 @@ public class RefsetController extends BaseController {
     /**
      * Returns the refset.
      *
-     * @param refsetInternalId the internal refset ID
+     * @param refsetId the refset ID
+     * @param versionDate the version date or IN DEVELOPMENT
      * @return the refset
      * @throws Exception the exception
      */
@@ -113,21 +114,24 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 404, message = "Resource not found")
     })
-    @ApiImplicitParams({@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataType = "string", paramType = "path")})
+    @ApiImplicitParams({@ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataType = "string", paramType = "path")})
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}", produces = "application/json")
-    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, HttpServletRequest request) throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = "application/json")
+    public @ResponseBody Refset getRefset(
+        @PathVariable(value = "refsetId") final String refsetId, 
+        @PathVariable(value = "versionDate") final String versionDate, 
+        HttpServletRequest request
+    ) throws Exception {
 
         try {
 
-            //logger.debug("getRefset: refsetInternalId: " + refsetInternalId);
+            logger.debug("getRefset: refsetId: " + refsetId + " ; versionDate: " + versionDate);
             
             User user = SecurityService.getUserFromSession();
-            final Refset refset = RefsetService.getRefset(user, refsetInternalId);
+            final Refset refset = RefsetService.getRefset(user, refsetId, versionDate);
             RefsetService.getRefsetDescriptions(refset);
             
-            if (RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId)) {
+            if (RefsetMemberService.refsetsBeingUpdated.contains(refset.getId())) {
                 refset.setLocked(true);
             }
             
@@ -496,14 +500,23 @@ public class RefsetController extends BaseController {
             logger.debug("createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             
             User user = SecurityService.getUserFromSession();
-            final String status = RefsetService.createRefset(user, refsetParameters);
+            String status = "";
+            final Object returned = RefsetService.createRefset(user, refsetParameters);
+            
+            if (returned instanceof String) {
+                status = (String)returned;
+            } else {
+                
+                final Refset refset = (Refset)returned;
+                newRefsetInternalId = refset.getId();
+                status = refset.getRefsetId();
+            }
             
             if (status.startsWith("Error")) {
                 return "{\"error\": \"" + status + "\"}";
             }
 
-            newRefsetInternalId = status;
-            return "{\"refsetInternalId\": \"" + status + "\"}";
+            return "{\"refsetId\": \"" + status + "\"}";
 
         } catch (final Exception e) {
 
@@ -1143,7 +1156,8 @@ public class RefsetController extends BaseController {
     /**
      * Cache all ancestors for all members of a refset.
      *
-     * @param refsetInternalId the internal refset id
+     * @param refsetId the refset ID
+     * @param versionDate the version date or IN DEVELOPMENT
      * @return the success/failure
      * @throws Exception the exception
      */
@@ -1154,43 +1168,34 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId",
-                    value = "The internal ID of the refset for which ancestors are to be identified.", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "refsetId",
+                    value = "The ID of the refset for which ancestors are to be identified.", required = true, dataType = "string", paramType = "path"),
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetInternalId}", produces = "application/json")
-    public @ResponseBody String cacheMemberAncestors(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId) throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetId}/versionDate/{versionDate}", produces = "application/json")
+    public @ResponseBody String cacheMemberAncestors(
+        @PathVariable(value = "refsetId") final String refsetId, 
+        @PathVariable(value = "versionDate") final String versionDate
+    ) throws Exception {
 
         try {
 
-            //logger.debug("cacheMemberAncestors: refsetInternalId: " + refsetInternalId);
+            User user = SecurityService.getUserFromSession();
+            logger.debug("cacheMemberAncestors: refsetId: " + refsetId + " ; versionDate: " + versionDate);
 
-            try (TerminologyService service = new TerminologyService()) {
+            String returnJson = "{\"success\": \"<RESULT>\"}";
 
-                try {
+            final boolean success = RefsetMemberService.cacheMemberAncestors(user, refsetId, versionDate);
 
-                    String returnJson = "{\"success\": \"<RESULT>\"}";
-
-                    final boolean success =
-                            RefsetMemberService.cacheMemberAncestors(refsetInternalId);
-
-                    if (success) {
-                        returnJson = returnJson.replace("<RESULT>", "true");
-                    } else {
-                        returnJson = returnJson.replace("<RESULT>", "false");
-                    }
-
-                    //logger.debug("cacheMemberAncestors results: " + returnJson);
-
-                    return returnJson;
-
-                } catch (final Exception e) {
-
-                    handleException(e);
-                    return null;
-                }
+            if (success) {
+                returnJson = returnJson.replace("<RESULT>", "true");
+            } else {
+                returnJson = returnJson.replace("<RESULT>", "false");
             }
+
+            //logger.debug("cacheMemberAncestors results: " + returnJson);
+
+            return returnJson;
 
         } catch (final Exception e) {
 

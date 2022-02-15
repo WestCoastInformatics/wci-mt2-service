@@ -92,13 +92,14 @@ public class RefsetService {
      * Create a refset with the given parameters .
      *
      * @param user the user
-     * @param refsetEditParameters the paramters for creating the refset
-     * @return the new refset's internal ID
+     * @param refsetEditParameters the parameters for creating the refset
+     * @return the new refset or a string error
      * @throws Exception the exception
      */
-    public static String createRefset(final User user, final Refset refsetEditParameters) throws Exception {
+    public static Object createRefset(final User user, final Refset refsetEditParameters) throws Exception {
         
         String newInternalRefsetId = null;
+        Refset refset = null;
         String refsetConceptId = refsetEditParameters.getRefsetId();
         String parentConceptId = refsetEditParameters.getParentConceptId();
         Edition edition = null;
@@ -109,8 +110,7 @@ public class RefsetService {
         try (final TerminologyService service = new TerminologyService()) {
 
             if (refsetConceptId != null && doesRefsetExist(refsetConceptId, null)) {
-                return "Error - Concept Id '" + refsetConceptId
-                + "' is already used as a refset.";
+                return "Error - Concept Id '" + refsetConceptId + "' is already used as a refset.";
             }
             
             project = service.get(refsetEditParameters.getProjectId(), Project.class);
@@ -265,7 +265,7 @@ public class RefsetService {
             service.setModifiedBy("RT2");
             service.setModifiedFlag(true);
 
-            Refset refset = new Refset(refsetEditParameters);
+            refset = new Refset(refsetEditParameters);
             refset.setRefsetId(refsetConceptId);
             refset.setVersionStatus(Refset.IN_DEVELOPMENT);
             refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
@@ -311,7 +311,7 @@ public class RefsetService {
             logger.debug("Create Refset: Refset: " + ModelUtility.toJson(refset));
         }
         
-        return newInternalRefsetId;
+        return refset;
     }
     
     /**
@@ -1193,7 +1193,7 @@ public class RefsetService {
     }
     
     /**
-     * Returns a specific refset.
+     * Returns a specific refset by internal ID.
      *
      * @param user the user
      * @param refsetInternalId the internal refset ID
@@ -1204,11 +1204,47 @@ public class RefsetService {
         
         try (TerminologyService service = new TerminologyService()) {
 
-            Refset refset = service.findSingle(
-                    "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+            Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
 
             if (refset == null) {
                 throw new Exception("Unable to retrieve refset " + refsetInternalId);
+            }
+
+            refset = setRefsetPermissions(user, refset);
+            refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
+            refset.setBranchPath(getBranchPath(refset));
+
+            logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
+            return refset;
+        }
+    }
+    
+    /**
+     * Returns a specific refset by Refset ID.
+     *
+     * @param user the user
+     * @param refsetId the refset ID
+     * @param versionDate the version date or IN DEVELOPMENT
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public static Refset getRefset(final User user, final String refsetId, final String versionDate) throws Exception {
+        
+        try (TerminologyService service = new TerminologyService()) {
+
+            String query = "latestPublishedVersion: true";
+            
+            if (versionDate != null && !versionDate.equals("") & !versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
+                query = "versionDate:" + versionDate;
+                
+            } else if (versionDate != null && versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
+                query = "versionStatus: " + Refset.IN_DEVELOPMENT;
+            }
+            
+            Refset refset = service.findSingle(query + " AND refsetId:" + refsetId, Refset.class, null);
+
+            if (refset == null) {
+                throw new Exception("Unable to retrieve refset " + refsetId + " with version date: " + versionDate);
             }
 
             refset = setRefsetPermissions(user, refset);
