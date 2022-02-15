@@ -211,14 +211,17 @@ public class EditUnitTestUtilities {
 
             final JsonNode root = new ObjectMapper().readTree(content);
             final JsonNode refsetNode = root;
+            Refset refset = null;
 
-            assertThat(refsetNode.has("refsetInternalId")).isTrue();
-            final String refsetInternalId = refsetNode.get("refsetInternalId").asText();
+            assertThat(refsetNode.has("refsetId")).isTrue();
+            final String refsetId = refsetNode.get("refsetId").asText();
 
             // verify the refset from a new concept in the RT2 DB
             try (final TerminologyService service = new TerminologyService()) {
 
-                Refset refset = service.get(refsetInternalId, Refset.class);
+                GetUnitTestUtilities getUtil = new GetUnitTestUtilities(mvc, baseUrl, sdf);
+                
+                refset = getUtil.getRefsetFromRefsetIdAndVersion(refsetId, Refset.IN_DEVELOPMENT);
                 assertThat(refset).isNotNull();
                 assertThat(refset.getName()).isEqualTo(refsetDetail.get("name"));
                 assertThat(refset.getModuleId()).isEqualTo(refsetDetail.get("moduleId"));
@@ -237,7 +240,7 @@ public class EditUnitTestUtilities {
                 }
             }
 
-            return refsetInternalId;
+            return refset.getId();
 
         } catch (Exception e) {
             e.printStackTrace();

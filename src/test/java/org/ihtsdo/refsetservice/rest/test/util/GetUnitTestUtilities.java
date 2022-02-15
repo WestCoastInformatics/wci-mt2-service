@@ -168,11 +168,11 @@ public class GetUnitTestUtilities {
 
     }
 
-    public Refset getRefsetFromInternalId(final String internalRefsetId) {
+    public Refset getRefsetFromRefsetIdAndVersion(final String refsetId, final String version) {
 
         try {
 
-            final String url = baseUrl + "/" + internalRefsetId;
+            final String url = baseUrl + "/" + refsetId + "/" + version;
             logger.info("Get Refset Testing url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -188,6 +188,24 @@ public class GetUnitTestUtilities {
             e.printStackTrace();
 
             return null;
+        }
+
+    }
+    
+    public Refset getRefsetFromInternalId(String refsetInternalId) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId), Refset.class, null);
+
+            if (refset == null) {
+
+                throw new Exception("Refset Id: " + refsetInternalId + " does not exist in the RT2 database");
+            }
+
+            assertThat(refset.getId()).isEqualTo(refsetInternalId);
+
+            return refset;
         }
 
     }
@@ -525,11 +543,11 @@ public class GetUnitTestUtilities {
 
     }
 
-    public boolean setupAncestorCache(String internalRefsetId) {
+    public boolean setupAncestorCache(final String refsetId, final String version) {
 
         try {
 
-            final String url = "/ancestors/" + internalRefsetId;
+            final String url = "/ancestors/" + refsetId + "/" + version;
             logger.info("Testing url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();

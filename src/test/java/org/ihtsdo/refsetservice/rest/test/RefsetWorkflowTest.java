@@ -78,7 +78,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
 
                 testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
                 testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
-                mainTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_TESTING_REFSET_ID, MAIN_TESTING_REFSET_VERSION);
+                mainCoreTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
 
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
 
@@ -139,7 +139,7 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
     public void testWorkflowHistory() throws Exception {
 
         // Create a new Edit version of a published refset
-        final String newRefsetVersionInternalId = editUtil.createNewRefsetVersion(MAIN_TESTING_REFSET_ID);
+        final String newRefsetVersionInternalId = editUtil.createNewRefsetVersion(MAIN_CORE_TESTING_REFSET_ID);
         int actionCount = 1;
         List<WorkflowHistory> lookedUpWorkflowHistory;
         String note;

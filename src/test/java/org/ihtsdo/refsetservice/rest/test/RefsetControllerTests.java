@@ -212,7 +212,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testRefset() throws Exception {
 
-        final Refset refset = getUtil.getRefsetFromInternalId(mainNrcTestingRefsetInternalId);
+        final Refset refset = getUtil.getRefsetFromRefsetIdAndVersion(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
 
         validateRefsetMetadata(refset);
     }
@@ -569,7 +569,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // Call this first
         // @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/ancestorCache", produces = "application/json")
-        final boolean cacheSuccess = getUtil.setupAncestorCache(mainNrcTestingRefsetInternalId);
+        final boolean cacheSuccess = getUtil.setupAncestorCache(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
         assertThat(cacheSuccess).isTrue();
 
         // Search on grandparent
