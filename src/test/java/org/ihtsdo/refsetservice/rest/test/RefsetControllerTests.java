@@ -105,7 +105,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     // by term id
     // by refset id
     // By narrative
-    // by tags
     private static final String membersSearchQueryList[] = new String[] {
         "human", "Animal", "HAIR", "Non", "niet", "menselijk", "dierenhaar", "poil", "dierlijk", "haar", "276310004", "412393015", "1495334015"
     };
@@ -325,9 +324,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // by term id
         // by refset id
         // By narrative
-        // by tags (with punctuation and reverse order)
         String searchTerms[] = new String[] {
-            "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005", "999861000172117", "561000172108", "General / Allergies", "Allergies General", "anim Belgian Edi"
+            "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005", "999861000172117", "561000172108", "Allergies General", "anim Belgian Edi"
         };
 
         for (int i = 0; i < searchTerms.length; i++) {
@@ -758,6 +756,27 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     // @Test
     // TODO: Fill out once have capability
     public void testAncestorAreMembersIdentifiers() {
+
+    }
+
+    // @Test
+    // TODO: Add test on tags (add tags, then search directory, and validate they are returned
+    public void testTags() {
+
+        final String testTag = "General / Allergies";
+
+        // TODO: Add Tag to WCI refset
+
+        logger.info("Testing term - " + testTag);
+        ResultList<Refset> refsetList = getUtil.searchDirectory(testTag);
+
+        Refset refsetIdentified = validateRefsetExists(refsetList, "WCI_REFSET");
+
+        // Collection - Tags
+        assertThat(refsetIdentified.getTags().size()).isEqualTo(1);
+        assertThat(refsetIdentified.getTags().iterator().next()).isEqualTo("General / Allergies");
+
+        // TODO: Remove Tag
 
     }
 

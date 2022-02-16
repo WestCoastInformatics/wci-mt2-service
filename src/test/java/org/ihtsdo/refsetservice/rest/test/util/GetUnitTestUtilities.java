@@ -65,7 +65,7 @@ public class GetUnitTestUtilities {
 
             for (Refset refset : refsets.getItems()) {
 
-                if (version.equals(sdf.format(refset.getVersionDate()))) {
+                if (version.replaceAll("-", "").equals(sdf.format(refset.getVersionDate()))) {
 
                     refsetToReturn = refset;
                     break;
@@ -172,7 +172,7 @@ public class GetUnitTestUtilities {
 
         try {
 
-            final String url = baseUrl + "/" + refsetId + "/" + version;
+            final String url = baseUrl + "/" + refsetId + "/versionDate/" + version;
             logger.info("Get Refset Testing url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
@@ -191,7 +191,7 @@ public class GetUnitTestUtilities {
         }
 
     }
-    
+
     public Refset getRefsetFromInternalId(String refsetInternalId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -547,7 +547,7 @@ public class GetUnitTestUtilities {
 
         try {
 
-            final String url = "/ancestors/" + refsetId + "/" + version;
+            final String url = "/ancestors/" + refsetId + "/versionDate/" + version;
             logger.info("Testing url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();

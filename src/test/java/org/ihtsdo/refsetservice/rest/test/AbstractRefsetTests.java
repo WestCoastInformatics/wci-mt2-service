@@ -68,9 +68,9 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String INACTIVE_REFSET_ID = "723264001";
 
-    protected static final String INACTIVE_REFSET_VERSION = "20210731";
+    protected static final String INACTIVE_REFSET_VERSION = "2021-07-31";
 
-    protected static final String INACTIVE_REFSET_EARLIER_VERSION = "20170731";
+    protected static final String INACTIVE_REFSET_EARLIER_VERSION = "2017-07-31";
 
     // Added 20170731 and Inactived in Lateralizable (723264001) on 20180131
     protected static final String INACTIVE_CONCEPT_ID = "727156001";
@@ -79,11 +79,11 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String MAIN_NRC_TESTING_REFSET_ID = "561000172108"; // Belgian
 
-    protected static final String MAIN_NRC_TESTING_REFSET_VERSION = "20200915";
+    protected static final String MAIN_NRC_TESTING_REFSET_VERSION = "2020-09-15";
 
     protected static final String MAIN_CORE_TESTING_REFSET_ID = "721145008"; // Belgian
 
-    protected static final String MAIN_CORE_TESTING_REFSET_VERSION = "20210731";
+    protected static final String MAIN_CORE_TESTING_REFSET_VERSION = "2021-07-31";
 
     protected static final String MEMBER_ID_LIST_FILE_NAME = "member_concept_id_list.txt";
 
@@ -125,8 +125,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
             assertThat(refset.getName()).isEqualToIgnoringCase("Lateralizable body structure reference set");
             assertThat(refset.getNarrative()).isEqualToIgnoringCase("The reference set contains all body structures that can be lateralized.");
-            // assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
-            // || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
+            assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("900000000000012004");
             assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("International Edition");
@@ -139,10 +138,6 @@ abstract public class AbstractRefsetTests extends BaseTest {
             assertThat(refset.isLocalSet()).isFalse();
             assertThat(refset.isPrivateRefset()).isFalse();
 
-            // Collection - Tags
-            assertThat(refset.getTags().size()).isEqualTo(1);
-            assertThat(refset.getTags().iterator().next()).isEqualTo("anatomy");
-
             // Version Date
             assertThat(refset.getVersionDate()).isNotNull();
         } else {
@@ -150,9 +145,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
             assertThat(refset.getRefsetId()).isEqualTo(MAIN_NRC_TESTING_REFSET_ID);
 
             assertThat(refset.getName()).isEqualToIgnoringCase("Belgian simple reference set for translated animal materials");
-            assertThat(refset.getNarrative()).isEqualToIgnoringCase("descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
-            // assertThat(refset.getModifiedBy().equalsIgnoreCase("Migration")
-            // || refset.getModifiedBy().equalsIgnoreCase("RT2")).isTrue();
+            // assertThat(refset.getNarrative()).isEqualToIgnoringCase("descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
+            assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("11000172109");
             assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("Belgian Edition");
@@ -164,10 +158,6 @@ abstract public class AbstractRefsetTests extends BaseTest {
             assertThat(refset.isActive()).isTrue();
             assertThat(refset.isLocalSet()).isFalse();
             assertThat(refset.isPrivateRefset()).isFalse();
-
-            // Collection - Tags
-            assertThat(refset.getTags().size()).isEqualTo(1);
-            assertThat(refset.getTags().iterator().next()).isEqualTo("General / Allergies");
 
             // Version Date
             assertThat(refset.getVersionDate()).isNotNull();
