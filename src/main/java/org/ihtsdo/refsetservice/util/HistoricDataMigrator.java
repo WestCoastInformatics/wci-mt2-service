@@ -251,6 +251,8 @@ public class HistoricDataMigrator {
 
     ClassPathResource refsetToClausesResource = new ClassPathResource("rtt-migration/refsetToClauses.txt");
 
+    ClassPathResource refsetToDescriptionResource = new ClassPathResource("rtt-migration/refsetToDescription.txt");
+
     ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("rtt-migration/undefinedDefaultLangRefsets.txt");
 
     /** The metadata map. */
@@ -1173,8 +1175,9 @@ public class HistoricDataMigrator {
 
             }
 
-            Map<String, String> refsetToProjectsInfoMap = readRttRefsetsToProjectsMap();
-            Map<String, String> refsetToClausesInfoMap = readRttRefsetsToClausesMap();
+            final Map<String, String> refsetToProjectsInfoMap = readRttRefsetsToProjectsMap();
+            final Map<String, String> refsetToClausesInfoMap = readRttRefsetsToClausesMap();
+            final Map<String, String> refsetToDescriptionMap = readRttRefsetsToDescriptionMap();
 
             // Adding refsets identified on snowstorm
             for (String refsetSctId : refsetVersionsPreProcessed.keySet()) {
@@ -1182,6 +1185,14 @@ public class HistoricDataMigrator {
                 if (refsetToClausesInfoMap.containsKey(refsetSctId)) {
 
                     logger.debug("LLL - Have clause on refset: " + refsetSctId);
+                }
+
+                String narrative = null;
+
+                if (refsetToDescriptionMap.containsKey(refsetSctId)) {
+
+                    logger.debug("MMM - Have description on refset: " + refsetSctId);
+                    narrative = refsetToDescriptionMap.get(refsetSctId);
                 }
 
                 for (Refset snowRefset : refsetVersionsPreProcessed.get(refsetSctId)) {
@@ -1201,6 +1212,7 @@ public class HistoricDataMigrator {
                         // Add Refset. Keep track of which are added this way as to not add them from RTT as well
                         logger.debug(" BBB - Persisting Snowstorm refset: " + snowRefset.getRefsetId() + " with version: " + snowRefset.getVersionDate());
 
+                        snowRefset.setNarrative(narrative);
                         projectCount = processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, refsetToProjectsInfoMap, projectCount);
                         service.add(snowRefset);
 
@@ -1955,6 +1967,55 @@ public class HistoricDataMigrator {
         }
 
         return refsetToClausesInfoMap;
+    }
+
+    private Map<String, String> readRttRefsetsToDescriptionMap() throws Exception {
+
+        BufferedReader reader;
+        Map<String, String> refsetToDescriptionMap = new HashMap<>();
+
+        try {
+
+            reader = new BufferedReader(new InputStreamReader(refsetToDescriptionResource.getInputStream()));
+
+            String line = reader.readLine();
+
+            while (line != null && !line.trim().isEmpty()) {
+
+                int columnSplit = line.indexOf(",");
+
+                if (columnSplit < 0) {
+
+                    throw new Exception("Have issue with line: " + line);
+
+                }
+
+                String sctId = line.substring(0, columnSplit);
+                String description = line.substring(columnSplit + 1);
+
+                if (description.startsWith("\"")) {
+
+                    description = description.substring(1);
+                }
+
+                if (description.endsWith("\"")) {
+
+                    description = description.substring(0, description.length() - 1);
+                }
+
+                logger.debug("Split line: " + sctId + "/" + description);
+                refsetToDescriptionMap.put(sctId, description);
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return refsetToDescriptionMap;
     }
 
     private Map<String, String> readRttRefsetsToProjectsMap() {

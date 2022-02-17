@@ -145,7 +145,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
             assertThat(refset.getRefsetId()).isEqualTo(MAIN_NRC_TESTING_REFSET_ID);
 
             assertThat(refset.getName()).isEqualToIgnoringCase("Belgian simple reference set for translated animal materials");
-            // assertThat(refset.getNarrative()).isEqualToIgnoringCase("descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
+            assertThat(refset.getNarrative()).isEqualToIgnoringCase("descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
             assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("11000172109");
