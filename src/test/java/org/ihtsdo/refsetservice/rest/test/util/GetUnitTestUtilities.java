@@ -49,7 +49,7 @@ public class GetUnitTestUtilities {
         this.sdf = sdf;
     }
 
-    public String getRefsetInternalId(String refsetId, String version) throws Exception {
+    public String getInternalRefsetId(String refsetId, String version) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -93,7 +93,7 @@ public class GetUnitTestUtilities {
      * @return the internal project ID
      * @throws Exception the exception
      */
-    public String getProjectInternalId(String projectName) throws Exception {
+    public String getInternalProjectId(String projectName) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -122,7 +122,7 @@ public class GetUnitTestUtilities {
      * @return the internal edition ID
      * @throws Exception the exception
      */
-    public String getEditionInternalId(String name) throws Exception {
+    public String getInternalEditionId(String name) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -192,18 +192,18 @@ public class GetUnitTestUtilities {
 
     }
 
-    public Refset getRefsetFromInternalId(String refsetInternalId) throws Exception {
+    public Refset getRefsetFromInternalId(String interalRefsetId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId), Refset.class, null);
+            final Refset refset = service.findSingle("id:" + QueryParserBase.escape(interalRefsetId), Refset.class, null);
 
             if (refset == null) {
 
-                throw new Exception("Refset Id: " + refsetInternalId + " does not exist in the RT2 database");
+                throw new Exception("Refset Id: " + interalRefsetId + " does not exist in the RT2 database");
             }
 
-            assertThat(refset.getId()).isEqualTo(refsetInternalId);
+            assertThat(refset.getId()).isEqualTo(interalRefsetId);
 
             return refset;
         }
@@ -312,7 +312,7 @@ public class GetUnitTestUtilities {
 
     }
 
-    public Concept getConceptDetails(String conceptId, String internalRefsetId) {
+    public Concept getConceptDetails(String internalRefsetId, String conceptId) {
 
         try {
 
@@ -429,33 +429,6 @@ public class GetUnitTestUtilities {
 
             // Testing Results
             assertThat(members).isNotNull();
-            return members;
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return null;
-        }
-
-    }
-
-    public ConceptResultList searchConcepts(String internalRefsetId, String searchTerm) {
-
-        try {
-
-            final String url = "/refset/" + internalRefsetId + "/conceptSearch?limit=500&offset=0&query=" + searchTerm;
-
-            logger.info("Testing url - " + url);
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
-            final String content = result.getResponse().getContentAsString();
-
-            logger.info(" content = " + content);
-            final ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
-
-            // Testing Results
-            assertThat(members).isNotNull();
-            assertThat(members.getItems()).isNotEmpty();
             return members;
 
         } catch (Exception e) {
