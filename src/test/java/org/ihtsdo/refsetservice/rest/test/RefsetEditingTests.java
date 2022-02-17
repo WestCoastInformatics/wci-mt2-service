@@ -57,10 +57,10 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
             if (firstTimeSetup) {
 
-                testingProjectId = getUtil.getProjectInternalId(TESTING_PROJECT_NAME);
-                testingEditionId = getUtil.getEditionInternalId(TESTING_EDITION_NAME);
-                mainNrcTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
-                mainCoreTestingRefsetInternalId = getUtil.getRefsetInternalId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
+                testingProjectId = getUtil.getInternalProjectId(TESTING_PROJECT_NAME);
+                testingEditionId = getUtil.getInternalEditionId(TESTING_EDITION_NAME);
+                mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
+                mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
 
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
 
