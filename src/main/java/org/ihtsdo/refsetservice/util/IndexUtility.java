@@ -784,9 +784,13 @@ public final class IndexUtility {
 
             } else {
 
+                // Remove leading AND OR and clear out empty query_string
+                finalQuery = finalQuery.replace("() AND", "").replace("( AND", " (").replace("( OR", " (").replace("() OR", "");
+                finalQuery = StringUtils.removeStart(finalQuery, " AND ");
+                finalQuery = StringUtils.removeStart(finalQuery, " OR ");
+                
                 fullQueryString =
-                        "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""
-                                + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
+                        "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\"" + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
             }
 
             // Need to escape double-quotes for the json
