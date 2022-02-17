@@ -1053,7 +1053,14 @@ public class RefsetService {
             ecl = StringUtility.encodeValue(QueryParserBase.escape("<" + SIMPLE_TYPE_REFERENCE_SET));
         }
         final List<Edition> editions = getEditionForBranch(branch);
-        final String modules = editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(",")) + "," + SIMPLE_TYPE_REFERENCE_SET_MODULE_ID;
+        
+        String modules = "";
+        
+        if (editions.size() > 0) {
+            modules = editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(",")) + ",";
+        } 
+        modules += SIMPLE_TYPE_REFERENCE_SET_MODULE_ID;
+        
         final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module=" + modules;
 
         logger.debug("getRefsetConcepts URL: " + url);
