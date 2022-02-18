@@ -58,6 +58,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static String mainCoreTestingRefsetInternalId = "";
 
+    protected static String refsetWithInactiveConceptAsActiveMember = "";
+
     protected static String mainNrcTestingRefsetInternalId = "";
 
     protected static final String SNOMED_ROOT = "138875005";
@@ -73,7 +75,9 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected static final String INACTIVE_REFSET_EARLIER_VERSION = "2017-07-31";
 
     // Added 20170731 and Inactived in Lateralizable (723264001) on 20180131
-    protected static final String INACTIVE_CONCEPT_ID = "727156001";
+    protected static final String INACTIVE_CONCEPT_ID = "63716004";
+
+    protected static final String INACTIVE_CONCEPT_PARENT_CONCEPT_ID = "18619003";
 
     protected static final String INVALID_INTERNAL_REFSET_ID = "12345678901234567890";
 
@@ -96,6 +100,12 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected static final String TESTING_PROJECT_NAME = "SNOMED International Project";
 
     protected static final String TESTING_EDITION_NAME = "International Edition";
+
+    protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID = "450970008";
+
+    protected static final String INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID = "4106009";
+
+    protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION = "2021-07-31";
 
     /** The mvc. */
     @Autowired
