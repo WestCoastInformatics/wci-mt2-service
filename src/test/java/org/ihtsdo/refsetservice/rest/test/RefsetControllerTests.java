@@ -334,7 +334,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // by refset id
         // By narrative
         String searchTerms[] = new String[] {
-            "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005", "999861000172117", "561000172108" // TODO with tags - "Allergies General",
+            "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005", "999861000172117", "561000172108", "Allergies General"
         };
 
         for (int i = 0; i < searchTerms.length; i++) {
