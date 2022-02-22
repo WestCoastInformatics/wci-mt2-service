@@ -62,7 +62,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     private static final String FIRST_MAIN_NRC_REFSET_CONCEPT_ID = "37663002";
 
     // With 1 parents, 0 children and 0 defing rels
-    private static final String SECOND_MAIN_NRC_REFSET_CONCEPT_ID = "260206005";
+    private static final String SECOND_MAIN_NRC_REFSET_CONCEPT_ID = "276310004";
 
     private static final String FIRST_MAIN_CORE_REFSET_CONCEPT_ID = "118690002";
 
@@ -72,11 +72,11 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
     private static final List<String> firstConceptParentDescList = new ArrayList<>();
 
-    private static final List<String> secondConceptDescList = new ArrayList<>();
-
     private static final List<String> inactiveConceptDescList = new ArrayList<>();
 
-    private static final List<String> detailSearchNonAcceptableConceptDescList = new ArrayList<>();
+    private static final List<String> secondConceptAllDescTypeList = new ArrayList<>();
+
+    private static final List<String> secondConceptPtAndFsnOnlyDescList = new ArrayList<>();
 
     private static final List<String> conceptSearchDescList = new ArrayList<>();
 
@@ -165,18 +165,21 @@ public class RefsetControllerTests extends AbstractRefsetTests {
                 firstConceptParentDescList.add("produit animal");
                 firstConceptParentDescList.add("dierlijk product");
 
-                secondConceptDescList.add("Sheep wool (substance)");
-                secondConceptDescList.add("Sheep wool");
-                secondConceptDescList.add("schapenwol");
-                secondConceptDescList.add("laine de mouton");
-
                 inactiveConceptDescList.add("Entire sclerocorneal junction (body structure)");
                 inactiveConceptDescList.add("Entire sclerocorneal junction");
 
-                detailSearchNonAcceptableConceptDescList.add("Non-human hair - material (substance)");
-                detailSearchNonAcceptableConceptDescList.add("Animal hair");
-                detailSearchNonAcceptableConceptDescList.add("dierlijk haar");
-                detailSearchNonAcceptableConceptDescList.add("poil animal");
+                secondConceptAllDescTypeList.add("Non-human hair - material (substance)");
+                secondConceptAllDescTypeList.add("Animal hair");
+                secondConceptAllDescTypeList.add("Non-human hair - material");
+                secondConceptAllDescTypeList.add("poil animal");
+                secondConceptAllDescTypeList.add("dierlijk haar");
+                secondConceptAllDescTypeList.add("dierenhaar");
+                secondConceptAllDescTypeList.add("niet-menselijk haar");
+
+                secondConceptPtAndFsnOnlyDescList.add("Non-human hair - material (substance)");
+                secondConceptPtAndFsnOnlyDescList.add("Animal hair");
+                secondConceptPtAndFsnOnlyDescList.add("poil animal");
+                secondConceptPtAndFsnOnlyDescList.add("dierlijk haar");
 
                 conceptSearchDescList.add("Brazilian pemphigus foliaceus");
 
@@ -286,27 +289,27 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         Refset refset;
 
         // Test by name
-        refsetList = getUtil.searchDirectory("query=animal");
+        refsetList = getUtil.searchDirectory("animal");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by partial name
-        refsetList = getUtil.searchDirectory("query=ani");
+        refsetList = getUtil.searchDirectory("ani");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by alternate refset name (using translation)
-        refsetList = getUtil.searchDirectory("query=ensemble de référence simple belge pour les matières animales traduites");
+        refsetList = getUtil.searchDirectory("ensemble de référence simple belge pour les matières animales traduites");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by partial alternate refset name (using translation)
-        refsetList = getUtil.searchDirectory("query=matiè");
+        refsetList = getUtil.searchDirectory("matiè");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by edition name
-        refsetList = getUtil.searchDirectory("query=editionName:Belgian Edition");
+        refsetList = getUtil.searchDirectory("editionName:Belgian Edition");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
@@ -331,7 +334,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // by refset id
         // By narrative
         String searchTerms[] = new String[] {
-            "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005", "999861000172117", "561000172108", "Allergies General", "anim Belgian Edi"
+            "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005", "999861000172117", "561000172108" // TODO with tags - "Allergies General",
         };
 
         for (int i = 0; i < searchTerms.length; i++) {
@@ -344,6 +347,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
             validateRefsetMetadata(refset);
         }
 
+        // Verify when expect to return no matching refsets
         for (int i = 0; i < invalidSearchTerms.length; i++) {
 
             logger.info("Testing term - " + invalidSearchTerms[i]);
@@ -431,22 +435,20 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // Test normal concept Details Call
         Concept concept = getUtil.getConceptDetails(mainNrcTestingRefsetInternalId, FIRST_MAIN_NRC_REFSET_CONCEPT_ID);
-
-        // doesn't include membership status nor memberEffectiveTime
         validateConcept(concept, FIRST_MAIN_NRC_REFSET_CONCEPT_ID, null, false, firstConceptDescList, 0, 0, 0);
 
         // Try second concept
         concept = getUtil.getConceptDetails(mainNrcTestingRefsetInternalId, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
-
-        // doesn't include membership status nor memberEffectiveTime
-        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, null, false, secondConceptDescList, 0, 0, 0);
+        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, null, false, secondConceptAllDescTypeList, 0, 0, 0);
 
         // Test invalid refset is handled gracefully
         try {
 
+            concept = null;
             concept = getUtil.getConceptDetails(INVALID_INTERNAL_REFSET_ID, FIRST_MAIN_NRC_REFSET_CONCEPT_ID);
+        } catch (AssertionError ae) {
+
             assertThat(concept).isNull();
-        } catch (AssertionError e) {
 
             logger.info("Successfully identified that refset is invalid");
         }
@@ -498,7 +500,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // Membership info and descriptions, but no parents/children
         concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
-        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, secondConceptDescList, 0, 0, 0);
+        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, secondConceptPtAndFsnOnlyDescList, 0, 0, 0);
 
         members = getUtil.getMembers(refsetWithInactiveConceptAsActiveMember);
         concept = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
@@ -524,14 +526,14 @@ public class RefsetControllerTests extends AbstractRefsetTests {
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include relationships
-            validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, detailSearchNonAcceptableConceptDescList, 0, 0, 0);
+            validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, secondConceptPtAndFsnOnlyDescList, 0, 0, 0);
         }
 
         for (int i = 0; i < invalidSearchTerms.length; i++) {
 
             logger.info("Testing term - " + invalidSearchTerms[i]);
 
-            final ConceptResultList members = getUtil.searchMembers(mainNrcTestingRefsetInternalId, membersSearchQueryList[i]);
+            final ConceptResultList members = getUtil.searchMembers(mainNrcTestingRefsetInternalId, invalidSearchTerms[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include relationships
@@ -556,14 +558,14 @@ public class RefsetControllerTests extends AbstractRefsetTests {
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include membership status nor memberEffectiveTime
-            validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, null, false, detailSearchNonAcceptableConceptDescList, 0, -1, 0);
+            validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, null, false, secondConceptPtAndFsnOnlyDescList, 0, -1, 0);
         }
 
         for (int i = 0; i < invalidSearchTerms.length; i++) {
 
             logger.info("Testing term - " + invalidSearchTerms[i]);
 
-            final ConceptResultList members = getUtil.searchTaxonomy(mainNrcTestingRefsetInternalId, membersSearchQueryList[i]);
+            final ConceptResultList members = getUtil.searchTaxonomy(mainNrcTestingRefsetInternalId, invalidSearchTerms[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include relationships
@@ -824,7 +826,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         while (inactiveConcept == null && offset * limit < 10000) {
 
-            url = "/refset/" + inactiveConceptRefsetInternalId + "/members?limit=5000&offset=" + offset++ + "&displayType=list&refsetInternalId=" + inactiveConceptRefsetInternalId;
+            // TODO: Remove
+            url = "/refset/" + inactiveRefsetVersionInternalId + "/members?limit=5000&offset=" + offset++ + "&displayType=list&refsetInternalId=" + inactiveRefsetVersionInternalId;
 
             logger.info("Testing url - " + url);
 
