@@ -1,0 +1,196 @@
+0	"Hepatobiliary Pancreatic Department"
+1	Ophthalmology
+10	Orthopedic_Procedure
+100000	procedure
+101	"General Medicine"
+101000210108	NA
+1051000202108	Helsenorge
+1061000195107	"Pratice Setting"
+1071000195101	"Healthcare Facilities"
+1081000195104	Localization
+1081000202100	Helsedirektoratet
+1091000195102	Localization
+1091000202103	Helsenorge
+11	Orthopedics
+11000057107	Procedures
+11000202100	NO
+1101000195109	Localization
+1111000195106	"Author Speciality"
+11201000202100	Helseplattformen
+1121000195101	authorRole
+11621000202109	"Translation test"
+12	Orthopedic_HISTORY
+1201000195101	"Document types"
+121000210100	NA
+121000269108	Urology
+12401000202106	Anatomi
+1271000202107	Helsenorge
+1281000202109	Helsenorge
+1281000245109	Test
+1291000202106	Helsedirektoratet
+13	ORTHOPEDICS_GE
+1301000202105	Helsedirektoratet
+131000210103	NA
+1311000202107	Helsedirektoratet
+14	ORTHOPEDIC_Diagnosis
+141000210106	NA
+15	"MEDICATION HISTORY"
+1501000003103	"Rare disease"
+16	"ORTHOPEDIC_MEDICATION HISTORY"
+161000202106	Kjernejournal
+1621000202106	"Translation test"
+1681000202107	Helsenorge
+17	"Pediatrics_GE_head to foot"
+17	Pediatric_Endocrinology
+171000202102	Kjernejournal
+1761000202108	Helsenorge
+1771000202104	Helsenorge
+18	Pediatrics_SE
+181000210104	NA
+19	Pediatrics_Endocrinology_FamilyHistory
+191000210102	NA
+1921000202100	covid-19
+1971000202101	Helsenorge
+1981000202104	Helsenorge
+198907	"All allergies"
+1991000202102	Helsenorge
+2.16.840.1.113883.2.20.3.208	PHC
+2.16.840.1.113883.2.20.3.210	Immunization
+20	Pediatric_Endocrinology_GE
+2001000202104	Helsenorge
+2081000202106	Helsedirektoratet
+21	"Pediatric_Obesity clinic_PC"
+21000003109	Cardiology
+21000202108	Dentistry
+21000210109	SACT
+211000003103	Cardiology
+22	"Pediatric_Obesity Clinic_FH"
+221000202107	NORPAT
+2231000189101	Opthalmology
+23	Pediatric_Thyroid_PC
+2361000189102	"Test for constraint language"
+23645832341	Specimen
+23671000087102	Immunization
+23911000202104	Helsedirektoratet
+23941000202103	Helsebiblioteket
+23951000202100	Helsebiblioteket
+23971000202106	Helsebiblioteket
+23981000202108	Helsebiblioteket
+24	"Pediatric_Thyroid GE"
+241000210102	NA
+241000210102	SACT
+25	Dermatology_PC
+251000210104	NA
+251000210104	SACT
+26	"Dermatology_History of pastillness"
+261000210101	NA
+27	Dermatology_PersonalHistory
+27011000202108	Helsebiblioteket
+28	"Dermatology_General Examination"
+29	Dermatology_Findings
+3	General
+30	Dermatology_Diagnosis
+31	Dermatology_Procedure
+31000151104	"Intensive Care"
+31000210106	SACT
+31000220100	AFIS
+31991000003105	"Oral Health"
+32	Dermatology_Treatment
+321000210102	NA
+33	OBG_Gynaec_PresentingComplaint
+34	OBG_Gynaec_Pastillness
+34	"OBG_Gynaec_Personal History"
+35	OBG_Gynaec_FamilyHistory
+351000210106	NA
+36	OBG_Gynaec_MedicalHistory
+37	OBG_Gynaec_GeneralExamination
+37	"Pediatrics_Presenting Complaints"
+371000202104	NO
+38	"Pediatric_past Illness"
+39	"Pediatric_Famil History"
+391000210104	NA
+4	"general surgery"
+40	Hypertension
+41	"Diabetic Related"
+41000003103	NO
+41000057106	Procedures
+41000202104	NO
+421000210109	NA
+441000210103	NA
+451000210100	NA
+45791000003109	"New cancer"
+45801000003108	Procedure
+45841000003106	"stomach cancer"
+461000210102	NA
+471000202107	NO
+471000210108	NA
+481000210105	NA
+5	Neurology
+500141000057107	Kroppsstruktur
+501000210102	NA
+51000003100	Demo
+51000210100	NA
+541000172109	"General / Allergies"
+551000172106	"General / Allergies"
+557481000005101	Drugs
+5601000003101	Renal
+561000172108	"General / Allergies"
+5741000202109	Helsedirektoratet
+5751000202107	Helsedirektoratet
+59041000052103	Hypersensitivity
+5961000202107	Legemidler
+6	Ophthalmology
+6001000202100	Legemidler
+61000210102	NA
+61000269105	"Respiratory department"
+611000202102	NORPAT
+61411000210102	test
+62931000003106	"implementation education"
+63001000003106	"implementation education"
+63301000003109	"implementation education"
+63341000003107	"implementation education"
+63691000003108	"Cardiac conditions subset"
+63761000003107	"Pain Quality Subset"
+63851000003102	"Skin Texture Subset"
+63881000003107	"Skin Texture Subset"
+64131000003104	"Skin Texture Subset"
+6721000202109	Helsedirektoratet
+6991000202105	Helsedirektoratet
+71000057100	"Patient sex"
+71000210108	NA
+712768323888	Specimen
+712768323948	Specimen
+721000172106	GP
+721144007	Dentistry
+723264001	anatomy
+731000172109	FHIR
+733990004	Procedures
+733991000	Diagnosis
+741000172102	FHIR
+751000172100	FHIR
+76941000003107	all
+771000202103	Patologi
+784308004	Renal
+78931000003103	"Cardiology- implementation course module D"
+78951000003109	"Pain Quality Subset"
+78991000003102	"Skin Texture Subset"
+8	Pediatrics
+8271000003100	dental
+876	Diagnósticos
+891000202109	Prosedyrer
+91000210107	NA
+951000003107	Opthalmology
+971000003104	Cardiology
+997321000189101	General
+997341000189105	General
+abc	Immunization
+ALLMENN	Fastleger-hp
+D002486	Diagnosis
+FDB3	test
+FindCovid	Sintomas
+LateralCHUP	anatomy
+NZ-GPsets	Fastleger
+Sample	"general medicine"
+"Social Care regimes"	regime/therapy
+test	test
+VascularCHUPDiagnósticos	Diagnósticos

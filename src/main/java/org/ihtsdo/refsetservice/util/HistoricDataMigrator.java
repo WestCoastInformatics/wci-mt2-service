@@ -243,6 +243,8 @@ public class HistoricDataMigrator {
 
     ClassPathResource refsetsResource = new ClassPathResource("rtt-migration/refsets.txt");
 
+    ClassPathResource refsetToTagsResource = new ClassPathResource("rtt-migration/refsetToTags.txt");
+
     ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("rtt-migration/ignoredCodeSystems.txt");
 
     ClassPathResource ignoredRefsetsResource = new ClassPathResource("rtt-migration/ignoredRefsets.txt");
@@ -1178,6 +1180,7 @@ public class HistoricDataMigrator {
             final Map<String, String> refsetToProjectsInfoMap = readRttRefsetsToProjectsMap();
             final Map<String, String> refsetToClausesInfoMap = readRttRefsetsToClausesMap();
             final Map<String, String> refsetToDescriptionMap = readRttRefsetsToDescriptionMap();
+            final Map<String, Set<String>> refsetToTagsMap = readRttRefsetsToTagsMap();
 
             // Adding refsets identified on snowstorm
             for (String refsetSctId : refsetVersionsPreProcessed.keySet()) {
@@ -1188,11 +1191,18 @@ public class HistoricDataMigrator {
                 }
 
                 String narrative = null;
+                Set<String> tags = null;
 
                 if (refsetToDescriptionMap.containsKey(refsetSctId)) {
 
                     logger.debug("MMM - Have description on refset: " + refsetSctId);
                     narrative = refsetToDescriptionMap.get(refsetSctId);
+                }
+
+                if (refsetToTagsMap.containsKey(refsetSctId)) {
+
+                    logger.debug("TTT - Have Tags on refset: " + refsetSctId);
+                    tags = refsetToTagsMap.get(refsetSctId);
                 }
 
                 for (Refset snowRefset : refsetVersionsPreProcessed.get(refsetSctId)) {
@@ -1213,6 +1223,7 @@ public class HistoricDataMigrator {
                         logger.debug(" BBB - Persisting Snowstorm refset: " + snowRefset.getRefsetId() + " with version: " + snowRefset.getVersionDate());
 
                         snowRefset.setNarrative(narrative);
+                        snowRefset.setTags(tags);
                         projectCount = processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, refsetToProjectsInfoMap, projectCount);
                         service.add(snowRefset);
 
@@ -1991,17 +2002,7 @@ public class HistoricDataMigrator {
                 }
 
                 String sctId = line.substring(0, columnSplit);
-                String description = line.substring(columnSplit + 1);
-
-                if (description.startsWith("\"")) {
-
-                    description = description.substring(1);
-                }
-
-                if (description.endsWith("\"")) {
-
-                    description = description.substring(0, description.length() - 1);
-                }
+                String description = stripQuotes(line.substring(columnSplit + 1));
 
                 logger.debug("Split line: " + sctId + "/" + description);
                 refsetToDescriptionMap.put(sctId, description);
@@ -2050,6 +2051,40 @@ public class HistoricDataMigrator {
         return refsetToProjectsInfoMap;
     }
 
+    private Map<String, Set<String>> readRttRefsetsToTagsMap() {
+
+        BufferedReader reader;
+        Map<String, Set<String>> refsetToTagsInfoMap = new HashMap<>();
+
+        try {
+
+            reader = new BufferedReader(new InputStreamReader(refsetToTagsResource.getInputStream()));
+
+            String line = reader.readLine();
+
+            while (line != null && !line.isEmpty()) {
+
+                logger.debug("Line: " + line);
+                String[] columns = line.split("\t");
+
+                if (!refsetToTagsInfoMap.containsKey(columns[0])) {
+
+                    refsetToTagsInfoMap.put(columns[0], new HashSet<>());
+                }
+
+                refsetToTagsInfoMap.get(columns[0]).add(stripQuotes(columns[1]));
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return refsetToTagsInfoMap;
+    }
+
     private Map<String, Set<String>> identifyUndefinedDefaultLanguageRefsets() {
 
         BufferedReader reader;
@@ -2081,5 +2116,20 @@ public class HistoricDataMigrator {
         }
 
         return defaultLanguageRefsetMap;
+    }
+
+    private String stripQuotes(String str) {
+
+        if (str.startsWith("\"")) {
+
+            str = str.substring(1);
+        }
+
+        if (str.endsWith("\"")) {
+
+            str = str.substring(0, str.length() - 1);
+        }
+
+        return str;
     }
 }
