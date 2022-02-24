@@ -58,7 +58,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static String mainCoreTestingRefsetInternalId = "";
 
-    protected static String refsetWithInactiveConceptAsActiveMember = "";
+    protected static String exportInactiveRefsetVersionInternalId = "";
 
     protected static String mainNrcTestingRefsetInternalId = "";
 
@@ -67,17 +67,6 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected static final String DESCRIPTION_TERM = "term";
 
     protected static final String REFSET_FILE_PATH = "src/test/resources/refsetService/";
-
-    protected static final String INACTIVE_REFSET_ID = "723264001";
-
-    protected static final String INACTIVE_REFSET_VERSION = "2021-07-31";
-
-    protected static final String INACTIVE_REFSET_EARLIER_VERSION = "2017-07-31";
-
-    // Added 20170731 and Inactived in Lateralizable (723264001) on 20180131
-    protected static final String INACTIVE_CONCEPT_ID = "63716004";
-
-    protected static final String INACTIVE_CONCEPT_PARENT_CONCEPT_ID = "18619003";
 
     protected static final String INVALID_INTERNAL_REFSET_ID = "12345678901234567890";
 
@@ -104,9 +93,14 @@ abstract public class AbstractRefsetTests extends BaseTest {
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID = "450970008";
 
     protected static final String INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID = "4106009";
-
+    
+    protected static final String INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID = "76318008";
+    
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION = "2021-07-31";
+    
+    protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION = "2020-07-31";
 
+    
     /** The mvc. */
     @Autowired
     protected MockMvc mvc;
@@ -129,12 +123,10 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
         assertThat(refset).isNotNull();
 
-        if (refset.getRefsetId().equals(INACTIVE_REFSET_ID)) {
+        if (refset.getRefsetId().equals(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID)) {
 
-            assertThat(refset.getRefsetId()).isEqualTo(INACTIVE_REFSET_ID);
-
-            assertThat(refset.getName()).isEqualToIgnoringCase("Lateralizable body structure reference set");
-            assertThat(refset.getNarrative()).isEqualToIgnoringCase("The reference set contains all body structures that can be lateralized.");
+            assertThat(refset.getName()).isEqualToIgnoringCase("General Practice / Family Practice reference set");
+            assertThat(refset.getNarrative()).isEqualToIgnoringCase("Description of refset General Practice / Family Practice reference set");
             assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("900000000000012004");
@@ -142,7 +134,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getVersionStatus()).isEqualToIgnoringCase("published");
             assertThat(refset.getVersionNotes()).isNull();
-            assertThat(refset.getProject().getName()).isEqualTo("SNOMED International WIP Project");
+            assertThat(refset.getProject().getName()).isEqualTo("SNOMED International Project");
 
             assertThat(refset.isActive()).isTrue();
             assertThat(refset.isLocalSet()).isFalse();
