@@ -155,6 +155,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getVersionStatus()).isEqualToIgnoringCase("published");
             assertThat(refset.getVersionNotes()).isNull();
+            assertThat(refset.getTags().size()).isEqualTo(1);
+            assertThat(refset.getTags().iterator().next()).isEqualToIgnoringCase("General / Allergies");
             assertThat(refset.getProject().getName()).isEqualTo("Belgian Extension Project");
 
             assertThat(refset.isActive()).isTrue();

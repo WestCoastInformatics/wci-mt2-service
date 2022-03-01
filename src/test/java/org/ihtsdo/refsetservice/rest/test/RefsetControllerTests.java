@@ -852,24 +852,18 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
     }
 
-    // @Test
-    // TODO: Add test on tags (add tags, then search directory, and validate they are returned
+    @Test
     public void testTags() {
 
         final String testTag = "General / Allergies";
-
-        // TO-DO: Add Tag to WCI refset
-
         logger.info("Testing term - " + testTag);
-        ResultList<Refset> refsetList = getUtil.searchDirectory(testTag);
 
-        Refset refsetIdentified = validateRefsetExists(refsetList, "WCI_REFSET");
+        ResultList<Refset> refsetList = getUtil.searchDirectory(testTag);
+        Refset refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
 
         // Collection - Tags
         assertThat(refsetIdentified.getTags().size()).isEqualTo(1);
         assertThat(refsetIdentified.getTags().iterator().next()).isEqualTo("General / Allergies");
-
-        // TO-DO: Remove Tag
 
     }
 
