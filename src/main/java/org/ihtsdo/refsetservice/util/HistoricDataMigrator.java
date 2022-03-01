@@ -42,6 +42,7 @@ public class HistoricDataMigrator {
     private static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
     private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
+    private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
 
     /** The formatter. */
     private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -1331,8 +1332,24 @@ public class HistoricDataMigrator {
             }
 
             logger.info("Adding WCI Testing Org's single project");
-            addProject(wciOrganization, "WCI Testing Project", "The single project for all WCI testing refsets", defaultMeta);
+            Project wciProject = addProject(wciOrganization, "WCI Testing Project", "The single project for all WCI testing refsets", defaultMeta);
 
+            Refset refset = new Refset();
+
+            refset.setVersionDate(new Date());
+            refset.setRefsetId(WCI_TESTING_REFSET_CONCEPT_ID);
+            refset.setModuleId(MODULE_ANCESTOR_CONCEPT_SCTID);
+            refset.setVersionStatus("PUBLISHED");
+            refset.setWorkflowStatus("PUBLISHED");
+            refset.setActive(true);
+            refset.setType("EXTENSIONAL");
+            refset.setProject(wciProject);
+            refset.setName("Base WCI Refset");
+
+            service.add(refset);
+            
+
+            
             logger.info("Have imported from Snowstorm " + projectCount + " projects and " + counts.getOrgsImportedCount() + " organizations");
 
             logger.info("Have NOT imported anything from RTT that isn't in Snowstorm");
