@@ -33,10 +33,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 
 @AutoConfigureMockMvc
-public class RefsetWorkflowTest extends AbstractRefsetTests {
+public class RefsetWorkflowTests extends AbstractRefsetTests {
 
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(RefsetWorkflowTest.class);
+    private static Logger logger = LoggerFactory.getLogger(RefsetWorkflowTests.class);
 
     /** The AUTHOR_USER workflow user . */
     public static final String AUTHOR_USER = "AUTHOR_USER";
@@ -79,13 +79,11 @@ public class RefsetWorkflowTest extends AbstractRefsetTests {
 
             if (firstTimeSetup) {
 
-                testingProjectId = getUtil.getInternalProjectId(TESTING_PROJECT_NAME);
-                testingEditionId = getUtil.getInternalEditionId(TESTING_EDITION_NAME);
+                // For read/write testing
+                wciTestingProjectId = getUtil.getInternalProjectId(WCI_TESTING_PROJECT_NAME);
+                wciTestingEditionId = getUtil.getInternalEditionId(WCI_TESTING_EDITION_NAME);
 
-                mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
-                mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
-
-                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
+                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, wciTestingProjectId, wciTestingEditionId);
 
                 firstTimeSetup = false;
             }

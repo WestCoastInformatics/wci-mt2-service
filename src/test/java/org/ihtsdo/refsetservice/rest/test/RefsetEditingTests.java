@@ -57,12 +57,11 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
             if (firstTimeSetup) {
 
-                testingProjectId = getUtil.getInternalProjectId(TESTING_PROJECT_NAME);
-                testingEditionId = getUtil.getInternalEditionId(TESTING_EDITION_NAME);
-                mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
-                mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
+                // For read/write testing
+                wciTestingProjectId = getUtil.getInternalProjectId(WCI_TESTING_PROJECT_NAME);
+                wciTestingEditionId = getUtil.getInternalEditionId(WCI_TESTING_EDITION_NAME);
 
-                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
+                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, wciTestingProjectId, wciTestingEditionId);
 
                 firstTimeSetup = false;
             }
@@ -196,7 +195,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     // @Test
-    // TODO: Need to update this including defining of metadata
+    // TODO: Make it based on refset in wci project. Need to update this including defining of metadata
     public void testCreateNewVersionWithChangesFromPublished() throws Exception {
 
         // ADD NEW VERSION
@@ -236,7 +235,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         // MODIFY NEW VERSION
         // Define the modifications
         modifyData.put("tags", "test tag1");
-        modifyData.put("versionNotes", testingProjectId);
+        modifyData.put("versionNotes", wciTestingProjectId);
         modifyData.put("narrative", "Test.");
 
         editUtil.modifyRefsetMetadata(newRefsetInternalId, modifyData);

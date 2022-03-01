@@ -52,9 +52,13 @@ abstract public class AbstractRefsetTests extends BaseTest {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(AbstractRefsetTests.class);
 
-    protected static String testingProjectId = null;
+    protected static String readOnlyTestingProjectId = null;
 
-    protected static String testingEditionId = null;
+    protected static String readOnlyTestingEditionId = null;
+
+    protected static String wciTestingProjectId = null;
+
+    protected static String wciTestingEditionId = null;
 
     protected static String mainCoreTestingRefsetInternalId = "";
 
@@ -86,9 +90,13 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String MEMBER_ID_RF2_FILE = REFSET_FILE_PATH + MEMBER_ID_RF2_FILE_NAME;
 
-    protected static final String TESTING_PROJECT_NAME = "SNOMED International Project";
+    protected static final String READ_ONLY_TESTING_PROJECT_NAME = "SNOMED International Project";
 
-    protected static final String TESTING_EDITION_NAME = "International Edition";
+    protected static final String READ_ONLY_TESTING_EDITION_NAME = "International Edition";
+
+    protected static final String WCI_TESTING_PROJECT_NAME = "WCI Testing Project";
+
+    protected static final String WCI_TESTING_EDITION_NAME = "WCI";
 
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID = "450970008";
 

@@ -15,7 +15,6 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.VersionStatus;
-import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.RefsetConceptsType;
@@ -143,12 +142,9 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
             if (firstTimeSetup) {
 
-                testingProjectId = getUtil.getInternalProjectId(TESTING_PROJECT_NAME);
-                testingEditionId = getUtil.getInternalEditionId(TESTING_EDITION_NAME);
+                readOnlyTestingProjectId = getUtil.getInternalProjectId(READ_ONLY_TESTING_PROJECT_NAME);
                 mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
                 mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
-
-                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
 
                 // Ensure have the export directory created on testing system
 
@@ -227,10 +223,10 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testGetProject() {
 
-        final Project project = getUtil.getProject(testingProjectId);
+        final Project project = getUtil.getProject(readOnlyTestingProjectId);
 
-        assertThat(project.getId()).isEqualTo(testingProjectId);
-        assertThat(project.getName()).isEqualTo(TESTING_PROJECT_NAME);
+        assertThat(project.getId()).isEqualTo(readOnlyTestingProjectId);
+        assertThat(project.getName()).isEqualTo(READ_ONLY_TESTING_PROJECT_NAME);
     }
 
     /**
