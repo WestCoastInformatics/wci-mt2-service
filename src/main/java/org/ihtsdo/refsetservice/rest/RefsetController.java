@@ -28,6 +28,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
+import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
@@ -165,12 +166,12 @@ public class RefsetController extends BaseController {
  
         try {
 
-            String returnString = true + "";
             User user = SecurityService.getUserFromSession();
             final boolean isLocked = RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId);
-            //logger.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
+            String returnString = isLocked + "";
+            logger.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
             
-            if (!isLocked) {
+            if (!isLocked && RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId)) {
                 
                 returnString = ModelUtility.toJson(RefsetMemberService.refsetsUpdatedMembers.get(refsetInternalId));
                 RefsetMemberService.refsetsUpdatedMembers.remove(refsetInternalId);
@@ -1882,6 +1883,75 @@ public class RefsetController extends BaseController {
             RefsetMemberService.getConceptAncestors(refset, Arrays.asList(concept));
             
             return concept;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Compile and store the data to upgrade a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param upgradeBranch the branch to upgrade to
+     * @return The operation status
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/compileUpgradeData", produces = "application/json")
+    public @ResponseBody String compileUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestParam(required = false) final String upgradeBranch) throws Exception {
+        
+        try {
+            
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            String status = "";
+            final User user = SecurityService.getUserFromSession(); 
+            
+            logger.debug("compileUpgradeData: refsetInternalId: " + refsetInternalId + "; upgradeBranch: " + upgradeBranch);
+              
+            // add the list of concepts as members to the refset
+            status = RefsetMemberService.compileUpgradeData(user, refsetInternalId, upgradeBranch);
+            
+            logger.debug("compileUpgradeData: Finished with status " + status);
+            
+            return "{\"status\": \"" + status + "\"}";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+        }
+    }
+    
+    /**
+     * Get the stored the data to upgrade a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param upgradeBranch the branch to upgrade to
+     * @return The upgrade data
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/upgradeData", produces = "application/json")
+    public @ResponseBody ResultList<UpgradeInactiveConcecpt> getUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+        
+        try {
+            
+            final User user = SecurityService.getUserFromSession(); 
+            
+            logger.debug("getUpgradeData: refsetInternalId: " + refsetInternalId);
+              
+            // add the list of concepts as members to the refset
+            final ResultList<UpgradeInactiveConcecpt> results = RefsetMemberService.getUpgradeData(user, refsetInternalId);
+            
+            logger.debug("getUpgradeData: results " + results);
+            
+            return results;
 
         } catch (final Exception e) {
 

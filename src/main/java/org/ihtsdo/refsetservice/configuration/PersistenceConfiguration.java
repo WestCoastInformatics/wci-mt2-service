@@ -43,7 +43,6 @@ public class PersistenceConfiguration {
      * @return the migration strategy
      */
     @Bean
-    // @DependsOn("flywayConfigurationCustomizer")
     public FlywayMigrationStrategy customMigrationStrategy() {
 
         FlywayMigrationStrategy strategy = new FlywayMigrationStrategy() {

@@ -8,11 +8,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.WorkflowUnitTestUtilities;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -61,6 +64,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
                 testingEditionId = getUtil.getInternalEditionId(TESTING_EDITION_NAME);
                 mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
                 mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
+                refsetWithInactiveConceptAsActiveMember = getUtil.getInternalRefsetId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
 
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
 
@@ -271,6 +275,38 @@ public class RefsetEditingTests extends AbstractRefsetTests {
             assertThat(refset.isLatestPublishedVersion()).isTrue();
         }
 
+    }
+    
+    /**
+     * Test upgrading a refset.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testUpgradeRefset() throws Exception {
+
+        // ADD NEW VERSION AND MOVE TO READY FOR EDIT
+        final String newRefsetInternalId = editUtil.createNewRefsetVersion(refsetWithInactiveConceptAsActiveMember);
+        Refset refset = getUtil.getRefsetFromInternalId(newRefsetInternalId);
+        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
+        
+        // START THE UPGRADE PROCESS
+        editUtil.compileUpgradeData(newRefsetInternalId);
+        editUtil.resolveBackgroundOperation(newRefsetInternalId);
+        
+        // GET THE UPGRADE DATA
+        final ResultList<UpgradeInactiveConcecpt> resultList = editUtil.getUpgradeData(newRefsetInternalId);
+        
+        // DELETE NEW VERSION
+        editUtil.deleteVersionedRefset(newRefsetInternalId);
+
+        // validate the original refset is back to the latest version
+        try (final TerminologyService service = new TerminologyService()) {
+
+            refset = service.get(refsetWithInactiveConceptAsActiveMember, Refset.class);
+            assertThat(refset).isNotNull();
+            assertThat(refset.isLatestPublishedVersion()).isTrue();
+        }
     }
 
     /**

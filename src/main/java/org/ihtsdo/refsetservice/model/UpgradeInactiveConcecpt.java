@@ -1,0 +1,321 @@
+
+package org.ihtsdo.refsetservice.model;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
+
+import org.hibernate.annotations.Type;
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+// TODO: Auto-generated Javadoc
+/**
+ * Represents an inactive concept during the refset upgrade process.
+ * 
+ */
+@Entity
+@Table(name = "upgrade_inactive_concecpts")
+@Indexed
+public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comparable<UpgradeInactiveConcecpt> {
+
+    /** The logger. */
+    private static Logger logger = LoggerFactory.getLogger(UpgradeInactiveConcecpt.class);
+    
+    /** The refset ID. */
+    @Column(nullable = false, length = 256)
+    private String refsetId;
+
+    /** The code. */
+    @Column(nullable = false, length = 256)
+    private String code;
+
+    /** The descriptions. */
+    @Column(nullable = false, length = 10000)
+    @Type(type = "text")
+    private String descriptions;
+
+    /** The flag showing if this concept is still a member of the refset. */
+    @Column(nullable = false)
+    private boolean stillMember;
+
+    /** The flag showing if this concept has had a replacement chosen. */
+    @Column(nullable = false)
+    private boolean replaced;
+    
+    /** The replacement concepts. */
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = UpgradeReplacementConcecpt.class, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("created ASC")
+    private List<UpgradeReplacementConcecpt> replacementConcecpts = new ArrayList<>();
+
+    /**
+     * Instantiates an empty {@link UpgradeInactiveConcecpt}.
+     */
+    public UpgradeInactiveConcecpt() {
+        // n/a
+    }
+
+    /**
+     * Instantiates a {@link UpgradeInactiveConcecpt} from the specified parameters.
+     *
+     * @param other the other
+     */
+    public UpgradeInactiveConcecpt(final UpgradeInactiveConcecpt other) {
+        populateFrom(other);
+    }
+
+    /**
+     * Populate from.
+     *
+     * @param other the other
+     */
+    public void populateFrom(final UpgradeInactiveConcecpt other) {
+        
+        super.populateFrom(other);
+        refsetId = other.getRefsetId();
+        code = other.getCode();
+        descriptions = other.getDescriptions();
+        stillMember = other.isStillMember();
+        replaced = other.isReplaced();
+        replacementConcecpts = new ArrayList<UpgradeReplacementConcecpt>(other.getReplacementConcecpts());
+    }
+
+    /**
+     * Returns the refset ID.
+     *
+     * @return the refset ID
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    public String getRefsetId() {
+        return refsetId;
+    }
+
+    /**
+     * Sets the refset ID.
+     *
+     * @param refsetId the refset ID
+     */
+    public void setRefsetId(final String refsetId) {
+        this.refsetId = refsetId;
+    }
+
+    /**
+     * Returns the code.
+     *
+     * @return the code
+     */
+    public String getCode() {
+        return code;
+    }
+
+    /**
+     * Sets the code.
+     *
+     * @param code the code
+     */
+    public void setCode(final String code) {
+        this.code = code;
+    }
+
+    /**
+     * Returns the descriptions.
+     *
+     * @return the descriptions
+     */
+    public String getDescriptions() {
+        return descriptions;
+    }
+
+    /**
+     * Sets the descriptions.
+     *
+     * @param descriptions the descriptions
+     */
+    public void setDescriptions(final String descriptions) {
+        this.descriptions = descriptions;
+    }
+
+    /**
+     * Checks if this concept is still a member of the refset.
+     *
+     * @return the stillMember flag
+     */
+    public boolean isStillMember() {
+        return stillMember;
+    }
+
+    /**
+     * Sets the flag showing if this concept is still a member of the refset.
+     *
+     * @param stillMember the flag value to set
+     */
+    public void setStillMember(final boolean stillMember) {
+        this.stillMember = stillMember;
+    }
+
+    /**
+     * Checks if this concept has had a replacement chosen.
+     *
+     * @return the replaced flag
+     */
+    public boolean isReplaced() {
+        return replaced;
+    }
+
+    /**
+     * Sets the flag showing if this concept has had a replacement chosen.
+     *
+     * @param replaced the flag to set
+     */
+    public void setReplaced(final boolean replaced) {
+        this.replaced = replaced;
+    }
+    
+    /**
+     * Gets the replacement concepts.
+     *
+     * @return the replacementConcecpts
+     */
+    @IndexedEmbedded(targetType = UpgradeReplacementConcecpt.class)
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    public List<UpgradeReplacementConcecpt> getReplacementConcecpts() {
+
+        if (replacementConcecpts == null) {
+            replacementConcecpts = new ArrayList<>();
+        }
+
+        return replacementConcecpts;
+    }
+
+    /**
+     * Sets the replacement concepts.
+     *
+     * @param replacementConcecpts the replacementConcecpts to set
+     */
+    public void setReplacementConcecpts(final List<UpgradeReplacementConcecpt> replacementConcecpts) {
+        
+        Collections.sort(replacementConcecpts, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
+        this.replacementConcecpts = replacementConcecpts;
+    }
+
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((refsetId == null) ? 0 : refsetId.hashCode());
+        result = prime * result + ((code == null) ? 0 : code.hashCode());
+        result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
+        result = prime * result + ((replacementConcecpts == null) ? 0 : replacementConcecpts.hashCode());
+        result = prime * result + (stillMember ? 1 : 0);
+        result = prime * result + (replaced ? 1 : 0);
+        return result;
+    }
+    
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
+    @Override
+    public boolean equals(final Object obj) {
+
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null) {
+            return false;
+        }
+
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final UpgradeInactiveConcecpt other = (UpgradeInactiveConcecpt) obj;
+
+        if (refsetId == null) {
+            if (other.refsetId != null) {
+                return false;
+            }
+        } else if (!refsetId.equals(other.refsetId)) {
+            return false;
+        }
+
+        if (code == null) {
+            if (other.code != null) {
+                return false;
+            }
+        } else if (!code.equals(other.code)) {
+            return false;
+        }
+
+        if (descriptions == null) {
+            if (other.descriptions != null) {
+                return false;
+            }
+        } else if (!descriptions.equals(other.descriptions)) {
+            return false;
+        }
+        
+        if (replacementConcecpts == null) {
+            if (other.replacementConcecpts != null) {
+                return false;
+            }
+        } else if (!replacementConcecpts.equals(other.replacementConcecpts)) {
+            return false;
+        }
+
+        if (stillMember != other.stillMember) {
+            return false;
+        }
+
+        if (replaced != other.replaced) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Compare to.
+     *
+     * @param other the other
+     * @return the int
+     */
+    @Override
+    public int compareTo(final UpgradeInactiveConcecpt other) {
+        // Handle null
+        return (code + refsetId).compareToIgnoreCase(other.getCode() + other.getRefsetId());
+    }
+
+    /**
+     * Lazy init.
+     */
+    @Override
+    public void lazyInit() {
+        // TODO Auto-generated method stub
+
+    }
+}

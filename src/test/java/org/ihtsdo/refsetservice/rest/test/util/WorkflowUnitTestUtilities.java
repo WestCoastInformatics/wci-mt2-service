@@ -34,6 +34,18 @@ public class WorkflowUnitTestUtilities {
     private MockMvc mvc;
 
     private String baseUrl;
+    
+    /** The AUTHOR_USER workflow user . */
+    public static final String AUTHOR_USER = "AUTHOR_USER";
+
+    /** The REVIEWER_USER workflow user . */
+    public static final String REVIEWER_USER = "REVIEWER_USER";
+
+    /** The ADMIN_USER workflow user . */
+    public static final String ADMIN_USER = "ADMIN_USER";
+
+    /** The VIEWER_USER workflow user . */
+    public static final String VIEWER_USER = "VIEWER_USER";
 
     private static final String WORKFLOW_PERMUTATIONS_FILE_NAME =
             "workflowPermutationsToFinalAction.txt";

@@ -69,6 +69,9 @@ public final class WorkflowService {
 
     /** The IN_EDIT workflow status . */
     public static final String IN_EDIT = "IN_EDIT";
+    
+    /** The IN_UPGRADE workflow status . */
+    public static final String IN_UPGRADE = "IN_UPGRADE";
 
     /** The READY_FOR_REVIEW workflow status . */
     public static final String READY_FOR_REVIEW = "READY_FOR_REVIEW";
@@ -93,6 +96,15 @@ public final class WorkflowService {
 
     /** The FINISH_EDIT workflow action . */
     public static final String FINISH_EDIT = "FINISH_EDIT";
+    
+    /** The UPGRADE workflow action . */
+    public static final String UPGRADE = "UPGRADE";
+    
+    /** The CANCEL UPGRADE workflow action . */
+    public static final String CANCEL_UPGRADE = "CANCEL_UPGRADE";
+
+    /** The FINISH_UPGRADE workflow action . */
+    public static final String FINISH_UPGRADE = "FINISH_UPGRADE";
 
     /** The REQUEST_REVIEW workflow action . */
     public static final String REQUEST_REVIEW = "REQUEST_REVIEW";
@@ -123,11 +135,11 @@ public final class WorkflowService {
 
     /** The order of workflow steps . */
     public static final List<String> WORKFLOW_STATUSES =
-            new ArrayList<>(Arrays.asList(READY_FOR_EDIT, IN_EDIT, READY_FOR_REVIEW, IN_REVIEW, REVIEW_COMPLETED, READY_FOR_PUBLICATION, PUBLISHED));
+            new ArrayList<>(Arrays.asList(READY_FOR_EDIT, IN_EDIT, IN_UPGRADE, READY_FOR_REVIEW, IN_REVIEW, REVIEW_COMPLETED, READY_FOR_PUBLICATION, PUBLISHED));
 
     /** The order of workflow actions . */
     public static final List<String> WORKFLOW_ACTIONS =
-            new ArrayList<>(Arrays.asList(EDIT, CANCEL_EDIT, FINISH_EDIT, REQUEST_REVIEW, REVIEW, REJECT_REVIEW,
+            new ArrayList<>(Arrays.asList(EDIT, CANCEL_EDIT, FINISH_EDIT, UPGRADE, CANCEL_UPGRADE, FINISH_UPGRADE, REQUEST_REVIEW, REVIEW, REJECT_REVIEW,
                     ACCEPT_REVIEW, UNASSIGN, REQUEST_PUBLICATION, FAILS_RVF, REFSET_PUBLISHED));
 
     /** The file that contains workflow actions by user and step. */

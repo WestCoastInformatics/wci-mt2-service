@@ -18,7 +18,9 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -26,6 +28,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -320,6 +323,53 @@ public class EditUnitTestUtilities {
             e.printStackTrace();
         }
     }
+    
+    public String resolveBackgroundOperation(String refsetInternalId) {
+        
+        try {
+            
+            boolean locked = true;
+            String status = "";
+            int callDelayMilliseconds = 1000;
+            int callNumber = 0;
+            final String url = baseUrl + "/" + refsetInternalId + "/isLocked";
+            logger.info("Testing url - " + url);
+            
+            // keep testing to see if the refset has unlocked 
+            while (locked) {
+                
+                callNumber++;
+                final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+                status = result.getResponse().getContentAsString();
+                logger.info(" status = " + status);
+                
+                if (status.equals("true")) {
+                    
+                    if (callNumber == 20) {
+                        callDelayMilliseconds = 4000;
+
+                    } else if (callNumber == 30) {
+                        callDelayMilliseconds = 15000;
+                    }
+                    
+                    try {
+                        Thread.sleep(callDelayMilliseconds);
+                    } catch(InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    locked = false;
+                }
+            }
+            
+            return status;
+            
+        } catch (Exception e) {
+            
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public void removeRefsetContent(String refsetInternalId, Map<String, String> refsetDetail,
         JsonNode membersNode) {
@@ -493,6 +543,46 @@ public class EditUnitTestUtilities {
             e.printStackTrace();
             
             return false;
+        }
+    }
+    
+    public void compileUpgradeData(String refsetInternalId) {
+        
+        try {
+            
+            final String url = baseUrl + "/" + refsetInternalId + "/compileUpgradeData";
+
+            logger.info("Testing url - " + url);
+
+            mvc.perform(get(url));
+
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+public ResultList<UpgradeInactiveConcecpt> getUpgradeData(String refsetInternalId) {
+        
+        try {
+            
+            final String url = baseUrl + "/" + refsetInternalId + "/upgradeData";
+
+            logger.info("Testing url - " + url);
+
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            
+            final ResultList<UpgradeInactiveConcecpt> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<UpgradeInactiveConcecpt>>(){}));
+            assertThat(resultList).isNotNull();
+            
+            return resultList;
+            
+        } catch (Exception e) {
+            
+            e.printStackTrace();
+            return null;
         }
     }
 

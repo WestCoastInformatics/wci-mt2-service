@@ -1,3 +1,10 @@
+drop table ${pre_if_exists} refset_history_definition_clauses_history ${post_if_exists};
+drop table ${pre_if_exists} refsetedithistory_tags ${post_if_exists};
+drop table ${pre_if_exists} refset_history ${post_if_exists};
+drop table ${pre_if_exists} definition_clauses_history ${post_if_exists};
+drop table ${pre_if_exists} user_roles ${post_if_exists};
+drop table ${pre_if_exists} users ${post_if_exists};
+drop table ${pre_if_exists} workflow_history ${post_if_exists};
 drop table ${pre_if_exists} refsets_definition_clauses ${post_if_exists};
 drop table ${pre_if_exists} definition_clauses ${post_if_exists};
 drop table ${pre_if_exists} refset_tags ${post_if_exists};
@@ -197,3 +204,41 @@ CREATE TABLE `refset_history_definition_clauses_history` (
   CONSTRAINT `FKo21bax91dosoykcp70vg8709n` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses_history` (`id`),
   CONSTRAINT `FKwyybq7oy7spmr11a78ix5b4p` FOREIGN KEY (`RefsetEditHistory_id`) REFERENCES `refset_history` (`id`)
 );
+
+CREATE TABLE `upgrade_inactive_concecpts` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `code` varchar(256) NOT NULL,
+  `descriptions` longtext NOT NULL,
+  `refsetId` varchar(256) NOT NULL,
+  `replaced` bit(1) NOT NULL,
+  `stillMember` bit(1) NOT NULL,
+  PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `upgrade_replacement_concecpts` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `added` bit(1) NOT NULL,
+  `code` varchar(256) NOT NULL,
+  `descriptions` longtext NOT NULL,
+  `existingMember` bit(1) NOT NULL,
+  `reason` varchar(256) NOT NULL,
+  PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` (
+  `UpgradeInactiveConcecpt_id` varchar(64) NOT NULL,
+  `replacementConcecpts_id` varchar(64) NOT NULL,
+  UNIQUE KEY `UK_gvw8w97h67cp3wamn80hv4279` (`replacementConcecpts_id`),
+  KEY `FKr832qlbgsqdr1o9do0qseqm4m` (`UpgradeInactiveConcecpt_id`),
+  CONSTRAINT `FKju78x6kjym3y2y90mfmon9lge` FOREIGN KEY (`replacementConcecpts_id`) REFERENCES `upgrade_replacement_concecpts` (`id`),
+  CONSTRAINT `FKr832qlbgsqdr1o9do0qseqm4m` FOREIGN KEY (`UpgradeInactiveConcecpt_id`) REFERENCES `upgrade_inactive_concecpts` (`id`)
+);
+
