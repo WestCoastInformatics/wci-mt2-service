@@ -386,14 +386,14 @@ public final class WorkflowService {
             }
         }
         
-        if (Arrays.asList(EDIT, REVIEW).contains(action)) {
+        if (Arrays.asList(EDIT, UPGRADE, REVIEW).contains(action)) {
             assignedUser = user.getUserName();
         }
         
         logger.debug("currentStatus: " + currentStatus + " ; nextStatus: " + nextStatus);
 
         // if edits have just been completed then merge the edit branch into the refset branch and delete the edit branch
-        if (currentStatus.equals(IN_EDIT) && (Arrays.asList(FINISH_EDIT, REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action))) {
+        if ((currentStatus.equals(IN_EDIT) && Arrays.asList(FINISH_EDIT, REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(FINISH_UPGRADE).contains(action))) {
 
             final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(), notes);
 
@@ -411,7 +411,7 @@ public final class WorkflowService {
 
         }
         
-        else if (currentStatus.equals(IN_EDIT) && (Arrays.asList(CANCEL_EDIT).contains(action))) {
+        else if ((currentStatus.equals(IN_EDIT) && Arrays.asList(CANCEL_EDIT).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(CANCEL_UPGRADE).contains(action))) {
             
             RefsetMemberService.clearAllMemberCaches(getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId()));
             refset.setEditBranchId(null);
@@ -420,7 +420,7 @@ public final class WorkflowService {
         }
 
         // else if this is the start of edits create the refset edit branch
-        else if (action.equals(EDIT)) {
+        else if (action.equals(EDIT) || action.equals(UPGRADE)) {
             
             final String branchId = generateEditBranchId();
             refset.setEditBranchId(branchId);
@@ -1124,19 +1124,23 @@ public final class WorkflowService {
         }
 
         // only the assigned user can edit or review
-        if (!user.getUserName().equals(refset.getAssignedUser()) && Arrays.asList(IN_EDIT, IN_REVIEW).contains(currentStatus)) {
+        if (!user.getUserName().equals(refset.getAssignedUser()) && Arrays.asList(IN_EDIT, IN_UPGRADE, IN_REVIEW).contains(currentStatus)) {
             return allowedStatuses;
         }
 
         // set status permissions for AUTHORS
         if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
 
-            if (Arrays.asList(REVIEW_COMPLETED, READY_FOR_PUBLICATION).contains(currentStatus)) {
+            if (Arrays.asList(IN_EDIT, IN_UPGRADE, REVIEW_COMPLETED, READY_FOR_PUBLICATION).contains(currentStatus)) {
                 allowedStatuses.add(READY_FOR_EDIT);
             }
 
             if (Arrays.asList(READY_FOR_EDIT, READY_FOR_REVIEW, REVIEW_COMPLETED).contains(currentStatus)) {
                 allowedStatuses.add(IN_EDIT);
+            }
+            
+            if (Arrays.asList(READY_FOR_EDIT).contains(currentStatus)) {
+                allowedStatuses.add(IN_UPGRADE);
             }
 
             if (Arrays.asList(READY_FOR_EDIT, IN_EDIT, REVIEW_COMPLETED).contains(currentStatus)) {
@@ -1145,10 +1149,6 @@ public final class WorkflowService {
 
             if (Arrays.asList(READY_FOR_EDIT, IN_EDIT, READY_FOR_REVIEW).contains(currentStatus)) {
                 allowedStatuses.add(READY_FOR_PUBLICATION);
-            }
-
-            if (Arrays.asList(READY_FOR_PUBLICATION).contains(currentStatus)) {
-                allowedStatuses.add(READY_FOR_EDIT);
             }
         }
 
@@ -1205,7 +1205,9 @@ public final class WorkflowService {
             if (currentStatus.equals(READY_FOR_EDIT)) {
     
                 if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
+                    
                     allowedActions.add(EDIT);
+                    allowedActions.add(UPGRADE);
                     allowedActions.add(REQUEST_REVIEW);
                     allowedActions.add(REQUEST_PUBLICATION);
                 }
@@ -1220,6 +1222,16 @@ public final class WorkflowService {
                     allowedActions.add(FINISH_EDIT);
                     allowedActions.add(REQUEST_REVIEW);
                     allowedActions.add(REQUEST_PUBLICATION);
+                }
+            }
+            
+            else if (currentStatus.equals(IN_UPGRADE)) {
+                
+                // only the assigned user can upgrade
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, project) && user.getUserName().equals(refset.getAssignedUser())) {
+    
+                    allowedActions.add(CANCEL_UPGRADE);
+                    allowedActions.add(FINISH_UPGRADE);
                 }
             }
 

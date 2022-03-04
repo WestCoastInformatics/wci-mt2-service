@@ -1765,7 +1765,7 @@ public class RefsetService {
             branchPath = refset.getEditionBranch() + pathDate;
         } else {
 
-            if (refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
+            if (Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_UPGRADE).contains(refset.getWorkflowStatus())) {
 
                 branchPath = WorkflowService.getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId());
             } else {

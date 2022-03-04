@@ -4405,10 +4405,7 @@ public class RefsetMemberService {
                     }
                     
                     // set the refset into IN_UPGRADE status
-                    WorkflowService.setWorkflowStatus(user, WorkflowService.UPGRADE, refset, "", WorkflowService.IN_UPGRADE, user.getUserName());
-
-                    // create an edit history entry based on the new refset version.
-                    RefsetService.createRefsetEditHistory(user, refsetInternalId);
+                    WorkflowService.setWorkflowStatusByAction(user, WorkflowService.UPGRADE, refset, "");
                 }
             }
         }
