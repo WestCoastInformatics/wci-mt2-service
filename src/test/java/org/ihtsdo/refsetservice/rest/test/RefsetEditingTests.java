@@ -60,13 +60,12 @@ public class RefsetEditingTests extends AbstractRefsetTests {
 
             if (firstTimeSetup) {
 
-                testingProjectId = getUtil.getInternalProjectId(TESTING_PROJECT_NAME);
-                testingEditionId = getUtil.getInternalEditionId(TESTING_EDITION_NAME);
-                mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
-                mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
-                refsetWithInactiveConceptAsActiveMember = getUtil.getInternalRefsetId(INACTIVE_REFSET_ID, INACTIVE_REFSET_VERSION);
+                // For read/write testing
+                wciTestingProjectId = getUtil.getInternalProjectId(WCI_TESTING_PROJECT_NAME);
+                wciTestingEditionId = getUtil.getInternalEditionId(WCI_TESTING_EDITION_NAME);
+                refsetWithInactiveConceptAsActiveMemberInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
 
-                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, testingProjectId, testingEditionId);
+                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, wciTestingProjectId, wciTestingEditionId);
 
                 firstTimeSetup = false;
             }
@@ -200,7 +199,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     // @Test
-    // TODO: Need to update this including defining of metadata
+    // TODO: Make it based on refset in wci project. Need to update this including defining of metadata
     public void testCreateNewVersionWithChangesFromPublished() throws Exception {
 
         // ADD NEW VERSION
@@ -240,7 +239,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         // MODIFY NEW VERSION
         // Define the modifications
         modifyData.put("tags", "test tag1");
-        modifyData.put("versionNotes", testingProjectId);
+        modifyData.put("versionNotes", wciTestingProjectId);
         modifyData.put("narrative", "Test.");
 
         editUtil.modifyRefsetMetadata(newRefsetInternalId, modifyData);
@@ -286,7 +285,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     public void testUpgradeRefset() throws Exception {
 
         // ADD NEW VERSION AND MOVE TO READY FOR EDIT
-        final String newRefsetInternalId = editUtil.createNewRefsetVersion(refsetWithInactiveConceptAsActiveMember);
+        final String newRefsetInternalId = editUtil.createNewRefsetVersion(refsetWithInactiveConceptAsActiveMemberInternalId);
         Refset refset = getUtil.getRefsetFromInternalId(newRefsetInternalId);
         refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
         
@@ -303,7 +302,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         // validate the original refset is back to the latest version
         try (final TerminologyService service = new TerminologyService()) {
 
-            refset = service.get(refsetWithInactiveConceptAsActiveMember, Refset.class);
+            refset = service.get(refsetWithInactiveConceptAsActiveMemberInternalId, Refset.class);
             assertThat(refset).isNotNull();
             assertThat(refset.isLatestPublishedVersion()).isTrue();
         }

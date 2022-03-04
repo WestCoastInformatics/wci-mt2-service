@@ -41,6 +41,9 @@ public class HistoricDataMigrator {
 
     private static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
+    private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
+    private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
+
     /** The formatter. */
     private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -313,6 +316,8 @@ public class HistoricDataMigrator {
     private Map<DefinitionClause, Refset> clausesRefsetMap = new HashMap<>();
 
     private Set<String> projectsToIgnore = new HashSet<>();
+
+    private Organization wciOrganization = null;
 
     public void migrate() throws Exception {
 
@@ -845,9 +850,15 @@ public class HistoricDataMigrator {
 
                         } else {
 
-                            edition.getDefaultLanguageRefsets().addAll(undefinedDefaultLanguageRefsets.get(edition.getName()));
-                            logger.debug("No defined Default Language Refsets for " + edition.getName() + ": " + edition.getName() + ", so adding from txt file: "
-                                + undefinedDefaultLanguageRefsets.get(edition.getName()));
+                            if (undefinedDefaultLanguageRefsets.containsKey(edition.getName())) {
+
+                                edition.getDefaultLanguageRefsets().addAll(undefinedDefaultLanguageRefsets.get(edition.getName()));
+                                logger.debug("No defined Default Language Refsets for " + edition.getName() + ", so adding from txt file: " + undefinedDefaultLanguageRefsets.get(edition.getName()));
+                            } else {
+
+                                edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET);
+                                logger.debug("No defined Default Language Refsets for " + edition.getName() + " nor in text file, so adding default value: " + DEFAULT_LANGUAGE_REFSET);
+                            }
 
                         }
 
@@ -882,7 +893,13 @@ public class HistoricDataMigrator {
                         // snowstorm with value per codesystem
                         final String orgDesc = "";
 
-                        addOrganziation(editionOwnerMap.get(edition.getName()), orgDesc, edition, defaultMeta);
+                        Organization org = addOrganziation(editionOwnerMap.get(edition.getName()), orgDesc, edition, defaultMeta);
+
+                        if (org.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
+
+                            wciOrganization = org;
+                        }
+
                     }
 
                 }
@@ -1303,12 +1320,36 @@ public class HistoricDataMigrator {
 
                 Organization org = organizationsAdded.get(orgName);
 
+                if (wciOrganization.equals(org)) {
+
+                    continue;
+                }
+
                 addProject(org, org.getName() + " dedicated UAT Training Project",
                     "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project",
                     defaultMeta);
                 projectCount++;
             }
 
+            logger.info("Adding WCI Testing Org's single project");
+            Project wciProject = addProject(wciOrganization, "WCI Testing Project", "The single project for all WCI testing refsets", defaultMeta);
+
+            Refset refset = new Refset();
+
+            refset.setVersionDate(new Date());
+            refset.setRefsetId(WCI_TESTING_REFSET_CONCEPT_ID);
+            refset.setModuleId(MODULE_ANCESTOR_CONCEPT_SCTID);
+            refset.setVersionStatus("PUBLISHED");
+            refset.setWorkflowStatus("PUBLISHED");
+            refset.setActive(true);
+            refset.setType("EXTENSIONAL");
+            refset.setProject(wciProject);
+            refset.setName("Base WCI Refset");
+
+            service.add(refset);
+            
+
+            
             logger.info("Have imported from Snowstorm " + projectCount + " projects and " + counts.getOrgsImportedCount() + " organizations");
 
             logger.info("Have NOT imported anything from RTT that isn't in Snowstorm");
@@ -2004,7 +2045,6 @@ public class HistoricDataMigrator {
                 String sctId = line.substring(0, columnSplit);
                 String description = stripQuotes(line.substring(columnSplit + 1));
 
-                logger.debug("Split line: " + sctId + "/" + description);
                 refsetToDescriptionMap.put(sctId, description);
 
                 line = reader.readLine();
@@ -2064,7 +2104,6 @@ public class HistoricDataMigrator {
 
             while (line != null && !line.isEmpty()) {
 
-                logger.debug("Line: " + line);
                 String[] columns = line.split("\t");
 
                 if (!refsetToTagsInfoMap.containsKey(columns[0])) {

@@ -4368,7 +4368,10 @@ public class RefsetMemberService {
                                     @Override
                                     public void run() {
                                    
-                                        try {
+                                        try (final TerminologyService threadService = new TerminologyService()) {
+
+                                            threadService.setModifiedBy(user.getUserName());
+                                            threadService.setModifiedFlag(true);
                                 
                                             //logger.debug("%%%%%%%%% getMemberList IN THREAD ID: " + Thread.currentThread().getId());
                                             populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
@@ -4383,11 +4386,11 @@ public class RefsetMemberService {
                                                     upgradeReplacementConcecpt.setDescriptions(ModelUtility.toJson(conceptNode.get("descriptions")));
                                                 }
                                                 
-                                                service.add(upgradeReplacementConcecpt);
+                                                threadService.add(upgradeReplacementConcecpt);
                                                 inactiveConcept.getReplacementConcecpts().add(upgradeReplacementConcecpt);
                                             }
                                             
-                                            service.add(inactiveConcept);
+                                            threadService.add(inactiveConcept);
                                             
                                         } catch (Exception e) {
                                             throw new RuntimeException(e);
