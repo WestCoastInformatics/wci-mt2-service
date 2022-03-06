@@ -1903,16 +1903,20 @@ public class RefsetController extends BaseController {
     public @ResponseBody String compileUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         @RequestParam(required = false) final String upgradeBranch) throws Exception {
         
-        try {
+        final User user = SecurityService.getUserFromSession();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
             
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             String status = "";
-            final User user = SecurityService.getUserFromSession(); 
             
             logger.debug("compileUpgradeData: refsetInternalId: " + refsetInternalId + "; upgradeBranch: " + upgradeBranch);
               
             // add the list of concepts as members to the refset
-            status = RefsetMemberService.compileUpgradeData(user, refsetInternalId, upgradeBranch);
+            status = RefsetMemberService.compileUpgradeData(service, user, refsetInternalId, upgradeBranch);
             
             logger.debug("compileUpgradeData: Finished with status " + status);
             
@@ -1940,18 +1944,55 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/upgradeData", produces = "application/json")
     public @ResponseBody ResultList<UpgradeInactiveConcecpt> getUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
         
-        try {
-            
-            final User user = SecurityService.getUserFromSession(); 
+        final User user = SecurityService.getUserFromSession();
+        
+        try (final TerminologyService service = new TerminologyService()) {
             
             logger.debug("getUpgradeData: refsetInternalId: " + refsetInternalId);
               
             // add the list of concepts as members to the refset
-            final ResultList<UpgradeInactiveConcecpt> results = RefsetMemberService.getUpgradeData(user, refsetInternalId);
+            final ResultList<UpgradeInactiveConcecpt> results = RefsetMemberService.getUpgradeData(service, user, refsetInternalId);
             
             logger.debug("getUpgradeData: results " + results);
             
             return results;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Make a change to an upgrade concept.
+     *
+     * @param active the active status
+     * @param refsetInternalId the internal refset ID
+     * @param changedInactiveConcecpt the upgrade inactive concept that has been changed
+     * @param changed a string identifying what has been changed
+     * @return the status
+     * @throws Exception the exception
+     */
+    @PostMapping("/refset/{refsetInternalId}/modifyUpgradeConcept")
+    public @ResponseBody String modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestParam(required = true) final String changed, @RequestBody final UpgradeInactiveConcecpt upgradeInactiveConcecpt) throws Exception {
+        
+        final User user = SecurityService.getUserFromSession();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            String status = "All changes made successfully"; 
+            
+            logger.debug("modifyUpgradeConcept: refsetInternalId: " + refsetInternalId + "; changed: " + changed + "; upgradeInactiveConcecpt: " + upgradeInactiveConcecpt);
+
+            status = RefsetMemberService.modifyUpgradeConcept(service, user, refsetInternalId, upgradeInactiveConcecpt, changed);
+            
+            logger.debug("modifyUpgradeConcept: Finished with status: " + status);
+
+            return "{\"status\": \"" + status + "\"}";
 
         } catch (final Exception e) {
 

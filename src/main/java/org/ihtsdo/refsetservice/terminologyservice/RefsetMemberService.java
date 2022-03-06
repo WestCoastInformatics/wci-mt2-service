@@ -56,6 +56,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
@@ -4176,12 +4177,13 @@ public class RefsetMemberService {
     /**
      * Compile and store the data to upgrade a refset.
      *
+     * @param service the Terminology Service
      * @param refsetInternalId the internal refset ID
      * @param upgradeBranch the branch to upgrade to
      * @return The operation status
      * @throws Exception the exception
      */
-    public static String compileUpgradeData(final User user, final String refsetInternalId, String upgradeBranch) throws Exception {
+    public static String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId, String upgradeBranch) throws Exception {
         
         String status = "Upgrade data compiled";
         final Refset refset = RefsetService.getRefset(user, refsetInternalId);
@@ -4274,139 +4276,133 @@ public class RefsetMemberService {
         // Change the numbers to '1's to avoid threading 
         final ExecutorService executor = new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
         
-        try (final TerminologyService service = new TerminologyService()) {
-
-            service.setModifiedBy(user.getUserName());
-            service.setModifiedFlag(true);
-        
-            // use /browser/MAIN/concepts/bulk-load POST call to get the inactive concept details including descriptions and reasons (root.associationTargets)
-            while (searchAgain) {
+        // use /browser/MAIN/concepts/bulk-load POST call to get the inactive concept details including descriptions and reasons (root.associationTargets)
+        while (searchAgain) {
+            
+            searchAgain = false;
+            String bodyConceptIds = "";
+            
+            for (; searchIndex < inactiveMemberList.size(); searchIndex++) {
                 
-                searchAgain = false;
-                String bodyConceptIds = "";
+                Concept member = inactiveMemberList.get(searchIndex);
+                final String conceptId = member.getCode();
+                final UpgradeInactiveConcecpt inactiveConcept = new UpgradeInactiveConcecpt();
+                inactiveConcept.setRefsetId(refsetId);
+                inactiveConcept.setCode(member.getCode());
+                inactiveConcept.setStillMember(true);
+                inactiveData.put(conceptId, inactiveConcept);
+                bodyConceptIds += conceptId + ",";
                 
-                for (; searchIndex < inactiveMemberList.size(); searchIndex++) {
+                if (conceptDetailsBaseUrl.length() + bodyConceptIds.length() >= URL_MAX_CHAR_LENGTH) {
                     
-                    Concept member = inactiveMemberList.get(searchIndex);
-                    final String conceptId = member.getCode();
-                    final UpgradeInactiveConcecpt inactiveConcept = new UpgradeInactiveConcecpt();
-                    inactiveConcept.setRefsetId(refsetId);
-                    inactiveConcept.setCode(member.getCode());
-                    inactiveConcept.setStillMember(true);
-                    inactiveData.put(conceptId, inactiveConcept);
-                    bodyConceptIds += conceptId + ",";
-                    
-                    if (conceptDetailsBaseUrl.length() + bodyConceptIds.length() >= URL_MAX_CHAR_LENGTH) {
-                        
-                        searchAgain = true;
-                        break;
-                    }
+                    searchAgain = true;
+                    break;
                 }
-                
-                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
-                
-                final String memberDetailsUrl = conceptDetailsBaseUrl + bodyConceptIds;
-                Iterator<JsonNode> iterator = null;
-                
-                logger.debug("compileUpgradeData member details URL: " + memberDetailsUrl);
-                
-                try (final Response response = SnowstormConnection.getResponse(memberDetailsUrl)) {
-    
-                    final String resultString = response.readEntity(String.class);
-    
-                    // Only process payload if Rest call is successful
-                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                        
-                        searchAgain = false;
-                        throw new Exception("call to url '" + memberDetailsUrl + "' wasn't successful. " + response.toString());
-                    }
-    
-                    final JsonNode root = mapper.readTree(resultString.toString());
-                    iterator = root.get("items").iterator();
+            }
+            
+            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+            
+            final String memberDetailsUrl = conceptDetailsBaseUrl + bodyConceptIds;
+            Iterator<JsonNode> iterator = null;
+            
+            logger.debug("compileUpgradeData member details URL: " + memberDetailsUrl);
+            
+            try (final Response response = SnowstormConnection.getResponse(memberDetailsUrl)) {
+
+                final String resultString = response.readEntity(String.class);
+
+                // Only process payload if Rest call is successful
+                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                     
-                    // loop thru the returned member details and process the descriptions and replacement concepts
-                    while (iterator != null && iterator.hasNext()) {
-    
-                        final JsonNode conceptNode = iterator.next();
-                        final UpgradeInactiveConcecpt inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asText());
+                    searchAgain = false;
+                    throw new Exception("call to url '" + memberDetailsUrl + "' wasn't successful. " + response.toString());
+                }
+
+                final JsonNode root = mapper.readTree(resultString.toString());
+                iterator = root.get("items").iterator();
+                
+                // loop thru the returned member details and process the descriptions and replacement concepts
+                while (iterator != null && iterator.hasNext()) {
+
+                    final JsonNode conceptNode = iterator.next();
+                    final UpgradeInactiveConcecpt inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asText());
+                    
+                    if (conceptNode.get("descriptions") != null) {
                         
-                        if (conceptNode.get("descriptions") != null) {
-                            
-                            final List<Map<String, String>> descriptions = populateDescriptions(inactiveConcept.getCode(), conceptNode.get("descriptions"), refset, nonDefaultPreferredTerms);
-                            inactiveConcept.setDescriptions(ModelUtility.toJson(descriptions));
+                        final List<Map<String, String>> descriptions = populateDescriptions(inactiveConcept.getCode(), conceptNode.get("descriptions"), refset, nonDefaultPreferredTerms);
+                        inactiveConcept.setDescriptions(ModelUtility.toJson(descriptions));
+                    }
+                    
+                    final JsonNode associationTargets = conceptNode.get("associationTargets");
+
+                    if (associationTargets != null && associationTargets.size() != 0 && associationTargets.fields() != null) {
+
+                        final Map<String, String> reasonMap = new HashMap<>();
+                        Entry<String, JsonNode> entry = associationTargets.fields().next();
+                        final List<Concept> replacementConceptsToLookup = new ArrayList<>();
+                        String reason = entry.getKey();
+                        String replacementConceptIds = entry.getValue().toString();
+                        
+                        if (replacementConceptIds.contains("[")) {
+                          replacementConceptIds = replacementConceptIds.substring(1, replacementConceptIds.length() - 1);
                         }
                         
-                        final JsonNode associationTargets = conceptNode.get("associationTargets");
-    
-                        if (associationTargets != null && associationTargets.size() != 0 && associationTargets.fields() != null) {
-    
-                            final Map<String, String> reasonMap = new HashMap<>();
-                            Entry<String, JsonNode> entry = associationTargets.fields().next();
-                            final List<Concept> replacementConceptsToLookup = new ArrayList<>();
-                            String reason = entry.getKey();
-                            String replacementConceptIds = entry.getValue().toString();
+                        replacementConceptIds = replacementConceptIds.replaceAll("\"", "");
+                        
+                        for (String replacementConceptId : replacementConceptIds.split(",")) {
                             
-                            if (replacementConceptIds.contains("[")) {
-                              replacementConceptIds = replacementConceptIds.substring(1, replacementConceptIds.length() - 1);
-                            }
+                            replacementCount++;
+                            reasonMap.put(replacementConceptId, reason);
+                            replacementConceptsToLookup.add(new Concept(replacementConceptId));
+                        }
+                        
+                        // process descriptions of any replacement concepts 
+                        if (replacementConceptsToLookup.size() > 0) {
                             
-                            replacementConceptIds = replacementConceptIds.replaceAll("\"", "");
-                            
-                            for (String replacementConceptId : replacementConceptIds.split(",")) {
+                            executor.submit(new Runnable() {
                                 
-                                replacementCount++;
-                                reasonMap.put(replacementConceptId, reason);
-                                replacementConceptsToLookup.add(new Concept(replacementConceptId));
-                            }
-                            
-                            // process descriptions of any replacement concepts 
-                            if (replacementConceptsToLookup.size() > 0) {
-                                
-                                executor.submit(new Runnable() {
-                                    
-                                    /* see superclass */
-                                    @Override
-                                    public void run() {
-                                   
-                                        try (final TerminologyService threadService = new TerminologyService()) {
+                                /* see superclass */
+                                @Override
+                                public void run() {
+                               
+                                    try (final TerminologyService threadService = new TerminologyService()) {
 
-                                            threadService.setModifiedBy(user.getUserName());
-                                            threadService.setModifiedFlag(true);
-                                
-                                            //logger.debug("%%%%%%%%% getMemberList IN THREAD ID: " + Thread.currentThread().getId());
-                                            populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
+                                        threadService.setModifiedBy(user.getUserName());
+                                        threadService.setModifiedFlag(true);
+                            
+                                        //logger.debug("%%%%%%%%% getMemberList IN THREAD ID: " + Thread.currentThread().getId());
+                                        populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
+                                        
+                                        for (final Concept replacementConcept: replacementConceptsToLookup) {
                                             
-                                            for (final Concept replacementConcept: replacementConceptsToLookup) {
-                                                
-                                                final UpgradeReplacementConcecpt upgradeReplacementConcecpt = new UpgradeReplacementConcecpt();
-                                                upgradeReplacementConcecpt.setCode(replacementConcept.getCode());
-                                                upgradeReplacementConcecpt.setReason(reasonMap.get(replacementConcept.getCode()));
-                                                
-                                                if (conceptNode.get("descriptions") != null) {
-                                                    upgradeReplacementConcecpt.setDescriptions(ModelUtility.toJson(conceptNode.get("descriptions")));
-                                                }
-                                                
-                                                threadService.add(upgradeReplacementConcecpt);
-                                                inactiveConcept.getReplacementConcecpts().add(upgradeReplacementConcecpt);
+                                            final UpgradeReplacementConcecpt upgradeReplacementConcecpt = new UpgradeReplacementConcecpt();
+                                            upgradeReplacementConcecpt.setCode(replacementConcept.getCode());
+                                            upgradeReplacementConcecpt.setReason(reasonMap.get(replacementConcept.getCode()));
+                                            
+                                            if (conceptNode.get("descriptions") != null) {
+                                                upgradeReplacementConcecpt.setDescriptions(ModelUtility.toJson(conceptNode.get("descriptions")));
                                             }
                                             
-                                            threadService.add(inactiveConcept);
-                                            
-                                        } catch (Exception e) {
-                                            throw new RuntimeException(e);
+                                            threadService.add(upgradeReplacementConcecpt);
+                                            inactiveConcept.getReplacementConcecpts().add(upgradeReplacementConcecpt);
                                         }
+                                        
+                                        threadService.add(inactiveConcept);
+                                        
+                                    } catch (Exception e) {
+                                        throw new RuntimeException(e);
                                     }
-                                });
-                                
-                            } else {
-                                service.add(inactiveConcept);
-                            }
+                                }
+                            });
+                            
+                        } else {
+                            service.add(inactiveConcept);
                         }
                     }
-                    
-                    // set the refset into IN_UPGRADE status
-                    WorkflowService.setWorkflowStatusByAction(user, WorkflowService.UPGRADE, refset, "");
                 }
+                
+                // set the refset into IN_UPGRADE status
+                WorkflowService.setWorkflowStatusByAction(user, WorkflowService.UPGRADE, refset, "");
             }
         }
         
@@ -4419,22 +4415,157 @@ public class RefsetMemberService {
     /**
      * get the stored the data to upgrade a refset.
      *
+     * @param service the Terminology Service
      * @param refsetInternalId the internal refset ID
      * @return The upgrade data
      * @throws Exception the exception
      */
-    public static ResultList<UpgradeInactiveConcecpt> getUpgradeData(final User user, final String refsetInternalId) throws Exception {
+    public static ResultList<UpgradeInactiveConcecpt> getUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
         
         final Refset refset = RefsetService.getRefset(user, refsetInternalId);
         final String refsetId = refset.getRefsetId();
         
-        try (final TerminologyService service = new TerminologyService()) {
+        ResultList<UpgradeInactiveConcecpt> results = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcecpt.class, null);
+        results.setTotal(results.getItems().size());
+        results.setTotalKnown(true);
+        
+        return results;
+    }
+    
+    /**
+     * get a single inactive upgrade concept.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @param inactiveConceptId the code of the inactive upgrade concept to get
+     * @return The upgrade data
+     * @throws Exception the exception
+     */
+    public static UpgradeInactiveConcecpt getUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final String inactiveConceptId) throws Exception {
+        
+        final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+        final String refsetId = refset.getRefsetId();
+        
+        UpgradeInactiveConcecpt upgradeInactiveConcecpt = service.findSingle("refsetId: " + refsetId + " AND code:" + inactiveConceptId, UpgradeInactiveConcecpt.class, null);
+        return upgradeInactiveConcecpt;
+    }
+    
+    /**
+     * Make a change to an upgrade concept.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @param changedInactiveConcecpt the upgrade inactive concept that has been changed
+     * @param changed a string identifying what has been changed
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String modifyUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final UpgradeInactiveConcecpt changedInactiveConcecpt, final String changed) throws Exception {
+        
+        try {
             
-            ResultList<UpgradeInactiveConcecpt> results = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcecpt.class, null);
-            results.setTotal(results.getItems().size());
-            results.setTotalKnown(true);
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             
-            return results;
+            String status = "";
+            List<String> unchangedConcepts;
+            final List replacementChangeStatuses = Arrays.asList("REPLACEMENT_REMOVED", "REPLACEMENT_ADDED", "REMOVE_MANUAL_REPLACEMENT");
+            boolean add = true;
+            String changeText = "added";
+            boolean noMemberChange = false;
+            final UpgradeInactiveConcecpt upgradeInactiveConcecpt = getUpgradeConcept(service, user, refsetInternalId, changedInactiveConcecpt.getCode());
+            UpgradeReplacementConcecpt upgradeReplacementConcecpt = null;
+            
+            logger.debug("modifyUpgradeConcept: member change: " + changedInactiveConcecpt.getCode());
+            
+            if (changed.contains("REMOVED")) {
+                
+                add = false;
+                changeText = "removed";
+            }
+            
+            // if the operation needs it get the stored replacement concept
+            if (replacementChangeStatuses.contains(changed)) {
+                
+                final UpgradeReplacementConcecpt changedReplacementConcecpt = changedInactiveConcecpt.getReplacementConcecpts().get(0);
+                
+                for (UpgradeReplacementConcecpt replacementConcecpt : upgradeInactiveConcecpt.getReplacementConcecpts()) {
+                    
+                    if (replacementConcecpt.getCode().equals(changedReplacementConcecpt.getCode())) {
+                        
+                        upgradeReplacementConcecpt = replacementConcecpt;
+                        
+                        if (changed.equals("REMOVE_MANUAL_REPLACEMENT") && !upgradeReplacementConcecpt.isAdded()) {
+                            noMemberChange = true;
+                        }
+                    }
+                }
+            } else if (changed.equals("NEW_MANUAL_REPLACEMENT")) {
+                
+                upgradeReplacementConcecpt = changedInactiveConcecpt.getReplacementConcecpts().get(0);
+                noMemberChange = true;
+                
+                // save the replacement concept and add it to the inactive concept
+                service.update(upgradeReplacementConcecpt);
+                upgradeInactiveConcecpt.getReplacementConcecpts().add(upgradeReplacementConcecpt);
+            }
+            
+            // add or remove the concept as a member to the refset
+            if (!noMemberChange) {
+                
+                RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+                
+                if (add) {
+                    unchangedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, Arrays.asList(changedInactiveConcecpt.getCode()));
+                } else {
+                    unchangedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, changedInactiveConcecpt.getCode());
+                }
+                
+                // see if there the concept was unable to be changed and craft the error message
+                if (unchangedConcepts.size() > 0) {
+                    return "The concept " + unchangedConcepts.get(0) + " was unable to be " + changeText;
+                }
+            }
+            
+            if (changed.equals("INACTIVE_REMOVED")) {
+                upgradeInactiveConcecpt.setStillMember(false);
+                
+            } else if (replacementChangeStatuses.contains(changed)) {
+                
+                if (upgradeReplacementConcecpt == null) {
+                    throw new Exception("Unable to find replacement concept code");
+                }
+                
+                upgradeInactiveConcecpt.setReplaced(add);
+                
+                // save or remove the replacement concept
+                if (changed.equals("REMOVE_MANUAL_REPLACEMENT")) {
+                    
+                    upgradeInactiveConcecpt.getReplacementConcecpts().remove(upgradeReplacementConcecpt);
+                    service.remove(upgradeReplacementConcecpt);
+                } else {
+                    
+                    upgradeReplacementConcecpt.setAdded(add);
+                    service.update(upgradeReplacementConcecpt);
+                }
+                
+            } else if (changed.equals("INACTIVE_ADDED")) {
+                upgradeInactiveConcecpt.setStillMember(true);
+            }
+              
+            // save the inactive concept
+            service.update(upgradeInactiveConcecpt);
+            
+            return "All changes made successfully";
+            
+        } catch (final Exception e) {
+            throw new Exception(e);
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
     }
+
 }

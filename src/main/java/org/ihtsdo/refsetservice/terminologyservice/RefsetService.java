@@ -1226,6 +1226,33 @@ public class RefsetService {
         }
 
     }
+    
+    /**
+     * Returns a specific refset by internal ID.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public static Refset getRefset(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+
+        Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+
+        if (refset == null) {
+
+            throw new Exception("Unable to retrieve refset " + refsetInternalId);
+        }
+
+        refset = setRefsetPermissions(user, refset);
+        refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
+        refset.setBranchPath(getBranchPath(refset));
+
+        logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
+        return refset;
+
+    }
 
     /**
      * Returns a specific refset by internal ID.
@@ -1238,22 +1265,8 @@ public class RefsetService {
     public static Refset getRefset(final User user, final String refsetInternalId) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
-
-            Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
-
-            if (refset == null) {
-
-                throw new Exception("Unable to retrieve refset " + refsetInternalId);
-            }
-
-            refset = setRefsetPermissions(user, refset);
-            refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
-            refset.setBranchPath(getBranchPath(refset));
-
-            logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
-            return refset;
+            return getRefset(service, user, refsetInternalId);
         }
-
     }
 
     /**
