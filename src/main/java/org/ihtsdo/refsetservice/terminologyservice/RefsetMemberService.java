@@ -4355,6 +4355,7 @@ public class RefsetMemberService {
 
                     if (associationTargets != null && associationTargets.size() != 0 && associationTargets.fields() != null) {
 
+                        logger.debug("compileUpgradeData associationTargets: " + ModelUtility.toJson(associationTargets));
                         final Map<String, String> reasonMap = new HashMap<>();
                         Entry<String, JsonNode> entry = associationTargets.fields().next();
                         final List<Concept> replacementConceptsToLookup = new ArrayList<>();
@@ -4374,6 +4375,8 @@ public class RefsetMemberService {
                             replacementConceptsToLookup.add(new Concept(replacementConceptId));
                         }
                         
+                        logger.debug("compileUpgradeData replacementConceptsToLookup: " + replacementConceptsToLookup);
+                        
                         // process descriptions of any replacement concepts 
                         if (replacementConceptsToLookup.size() > 0) {
                             
@@ -4388,7 +4391,7 @@ public class RefsetMemberService {
                                         threadService.setModifiedBy(user.getUserName());
                                         threadService.setModifiedFlag(true);
                             
-                                        //logger.debug("%%%%%%%%% getMemberList IN THREAD ID: " + Thread.currentThread().getId());
+                                        logger.debug("%%%%%%%%% compileUpgradeData IN THREAD ID: " + Thread.currentThread().getId());
                                         populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
                                         
                                         for (final Concept replacementConcept: replacementConceptsToLookup) {
@@ -4402,11 +4405,12 @@ public class RefsetMemberService {
                                             }
                                             
                                             threadService.add(upgradeReplacementConcecpt);
+                                            logger.debug("compileUpgradeData added Replacement Concept: " + upgradeReplacementConcecpt);
                                             inactiveConcept.getReplacementConcecpts().add(upgradeReplacementConcecpt);
                                         }
                                         
                                         threadService.add(inactiveConcept);
-                                        
+                                        logger.debug("compileUpgradeData added inactive Concept: " + inactiveConcept);
                                     } catch (Exception e) {
                                         throw new RuntimeException(e);
                                     }
@@ -4415,6 +4419,7 @@ public class RefsetMemberService {
                             
                         } else {
                             service.add(inactiveConcept);
+                            logger.debug("**** shouldn't happen **** compileUpgradeData added inactive Concept with no replacement: " + inactiveConcept);
                         }
                     }
                 }
