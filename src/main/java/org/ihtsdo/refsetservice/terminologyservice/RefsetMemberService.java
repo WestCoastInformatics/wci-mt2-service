@@ -117,6 +117,24 @@ public class RefsetMemberService {
 
     /** The description language. */
     private static final String LANGUAGE_NAME = "languageName";
+    
+    /** The upgrade changed status for REPLACEMENT_REMOVED. */
+    public static final String REPLACEMENT_REMOVED = "REPLACEMENT_REMOVED";
+    
+    /** The upgrade changed status for REPLACEMENT_ADDED. */
+    public static final String REPLACEMENT_ADDED = "REPLACEMENT_ADDED";
+    
+    /** The upgrade changed status for REMOVED_MANUAL_REPLACEMENT. */
+    public static final String REMOVED_MANUAL_REPLACEMENT = "REMOVED_MANUAL_REPLACEMENT";
+    
+    /** The upgrade changed status for NEW_MANUAL_REPLACEMENT. */
+    public static final String NEW_MANUAL_REPLACEMENT = "NEW_MANUAL_REPLACEMENT";
+    
+    /** The upgrade changed status for INACTIVE_ADDED. */
+    public static final String INACTIVE_ADDED = "INACTIVE_ADDED";
+    
+    /** The upgrade changed status for INACTIVE_REMOVED. */
+    public static final String INACTIVE_REMOVED = "INACTIVE_REMOVED";
 
     /** The local directory to store exported refset files. */
     private static String EXPORT_FILE_DIR;
@@ -3551,7 +3569,7 @@ public class RefsetMemberService {
 
             // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
             final String conceptSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/concepts/search";
-            final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", \"activeFilter\": true, ";
+            final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
             final List<String> conceptsToSearch = new ArrayList<>(conceptIds);
             final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
             final List<String> validatedConcepts = new ArrayList<>();
@@ -4424,8 +4442,10 @@ public class RefsetMemberService {
         
         final Refset refset = RefsetService.getRefset(user, refsetInternalId);
         final String refsetId = refset.getRefsetId();
+        final PfsParameter pfs = new PfsParameter();
+        pfs.setSort("code");
         
-        ResultList<UpgradeInactiveConcecpt> results = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcecpt.class, null);
+        ResultList<UpgradeInactiveConcecpt> results = service.find("refsetId: " + refsetId, pfs, UpgradeInactiveConcecpt.class, null);
         results.setTotal(results.getItems().size());
         results.setTotalKnown(true);
         
@@ -4470,14 +4490,13 @@ public class RefsetMemberService {
             
             String status = "";
             List<String> unchangedConcepts;
-            final List replacementChangeStatuses = Arrays.asList("REPLACEMENT_REMOVED", "REPLACEMENT_ADDED", "REMOVE_MANUAL_REPLACEMENT");
+            final List replacementChangeStatuses = Arrays.asList(REPLACEMENT_REMOVED, REPLACEMENT_ADDED, REMOVED_MANUAL_REPLACEMENT);
             boolean add = true;
             String changeText = "added";
-            boolean noMemberChange = false;
+            boolean memberChange = true;
             final UpgradeInactiveConcecpt upgradeInactiveConcecpt = getUpgradeConcept(service, user, refsetInternalId, changedInactiveConcecpt.getCode());
             UpgradeReplacementConcecpt upgradeReplacementConcecpt = null;
-            
-            logger.debug("modifyUpgradeConcept: member change: " + changedInactiveConcecpt.getCode());
+            String conceptIdToChange = changedInactiveConcecpt.getCode();
             
             if (changed.contains("REMOVED")) {
                 
@@ -4495,31 +4514,35 @@ public class RefsetMemberService {
                     if (replacementConcecpt.getCode().equals(changedReplacementConcecpt.getCode())) {
                         
                         upgradeReplacementConcecpt = replacementConcecpt;
+                        conceptIdToChange = upgradeReplacementConcecpt.getCode();
                         
-                        if (changed.equals("REMOVE_MANUAL_REPLACEMENT") && !upgradeReplacementConcecpt.isAdded()) {
-                            noMemberChange = true;
+                        if (changed.equals(REMOVED_MANUAL_REPLACEMENT) && !upgradeReplacementConcecpt.isAdded()) {
+                            memberChange = false;
                         }
                     }
                 }
-            } else if (changed.equals("NEW_MANUAL_REPLACEMENT")) {
+            } else if (changed.equals(NEW_MANUAL_REPLACEMENT)) {
                 
                 upgradeReplacementConcecpt = changedInactiveConcecpt.getReplacementConcecpts().get(0);
-                noMemberChange = true;
+                memberChange = false;
+                conceptIdToChange = upgradeReplacementConcecpt.getCode();
                 
                 // save the replacement concept and add it to the inactive concept
-                service.update(upgradeReplacementConcecpt);
+                service.add(upgradeReplacementConcecpt);
                 upgradeInactiveConcecpt.getReplacementConcecpts().add(upgradeReplacementConcecpt);
             }
             
+            logger.debug("modifyUpgradeConcept: member change: " + conceptIdToChange);
+            
             // add or remove the concept as a member to the refset
-            if (!noMemberChange) {
+            if (memberChange) {
                 
                 RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
                 
                 if (add) {
-                    unchangedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, Arrays.asList(changedInactiveConcecpt.getCode()));
+                    unchangedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, Arrays.asList(conceptIdToChange));
                 } else {
-                    unchangedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, changedInactiveConcecpt.getCode());
+                    unchangedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, conceptIdToChange);
                 }
                 
                 // see if there the concept was unable to be changed and craft the error message
@@ -4528,7 +4551,7 @@ public class RefsetMemberService {
                 }
             }
             
-            if (changed.equals("INACTIVE_REMOVED")) {
+            if (changed.equals(INACTIVE_REMOVED)) {
                 upgradeInactiveConcecpt.setStillMember(false);
                 
             } else if (replacementChangeStatuses.contains(changed)) {
@@ -4537,20 +4560,25 @@ public class RefsetMemberService {
                     throw new Exception("Unable to find replacement concept code");
                 }
                 
-                upgradeInactiveConcecpt.setReplaced(add);
+                if (memberChange) {
+                    upgradeInactiveConcecpt.setReplaced(add);
+                    logger.debug("modifyUpgradeConcept: inactive concept marked as replaced = " + add);
+                }
                 
                 // save or remove the replacement concept
-                if (changed.equals("REMOVE_MANUAL_REPLACEMENT")) {
+                if (changed.equals(REMOVED_MANUAL_REPLACEMENT)) {
                     
                     upgradeInactiveConcecpt.getReplacementConcecpts().remove(upgradeReplacementConcecpt);
                     service.remove(upgradeReplacementConcecpt);
+                    logger.debug("modifyUpgradeConcept: removed the replacement concept: " + conceptIdToChange);
                 } else {
                     
                     upgradeReplacementConcecpt.setAdded(add);
                     service.update(upgradeReplacementConcecpt);
+                    logger.debug("modifyUpgradeConcept: updated the replacement concept: " + conceptIdToChange);
                 }
                 
-            } else if (changed.equals("INACTIVE_ADDED")) {
+            } else if (changed.equals(INACTIVE_ADDED)) {
                 upgradeInactiveConcecpt.setStillMember(true);
             }
               

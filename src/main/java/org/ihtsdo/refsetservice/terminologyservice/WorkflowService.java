@@ -1287,7 +1287,7 @@ public final class WorkflowService {
      */
     public static void canUserEditRefset(final User user, final Refset refset) throws Exception {
         
-        if (!refset.getAvailableActions().contains(WorkflowService.FINISH_EDIT)) {
+        if (!Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_UPGRADE).contains(refset.getWorkflowStatus()) || !user.getUserName().equals(refset.getAssignedUser())) {
             throw new Exception("Refset is not in the proper state or user does not have permission to edit.");
         }
     }

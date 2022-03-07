@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -563,7 +564,7 @@ public class EditUnitTestUtilities {
         }
     }
     
-public ResultList<UpgradeInactiveConcecpt> getUpgradeData(String refsetInternalId) {
+    public ResultList<UpgradeInactiveConcecpt> getUpgradeData(String refsetInternalId) {
         
         try {
             
@@ -587,4 +588,22 @@ public ResultList<UpgradeInactiveConcecpt> getUpgradeData(String refsetInternalI
         }
     }
 
+    public void updateUpgradeConcept(String refsetInternalId, UpgradeInactiveConcecpt upgradeInactiveConcecpt, String changed) {
+    
+        try {
+            
+            final String url = baseUrl + "/" + refsetInternalId + "/modifyUpgradeConcept?changed=" + changed;
+            String body = upgradeInactiveConcecpt.toString();
+            logger.info("Testing url - " + url + " ; body: " + body);
+    
+            final MvcResult result = mvc.perform(post(url).content(body).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            
+            assertThat(content).contains("All changes made successfully");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

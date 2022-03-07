@@ -120,6 +120,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
      *
      * @return the code
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getCode() {
         return code;
     }
