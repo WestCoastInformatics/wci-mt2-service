@@ -68,7 +68,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
      * Instantiates an empty {@link UpgradeInactiveConcecpt}.
      */
     public UpgradeInactiveConcecpt() {
-        // n/a
+        setActive(false);
     }
 
     /**
