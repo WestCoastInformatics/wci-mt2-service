@@ -18,6 +18,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
+import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -588,12 +589,21 @@ public class EditUnitTestUtilities {
         }
     }
 
-    public void updateUpgradeConcept(String refsetInternalId, UpgradeInactiveConcecpt upgradeInactiveConcecpt, String changed) {
+    public void updateUpgradeConcept(String refsetInternalId, String changed, final String inactiveConceptId, final String replacementConceptId, UpgradeReplacementConcecpt manualReplacementConcecpt) {
     
         try {
             
-            final String url = baseUrl + "/" + refsetInternalId + "/modifyUpgradeConcept?changed=" + changed;
-            String body = upgradeInactiveConcecpt.toString();
+            String url = baseUrl + "/" + refsetInternalId + "/modifyUpgradeConcept?inactiveConceptId=" + inactiveConceptId + "&changed=" + changed;
+            String body = "";
+            
+            if (replacementConceptId != null) {
+                url += "&replacementConceptId=" + replacementConceptId;
+            }
+            
+            if (manualReplacementConcecpt != null) {
+                body = manualReplacementConcecpt.toString();
+            }
+            
             logger.info("Testing url - " + url + " ; body: " + body);
     
             final MvcResult result = mvc.perform(post(url).content(body).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();

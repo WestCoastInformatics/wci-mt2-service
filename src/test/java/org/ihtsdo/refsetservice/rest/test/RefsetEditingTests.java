@@ -302,24 +302,20 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         
         // for the the first inactive concept add the first replacement as a member
         UpgradeInactiveConcecpt upgradeInactiveConcecpt = resultList.getItems().get(0);
+        final String inactiveConceptId = upgradeInactiveConcecpt.getCode();
         assertThat(upgradeInactiveConcecpt.getReplacementConcecpts().size()).isGreaterThan(0);
         UpgradeReplacementConcecpt upgradeReplacementConcecpt = upgradeInactiveConcecpt.getReplacementConcecpts().get(0);
-        upgradeReplacementConcecpt.setAdded(true);
-        upgradeInactiveConcecpt.getReplacementConcecpts().clear();
-        upgradeInactiveConcecpt.getReplacementConcecpts().add(upgradeReplacementConcecpt);
-        editUtil.updateUpgradeConcept(newRefsetInternalId, upgradeInactiveConcecpt, RefsetMemberService.REPLACEMENT_ADDED);
+        String replacementConceptId = upgradeReplacementConcecpt.getCode();
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REPLACEMENT_ADDED, inactiveConceptId, replacementConceptId, null);
         
         // for the the first inactive concept remove the first replacement as a member
-        upgradeReplacementConcecpt.setAdded(false);
-        editUtil.updateUpgradeConcept(newRefsetInternalId, upgradeInactiveConcecpt, RefsetMemberService.REPLACEMENT_REMOVED);
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REPLACEMENT_REMOVED, inactiveConceptId, replacementConceptId, null);
         
         // remove the first inactive concept as a member
-        upgradeInactiveConcecpt.setStillMember(false);
-        editUtil.updateUpgradeConcept(newRefsetInternalId, upgradeInactiveConcecpt, RefsetMemberService.INACTIVE_REMOVED);
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.INACTIVE_REMOVED, inactiveConceptId, null, null);
         
         // re-add the first inactive concept as a member
-        upgradeInactiveConcecpt.setStillMember(false);
-        editUtil.updateUpgradeConcept(newRefsetInternalId, upgradeInactiveConcecpt, RefsetMemberService.INACTIVE_ADDED);
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.INACTIVE_ADDED, inactiveConceptId, null, null);
         
         // get a concept to use as a custom replacement
         UpgradeReplacementConcecpt tempReplacementConcecpt = resultList.getItems().get(7).getReplacementConcecpts().get(0);
@@ -327,24 +323,22 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         manualReplacementConcecpt.setCode(tempReplacementConcecpt.getCode());
         manualReplacementConcecpt.setDescriptions(tempReplacementConcecpt.getDescriptions());
         manualReplacementConcecpt.setReason("MANUAL_REPLACEMENT");
+        replacementConceptId = manualReplacementConcecpt.getCode();
         
         // for the the first inactive concept add the manual replacement
-        upgradeInactiveConcecpt.getReplacementConcecpts().clear();
-        upgradeInactiveConcecpt.getReplacementConcecpts().add(manualReplacementConcecpt);
-        editUtil.updateUpgradeConcept(newRefsetInternalId, upgradeInactiveConcecpt, RefsetMemberService.NEW_MANUAL_REPLACEMENT);
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.NEW_MANUAL_REPLACEMENT, inactiveConceptId, null, manualReplacementConcecpt);
         
         // for the the first inactive concept remove the manual replacement before it is added as a member
-        editUtil.updateUpgradeConcept(newRefsetInternalId, upgradeInactiveConcecpt, RefsetMemberService.REMOVED_MANUAL_REPLACEMENT);
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REMOVED_MANUAL_REPLACEMENT, inactiveConceptId, replacementConceptId, null);
         
         // for the the first inactive concept add the manual replacement again
-        editUtil.updateUpgradeConcept(newRefsetInternalId, upgradeInactiveConcecpt, RefsetMemberService.NEW_MANUAL_REPLACEMENT);
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.NEW_MANUAL_REPLACEMENT, inactiveConceptId, null, manualReplacementConcecpt);
         
         // for the the first inactive concept add the manual replacement as a member
-        manualReplacementConcecpt.setAdded(true);
-        editUtil.updateUpgradeConcept(newRefsetInternalId, upgradeInactiveConcecpt, RefsetMemberService.REPLACEMENT_ADDED);
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REPLACEMENT_ADDED, inactiveConceptId, replacementConceptId, null);
         
         // for the the first inactive concept remove the manual replacement again after it is added as a member
-        editUtil.updateUpgradeConcept(newRefsetInternalId, upgradeInactiveConcecpt, RefsetMemberService.REMOVED_MANUAL_REPLACEMENT);
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REMOVED_MANUAL_REPLACEMENT, inactiveConceptId, replacementConceptId, null);
         
         // DELETE NEW VERSION
         editUtil.deleteVersionedRefset(newRefsetInternalId);

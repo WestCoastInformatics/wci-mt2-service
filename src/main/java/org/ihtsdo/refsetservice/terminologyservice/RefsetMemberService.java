@@ -4477,26 +4477,28 @@ public class RefsetMemberService {
      * @param service the Terminology Service
      * @param user the user
      * @param refsetInternalId the internal refset ID
-     * @param changedInactiveConcecpt the upgrade inactive concept that has been changed
+     * @param inactiveConceptId the concept ID of the inactive concept to be upgraded
+     * @param replacementConceptId the concept ID of the replacement concept to be updated
+     * @param manualReplacementConcecpt the manual upgrade replacement concept that to be added
      * @param changed a string identifying what has been changed
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String modifyUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final UpgradeInactiveConcecpt changedInactiveConcecpt, final String changed) throws Exception {
+    public static String modifyUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final String inactiveConceptId, 
+        final String replacementConceptId, final UpgradeReplacementConcecpt manualReplacementConcecpt, final String changed) throws Exception {
         
         try {
             
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             
-            String status = "";
             List<String> unchangedConcepts;
-            final List replacementChangeStatuses = Arrays.asList(REPLACEMENT_REMOVED, REPLACEMENT_ADDED, REMOVED_MANUAL_REPLACEMENT);
+            final List<String> replacementChangeStatuses = Arrays.asList(REPLACEMENT_REMOVED, REPLACEMENT_ADDED, REMOVED_MANUAL_REPLACEMENT);
             boolean add = true;
             String changeText = "added";
             boolean memberChange = true;
-            final UpgradeInactiveConcecpt upgradeInactiveConcecpt = getUpgradeConcept(service, user, refsetInternalId, changedInactiveConcecpt.getCode());
+            final UpgradeInactiveConcecpt upgradeInactiveConcecpt = getUpgradeConcept(service, user, refsetInternalId, inactiveConceptId);
             UpgradeReplacementConcecpt upgradeReplacementConcecpt = null;
-            String conceptIdToChange = changedInactiveConcecpt.getCode();
+            String conceptIdToChange = inactiveConceptId;
             
             if (changed.contains("REMOVED")) {
                 
@@ -4506,15 +4508,13 @@ public class RefsetMemberService {
             
             // if the operation needs it get the stored replacement concept
             if (replacementChangeStatuses.contains(changed)) {
-                
-                final UpgradeReplacementConcecpt changedReplacementConcecpt = changedInactiveConcecpt.getReplacementConcecpts().get(0);
-                
+                 
                 for (UpgradeReplacementConcecpt replacementConcecpt : upgradeInactiveConcecpt.getReplacementConcecpts()) {
                     
-                    if (replacementConcecpt.getCode().equals(changedReplacementConcecpt.getCode())) {
+                    if (replacementConcecpt.getCode().equals(replacementConceptId)) {
                         
                         upgradeReplacementConcecpt = replacementConcecpt;
-                        conceptIdToChange = upgradeReplacementConcecpt.getCode();
+                        conceptIdToChange = replacementConceptId;
                         
                         if (changed.equals(REMOVED_MANUAL_REPLACEMENT) && !upgradeReplacementConcecpt.isAdded()) {
                             memberChange = false;
@@ -4523,7 +4523,7 @@ public class RefsetMemberService {
                 }
             } else if (changed.equals(NEW_MANUAL_REPLACEMENT)) {
                 
-                upgradeReplacementConcecpt = changedInactiveConcecpt.getReplacementConcecpts().get(0);
+                upgradeReplacementConcecpt = manualReplacementConcecpt;
                 memberChange = false;
                 conceptIdToChange = upgradeReplacementConcecpt.getCode();
                 

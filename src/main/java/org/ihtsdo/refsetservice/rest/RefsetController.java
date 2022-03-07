@@ -29,6 +29,7 @@ import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
+import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
@@ -1969,14 +1970,17 @@ public class RefsetController extends BaseController {
      *
      * @param active the active status
      * @param refsetInternalId the internal refset ID
-     * @param changedInactiveConcecpt the upgrade inactive concept that has been changed
+     * @param inactiveConceptId the concept ID of the inactive concept to be upgraded
+     * @param replacementConceptId the concept ID of the replacement concept to be updated
+     * @param manualReplacementConcecpt the manual upgrade replacement concept that to be added
      * @param changed a string identifying what has been changed
      * @return the status
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/modifyUpgradeConcept")
-    public @ResponseBody String modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = true) final String changed, @RequestBody final UpgradeInactiveConcecpt upgradeInactiveConcecpt) throws Exception {
+    public @ResponseBody String modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = true) final String inactiveConceptId,
+        @RequestParam(required = false) final String replacementConceptId, @RequestParam(required = true) final String changed, 
+        @RequestBody(required = false) final UpgradeReplacementConcecpt manualReplacementConcecpt) throws Exception {
         
         final User user = SecurityService.getUserFromSession();
         
@@ -1986,9 +1990,10 @@ public class RefsetController extends BaseController {
             service.setModifiedFlag(true);
             String status = "All changes made successfully"; 
             
-            logger.debug("modifyUpgradeConcept: refsetInternalId: " + refsetInternalId + "; changed: " + changed + "; upgradeInactiveConcecpt: " + upgradeInactiveConcecpt);
+            logger.debug("modifyUpgradeConcept: refsetInternalId: " + refsetInternalId + "; changed: " + changed + "; inactiveConceptId: " + inactiveConceptId 
+                + "; replacementConceptId: " + replacementConceptId + "; manualReplacementConcecpt: " + manualReplacementConcecpt);
 
-            status = RefsetMemberService.modifyUpgradeConcept(service, user, refsetInternalId, upgradeInactiveConcecpt, changed);
+            status = RefsetMemberService.modifyUpgradeConcept(service, user, refsetInternalId, inactiveConceptId, replacementConceptId, manualReplacementConcecpt, changed);
             
             logger.debug("modifyUpgradeConcept: Finished with status: " + status);
 
