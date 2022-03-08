@@ -1124,6 +1124,7 @@ public final class WorkflowService {
                 
                 allowedStatuses.add(READY_FOR_EDIT);
                 allowedStatuses.add(IN_EDIT);
+                allowedStatuses.add(UPGRADE);
             }
             
             return allowedStatuses;
@@ -1202,6 +1203,7 @@ public final class WorkflowService {
         // Authors can start an edit cycle on Published refsets
         if (refset.getVersionStatus().equals(PUBLISHED) && user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
             allowedActions.add(EDIT);
+            allowedActions.add(UPGRADE);
             
         } else if (currentStatus == null) {
             return allowedActions;

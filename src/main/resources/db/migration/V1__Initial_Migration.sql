@@ -89,6 +89,7 @@ CREATE TABLE `refsets` (
   `versionStatus` varchar(256) NOT NULL,
   `workflowStatus` varchar(256),
   `project_id` varchar(64) DEFAULT NULL,
+  `memberCount` int DEFAULT '-1',
   PRIMARY KEY (`id`),
   KEY `FKapij9mkufxno7uncjc6oo20en` (`project_id`),
   CONSTRAINT `FKapij9mkufxno7uncjc6oo20en` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`)
@@ -186,6 +187,7 @@ CREATE TABLE `refset_history` (
   `versionNotes` longtext,
   `versionStatus` varchar(256) NOT NULL,
   `workflowStatus` varchar(256) DEFAULT NULL,
+  `memberCount` int DEFAULT '-1',
   PRIMARY KEY (`id`)
 );
 

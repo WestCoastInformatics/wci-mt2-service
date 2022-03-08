@@ -113,6 +113,10 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     /** The external URL. */
     @Column(nullable = true, length = 4000)
     private String externalUrl;
+    
+    /** The refset member count. */
+    @Column(nullable = false)
+    private int memberCount = -1;
 
     /** The tags. */
     @ElementCollection
@@ -185,6 +189,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         privateRefset = other.isPrivateRefset();
         definitionClauses = new ArrayList<DefinitionClauseEditHistory>(other.getDefinitionClauses());
         tags = new HashSet<String>(other.getTags());
+        memberCount = other.getMemberCount();
     }
     
     /**
@@ -208,6 +213,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         editBranchId = other.getEditBranchId();
         privateRefset = other.isPrivateRefset();
         tags = new HashSet<String>(other.getTags());
+        memberCount = other.getMemberCount();
     }
 
     /**
@@ -396,6 +402,24 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     public void setTags(final Set<String> tags) {
         this.tags = tags;
     }
+    
+    /**
+     * Returns the member count.
+     *
+     * @return the member count
+     */
+    public int getMemberCount() {
+        return memberCount;
+    }
+    
+    /**
+     * Sets the member count.
+     *
+     * @param memberCount the member count to set
+     */
+    public void setMemberCount(final int memberCount) {
+        this.memberCount = memberCount;
+    }
 
     /**
      * Checks if is local set.
@@ -514,6 +538,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
         result = prime * result + ((editBranchId == null) ? 0 : editBranchId.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
+        result = prime * result + memberCount;
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
@@ -627,6 +652,10 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
                 return false;
             }
         } else if (!externalUrl.equals(other.externalUrl)) {
+            return false;
+        }
+        
+        if (memberCount != other.memberCount) {
             return false;
         }
 

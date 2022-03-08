@@ -288,13 +288,16 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     public void testUpgradeRefset() throws Exception {
 
         // ADD NEW VERSION AND MOVE TO READY FOR EDIT
-        final String newRefsetInternalId = editUtil.createNewRefsetVersion(refsetWithInactiveConceptAsActiveMemberInternalId);
-        Refset refset = getUtil.getRefsetFromInternalId(newRefsetInternalId);
-        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
+        //final String newRefsetInternalId = editUtil.createNewRefsetVersion(refsetWithInactiveConceptAsActiveMemberInternalId);
+        Refset refset = getUtil.getRefsetFromInternalId(refsetWithInactiveConceptAsActiveMemberInternalId);
+        //refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
         
         // START THE UPGRADE PROCESS
-        editUtil.compileUpgradeData(newRefsetInternalId);
-        editUtil.resolveBackgroundOperation(newRefsetInternalId);
+        editUtil.compileUpgradeData(refset.getId());
+        editUtil.resolveBackgroundOperation(refset.getId());
+        
+        refset = getUtil.getRefsetFromRefsetIdAndVersion(refset.getRefsetId(), Refset.IN_DEVELOPMENT);
+        final String newRefsetInternalId = refset.getId();
         
         // GET THE UPGRADE DATA
         ResultList<UpgradeInactiveConcecpt> resultList = editUtil.getUpgradeData(newRefsetInternalId);
@@ -341,7 +344,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REMOVED_MANUAL_REPLACEMENT, inactiveConceptId, replacementConceptId, null);
         
         // Finish the upgrade
-        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_UPGRADE, "");
+        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.CANCEL_UPGRADE, "");
         
         // DELETE NEW VERSION
         editUtil.deleteVersionedRefset(newRefsetInternalId);

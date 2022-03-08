@@ -31,6 +31,12 @@ public class ResultList<T> implements Collection<T> {
     /** The offset. */
     private int offset;
     
+    /** A miscellaneous field for other counts that might be needed. */
+    private int miscCountA;
+    
+    /** A miscellaneous field for other counts that might be needed. */
+    private int miscCountB;
+    
     /** The searchAfter */
     private String searchAfter;
     
@@ -85,6 +91,8 @@ public class ResultList<T> implements Collection<T> {
         items = other.getItems();
         limit = other.getLimit();
         offset = other.getOffset();
+        miscCountA = other.getMiscCountA();
+        miscCountA = other.getMiscCountB();
         searchAfter = other.getSearchAfter();
         parameters = other.getParameters();
         scoreMap = other.getScoreMap();
@@ -193,6 +201,42 @@ public class ResultList<T> implements Collection<T> {
     @Override
     public void setLimit(final int limit) {
         this.limit = limit;
+    }
+    
+    /**
+     * Returns a miscellaneous field for other counts that might be needed.
+     *
+     * @return the count
+     */
+    public int getMiscCountA() {
+        return miscCountA;
+    }
+    
+    /**
+     * Sets a miscellaneous field for other counts that might be needed.
+     *
+     * @param miscCountA the count
+     */
+    public void setMiscCountA(final int miscCountA) {
+        this.miscCountA = miscCountA;
+    }
+    
+    /**
+     * Returns a miscellaneous field for other counts that might be needed.
+     *
+     * @return the count
+     */
+    public int getMiscCountB() {
+        return miscCountB;
+    }
+    
+    /**
+     * Sets a miscellaneous field for other counts that might be needed.
+     *
+     * @param miscCountB the count
+     */
+    public void setMiscCountB(final int miscCountB) {
+        this.miscCountB = miscCountB;
     }
 
     /* see superclass */

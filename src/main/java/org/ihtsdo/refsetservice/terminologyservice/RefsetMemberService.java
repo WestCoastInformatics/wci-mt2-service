@@ -2414,6 +2414,41 @@ public class RefsetMemberService {
         }
     }
     
+    /**
+     * Get the refset member concepts as a list.
+     *
+     * @return the count of refset members
+     * @throws Exception the exception
+     */
+    public static int getMemberCount(final Refset refset) throws Exception {
+        
+        int count = 0;
+        
+        // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
+        final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&active=true&offset=0&limit=1";
+        
+        logger.debug("Get Member List URL: " + url);
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+            }
+
+            final String resultString = response.readEntity(String.class);
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                throw new Exception(Integer.toString(response.getStatus()));
+            }
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+            count = root.get("total").asInt();
+        }
+        
+        return count;
+    }
 
     /**
      * Get the refset member concepts as a list.
@@ -3547,10 +3582,14 @@ public class RefsetMemberService {
         
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
-
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            
             final Refset refset = getRefset(user, service, refsetInternalId);
             WorkflowService.canUserEditRefset(user, refset);
             
+            int newMemberCount = 0;
             final String branchPath = RefsetService.getBranchPath(refset);
             final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
 
@@ -3658,6 +3697,7 @@ public class RefsetMemberService {
                             final JsonNode conceptNode = iterator.next();
                             final String conceptId = conceptNode.get("conceptId").asText();
                             validatedConcepts.add(conceptId);
+                            newMemberCount++;
                             
                             final Map<String, String> status = new HashMap<>();
                             status.put("operation", "Added");
@@ -3695,6 +3735,10 @@ public class RefsetMemberService {
             } else {
                 unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds));
             }
+
+            // update the member count and save the refset
+            refset.setMemberCount(refset.getMemberCount() + newMemberCount);
+            service.update(refset);
             
             for (final String conceptId : unaddedConcepts) {
                 
@@ -3858,12 +3902,16 @@ public class RefsetMemberService {
         // get the edition and project for the new refset
         try (final TerminologyService service = new TerminologyService()) {
 
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            
             final Refset refset = getRefset(user, service, refsetInternalId);
             WorkflowService.canUserEditRefset(user, refset);
 
             final String refsetId = refset.getRefsetId();
             final String branchPath = RefsetService.getBranchPath(refset);
             final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
+            int removedMemberCount = 0;
 
             // clear the caches for this refset
             clearAllMemberCaches(branchPath);
@@ -3988,6 +4036,10 @@ public class RefsetMemberService {
                 
                 unremovedConcepts = callUpdateMembersBulk(refsetId, url + "/bulk", memberUpdateArray);
             }
+            
+            // update the member count and save the refset
+            refset.setMemberCount(getMemberCount(refset));
+            service.update(refset);
             
             for (final String conceptId : unremovedConcepts) {
                 
@@ -4204,11 +4256,19 @@ public class RefsetMemberService {
     public static String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId, String upgradeBranch) throws Exception {
         
         String status = "Upgrade data compiled";
-        final Refset refset = RefsetService.getRefset(user, refsetInternalId);
+        Refset tempRefset = RefsetService.getRefset(user, refsetInternalId);
         
-        if (!refset.getWorkflowStatus().equals(WorkflowService.READY_FOR_EDIT)) {
+        if (tempRefset.getWorkflowStatus().equals(WorkflowService.PUBLISHED) && tempRefset.getAvailableActions().contains(WorkflowService.UPGRADE)) {
+            
+            final String internalRefsetId = RefsetService.createNewRefsetVersion(user, tempRefset.getId(), false);
+            tempRefset = service.get(internalRefsetId, Refset.class);
+        }
+        
+        if (!tempRefset.getWorkflowStatus().equals(WorkflowService.READY_FOR_EDIT)) {
             throw new Exception ("Refset is in the wrong status to be Upgraded");
         }
+        
+        final Refset refset = tempRefset;
         
         // set the refset into IN_UPGRADE status
         WorkflowService.setWorkflowStatusByAction(user, WorkflowService.UPGRADE, refset, "");
@@ -4462,6 +4522,7 @@ public class RefsetMemberService {
         ResultList<UpgradeInactiveConcecpt> results = service.find("refsetId: " + refsetId, pfs, UpgradeInactiveConcecpt.class, null);
         results.setTotal(results.getItems().size());
         results.setTotalKnown(true);
+        results.setMiscCountA(refset.getMemberCount() - results.getItems().size());
         
         return results;
     }
@@ -4489,6 +4550,7 @@ public class RefsetMemberService {
      * remove the upgrade data for a refset.
      *
      * @param service the Terminology Service
+     * @param user the user
      * @param refsetInternalId the internal refset ID
      * @throws Exception the exception
      */

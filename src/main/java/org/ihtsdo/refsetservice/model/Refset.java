@@ -114,6 +114,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = true)
     private String assignedUser;
     
+    /** The refset member count. */
+    @Column(nullable = false)
+    private int memberCount = -1;
+    
     /** The flag for if a user can download this refset. */
     @Transient
     private boolean downloadable;
@@ -266,6 +270,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         moduleId = other.getModuleId();
         editBranchId = other.getEditBranchId();
         assignedUser = other.getAssignedUser();
+        memberCount = other.getMemberCount();
         privateRefset = other.isPrivateRefset();
         downloadable = other.isDownloadable();
         locked = other.isLocked();
@@ -925,6 +930,24 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setAssignedUser(final String assignedUser) {
         this.assignedUser = assignedUser;
     }
+    
+    /**
+     * Returns the member count.
+     *
+     * @return the member count
+     */
+    public int getMemberCount() {
+        return memberCount;
+    }
+    
+    /**
+     * Sets the member count.
+     *
+     * @param memberCount the member count to set
+     */
+    public void setMemberCount(final int memberCount) {
+        this.memberCount = memberCount;
+    }
 
     /**
      * Gets the project.
@@ -1063,6 +1086,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((branchPath == null) ? 0 : branchPath.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + memberCount;
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (downloadable ? 1 : 0);
         result = prime * result + (feedbackVisible ? 1 : 0);
@@ -1224,6 +1248,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
             return false;
         }
 
+        if (memberCount != other.memberCount) {
+            return false;
+        }
+        
         if (privateRefset != other.privateRefset) {
             return false;
         }

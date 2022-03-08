@@ -647,7 +647,7 @@ public class RefsetController extends BaseController {
                 try (final TerminologyService service = new TerminologyService()) {
 
                 
-                    final String internalRefsetId = RefsetService.createNewRefsetVersion(user, refset.getId());
+                    final String internalRefsetId = RefsetService.createNewRefsetVersion(user, refset.getId(), true);
                     refset = service.get(internalRefsetId, Refset.class);
                 }
                 
@@ -829,7 +829,7 @@ public class RefsetController extends BaseController {
             logger.debug("createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
             
-            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refsetInternalId);
+            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refsetInternalId, true);
             
             if (newRefsetInternalId.startsWith("Error")) {
                 return "{\"error\": \"" + newRefsetInternalId + "\"}";
@@ -1915,7 +1915,7 @@ public class RefsetController extends BaseController {
             String status = "";
             
             logger.debug("compileUpgradeData: refsetInternalId: " + refsetInternalId + "; upgradeBranch: " + upgradeBranch);
-              
+            
             // add the list of concepts as members to the refset
             status = RefsetMemberService.compileUpgradeData(service, user, refsetInternalId, upgradeBranch);
             

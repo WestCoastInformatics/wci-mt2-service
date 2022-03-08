@@ -505,6 +505,7 @@ public class RefsetService {
             refset.setDefinitionClauses(new ArrayList<>());
             refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
             refset.setAssignedUser(null);
+            refset.setMemberCount(history.getMemberCount());
 
             service.update(refset);
 
@@ -1231,27 +1232,54 @@ public class RefsetService {
      * Returns a specific refset by internal ID.
      *
      * @param service the Terminology Service
+     * @param refset the refset
+     * @return the if the refset needed the count set
+     * @throws Exception the exception
+     */
+    public static boolean setRefsetMemberCount(final TerminologyService service, final Refset refset) throws Exception {
+
+        if (refset.getMemberCount() == -1) {
+
+            logger.debug("setRefsetMemberCount Setting the member count for refset: " + refset.getId());
+            refset.setMemberCount(RefsetMemberService.getMemberCount(refset));
+            
+            // save the refset
+            service.update(refset);
+            return true;
+        }
+
+        return false;
+    }
+    
+    /**
+     * Returns a specific refset by internal ID.
+     *
+     * @param service the Terminology Service
      * @param user the user
      * @param refsetInternalId the internal refset ID
      * @return the refset
      * @throws Exception the exception
      */
     public static Refset getRefset(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
-
+        
+        service.setModifiedBy(user.getUserName());
+        service.setModifiedFlag(true);
+        
         Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
-
+        
         if (refset == null) {
-
+            
             throw new Exception("Unable to retrieve refset " + refsetInternalId);
         }
-
+        
         refset = setRefsetPermissions(user, refset);
         refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
         refset.setBranchPath(getBranchPath(refset));
-
+        setRefsetMemberCount(service, refset);
+        
         logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
         return refset;
-
+        
     }
 
     /**
@@ -1265,6 +1293,10 @@ public class RefsetService {
     public static Refset getRefset(final User user, final String refsetInternalId) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            
             return getRefset(service, user, refsetInternalId);
         }
     }
@@ -1281,6 +1313,9 @@ public class RefsetService {
     public static Refset getRefset(final User user, final String refsetId, final String versionDate) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
 
             String query = "latestPublishedVersion: true";
 
@@ -1303,6 +1338,7 @@ public class RefsetService {
             refset = setRefsetPermissions(user, refset);
             refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
             refset.setBranchPath(getBranchPath(refset));
+            setRefsetMemberCount(service, refset);
 
             logger.debug("*********** getRefset: refset: " + ModelUtility.toJson(refset));
             return refset;
@@ -1564,10 +1600,11 @@ public class RefsetService {
      *
      * @param user the user
      * @param refsetInternalId the internal refset ID to base the new version on
+     * @param inEdit should the refset be set into IN_EDIT status, if false it will be in READY_FOR_EDIT
      * @return the new internal refset ID
      * @throws Exception the exception
      */
-    public static String createNewRefsetVersion(final User user, final String refsetInternalId) throws Exception {
+    public static String createNewRefsetVersion(final User user, final String refsetInternalId, final boolean inEdit) throws Exception {
 
         Refset oldLatestVersionRefset = null;
         Refset newRefsetVersion = new Refset();
@@ -1575,7 +1612,7 @@ public class RefsetService {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy("RT2");
+            service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
             Refset refset = getRefset(user, refsetInternalId);
@@ -1612,17 +1649,25 @@ public class RefsetService {
 
                 oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestPublishedVersion: true", Refset.class, null);
             }
+            
+            // get the member count for the new version
+            newRefsetVersion.setMemberCount(RefsetMemberService.getMemberCount(newRefsetVersion));
 
             // Add an object
             service.add(newRefsetVersion);
             newInternalRefsetId = newRefsetVersion.getId();
 
-            // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
+            // Add a workflow history entry for READY_FOR_EDIT
             WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, newRefsetVersion, "");
-            newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT, user.getUserName());
-
-            // create an edit history entry based on the new refset version.
-            createRefsetEditHistory(user, newInternalRefsetId);
+            
+            // update the workflow to IN_EDIT if required
+            if (inEdit) {
+                
+                newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT, user.getUserName());
+                
+                // create an edit history entry based on the new refset version.
+                createRefsetEditHistory(user, newInternalRefsetId);
+            }
 
             // update the previous latest version so it no longer is marked as latest
             if (oldLatestVersionRefset != null) {
