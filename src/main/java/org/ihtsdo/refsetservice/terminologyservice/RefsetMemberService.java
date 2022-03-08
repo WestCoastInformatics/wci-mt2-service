@@ -4205,11 +4205,17 @@ public class RefsetMemberService {
         
         String status = "Upgrade data compiled";
         final Refset refset = RefsetService.getRefset(user, refsetInternalId);
-        ConceptResultList replacements = new ConceptResultList();
+        
+        if (!refset.getWorkflowStatus().equals(WorkflowService.READY_FOR_EDIT)) {
+            throw new Exception ("Refset is in the wrong status to be Upgraded");
+        }
+        
+        // set the refset into IN_UPGRADE status
+        WorkflowService.setWorkflowStatusByAction(user, WorkflowService.UPGRADE, refset, "");
+        
         List<Concept> inactiveMemberList = new ArrayList<>();
         List<String> activeMemberList = new ArrayList<>();
         LinkedHashMap<String, UpgradeInactiveConcecpt> inactiveData = new LinkedHashMap<>();
-        final List<Concept> replacementConcepts = new ArrayList<>();
         final String branchPath = getBranchPath(refset);
         final String refsetId = refset.getRefsetId();
         ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
@@ -4351,6 +4357,12 @@ public class RefsetMemberService {
                         inactiveConcept.setDescriptions(ModelUtility.toJson(descriptions));
                     }
                     
+                    final JsonNode inactivationIndicatorNode = conceptNode.get("inactivationIndicator");
+                    
+                    if (inactivationIndicatorNode != null) {
+                        inactiveConcept.setInactivationReason(inactivationIndicatorNode.asText());
+                    }
+                    
                     final JsonNode associationTargets = conceptNode.get("associationTargets");
 
                     if (associationTargets != null && associationTargets.size() != 0 && associationTargets.fields() != null) {
@@ -4391,7 +4403,7 @@ public class RefsetMemberService {
                                         threadService.setModifiedBy(user.getUserName());
                                         threadService.setModifiedFlag(true);
                             
-                                        logger.debug("%%%%%%%%% compileUpgradeData IN THREAD ID: " + Thread.currentThread().getId());
+                                        //logger.debug("%%%%%%%%% compileUpgradeData IN THREAD ID: " + Thread.currentThread().getId());
                                         populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
                                         
                                         for (final Concept replacementConcept: replacementConceptsToLookup) {
@@ -4423,9 +4435,6 @@ public class RefsetMemberService {
                         }
                     }
                 }
-                
-                // set the refset into IN_UPGRADE status
-                WorkflowService.setWorkflowStatusByAction(user, WorkflowService.UPGRADE, refset, "");
             }
         }
         
@@ -4474,6 +4483,25 @@ public class RefsetMemberService {
         
         UpgradeInactiveConcecpt upgradeInactiveConcecpt = service.findSingle("refsetId: " + refsetId + " AND code:" + inactiveConceptId, UpgradeInactiveConcecpt.class, null);
         return upgradeInactiveConcecpt;
+    }
+    
+    /**
+     * remove the upgrade data for a refset.
+     *
+     * @param service the Terminology Service
+     * @param refsetInternalId the internal refset ID
+     * @throws Exception the exception
+     */
+    public static void removeUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+        
+        final Refset refset = RefsetService.getRefset(user, refsetInternalId);
+        final String refsetId = refset.getRefsetId();
+        
+        ResultList<UpgradeInactiveConcecpt> results = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcecpt.class, null);
+        
+        for (final UpgradeInactiveConcecpt upgradeInactiveConcecpt: results.getItems()) {
+            service.removeObject(upgradeInactiveConcecpt);
+        }
     }
     
     /**

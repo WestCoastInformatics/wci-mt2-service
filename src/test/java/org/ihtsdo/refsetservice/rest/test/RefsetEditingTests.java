@@ -340,6 +340,9 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         // for the the first inactive concept remove the manual replacement again after it is added as a member
         editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REMOVED_MANUAL_REPLACEMENT, inactiveConceptId, replacementConceptId, null);
         
+        // Finish the upgrade
+        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_UPGRADE, "");
+        
         // DELETE NEW VERSION
         editUtil.deleteVersionedRefset(newRefsetInternalId);
 

@@ -364,88 +364,94 @@ public final class WorkflowService {
         final String currentStatus = refset.getWorkflowStatus();
         boolean restoreHistory = false;
         List<String> roles = RefsetService.setRoles(user, refset.getProject(), new ArrayList<>());
+        
+        try (final TerminologyService service = new TerminologyService()) {
 
-        // get the next status based on the user, current status, and supplied action
-        logger.debug("WORKFLOW_PERMUTATIONS: " + ModelUtility.toJson(WORKFLOW_PERMUTATIONS));
-        
-        String nextStatus = null;
-        String assignedUser = null;
-        
-        // loop thru the roles to find a match for the action and current status. !! This only works if any multiple matches between role, current status, and action go to the same next status !!
-        for (final String role: roles) {
+            // get the next status based on the user, current status, and supplied action
+            logger.debug("WORKFLOW_PERMUTATIONS: " + ModelUtility.toJson(WORKFLOW_PERMUTATIONS));
             
-            if (WORKFLOW_PERMUTATIONS.containsKey(role) && WORKFLOW_PERMUTATIONS.get(role).containsKey(refset.getWorkflowStatus())) {
+            String nextStatus = null;
+            String assignedUser = null;
+            
+            // loop thru the roles to find a match for the action and current status. !! This only works if any multiple matches between role, current status, and action go to the same next status !!
+            for (final String role: roles) {
                 
-                final String possibleStatus = WORKFLOW_PERMUTATIONS.get(role).get(refset.getWorkflowStatus()).get(action);
-                
-                if (possibleStatus != null) {
+                if (WORKFLOW_PERMUTATIONS.containsKey(role) && WORKFLOW_PERMUTATIONS.get(role).containsKey(refset.getWorkflowStatus())) {
                     
-                    nextStatus = possibleStatus;
-                    break;
+                    final String possibleStatus = WORKFLOW_PERMUTATIONS.get(role).get(refset.getWorkflowStatus()).get(action);
+                    
+                    if (possibleStatus != null) {
+                        
+                        nextStatus = possibleStatus;
+                        break;
+                    }
                 }
             }
-        }
-        
-        if (Arrays.asList(EDIT, UPGRADE, REVIEW).contains(action)) {
-            assignedUser = user.getUserName();
-        }
-        
-        logger.debug("currentStatus: " + currentStatus + " ; nextStatus: " + nextStatus);
-
-        // if edits have just been completed then merge the edit branch into the refset branch and delete the edit branch
-        if ((currentStatus.equals(IN_EDIT) && Arrays.asList(FINISH_EDIT, REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(FINISH_UPGRADE).contains(action))) {
-
-            final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(), notes);
-
-            if (merged) {
+            
+            if (Arrays.asList(EDIT, UPGRADE, REVIEW).contains(action)) {
+                assignedUser = user.getUserName();
+            }
+            
+            logger.debug("currentStatus: " + currentStatus + " ; nextStatus: " + nextStatus);
+    
+            // if edits have just been completed then merge the edit branch into the refset branch and delete the edit branch
+            if ((currentStatus.equals(IN_EDIT) && Arrays.asList(FINISH_EDIT, REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(FINISH_UPGRADE).contains(action))) {
+    
+                final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(), notes);
+    
+                if (merged) {
+                    
+                    refset.setEditBranchId(null);
+                    RefsetService.removeRefsetEditHistory(user, refset.getRefsetId());
+                    
+                } else {
+    
+                    final String message = "Unable to merge edit into refset branch for refset " + refset.getRefsetId() + " because the edit branch doesn't exist.";
+                    logger.error(message);
+                    throw new Exception(message);
+                }
+    
+            }
+            
+            else if ((currentStatus.equals(IN_EDIT) && Arrays.asList(CANCEL_EDIT).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(CANCEL_UPGRADE).contains(action))) {
                 
+                RefsetMemberService.clearAllMemberCaches(getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId()));
                 refset.setEditBranchId(null);
-                RefsetService.removeRefsetEditHistory(user, refset.getRefsetId());
-                //deleteEditBranch(user, refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId());
-            } else {
-
-                final String message = "Unable to merge edit into refset branch for refset " + refset.getRefsetId() + " because the edit branch doesn't exist.";
-                logger.error(message);
-                throw new Exception(message);
+                restoreHistory = true;
             }
-
-        }
-        
-        else if ((currentStatus.equals(IN_EDIT) && Arrays.asList(CANCEL_EDIT).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(CANCEL_UPGRADE).contains(action))) {
-            
-            RefsetMemberService.clearAllMemberCaches(getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId()));
-            refset.setEditBranchId(null);
-            restoreHistory = true;
-            //deleteEditBranch(user, refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId());
-        }
-
-        // else if this is the start of edits create the refset edit branch
-        else if (action.equals(EDIT) || action.equals(UPGRADE)) {
-            
-            final String branchId = generateEditBranchId();
-            refset.setEditBranchId(branchId);
-            createEditBranch(user, refset.getEditionBranch(), refset.getId(), refset.getRefsetId(), branchId);
-        }
-
-        // if publication is being requested merge the refset branch into the edition branch
-        if (action.equals(REQUEST_PUBLICATION)) {
-
-            final boolean merged = mergeRefsetIntoProjectBranch(refset.getEditionBranch(), refset.getRefsetId(), notes);
-
-            if (!merged) {
+    
+            // else if this is the start of edits create the refset edit branch
+            else if (action.equals(EDIT) || action.equals(UPGRADE)) {
                 
-                final String message = "Unable to merge refset into project branch for refset " + refset.getRefsetId() + " because the project branch doesn't exist.";
-                logger.error(message);
-                throw new Exception(message);
+                final String branchId = generateEditBranchId();
+                refset.setEditBranchId(branchId);
+                createEditBranch(user, refset.getEditionBranch(), refset.getId(), refset.getRefsetId(), branchId);
             }
-        }
-        
-        setWorkflowStatus(user, action, refset, notes, nextStatus, assignedUser);
-        
-        if (restoreHistory) {
             
-            RefsetService.replaceRefsetWithEditHistory(user, refset.getId());
-            RefsetService.removeRefsetEditHistory(user, refset.getRefsetId());
+            if (currentStatus.equals(IN_UPGRADE)) {
+                RefsetMemberService.removeUpgradeData(service, user, refset.getId());
+            }
+    
+            // if publication is being requested merge the refset branch into the edition branch
+            if (action.equals(REQUEST_PUBLICATION)) {
+    
+                final boolean merged = mergeRefsetIntoProjectBranch(refset.getEditionBranch(), refset.getRefsetId(), notes);
+    
+                if (!merged) {
+                    
+                    final String message = "Unable to merge refset into project branch for refset " + refset.getRefsetId() + " because the project branch doesn't exist.";
+                    logger.error(message);
+                    throw new Exception(message);
+                }
+            }
+            
+            setWorkflowStatus(user, action, refset, notes, nextStatus, assignedUser);
+            
+            if (restoreHistory) {
+                
+                RefsetService.replaceRefsetWithEditHistory(user, refset.getId());
+                RefsetService.removeRefsetEditHistory(user, refset.getRefsetId());
+            }
         }
         
         return refset;

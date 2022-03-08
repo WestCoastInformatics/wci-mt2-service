@@ -213,6 +213,7 @@ CREATE TABLE `upgrade_inactive_concecpts` (
   `modifiedBy` varchar(256) NOT NULL,
   `code` varchar(256) NOT NULL,
   `descriptions` longtext NOT NULL,
+  `inactivationReason` varchar(256),
   `refsetId` varchar(256) NOT NULL,
   `replaced` bit(1) NOT NULL,
   `stillMember` bit(1) NOT NULL,

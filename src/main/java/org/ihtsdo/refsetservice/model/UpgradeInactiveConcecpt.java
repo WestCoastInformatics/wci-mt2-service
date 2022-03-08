@@ -50,6 +50,11 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
     @Column(nullable = false, length = 10000)
     @Type(type = "text")
     private String descriptions;
+    
+    /** The descriptions. */
+    @Column(nullable = false, length = 256)
+    @Type(type = "text")
+    private String inactivationReason;
 
     /** The flag showing if this concept is still a member of the refset. */
     @Column(nullable = false)
@@ -91,6 +96,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
         refsetId = other.getRefsetId();
         code = other.getCode();
         descriptions = other.getDescriptions();
+        inactivationReason = other.getInactivationReason();
         stillMember = other.isStillMember();
         replaced = other.isReplaced();
         replacementConcecpts = new ArrayList<UpgradeReplacementConcecpt>(other.getReplacementConcecpts());
@@ -150,6 +156,24 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
      */
     public void setDescriptions(final String descriptions) {
         this.descriptions = descriptions;
+    }
+    
+    /**
+     * Returns the inactivation reason.
+     *
+     * @return the inactivation reason
+     */
+    public String getInactivationReason() {
+        return inactivationReason;
+    }
+    
+    /**
+     * Sets the inactivation reason.
+     *
+     * @param inactivationReason the inactivation reason
+     */
+    public void setInactivationReason(final String inactivationReason) {
+        this.inactivationReason = inactivationReason;
     }
 
     /**
@@ -227,6 +251,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
         result = prime * result + ((refsetId == null) ? 0 : refsetId.hashCode());
         result = prime * result + ((code == null) ? 0 : code.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
+        result = prime * result + ((inactivationReason == null) ? 0 : inactivationReason.hashCode());
         result = prime * result + ((replacementConcecpts == null) ? 0 : replacementConcecpts.hashCode());
         result = prime * result + (stillMember ? 1 : 0);
         result = prime * result + (replaced ? 1 : 0);
@@ -277,6 +302,14 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
                 return false;
             }
         } else if (!descriptions.equals(other.descriptions)) {
+            return false;
+        }
+        
+        if (inactivationReason == null) {
+            if (other.inactivationReason != null) {
+                return false;
+            }
+        } else if (!inactivationReason.equals(other.inactivationReason)) {
             return false;
         }
         
