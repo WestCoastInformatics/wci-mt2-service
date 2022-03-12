@@ -1675,10 +1675,9 @@ public class RefsetMemberService {
      * @param refset the refset who's members are being retrieved
      * @param conceptsToProcess the concepts to add descriptions to
      * @return the concept descriptions
-     * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws MalformedURLException, Exception {
+    public static void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
         final StringBuffer conceptIds = new StringBuffer();
 
@@ -1791,11 +1790,9 @@ public class RefsetMemberService {
      *
      * @param refset the refset who's members are being retrieved
      * @param conceptsToProcess the concepts to add hasChild info to
-     * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static void populateConceptLeafStatus(final Refset refset,
-        final List<Concept> conceptsToProcess) throws MalformedURLException, Exception {
+    public static void populateConceptLeafStatus(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
         final StringBuffer conceptIds = new StringBuffer();
 
@@ -1870,12 +1867,9 @@ public class RefsetMemberService {
      * @param searchRefsetMembers Should the search be for members of the refset
      *            or for all concepts
      * @return the concept result list
-     * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static ConceptResultList prepareConceptSearch(final User user, final String refsetInternalId,
-        final SearchParameters searchParameters, final boolean searchRefsetMembers)
-        throws MalformedURLException, Exception {
+    public static ConceptResultList prepareConceptSearch(final User user, final String refsetInternalId, final SearchParameters searchParameters, final boolean searchRefsetMembers) throws Exception {
 
         ConceptResultList concepts = new ConceptResultList();
 
@@ -1885,6 +1879,7 @@ public class RefsetMemberService {
             final String branchPath = getBranchPath(refset);
             final String cacheString = refset.getRefsetId() + searchParameters.toString() + searchRefsetMembers;
             final Map<String, ConceptResultList> branchCache = getCacheForConceptsCall(branchPath);
+            String searchMembersMode = "all";
             
             // check if the concept call has been cached
             if (branchCache.containsKey(cacheString)) {
@@ -1892,8 +1887,12 @@ public class RefsetMemberService {
                 logger.debug("####### prepareConceptSearch USING CACHE");
                 return branchCache.get(cacheString);
             }
+            
+            if (searchRefsetMembers) {
+                searchMembersMode = "members";
+            }
 
-            concepts = searchConcepts(refset, searchParameters, searchRefsetMembers);
+            concepts = searchConcepts(refset, searchParameters, searchMembersMode, -1);
 
             if (searchRefsetMembers) {
                 
@@ -1926,11 +1925,9 @@ public class RefsetMemberService {
      * @param refset the refset
      * @param concepts the list of concepts ancestor paths are being generated for
      * @return the concept result list
-     * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static List<Concept> getConceptAncestors(final Refset refset,
-        final List<Concept> concepts) throws MalformedURLException, Exception {
+    public static List<Concept> getConceptAncestors(final Refset refset, final List<Concept> concepts) throws Exception {
 
         String conceptIds = "";
         final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
@@ -2027,30 +2024,44 @@ public class RefsetMemberService {
      *
      * @param refset the refset
      * @param searchParameters the search parameters
-     * @param searchRefsetMembers Should the search be for members of the refset or for all concepts
+     * @param searchMembersMode Should the search be for only for members, non members, or all concepts. Values: 'all', 'members', 'non members'
+     * @param limitReturnNumber -1 if all results should be returned, or the number of final results that should be returned (search may request more than what is returned)
      * @return the concept result list
-     * @throws MalformedURLException the malformed URL exception
      * @throws Exception the exception
      */
-    public static ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final boolean searchRefsetMembers) throws MalformedURLException, Exception {
+    public static ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode, final int limitReturnNumber) throws Exception {
 
         ConceptResultList members = new ConceptResultList();
         final ObjectMapper mapper = new ObjectMapper();
         final String encodedCaret = "%5E";
         final String encodedSpace = "%20";
+        boolean searchOnlyRefsetMembers = false;
+        boolean limitToNonMembers = false;
+        int limit = ELASTICSEARCH_MAX_RECORD_LENGTH - 1;
+        
+        if (limitReturnNumber > 0) {
+            limit = limitReturnNumber;
+        }
+        
+        if (searchMembersMode.equals("members")) {
+            searchOnlyRefsetMembers = true;
+            
+        } else if (searchMembersMode.equals("non members")) {
+            limitToNonMembers = true; 
+        }
 
         // Create Snowstorm URL
-        String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset=0&limit=" + (ELASTICSEARCH_MAX_RECORD_LENGTH - 1);
+        String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset=0&limit=" + limit;
 
         // if this search is for editing then get the concept leaf information
-        if (searchParameters.isEditing()) {
+        if (!limitToNonMembers && searchParameters.isEditing()) {
             url += "&includeLeafFlag=true&form=inferred";
         }
 
         boolean searchEcl = false;
 
         // if the query is not an ID then see if it passes ECL syntax
-        if (searchParameters.getQuery() != null && !searchParameters.getQuery().matches("\\d*")) {
+        if (!limitToNonMembers && searchParameters.getQuery() != null && !searchParameters.getQuery().matches("\\d*")) {
 
             final String eclUrl = SnowstormConnection.BASE_URL + "util/ecl-string-to-model";
             final String body = StringUtility.encodeValue(searchParameters.getQuery());
@@ -2071,7 +2082,7 @@ public class RefsetMemberService {
             url += "&term=" + StringUtility
                     .encodeValue(searchParameters.getQuery());
 
-            if (searchRefsetMembers) {
+            if (searchOnlyRefsetMembers) {
                 url += "&ecl=" + encodedCaret + refset.getRefsetId();
             }
 
@@ -2079,7 +2090,7 @@ public class RefsetMemberService {
 
             url += "&ecl=" + StringUtility.encodeValue("(" + searchParameters.getQuery() + ")");
 
-            if (searchRefsetMembers) {
+            if (searchOnlyRefsetMembers) {
                 url += encodedSpace + "AND" + encodedSpace + encodedCaret + refset.getRefsetId();
             }
         }
@@ -2154,7 +2165,7 @@ public class RefsetMemberService {
                         }
     
                         setConceptPermissions(concept);
-                        concept.setMemberOfRefset(searchRefsetMembers);
+                        concept.setMemberOfRefset(searchOnlyRefsetMembers);
                         processIntensionalDefinitionException(refset, concept);
                         conceptBatch.add(concept);
                     }
@@ -2491,7 +2502,7 @@ public class RefsetMemberService {
             if (searchParameters.getQuery() != null && !searchParameters.getQuery().isEmpty()) {
 
                 notSearching = false;
-                currentList = searchConcepts(refset, searchParameters, true);
+                currentList = searchConcepts(refset, searchParameters, "members", -1);
             } else {
 
                 String searchAfter = "";
@@ -4468,17 +4479,17 @@ public class RefsetMemberService {
                                         
                                         for (final Concept replacementConcept: replacementConceptsToLookup) {
                                             
-                                            final UpgradeReplacementConcecpt upgradeReplacementConcecpt = new UpgradeReplacementConcecpt();
-                                            upgradeReplacementConcecpt.setCode(replacementConcept.getCode());
-                                            upgradeReplacementConcecpt.setReason(reasonMap.get(replacementConcept.getCode()));
+                                            final UpgradeReplacementConcecpt upgradeReplacementConcept = new UpgradeReplacementConcecpt();
+                                            upgradeReplacementConcept.setCode(replacementConcept.getCode());
+                                            upgradeReplacementConcept.setReason(reasonMap.get(replacementConcept.getCode()));
                                             
                                             if (conceptNode.get("descriptions") != null) {
-                                                upgradeReplacementConcecpt.setDescriptions(ModelUtility.toJson(conceptNode.get("descriptions")));
+                                                upgradeReplacementConcept.setDescriptions(ModelUtility.toJson(conceptNode.get("descriptions")));
                                             }
                                             
-                                            threadService.add(upgradeReplacementConcecpt);
-                                            logger.debug("compileUpgradeData added Replacement Concept: " + upgradeReplacementConcecpt);
-                                            inactiveConcept.getReplacementConcecpts().add(upgradeReplacementConcecpt);
+                                            threadService.add(upgradeReplacementConcept);
+                                            logger.debug("compileUpgradeData added Replacement Concept: " + upgradeReplacementConcept);
+                                            inactiveConcept.getReplacementConcecpts().add(upgradeReplacementConcept);
                                         }
                                         
                                         threadService.add(inactiveConcept);
@@ -4542,8 +4553,8 @@ public class RefsetMemberService {
         final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
         final String refsetId = refset.getRefsetId();
         
-        UpgradeInactiveConcecpt upgradeInactiveConcecpt = service.findSingle("refsetId: " + refsetId + " AND code:" + inactiveConceptId, UpgradeInactiveConcecpt.class, null);
-        return upgradeInactiveConcecpt;
+        UpgradeInactiveConcecpt upgradeInactiveConcept = service.findSingle("refsetId: " + refsetId + " AND code:" + inactiveConceptId, UpgradeInactiveConcecpt.class, null);
+        return upgradeInactiveConcept;
     }
     
     /**
@@ -4561,8 +4572,8 @@ public class RefsetMemberService {
         
         ResultList<UpgradeInactiveConcecpt> results = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcecpt.class, null);
         
-        for (final UpgradeInactiveConcecpt upgradeInactiveConcecpt: results.getItems()) {
-            service.removeObject(upgradeInactiveConcecpt);
+        for (final UpgradeInactiveConcecpt upgradeInactiveConcept: results.getItems()) {
+            service.removeObject(upgradeInactiveConcept);
         }
     }
     
@@ -4574,13 +4585,13 @@ public class RefsetMemberService {
      * @param refsetInternalId the internal refset ID
      * @param inactiveConceptId the concept ID of the inactive concept to be upgraded
      * @param replacementConceptId the concept ID of the replacement concept to be updated
-     * @param manualReplacementConcecpt the manual upgrade replacement concept that to be added
+     * @param manualReplacementConcept the manual upgrade replacement concept that to be added
      * @param changed a string identifying what has been changed
      * @return the status of the operation
      * @throws Exception the exception
      */
     public static String modifyUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final String inactiveConceptId, 
-        final String replacementConceptId, final UpgradeReplacementConcecpt manualReplacementConcecpt, final String changed) throws Exception {
+        final String replacementConceptId, final UpgradeReplacementConcecpt manualReplacementConcept, final String changed) throws Exception {
         
         try {
             
@@ -4591,8 +4602,8 @@ public class RefsetMemberService {
             boolean add = true;
             String changeText = "added";
             boolean memberChange = true;
-            final UpgradeInactiveConcecpt upgradeInactiveConcecpt = getUpgradeConcept(service, user, refsetInternalId, inactiveConceptId);
-            UpgradeReplacementConcecpt upgradeReplacementConcecpt = null;
+            final UpgradeInactiveConcecpt upgradeInactiveConcept = getUpgradeConcept(service, user, refsetInternalId, inactiveConceptId);
+            UpgradeReplacementConcecpt upgradeReplacementConcept = null;
             String conceptIdToChange = inactiveConceptId;
             
             if (changed.contains("REMOVED")) {
@@ -4604,27 +4615,27 @@ public class RefsetMemberService {
             // if the operation needs it get the stored replacement concept
             if (replacementChangeStatuses.contains(changed)) {
                  
-                for (UpgradeReplacementConcecpt replacementConcecpt : upgradeInactiveConcecpt.getReplacementConcecpts()) {
+                for (UpgradeReplacementConcecpt replacementConcecpt : upgradeInactiveConcept.getReplacementConcecpts()) {
                     
                     if (replacementConcecpt.getCode().equals(replacementConceptId)) {
                         
-                        upgradeReplacementConcecpt = replacementConcecpt;
+                        upgradeReplacementConcept = replacementConcecpt;
                         conceptIdToChange = replacementConceptId;
                         
-                        if (changed.equals(REMOVED_MANUAL_REPLACEMENT) && !upgradeReplacementConcecpt.isAdded()) {
+                        if (changed.equals(REMOVED_MANUAL_REPLACEMENT) && !upgradeReplacementConcept.isAdded()) {
                             memberChange = false;
                         }
                     }
                 }
             } else if (changed.equals(NEW_MANUAL_REPLACEMENT)) {
                 
-                upgradeReplacementConcecpt = manualReplacementConcecpt;
+                upgradeReplacementConcept = manualReplacementConcept;
                 memberChange = false;
-                conceptIdToChange = upgradeReplacementConcecpt.getCode();
+                conceptIdToChange = upgradeReplacementConcept.getCode();
                 
                 // save the replacement concept and add it to the inactive concept
-                service.add(upgradeReplacementConcecpt);
-                upgradeInactiveConcecpt.getReplacementConcecpts().add(upgradeReplacementConcecpt);
+                service.add(upgradeReplacementConcept);
+                upgradeInactiveConcept.getReplacementConcecpts().add(upgradeReplacementConcept);
             }
             
             logger.debug("modifyUpgradeConcept: member change: " + conceptIdToChange);
@@ -4647,38 +4658,38 @@ public class RefsetMemberService {
             }
             
             if (changed.equals(INACTIVE_REMOVED)) {
-                upgradeInactiveConcecpt.setStillMember(false);
+                upgradeInactiveConcept.setStillMember(false);
                 
             } else if (replacementChangeStatuses.contains(changed)) {
                 
-                if (upgradeReplacementConcecpt == null) {
+                if (upgradeReplacementConcept == null) {
                     throw new Exception("Unable to find replacement concept code");
                 }
                 
                 if (memberChange) {
-                    upgradeInactiveConcecpt.setReplaced(add);
+                    upgradeInactiveConcept.setReplaced(add);
                     logger.debug("modifyUpgradeConcept: inactive concept marked as replaced = " + add);
                 }
                 
                 // save or remove the replacement concept
                 if (changed.equals(REMOVED_MANUAL_REPLACEMENT)) {
                     
-                    upgradeInactiveConcecpt.getReplacementConcecpts().remove(upgradeReplacementConcecpt);
-                    service.remove(upgradeReplacementConcecpt);
+                    upgradeInactiveConcept.getReplacementConcecpts().remove(upgradeReplacementConcept);
+                    service.remove(upgradeReplacementConcept);
                     logger.debug("modifyUpgradeConcept: removed the replacement concept: " + conceptIdToChange);
                 } else {
                     
-                    upgradeReplacementConcecpt.setAdded(add);
-                    service.update(upgradeReplacementConcecpt);
+                    upgradeReplacementConcept.setAdded(add);
+                    service.update(upgradeReplacementConcept);
                     logger.debug("modifyUpgradeConcept: updated the replacement concept: " + conceptIdToChange);
                 }
                 
             } else if (changed.equals(INACTIVE_ADDED)) {
-                upgradeInactiveConcecpt.setStillMember(true);
+                upgradeInactiveConcept.setStillMember(true);
             }
               
             // save the inactive concept
-            service.update(upgradeInactiveConcecpt);
+            service.update(upgradeInactiveConcept);
             
             return "All changes made successfully";
             
@@ -4689,6 +4700,57 @@ public class RefsetMemberService {
         finally {
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+    }
+    
+    /**
+     * Search for replacement concepts for Upgrade.
+     *
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @param searchParameters the search parameters
+     * @return the upgrade replacement concept result list
+     * @throws Exception the exception
+     */
+    public static ResultList<UpgradeReplacementConcecpt> replacementConceptSearch(final User user, final String refsetInternalId, final SearchParameters searchParameters) throws Exception {
+
+        ResultList<UpgradeReplacementConcecpt> replacementConcepts = new ResultList<>();
+        searchParameters.setEditing(true);
+        
+        if (searchParameters.getLimit() < 0) {
+            searchParameters.setLimit(10);
+        }
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final Refset refset = getRefset(user, service, refsetInternalId);
+
+            final ConceptResultList concepts = searchConcepts(refset, searchParameters, "non-members", searchParameters.getLimit() * 6);
+
+            for (Concept concept : concepts.getItems()) {
+                
+                if (concept.isMemberOfRefset()) {
+                    continue;
+                }
+                
+                final UpgradeReplacementConcecpt replacementConcept = new UpgradeReplacementConcecpt();
+                replacementConcept.setCode(replacementConcept.getCode());
+                replacementConcept.setReason("MANUAL_REPLACEMENT");
+                
+                if (concept.getDescriptions().size() > 0) {
+                    replacementConcept.setDescriptions(ModelUtility.toJson(concept.getDescriptions()));
+                }
+                
+                replacementConcepts.getItems().add(replacementConcept);
+                
+                if (replacementConcepts.getItems().size() == searchParameters.getLimit()) {
+                    break;
+                }
+            }
+
+            logger.debug("******** replacementConceptSearch: results: " + ModelUtility.toJson(concepts));
+        }
+
+        return replacementConcepts;
     }
 
 }

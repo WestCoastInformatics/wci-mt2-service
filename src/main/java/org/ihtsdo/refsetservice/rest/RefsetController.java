@@ -1972,7 +1972,7 @@ public class RefsetController extends BaseController {
      * @param refsetInternalId the internal refset ID
      * @param inactiveConceptId the concept ID of the inactive concept to be upgraded
      * @param replacementConceptId the concept ID of the replacement concept to be updated
-     * @param manualReplacementConcecpt the manual upgrade replacement concept that to be added
+     * @param manualReplacementConcept the manual upgrade replacement concept that to be added
      * @param changed a string identifying what has been changed
      * @return the status
      * @throws Exception the exception
@@ -1980,7 +1980,7 @@ public class RefsetController extends BaseController {
     @PostMapping("/refset/{refsetInternalId}/modifyUpgradeConcept")
     public @ResponseBody String modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = true) final String inactiveConceptId,
         @RequestParam(required = false) final String replacementConceptId, @RequestParam(required = true) final String changed, 
-        @RequestBody(required = false) final UpgradeReplacementConcecpt manualReplacementConcecpt) throws Exception {
+        @RequestBody(required = false) final UpgradeReplacementConcecpt manualReplacementConcept) throws Exception {
         
         final User user = SecurityService.getUserFromSession();
         
@@ -1991,13 +1991,65 @@ public class RefsetController extends BaseController {
             String status = "All changes made successfully"; 
             
             logger.debug("modifyUpgradeConcept: refsetInternalId: " + refsetInternalId + "; changed: " + changed + "; inactiveConceptId: " + inactiveConceptId 
-                + "; replacementConceptId: " + replacementConceptId + "; manualReplacementConcecpt: " + manualReplacementConcecpt);
+                + "; replacementConceptId: " + replacementConceptId + "; manualReplacementConcept: " + manualReplacementConcept);
 
-            status = RefsetMemberService.modifyUpgradeConcept(service, user, refsetInternalId, inactiveConceptId, replacementConceptId, manualReplacementConcecpt, changed);
+            status = RefsetMemberService.modifyUpgradeConcept(service, user, refsetInternalId, inactiveConceptId, replacementConceptId, manualReplacementConcept, changed);
             
             logger.debug("modifyUpgradeConcept: Finished with status: " + status);
 
             return "{\"status\": \"" + status + "\"}";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Search for members replacement concepts for upgrade.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the string
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Search the taxonomy for refset members", response = ResultList.class, notes = API_NOTES)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            // TODO: activeOnly, sort, sortAscending
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = {"/refset/{refsetInternalId}/taxonomySearch", "/refset/{refsetInternalId}/conceptSearch"}, produces = "application/json")
+    public @ResponseBody ResultList<UpgradeReplacementConcecpt> replacementConceptSearch(@PathVariable(value = "refsetInternalId")
+    final String refsetInternalId, final SearchParameters searchParameters, final BindingResult bindingResult, HttpServletRequest request) throws Exception {
+
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+        
+        User user = SecurityService.getUserFromSession();
+
+        try {
+
+            ResultList<UpgradeReplacementConcecpt> results = new ResultList<>();
+            String query = searchParameters.getQuery();
+
+            logger.debug("replacementConceptSearch: searchConcepts: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
+
+            if (query != null && !query.equals("")) {
+                results = RefsetMemberService.replacementConceptSearch(user, refsetInternalId, searchParameters);
+            }
+
+            return results;
 
         } catch (final Exception e) {
 
