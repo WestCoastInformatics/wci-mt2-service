@@ -2116,7 +2116,7 @@ public class RefsetMemberService {
                 final JsonNode root = mapper.readTree(resultString.toString());
                 JsonNode conceptNodeBatch = root.get("items");
                 
-                if (root.get("searchAfter") != null) {
+                if (limitReturnNumber < 0 && root.get("searchAfter") != null) {
                     searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
                 }
                 
@@ -2127,7 +2127,7 @@ public class RefsetMemberService {
                     members.setTotalKnown(true);
                 }
     
-                if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + members.getItems().size() >= members.getTotal()) {
+                if (limitReturnNumber > 0 || conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + members.getItems().size() >= members.getTotal()) {
                     hasMorePages = false;
                 }
                 
@@ -4724,16 +4724,32 @@ public class RefsetMemberService {
 
             final Refset refset = getRefset(user, service, refsetInternalId);
 
-            final ConceptResultList concepts = searchConcepts(refset, searchParameters, "non-members", searchParameters.getLimit() * 6);
-
+            final ConceptResultList concepts = searchConcepts(refset, searchParameters, "non members", searchParameters.getLimit() * 6);
+            final List<Concept> replacementConceptsToLookup = new ArrayList<>();
+            
             for (Concept concept : concepts.getItems()) {
                 
                 if (concept.isMemberOfRefset()) {
                     continue;
                 }
                 
+                replacementConceptsToLookup.add(concept);
+                
+                if (replacementConceptsToLookup.size() == searchParameters.getLimit()) {
+                    break;
+                }
+            }
+            
+            if (replacementConceptsToLookup.size() == 0) {
+                return replacementConcepts;
+            }
+
+            populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
+
+            for (Concept concept : replacementConceptsToLookup) {
+                
                 final UpgradeReplacementConcecpt replacementConcept = new UpgradeReplacementConcecpt();
-                replacementConcept.setCode(replacementConcept.getCode());
+                replacementConcept.setCode(concept.getCode());
                 replacementConcept.setReason("MANUAL_REPLACEMENT");
                 
                 if (concept.getDescriptions().size() > 0) {
@@ -4741,13 +4757,9 @@ public class RefsetMemberService {
                 }
                 
                 replacementConcepts.getItems().add(replacementConcept);
-                
-                if (replacementConcepts.getItems().size() == searchParameters.getLimit()) {
-                    break;
-                }
             }
 
-            logger.debug("******** replacementConceptSearch: results: " + ModelUtility.toJson(concepts));
+            logger.debug("replacementConceptSearch: results: " + ModelUtility.toJson(concepts));
         }
 
         return replacementConcepts;

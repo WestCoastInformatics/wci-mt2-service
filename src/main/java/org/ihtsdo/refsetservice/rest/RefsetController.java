@@ -2029,7 +2029,7 @@ public class RefsetController extends BaseController {
             // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = {"/refset/{refsetInternalId}/taxonomySearch", "/refset/{refsetInternalId}/conceptSearch"}, produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = {"/refset/{refsetInternalId}/replacementConceptSearch"}, produces = "application/json")
     public @ResponseBody ResultList<UpgradeReplacementConcecpt> replacementConceptSearch(@PathVariable(value = "refsetInternalId")
     final String refsetInternalId, final SearchParameters searchParameters, final BindingResult bindingResult, HttpServletRequest request) throws Exception {
 

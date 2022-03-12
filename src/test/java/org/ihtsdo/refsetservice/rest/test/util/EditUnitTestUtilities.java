@@ -20,6 +20,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
@@ -589,7 +590,7 @@ public class EditUnitTestUtilities {
         }
     }
 
-    public void updateUpgradeConcept(String refsetInternalId, String changed, final String inactiveConceptId, final String replacementConceptId, UpgradeReplacementConcecpt manualReplacementConcecpt) {
+    public void updateUpgradeConcept(String refsetInternalId, String changed, final String inactiveConceptId, final String replacementConceptId, UpgradeReplacementConcecpt manualReplacementConcept) {
     
         try {
             
@@ -600,8 +601,8 @@ public class EditUnitTestUtilities {
                 url += "&replacementConceptId=" + replacementConceptId;
             }
             
-            if (manualReplacementConcecpt != null) {
-                body = manualReplacementConcecpt.toString();
+            if (manualReplacementConcept != null) {
+                body = manualReplacementConcept.toString();
             }
             
             logger.info("Testing url - " + url + " ; body: " + body);
@@ -615,5 +616,30 @@ public class EditUnitTestUtilities {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    
+    public ResultList<UpgradeReplacementConcecpt> searchReplacementConcepts(String internalRefsetId, String searchTerm) {
+
+        try {
+
+            final String url = "/refset/" + internalRefsetId + "/replacementConceptSearch?limit=10&query=" + searchTerm;
+
+            logger.info("Testing url - " + url);
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+
+            logger.info(" content = " + content);
+            final ResultList<UpgradeReplacementConcecpt> results = new ObjectMapper().readValue(content, (new TypeReference<ResultList<UpgradeReplacementConcecpt>>(){}));
+
+            // Testing Results
+            assertThat(results).isNotNull();
+            return results;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            return null;
+        }
+
     }
 }
