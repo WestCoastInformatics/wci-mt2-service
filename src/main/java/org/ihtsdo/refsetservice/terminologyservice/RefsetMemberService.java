@@ -3755,6 +3755,10 @@ public class RefsetMemberService {
                 }
             }
             
+            logger.debug("invalidConcepts: " + invalidConcepts);
+            unaddedConcepts.addAll(invalidConcepts);
+            conceptIds.removeAll(invalidConcepts);
+            
             logger.debug("addRefsetMembers about to add concept size: " + conceptIds.size());
             
             if (conceptIds.size() == 1) {
