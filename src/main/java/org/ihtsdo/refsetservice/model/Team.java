@@ -10,7 +10,11 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -25,24 +29,23 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextFi
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
- * Represents an Organization.
+ * Represents a Team.
  */
 @Entity
-@Table(name = "organizations")
-@Schema(description = "Represents an organization.")
+@Table(name = "teams")
+@Schema(description = "Represents a team with organization, roles and members (users).")
 @JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class Organization extends AbstractHasModified implements Copyable<Organization>, ValidateCrud<Organization> {
+public class Team extends AbstractHasModified implements Copyable<Team>, ValidateCrud<Team> {
 
     /** The name. */
     @Column(nullable = false)
@@ -52,40 +55,49 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @Column(nullable = true, length = 4000)
     private String description;
 
-    /** The edition. */
-    @ManyToOne(targetEntity = Edition.class)
+    /** The owning organization. */
+    @ManyToOne(targetEntity = Organization.class)
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
-    private Edition edition;
+    private Organization organization;
 
-    /** email for primary contact. */
+    /** email for primary contact */
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
 
+    /** roles for team */
+    @ElementCollection
+    @Fetch(FetchMode.JOIN)
+    private Set<String> roles;
+
+    @ElementCollection
+    @Fetch(FetchMode.JOIN)
+    private Set<String> members;
+
     /**
-     * Instantiates an empty {@link Organization}.
+     * Instantiates an empty {@link Team}.
      */
-    public Organization() {
+    public Team() {
 
         // n/a
     }
 
     /**
-     * Instantiates a {@link Organization} from the specified parameters.
+     * Instantiates a {@link Team} from the specified parameters.
      *
      * @param other the other
      */
-    public Organization(final Organization other) {
+    public Team(final Team other) {
 
         populateFrom(other);
     }
 
     /**
-     * Instantiates a {@link Organization} from the specified parameters.
+     * Instantiates a {@link Team} from the specified parameters.
      *
      * @param name the value
      */
-    public Organization(final String name) {
+    public Team(final String name) {
 
         this.name = name;
     }
@@ -95,13 +107,11 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      *
      * @param other the other
      */
-    public void populateFrom(final Organization other) {
+    public void populateFrom(final Team other) {
 
         super.populateFrom(other);
         name = other.getName();
         description = other.getDescription();
-        edition = other.getEdition();
-        primaryContactEmail = other.getPrimaryContactEmail();
     }
 
     /**
@@ -109,13 +119,12 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      *
      * @param other the other
      */
-    public void patchFrom(final Organization other) {
+    public void patchFrom(final Team other) {
 
+        super.populateFrom(other);
         // Only these field can be patched
         name = other.getName();
         description = other.getDescription();
-        edition = other.getEdition();
-        primaryContactEmail = other.getPrimaryContactEmail();
     }
 
     /**
@@ -161,31 +170,61 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     }
 
     /**
-     * Gets the edition.
+     * Gets the organization.
      *
-     * @return the edition
+     * @return the organization
      */
-    @JsonSerialize(contentAs = Edition.class)
-    @JsonDeserialize(contentAs = Edition.class)
-    public Edition getEdition() {
+    public Organization getOrganization() {
 
-        return edition;
+        return organization;
     }
 
     /**
-     * Sets the edition.
+     * Sets the organization.
      *
-     * @param edition the edition to set
+     * @param organization the organization to set
      */
-    public void setEdition(final Edition edition) {
+    public void setOrganization(final Organization organization) {
 
-        this.edition = edition;
+        this.organization = organization;
     }
 
     /**
-     * Returns the primary contact email.
-     *
-     * @return the primary contact email
+     * @return the roles
+     */
+    @JsonGetter()
+    public Set<String> getRoles() {
+
+        return (roles != null) ? roles : new HashSet<>();
+    }
+
+    /**
+     * @param roles the roles
+     */
+    public void setRoles(Set<String> roles) {
+
+        this.roles = roles;
+    }
+
+    /**
+     * @return the members
+     */
+    @JsonGetter()
+    public Set<String> getMembers() {
+
+        return (members != null) ? members : new HashSet<>();
+    }
+
+    /**
+     * @param members the members
+     */
+    public void setMembers(Set<String> members) {
+
+        this.members = members;
+    }
+
+    /**
+     * @return the primaryContactEmail
      */
     public String getPrimaryContactEmail() {
 
@@ -193,11 +232,9 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     }
 
     /**
-     * Sets the primary contact email.
-     *
-     * @param primaryContactEmail the primary contact email
+     * @param primaryContactEmail the primaryContactEmail
      */
-    public void setPrimaryContactEmail(final String primaryContactEmail) {
+    public void setPrimaryContactEmail(String primaryContactEmail) {
 
         this.primaryContactEmail = primaryContactEmail;
     }
@@ -208,22 +245,23 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((edition == null) ? 0 : edition.hashCode());
-        result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
+        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((members == null) ? 0 : roles.hashCode());
         return result;
     }
 
     /* see superclass */
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(Object obj) {
 
         if (this == obj) {
             return true;
         }
 
-        if (obj == null) {
+        if (!super.equals(obj)) {
             return false;
         }
 
@@ -231,15 +269,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
             return false;
         }
 
-        final Organization other = (Organization) obj;
-
-        if (name == null) {
-            if (other.name != null) {
-                return false;
-            }
-        } else if (!name.equals(other.name)) {
-            return false;
-        }
+        final Team other = (Team) obj;
 
         if (description == null) {
             if (other.description != null) {
@@ -249,11 +279,11 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
             return false;
         }
 
-        if (edition == null) {
-            if (other.edition != null) {
+        if (name == null) {
+            if (other.name != null) {
                 return false;
             }
-        } else if (!edition.equals(other.edition)) {
+        } else if (!name.equals(other.name)) {
             return false;
         }
 
@@ -265,6 +295,22 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
             return false;
         }
 
+        if (roles == null) {
+            if (other.roles != null) {
+                return false;
+            }
+        } else if (!roles.equals(other.roles)) {
+            return false;
+        }
+
+        if (members == null) {
+            if (other.members != null) {
+                return false;
+            }
+        } else if (!members.equals(other.members)) {
+            return false;
+        }
+
         return true;
     }
 
@@ -272,34 +318,31 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @Override
     public String toString() {
 
-        return "Organization [name=" + name + ", description=" + description + ", edition=" + edition + ", primaryContactEmail=" + primaryContactEmail + "]";
+        return "Team [name=" + name + ", description=" + description + ", organization=" + organization + ", primaryContactEmail=" + primaryContactEmail + ", roles=" + roles + ", members=" + members
+            + "]";
     }
 
     /* see superclass */
     @Override
     public void lazyInit() {
-
         // TODO Auto-generated method stub
     }
 
     /* see superclass */
     @Override
     public void validateAdd(AuthContext context) throws Exception {
-
         // TODO validate add
     }
 
     /* see superclass */
     @Override
-    public void validateUpdate(AuthContext context, Organization other) throws Exception {
-
+    public void validateUpdate(AuthContext context, Team other) throws Exception {
         // TODO validate update
     }
 
     /* see superclass */
     @Override
     public void validateDelete(AuthContext context) throws Exception {
-
         // TODO valiidate delete
     }
 }

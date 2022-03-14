@@ -31,6 +31,7 @@ import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetEditHistory;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
@@ -1778,11 +1779,75 @@ public class RefsetService {
             for (Project project : projectList) {
 
                 project = setProjectPermissions(user, project);
-
                 if (!project.getRoles().contains(User.ROLE_VIEWER)) {
 
                     results.getItems().remove(project);
                 }
+
+            }
+
+            return results;
+        }
+
+    }
+    
+    /**
+     * Search Teams.
+     *
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @return the list of projects
+     * @throws Exception the exception
+     */
+    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            final long start = System.currentTimeMillis();
+            ResultList<Team> results = new ResultList<Team>();
+            String query = searchParameters.getQuery();
+
+            final PfsParameter pfs = new PfsParameter();
+
+            if (searchParameters.getOffset() != null) {
+
+                pfs.setOffset(searchParameters.getOffset());
+            }
+
+            if (searchParameters.getLimit() != null) {
+
+                pfs.setLimit(searchParameters.getLimit());
+            }
+
+            if (searchParameters.getSortAscending() != null) {
+
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
+
+            if (searchParameters.getSort() != null) {
+
+                pfs.setSort(searchParameters.getSort());
+            }
+
+            if (query != null && !query.equals("")) {
+
+                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
+            }
+
+            results = service.find(query, pfs, Team.class, null);
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
+
+            final List<Team> teamList = new ArrayList<>(results.getItems());
+
+            for (Team team : teamList) {
+
+                // TODO FIX
+                // team = setTeamPermissions(user, team);
+                // if (!project.getRoles().contains(User.ROLE_VIEWER)) {
+                //
+                // results.getItems().remove(project);
+                // }
 
             }
 
@@ -1892,12 +1957,28 @@ public class RefsetService {
      * @throws Exception the exception
      */
     public static Project setProjectPermissions(final User user, final Project project) throws Exception {
-
+        
         final List<String> roles = project.getRoles();
         setRoles(user, project, roles);
 
         return project;
     }
+    
+    // /**
+    // * Set the user permissions for a refset.
+    // *
+    // * @param user the user
+    // * @param project the project
+    // * @return the refset with permissions
+    // * @throws Exception the exception
+    // */
+    // public static Team setTeamPermissions(final User user, final Team team) throws Exception {
+    //
+    // final List<String> roles = team.getRoles();
+    // setRoles(user, team, roles);
+    //
+    // return team;
+    // }
 
     /**
      * Set the user permissions for a refset.
