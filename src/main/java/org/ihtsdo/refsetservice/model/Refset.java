@@ -134,6 +134,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private boolean locked = false;
     
+    /** The flag for if the refset was last published more than one edition version prior. */
+    @Transient
+    private boolean upgradeWarning = false;
+    
     /** The list of actions available for the user to perform on this refset. */
     @Transient
     private List<String> availableActions;
@@ -274,6 +278,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         privateRefset = other.isPrivateRefset();
         downloadable = other.isDownloadable();
         locked = other.isLocked();
+        upgradeWarning = other.getUpgradeWarning();
         availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
         branchPath = other.getBranchPath();
@@ -787,7 +792,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setDefinitionClauses(final List<DefinitionClause> definitionClauses) {
         
-        Collections.sort(definitionClauses, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
+        if (definitionClauses != null) {
+            Collections.sort(definitionClauses, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
+        }
+        
         this.definitionClauses = definitionClauses;
     }
 
@@ -827,6 +835,25 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setLocked(final boolean locked) {
         this.locked = locked;
+    }
+    
+    /**
+     * Gets the flag that shows if the refset was last published more than one edition version prior.
+     *
+     * @return the upgrade warning flag
+     */
+    @JsonGetter()
+    public boolean getUpgradeWarning() {
+        return upgradeWarning;
+    }
+    
+    /**
+     * Sets the flag that shows if the refset was last published more than one edition version prior.
+     *
+     * @param upgradeWarning the upgrade warning flag
+     */
+    public void setUpgradeWarning(final boolean upgradeWarning) {
+        this.upgradeWarning = upgradeWarning;
     }
     
     /**
@@ -1093,6 +1120,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (latestPublishedVersion ? 1 : 0);
         result = prime * result + (hasVersionInDevelopment ? 1 : 0);
         result = prime * result + (locked ? 1 : 0);
+        result = prime * result + (upgradeWarning ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         return result;
     }
@@ -1277,6 +1305,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         }
         
         if (locked != other.locked) {
+            return false;
+        }
+        
+        if (upgradeWarning != other.upgradeWarning) {
             return false;
         }
 

@@ -287,17 +287,23 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     @Test
     public void testUpgradeRefset() throws Exception {
 
-        // ADD NEW VERSION AND MOVE TO READY FOR EDIT
+        // CHOOSE ONE: 1. ADD NEW VERSION AND MOVE TO READY FOR EDIT
         //final String newRefsetInternalId = editUtil.createNewRefsetVersion(refsetWithInactiveConceptAsActiveMemberInternalId);
         Refset refset = getUtil.getRefsetFromInternalId(refsetWithInactiveConceptAsActiveMemberInternalId);
-        //refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
+        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.EDIT, "");
+        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
+        final String newRefsetInternalId = refset.getId();
+        
+        // CHOOSE ONE: 2. GET PUBLISHED VERSION TO UPGRADE DIRECTLY
+        //Refset refset = getUtil.getRefsetFromInternalId(refsetWithInactiveConceptAsActiveMemberInternalId);
         
         // START THE UPGRADE PROCESS
         editUtil.compileUpgradeData(refset.getId());
         editUtil.resolveBackgroundOperation(refset.getId());
         
-        refset = getUtil.getRefsetFromRefsetIdAndVersion(refset.getRefsetId(), Refset.IN_DEVELOPMENT);
-        final String newRefsetInternalId = refset.getId();
+        // ONLY UNCOMMENT IF YOU CHOOSE OPTION 2 ABOVE          
+        //refset = getUtil.getRefsetFromRefsetIdAndVersion(refset.getRefsetId(), Refset.IN_DEVELOPMENT);
+        //final String newRefsetInternalId = refset.getId();
         
         // GET THE UPGRADE DATA
         ResultList<UpgradeInactiveConcecpt> resultList = editUtil.getUpgradeData(newRefsetInternalId);

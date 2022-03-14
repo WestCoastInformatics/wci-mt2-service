@@ -483,16 +483,16 @@ public final class WorkflowService {
             if (status.equals(PUBLISHED)) {
 
                 // get the latest edition version branch
-                final ResultList<String> branchVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
+                final List<String> branchVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
 
-                if (branchVersions.getItems().size() < 1) {
+                if (branchVersions.size() < 1) {
 
                     final String message = "Could not retrieve branch versions for branch " + refset.getEditionBranch();
                     logger.error(message);
                     throw new Exception(message);
                 }
 
-                final String newVersion = branchVersions.getItems().get(0);
+                final String newVersion = branchVersions.get(0);
 
                 
                 refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(newVersion));
@@ -603,7 +603,7 @@ public final class WorkflowService {
 
             ResultList<WorkflowHistory> results = service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + query, pfs, WorkflowHistory.class, null);
 
-            logger.debug("******** getWorkflowHistory results: " + ModelUtility.toJson(results));
+            logger.debug("getWorkflowHistory results: " + ModelUtility.toJson(results));
 
             return results;
         }
