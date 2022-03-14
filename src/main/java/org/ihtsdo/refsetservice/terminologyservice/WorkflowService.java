@@ -425,6 +425,11 @@ public final class WorkflowService {
                 
                 final String branchId = generateEditBranchId();
                 refset.setEditBranchId(branchId);
+                String projectBranchPath = getProjectBranchPath(refset.getEditionBranch());
+                String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
+                
+                mergeBranch(refset.getEditionBranch(), projectBranchPath, "Updating branch to latest changes");
+                mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes");
                 createEditBranch(user, refset.getEditionBranch(), refset.getId(), refset.getRefsetId(), branchId);
             }
             
