@@ -288,7 +288,6 @@ public class RefsetEditingTests extends AbstractRefsetTests {
     public void testUpgradeRefset() throws Exception {
 
         // CHOOSE ONE: 1. ADD NEW VERSION AND MOVE TO READY FOR EDIT
-        //final String newRefsetInternalId = editUtil.createNewRefsetVersion(refsetWithInactiveConceptAsActiveMemberInternalId);
         Refset refset = getUtil.getRefsetFromInternalId(refsetWithInactiveConceptAsActiveMemberInternalId);
         refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.EDIT, "");
         refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
