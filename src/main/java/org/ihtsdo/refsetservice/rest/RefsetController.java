@@ -39,6 +39,7 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.HistoricDataMigrator;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -646,9 +647,15 @@ public class RefsetController extends BaseController {
                 
                 try (final TerminologyService service = new TerminologyService()) {
 
-                
+                    final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
+                    final String versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
+                    
                     final String internalRefsetId = RefsetService.createNewRefsetVersion(user, refset.getId(), true);
                     refset = service.get(internalRefsetId, Refset.class);
+                    
+                    if (editionVersions.indexOf(versionDate) > 1) {
+                        refset.setUpgradeWarning(true);
+                    }
                 }
                 
                 return refset;
@@ -1757,7 +1764,9 @@ public class RefsetController extends BaseController {
             //logger.debug("getBranchVersions - branch: " + branch);
 
             User user = SecurityService.getUserFromSession();
-            final ResultList<String> results = RefsetService.getBranchVersions(branch);
+            
+            final ResultList<String> results = new ResultList<>();
+            results.setItems(RefsetService.getBranchVersions(branch));
             
             //logger.debug("getBranchVersions - results: " + results);
             

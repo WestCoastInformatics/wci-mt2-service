@@ -229,7 +229,7 @@ public class RefsetMemberService {
                 concepts = getMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
             }
 
-            //logger.debug("******** getRefsetMembers results: " + ModelUtility.toJson(concepts));
+            //logger.debug("getRefsetMembers results: " + ModelUtility.toJson(concepts));
         }
 
         return concepts;
@@ -956,7 +956,7 @@ public class RefsetMemberService {
                     }
                     
                     logger.debug("fileContentsArray after versionInScope " + fileContentsArray.size() + " " + versionInScope);
-                    logger.debug("****@@@@@@@@@@@@@@@@@@@@@ fileContentsArray: " + fileContentsArray);
+                    logger.debug("fileContentsArray: " + fileContentsArray);
 
                     // If first file, store header so can print it later
                     if (headerLine == null) {
@@ -1384,7 +1384,7 @@ public class RefsetMemberService {
             logger.debug("SCTID freeset txt output path = " + sctidsOutputPath);
             logger.debug("zip freeset output path = " + zipOutputPath);
 
-            logger.debug("*********** exportFreeset: refsetInternalId: " + refsetInternalId);
+            logger.debug("exportFreeset: refsetInternalId: " + refsetInternalId);
 
             final long start = System.currentTimeMillis();
             ConceptResultList results = new ConceptResultList();
@@ -1884,7 +1884,7 @@ public class RefsetMemberService {
             // check if the concept call has been cached
             if (branchCache.containsKey(cacheString)) {
                 
-                logger.debug("####### prepareConceptSearch USING CACHE");
+                logger.debug("prepareConceptSearch USING CACHE");
                 return branchCache.get(cacheString);
             }
             
@@ -1913,7 +1913,7 @@ public class RefsetMemberService {
 
             branchCache.put(cacheString, concepts);
             conceptsCallCache.put(branchPath, branchCache);
-            //logger.debug("******** prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
+            //logger.debug("prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
         }
 
         return concepts;
@@ -1941,7 +1941,7 @@ public class RefsetMemberService {
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
             
-            logger.debug("####### getConceptAncestors USING CACHE");
+            logger.debug("getConceptAncestors USING CACHE");
             return branchCache.get(cacheString);
         }
 
@@ -2343,7 +2343,7 @@ public class RefsetMemberService {
 
         if (branchPath != null) {
             
-            logger.debug(" Clearing caches for branch path: " + branchPath);
+            logger.debug("clearAllMemberCaches: Clearing caches for branch path: " + branchPath);
             
             conceptsCallCache.remove(branchPath);
             conceptDetailsCache.remove(branchPath);
@@ -2354,7 +2354,7 @@ public class RefsetMemberService {
 
         } else {
             
-            logger.debug(" Clearing caches for all branches");
+            logger.debug("clearAllMemberCaches: Clearing caches for all branches");
             
             conceptsCallCache.clear();
             conceptDetailsCache.clear();
@@ -2481,7 +2481,7 @@ public class RefsetMemberService {
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
             
-            logger.debug("####### getMemberList USING CACHE");
+            logger.debug("getMemberList USING CACHE");
             return branchCache.get(cacheString);
         }
 
@@ -2587,7 +2587,7 @@ public class RefsetMemberService {
                        
                             try {
                     
-                                //logger.debug("%%%%%%%%% getMemberList IN THREAD ID: " + Thread.currentThread().getId());
+                                //logger.debug("getMemberList IN THREAD ID: " + Thread.currentThread().getId());
                                 populateAllLanguageDescriptions(refset, threadConcepts);
     
                                 // if not searching and editing then get the concept leaf information
@@ -2609,7 +2609,7 @@ public class RefsetMemberService {
             executor.shutdown();
             executor.awaitTermination(600, TimeUnit.SECONDS);
             
-            logger.debug("####### getMemberList snowstormCallCount: " + snowstormCallCount);
+            logger.debug("getMemberList snowstormCallCount: " + snowstormCallCount);
 
             members.getItems().addAll(currentList.getItems());
             members.setTotal(currentList.getTotal());
@@ -2648,7 +2648,7 @@ public class RefsetMemberService {
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
             
-            logger.debug("####### getMemberTaxonomy USING CACHE");
+            logger.debug("getMemberTaxonomy USING CACHE");
             return branchCache.get(cacheString);
         }
 
@@ -2740,7 +2740,7 @@ public class RefsetMemberService {
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
             
-            logger.debug("####### getConceptDetails USING CACHE");
+            logger.debug("getConceptDetails USING CACHE");
             return branchCache.get(cacheString);
         }
 
@@ -3219,7 +3219,7 @@ public class RefsetMemberService {
                    
                         try {
                 
-                            //logger.debug("%%%%%%%%% populateMembershipInformation IN THREAD ID: " + Thread.currentThread().getId());
+                            //logger.debug("populateMembershipInformation IN THREAD ID: " + Thread.currentThread().getId());
                             logger.debug("Get Membership URL for Populate: " + memberUrl);
 
                             final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
@@ -3254,7 +3254,7 @@ public class RefsetMemberService {
         executor.shutdown();
         executor.awaitTermination(600, TimeUnit.SECONDS);
         
-        logger.debug("####### populateMembershipInformation snowstormCallCount: " + snowstormCallCount);
+        logger.debug("populateMembershipInformation snowstormCallCount: " + snowstormCallCount);
     }
     
     private static String processIntensionalDefinitionException(final Refset refset, final Concept concept) throws Exception {
@@ -3459,7 +3459,7 @@ public class RefsetMemberService {
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
             
-            logger.debug("####### cacheMemberAncestors USING CACHE");
+            logger.debug("cacheMemberAncestors USING CACHE");
             return true;
         }
         
@@ -3735,7 +3735,7 @@ public class RefsetMemberService {
                 })
                 .collect(Collectors.toList());
             
-            logger.debug("********* invalidConcepts: " + invalidConcepts);
+            logger.debug("invalidConcepts: " + invalidConcepts);
             unaddedConcepts.addAll(invalidConcepts);
             conceptIds.removeAll(invalidConcepts);
             
@@ -4474,7 +4474,7 @@ public class RefsetMemberService {
                                         threadService.setModifiedBy(user.getUserName());
                                         threadService.setModifiedFlag(true);
                             
-                                        //logger.debug("%%%%%%%%% compileUpgradeData IN THREAD ID: " + Thread.currentThread().getId());
+                                        //logger.debug("compileUpgradeData IN THREAD ID: " + Thread.currentThread().getId());
                                         populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
                                         
                                         for (final Concept replacementConcept: replacementConceptsToLookup) {
@@ -4502,7 +4502,7 @@ public class RefsetMemberService {
                             
                         } else {
                             service.add(inactiveConcept);
-                            logger.debug("**** shouldn't happen **** compileUpgradeData added inactive Concept with no replacement: " + inactiveConcept);
+                            logger.debug("compileUpgradeData added inactive Concept with no replacement: " + inactiveConcept);
                         }
                     }
                 }

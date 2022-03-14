@@ -10,6 +10,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -280,6 +282,11 @@ public final class DateUtility {
         throws Exception {
 
         String newTimezone;
+        final DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern(pattern)
+            .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
+            .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
+            .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
+            .toFormatter();
         
         if (timeZone == null) {
             newTimezone = "-00:00";
@@ -287,8 +294,7 @@ public final class DateUtility {
             newTimezone = new String(timeZone);
         }
         
-        final LocalDateTime ldt =
-                LocalDateTime.parse(dateString, DateTimeFormatter.ofPattern(pattern));
+        final LocalDateTime ldt = LocalDateTime.parse(dateString, formatter);
         final ZonedDateTime zdt = ZonedDateTime.of(ldt, ZoneId.of(newTimezone));
         return Date.from(zdt.toInstant());
     }
