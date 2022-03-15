@@ -87,6 +87,11 @@ public class RefsetUnitTest extends BaseTest {
         tester.exclude("editionName");
         tester.exclude("editionShortName");
         tester.exclude("versionList");
+        tester.exclude("edition");
+        tester.exclude("editionBranch");
+        tester.exclude("editionId");
+        tester.exclude("projectId");
+       
         tester.test();
     }
 
@@ -103,20 +108,33 @@ public class RefsetUnitTest extends BaseTest {
         tester.include("name");
         tester.include("type");
         tester.include("versionStatus");
+        tester.include("workflowStatus");
         tester.include("versionDate");
         tester.include("narrative");
         tester.include("versionNotes");
         tester.include("privateRefset");
         tester.include("localSet");
-        tester.include("workflowStatus");
-        tester.include("parentConceptId");
-        tester.include("latestVersion");
-        tester.include("privateRefset");
+        tester.include("latestPublishedVersion");
+        tester.include("hasVersionInDevelopment");
         tester.include("assignedUser");
-        tester.include("moduleId");
-        tester.include("externalUrl");
-        tester.include("feedbackVisible");
+        tester.include("memberCount");
         tester.include("downloadable");
+        tester.include("feedbackVisible");
+        tester.exclude("roles");
+        tester.include("locked");
+        tester.include("upgradeWarning");
+        tester.exclude("availableActions");
+        tester.include("parentConceptId");
+        tester.include("branchPath");
+        tester.exclude("descriptions");
+        tester.exclude("versionList");
+        tester.include("moduleId");
+        tester.include("editBranchId");
+        tester.include("externalUrl");
+        tester.exclude("project");
+        tester.exclude("projectId");
+        tester.exclude("tags");
+        tester.exclude("definitionClauses");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -137,6 +155,7 @@ public class RefsetUnitTest extends BaseTest {
         final Refset copyObject = new Refset();
         copyObject.setDefinitionClauses(definitionList);
         copyObject.setProject(project);
+        copyObject.setEdition(edition);
         // copyObject.setTags(tagList);
 
         final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
@@ -209,14 +228,12 @@ public class RefsetUnitTest extends BaseTest {
 
             // test that the refset can be retrieved.
             if (!object.getId().equals(retrievedObject.getId())) {
-                throw new Exception("Original id unexpectedly does not match retrieved object id = "
-                        + object.getId() + ", " + retrievedObject.getId());
+                throw new Exception("Original id unexpectedly does not match retrieved object id = " + object.getId() + ", " + retrievedObject.getId());
             }
 
             // test that the correct number of definitions clauses are present.
             if (retrievedObject.getDefinitionClauses().size() != 2) {
-                throw new Exception("Expected 2 definition clauses, found = "
-                        + retrievedObject.getDefinitionClauses().size());
+                throw new Exception("Expected 2 definition clauses, found = " + retrievedObject.getDefinitionClauses().size());
             }
 
             // test that the correct number of tags are present.
@@ -225,19 +242,14 @@ public class RefsetUnitTest extends BaseTest {
             }
 
             // test that the edition was properly added.
-            if (retrievedObject.getEdition() == null
-                    || !retrievedObject.getEdition().getName().equals("1")) {
-                throw new Exception(
-                        "Refset edition not properly saved = " + retrievedObject.getId());
+            if (retrievedObject.getEdition() == null || !retrievedObject.getEdition().getName().equals("1")) {
+                throw new Exception("Refset edition not properly saved = " + retrievedObject.getId());
             }
 
             // test that project and organization were properly added.
-            if (retrievedObject.getProject() == null
-                    || !retrievedObject.getProject().getName().equals("1")
-                    || retrievedObject.getProject().getOrganization() == null
-                    || !retrievedObject.getProject().getOrganization().getName().equals("1")) {
-                throw new Exception("Refset project and organization not properly saved = "
-                        + retrievedObject.getId());
+            if (retrievedObject.getProject() == null || !retrievedObject.getProject().getName().equals("1") || retrievedObject.getProject().getOrganization() == null
+                || !retrievedObject.getProject().getOrganization().getName().equals("1")) {
+                throw new Exception("Refset project and organization not properly saved = " + retrievedObject.getId());
             }
 
             service.remove(object);
@@ -248,8 +260,7 @@ public class RefsetUnitTest extends BaseTest {
             retrievedObject = service.get(object.getId(), object.getClass());
 
             if (retrievedObject != null) {
-                throw new Exception("Search results size is unexpectedly not empty = "
-                        + retrievedObject.getId());
+                throw new Exception("Search results size is unexpectedly not empty = " + retrievedObject.getId());
             }
         }
     }

@@ -90,8 +90,17 @@ public class ConceptResultListUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
         tester.include("total");
-        tester.include("parameters");
         tester.exclude("items");
+        tester.include("limit");
+        tester.include("offset");
+        tester.include("miscCountA");
+        tester.include("miscCountB");
+        tester.include("searchAfter");
+        tester.include("totalKnown");
+        tester.exclude("scoreMap");
+        tester.include("timeTaken");        
+        tester.include("parameters");
+        
 
         tester.proxy("concepts", 1, c1);
         tester.proxy("concepts", 2, c2);

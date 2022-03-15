@@ -25,7 +25,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The name. */
     private String name;
-    
+
     /** The Fully Specified Name. */
     private String fsn;
 
@@ -46,7 +46,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The descriptions. */
     private List<Map<String, String>> descriptions = new ArrayList<>();
-    
+
     // These next two booleans are NOT needed for tree
     /** The flag for if a user can see the history for this concept. */
     private boolean historyVisible;
@@ -56,13 +56,13 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The flag for if concept is defined or primitive. */
     private boolean defined;
-    
+
     /** The flag for if concept membership has been released. */
     private boolean released;
-    
+
     /** What kind of intensional refset definition exception type is this concept. (definition/inclusion/exclusion) */
     private String definitionExceptionType;
-    
+
     /** The internal ID of intensional refset definition exception */
     private String definitionExceptionId;
 
@@ -90,6 +90,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * Instantiates an empty {@link Concept}.
      */
     public Concept() {
+
         // n/a
     }
 
@@ -99,6 +100,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param code the code
      */
     public Concept(final String code) {
+
         this.code = code;
     }
 
@@ -110,6 +112,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param name the name
      */
     public Concept(final String terminology, final String code, final String name) {
+
         this.terminology = terminology;
         this.code = code;
         this.name = name;
@@ -121,6 +124,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param other the other
      */
     public Concept(final Concept other) {
+
         populateFrom(other);
     }
 
@@ -158,6 +162,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the code
      */
     public String getCode() {
+
         return code;
     }
 
@@ -167,6 +172,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param code the code
      */
     public void setCode(final String code) {
+
         this.code = code;
     }
 
@@ -176,6 +182,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the name
      */
     public String getName() {
+
         return name;
     }
 
@@ -185,24 +192,27 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param name the name
      */
     public void setName(final String name) {
+
         this.name = name;
     }
-   
+
     /**
      * Returns the fsn.
      *
      * @return the fsn
      */
     public String getFsn() {
+
         return fsn;
     }
-    
+
     /**
      * Sets the fsn.
      *
      * @param fsn the fsn
      */
     public void setFsn(final String fsn) {
+
         this.fsn = fsn;
     }
 
@@ -212,6 +222,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the terminology
      */
     public String getTerminology() {
+
         return terminology;
     }
 
@@ -221,6 +232,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param terminology the terminology
      */
     public void setTerminology(final String terminology) {
+
         this.terminology = terminology;
     }
 
@@ -230,6 +242,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the version
      */
     public String getVersion() {
+
         return version;
     }
 
@@ -239,6 +252,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param version the version
      */
     public void setVersion(final String version) {
+
         this.version = version;
     }
 
@@ -248,6 +262,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the member effective time
      */
     public Date getMemberEffectiveTime() {
+
         return memberEffectiveTime;
     }
 
@@ -257,6 +272,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param memberEffectiveTime the new member effective time
      */
     public void setMemberEffectiveTime(Date memberEffectiveTime) {
+
         this.memberEffectiveTime = memberEffectiveTime;
     }
 
@@ -266,6 +282,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the descriptions
      */
     public List<Map<String, String>> getDescriptions() {
+
         return descriptions;
     }
 
@@ -275,6 +292,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param descriptions the descriptions
      */
     public void setDescriptions(List<Map<String, String>> descriptions) {
+
         this.descriptions = descriptions;
     }
 
@@ -284,6 +302,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the history visible flag
      */
     public boolean isHistoryVisible() {
+
         return historyVisible;
     }
 
@@ -293,6 +312,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param historyVisible the history to set
      */
     public void setHistoryVisible(final boolean historyVisible) {
+
         this.historyVisible = historyVisible;
     }
 
@@ -302,6 +322,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the feedback visible flag
      */
     public boolean isFeedbackVisible() {
+
         return feedbackVisible;
     }
 
@@ -311,6 +332,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param feedbackVisible the feedbackVisible to set
      */
     public void setFeedbackVisible(final boolean feedbackVisible) {
+
         this.feedbackVisible = feedbackVisible;
     }
 
@@ -320,6 +342,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the memberOfRefset
      */
     public boolean isMemberOfRefset() {
+
         return memberOfRefset;
     }
 
@@ -329,6 +352,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param memberOfRefset the memberOfRefset to set
      */
     public void setMemberOfRefset(boolean memberOfRefset) {
+
         this.memberOfRefset = memberOfRefset;
     }
 
@@ -338,6 +362,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the hasChildren
      */
     public boolean getHasChildren() {
+
         return hasChildren;
     }
 
@@ -347,6 +372,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param hasChildren the hasChildren to set
      */
     public void setHasChildren(boolean hasChildren) {
+
         this.hasChildren = hasChildren;
     }
 
@@ -370,6 +396,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param parents the parents to set
      */
     public void setParents(List<Concept> parents) {
+
         this.parents = parents;
     }
 
@@ -379,6 +406,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the hasAncestorRefsetMembers
      */
     public boolean getHasAncestorRefsetMembers() {
+
         return hasAncestorRefsetMembers;
     }
 
@@ -388,42 +416,47 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param hasAncestorRefsetMembers the hasAncestorRefsetMembers to set
      */
     public void setHasAncestorRefsetMembers(boolean hasAncestorRefsetMembers) {
+
         this.hasAncestorRefsetMembers = hasAncestorRefsetMembers;
     }
-    
+
     /**
      * Returns the definition exception type.
      *
      * @return the definition exception type
      */
     public String getDefinitionExceptionType() {
+
         return definitionExceptionType;
     }
-    
+
     /**
      * Sets the definition exception type.
      *
      * @param definitionExceptionType the definition exception type
      */
     public void setDefinitionExceptionType(final String definitionExceptionType) {
+
         this.definitionExceptionType = definitionExceptionType;
     }
-    
+
     /**
      * Returns the definition exception ID.
      *
      * @return the definition exception ID
      */
     public String getDefinitionExceptionId() {
+
         return definitionExceptionId;
     }
-    
+
     /**
      * Sets the definition exception ID.
      *
      * @param definitionExceptionId the definition exception ID
      */
     public void setDefinitionExceptionId(final String definitionExceptionId) {
+
         this.definitionExceptionId = definitionExceptionId;
     }
 
@@ -447,6 +480,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param children the children to set
      */
     public void setChildren(List<Concept> children) {
+
         this.children = children;
     }
 
@@ -456,6 +490,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the hasDescendantRefsetMembers
      */
     public boolean getHasDescendantRefsetMembers() {
+
         return hasDescendantRefsetMembers;
     }
 
@@ -465,14 +500,17 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param hasDescendantRefsetMembers the hasDescendantRefsetMembers to set
      */
     public void setHasDescendantRefsetMembers(boolean hasDescendantRefsetMembers) {
+
         this.hasDescendantRefsetMembers = hasDescendantRefsetMembers;
     }
 
     public Map<Integer, List<String>> getRoleGroups() {
+
         return roleGroups;
     }
 
     public void setRoleGroups(Map<Integer, List<String>> map) {
+
         this.roleGroups = map;
     }
 
@@ -480,6 +518,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @return the isDefined
      */
     public boolean isDefined() {
+
         return defined;
     }
 
@@ -487,20 +526,23 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * @param isDefined the isDefined to set
      */
     public void setDefined(boolean isDefined) {
+
         this.defined = isDefined;
     }
-    
+
     /**
      * @return has the concept been released
      */
     public boolean isReleased() {
+
         return released;
     }
-    
+
     /**
      * @param released the value to set the released flag to
      */
     public void setReleased(boolean released) {
+
         this.released = released;
     }
 
@@ -509,40 +551,35 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @return the int
      */
-    /* see superclass */
-    @Override
+    /* see superclass */    @Override
     public int hashCode() {
+
         final int prime = 31;
-        int result = 1;
+        int result = super.hashCode();
+        result = prime * result + ((children == null) ? 0 : children.hashCode());
         result = prime * result + ((code == null) ? 0 : code.hashCode());
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + (defined ? 1231 : 1237);
+        result = prime * result + ((definitionExceptionId == null) ? 0 : definitionExceptionId.hashCode());
+        result = prime * result + ((definitionExceptionType == null) ? 0 : definitionExceptionType.hashCode());
+        result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
+        result = prime * result + (feedbackVisible ? 1231 : 1237);
         result = prime * result + ((fsn == null) ? 0 : fsn.hashCode());
+        result = prime * result + (hasAncestorRefsetMembers ? 1231 : 1237);
+        result = prime * result + (hasChildren ? 1231 : 1237);
+        result = prime * result + (hasDescendantRefsetMembers ? 1231 : 1237);
+        result = prime * result + (historyVisible ? 1231 : 1237);
+        result = prime * result + ((memberEffectiveTime == null) ? 0 : memberEffectiveTime.hashCode());
+        result = prime * result + (memberOfRefset ? 1231 : 1237);
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((parents == null) ? 0 : parents.hashCode());
+        result = prime * result + (released ? 1231 : 1237);
+        result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
         result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
-        result = prime * result + ((children == null) ? 0 : children.hashCode());
-        result = prime * result + ((parents == null) ? 0 : parents.hashCode());
-        result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
-        result = prime * result + ((definitionExceptionType == null) ? 0 : definitionExceptionType.hashCode());
-        result = prime * result + ((definitionExceptionId == null) ? 0 : definitionExceptionId.hashCode());
-        result = prime * result + (memberOfRefset ? 1 : 0);
-        result = prime * result + (hasChildren ? 1 : 0);
-        result = prime * result + (defined ? 1 : 0);
-        result = prime * result + (released ? 1 : 0);
-        result = prime * result + (hasDescendantRefsetMembers ? 1 : 0);
-        result = prime * result + (hasAncestorRefsetMembers ? 1 : 0);
-        result = prime * result
-                + ((memberEffectiveTime == null) ? 0 : memberEffectiveTime.hashCode());
-        result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
+        result = prime * result + ((super.getModified() == null) ? 0 : super.getModifiedBy().hashCode());
         return result;
     }
 
-    /**
-     * Equals.
-     *
-     * @param obj the obj
-     * @return true, if successful
-     */
-    /* see superclass */
     @Override
     public boolean equals(final Object obj) {
 
@@ -550,7 +587,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
             return true;
         }
 
-        if (obj == null) {
+        if (!super.equals(obj)) {
             return false;
         }
 
@@ -560,115 +597,65 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
         final Concept other = (Concept) obj;
 
-        if (code == null) {
-
-            if (other.code != null) {
-                return false;
-            }
-        } else if (!code.equals(other.code)) {
-            return false;
-        }
-
-        if (name == null) {
-
-            if (other.name != null) {
-                return false;
-            }
-        } else if (!name.equals(other.name)) {
-            return false;
-        }
-        
-        if (fsn == null) {
-            
-            if (other.fsn != null) {
-                return false;
-            }
-        } else if (!fsn.equals(other.fsn)) {
-            return false;
-        }
-
-        if (terminology == null) {
-
-            if (other.terminology != null) {
-                return false;
-            }
-        } else if (!terminology.equals(other.terminology)) {
-            return false;
-        }
-
-        if (version == null) {
-
-            if (other.version != null) {
-                return false;
-            }
-        } else if (!version.equals(other.version)) {
-            return false;
-        }
-
-        if (memberEffectiveTime == null) {
-
-            if (other.memberEffectiveTime != null) {
-                return false;
-            }
-        } else if (!memberEffectiveTime.equals(other.memberEffectiveTime)) {
-            return false;
-        }
-
-        if (descriptions == null) {
-
-            if (other.descriptions != null) {
-                return false;
-            }
-        } else if (!descriptions.equals(other.descriptions)) {
-            return false;
-        }
-        
-        if (definitionExceptionType == null) {
-            
-            if (other.definitionExceptionType != null) {
-                return false;
-            }
-        } else if (!definitionExceptionType.equals(other.definitionExceptionType)) {
-            return false;
-        }
-        
-        if (definitionExceptionId == null) {
-            
-            if (other.definitionExceptionId != null) {
-                return false;
-            }
-        } else if (!definitionExceptionId.equals(other.definitionExceptionId)) {
-            return false;
-        }
-
         if (children == null) {
-
             if (other.children != null) {
                 return false;
             }
+
         } else if (!children.equals(other.children)) {
             return false;
         }
 
-        if (parents == null) {
-
-            if (other.parents != null) {
+        if (code == null) {
+            if (other.code != null) {
                 return false;
             }
-        } else if (!parents.equals(other.parents)) {
+
+        } else if (!code.equals(other.code)) {
             return false;
         }
 
-        if (roleGroups == null) {
-
-            if (other.roleGroups != null) {
-                return false;
-            }
-        } else if (!roleGroups.equals(other.roleGroups)) {
+        if (defined != other.defined) {
             return false;
         }
 
-        if (hasDescendantRefsetMembers != other.hasDescendantRefsetMembers) {
+        if (definitionExceptionId == null) {
+            if (other.definitionExceptionId != null) {
+                return false;
+            }
+
+        } else if (!definitionExceptionId.equals(other.definitionExceptionId)) {
+            return false;
+        }
+
+        if (definitionExceptionType == null) {
+            if (other.definitionExceptionType != null) {
+                return false;
+            }
+
+        } else if (!definitionExceptionType.equals(other.definitionExceptionType)) {
+            return false;
+        }
+
+        if (descriptions == null) {
+            if (other.descriptions != null) {
+                return false;
+            }
+
+        } else if (!descriptions.equals(other.descriptions)) {
+            return false;
+        }
+
+        if (feedbackVisible != other.feedbackVisible) {
+            return false;
+        }
+
+        if (fsn == null) {
+            if (other.fsn != null) {
+                return false;
+            }
+
+        } else if (!fsn.equals(other.fsn)) {
             return false;
         }
 
@@ -676,19 +663,77 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
             return false;
         }
 
-        if (memberOfRefset != other.memberOfRefset) {
-            return false;
-        }
-
         if (hasChildren != other.hasChildren) {
             return false;
         }
 
-        if (defined != other.defined) {
+        if (hasDescendantRefsetMembers != other.hasDescendantRefsetMembers) {
             return false;
         }
-        
+
+        if (historyVisible != other.historyVisible) {
+            return false;
+        }
+
+        if (memberEffectiveTime == null) {
+            if (other.memberEffectiveTime != null) {
+                return false;
+            }
+
+        } else if (!memberEffectiveTime.equals(other.memberEffectiveTime)) {
+            return false;
+        }
+
+        if (memberOfRefset != other.memberOfRefset) {
+            return false;
+        }
+
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+
+        if (parents == null) {
+            if (other.parents != null) {
+                return false;
+            }
+
+        } else if (!parents.equals(other.parents)) {
+            return false;
+        }
+
         if (released != other.released) {
+            return false;
+        }
+
+        if (roleGroups == null) {
+            if (other.roleGroups != null) {
+                return false;
+            }
+
+        } else if (!roleGroups.equals(other.roleGroups)) {
+            return false;
+        }
+
+        if (terminology == null) {
+            if (other.terminology != null) {
+                return false;
+            }
+
+        } else if (!terminology.equals(other.terminology)) {
+            return false;
+        }
+
+        if (version == null) {
+            if (other.version != null) {
+                return false;
+            }
+
+        } else if (!version.equals(other.version)) {
             return false;
         }
 
@@ -704,6 +749,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /* see superclass */
     @Override
     public int compareTo(final Concept o) {
+
         // Handle null
         return (name + code).compareToIgnoreCase(o.getName() + o.getCode());
     }

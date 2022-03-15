@@ -92,7 +92,7 @@ public class ResultList<T> implements Collection<T> {
         limit = other.getLimit();
         offset = other.getOffset();
         miscCountA = other.getMiscCountA();
-        miscCountA = other.getMiscCountB();
+        miscCountB = other.getMiscCountB();
         searchAfter = other.getSearchAfter();
         parameters = other.getParameters();
         scoreMap = other.getScoreMap();
@@ -295,61 +295,76 @@ public class ResultList<T> implements Collection<T> {
         this.parameters = parameters;
     }
 
+
     /* see superclass */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((items == null) ? 0 : items.hashCode());
+        result = prime * result + limit;
+        result = prime * result + miscCountA;
+        result = prime * result + miscCountB;
+        result = prime * result + offset;
         result = prime * result + ((parameters == null) ? 0 : parameters.hashCode());
-        result = prime * result + (totalKnown ? 1 : 0);
+        result = prime * result + ((scoreMap == null) ? 0 : scoreMap.hashCode());
+        result = prime * result + ((searchAfter == null) ? 0 : searchAfter.hashCode());
+        result = prime * result + ((timeTaken == null) ? 0 : timeTaken.hashCode());
         result = prime * result + total;
+        result = prime * result + (totalKnown ? 1231 : 1237);
         return result;
     }
 
     /* see superclass */
     @Override
-    public boolean equals(final Object obj) {
-        
-        if (this == obj) {
+    public boolean equals(Object obj) {
+
+        if (this == obj)
             return true;
-        }
-        
-        if (obj == null) {
+        if (obj == null)
             return false;
-        }
-        
-        if (getClass() != obj.getClass()) {
+        if (getClass() != obj.getClass())
             return false;
-        }
-        
         @SuppressWarnings("unchecked")
         final ResultList<T> other = (ResultList<T>) obj;
-        
         if (items == null) {
-            if (other.items != null) {
+            if (other.items != null)
                 return false;
-            }
-        } else if (!items.equals(other.items)) {
+        } else if (!items.equals(other.items))
             return false;
-        }
-        
+        if (limit != other.limit)
+            return false;
+        if (miscCountA != other.miscCountA)
+            return false;
+        if (miscCountB != other.miscCountB)
+            return false;
+        if (offset != other.offset)
+            return false;
         if (parameters == null) {
-            if (other.parameters != null) {
+            if (other.parameters != null)
                 return false;
-            }
-        } else if (!parameters.equals(other.parameters)) {
+        } else if (!parameters.equals(other.parameters))
             return false;
-        }
-        
-        if (total != other.total) {
+        if (scoreMap == null) {
+            if (other.scoreMap != null)
+                return false;
+        } else if (!scoreMap.equals(other.scoreMap))
             return false;
-        }
-        
-        if (totalKnown != other.totalKnown) {
+        if (searchAfter == null) {
+            if (other.searchAfter != null)
+                return false;
+        } else if (!searchAfter.equals(other.searchAfter))
             return false;
-        }
-        
+        if (timeTaken == null) {
+            if (other.timeTaken != null)
+                return false;
+        } else if (!timeTaken.equals(other.timeTaken))
+            return false;
+        if (total != other.total)
+            return false;
+        if (totalKnown != other.totalKnown)
+            return false;
         return true;
     }
 
