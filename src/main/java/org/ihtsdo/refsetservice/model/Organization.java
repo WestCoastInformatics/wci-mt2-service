@@ -185,7 +185,6 @@ public class Organization extends AbstractHasModified {
         } else if (!description.equals(other.description)) {
             return false;
         }
-        
         if (edition == null) {
             if (other.edition != null) {
                 return false;
