@@ -24,6 +24,7 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -208,39 +209,27 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((edition == null) ? 0 : edition.hashCode());
-        result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
+        result = prime * result + ((edition == null) ? 0 : edition.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         return result;
     }
 
     /* see superclass */
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(Object obj) {
 
         if (this == obj) {
             return true;
         }
-
-        if (obj == null) {
+        if (!super.equals(obj)) {
             return false;
         }
-
         if (getClass() != obj.getClass()) {
             return false;
         }
-
         final Organization other = (Organization) obj;
-
-        if (name == null) {
-            if (other.name != null) {
-                return false;
-            }
-        } else if (!name.equals(other.name)) {
-            return false;
-        }
-
         if (description == null) {
             if (other.description != null) {
                 return false;
@@ -248,7 +237,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         } else if (!description.equals(other.description)) {
             return false;
         }
-
         if (edition == null) {
             if (other.edition != null) {
                 return false;
@@ -256,7 +244,13 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         } else if (!edition.equals(other.edition)) {
             return false;
         }
-
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
         if (primaryContactEmail == null) {
             if (other.primaryContactEmail != null) {
                 return false;
@@ -264,15 +258,17 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
             return false;
         }
-
         return true;
     }
 
     /* see superclass */
     @Override
     public String toString() {
-
-        return "Organization [name=" + name + ", description=" + description + ", edition=" + edition + ", primaryContactEmail=" + primaryContactEmail + "]";
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
     }
 
     /* see superclass */
