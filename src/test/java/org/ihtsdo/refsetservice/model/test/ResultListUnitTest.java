@@ -70,9 +70,19 @@ public class ResultListUnitTest extends BaseTest {
     @Test
     public void testModelEqualsHashcode() throws Exception {
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
+        
         tester.include("total");
-        tester.include("parameters");
         tester.exclude("items");
+        tester.include("limit");
+        tester.include("offset");
+        tester.include("miscCountA");
+        tester.include("miscCountB");
+        tester.include("searchAfter");
+        tester.include("totalKnown");
+        tester.exclude("scoreMap");
+        tester.include("timeTaken");        
+        tester.include("parameters");
+        
         tester.proxy(SearchParameters.class, 1, sc1);
         tester.proxy(SearchParameters.class, 2, sc2);
 

@@ -8,7 +8,6 @@ import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.CopyConstructorTester;
 import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
 import org.ihtsdo.refsetservice.test.GetterSetterTester;
-import org.ihtsdo.refsetservice.test.PersistenceTester;
 import org.ihtsdo.refsetservice.test.SerializationTester;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,18 +58,35 @@ public class ConceptUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        tester.include("name");
+        // from AbstractHasModified
+        tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
+        
+        // from Concept
         tester.include("code");
+        tester.include("name");
+        tester.include("fsn");
         tester.include("terminology");
         tester.include("version");
-        tester.include("memberStatus");
-        tester.include("memberEffectiveTime");
         tester.include("memberOfRefset");
-        tester.include("hasChildrenRefsetMembers");
-        tester.include("hasParentsRefsetMembers");
-        tester.exclude("children");
-        tester.exclude("parents");
+        tester.include("memberEffectiveTime");
+        tester.include("hasChildren");
         tester.exclude("descriptions");
+        tester.include("historyVisible");
+        tester.include("feedbackVisible");
+        tester.include("defined");
+        tester.include("released");
+        tester.include("historyVisible");
+        tester.include("historyVisible");
+        tester.include("definitionExceptionType");
+        tester.include("definitionExceptionId");
+        tester.exclude("parents");
+        tester.include("hasAncestorRefsetMembers");
+        tester.exclude("children");
+        tester.include("hasDescendantRefsetMembers");
+        tester.exclude("roleGroups");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());

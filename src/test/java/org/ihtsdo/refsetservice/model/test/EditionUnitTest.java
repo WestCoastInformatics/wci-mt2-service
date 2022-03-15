@@ -59,13 +59,15 @@ public class EditionUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        tester.include("code");
         tester.include("name");
+        tester.include("namespace");
         tester.include("shortName");
         tester.include("iconUri");
-        tester.include("branch");
-        tester.include("description");
-
+        tester.include("branch");       
+        tester.include("topLevelModule");
+        tester.include("defaultLanguageCode");
+        tester.exclude("defaultLanguageRefsets");
+        
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
         assertTrue(tester.testIdentityFieldNotEquals());

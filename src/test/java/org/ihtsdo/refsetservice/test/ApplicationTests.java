@@ -49,7 +49,7 @@ public class ApplicationTests extends BaseTest {
     @Test
     public void propertiesLoads() {
         assertThat(properties.getProperty("spring.application.name"))
-                .isEqualTo("ihtsdo-refset-service");
+                .isEqualTo("snomed-refset-service");
         logger.info("properties loaded successfully");
     }
 
