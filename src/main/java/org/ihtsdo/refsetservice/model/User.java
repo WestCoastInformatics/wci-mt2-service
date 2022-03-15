@@ -29,6 +29,7 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     /** The user's email. */
     @Column(nullable = false, length = 250)
     private String email;
-    
+
     /** The user's title. */
     @Column(nullable = true, length = 250)
     private String title;
@@ -149,7 +150,10 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         userName = other.getUserName();
         name = other.getName();
         email = other.getEmail();
+        title = other.getTitle();
         roles = other.getRoles();
+        authToken = other.getAuthToken();
+        organization = other.getOrganization();
     }
 
     /**
@@ -159,13 +163,16 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      */
     public void patchFrom(final User other) {
 
-        super.populateFrom(other);
+        //super.populateFrom(other);
         userName = other.getUserName();
         name = other.getName();
         email = other.getEmail();
+        title = other.getTitle();
         roles = other.getRoles();
+        authToken = other.getAuthToken();
+        organization = other.getOrganization();
     }
-    
+
     /**
      * Returns the userName.
      *
@@ -227,7 +234,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
         this.email = email;
     }
-    
+
     /**
      * Returns the title.
      *
@@ -250,7 +257,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
     /**
      * Sets the authentication token.
-     * 
+     *
      * @return
      */
     public String getAuthToken() {
@@ -260,7 +267,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
     /**
      * Returns the authentication token.
-     * 
+     *
      * @param authToken
      */
     public void setAuthToken(String authToken) {
@@ -289,7 +296,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      *
      * @param roles the roles to set
      */
-    public void setRoles(Set<String> roles) {
+    public void setRoles(final Set<String> roles) {
 
         this.roles = roles;
     }
@@ -313,7 +320,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
         this.organization = organization;
     }
-    
+
     /**
      * Check if the user has the specified role on the refset.
      *
@@ -368,126 +375,85 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         return false;
     }
 
-    /**
-     * Hash code.
-     *
-     * @return the int
-     */
     /* see superclass */
     @Override
     public int hashCode() {
 
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((userName == null) ? 0 : userName.hashCode());
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((authToken == null) ? 0 : authToken.hashCode());
         result = prime * result + ((email == null) ? 0 : email.hashCode());
-        result = prime * result + ((title == null) ? 0 : title.hashCode());
-        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((organization == null) ? 0 : organization.hashCode());
-
+        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((title == null) ? 0 : title.hashCode());
+        result = prime * result + ((userName == null) ? 0 : userName.hashCode());
         return result;
     }
 
-    /**
-     * Equals.
-     *
-     * @param obj the obj
-     * @return true, if successful
-     */
     /* see superclass */
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(Object obj) {
 
         if (this == obj) {
-
             return true;
         }
-
-        if (obj == null) {
-
+        if (!super.equals(obj)) {
             return false;
         }
-
         if (getClass() != obj.getClass()) {
-
             return false;
         }
-
         final User other = (User) obj;
-
-        if (userName == null) {
-
-            if (other.userName != null) {
-
+        if (authToken == null) {
+            if (other.authToken != null) {
                 return false;
             }
-
-        } else if (!userName.equals(other.userName)) {
-
+        } else if (!authToken.equals(other.authToken)) {
             return false;
         }
-
-        if (name == null) {
-
-            if (other.name != null) {
-
-                return false;
-            }
-
-        } else if (!name.equals(other.name)) {
-
-            return false;
-        }
-
         if (email == null) {
-
             if (other.email != null) {
-
                 return false;
             }
-
         } else if (!email.equals(other.email)) {
-
             return false;
         }
-        
-        if (title == null) {
-
-            if (other.title != null) {
-
+        if (name == null) {
+            if (other.name != null) {
                 return false;
             }
-
-        } else if (!title.equals(other.title)) {
-
+        } else if (!name.equals(other.name)) {
             return false;
         }
-
-        if (roles == null) {
-
-            if (other.roles != null) {
-
-                return false;
-            }
-
-        } else if (!roles.equals(other.roles)) {
-
-            return false;
-        }
-
         if (organization == null) {
-
             if (other.organization != null) {
-
                 return false;
             }
-
         } else if (!organization.equals(other.organization)) {
-
             return false;
         }
-
+        if (roles == null) {
+            if (other.roles != null) {
+                return false;
+            }
+        } else if (!roles.equals(other.roles)) {
+            return false;
+        }
+        if (title == null) {
+            if (other.title != null) {
+                return false;
+            }
+        } else if (!title.equals(other.title)) {
+            return false;
+        }
+        if (userName == null) {
+            if (other.userName != null) {
+                return false;
+            }
+        } else if (!userName.equals(other.userName)) {
+            return false;
+        }
         return true;
     }
 
@@ -495,7 +461,11 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @Override
     public String toString() {
 
-        return "User [userName=" + userName + ", name=" + name + ", email=" + email + ", title=" + title + ", authToken=" + authToken + ", roles=" + roles + ", organization=" + organization + "]";
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
     }
 
     /**
@@ -525,20 +495,20 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     public void validateAdd(AuthContext context) throws Exception {
 
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void validateUpdate(AuthContext context, User other) throws Exception {
 
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void validateDelete(AuthContext context) throws Exception {
 
         // TODO Auto-generated method stub
-        
+
     }
 }

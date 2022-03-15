@@ -57,13 +57,18 @@ public class TeamUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        
+        // from AbstractHasModified
+        tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
+
         tester.include("name");
         tester.include("description");
-        tester.include("organization");
-        tester.include("pirmaryEmailContact");
-        tester.include("roles");
-        tester.include("members");
+        tester.exclude("organization");
+        tester.include("primaryContactEmail");
+        tester.exclude("roles");
+        tester.exclude("members");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());

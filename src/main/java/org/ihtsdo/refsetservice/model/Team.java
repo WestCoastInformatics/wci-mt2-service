@@ -28,6 +28,7 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -112,6 +113,8 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         super.populateFrom(other);
         name = other.getName();
         description = other.getDescription();
+        primaryContactEmail = other.getPrimaryContactEmail();
+        organization = other.getOrganization();
     }
 
     /**
@@ -121,10 +124,12 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
      */
     public void patchFrom(final Team other) {
 
-        super.populateFrom(other);
+        // super.populateFrom(other);
         // Only these field can be patched
         name = other.getName();
         description = other.getDescription();
+        primaryContactEmail = other.getPrimaryContactEmail();
+        organization = other.getOrganization();
     }
 
     /**
@@ -201,7 +206,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     /**
      * @param roles the roles
      */
-    public void setRoles(Set<String> roles) {
+    public void setRoles(final Set<String> roles) {
 
         this.roles = roles;
     }
@@ -218,7 +223,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     /**
      * @param members the members
      */
-    public void setMembers(Set<String> members) {
+    public void setMembers(final Set<String> members) {
 
         this.members = members;
     }
@@ -234,7 +239,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     /**
      * @param primaryContactEmail the primaryContactEmail
      */
-    public void setPrimaryContactEmail(String primaryContactEmail) {
+    public void setPrimaryContactEmail(final String primaryContactEmail) {
 
         this.primaryContactEmail = primaryContactEmail;
     }
@@ -246,31 +251,28 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         final int prime = 31;
         int result = 1;
         result = prime * result + ((description == null) ? 0 : description.hashCode());
+        result = prime * result + ((members == null) ? 0 : members.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
-        result = prime * result + ((members == null) ? 0 : roles.hashCode());
         return result;
     }
 
     /* see superclass */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
         }
-
         if (!super.equals(obj)) {
             return false;
         }
-
         if (getClass() != obj.getClass()) {
             return false;
         }
-
         final Team other = (Team) obj;
-
         if (description == null) {
             if (other.description != null) {
                 return false;
@@ -278,31 +280,6 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         } else if (!description.equals(other.description)) {
             return false;
         }
-
-        if (name == null) {
-            if (other.name != null) {
-                return false;
-            }
-        } else if (!name.equals(other.name)) {
-            return false;
-        }
-
-        if (primaryContactEmail == null) {
-            if (other.primaryContactEmail != null) {
-                return false;
-            }
-        } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
-            return false;
-        }
-
-        if (roles == null) {
-            if (other.roles != null) {
-                return false;
-            }
-        } else if (!roles.equals(other.roles)) {
-            return false;
-        }
-
         if (members == null) {
             if (other.members != null) {
                 return false;
@@ -310,7 +287,34 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         } else if (!members.equals(other.members)) {
             return false;
         }
-
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+        if (organization == null) {
+            if (other.organization != null) {
+                return false;
+            }
+        } else if (!organization.equals(other.organization)) {
+            return false;
+        }
+        if (primaryContactEmail == null) {
+            if (other.primaryContactEmail != null) {
+                return false;
+            }
+        } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
+            return false;
+        }
+        if (roles == null) {
+            if (other.roles != null) {
+                return false;
+            }
+        } else if (!roles.equals(other.roles)) {
+            return false;
+        }
         return true;
     }
 
@@ -318,31 +322,38 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     @Override
     public String toString() {
 
-        return "Team [name=" + name + ", description=" + description + ", organization=" + organization + ", primaryContactEmail=" + primaryContactEmail + ", roles=" + roles + ", members=" + members
-            + "]";
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
     }
 
     /* see superclass */
     @Override
     public void lazyInit() {
+
         // TODO Auto-generated method stub
     }
 
     /* see superclass */
     @Override
-    public void validateAdd(AuthContext context) throws Exception {
+    public void validateAdd(final AuthContext context) throws Exception {
+
         // TODO validate add
     }
 
     /* see superclass */
     @Override
-    public void validateUpdate(AuthContext context, Team other) throws Exception {
+    public void validateUpdate(final AuthContext context, final Team other) throws Exception {
+
         // TODO validate update
     }
 
     /* see superclass */
     @Override
-    public void validateDelete(AuthContext context) throws Exception {
+    public void validateDelete(final AuthContext context) throws Exception {
+
         // TODO valiidate delete
     }
 }

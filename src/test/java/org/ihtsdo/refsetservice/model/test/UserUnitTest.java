@@ -57,11 +57,18 @@ public class UserUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
+        // from AbstractHasModified
+        tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
         
         tester.include("userName");
         tester.include("name");
         tester.include("email");
-        tester.include("organization");
+        tester.include("title");
+        tester.include("authToken");
+        tester.exclude("organization");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());

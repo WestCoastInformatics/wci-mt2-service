@@ -57,13 +57,20 @@ public class ProjectUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        
+        // from AbstractHasModified
+        tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
+
         tester.include("name");
         tester.include("description");
-        tester.include("organization");
+        tester.exclude("organization");
         tester.include("privateProject");
-        tester.include("pirmaryEmailContact");
-        tester.include("teams");
+        tester.include("primaryContactEmail");
+        tester.include("crowdProjectId");
+        tester.exclude("teams");
+        tester.exclude("roles");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -98,4 +105,3 @@ public class ProjectUnitTest extends BaseTest {
     }
 
 }
-

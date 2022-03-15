@@ -31,6 +31,7 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 
@@ -119,18 +120,22 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         organization = other.getOrganization();
         description = other.getDescription();
         privateProject = other.isPrivateProject();
+        crowdProjectId = other.getCrowdProjectId();
+        primaryContactEmail = other.getPrimaryContactEmail();
         teams = other.getTeams();
     }
 
     /* see superclass */
     @Override
-    public void patchFrom(Project other) {
+    public void patchFrom(final Project other) {
 
-        super.populateFrom(other);
+        //super.populateFrom(other);
         name = other.getName();
         organization = other.getOrganization();
         description = other.getDescription();
         privateProject = other.isPrivateProject();
+        crowdProjectId = other.getCrowdProjectId();
+        primaryContactEmail = other.getPrimaryContactEmail();
         teams = other.getTeams();
     }
 
@@ -253,7 +258,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      *
      * @param teams the teams
      */
-    public void setTeams(Set<String> teams) {
+    public void setTeams(final Set<String> teams) {
 
         this.teams = teams;
     }
@@ -274,7 +279,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      *
      * @param teams the roles
      */
-    public void setRoles(List<String> roles) {
+    public void setRoles(final List<String> roles) {
 
         this.roles = roles;
     }
@@ -294,62 +299,51 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      *
      * @param primaryContactEmail the primaryContactEmail
      */
-    public void setPrimaryContactEmail(String primaryContactEmail) {
+    public void setPrimaryContactEmail(final String primaryContactEmail) {
 
         this.primaryContactEmail = primaryContactEmail;
     }
 
-    /**
-     * Hash code.
-     *
-     * @return the int
-     */
+ 
+
+    /* see superclass */
     @Override
     public int hashCode() {
 
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((crowdProjectId == null) ? 0 : crowdProjectId.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((organization == null) ? 0 : organization.hashCode());
-        result = prime * result + ((teams == null) ? 0 : teams.hashCode());
-        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
-        result = prime * result + (privateProject ? 1 : 0);
+        result = prime * result + (privateProject ? 1231 : 1237);
+        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((teams == null) ? 0 : teams.hashCode());
         return result;
     }
 
-    /**
-     * Equals.
-     *
-     * @param obj the obj
-     * @return true, if successful
-     */
+    /* see superclass */
     @Override
     public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
         }
-
-        if (obj == null) {
+        if (!super.equals(obj)) {
             return false;
         }
-
         if (getClass() != obj.getClass()) {
             return false;
         }
-
         final Project other = (Project) obj;
-
-        if (name == null) {
-            if (other.name != null) {
+        if (crowdProjectId == null) {
+            if (other.crowdProjectId != null) {
                 return false;
             }
-        } else if (!name.equals(other.name)) {
+        } else if (!crowdProjectId.equals(other.crowdProjectId)) {
             return false;
         }
-
         if (description == null) {
             if (other.description != null) {
                 return false;
@@ -357,7 +351,13 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         } else if (!description.equals(other.description)) {
             return false;
         }
-
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
         if (organization == null) {
             if (other.organization != null) {
                 return false;
@@ -365,27 +365,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         } else if (!organization.equals(other.organization)) {
             return false;
         }
-
-        if (teams == null) {
-            if (other.teams != null) {
-                return false;
-            }
-        } else if (!teams.equals(other.teams)) {
-            return false;
-        }
-        
-        if (roles == null) {
-            if (other.roles != null) {
-                return false;
-            }
-        } else if (!roles.equals(other.roles)) {
-            return false;
-        }
-
-        if (privateProject != other.privateProject) {
-            return false;
-        }
-
         if (primaryContactEmail == null) {
             if (other.primaryContactEmail != null) {
                 return false;
@@ -393,39 +372,61 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
             return false;
         }
-
+        if (privateProject != other.privateProject) {
+            return false;
+        }
+        if (roles == null) {
+            if (other.roles != null) {
+                return false;
+            }
+        } else if (!roles.equals(other.roles)) {
+            return false;
+        }
+        if (teams == null) {
+            if (other.teams != null) {
+                return false;
+            }
+        } else if (!teams.equals(other.teams)) {
+            return false;
+        }
         return true;
     }
 
     /* see superclass */
     @Override
     public String toString() {
-
-        return "Project [name=" + name + ", description=" + description + ", organization=" + organization + ", privateProject=" + privateProject + ", primaryContactEmail=" + primaryContactEmail
-            + ", crowdProjectId=" + crowdProjectId + ", teams=" + teams + ", roles=" + roles + "]";
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
     }
 
     /* see superclass */
     @Override
     public void lazyInit() {
+
         // TODO Auto-generated method stub
     }
 
     /* see superclass */
     @Override
-    public void validateAdd(AuthContext context) throws Exception {
+    public void validateAdd(final AuthContext context) throws Exception {
+
         // TODO validate add
     }
 
     /* see superclass */
     @Override
-    public void validateUpdate(AuthContext context, Project other) throws Exception {
+    public void validateUpdate(final AuthContext context, final Project other) throws Exception {
+
         // TODO validate update
     }
 
     /* see superclass */
     @Override
-    public void validateDelete(AuthContext context) throws Exception {
+    public void validateDelete(final AuthContext context) throws Exception {
+
         // TODO valiidate delete
     }
 }
