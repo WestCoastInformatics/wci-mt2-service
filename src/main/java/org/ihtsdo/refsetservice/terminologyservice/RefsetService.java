@@ -1413,7 +1413,7 @@ public class RefsetService {
                 searchParameters.setQuery(query);
 
                 final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate", "modified", "privateRefset",
-                    "editionShortName", "assignedUser", "projectId");
+                    "editionShortName", "assignedUser", "projectId, workflowStatus");
                 String[] queryParts = query.split(" AND ");
                 String filterQuery = "";
                 String termQuery = "";
