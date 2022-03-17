@@ -3712,13 +3712,14 @@ public class RefsetMemberService {
                 
                 if (conceptsToSearch.size() > 0) {
                 
-                    bodyConceptIds = "";
+                    bodyConceptIds = "\"conceptIds\":[";
                 
                     // generate the body list for the check for concepts that are already members
                     for (final String conceptId : conceptsToSearch) {
                         bodyConceptIds += "\"" + conceptId + "\",";
                     }
                     
+                    bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
                     final String memberSearchBody = bodyBase + bodyConceptIds + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\"}";
                     logger.debug("addRefsetMembers member search body: " + memberSearchBody);
                     
