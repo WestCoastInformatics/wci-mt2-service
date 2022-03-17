@@ -3657,7 +3657,7 @@ public class RefsetMemberService {
                 final String memberSearchBody = bodyBase + bodyConceptIds + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\"}";
                 Iterator<JsonNode> iterator = null;
                 
-                //logger.debug("addRefsetMembers member search body: " + memberSearchBody);
+                logger.debug("addRefsetMembers member search body: " + memberSearchBody);
                 
                 try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
 
