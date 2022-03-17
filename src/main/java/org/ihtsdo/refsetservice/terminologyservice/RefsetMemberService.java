@@ -3632,6 +3632,7 @@ public class RefsetMemberService {
                 
                 searchAgain = false;
                 String bodyConceptIds = "\"conceptIds\":[";
+                Iterator<JsonNode> iterator = null;
                 
                 for (; searchIndex < conceptsToSearch.size(); searchIndex++) {
                     
@@ -3653,37 +3654,6 @@ public class RefsetMemberService {
                 
                 logger.debug("addRefsetMembers searchIndex :: loopNumber :: batch size: " + searchIndex + " :: " + loopNumber + " :: " + (searchIndex / loopNumber));
                 bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
-                
-                final String memberSearchBody = bodyBase + bodyConceptIds + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\"}";
-                Iterator<JsonNode> iterator = null;
-                
-                logger.debug("addRefsetMembers member search body: " + memberSearchBody);
-                
-                try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
-
-                    final String resultString = response.readEntity(String.class);
-
-                    // Only process payload if Rest call is successful
-                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                        throw new Exception("call to url '" + conceptSearchUrl + "' for member search wasn't successful. " + response.toString());
-                    }
-
-                    final JsonNode root = mapper.readTree(resultString.toString());
-                    iterator = root.get("items").iterator();
-                    
-                    // loop thru the returned member details remove any from the list to add
-                    while (iterator != null && iterator.hasNext()) {
-
-                        final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("conceptId").asText();
-                        conceptIds.remove(conceptId);
-                        
-                        final Map<String, String> status = new HashMap<>();
-                        status.put("operation", "Added");
-                        status.put("status", "Already Member");
-                        conceptsStatus.put(conceptId, status);
-                    }
-                }
                 
                 // verify the concept IDs if a bulk add is going to be used -- TODO - This can be removed if invalid concepts are handled on SnowStorm
                 if (conceptIds.size() > 0) {
@@ -3717,27 +3687,68 @@ public class RefsetMemberService {
                         }
                     }
                 }
-            }
-            
-            // gather any input concept not in the validated list 
-            final List<String> invalidConcepts = conceptIds.stream()
-                .filter((inputConceptId) -> { 
-                    
-                    boolean found = validatedConcepts.contains(inputConceptId);
-                    
-                    if (found) {
-                        return false;
-                    } else {
+                
+                // gather any input concept not in the validated list 
+                final List<String> invalidConcepts = conceptIds.stream()
+                    .filter((inputConceptId) -> { 
                         
-                        logger.debug("The ID " + inputConceptId + " is not a valid concept.");
-                        return true;
+                        boolean found = validatedConcepts.contains(inputConceptId);
+                        
+                        if (found) {
+                            return false;
+                        } else {
+                            
+                            logger.debug("The ID " + inputConceptId + " is not a valid concept.");
+                            return true;
+                        }
+                    })
+                    .collect(Collectors.toList());
+                
+                // remove invalid concepts from the concept lists 
+                logger.debug("invalidConcepts: " + invalidConcepts);
+                unaddedConcepts.addAll(invalidConcepts);
+                conceptIds.removeAll(invalidConcepts);
+                conceptsToSearch.removeAll(invalidConcepts);
+                
+                if (conceptsToSearch.size() > 0) {
+                
+                    bodyConceptIds = "";
+                
+                    // generate the body list for the check for concepts that are already members
+                    for (final String conceptId : conceptsToSearch) {
+                        bodyConceptIds += "\"" + conceptId + "\",";
                     }
-                })
-                .collect(Collectors.toList());
-            
-            logger.debug("invalidConcepts: " + invalidConcepts);
-            unaddedConcepts.addAll(invalidConcepts);
-            conceptIds.removeAll(invalidConcepts);
+                    
+                    final String memberSearchBody = bodyBase + bodyConceptIds + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\"}";
+                    logger.debug("addRefsetMembers member search body: " + memberSearchBody);
+                    
+                    try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
+    
+                        final String resultString = response.readEntity(String.class);
+    
+                        // Only process payload if Rest call is successful
+                        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                            throw new Exception("call to url '" + conceptSearchUrl + "' for member search wasn't successful. " + response.toString());
+                        }
+    
+                        final JsonNode root = mapper.readTree(resultString.toString());
+                        iterator = root.get("items").iterator();
+                        
+                        // loop thru the returned member details remove any from the list to add
+                        while (iterator != null && iterator.hasNext()) {
+    
+                            final JsonNode conceptNode = iterator.next();
+                            final String conceptId = conceptNode.get("conceptId").asText();
+                            conceptIds.remove(conceptId);
+                            
+                            final Map<String, String> status = new HashMap<>();
+                            status.put("operation", "Added");
+                            status.put("status", "Already Member");
+                            conceptsStatus.put(conceptId, status);
+                        }
+                    }
+                }
+            }
             
             logger.debug("addRefsetMembers about to add concept size: " + conceptIds.size());
             
