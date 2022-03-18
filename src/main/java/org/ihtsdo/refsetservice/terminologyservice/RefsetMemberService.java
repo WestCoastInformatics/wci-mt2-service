@@ -2438,7 +2438,7 @@ public class RefsetMemberService {
         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
         final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&active=true&offset=0&limit=1";
         
-        logger.debug("Get Member List URL: " + url);
+        logger.debug("Get Refset Member Count URL: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
