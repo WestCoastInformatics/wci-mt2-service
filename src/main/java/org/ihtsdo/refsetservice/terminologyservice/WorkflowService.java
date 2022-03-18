@@ -311,6 +311,8 @@ public final class WorkflowService {
                 
                 if (currentStatus.equals(refset.getWorkflowStatus())) {
                     refsetsNotUpdated.add(refset.getRefsetId());
+                } else {
+                    RefsetService.clearAllRefsetCaches(refset.getEditionBranch());
                 }
                 
             } catch (Exception e) {
