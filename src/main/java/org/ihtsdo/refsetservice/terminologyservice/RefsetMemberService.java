@@ -3620,7 +3620,7 @@ public class RefsetMemberService {
             // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
             final String conceptSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/concepts/search";
             final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
-            final List<String> conceptsToSearch = new ArrayList<>(conceptIds);
+            final List<String> permanentFullConceptList = new ArrayList<>(conceptIds);
             final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
             final List<String> validatedConcepts = new ArrayList<>();
             boolean searchAgain = true;
@@ -3633,15 +3633,17 @@ public class RefsetMemberService {
                 searchAgain = false;
                 String bodyConceptIds = "\"conceptIds\":[";
                 Iterator<JsonNode> iterator = null;
+                final List<String> conceptBatch = new ArrayList<>();
                 
-                for (; searchIndex < conceptsToSearch.size(); searchIndex++) {
+                for (; searchIndex < permanentFullConceptList.size(); searchIndex++) {
                     
-                    //logger.debug("addRefsetMembers searchIndex: " + searchIndex + " :: conceptsToSearch.size(): " + conceptsToSearch.size() + " :: conceptsToSearch.get(searchIndex): " + conceptsToSearch.get(searchIndex));
-                    final String conceptId = conceptsToSearch.get(searchIndex);
+                    //logger.debug("addRefsetMembers searchIndex: " + searchIndex + " :: permanentFullConceptList.size(): " + permanentFullConceptList.size() + " :: permanentFullConceptList.get(searchIndex): " + permanentFullConceptList.get(searchIndex));
+                    final String conceptId = permanentFullConceptList.get(searchIndex);
                     final Map<String, String> status = new HashMap<>();
                     status.put("operation", "Added");
                     status.put("status", "Failed");
                     conceptsStatus.put(conceptId, status);
+                    conceptBatch.add(conceptId);
                     bodyConceptIds += "\"" + conceptId + "\",";
                     
                     if (searchIndex / loopNumber >= ELASTICSEARCH_MAX_RECORD_LENGTH) {
@@ -3655,7 +3657,7 @@ public class RefsetMemberService {
                 logger.debug("addRefsetMembers searchIndex :: loopNumber :: batch size: " + searchIndex + " :: " + loopNumber + " :: " + (searchIndex / loopNumber));
                 bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
                 
-                // verify the concept IDs if a bulk add is going to be used -- TODO - This can be removed if invalid concepts are handled on SnowStorm
+                // verify the concept IDs if a bulk add is going to be used
                 if (conceptIds.size() > 0) {
                     
                     final String conceptVerificationBody = bodyBase + bodyConceptIds + "}";
@@ -3689,7 +3691,7 @@ public class RefsetMemberService {
                 }
                 
                 // gather any input concept not in the validated list 
-                final List<String> invalidConcepts = conceptIds.stream()
+                final List<String> invalidConcepts = conceptBatch.stream()
                     .filter((inputConceptId) -> { 
                         
                         boolean found = validatedConcepts.contains(inputConceptId);
@@ -3708,14 +3710,14 @@ public class RefsetMemberService {
                 logger.debug("invalidConcepts: " + invalidConcepts);
                 unaddedConcepts.addAll(invalidConcepts);
                 conceptIds.removeAll(invalidConcepts);
-                conceptsToSearch.removeAll(invalidConcepts);
+                conceptBatch.removeAll(invalidConcepts);
                 
-                if (conceptsToSearch.size() > 0) {
+                if (conceptBatch.size() > 0) {
                 
                     bodyConceptIds = "\"conceptIds\":[";
                 
                     // generate the body list for the check for concepts that are already members
-                    for (final String conceptId : conceptsToSearch) {
+                    for (final String conceptId : conceptBatch) {
                         bodyConceptIds += "\"" + conceptId + "\",";
                     }
                     
@@ -3944,7 +3946,8 @@ public class RefsetMemberService {
             + "&limit=" + URL_MAX_CHAR_LENGTH + "&referencedComponentId=";
             final ArrayNode memberDeleteArray = mapper.createArrayNode();
             final ArrayNode memberUpdateArray = mapper.createArrayNode();
-            final List<String> conceptsToSearch = Arrays.asList(conceptIds.split(","));
+            final List<String> permanentFullConceptList = Arrays.asList(conceptIds.split(","));
+            final List<String> members = new ArrayList<>();
             boolean searchAgain = true;
             int searchIndex = 0;
             
@@ -3953,9 +3956,9 @@ public class RefsetMemberService {
                 searchAgain = false;
                 String bodyConceptIds = "";
                 
-                for (; searchIndex < conceptsToSearch.size(); searchIndex++) {
+                for (; searchIndex < permanentFullConceptList.size(); searchIndex++) {
                     
-                    final String conceptId = conceptsToSearch.get(searchIndex);
+                    final String conceptId = permanentFullConceptList.get(searchIndex);
                     final Map<String, String> status = new HashMap<>();
                     status.put("operation", "Removed");
                     status.put("status", "Failed");
@@ -3997,6 +4000,7 @@ public class RefsetMemberService {
                     final JsonNode conceptNode = iterator.next();
                     final boolean released = conceptNode.get("released").asBoolean();
                     final String membershipId = conceptNode.get("memberId").asText();
+                    members.add(conceptNode.get("referencedComponentId").asText());
                     
                     // if the member has not been released then remove the membership
                     if (!released) {
@@ -4029,6 +4033,23 @@ public class RefsetMemberService {
                     conceptsStatus.put(conceptNode.get("referencedComponentId").asText(), status);
                 }
             }
+            
+            // gather any input concept that was not a member and adjust its status 
+//            permanentFullConceptList.stream().filter((inputConceptId) -> { 
+//                
+//                boolean isMember = members.contains(inputConceptId);
+//                
+//                if (isMember) {
+//                    return false;
+//                } else {
+//                    
+//                    final Map<String, String> status = new HashMap<>();
+//                    status.put("operation", "Removed");
+//                    status.put("status", "Was Not a Member");
+//                    conceptsStatus.put(inputConceptId, status);
+//                    return true;
+//                }
+//            });
             
             // delete any members that haven't been released
             if (memberDeleteArray.size() > 0) {
