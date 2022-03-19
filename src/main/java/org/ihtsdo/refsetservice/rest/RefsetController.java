@@ -652,8 +652,8 @@ public class RefsetController extends BaseController {
                     final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
                     final String versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
                     
-                    final String internalRefsetId = RefsetService.createNewRefsetVersion(user, refset.getId(), true);
-                    refset = service.get(internalRefsetId, Refset.class);
+                    final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refset.getId(), true);
+                    refset = RefsetService.getRefset(service, user, newRefsetInternalId);
                     
                     if (editionVersions.indexOf(versionDate) > 1) {
                         refset.setUpgradeWarning(true);
