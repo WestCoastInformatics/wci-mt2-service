@@ -1320,7 +1320,7 @@ public class HistoricDataMigrator {
 
                 Organization org = organizationsAdded.get(orgName);
 
-                if (wciOrganization.equals(org)) {
+                if (wciOrganization != null && wciOrganization.equals(org)) {
 
                     continue;
                 }
