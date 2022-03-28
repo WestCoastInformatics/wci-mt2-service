@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2021 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -11,12 +11,9 @@
 package org.ihtsdo.refsetservice.model;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -49,7 +46,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class Project extends AbstractHasModified implements Copyable<Project>, ValidateCrud<Project> {
+public class Project extends AbstractHasModified {
 
     /** The name. */
     @Column(nullable = false)
@@ -64,16 +61,12 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Organization organization;
-
+    
     /** The private flag. */
     @Column(nullable = false)
     private boolean privateProject;
-
-    /** email for primary contact. */
-    @Column(nullable = true, length = 255)
-    private String primaryContactEmail;
-
-    /** The crowd identifier for this project. */
+    
+    /** The list of user roles for this project. */
     @Transient
     @Column(nullable = true)
     private String crowdProjectId;
@@ -91,7 +84,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * Instantiates an empty {@link Project}.
      */
     public Project() {
-
         // n/a
     }
 
@@ -101,7 +93,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @param other the other
      */
     public Project(final Project other) {
-
         populateFrom(other);
     }
 
@@ -112,7 +103,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @param organization the organization
      */
     public Project(final String name, final Organization organization) {
-
         this.name = name;
         this.organization = organization;
     }
@@ -123,7 +113,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @param other the other
      */
     public void populateFrom(final Project other) {
-
         super.populateFrom(other);
         name = other.getName();
         organization = other.getOrganization();
@@ -158,7 +147,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @FullTextField(analyzer = "standard")
     @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
-
         return name;
     }
 
@@ -168,7 +156,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @param name the name
      */
     public void setName(final String name) {
-
         this.name = name;
     }
 
@@ -178,7 +165,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @return the description
      */
     public String getDescription() {
-
         return description;
     }
 
@@ -188,7 +174,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @param description the description to set
      */
     public void setDescription(final String description) {
-
         this.description = description;
     }
 
@@ -198,7 +183,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @return the organization
      */
     public Organization getOrganization() {
-
         return organization;
     }
 
@@ -208,30 +192,9 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @param organization the organization to set
      */
     public void setOrganization(final Organization organization) {
-
         this.organization = organization;
     }
-
-    /**
-     * Gets the crowd project/group id.
-     *
-     * @return the crowdProjectId
-     */
-    public String getCrowdProjectId() {
-
-        return crowdProjectId;
-    }
-
-    /**
-     * Sets the crowdProjectId.
-     *
-     * @param crowdProjectId the crowdProjectId to set
-     */
-    public void setCrowdProjectId(final String crowdProjectId) {
-
-        this.crowdProjectId = crowdProjectId;
-    }
-
+    
     /**
      * Checks if is private project.
      *
@@ -239,7 +202,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean isPrivateProject() {
-
         return privateProject;
     }
 
@@ -249,7 +211,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @param privateProject the private flag to set
      */
     public void setPrivateProject(final boolean privateProject) {
-
         this.privateProject = privateProject;
     }
 
@@ -275,25 +236,24 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     }
     
     /**
-     * Returns the roles.
-     *
      * @return the roles
      */
     @JsonGetter()
     public List<String> getRoles() {
-
-        return (roles != null) ? roles : new ArrayList<>();
+        
+        if (roles == null) {
+            roles = new ArrayList<>();
+        }
+        
+        return roles;
         
         
     }
-
+    
     /**
-     * Sets the roles.
-     *
-     * @param teams the roles
+     * @param roles the roles
      */
     public void setRoles(final List<String> roles) {
-
         this.roles = roles;
     }
 
@@ -405,7 +365,9 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         return true;
     }
 
-    /* see superclass */
+    /**
+     * Lazy init.
+     */
     @Override
     public String toString() {
         try {
@@ -420,7 +382,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public void lazyInit() {
 
         // TODO Auto-generated method stub
-    }
 
     /* see superclass */
     @Override

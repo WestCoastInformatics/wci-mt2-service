@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2021 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -26,24 +26,16 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Represents an Organization.
  */
 @Entity
 @Table(name = "organizations")
-@Schema(description = "Represents an organization.")
-@JsonInclude(Include.NON_EMPTY)
-@JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class Organization extends AbstractHasModified implements Copyable<Organization>, ValidateCrud<Organization> {
+public class Organization extends AbstractHasModified {
 
     /** The name. */
     @Column(nullable = false)
@@ -52,22 +44,17 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     /** The description. */
     @Column(nullable = true, length = 4000)
     private String description;
-
+    
     /** The edition. */
     @ManyToOne(targetEntity = Edition.class)
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Edition edition;
 
-    /** email for primary contact. */
-    @Column(nullable = true, length = 255)
-    private String primaryContactEmail;
-
     /**
      * Instantiates an empty {@link Organization}.
      */
     public Organization() {
-
         // n/a
     }
 
@@ -77,7 +64,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      * @param other the other
      */
     public Organization(final Organization other) {
-
         populateFrom(other);
     }
 
@@ -87,7 +73,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      * @param name the value
      */
     public Organization(final String name) {
-
         this.name = name;
     }
 
@@ -97,26 +82,10 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      * @param other the other
      */
     public void populateFrom(final Organization other) {
-
         super.populateFrom(other);
         name = other.getName();
         description = other.getDescription();
         edition = other.getEdition();
-        primaryContactEmail = other.getPrimaryContactEmail();
-    }
-
-    /**
-     * Patch from.
-     *
-     * @param other the other
-     */
-    public void patchFrom(final Organization other) {
-
-        // Only these field can be patched
-        name = other.getName();
-        description = other.getDescription();
-        edition = other.getEdition();
-        primaryContactEmail = other.getPrimaryContactEmail();
     }
 
     /**
@@ -127,7 +96,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @FullTextField(analyzer = "standard")
     @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
-
         return name;
     }
 
@@ -137,30 +105,23 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      * @param name the name
      */
     public void setName(final String name) {
-
         this.name = name;
     }
 
     /**
-     * Returns the description.
-     *
      * @return the description
      */
     public String getDescription() {
-
         return description;
     }
 
     /**
-     * Sets the description.
-     *
      * @param description the description to set
      */
     public void setDescription(final String description) {
-
         this.description = description;
     }
-
+    
     /**
      * Gets the edition.
      *
@@ -169,7 +130,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @JsonSerialize(contentAs = Edition.class)
     @JsonDeserialize(contentAs = Edition.class)
     public Edition getEdition() {
-
         return edition;
     }
 
@@ -179,31 +139,14 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      * @param edition the edition to set
      */
     public void setEdition(final Edition edition) {
-
         this.edition = edition;
     }
 
     /**
-     * Returns the primary contact email.
+     * Hash code.
      *
-     * @return the primary contact email
+     * @return the int
      */
-    public String getPrimaryContactEmail() {
-
-        return primaryContactEmail;
-    }
-
-    /**
-     * Sets the primary contact email.
-     *
-     * @param primaryContactEmail the primary contact email
-     */
-    public void setPrimaryContactEmail(final String primaryContactEmail) {
-
-        this.primaryContactEmail = primaryContactEmail;
-    }
-
-    /* see superclass */
     @Override
     public int hashCode() {
 
@@ -216,7 +159,12 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(Object obj) {
 
@@ -237,6 +185,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         } else if (!description.equals(other.description)) {
             return false;
         }
+        
         if (edition == null) {
             if (other.edition != null) {
                 return false;
@@ -261,7 +210,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         return true;
     }
 
-    /* see superclass */
     @Override
     public String toString() {
         try {
@@ -274,28 +222,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     /* see superclass */
     @Override
     public void lazyInit() {
-
         // TODO Auto-generated method stub
-    }
 
-    /* see superclass */
-    @Override
-    public void validateAdd(AuthContext context) throws Exception {
-
-        // TODO validate add
-    }
-
-    /* see superclass */
-    @Override
-    public void validateUpdate(AuthContext context, Organization other) throws Exception {
-
-        // TODO validate update
-    }
-
-    /* see superclass */
-    @Override
-    public void validateDelete(AuthContext context) throws Exception {
-
-        // TODO valiidate delete
     }
 }
