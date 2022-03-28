@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2021 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -287,9 +287,8 @@ public class Edition extends AbstractHasModified {
 
     /**
      * This is solely for bean validation, method does nothing.
-
      *
-     * @param qualifiedLanguageList the qualified language list
+     ** @param qualifiedLanguageList
      */
     public void setFullyQualifiedLanguageRefsets(List<Map<String, String>> qualifiedLanguageList) {
         /* NA */}
