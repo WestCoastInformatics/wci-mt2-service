@@ -1,21 +1,14 @@
-/*
- * Copyright 2022 SNOMED International - All Rights Reserved.
- *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
- * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
- * and are protected by trade secret or copyright law.  Dissemination of this information
- * or reproduction of this material is strictly forbidden.
- */
 
 package org.ihtsdo.refsetservice.rest;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.ihtsdo.refsetservice.model.AuthContext;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -28,7 +21,8 @@ import org.springframework.web.server.ResponseStatusException;
  * Base controller for error handling.
  */
 @CrossOrigin(origins = {
-    "http://localhost:4200", "http://localhost:8888", "http://local.ihtsdotools.org:8888", "https://dev-rt2.ihtsdotools.org", "https://uat-rt2.ihtsdotools.org", "https://rt2.ihtsdotools.org"
+        "http://localhost:4200", "http://localhost:8888", "http://local.ihtsdotools.org:8888",
+        "https://dev-rt2.ihtsdotools.org", "https://uat-rt2.ihtsdotools.org", "https://rt2.ihtsdotools.org"
 }, allowCredentials = "true")
 public class BaseController {
 
@@ -42,16 +36,16 @@ public class BaseController {
      * @throws Exception the exception
      */
     public void handleException(final Exception e) throws Exception {
-
         if (e instanceof ResponseStatusException) {
             throw e;
         }
 
         logger.error("Unexpected error", e);
-        final String errorMessage = "Unexpected error occurred in the system. Please contact info@snomed.org";
+        final String errorMessage =
+                "Unexpected error occurred in the system. Please contact info@snomed.org";
         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage);
     }
-
+    
     /**
      * Check to make sure parameters were properly bound to variables.
      *
@@ -59,8 +53,8 @@ public class BaseController {
      * @throws Exception the exception
      */
     public void checkBinding(final BindingResult bindingResult) throws Exception {
-
-        // Check whether or not parameter binding was successful
+        
+     // Check whether or not parameter binding was successful
         if (bindingResult.hasErrors()) {
 
             final List<FieldError> errors = bindingResult.getFieldErrors();
@@ -68,26 +62,14 @@ public class BaseController {
 
             for (final FieldError error : errors) {
 
-                final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = " + error.getField() + ", " + error.getCode();
+                final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = "
+                        + error.getField() + ", " + error.getCode();
                 logger.error(errorMessage);
                 errorMessages.add(errorMessage);
             }
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.join("\n ", errorMessages));
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.join("\n ", errorMessages));
         }
     }
-
-    /**
-     * Authorize.
-     *
-     * @param request the request
-     * @return the auth context
-     * @throws Exception the exception
-     */
-    public AuthContext authorize(final HttpServletRequest request) throws Exception {
-        // TODO finish authorize logic
-        return null;
-    }
-    
-
 }
