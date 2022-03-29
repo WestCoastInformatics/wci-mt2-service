@@ -27,6 +27,7 @@ import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
@@ -2060,6 +2061,74 @@ public class RefsetController extends BaseController {
                 results = RefsetMemberService.replacementConceptSearch(user, refsetInternalId, searchParameters);
             }
 
+            return results;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+
+    /**
+     * Compile the data to compare two refsets.
+     *
+     * @param activeRefsetInternalId the internal refset ID of the active refset
+     * @param comparisonRefsetInternalId the internal refset ID of the comparison refset
+     * @return The operation status
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/compileComparisonData", produces = "application/json")
+    public @ResponseBody String compileComparisonData(@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
+        @RequestParam(required = true) final String comparisonRefsetInternalId) throws Exception {
+        
+        final User user = SecurityService.getUserFromSession();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+       
+            String status = "";
+            
+            logger.debug("compileUpgradeData: activeRefsetInternalId: " + activeRefsetInternalId + "; comparisonRefsetInternalId: " + comparisonRefsetInternalId);
+            
+            // add the list of concepts as members to the refset
+            status = RefsetMemberService.compileComparisonData(service, user, activeRefsetInternalId, comparisonRefsetInternalId);
+            
+            logger.debug("compileUpgradeData: Finished with status " + status);
+            
+            return "{\"status\": \"" + status + "\"}";
+    
+        } catch (final Exception e) {
+    
+            handleException(e);
+            return null;
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(activeRefsetInternalId);
+        }
+    }
+    
+    /**
+     * Get the data to compare two refsets.
+     *
+     * @param activeRefsetInternalId the internal ID of the active refset
+     * @return The comparison data
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/comparisonData", produces = "application/json")
+    public @ResponseBody RefsetMemberComparison getComparisonData(@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId, final HttpServletRequest request) throws Exception {
+        
+        final User user = SecurityService.getUserFromSession();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            logger.debug("getComparisonData: activeRefsetInternalId: " + activeRefsetInternalId);
+            
+            // add the list of concepts as members to the refset
+            final RefsetMemberComparison results = ModelUtility.fromJson((String)request.getSession().getAttribute("refsetMemberComparison_" + activeRefsetInternalId), RefsetMemberComparison.class);
+            
+            logger.debug("getComparisonData: results " + results);
+            
             return results;
 
         } catch (final Exception e) {

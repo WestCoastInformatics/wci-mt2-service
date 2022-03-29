@@ -165,6 +165,34 @@ public class SecurityService implements AutoCloseable {
         Object object = session.getAttribute(attributeName);
         return object;
     }
+    
+    /**
+     * Get the something from the session.
+     *
+     * @param attributeName the session attribute name
+     * @param value the value to store in the session
+     * @return true if the value was set in the session, otherwise false
+     * @throws Exception the exception
+     */
+    public static boolean setInSession(final String attributeName, final String value) throws Exception {
+
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+
+            return false;
+        }
+
+        final HttpSession session = requestAttributes.getRequest().getSession();
+
+        if (session == null) {
+
+            return false;
+        }
+
+        session.setAttribute(attributeName, value);
+        return true;
+    }
 
     /**
      * Remove the something from the session.

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -53,6 +54,7 @@ import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
 import org.ihtsdo.refsetservice.model.User;
@@ -4301,12 +4303,12 @@ public class RefsetMemberService {
     public static String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId, String upgradeBranch) throws Exception {
         
         String status = "Upgrade data compiled";
-        Refset tempRefset = RefsetService.getRefset(user, refsetInternalId);
+        Refset tempRefset = RefsetService.getRefset(service, user, refsetInternalId);
         
         if (tempRefset.getWorkflowStatus().equals(WorkflowService.PUBLISHED) && tempRefset.getAvailableActions().contains(WorkflowService.UPGRADE)) {
             
-            final String internalRefsetId = RefsetService.createNewRefsetVersion(user, tempRefset.getId(), false);
-            tempRefset = service.get(internalRefsetId, Refset.class);
+            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, tempRefset.getId(), false);
+            tempRefset = service.get(newRefsetInternalId, Refset.class);
         }
         
         if (!tempRefset.getWorkflowStatus().equals(WorkflowService.READY_FOR_EDIT)) {
@@ -4799,4 +4801,139 @@ public class RefsetMemberService {
         return replacementConcepts;
     }
 
+    /**
+     * Compile and store the data to upgrade a refset.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param activeRefsetInternalId the internal refset ID of the active refset
+     * @param comparisonRefsetInternalId the internal refset ID of the comparison refset
+     * @return The operation status
+     * @throws Exception the exception
+     */
+    public static String compileComparisonData(final TerminologyService service, final User user, final String activeRefsetInternalId, final String comparisonRefsetInternalId) throws Exception {
+        
+        String status = "Comparison data compiled";
+        final Refset activeRefset = service.get(activeRefsetInternalId, Refset.class);
+        final Refset comparisonRefset = service.get(comparisonRefsetInternalId, Refset.class);
+        final RefsetMemberComparison refsetMemberComparison = new RefsetMemberComparison();
+        refsetMemberComparison.setActiveRefsetId(activeRefset.getId());
+        refsetMemberComparison.setComparisonRefsetId(comparisonRefset.getId());
+        refsetMemberComparison.setActiveRefsetName(activeRefset.getName());
+        refsetMemberComparison.setComparisonRefsetName(comparisonRefset.getName());
+        final boolean editing = activeRefset.getWorkflowStatus().equals(WorkflowService.IN_EDIT);
+        final TreeMap<String, Concept> comparisonRefsetMembers = new TreeMap<>();
+        final TreeMap<String, Concept> activeRefsetMembers = new TreeMap<>();
+        final SearchParameters searchParameters = new SearchParameters();
+        searchParameters.setLimit(10);
+        searchParameters.setEditing(editing);
+        
+        if (editing) {
+            refsetsBeingUpdated.add(activeRefsetInternalId);
+        }
+        
+        // remove any existing comparison data for this refset 
+        SecurityService.removeFromSession("refsetMemberComparison_" + activeRefsetInternalId);
+        
+        // Change the numbers to '1's to avoid threading 
+        final ExecutorService executor = new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        
+        for (final String refsetType: Arrays.asList("active", "comparison")) {
+            
+            executor.submit(new Runnable() {
+                
+                /* see superclass */
+                @Override
+                public void run() {
+               
+                    try {
+
+                        final Refset refset;
+                        
+                        if (refsetType.equals("active")) {
+                            refset = activeRefset;
+                        } else {
+                            refset = comparisonRefset;
+                        }
+                        
+                        final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(refset.getEdition());
+                        final ResultList<Concept> concepts = getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
+                        final TreeMap<String, Concept> members;
+                        
+                        if (refsetType.equals("active")) {
+                            members = activeRefsetMembers;
+                        } else {
+                            members = comparisonRefsetMembers;
+                        }
+                        
+                        for (final Concept concept : concepts.getItems()) {
+                            members.put(concept.getCode(), concept);
+                        }
+                        
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });                
+        }
+        
+        executor.shutdown();
+        executor.awaitTermination(10, TimeUnit.MINUTES);
+        
+        refsetMemberComparison.setActiveRefsetMemberTotal(activeRefsetMembers.size());
+        refsetMemberComparison.setComparisonRefsetMemberTotal(comparisonRefsetMembers.size());
+        
+        for (Map.Entry<String, Concept> activeMemberEntry : activeRefsetMembers.entrySet()) {
+            
+            final String activeConceptId = activeMemberEntry.getKey();
+            final Concept activeConcept = activeMemberEntry.getValue();
+            final Map<String, String> returnMap = new HashMap<>();
+            returnMap.put("code", activeConceptId);
+            returnMap.put("hasChildren", "false"); //activeConcept.getHasChildren() + "");
+            
+            if (activeConcept.getDescriptions().size() > 0) {
+                returnMap.put("term", activeConcept.getDescriptions().get(0).get("term"));
+            }
+            
+            // check to see if this member is also a member of the comparison refset 
+            if (comparisonRefsetMembers.containsKey(activeConceptId)) {
+                returnMap.put("membership", "Both");
+            } else {
+                
+                returnMap.put("membership", "Active Refset");
+                refsetMemberComparison.getActiveRefsetDistinctMembers().add(activeConceptId);
+            }
+            
+            refsetMemberComparison.getMembers().add(returnMap);
+        }
+        
+        // since the members of the active or both refsets are handled, remove all but the unique comparison refset members 
+        comparisonRefsetMembers.keySet().removeAll(activeRefsetMembers.keySet());
+        
+        for (Map.Entry<String, Concept> comparisonMemberEntry : comparisonRefsetMembers.entrySet()) {
+            
+            final String comparisonConceptId = comparisonMemberEntry.getKey();
+            final Concept comparisonConcept = comparisonMemberEntry.getValue();
+            final Map<String, String> returnMap = new HashMap<>();
+            returnMap.put("code", comparisonConceptId);
+            returnMap.put("hasChildren", "false"); //comparisonConcept.getHasChildren() + "");
+            returnMap.put("membership", "Comparison Refset");
+            refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
+            
+            if (comparisonConcept.getDescriptions().size() > 0) {
+                returnMap.put("term", comparisonConcept.getDescriptions().get(0).get("term"));
+            }
+            
+            refsetMemberComparison.getMembers().add(returnMap);
+        }
+        
+        refsetMemberComparison.setActiveRefsetDistinctMembersCount(refsetMemberComparison.getActiveRefsetDistinctMembers().size());
+        refsetMemberComparison.setComparisonRefsetDistinctMembersCount(refsetMemberComparison.getComparisonRefsetDistinctMembers().size());
+        
+        boolean wasSet = SecurityService.setInSession("refsetMemberComparison_" + activeRefsetInternalId, refsetMemberComparison.toString());
+        logger.debug("compileComparisonData setInSession: " + wasSet);
+        logger.debug("compileComparisonData refsetMemberComparison: " + refsetMemberComparison);
+        
+        return status;
+    }
 }
