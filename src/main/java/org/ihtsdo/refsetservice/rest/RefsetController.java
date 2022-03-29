@@ -659,10 +659,6 @@ public class RefsetController extends BaseController {
                     if (editionVersions.indexOf(versionDate) > 1) {
                         refset.setUpgradeWarning(true);
                     }
-                    
-                    if (editionVersions.indexOf(versionDate) > 1) {
-                        refset.setUpgradeWarning(true);
-                    }
                 }
                 
                 return refset;
@@ -998,7 +994,6 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
-    
 
     /**
      * Search Directory.

@@ -6,9 +6,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.ihtsdo.refsetservice.model.AuthContext;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
