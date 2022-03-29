@@ -34,12 +34,20 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Represents a project.
  */
 @Entity
 @Table(name = "projects")
+@Schema(description = "Represents a project")
+@JsonInclude(Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
 public class Project extends AbstractHasModified implements Copyable<Project>, ValidateCrud<Project> {
 
@@ -72,10 +80,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     /** The of teams ids for this project. */
     @ElementCollection
+    @Fetch(FetchMode.JOIN)
     private Set<String> teams;
     
     /** The of roles for this project. */
-    @ElementCollection
+    @Transient
     private List<String> roles;
 
     /**
@@ -120,6 +129,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         organization = other.getOrganization();
         description = other.getDescription();
         privateProject = other.isPrivateProject();
+        roles = other.getRoles();
         crowdProjectId = other.getCrowdProjectId();
         primaryContactEmail = other.getPrimaryContactEmail();
         teams = other.getTeams();
@@ -134,6 +144,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         organization = other.getOrganization();
         description = other.getDescription();
         privateProject = other.isPrivateProject();
+        roles = other.getRoles();
         crowdProjectId = other.getCrowdProjectId();
         primaryContactEmail = other.getPrimaryContactEmail();
         teams = other.getTeams();
@@ -272,6 +283,8 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public List<String> getRoles() {
 
         return (roles != null) ? roles : new ArrayList<>();
+        
+        
     }
 
     /**

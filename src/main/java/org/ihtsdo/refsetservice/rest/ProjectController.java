@@ -66,92 +66,94 @@ public class ProjectController extends BaseController {
     @Autowired
     HttpServletRequest request;
 
-    /**
-     * Return the project.
-     *
-     * @param id the id
-     * @return the project
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Get the project for the specified identifier", response = Project.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-        @ApiResponse(code = 404, message = "Resource not found")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Project identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
-    })
+    // There is a duplicate in Refset Controller.
+//    /**
+//     * Return the project.
+//     *
+//     * @param id the id
+//     * @return the project
+//     * @throws Exception the exception
+//     */
+//    @ApiOperation(value = "Get the project for the specified identifier", response = Project.class)
+//    @ApiResponses(value = {
+//        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+//        @ApiResponse(code = 404, message = "Resource not found")
+//    })
+//    @ApiImplicitParams({
+//        @ApiImplicitParam(name = "id", value = "Project identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
+//    })
+//
+//    @RecordMetric
+//    @RequestMapping(value = "/project/{id}", produces = MediaType.APPLICATION_JSON)
+//    public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "id") final String id) throws Exception {
+//
+//        try {
+//            logger.info("Get project: {}", id);
+//            // TODO check permissions, fail if not authorized.
+//            // final AuthContext context = authorize(request);
+//            final User user = SecurityService.getUserFromSession();
+//
+//            try (final TerminologyService service = new TerminologyService()) {
+//                logger.debug("get project: id: {}", id);
+//                final Project project = service.get(id, Project.class);
+//                return new ResponseEntity<>(project, HttpStatus.OK);
+//            }
+//        } catch (final Exception e) {
+//            handleException(e);
+//            return null;
+//        }
+//    }
 
-    @RecordMetric
-    @RequestMapping(value = "/project/{id}", produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "id") final String id) throws Exception {
-
-        try {
-            logger.info("Get project: {}", id);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
-
-            try (final TerminologyService service = new TerminologyService()) {
-                logger.debug("get project: id: {}", id);
-                final Project project = service.get(id, Project.class);
-                return new ResponseEntity<>(project, HttpStatus.OK);
-            }
-        } catch (final Exception e) {
-            handleException(e);
-            return null;
-        }
-    }
-
-    /**
-     * Search Projects.
-     *
-     * @param searchParameters the search parameters
-     * @param bindingResult the binding result
-     * @return the string
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Get project search results", response = ResultList.class, notes = API_NOTES)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-        @ApiResponse(code = 404, message = "Resource not found")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
-        // TODO: activeOnly, sort, sortAscending
-    })
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/project/search", produces = "application/json")
-    public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
-
-        try {
-            logger.info("Get projects: {}", searchParameters);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
-
-            // Check to make sure parameters were properly bound to variables.
-            checkBinding(bindingResult);
-
-            try {
-
-                logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
-                ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
-
-                final HttpHeaders headers = new HttpHeaders();
-                return new ResponseEntity<>(results, headers, HttpStatus.OK);
-
-            } catch (final ResponseStatusException rse) {
-                throw rse;
-
-            }
-        } catch (final Exception e) {
-            handleException(e);
-            return null;
-        }
-    }
+    // There is a duplicate in Refset Controller.
+//    /**
+//     * Search Projects.
+//     *
+//     * @param searchParameters the search parameters
+//     * @param bindingResult the binding result
+//     * @return the string
+//     * @throws Exception the exception
+//     */
+//    @ApiOperation(value = "Get project search results", response = ResultList.class, notes = API_NOTES)
+//    @ApiResponses(value = {
+//        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+//        @ApiResponse(code = 404, message = "Resource not found")
+//    })
+//    @ApiImplicitParams({
+//        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
+//        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+//        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+//        // TODO: activeOnly, sort, sortAscending
+//    })
+//    @RecordMetric
+//    @RequestMapping(method = RequestMethod.GET, value = "/project/search", produces = "application/json")
+//    public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+//
+//        try {
+//            logger.info("Get projects: {}", searchParameters);
+//            // TODO check permissions, fail if not authorized.
+//            // final AuthContext context = authorize(request);
+//            final User user = SecurityService.getUserFromSession();
+//
+//            // Check to make sure parameters were properly bound to variables.
+//            checkBinding(bindingResult);
+//
+//            try {
+//
+//                logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
+//                ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
+//
+//                final HttpHeaders headers = new HttpHeaders();
+//                return new ResponseEntity<>(results, headers, HttpStatus.OK);
+//
+//            } catch (final ResponseStatusException rse) {
+//                throw rse;
+//
+//            }
+//        } catch (final Exception e) {
+//            handleException(e);
+//            return null;
+//        }
+//    }
 
     /**
      * Add the project.

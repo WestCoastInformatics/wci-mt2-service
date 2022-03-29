@@ -1923,22 +1923,6 @@ public class RefsetService {
         return project;
     }
     
-    // /**
-    // * Set the user permissions for a refset.
-    // *
-    // * @param user the user
-    // * @param project the project
-    // * @return the refset with permissions
-    // * @throws Exception the exception
-    // */
-    // public static Team setTeamPermissions(final User user, final Team team) throws Exception {
-    //
-    // final List<String> roles = team.getRoles();
-    // setRoles(user, team, roles);
-    //
-    // return team;
-    // }
-
     /**
      * Set the user permissions for a refset.
      *
@@ -1995,7 +1979,7 @@ public class RefsetService {
 
             roles.add(User.ROLE_VIEWER);
         }
-
+                
         return roles;
     }
 
