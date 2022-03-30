@@ -261,7 +261,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @JsonGetter()
     public Set<String> getTeams() {
 
-        return (teams != null) ? teams : new HashSet<>();
+        if (teams == null) {
+            teams = new HashSet<>();
+        }
+        
+        return teams;
     }
 
     /**
@@ -282,8 +286,10 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @JsonGetter()
     public List<String> getRoles() {
 
-        return (roles != null) ? roles : new ArrayList<>();
-        
+        if (roles == null) {
+            roles = new ArrayList<>();
+        }
+        return roles;        
         
     }
 
