@@ -1828,6 +1828,7 @@ public class RefsetController extends BaseController {
                 for (Organization organization : organizationList) {
                     TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(),
                             organization.getName());
+                    tkv.setId(organization.getId());
                     entryList.add(tkv);
                 }
                 entryResults.setItems(entryList);
