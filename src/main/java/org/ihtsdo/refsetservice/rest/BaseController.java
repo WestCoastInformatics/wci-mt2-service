@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.ihtsdo.refsetservice.model.AuthContext;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -71,5 +74,17 @@ public class BaseController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.join("\n ", errorMessages));
         }
+    }
+    
+    /**
+     * Authorize.
+     *
+     * @param request the request
+     * @return the auth context
+     * @throws Exception the exception
+     */
+    public AuthContext authorize(final HttpServletRequest request) throws Exception {
+        // TODO finish authorize logic
+        return null;
     }
 }

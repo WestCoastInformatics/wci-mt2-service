@@ -1,3 +1,12 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model;
 
@@ -7,6 +16,8 @@ import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -18,6 +29,7 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +50,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class User extends AbstractHasModified implements Comparable<User> {
+public class User extends AbstractHasModified implements Comparable<User>, Copyable<User>, ValidateCrud<User> {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(User.class);
@@ -55,6 +67,10 @@ public class User extends AbstractHasModified implements Comparable<User> {
     @Column(nullable = false, length = 250)
     private String email;
 
+    /** The user's title. */
+    @Column(nullable = true, length = 250)
+    private String title;
+
     /** The auth token. */
     @Transient
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -64,6 +80,12 @@ public class User extends AbstractHasModified implements Comparable<User> {
     @ElementCollection
     @Fetch(FetchMode.JOIN)
     private Set<String> roles = new HashSet<>();
+
+    /** The owning organization. */
+    @ManyToOne(targetEntity = Organization.class)
+    @JoinColumn(nullable = true)
+    @Fetch(FetchMode.JOIN)
+    private Organization organization;
 
     /** The admin role. */
     public static final String ROLE_ADMIN = "ADMIN";
@@ -128,7 +150,27 @@ public class User extends AbstractHasModified implements Comparable<User> {
         userName = other.getUserName();
         name = other.getName();
         email = other.getEmail();
+        title = other.getTitle();
         roles = other.getRoles();
+        authToken = other.getAuthToken();
+        organization = other.getOrganization();
+    }
+
+    /**
+     * Populate from.
+     *
+     * @param other the other
+     */
+    public void patchFrom(final User other) {
+
+        // super.populateFrom(other);
+        userName = other.getUserName();
+        name = other.getName();
+        email = other.getEmail();
+        title = other.getTitle();
+        roles = other.getRoles();
+        authToken = other.getAuthToken();
+        organization = other.getOrganization();
     }
 
     /**
@@ -194,8 +236,28 @@ public class User extends AbstractHasModified implements Comparable<User> {
     }
 
     /**
+     * Returns the title.
+     *
+     * @return the title
+     */
+    public String getTitle() {
+
+        return title;
+    }
+
+    /**
+     * Sets the title.
+     *
+     * @param title the title
+     */
+    public void setTitle(final String title) {
+
+        this.title = title;
+    }
+
+    /**
      * Sets the authentication token.
-     * 
+     *
      * @return
      */
     public String getAuthToken() {
@@ -205,7 +267,7 @@ public class User extends AbstractHasModified implements Comparable<User> {
 
     /**
      * Returns the authentication token.
-     * 
+     *
      * @param authToken
      */
     public void setAuthToken(String authToken) {
@@ -234,9 +296,29 @@ public class User extends AbstractHasModified implements Comparable<User> {
      *
      * @param roles the roles to set
      */
-    public void setRoles(Set<String> roles) {
+    public void setRoles(final Set<String> roles) {
 
         this.roles = roles;
+    }
+
+    /**
+     * Gets the organization.
+     *
+     * @return the organization
+     */
+    public Organization getOrganization() {
+
+        return organization;
+    }
+
+    /**
+     * Sets the organization.
+     *
+     * @param organization the organization to set
+     */
+    public void setOrganization(final Organization organization) {
+
+        this.organization = organization;
     }
 
     /**
@@ -251,8 +333,8 @@ public class User extends AbstractHasModified implements Comparable<User> {
 
         String editionName = project.getOrganization().getEdition().getShortName();
 
-        //logger.debug("******** doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
-        
+        // logger.debug("******** doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
+
         if (!project.getOrganization().getEdition().getShortName().equals("SNOMEDCT")) {
             editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
         } else {
@@ -266,24 +348,24 @@ public class User extends AbstractHasModified implements Comparable<User> {
             final String lowerCasedRole = role.toLowerCase();
             final int indexFirstHyphen = lowerCasedRole.indexOf("-");
             final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
-            //logger.debug("******** doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
+            // logger.debug("******** doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
 
             // first check the edition permissions
             if (editionPart.equals("all") || editionPart.equals(editionName)) {
 
                 final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
                 final String projectName = project.getName().toLowerCase().replace(" ", "_");
-                //logger.debug("******** doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
+                // logger.debug("******** doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
 
                 // then check the project level permissions
                 if (projectPart.equals("all") || projectPart.equals(projectName)) {
 
-                    //logger.debug("******** doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
-                    
+                    // logger.debug("******** doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
+
                     // last check for the role or if they have any permission at this level they have the VIEWER role
                     if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
-                        
-                        //logger.debug("******** doesUserHavePermission = true");
+
+                        // logger.debug("******** doesUserHavePermission = true");
                         return true;
                     }
                 }
@@ -293,101 +375,97 @@ public class User extends AbstractHasModified implements Comparable<User> {
         return false;
     }
 
-    /**
-     * Hash code.
-     *
-     * @return the int
-     */
     /* see superclass */
     @Override
     public int hashCode() {
 
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((userName == null) ? 0 : userName.hashCode());
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((authToken == null) ? 0 : authToken.hashCode());
         result = prime * result + ((email == null) ? 0 : email.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
-
+        result = prime * result + ((title == null) ? 0 : title.hashCode());
+        result = prime * result + ((userName == null) ? 0 : userName.hashCode());
         return result;
     }
 
-    /**
-     * Equals.
-     *
-     * @param obj the obj
-     * @return true, if successful
-     */
     /* see superclass */
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(Object obj) {
 
         if (this == obj) {
-
             return true;
         }
-
-        if (obj == null) {
-
+        if (!super.equals(obj)) {
             return false;
         }
-
         if (getClass() != obj.getClass()) {
-
             return false;
         }
-
         final User other = (User) obj;
-
-        if (userName == null) {
-
-            if (other.userName != null) {
-
+        if (authToken == null) {
+            if (other.authToken != null) {
                 return false;
             }
-
-        } else if (!userName.equals(other.userName)) {
-
+        } else if (!authToken.equals(other.authToken)) {
             return false;
         }
-
-        if (name == null) {
-
-            if (other.name != null) {
-
-                return false;
-            }
-
-        } else if (!name.equals(other.name)) {
-
-            return false;
-        }
-
         if (email == null) {
-
             if (other.email != null) {
-
                 return false;
             }
-
         } else if (!email.equals(other.email)) {
-
             return false;
         }
-
-        if (roles == null) {
-
-            if (other.roles != null) {
-
+        if (name == null) {
+            if (other.name != null) {
                 return false;
             }
-
-        } else if (!roles.equals(other.roles)) {
-
+        } else if (!name.equals(other.name)) {
             return false;
         }
-
+        if (organization == null) {
+            if (other.organization != null) {
+                return false;
+            }
+        } else if (!organization.equals(other.organization)) {
+            return false;
+        }
+        if (roles == null) {
+            if (other.roles != null) {
+                return false;
+            }
+        } else if (!roles.equals(other.roles)) {
+            return false;
+        }
+        if (title == null) {
+            if (other.title != null) {
+                return false;
+            }
+        } else if (!title.equals(other.title)) {
+            return false;
+        }
+        if (userName == null) {
+            if (other.userName != null) {
+                return false;
+            }
+        } else if (!userName.equals(other.userName)) {
+            return false;
+        }
         return true;
+    }
+
+    /* see superclass */
+    @Override
+    public String toString() {
+
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
     }
 
     /**
@@ -409,6 +487,27 @@ public class User extends AbstractHasModified implements Comparable<User> {
      */
     @Override
     public void lazyInit() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void validateAdd(AuthContext context) throws Exception {
+
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void validateUpdate(AuthContext context, User other) throws Exception {
+
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void validateDelete(AuthContext context) throws Exception {
+
         // TODO Auto-generated method stub
 
     }

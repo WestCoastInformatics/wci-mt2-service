@@ -1857,7 +1857,7 @@ public class RefsetService {
 
         return project;
     }
-
+    
     /**
      * Set the user permissions for a refset.
      *
@@ -1914,7 +1914,7 @@ public class RefsetService {
 
             roles.add(User.ROLE_VIEWER);
         }
-
+                
         return roles;
     }
 
