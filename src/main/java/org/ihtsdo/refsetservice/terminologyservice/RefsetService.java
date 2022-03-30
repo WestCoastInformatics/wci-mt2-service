@@ -1854,6 +1854,7 @@ public class RefsetService {
 
         final List<String> roles = project.getRoles();
         setRoles(user, project, roles);
+        project.setRoles(roles);
 
         return project;
     }
@@ -1875,6 +1876,7 @@ public class RefsetService {
         final Project project = refset.getProject();
         final List<String> roles = refset.getRoles();
         setRoles(user, project, roles);
+        project.setRoles(roles);
 
         return refset;
     }
