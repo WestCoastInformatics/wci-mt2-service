@@ -1750,6 +1750,59 @@ public class RefsetService {
         }
 
     }
+    
+    
+    /**
+     * Search Editions.
+     *
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @return the list of projects
+     * @throws Exception the exception
+     */
+    public static ResultList<Edition> searchEditions(final User user, final SearchParameters searchParameters) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            final long start = System.currentTimeMillis();
+            ResultList<Edition> results = new ResultList<Edition>();
+            String query = searchParameters.getQuery();
+
+            final PfsParameter pfs = new PfsParameter();
+
+            if (searchParameters.getOffset() != null) {
+
+                pfs.setOffset(searchParameters.getOffset());
+            }
+
+            if (searchParameters.getLimit() != null) {
+
+                pfs.setLimit(searchParameters.getLimit());
+            }
+
+            if (searchParameters.getSortAscending() != null) {
+
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
+
+            if (searchParameters.getSort() != null) {
+
+                pfs.setSort(searchParameters.getSort());
+            }
+
+            if (query != null && !query.equals("")) {
+
+                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
+            }
+
+            results = service.find(query, pfs, Edition.class, null);
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
+
+            return results;
+        }
+
+    }
 
 
     /**
