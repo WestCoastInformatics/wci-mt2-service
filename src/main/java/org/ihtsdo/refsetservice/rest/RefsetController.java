@@ -1694,6 +1694,7 @@ public class RefsetController extends BaseController {
                 for (Edition edition : editionList) {
                     TypeKeyValue tkv =
                             new TypeKeyValue("edition", edition.getName(), edition.getName());
+                    tkv.setId(edition.getId());
                     entryList.add(tkv);
                 }
                 entryResults.setItems(entryList);
