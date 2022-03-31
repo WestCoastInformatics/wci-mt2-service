@@ -261,6 +261,14 @@ public class HistoricDataMigrator {
 
     ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("rtt-migration/undefinedDefaultLangRefsets.txt");
 
+    /** The max number of record elasticsearch will return without erroring. */
+    private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
+
+    /** The number of milliseconds to stop processing records to avoid a gateway timeout. */
+    public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
+
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+
     /** The metadata map. */
     private final Map<String, Metadata> metadataMap = new HashMap<>();
 
@@ -319,6 +327,8 @@ public class HistoricDataMigrator {
     private Set<String> projectsToIgnore = new HashSet<>();
 
     private Organization wciOrganization = null;
+
+    private Map<String, List<Date>> refsetToPublishedVersionMap = new HashMap<>();
 
     public void migrate() throws Exception {
 
@@ -598,6 +608,7 @@ public class HistoricDataMigrator {
 
                     final String childBranch = branchChildrenByEdition.get(editionId).get(branchDate);
 
+                    // logger.debug("zzz - Getting refsets via url: " + url.replace("{branch}", childBranch));
                     try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", childBranch))) {
 
                         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -652,11 +663,35 @@ public class HistoricDataMigrator {
 
                                     refset.setRefsetId(refsetId);
                                     refset.setModuleId(moduleId);
-                                    refset.setVersionDate(branchDate);
                                     refset.setVersionStatus("PUBLISHED");
                                     refset.setWorkflowStatus("PUBLISHED");
                                     refset.setActive(true);
 
+                                    // if (refsetId.equals("723264001") || refsetId.equals("721144007")) {
+
+                                    /*-
+                                     * Check new version refset version date. If none returned (null), then:
+                                     * a) no changes to refset itself and 
+                                     * b) thus no need to create  new version.
+                                     * c) Move onto nex refset
+                                     */
+                                    Date refsetVersionDate = defineSnowstormRefsetVersionDate(childBranch, refsetId);
+
+                                    if (refsetVersionDate == null) {
+
+                                        // No changes to refset so don't create a new version
+                                        // logger.debug("zzz - No changes so skip");
+                                        continue;
+                                    }
+
+                                    refset.setVersionDate(refsetVersionDate);
+                                    /*
+                                     * } else {
+                                     * 
+                                     * refset.setVersionDate(branchDate); }
+                                     */
+
+                                    /* Finish and add refset */
                                     // add the edition to a map with the refset
                                     // ID to retrieve it later
                                     refsetEditions.put(refsetId, edition);
@@ -702,6 +737,7 @@ public class HistoricDataMigrator {
 
                     }
 
+                    // logger.debug("zzz - Finished with " + childBranch);
                 }
 
             }
@@ -711,6 +747,115 @@ public class HistoricDataMigrator {
         logger.debug("Finished processing CodeSystems in Snowstorm");
 
         return snowstormRefsets;
+    }
+
+    private Date defineSnowstormRefsetVersionDate(String branch, String refsetId) throws Exception {
+
+        // Get all members
+        // EG: https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/SNOMEDCT-BE/members?referenceSet=1235&offset=0&limit=10
+        // EG: https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/SNOMEDCT-BE/members?referenceSet=1235&offset=0&limit=10
+
+        int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
+        String searchAfter = "";
+
+        Date refsetLatestDate = null;
+        final long start = System.currentTimeMillis();
+        boolean hasMorePages = true;
+        final String acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
+        int iteration = 0;
+
+        while (hasMorePages) {
+
+            String url = SnowstormConnection.BASE_URL + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
+
+            // logger.debug("zzz - Get Member List URL: " + url);
+
+            try (final Response response = SnowstormConnection.getResponse(url, acceptLanguage)) {
+
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
+                    hasMorePages = false;
+                    throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                }
+
+                final String resultString = response.readEntity(String.class);
+
+                // Only process payload if Rest call is successful
+                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+
+                    throw new Exception(Integer.toString(response.getStatus()));
+                }
+
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString.toString());
+                JsonNode conceptNodeBatch = root.get("items");
+
+                searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asText() : "");
+
+                if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() < limit) {
+
+                    logger.debug("Expect to be here on iteration #" + iteration);
+                    hasMorePages = false;
+                }
+
+                if (System.currentTimeMillis() - start > TIMEOUT_MILLISECOND_THRESHOLD) {
+
+                    hasMorePages = false;
+                }
+
+                Iterator<JsonNode> iterator = conceptNodeBatch.iterator();
+
+                JsonNode memberNode = null;
+
+                Date versionLatestDate = null;
+
+                while (iterator.hasNext()) {
+
+                    memberNode = iterator.next();
+
+                    Date memberEffectiveTime = SIMPLE_DATE_FORMAT.parse(memberNode.get("releasedEffectiveTime").asText());
+
+                    if (versionLatestDate == null || versionLatestDate.before(memberEffectiveTime)) {
+
+                        versionLatestDate = memberEffectiveTime;
+                    }
+
+                }
+
+                if (versionLatestDate != null || refsetLatestDate.before(versionLatestDate)) {
+
+                    // // logger.debug("zzz - Changing versionLatestDate to: " + versionLatestDate);
+                    refsetLatestDate = versionLatestDate;
+                }
+
+                iteration++;
+
+            }
+
+        }
+
+        // logger.debug("zzz - Finished with latestDate: " + refsetLatestDate);
+
+        // See if version already exists.
+        if (!refsetToPublishedVersionMap.containsKey(refsetId)) {
+
+            // logger.debug("zzz - aaa");
+            refsetToPublishedVersionMap.put(refsetId, new ArrayList<Date>());
+        }
+
+        // logger.debug("zzz - bbb");
+
+        if (refsetToPublishedVersionMap.get(refsetId).contains(refsetLatestDate)) {
+
+            // logger.debug("zzz - ccc");
+            return null;
+        } else {
+
+            // logger.debug("zzz - ddd");
+            refsetToPublishedVersionMap.get(refsetId).add(refsetLatestDate);
+            return refsetLatestDate;
+        }
+
     }
 
     /**
