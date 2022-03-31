@@ -17,6 +17,9 @@ drop table ${pre_if_exists} teams ${post_if_exists};
 drop table ${pre_if_exists} team_members ${post_if_exists};
 drop table ${pre_if_exists} team_roles ${post_if_exists};
 drop table ${pre_if_exists} project_teams ${post_if_exists};
+drop table ${pre_if_exists} discussion_posts ${post_if_exists};
+drop table ${pre_if_exists} discussion_threads ${post_if_exists};
+drop table ${pre_if_exists} discussion_threads_discussion_posts ${post_if_exists};
 
 CREATE TABLE `editions` (
   `id` varchar(64) NOT NULL,
@@ -290,4 +293,40 @@ CREATE TABLE `project_teams` (
   `teams` varchar(255) DEFAULT NULL,
   KEY `FKg82gm3p0ykivqyitgacrko9n4` (`Project_id`),
   CONSTRAINT `FKg82gm3p0ykivqyitgacrko9n4` FOREIGN KEY (`Project_id`) REFERENCES `projects` (`id`)
+);
+
+CREATE TABLE `discussion_posts` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `message` varchar(4000) NOT NULL,
+  `privatePost` bit(1) NOT NULL,
+  PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `discussion_threads` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `objectKey` varchar(64) NOT NULL,
+  `privateThread` bit(1) NOT NULL,
+  `resolve` bit(1) NOT NULL,
+  `resolvedBy` varchar(64) NULL,
+  `subject` varchar(4000) NOT NULL,
+  `type` varchar(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_ibnnc9grph4u984hayecjickc` (`objectKey`)
+);
+
+CREATE TABLE `discussion_threads_discussion_posts` (
+  `DiscussionThread_id` varchar(64) NOT NULL,
+  `posts_id` varchar(64) NOT NULL,
+  UNIQUE KEY `UK_tdj8q5rjs9c9ivyuryqc4vq3a` (`posts_id`),
+  KEY `FK9e03dufefyllv3bea2wcfdj56` (`DiscussionThread_id`),
+  CONSTRAINT `FK9e03dufefyllv3bea2wcfdj56` FOREIGN KEY (`DiscussionThread_id`) REFERENCES `discussion_threads` (`id`),
+  CONSTRAINT `FKjb4q7pwfdqv0kf8wsk6mmi1t0` FOREIGN KEY (`posts_id`) REFERENCES `discussion_posts` (`id`)
 );
