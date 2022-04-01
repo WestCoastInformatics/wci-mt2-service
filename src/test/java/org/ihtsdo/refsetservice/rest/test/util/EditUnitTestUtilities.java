@@ -17,6 +17,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -641,5 +642,45 @@ public class EditUnitTestUtilities {
             return null;
         }
 
+    }
+    
+    public void compileComparisonData(final String activeRefsetInternalId, final String comparisonRefsetInternalId) {
+        
+        try {
+            
+            final String url = baseUrl + "/" + activeRefsetInternalId + "/compileComparisonData?comparisonRefsetInternalId=" + comparisonRefsetInternalId;
+
+            logger.info("Testing url - " + url);
+
+            mvc.perform(get(url));
+
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public RefsetMemberComparison getComparisonData(final String activeRefsetInternalId) {
+        
+        try {
+            
+            final String url = baseUrl + "/" + activeRefsetInternalId + "/comparisonData";
+
+            logger.info("Testing url - " + url);
+
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            
+            final RefsetMemberComparison refsetMemberComparison = new ObjectMapper().readValue(content, RefsetMemberComparison.class);
+            assertThat(refsetMemberComparison).isNotNull();
+            
+            return refsetMemberComparison;
+            
+        } catch (Exception e) {
+            
+            e.printStackTrace();
+            return null;
+        }
     }
 }
