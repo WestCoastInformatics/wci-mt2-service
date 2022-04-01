@@ -151,7 +151,7 @@ public class OrganizationController extends BaseController {
      * Update organization.
      *
      * @param id the id
-     * @param organizationJsonStr the organization json str
+     * @param organization the organization
      * @return the response entity
      * @throws Exception the exception
      */
@@ -197,10 +197,10 @@ public class OrganizationController extends BaseController {
 
     /**
      * Logical delete (inactivate) the organization.
-     * 
-     * @param id
-     * @return
-     * @throws Exception
+     *
+     * @param id the id
+     * @return the response entity
+     * @throws Exception the exception
      */
     @ApiOperation(value = "Inactivate organization")
     @ApiResponses(value = {
@@ -322,10 +322,10 @@ public class OrganizationController extends BaseController {
 
     /**
      * Return teams for the organization.
-     * 
+     *
      * @param id Id of the organization
      * @return ResponseEntity<ResultListProject>
-     * @throws Exception
+     * @throws Exception the exception
      */
     @ApiOperation(value = "Get the projects for an organization for the specified identifier", response = ResultListProject.class)
     @ApiResponses(value = {
