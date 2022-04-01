@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.assertj.core.util.Arrays;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
@@ -67,6 +68,8 @@ public class RefsetEditingTests extends AbstractRefsetTests {
                 wciTestingProjectId = getUtil.getInternalProjectId(WCI_TESTING_PROJECT_NAME);
                 wciTestingEditionId = getUtil.getInternalEditionId(WCI_TESTING_EDITION_NAME);
                 refsetWithInactiveConceptAsActiveMemberInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
+                mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
+                mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
 
                 editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, wciTestingProjectId, wciTestingEditionId);
 
@@ -360,6 +363,40 @@ public class RefsetEditingTests extends AbstractRefsetTests {
             refset = service.get(refsetWithInactiveConceptAsActiveMemberInternalId, Refset.class);
             assertThat(refset).isNotNull();
             //assertThat(refset.isLatestPublishedVersion()).isTrue();
+        }
+    }
+    
+    /**
+     * Test comparing a refset.
+     *
+     * @throws Exception the exception
+     */
+    //@Test
+    public void testRefsetComparison() throws Exception {
+
+        // ADD NEW VERSION AND MOVE TO READY FOR EDIT
+        Refset activeRefset = getUtil.getRefsetFromInternalId(mainNrcTestingRefsetInternalId);
+        activeRefset = workflowUtil.updateWorkflow(activeRefset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.EDIT, "");
+        final String newActiveRefsetInternalId = activeRefset.getId();
+        
+        try {
+            
+            // get the comparison refset
+            Refset comparisonRefset = getUtil.getRefsetFromInternalId(refsetWithInactiveConceptAsActiveMemberInternalId);
+            
+            // START THE COMPARISON PROCESS
+            editUtil.compileComparisonData(activeRefset.getId(), comparisonRefset.getId());
+            editUtil.resolveBackgroundOperation(activeRefset.getId());
+            
+            // GET THE COMPARISON DATA
+            RefsetMemberComparison refsetMemberComparison = editUtil.getComparisonData(newActiveRefsetInternalId);
+            assertThat(refsetMemberComparison.getMembers().size()).isGreaterThan(0);
+        } 
+        
+        finally {
+            
+            // DELETE NEW VERSION
+            editUtil.deleteVersionedRefset(newActiveRefsetInternalId);
         }
     }
 
