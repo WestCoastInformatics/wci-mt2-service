@@ -23,7 +23,10 @@
     <class>org.ihtsdo.refsetservice.model.WorkflowHistory</class>
     <class>org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt</class>
     <class>org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt</class>
-
+    <class>org.ihtsdo.refsetservice.model.Team</class>
+    <class>org.ihtsdo.refsetservice.model.DiscussionPost</class>
+    <class>org.ihtsdo.refsetservice.model.DiscussionThread</class>
+    
     <!--  import models for auth -->
     <class>org.ihtsdo.refsetservice.model.User</class>
 

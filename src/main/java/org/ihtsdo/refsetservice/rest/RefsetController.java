@@ -1694,6 +1694,7 @@ public class RefsetController extends BaseController {
                 for (Edition edition : editionList) {
                     TypeKeyValue tkv =
                             new TypeKeyValue("edition", edition.getName(), edition.getName());
+                    tkv.setId(edition.getId());
                     entryList.add(tkv);
                 }
                 entryResults.setItems(entryList);
@@ -1828,6 +1829,7 @@ public class RefsetController extends BaseController {
                 for (Organization organization : organizationList) {
                     TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(),
                             organization.getName());
+                    tkv.setId(organization.getId());
                     entryList.add(tkv);
                 }
                 entryResults.setItems(entryList);
