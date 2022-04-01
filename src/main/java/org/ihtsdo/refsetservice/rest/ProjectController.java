@@ -59,7 +59,7 @@ public class ProjectController extends BaseController {
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(ProjectController.class);
 
-    /** Search projects API note */
+    /**  Search projects API note. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /** The request. */
@@ -67,93 +67,94 @@ public class ProjectController extends BaseController {
     HttpServletRequest request;
 
     // There is a duplicate in Refset Controller.
-//    /**
-//     * Return the project.
-//     *
-//     * @param id the id
-//     * @return the project
-//     * @throws Exception the exception
-//     */
-//    @ApiOperation(value = "Get the project for the specified identifier", response = Project.class)
-//    @ApiResponses(value = {
-//        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-//        @ApiResponse(code = 404, message = "Resource not found")
-//    })
-//    @ApiImplicitParams({
-//        @ApiImplicitParam(name = "id", value = "Project identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
-//    })
-//
-//    @RecordMetric
-//    @RequestMapping(value = "/project/{id}", produces = MediaType.APPLICATION_JSON)
-//    public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "id") final String id) throws Exception {
-//
-//        try {
-//            logger.info("Get project: {}", id);
-//            // TODO check permissions, fail if not authorized.
-//            // final AuthContext context = authorize(request);
-//            final User user = SecurityService.getUserFromSession();
-//
-//            try (final TerminologyService service = new TerminologyService()) {
-//                logger.debug("get project: id: {}", id);
-//                final Project project = service.get(id, Project.class);
-//                return new ResponseEntity<>(project, HttpStatus.OK);
-//            }
-//        } catch (final Exception e) {
-//            handleException(e);
-//            return null;
-//        }
-//    }
+    // /**
+    // * Return the project.
+    // *
+    // * @param id the id
+    // * @return the project
+    // * @throws Exception the exception
+    // */
+    // @ApiOperation(value = "Get the project for the specified identifier", response = Project.class)
+    // @ApiResponses(value = {
+    // @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+    // @ApiResponse(code = 404, message = "Resource not found")
+    // })
+    // @ApiImplicitParams({
+    // @ApiImplicitParam(name = "id", value = "Project identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
+    // })
+    //
+    // @RecordMetric
+    // @RequestMapping(value = "/project/{id}", produces = MediaType.APPLICATION_JSON)
+    // public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "id") final String id) throws Exception {
+    //
+    // try {
+    // logger.info("Get project: {}", id);
+    // // TODO check permissions, fail if not authorized.
+    // // final AuthContext context = authorize(request);
+    // final User user = SecurityService.getUserFromSession();
+    //
+    // try (final TerminologyService service = new TerminologyService()) {
+    // logger.debug("get project: id: {}", id);
+    // final Project project = service.get(id, Project.class);
+    // return new ResponseEntity<>(project, HttpStatus.OK);
+    // }
+    // } catch (final Exception e) {
+    // handleException(e);
+    // return null;
+    // }
+    // }
 
     // There is a duplicate in Refset Controller.
-//    /**
-//     * Search Projects.
-//     *
-//     * @param searchParameters the search parameters
-//     * @param bindingResult the binding result
-//     * @return the string
-//     * @throws Exception the exception
-//     */
-//    @ApiOperation(value = "Get project search results", response = ResultList.class, notes = API_NOTES)
-//    @ApiResponses(value = {
-//        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-//        @ApiResponse(code = 404, message = "Resource not found")
-//    })
-//    @ApiImplicitParams({
-//        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-//        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-//        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
-//        // TODO: activeOnly, sort, sortAscending
-//    })
-//    @RecordMetric
-//    @RequestMapping(method = RequestMethod.GET, value = "/project/search", produces = "application/json")
-//    public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
-//
-//        try {
-//            logger.info("Get projects: {}", searchParameters);
-//            // TODO check permissions, fail if not authorized.
-//            // final AuthContext context = authorize(request);
-//            final User user = SecurityService.getUserFromSession();
-//
-//            // Check to make sure parameters were properly bound to variables.
-//            checkBinding(bindingResult);
-//
-//            try {
-//
-//                logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
-//                ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
-//
-//                final HttpHeaders headers = new HttpHeaders();
-//                return new ResponseEntity<>(results, headers, HttpStatus.OK);
-//
-//            } catch (final ResponseStatusException rse) {
-//                throw rse;
-//
-//            }
-//        } catch (final Exception e) {
-//            handleException(e);
-//            return null;
-//        }
-//    }
+    // /**
+    // * Search Projects.
+    // *
+    // * @param searchParameters the search parameters
+    // * @param bindingResult the binding result
+    // * @return the string
+    // * @throws Exception the exception
+    // */
+    // @ApiOperation(value = "Get project search results", response = ResultList.class, notes = API_NOTES)
+    // @ApiResponses(value = {
+    // @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+    // @ApiResponse(code = 404, message = "Resource not found")
+    // })
+    // @ApiImplicitParams({
+    // @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query",
+    // defaultValue = ""),
+    // @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+    // @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+    // // TODO: activeOnly, sort, sortAscending
+    // })
+    // @RecordMetric
+    // @RequestMapping(method = RequestMethod.GET, value = "/project/search", produces = "application/json")
+    // public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    //
+    // try {
+    // logger.info("Get projects: {}", searchParameters);
+    // // TODO check permissions, fail if not authorized.
+    // // final AuthContext context = authorize(request);
+    // final User user = SecurityService.getUserFromSession();
+    //
+    // // Check to make sure parameters were properly bound to variables.
+    // checkBinding(bindingResult);
+    //
+    // try {
+    //
+    // logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
+    // ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
+    //
+    // final HttpHeaders headers = new HttpHeaders();
+    // return new ResponseEntity<>(results, headers, HttpStatus.OK);
+    //
+    // } catch (final ResponseStatusException rse) {
+    // throw rse;
+    //
+    // }
+    // } catch (final Exception e) {
+    // handleException(e);
+    // return null;
+    // }
+    // }
 
     /**
      * Add the project.
@@ -201,6 +202,7 @@ public class ProjectController extends BaseController {
                 return new ResponseEntity<>(headers, HttpStatus.CREATED);
             }
         } catch (final Exception e) {
+            logger.error("Error adding project. {}", project.toString(), e);
             handleException(e);
             return null;
         }
@@ -216,42 +218,40 @@ public class ProjectController extends BaseController {
      */
     @ApiOperation(value = "Update project")
     @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "Inactivate specified project"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 201, message = "Update specified project"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
-    @PutMapping("/project/{id}")
+    @PutMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<Project> updateProject(@PathVariable(value = "id") final String id, @RequestBody final Project project) throws Exception {
 
-        try {
-            logger.info("Update project: {}", project);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Update project: {}", project);
+        // TODO check permissions, fail if not authorized.
+        // final AuthContext context = authorize(request);
+        final User user = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
+            service.setModifiedBy(user.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-                // Find the project
-                final Project original = service.get(project.getId(), Project.class);
+            // Find the project
+            final Project original = service.get(project.getId(), Project.class);
 
-                // not found - HttpStatus.NOT_FOUND
-                if (original == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find project for " + project.getId());
-                }
-
-                // Apply changes
-                original.patchFrom(project);
-
-                // Update
-                service.update(original);
-
-                service.commit();
-                return new ResponseEntity<>(original, HttpStatus.OK);
+            // not found - HttpStatus.NOT_FOUND
+            if (original == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find project for " + project.getId());
             }
+
+            // Apply changes
+            original.patchFrom(project);
+
+            // Update
+            service.update(original);
+            service.commit();
+            return new ResponseEntity<>(original, HttpStatus.OK);
+
         } catch (final Exception e) {
             logger.error("Error updating project.  Id: {}", id, e);
             handleException(e);
@@ -261,10 +261,10 @@ public class ProjectController extends BaseController {
 
     /**
      * Logical delete (inactivate) the project.
-     * 
-     * @param id
-     * @return
-     * @throws Exception
+     *
+     * @param id the id
+     * @return the response entity
+     * @throws Exception the exception
      */
     @ApiOperation(value = "Inactivate project")
     @ApiResponses(value = {
@@ -275,35 +275,34 @@ public class ProjectController extends BaseController {
     @DeleteMapping(value = "/project/{id}")
     public ResponseEntity<Void> deleteProject(@PathVariable("id") final String id) throws Exception {
 
-        try {
-            logger.info("Inactivate project: {}", id);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Inactivate project: {}", id);
+        // TODO check permissions, fail if not authorized.
+        // final AuthContext context = authorize(request);
+        final User user = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
+            service.setModifiedBy(user.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-                // Find the object
-                final Project proj = service.get(id, Project.class);
+            // Find the object
+            final Project project = service.get(id, Project.class);
 
-                // not found - HttpStatus.NOT_FOUND
-                if (proj == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find project for id:" + id);
-                }
-
-                // logical delete - setting project to inactive
-                proj.setActive(false);
-
-                service.update(proj);
-                service.commit();
-                return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            // not found - HttpStatus.NOT_FOUND
+            if (project == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find project for id:" + id);
             }
+
+            // logical delete - setting project to inactive
+            project.setActive(false);
+
+            service.update(project);
+            service.commit();
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+
         } catch (final Exception e) {
-            logger.error("Error inactivating project.  Id: {}", id);
+            logger.error("Error inactivating project.  Id: {}", id, e);
             handleException(e);
             return null;
         }

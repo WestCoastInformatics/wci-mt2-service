@@ -17,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.AuthContext;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
@@ -64,7 +65,7 @@ public class TeamController extends BaseController {
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(TeamController.class);
 
-    /** Search teams API notes */
+    /**  Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /** The request. */
@@ -87,11 +88,16 @@ public class TeamController extends BaseController {
         final User user = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
-
-            final Team team = service.get(id, Team.class);
+            final Team team  = service.findSingle("id: " + id + " AND active:true", Team.class, null);
+            
+            if (team == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find team for id " + id + ".");
+            }
+            
             return new ResponseEntity<>(team, HttpStatus.OK);
 
         } catch (final Exception e) {
+            logger.error("Error getting team.  Id: {}", id);
             handleException(e);
             return null;
         }
@@ -137,7 +143,7 @@ public class TeamController extends BaseController {
             throw rse;
 
         } catch (final Exception e) {
-
+            logger.error("Error searching teams.  Search criteria: {} ", searchParameters.toString());
             handleException(e);
             return null;
         }
@@ -173,6 +179,7 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(team, headers, HttpStatus.CREATED);
 
         } catch (final Exception e) {
+            logger.error("Error adding team.  Team: {}", team.toString());
             handleException(e);
             return null;
         }
@@ -186,7 +193,14 @@ public class TeamController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @PutMapping("/team/{id}")
+    @ApiOperation(value = "Update team", response = Team.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Team successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @PutMapping(value = "/team/{id}", consumes = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<Team> updateTeam(@PathVariable(value = "id") final String id, @RequestBody final Team team) throws Exception {
 
         logger.info("Update team: {}", team);
@@ -217,7 +231,7 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(original, HttpStatus.OK);
 
         } catch (final Exception e) {
-            logger.error("Error updating team.  Id: {}", id);
+            logger.error("Error upadting team.  Team: {}", team.toString());
             handleException(e);
             return null;
         }
@@ -226,14 +240,14 @@ public class TeamController extends BaseController {
     /**
      * Adds the user to the team.
      *
-     * @param teamJsonStr the team json str
+     * @param teamId the team id
+     * @param userId the user id
      * @return the response entity
      * @throws Exception the exception
      */
     @PostMapping("/team/{teamId}/member/{userId}")
     public @ResponseBody ResponseEntity<Void> addUserToTeam(@PathVariable final String teamId, @PathVariable final String userId) throws Exception {
 
-        try {
             logger.info("Add user {} to team: {}", userId, teamId);
             // TODO check permissions, fail if not authorized.
             // final AuthContext context = authorize(request);
@@ -267,17 +281,25 @@ public class TeamController extends BaseController {
                 service.commit();
 
                 return new ResponseEntity<>(HttpStatus.ACCEPTED);
-            }
+
         } catch (final Exception e) {
+            logger.error("Error adding user: {} to team: {}", userId, teamId);
             handleException(e);
             return null;
         }
     }
 
+    /**
+     * Removes the user from team.
+     *
+     * @param teamId the team id
+     * @param userId the user id
+     * @return the response entity
+     * @throws Exception the exception
+     */
     @DeleteMapping("/team/{teamId}/member/{userId}")
     public @ResponseBody ResponseEntity<Void> removeUserFromTeam(@PathVariable final String teamId, @PathVariable final String userId) throws Exception {
 
-        try {
             logger.info("Remove user {} from team: {}", userId, teamId);
             // TODO check permissions, fail if not authorized.
             // final AuthContext context = authorize(request);
@@ -312,8 +334,9 @@ public class TeamController extends BaseController {
                 service.commit();
 
                 return new ResponseEntity<>(HttpStatus.ACCEPTED);
-            }
+
         } catch (final Exception e) {
+            logger.error("Error removing user: {} from team: {}", userId, teamId);
             handleException(e);
             return null;
         }
@@ -330,7 +353,6 @@ public class TeamController extends BaseController {
     @PostMapping("/team/{teamId}/role/{role}")
     public @ResponseBody ResponseEntity<Void> addRoleToTeam(@PathVariable final String teamId, @PathVariable final String role) throws Exception {
 
-        try {
             logger.info("Add role {} to team {}", role, teamId);
             // TODO check permissions, fail if not authorized.
             // final AuthContext context = authorize(request);
@@ -362,8 +384,9 @@ public class TeamController extends BaseController {
                 service.commit();
 
                 return new ResponseEntity<>(HttpStatus.CREATED);
-            }
+
         } catch (final Exception e) {
+            logger.error("Error adding role: {} to team: {}", role, teamId);
             handleException(e);
             return null;
         }
@@ -414,6 +437,55 @@ public class TeamController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.ACCEPTED);
             }
         } catch (final Exception e) {
+            logger.error("Error removing role: {} from team: {}", role, teamId);
+            handleException(e);
+            return null;
+        }
+    }
+    
+    
+    /**
+     * Logical delete (inactivate) the team.
+     *
+     * @param id the id
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Inactivate a team")
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Inactivate specified team"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @DeleteMapping(value = "/team/{id}")
+    public ResponseEntity<Void> deleteTeam(@PathVariable("id") final String id) throws Exception {
+
+        logger.info("Inactivate team: {}", id);
+        // TODO check permissions, fail if not authorized.
+        // final AuthContext context = authorize(request);
+        final User user = SecurityService.getUserFromSession();
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(user.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            // Find the object
+            final Team team = service.get(id, Team.class);
+
+            if (team == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for id:" + id);
+            }
+
+            team.setActive(false);
+            service.update(team);
+            service.commit();
+            // Return the status
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+
+        } catch (final Exception e) {
+            logger.error("Error inactivating team.  Id: {}", id);
             handleException(e);
             return null;
         }

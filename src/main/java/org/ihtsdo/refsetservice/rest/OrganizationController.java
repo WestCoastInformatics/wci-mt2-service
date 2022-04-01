@@ -36,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -91,7 +92,12 @@ public class OrganizationController extends BaseController {
             final User user = SecurityService.getUserFromSession();
 
             try (final TerminologyService service = new TerminologyService()) {
-                final Organization organization = service.get(id, Organization.class);
+                final Organization organization = service.findSingle("id: " + id + " AND active:true", Organization.class, null);
+                
+                if (organization == null) {
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find organization for id " + id + ".");
+                }
+                
                 return new ResponseEntity<>(organization, HttpStatus.OK);
             }
         } catch (final Exception e) {
@@ -146,7 +152,7 @@ public class OrganizationController extends BaseController {
      * Update organization.
      *
      * @param id the id
-     * @param organizationJsonStr the organization json str
+     * @param organization the organization
      * @return the response entity
      * @throws Exception the exception
      */
@@ -157,33 +163,32 @@ public class OrganizationController extends BaseController {
         @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
-    @RequestMapping(value = "/organization/{id}", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON)
+    @PutMapping(value = "/organization/{id}", consumes = MediaType.APPLICATION_JSON)
     public ResponseEntity<Organization> updateOrganization(@PathVariable(value = "id") final String id, @RequestBody final Organization organization) throws Exception {
 
-        try {
-            logger.info("Update organization: {}", organization);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Update organization: {}", organization);
+        // TODO check permissions, fail if not authorized.
+        // final AuthContext context = authorize(request);
+        final User user = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                final Organization original = service.get(id, Organization.class);
+            final Organization original = service.get(id, Organization.class);
 
-                if (original == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find organization for id " + id + ".");
-                }
-
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
-
-                original.patchFrom(organization);
-                service.update(original);
-                service.commit();
-
-                return new ResponseEntity<>(original, HttpStatus.OK);
+            if (original == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find organization for id " + id + ".");
             }
+
+            service.setModifiedBy(user.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            original.patchFrom(organization);
+            service.update(original);
+            service.commit();
+
+            return new ResponseEntity<>(original, HttpStatus.OK);
+
         } catch (final Exception e) {
             logger.error("Error updating organization. Id: {}", id);
             handleException(e);
@@ -193,10 +198,10 @@ public class OrganizationController extends BaseController {
 
     /**
      * Logical delete (inactivate) the organization.
-     * 
-     * @param id
-     * @return
-     * @throws Exception
+     *
+     * @param id the id
+     * @return the response entity
+     * @throws Exception the exception
      */
     @ApiOperation(value = "Inactivate organization")
     @ApiResponses(value = {
@@ -207,31 +212,30 @@ public class OrganizationController extends BaseController {
     @DeleteMapping(value = "/organization/{id}")
     public ResponseEntity<Void> deleteOrganization(@PathVariable("id") final String id) throws Exception {
 
-        try {
-            logger.info("Inactivate organization: {}", id);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Inactivate organization: {}", id);
+        // TODO check permissions, fail if not authorized.
+        // final AuthContext context = authorize(request);
+        final User user = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
+            service.setModifiedBy(user.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-                // Find the object
-                final Organization organization = service.get(id, Organization.class);
+            // Find the object
+            final Organization organization = service.get(id, Organization.class);
 
-                if (organization == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find organization for id:" + id);
-                }
-
-                organization.setActive(false);
-                service.update(organization);
-                service.commit();
-                // Return the status
-                return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            if (organization == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find organization for id:" + id);
             }
+
+            organization.setActive(false);
+            service.update(organization);
+            service.commit();
+            // Return the status
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+
         } catch (final Exception e) {
             logger.error("Error inactivating organization.  Id: {}", id);
             handleException(e);
@@ -258,21 +262,20 @@ public class OrganizationController extends BaseController {
     @RequestMapping(value = "/organization/{id}/users/", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable(value = "id") final String id) throws Exception {
 
-        try {
-            logger.info("Get organization users. Id: {}", id);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Get organization users. Id: {}", id);
+        // TODO check permissions, fail if not authorized.
+        // final AuthContext context = authorize(request);
+        final User user = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                final PfsParameter pfs = new PfsParameter();
-                final QueryParameter query = new QueryParameter();
-                query.setQuery("organizationId:" + id);
+            final PfsParameter pfs = new PfsParameter();
+            final QueryParameter query = new QueryParameter();
+            query.setQuery("organizationId:" + id + " AND active:true");
 
-                final ResultList<User> orgUsers = service.find(query, pfs, User.class, null);
-                return new ResponseEntity<>(new ResultListUser(orgUsers), HttpStatus.OK);
-            }
+            final ResultList<User> orgUsers = service.find(query, pfs, User.class, null);
+            return new ResponseEntity<>(new ResultListUser(orgUsers), HttpStatus.OK);
+
         } catch (final Exception e) {
             handleException(e);
             return null;
@@ -298,21 +301,20 @@ public class OrganizationController extends BaseController {
     @RequestMapping(value = "/organization/{id}/teams/", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<ResultListTeam> getOrganizationTeams(@PathVariable(value = "id") final String id) throws Exception {
 
-        try {
-            logger.info("Get organization teams. Id: {}", id);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Get organization teams. Id: {}", id);
+        // TODO check permissions, fail if not authorized.
+        // final AuthContext context = authorize(request);
+        final User user = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                final PfsParameter pfs = new PfsParameter();
-                final QueryParameter query = new QueryParameter();
-                query.setQuery("organizationId:" + id);
+            final PfsParameter pfs = new PfsParameter();
+            final QueryParameter query = new QueryParameter();
+            query.setQuery("organizationId:" + id + " AND active:true");
 
-                final ResultList<Team> orgTeams = service.find(query, pfs, Team.class, null);
-                return new ResponseEntity<>(new ResultListTeam(orgTeams), HttpStatus.OK);
-            }
+            final ResultList<Team> orgTeams = service.find(query, pfs, Team.class, null);
+            return new ResponseEntity<>(new ResultListTeam(orgTeams), HttpStatus.OK);
+
         } catch (final Exception e) {
             handleException(e);
             return null;
@@ -321,10 +323,10 @@ public class OrganizationController extends BaseController {
 
     /**
      * Return teams for the organization.
-     * 
+     *
      * @param id Id of the organization
      * @return ResponseEntity<ResultListProject>
-     * @throws Exception
+     * @throws Exception the exception
      */
     @ApiOperation(value = "Get the projects for an organization for the specified identifier", response = ResultListProject.class)
     @ApiResponses(value = {
@@ -338,21 +340,20 @@ public class OrganizationController extends BaseController {
     @RequestMapping(value = "/organization/{id}/projects/", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<ResultListProject> getOrganizationProjects(@PathVariable(value = "id") final String id) throws Exception {
 
-        try {
-            logger.info("Get organization teams. Id: {}", id);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Get organization teams. Id: {}", id);
+        // TODO check permissions, fail if not authorized.
+        // final AuthContext context = authorize(request);
+        final User user = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                final PfsParameter pfs = new PfsParameter();
-                final QueryParameter query = new QueryParameter();
-                query.setQuery("organizationId:" + id);
+            final PfsParameter pfs = new PfsParameter();
+            final QueryParameter query = new QueryParameter();
+            query.setQuery("organizationId:" + id + " AND active:true");
 
-                final ResultList<Project> orgProjects = service.find(query, pfs, Project.class, null);
-                return new ResponseEntity<>(new ResultListProject(orgProjects), HttpStatus.OK);
-            }
+            final ResultList<Project> orgProjects = service.find(query, pfs, Project.class, null);
+            return new ResponseEntity<>(new ResultListProject(orgProjects), HttpStatus.OK);
+
         } catch (final Exception e) {
             handleException(e);
             return null;

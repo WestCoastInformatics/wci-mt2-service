@@ -12,6 +12,8 @@ package org.ihtsdo.refsetservice.rest;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
+import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
@@ -30,6 +32,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * Controller for /user endpoints.
@@ -85,7 +90,14 @@ public class UserController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @PutMapping("/user/{id}")
+    @ApiOperation(value = "Update User", response = User.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "User successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id, @RequestBody final User user) throws Exception {
 
         try {
