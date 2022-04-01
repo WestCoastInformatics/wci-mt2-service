@@ -36,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -162,7 +163,7 @@ public class OrganizationController extends BaseController {
         @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
-    @RequestMapping(value = "/organization/{id}", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON)
+    @PutMapping(value = "/organization/{id}", consumes = MediaType.APPLICATION_JSON)
     public ResponseEntity<Organization> updateOrganization(@PathVariable(value = "id") final String id, @RequestBody final Organization organization) throws Exception {
 
         logger.info("Update organization: {}", organization);

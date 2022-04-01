@@ -193,7 +193,14 @@ public class TeamController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @PutMapping("/team/{id}")
+    @ApiOperation(value = "Update team", response = Team.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Team successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @PutMapping(value = "/team/{id}", consumes = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<Team> updateTeam(@PathVariable(value = "id") final String id, @RequestBody final Team team) throws Exception {
 
         logger.info("Update team: {}", team);
