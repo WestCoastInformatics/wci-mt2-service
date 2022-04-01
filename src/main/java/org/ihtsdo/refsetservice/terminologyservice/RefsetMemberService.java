@@ -2033,7 +2033,7 @@ public class RefsetMemberService {
      */
     public static ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode, final int limitReturnNumber) throws Exception {
 
-        ConceptResultList members = new ConceptResultList();
+        ConceptResultList returnConcepts = new ConceptResultList();
         final ObjectMapper mapper = new ObjectMapper();
         final String encodedCaret = "%5E";
         final String encodedSpace = "%20";
@@ -2056,7 +2056,7 @@ public class RefsetMemberService {
         String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset=0&limit=" + limit;
 
         // if this search is for editing then get the concept leaf information
-        if (!limitToNonMembers && searchParameters.isEditing()) {
+        if (searchParameters.isEditing()) {
             url += "&includeLeafFlag=true&form=inferred";
         }
 
@@ -2123,13 +2123,13 @@ public class RefsetMemberService {
                 }
                 
                 // if the search returned results set the total
-                if (!members.isTotalKnown()) {
+                if (!returnConcepts.isTotalKnown()) {
                     
-                    members.setTotal(root.get("total").asInt());
-                    members.setTotalKnown(true);
+                    returnConcepts.setTotal(root.get("total").asInt());
+                    returnConcepts.setTotalKnown(true);
                 }
     
-                if (limitReturnNumber > 0 || conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + members.getItems().size() >= members.getTotal()) {
+                if (limitReturnNumber > 0 || conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + returnConcepts.getItems().size() >= returnConcepts.getTotal()) {
                     hasMorePages = false;
                 }
                 
@@ -2172,11 +2172,11 @@ public class RefsetMemberService {
                         conceptBatch.add(concept);
                     }
     
-                    if (searchParameters.isEditing()) {
+                    if (searchParameters.isEditing() || limitToNonMembers) {
                         populateMembershipInformation(refset, conceptBatch);
                     }
                     
-                    members.getItems().addAll(conceptBatch);
+                    returnConcepts.getItems().addAll(conceptBatch);
                 }
                 
             } catch (Exception ex) {
@@ -2185,8 +2185,29 @@ public class RefsetMemberService {
                 ex.printStackTrace();
             }
         }
+        
+        if (limitToNonMembers) {
+            
+            final List<Concept> conceptsToInclude = new ArrayList<>();
+            
+            for (Concept concept : returnConcepts.getItems()) {
+                
+                if (concept.isMemberOfRefset()) {
+                    continue;
+                }
+                
+                conceptsToInclude.add(concept);
+                
+                if (conceptsToInclude.size() == searchParameters.getLimit()) {
+                    break;
+                }
+            }
+            
+            returnConcepts.setItems(conceptsToInclude);
+            returnConcepts.setTotal(conceptsToInclude.size());
+        }
 
-        return members;
+        return returnConcepts;
     }
 
     /**
@@ -4742,63 +4763,74 @@ public class RefsetMemberService {
      * Search for replacement concepts for Upgrade.
      *
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param service the terminology service
+     * @param refset the refset
      * @param searchParameters the search parameters
      * @return the upgrade replacement concept result list
      * @throws Exception the exception
      */
-    public static ResultList<UpgradeReplacementConcecpt> replacementConceptSearch(final User user, final String refsetInternalId, final SearchParameters searchParameters) throws Exception {
+    public static ResultList<UpgradeReplacementConcecpt> replacementConceptSearch(final User user, final TerminologyService service, final Refset refset, final SearchParameters searchParameters) throws Exception {
 
         ResultList<UpgradeReplacementConcecpt> replacementConcepts = new ResultList<>();
-        searchParameters.setEditing(true);
+
+        final ConceptResultList concepts = conceptDropdownSearch(user, service, refset, searchParameters, "non members", true);
+
+        for (Concept concept : concepts.getItems()) {
+            
+            final UpgradeReplacementConcecpt replacementConcept = new UpgradeReplacementConcecpt();
+            replacementConcept.setCode(concept.getCode());
+            replacementConcept.setReason("MANUAL_REPLACEMENT");
+            
+            if (concept.getDescriptions().size() > 0) {
+                replacementConcept.setDescriptions(ModelUtility.toJson(concept.getDescriptions()));
+            }
+            
+            replacementConcepts.getItems().add(replacementConcept);
+        }
         
-        if (searchParameters.getLimit() < 0) {
+        replacementConcepts.setTotal(concepts.getTotal());
+        replacementConcepts.setTotalKnown(concepts.isTotalKnown());
+
+        logger.debug("replacementConceptSearch: results: " + ModelUtility.toJson(replacementConcepts));
+
+        return replacementConcepts;
+    }
+    
+    /**
+     * Search for concepts for display in dropdown options.
+     *
+     * @param user the user
+     * @param service the terminology service
+     * @param refset the refset
+     * @param searchParameters the search parameters
+     * @param searchMembersMode Should the search be for only for members, non members, or all concepts. Values: 'all', 'members', 'non members'
+     * @param getDescriptions should all descriptions be populated
+     * @return the upgrade replacement concept result list
+     * @throws Exception the exception
+     */
+    public static ConceptResultList conceptDropdownSearch(final User user, final TerminologyService service, final Refset refset, 
+        final SearchParameters searchParameters, final String searchMembersMode, final boolean getDescriptions) throws Exception 
+    {
+
+        searchParameters.setEditing(false);
+        
+        if (searchParameters.getLimit() <= 0) {
             searchParameters.setLimit(10);
         }
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final Refset refset = getRefset(user, service, refsetInternalId);
-
-            final ConceptResultList concepts = searchConcepts(refset, searchParameters, "non members", searchParameters.getLimit() * 6);
-            final List<Concept> replacementConceptsToLookup = new ArrayList<>();
-            
-            for (Concept concept : concepts.getItems()) {
-                
-                if (concept.isMemberOfRefset()) {
-                    continue;
-                }
-                
-                replacementConceptsToLookup.add(concept);
-                
-                if (replacementConceptsToLookup.size() == searchParameters.getLimit()) {
-                    break;
-                }
-            }
-            
-            if (replacementConceptsToLookup.size() == 0) {
-                return replacementConcepts;
-            }
-
-            populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
-
-            for (Concept concept : replacementConceptsToLookup) {
-                
-                final UpgradeReplacementConcecpt replacementConcept = new UpgradeReplacementConcecpt();
-                replacementConcept.setCode(concept.getCode());
-                replacementConcept.setReason("MANUAL_REPLACEMENT");
-                
-                if (concept.getDescriptions().size() > 0) {
-                    replacementConcept.setDescriptions(ModelUtility.toJson(concept.getDescriptions()));
-                }
-                
-                replacementConcepts.getItems().add(replacementConcept);
-            }
-
-            logger.debug("replacementConceptSearch: results: " + ModelUtility.toJson(concepts));
+        final ConceptResultList concepts = searchConcepts(refset, searchParameters, searchMembersMode, searchParameters.getLimit() * 6);
+        
+        if (concepts.getItems().size() == 0) {
+            return concepts;
         }
 
-        return replacementConcepts;
+        if (getDescriptions) {
+            populateAllLanguageDescriptions(refset, concepts.getItems());
+        }
+        
+        logger.debug("conceptDropdownSearch: results: " + ModelUtility.toJson(concepts));
+
+        return concepts;
     }
 
     /**

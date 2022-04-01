@@ -1026,14 +1026,12 @@ public class RefsetController extends BaseController {
         checkBinding(bindingResult);
         
         User user = SecurityService.getUserFromSession();
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
-        HttpSession session = requestAttributes.getRequest().getSession();
 
         try (TerminologyService service = new TerminologyService()) {
 
             logger.debug("searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + showInDevelopment);
             
-            ResultList<Refset> results = RefsetService.searchRefsets(user, searchParameters, searchConcepts, showInDevelopment);
+            ResultList<Refset> results = RefsetService.searchRefsets(user, service, searchParameters, searchConcepts, true, false);
            
             return results;
 
@@ -2052,15 +2050,67 @@ public class RefsetController extends BaseController {
         
         User user = SecurityService.getUserFromSession();
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
+            final Refset refset = RefsetMemberService.getRefset(user, service, refsetInternalId);
             ResultList<UpgradeReplacementConcecpt> results = new ResultList<>();
             String query = searchParameters.getQuery();
 
-            logger.debug("replacementConceptSearch: searchConcepts: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
+            logger.debug("replacementConceptSearch: refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
 
             if (query != null && !query.equals("")) {
-                results = RefsetMemberService.replacementConceptSearch(user, refsetInternalId, searchParameters);
+                results = RefsetMemberService.replacementConceptSearch(user, service, refset, searchParameters);
+            }
+
+            return results;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Search for refsets for dropdown menus.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the string
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Search the taxonomy for refset members", response = ResultList.class, notes = API_NOTES)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            // TODO: activeOnly, sort, sortAscending
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = {"/refset/dropdownSearch"}, produces = "application/json")
+    public @ResponseBody ResultList<Refset> refsetDropdownSearch(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+        
+        User user = SecurityService.getUserFromSession();
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            ResultList<Refset> results = new ResultList<>();
+            String query = searchParameters.getQuery();
+
+            logger.debug("refsetDropdownSearch: searchParameters: " + ModelUtility.toJson(searchParameters));
+
+            if (query != null && !query.equals("")) {
+                results = RefsetService.refsetDropdownSearch(user, service, searchParameters, false, true);
             }
 
             return results;
