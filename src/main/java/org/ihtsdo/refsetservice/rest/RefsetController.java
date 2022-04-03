@@ -2095,7 +2095,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = {"/refset/dropdownSearch"}, produces = "application/json")
-    public @ResponseBody ResultList<Refset> refsetDropdownSearch(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResultList<Refset> searchRefsetsForDropdowns(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -2110,7 +2110,7 @@ public class RefsetController extends BaseController {
             logger.debug("refsetDropdownSearch: searchParameters: " + ModelUtility.toJson(searchParameters));
 
             if (query != null && !query.equals("")) {
-                results = RefsetService.refsetDropdownSearch(user, service, searchParameters, false, true);
+                results = RefsetService.refsetDropdownSearch(user, service, searchParameters, true, true);
             }
 
             return results;
@@ -2139,13 +2139,14 @@ public class RefsetController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
        
             String status = "";
+            RefsetMemberService.refsetsBeingUpdated.add(activeRefsetInternalId);
             
-            logger.debug("compileUpgradeData: activeRefsetInternalId: " + activeRefsetInternalId + "; comparisonRefsetInternalId: " + comparisonRefsetInternalId);
+            logger.debug("compileComparisonData: activeRefsetInternalId: " + activeRefsetInternalId + "; comparisonRefsetInternalId: " + comparisonRefsetInternalId);
             
             // add the list of concepts as members to the refset
             status = RefsetMemberService.compileComparisonData(service, user, activeRefsetInternalId, comparisonRefsetInternalId);
             
-            logger.debug("compileUpgradeData: Finished with status " + status);
+            logger.debug("compileComparisonData: Finished with status " + status);
             
             return "{\"status\": \"" + status + "\"}";
     
@@ -2178,6 +2179,11 @@ public class RefsetController extends BaseController {
             
             // add the list of concepts as members to the refset
             final RefsetMemberComparison results = ModelUtility.fromJson((String)request.getSession().getAttribute("refsetMemberComparison_" + activeRefsetInternalId), RefsetMemberComparison.class);
+            request.getSession().removeAttribute("refsetMemberComparison_" + activeRefsetInternalId);
+            
+            if (results == null) {
+                throw new Exception("There were no comparison results to retrieve for this refset.");
+            }
             
             logger.debug("getComparisonData: results " + results);
             

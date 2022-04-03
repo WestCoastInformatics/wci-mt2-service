@@ -48,8 +48,8 @@ public class RefsetMemberComparison extends AbstractHasModified {
     /** The refset name of the comparison refset. */
     private String comparisonRefsetName;
 
-    /** A list of maps the members with keys of code, term, hasChildren, and membership. */
-    private List<Map<String, String>> members = new ArrayList<>();
+    /** A list of maps the members with keys of code, name, hasChildren, active, memberOfRefset, definitionExceptionType, and membership. */
+    private List<Map<String, String>> items = new ArrayList<>();
     
     /** A list of members unique to the active refset. */
     private List<String> activeRefsetDistinctMembers = new ArrayList<>();
@@ -98,7 +98,7 @@ public class RefsetMemberComparison extends AbstractHasModified {
         comparisonRefsetId = other.getComparisonRefsetId();
         activeRefsetName = other.getActiveRefsetName();
         comparisonRefsetName = other.getComparisonRefsetName();
-        members = other.getMembers();
+        items = other.getItems();
         activeRefsetDistinctMembers = other.getActiveRefsetDistinctMembers();
         comparisonRefsetDistinctMembers = other.getComparisonRefsetDistinctMembers();
         activeRefsetMemberTotal = other.getActiveRefsetMemberTotal();
@@ -180,26 +180,26 @@ public class RefsetMemberComparison extends AbstractHasModified {
     }
 
     /**
-     * Returns the list of maps of the members with keys of code, term, hasChildren, and membership (values of Both, Active Refset, Comparison Refset).
+     * Returns the list of maps of the members with keys of code, name, hasChildren, active, memberOfRefset, definitionExceptionType, and membership (values of Both, Active Refset, Comparison Refset).
      *
      * @return the members
      */
-    public List<Map<String, String>> getMembers() {
+    public List<Map<String, String>> getItems() {
         
-        if (members == null) {
-            members = new ArrayList<>();
+        if (items == null) {
+            items = new ArrayList<>();
         }
         
-        return members;
+        return items;
     }
 
     /**
-     * Sets the list of maps of the members with keys of code, term, hasChildren, and membership (values of Both, Active Refset, Comparison Refset).
+     * Sets the list of maps of the members with keys of code, name, hasChildren, active, memberOfRefset, definitionExceptionType, and membership (values of Both, Active Refset, Comparison Refset).
      *
      * @param members the members
      */
-    public void setMembers(final List<Map<String, String>> members) {
-        this.members = members;
+    public void setItems(final List<Map<String, String>> members) {
+        this.items = members;
     }
     
     /**
@@ -336,7 +336,7 @@ public class RefsetMemberComparison extends AbstractHasModified {
         result = prime * result + ((comparisonRefsetId == null) ? 0 : comparisonRefsetId.hashCode());
         result = prime * result + ((activeRefsetName == null) ? 0 : activeRefsetName.hashCode());
         result = prime * result + ((comparisonRefsetName == null) ? 0 : comparisonRefsetName.hashCode());
-        result = prime * result + ((members == null) ? 0 : members.hashCode());
+        result = prime * result + ((items == null) ? 0 : items.hashCode());
         result = prime * result + ((activeRefsetDistinctMembers == null) ? 0 : activeRefsetDistinctMembers.hashCode());
         result = prime * result + ((comparisonRefsetDistinctMembers == null) ? 0 : comparisonRefsetDistinctMembers.hashCode());
         result = prime * result + activeRefsetMemberTotal;
@@ -401,11 +401,11 @@ public class RefsetMemberComparison extends AbstractHasModified {
             return false;
         }
 
-        if (members == null) {
-            if (other.members != null) {
+        if (items == null) {
+            if (other.items != null) {
                 return false;
             }
-        } else if (!members.equals(other.members)) {
+        } else if (!items.equals(other.items)) {
             return false;
         }
         

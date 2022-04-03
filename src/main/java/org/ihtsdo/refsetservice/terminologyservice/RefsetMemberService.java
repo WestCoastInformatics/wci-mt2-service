@@ -4860,10 +4860,6 @@ public class RefsetMemberService {
         searchParameters.setLimit(10);
         searchParameters.setEditing(editing);
         
-        if (editing) {
-            refsetsBeingUpdated.add(activeRefsetInternalId);
-        }
-        
         // remove any existing comparison data for this refset 
         SecurityService.removeFromSession("refsetMemberComparison_" + activeRefsetInternalId);
         
@@ -4921,10 +4917,13 @@ public class RefsetMemberService {
             final Concept activeConcept = activeMemberEntry.getValue();
             final Map<String, String> returnMap = new HashMap<>();
             returnMap.put("code", activeConceptId);
+            returnMap.put("active", activeConcept.isActive() + "");
+            returnMap.put("memberOfRefset", "true");
+            returnMap.put("definitionExceptionType", activeConcept.getDefinitionExceptionType());
             returnMap.put("hasChildren", "false"); //activeConcept.getHasChildren() + "");
             
             if (activeConcept.getDescriptions().size() > 0) {
-                returnMap.put("term", activeConcept.getDescriptions().get(0).get("term"));
+                returnMap.put("name", activeConcept.getDescriptions().get(0).get("term").strip());
             }
             
             // check to see if this member is also a member of the comparison refset 
@@ -4936,7 +4935,7 @@ public class RefsetMemberService {
                 refsetMemberComparison.getActiveRefsetDistinctMembers().add(activeConceptId);
             }
             
-            refsetMemberComparison.getMembers().add(returnMap);
+            refsetMemberComparison.getItems().add(returnMap);
         }
         
         // since the members of the active or both refsets are handled, remove all but the unique comparison refset members 
@@ -4948,15 +4947,18 @@ public class RefsetMemberService {
             final Concept comparisonConcept = comparisonMemberEntry.getValue();
             final Map<String, String> returnMap = new HashMap<>();
             returnMap.put("code", comparisonConceptId);
+            returnMap.put("active", comparisonConcept.isActive() + "");
+            returnMap.put("memberOfRefset", "false");
+            returnMap.put("definitionExceptionType", comparisonConcept.getDefinitionExceptionType());
             returnMap.put("hasChildren", "false"); //comparisonConcept.getHasChildren() + "");
             returnMap.put("membership", "Comparison Refset");
             refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
             
             if (comparisonConcept.getDescriptions().size() > 0) {
-                returnMap.put("term", comparisonConcept.getDescriptions().get(0).get("term"));
+                returnMap.put("name", comparisonConcept.getDescriptions().get(0).get("term").strip());
             }
             
-            refsetMemberComparison.getMembers().add(returnMap);
+            refsetMemberComparison.getItems().add(returnMap);
         }
         
         refsetMemberComparison.setActiveRefsetDistinctMembersCount(refsetMemberComparison.getActiveRefsetDistinctMembers().size());

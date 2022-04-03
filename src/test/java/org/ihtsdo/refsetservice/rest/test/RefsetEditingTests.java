@@ -371,7 +371,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
      *
      * @throws Exception the exception
      */
-    //@Test
+    @Test
     public void testRefsetComparison() throws Exception {
 
         // ADD NEW VERSION AND MOVE TO READY FOR EDIT
@@ -390,7 +390,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
             
             // GET THE COMPARISON DATA
             RefsetMemberComparison refsetMemberComparison = editUtil.getComparisonData(newActiveRefsetInternalId);
-            assertThat(refsetMemberComparison.getMembers().size()).isGreaterThan(0);
+            assertThat(refsetMemberComparison.getItems().size()).isGreaterThan(0);
         } 
         
         finally {
