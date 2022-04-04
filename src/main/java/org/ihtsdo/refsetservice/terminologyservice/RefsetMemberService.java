@@ -4548,7 +4548,7 @@ public class RefsetMemberService {
                                             upgradeReplacementConcept.setReason(reasonMap.get(replacementConcept.getCode()));
                                             
                                             if (conceptNode.get("descriptions") != null) {
-                                                upgradeReplacementConcept.setDescriptions(ModelUtility.toJson(conceptNode.get("descriptions")));
+                                                upgradeReplacementConcept.setDescriptions(ModelUtility.toJson(replacementConcept.getDescriptions()));
                                             }
                                             
                                             threadService.add(upgradeReplacementConcept);
