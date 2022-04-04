@@ -4856,8 +4856,10 @@ public class RefsetMemberService {
         final Refset activeRefset = service.get(activeRefsetInternalId, Refset.class);
         final Refset comparisonRefset = service.get(comparisonRefsetInternalId, Refset.class);
         final RefsetMemberComparison refsetMemberComparison = new RefsetMemberComparison();
-        refsetMemberComparison.setActiveRefsetId(activeRefset.getId());
-        refsetMemberComparison.setComparisonRefsetId(comparisonRefset.getId());
+        refsetMemberComparison.setActiveRefsetInternalId(activeRefset.getId());
+        refsetMemberComparison.setComparisonRefsetInternalId(comparisonRefset.getId());
+        refsetMemberComparison.setActiveRefsetId(activeRefset.getRefsetId());
+        refsetMemberComparison.setComparisonRefsetId(comparisonRefset.getRefsetId());
         refsetMemberComparison.setActiveRefsetName(activeRefset.getName());
         refsetMemberComparison.setComparisonRefsetName(comparisonRefset.getName());
         final boolean editing = activeRefset.getWorkflowStatus().equals(WorkflowService.IN_EDIT);
