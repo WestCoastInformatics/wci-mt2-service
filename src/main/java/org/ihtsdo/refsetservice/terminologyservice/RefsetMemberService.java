@@ -3702,12 +3702,19 @@ public class RefsetMemberService {
 
                             final JsonNode conceptNode = iterator.next();
                             final String conceptId = conceptNode.get("conceptId").asText();
+                            String name = "";
                             validatedConcepts.add(conceptId);
                             newMemberCount++;
+                            
+                            if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
+                                name = conceptNode.get("pt").get("term").asText();  
+                            }
                             
                             final Map<String, String> status = new HashMap<>();
                             status.put("operation", "Added");
                             status.put("status", "Success");
+                            status.put("name", name);
+                            status.put("active", conceptNode.get("active").asText());
                             conceptsStatus.put(conceptId, status);
                         }
                     }
@@ -4921,10 +4928,7 @@ public class RefsetMemberService {
             returnMap.put("memberOfRefset", "true");
             returnMap.put("definitionExceptionType", activeConcept.getDefinitionExceptionType());
             returnMap.put("hasChildren", "false"); //activeConcept.getHasChildren() + "");
-            
-            if (activeConcept.getDescriptions().size() > 0) {
-                returnMap.put("name", activeConcept.getDescriptions().get(0).get("term").strip());
-            }
+            returnMap.put("name", activeConcept.getName().strip());
             
             // check to see if this member is also a member of the comparison refset 
             if (comparisonRefsetMembers.containsKey(activeConceptId)) {
@@ -4953,10 +4957,7 @@ public class RefsetMemberService {
             returnMap.put("hasChildren", "false"); //comparisonConcept.getHasChildren() + "");
             returnMap.put("membership", "Comparison Refset");
             refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
-            
-            if (comparisonConcept.getDescriptions().size() > 0) {
-                returnMap.put("name", comparisonConcept.getDescriptions().get(0).get("term").strip());
-            }
+            returnMap.put("name", comparisonConcept.getName().strip());
             
             refsetMemberComparison.getItems().add(returnMap);
         }
