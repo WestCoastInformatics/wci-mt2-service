@@ -300,9 +300,9 @@ public class HistoricDataMigrator {
     /** The testing. */
     private boolean testing = false;
 
-    private final String testingEdition = "Zealand";
+    private final String testingEdition = "elgi";
 
-    private final String testingRefset = "21000210109";
+    private final String testingRefset = "741000172102";
 
     private final Map<String, String> editionOwnerMap = new HashMap<>();
 
@@ -333,17 +333,26 @@ public class HistoricDataMigrator {
     public void migrate() throws Exception {
 
         Set<String> internationalModules = createEditionsFromSnowstorm();
-        logger.debug("Num internationalModules: " + internationalModules.size());
-
         Map<String, SortedMap<Date, String>> branches = identifyBranches();
-        logger.debug("Num branches: " + branches.size());
 
         createRefsetsFromSnowstorm(branches, internationalModules);
 
         // Read refset metadata and associated information (projects & ECLs)
         parseRttData();
 
-        if (supportRtt) {
+        processRttRefsets();
+
+        // With metadata from RTT project (defined in parseRTTMetadata())
+        updateRefsets();
+        persistObjects();
+    }
+
+    private void processRttRefsets() {
+
+        if (!supportRtt) {
+
+            logger.info("Nothing to do in processRttRefses() as we are nNot pulling refsets from RTT (due to supportRtt value of: " + supportRtt + ")");
+        } else {
 
             // Skip those refsets that live on SnowS, but are not yet in RTT DB dmp
             // file that we are using
@@ -364,9 +373,6 @@ public class HistoricDataMigrator {
 
         }
 
-        // With metadata from RTT project (defined in parseRTTMetadata())
-        updateRefsets();
-        persistObjects();
     }
 
     /**
@@ -580,6 +586,9 @@ public class HistoricDataMigrator {
      */
     private Set<Refset> createRefsetsFromSnowstorm(Map<String, SortedMap<Date, String>> branchChildrenByEdition, Set<String> internationalModules) throws Exception {
 
+        logger.debug("Num internationalModules: " + internationalModules.size());
+        logger.debug("Num branches: " + branchChildrenByEdition.size());
+
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy("Migration");
@@ -608,7 +617,6 @@ public class HistoricDataMigrator {
 
                     final String childBranch = branchChildrenByEdition.get(editionId).get(branchDate);
 
-                    // logger.debug("zzz - Getting refsets via url: " + url.replace("{branch}", childBranch));
                     try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", childBranch))) {
 
                         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -661,6 +669,11 @@ public class HistoricDataMigrator {
 
                                     Refset refset = new Refset();
 
+                                    if (testing && refsetId.equals(testingRefset)) {
+
+                                        logger.debug(testingRefset + " - xxx - here with childBranch" + childBranch);
+                                    }
+
                                     refset.setRefsetId(refsetId);
                                     refset.setModuleId(moduleId);
                                     refset.setVersionStatus("PUBLISHED");
@@ -675,25 +688,67 @@ public class HistoricDataMigrator {
                                      * b) thus no need to create  new version.
                                      * c) Move onto nex refset
                                      */
-                                    Date refsetVersionDate = defineSnowstormRefsetVersionDate(childBranch, refsetId);
+                                    Date refsetVersionDate = null;
+
+                                    if (!testing || refsetId.equals(testingRefset)) {
+
+                                        refsetVersionDate = defineSnowstormRefsetVersionDate(childBranch, refsetId);
+                                    }
 
                                     if (refsetVersionDate == null) {
 
+                                        if (testing && refsetId.equals(testingRefset)) {
+
+                                            logger.debug(testingRefset + " - qqq - not adding anything on this branch for " + childBranch);
+                                        }
+
                                         // No changes to refset so don't create a new version
-                                        // logger.debug("zzz - No changes so skip");
                                         continue;
                                     }
 
-                                    refset.setVersionDate(refsetVersionDate);
-                                    /*
-                                     * } else {
-                                     * 
-                                     * refset.setVersionDate(branchDate); }
-                                     */
+                                    Set<Date> editionVersions = branchChildrenByEdition.get(edition.getId()).keySet();
+                                    Date earliestPublishedVersionDate = null;
 
-                                    /* Finish and add refset */
-                                    // add the edition to a map with the refset
-                                    // ID to retrieve it later
+                                    if (!editionVersions.contains(refsetVersionDate)) {
+
+                                        for (Date editionDate : editionVersions) {
+
+                                            if (refsetVersionDate.after(editionDate)) {
+
+                                                throw new Exception("Don't expect to be here at createRefsetsFromSnowstorm()");
+                                            }
+
+                                            if (earliestPublishedVersionDate == null || editionDate.before(earliestPublishedVersionDate)) {
+
+                                                earliestPublishedVersionDate = editionDate;
+                                            }
+
+                                        }
+
+                                        if (earliestPublishedVersionDate == null) {
+
+                                            throw new Exception("Shouldn't be here at createRefsetsFromSnowstorm()");
+                                        }
+
+                                        refsetVersionDate = earliestPublishedVersionDate;
+                                    }
+
+                                    refset.setVersionDate(refsetVersionDate);
+
+                                    if (editionVersions.contains(refset.getVersionDate())) {
+
+                                        logger.debug(" yyy - edition supports refset: " + refsetId + " === " + refset.getVersionDate());
+
+                                    } else {
+
+                                        logger.debug(" zzz - would fail so need to filter: " + refsetId + " === " + refset.getVersionDate());
+                                        // logger.debug(" zzz2b - with edition ' " + edition.getName() + "' version dates: " + editionVersions.toString());
+
+                                        // Don't add refset versions that don't have corresponding snowstorm -based edition versions
+                                        continue;
+                                    }
+
+                                    // add the edition to a map with the refset ID to retrieve it later
                                     refsetEditions.put(refsetId, edition);
 
                                     if (refsetNode.get("pt").has("term")) {
@@ -704,6 +759,7 @@ public class HistoricDataMigrator {
                                         refset.setName(lookupRefsetName(refsetId, edition, childBranch));
                                     }
 
+                                    /* Add refset for later persisting */
                                     snowstormRefsets.add(refset);
                                     counts.incrementRefsetVersionPairsCounts();
 
@@ -730,6 +786,8 @@ public class HistoricDataMigrator {
 
                             if (isInternationalEdition) {
 
+                                logger.debug("Adding international refsetId " + refsetId + " refsets identified");
+
                                 internationalRefsets.add(refsetId);
                             }
 
@@ -737,14 +795,13 @@ public class HistoricDataMigrator {
 
                     }
 
-                    // logger.debug("zzz - Finished with " + childBranch);
                 }
 
             }
 
         }
 
-        logger.debug("Finished processing CodeSystems in Snowstorm");
+        logger.info("Finished processing CodeSystems in Snowstorm with " + snowstormRefsets.size() + " refsets identified out of which " + internationalRefsets.size() + " are international Refsets");
 
         return snowstormRefsets;
     }
@@ -766,9 +823,9 @@ public class HistoricDataMigrator {
 
         while (hasMorePages) {
 
-            String url = SnowstormConnection.BASE_URL + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
+            logger.debug("Here on iteration #" + iteration + " for " + refsetId + " --- " + branch);
 
-            // logger.debug("zzz - Get Member List URL: " + url);
+            String url = SnowstormConnection.BASE_URL + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
 
             try (final Response response = SnowstormConnection.getResponse(url, acceptLanguage)) {
 
@@ -794,7 +851,7 @@ public class HistoricDataMigrator {
 
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() < limit) {
 
-                    logger.debug("Expect to be here on iteration #" + iteration);
+                    logger.debug("Done at iteration #" + iteration);
                     hasMorePages = false;
                 }
 
@@ -824,34 +881,29 @@ public class HistoricDataMigrator {
 
                 if (versionLatestDate != null || refsetLatestDate.before(versionLatestDate)) {
 
-                    // // logger.debug("zzz - Changing versionLatestDate to: " + versionLatestDate);
                     refsetLatestDate = versionLatestDate;
                 }
 
                 iteration++;
 
+            } catch (Exception e) {
+
+                throw new Exception("Caught during defining refset version on: " + refsetId + " --- " + branch + "\n" + e.getStackTrace().toString());
             }
 
         }
 
-        // logger.debug("zzz - Finished with latestDate: " + refsetLatestDate);
-
         // See if version already exists.
         if (!refsetToPublishedVersionMap.containsKey(refsetId)) {
 
-            // logger.debug("zzz - aaa");
             refsetToPublishedVersionMap.put(refsetId, new ArrayList<Date>());
         }
 
-        // logger.debug("zzz - bbb");
-
         if (refsetToPublishedVersionMap.get(refsetId).contains(refsetLatestDate)) {
 
-            // logger.debug("zzz - ccc");
             return null;
         } else {
 
-            // logger.debug("zzz - ddd");
             refsetToPublishedVersionMap.get(refsetId).add(refsetLatestDate);
             return refsetLatestDate;
         }
@@ -1319,6 +1371,8 @@ public class HistoricDataMigrator {
 
             // Preprocess Snowstorm refsets for analysis purposes
             // Adding refsets identified on snowstorm
+            logger.debug(" step - Start persisting gathered Snowstorm & RTT Supporting Objects");
+
             for (Refset snowRefset : snowstormRefsets) {
 
                 if (testing && testingRefset != null && !testingRefset.equals(snowRefset.getRefsetId())) {
@@ -1353,13 +1407,11 @@ public class HistoricDataMigrator {
 
                 if (refsetToDescriptionMap.containsKey(refsetSctId)) {
 
-                    logger.debug("MMM - Have description on refset: " + refsetSctId);
                     narrative = refsetToDescriptionMap.get(refsetSctId);
                 }
 
                 if (refsetToTagsMap.containsKey(refsetSctId)) {
 
-                    logger.debug("TTT - Have Tags on refset: " + refsetSctId);
                     tags = refsetToTagsMap.get(refsetSctId);
                 }
 
@@ -1370,19 +1422,16 @@ public class HistoricDataMigrator {
 
                     if (refsetsToIgnore.contains(snowRefset.getRefsetId())) {
 
-                        logger.debug(" AAA - Here with Snowstorm refset: " + snowRefset.getRefsetId());
-
                         ignoreCounter++;
                         continue;
 
                     } else {
 
                         // Add Refset. Keep track of which are added this way as to not add them from RTT as well
-                        logger.debug(" BBB - Persisting Snowstorm refset: " + snowRefset.getRefsetId() + " with version: " + snowRefset.getVersionDate());
-
                         snowRefset.setNarrative(narrative);
                         snowRefset.setTags(tags);
                         projectCount = processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, refsetToProjectsInfoMap, projectCount);
+
                         service.add(snowRefset);
 
                         /* Don't need member count anymore */
@@ -1432,13 +1481,10 @@ public class HistoricDataMigrator {
 
                         if (refsetVersionsProcessed.containsKey(rttRefset.getRefsetId()) && refsetVersionsProcessed.get(rttRefset.getRefsetId()).contains(versionDate)) {
 
-                            logger.info(
-                                " CCC - Duplicate refsetId/VersionDate found in Snowstorm and in RTT (" + rttRefset.getRefsetId() + "/" + versionDate + ", so only processing the one from Snowstorm");
                             continue;
                         }
 
                         // only process those refsets that aren't in Snowstorm
-                        logger.debug(" DDD - Here with RTT refset: " + rttRefset.getRefsetId() + " and version: " + sdf.parse(rttRefsetToEffectiveDateMap.get(rttId)));
 
                         // TODO Temp fix so there are no refsets or orgs without editions
                         if (edition == null || edition.getId() == null || edition.getId().equals("")) {
@@ -1454,8 +1500,10 @@ public class HistoricDataMigrator {
 
             }
 
+            logger.info(" step complete - Finish persisting gathered Snowstorm & RTT Supporting Objects");
+
             // Add a dedicated UAT Training Project for each organization
-            logger.info("Adding a dedicated UAT Training Project for each Organization");
+            logger.info(" step - Adding special content");
 
             for (String orgName : organizationsAdded.keySet()) {
 
@@ -1479,6 +1527,7 @@ public class HistoricDataMigrator {
 
                 Refset refset = new Refset();
 
+                // TODO: Change this to have actual release date created/new Refset
                 refset.setVersionDate(new Date());
                 refset.setRefsetId(WCI_TESTING_REFSET_CONCEPT_ID);
                 refset.setModuleId(MODULE_ANCESTOR_CONCEPT_SCTID);
@@ -1489,8 +1538,15 @@ public class HistoricDataMigrator {
                 refset.setProject(wciProject);
                 refset.setName("Base WCI Refset");
 
+                if (testing && refset.getRefsetId().equals(testingRefset)) {
+
+                    logger.debug(testingRefset + " - vvv - here with childBranch" + refset);
+                }
+
                 service.add(refset);
             }
+
+            logger.info(" step complete - Adding special content");
 
             logger.info("Have imported from Snowstorm " + projectCount + " projects and " + counts.getOrgsImportedCount() + " organizations");
 
@@ -1527,7 +1583,6 @@ public class HistoricDataMigrator {
             // If has ECL clauses, add them to db & refset
             if (rttRefsetToClausesMap.containsKey(rttId)) {
 
-                logger.debug("GGG - Adding clause from Rtt refset: '" + rttId);
                 Set<DefinitionClause> clauses = addClause(rttId);
                 refset.getDefinitionClauses().addAll(clauses);
                 service.update(refset);
@@ -1566,7 +1621,6 @@ public class HistoricDataMigrator {
 
             if (!organizationsAdded.containsKey(translatedOrgName)) {
 
-                logger.debug("    HHH3 - And persisting Org used in RTT but not defined in Snowstorm: " + translatedOrgName);
                 org = addOrganziation(translatedOrgName, null, edition, defaultMeta);
                 organizationsAdded.put(translatedOrgName, org);
             } else {
@@ -1576,8 +1630,6 @@ public class HistoricDataMigrator {
 
             if (!projectsAdded.containsKey(rttProject.getName())) {
 
-                logger.debug("    FFF - Adding project '" + rttProject.getName() + "'    which used in RTT but not defined in Snowstorm to Code System: " + translatedOrgName
-                    + " in support of RefsetId: " + rttId);
                 final Project project = addProject(org, rttProject.getName(), rttProject.getDescription(), projectMeta);
                 projectCount++;
 
@@ -1612,7 +1664,6 @@ public class HistoricDataMigrator {
         try {
 
             members = RefsetMemberService.getRefsetMembers(SecurityService.getUserFromSession(), rttRefset.getId(), new SearchParameters(), "list", null);
-            logger.debug("MMM - refsetId/VersionDate '" + rttRefset.getRefsetId() + "/" + rttRefset.getVersionDate() + "' Member Count: " + members.getTotal());
         } catch (Exception e) {
 
             logger.error("Failed calling RefsetMemberService.getRefsetMembers()");
@@ -1665,7 +1716,6 @@ public class HistoricDataMigrator {
         if (refsetToProjectsInfoMap.containsKey(refset.getRefsetId())) {
 
             String projectInfo = refsetToProjectsInfoMap.get(refset.getRefsetId());
-            logger.debug("JJJ - found refset (" + refset.getRefsetId() + ") with corresponding RTT project: " + projectInfo);
 
             String[] projectDetails = projectInfo.split(",");
 
@@ -1720,7 +1770,6 @@ public class HistoricDataMigrator {
         if (!debugRttOrgTranslations.contains(name)) {
 
             debugRttOrgTranslations.add(name);
-            logger.debug("HHH-1  -  In 'translateRttOrg()' ... and First time seeing: " + name);
         }
 
         String shortName = null;
@@ -1757,11 +1806,8 @@ public class HistoricDataMigrator {
 
         } else if (name.toLowerCase().contains("india") || name.toLowerCase().contains("canad") || name.toLowerCase().contains("conteir")) {
 
-            logger.debug("HHH-2  -  Ignoring refsets from this organization as either a project without a Snowstorm Code System or is a traiining project : " + name);
             return null;
         } else {
-
-            logger.debug("HHH-3  -  Don't have trasnlation for RTT Org: " + name);
 
             return name;
         }
