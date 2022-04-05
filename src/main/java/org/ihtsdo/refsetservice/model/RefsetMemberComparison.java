@@ -36,6 +36,12 @@ public class RefsetMemberComparison extends AbstractHasModified {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetMemberComparison.class);
     
+    /** The internal ID of the active refset. */
+    private String activeRefsetInternalId;
+
+    /** The internal ID of the comparison refset. */
+    private String comparisonRefsetInternalId;
+    
     /** The refset ID of the active refset. */
     private String activeRefsetId;
 
@@ -48,8 +54,8 @@ public class RefsetMemberComparison extends AbstractHasModified {
     /** The refset name of the comparison refset. */
     private String comparisonRefsetName;
 
-    /** A list of maps the members with keys of code, term, hasChildren, and membership. */
-    private List<Map<String, String>> members = new ArrayList<>();
+    /** A list of maps the members with keys of code, name, hasChildren, active, memberOfRefset, definitionExceptionType, and membership. */
+    private List<Map<String, String>> items = new ArrayList<>();
     
     /** A list of members unique to the active refset. */
     private List<String> activeRefsetDistinctMembers = new ArrayList<>();
@@ -94,11 +100,13 @@ public class RefsetMemberComparison extends AbstractHasModified {
     public void populateFrom(final RefsetMemberComparison other) {
         
         super.populateFrom(other);
+        activeRefsetInternalId = other.getActiveRefsetInternalId();
+        comparisonRefsetInternalId = other.getComparisonRefsetInternalId();
         activeRefsetId = other.getActiveRefsetId();
         comparisonRefsetId = other.getComparisonRefsetId();
         activeRefsetName = other.getActiveRefsetName();
         comparisonRefsetName = other.getComparisonRefsetName();
-        members = other.getMembers();
+        items = other.getItems();
         activeRefsetDistinctMembers = other.getActiveRefsetDistinctMembers();
         comparisonRefsetDistinctMembers = other.getComparisonRefsetDistinctMembers();
         activeRefsetMemberTotal = other.getActiveRefsetMemberTotal();
@@ -108,6 +116,42 @@ public class RefsetMemberComparison extends AbstractHasModified {
     }
 
     /**
+     * Returns the internal ID of the active refset.
+     *
+     * @return the active refset internal ID
+     */
+    public String getActiveRefsetInternalId() {
+        return activeRefsetInternalId;
+    }
+
+    /**
+     * Sets the internal ID of the active refset.
+     *
+     * @param refsetId the active refset internal ID
+     */
+    public void setActiveRefsetInternalId(final String refsetInternalId) {
+        this.activeRefsetInternalId = refsetInternalId;
+    }
+
+    /**
+     * Returns the refset ID of the comparison refset.
+     *
+     * @return the comparison refset ID
+     */
+    public String getComparisonRefsetInternalId() {
+        return comparisonRefsetInternalId;
+    }
+
+    /**
+     * Sets the refset ID of the comparison refset.
+     *
+     * @param comparisonRefsetInternalId the comparison refset ID
+     */
+    public void setComparisonRefsetInternalId(final String comparisonRefsetInternalId) {
+        this.comparisonRefsetInternalId = comparisonRefsetInternalId;
+    }
+    
+    /**
      * Returns the refset ID of the active refset.
      *
      * @return the active refset ID
@@ -115,7 +159,7 @@ public class RefsetMemberComparison extends AbstractHasModified {
     public String getActiveRefsetId() {
         return activeRefsetId;
     }
-
+    
     /**
      * Sets the refset ID of the active refset.
      *
@@ -124,7 +168,7 @@ public class RefsetMemberComparison extends AbstractHasModified {
     public void setActiveRefsetId(final String refsetId) {
         this.activeRefsetId = refsetId;
     }
-
+    
     /**
      * Returns the refset ID of the comparison refset.
      *
@@ -133,7 +177,7 @@ public class RefsetMemberComparison extends AbstractHasModified {
     public String getComparisonRefsetId() {
         return comparisonRefsetId;
     }
-
+    
     /**
      * Sets the refset ID of the comparison refset.
      *
@@ -180,26 +224,26 @@ public class RefsetMemberComparison extends AbstractHasModified {
     }
 
     /**
-     * Returns the list of maps of the members with keys of code, term, hasChildren, and membership (values of Both, Active Refset, Comparison Refset).
+     * Returns the list of maps of the members with keys of code, name, hasChildren, active, memberOfRefset, definitionExceptionType, and membership (values of Both, Active Refset, Comparison Refset).
      *
      * @return the members
      */
-    public List<Map<String, String>> getMembers() {
+    public List<Map<String, String>> getItems() {
         
-        if (members == null) {
-            members = new ArrayList<>();
+        if (items == null) {
+            items = new ArrayList<>();
         }
         
-        return members;
+        return items;
     }
 
     /**
-     * Sets the list of maps of the members with keys of code, term, hasChildren, and membership (values of Both, Active Refset, Comparison Refset).
+     * Sets the list of maps of the members with keys of code, name, hasChildren, active, memberOfRefset, definitionExceptionType, and membership (values of Both, Active Refset, Comparison Refset).
      *
      * @param members the members
      */
-    public void setMembers(final List<Map<String, String>> members) {
-        this.members = members;
+    public void setItems(final List<Map<String, String>> members) {
+        this.items = members;
     }
     
     /**
@@ -332,11 +376,13 @@ public class RefsetMemberComparison extends AbstractHasModified {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((activeRefsetInternalId == null) ? 0 : activeRefsetInternalId.hashCode());
+        result = prime * result + ((comparisonRefsetInternalId == null) ? 0 : comparisonRefsetInternalId.hashCode());
         result = prime * result + ((activeRefsetId == null) ? 0 : activeRefsetId.hashCode());
         result = prime * result + ((comparisonRefsetId == null) ? 0 : comparisonRefsetId.hashCode());
         result = prime * result + ((activeRefsetName == null) ? 0 : activeRefsetName.hashCode());
         result = prime * result + ((comparisonRefsetName == null) ? 0 : comparisonRefsetName.hashCode());
-        result = prime * result + ((members == null) ? 0 : members.hashCode());
+        result = prime * result + ((items == null) ? 0 : items.hashCode());
         result = prime * result + ((activeRefsetDistinctMembers == null) ? 0 : activeRefsetDistinctMembers.hashCode());
         result = prime * result + ((comparisonRefsetDistinctMembers == null) ? 0 : comparisonRefsetDistinctMembers.hashCode());
         result = prime * result + activeRefsetMemberTotal;
@@ -369,6 +415,22 @@ public class RefsetMemberComparison extends AbstractHasModified {
 
         final RefsetMemberComparison other = (RefsetMemberComparison) obj;
 
+        if (activeRefsetInternalId == null) {
+            if (other.activeRefsetInternalId != null) {
+                return false;
+            }
+        } else if (!activeRefsetInternalId.equals(other.activeRefsetInternalId)) {
+            return false;
+        }
+
+        if (comparisonRefsetInternalId == null) {
+            if (other.comparisonRefsetInternalId != null) {
+                return false;
+            }
+        } else if (!comparisonRefsetInternalId.equals(other.comparisonRefsetInternalId)) {
+            return false;
+        }
+        
         if (activeRefsetId == null) {
             if (other.activeRefsetId != null) {
                 return false;
@@ -376,7 +438,7 @@ public class RefsetMemberComparison extends AbstractHasModified {
         } else if (!activeRefsetId.equals(other.activeRefsetId)) {
             return false;
         }
-
+        
         if (comparisonRefsetId == null) {
             if (other.comparisonRefsetId != null) {
                 return false;
@@ -401,11 +463,11 @@ public class RefsetMemberComparison extends AbstractHasModified {
             return false;
         }
 
-        if (members == null) {
-            if (other.members != null) {
+        if (items == null) {
+            if (other.items != null) {
                 return false;
             }
-        } else if (!members.equals(other.members)) {
+        } else if (!items.equals(other.items)) {
             return false;
         }
         

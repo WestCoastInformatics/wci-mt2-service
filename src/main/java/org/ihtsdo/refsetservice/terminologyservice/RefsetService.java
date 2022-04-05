@@ -24,6 +24,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
@@ -33,6 +34,7 @@ import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetEditHistory;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
@@ -1370,188 +1372,189 @@ public class RefsetService {
      * Searches for refset with filters and member concept search.
      *
      * @param user the user
+     * @param service the terminology service
      * @param searchParameters the search parameters
      * @param searchConcepts should refset members be searched
-     * @param showInDevelopment flag on whether to include IN_DEVELOPMENT refsets
+     * @param setPermissions should permissions and roles be set on the refsets
+     * @param setVersions should the version list be set on the refsets
      * @return the list of found refsets
      * @throws Exception the exception
      */
-    public static ResultList<Refset> searchRefsets(final User user, final SearchParameters searchParameters, final boolean searchConcepts, final boolean showInDevelopment) throws Exception {
+    public static ResultList<Refset> searchRefsets(final User user, final TerminologyService service, final SearchParameters searchParameters, 
+        final boolean searchConcepts, final boolean setPermissions, final boolean setVersions) throws Exception 
+    {
 
-        try (TerminologyService service = new TerminologyService()) {
+        final long start = System.currentTimeMillis();
+        ResultList<Refset> results = new ResultList<Refset>();
+        String query = searchParameters.getQuery();
+        final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!(){}[]^\"~*?:\\/") + "]+?";
 
-            final long start = System.currentTimeMillis();
-            ResultList<Refset> results = new ResultList<Refset>();
-            String query = searchParameters.getQuery();
-            final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!(){}[]^\"~*?:\\/") + "]+?";
+        final PfsParameter pfs = new PfsParameter();
 
-            final PfsParameter pfs = new PfsParameter();
+        if (searchParameters.getOffset() != null) {
 
-            if (searchParameters.getOffset() != null) {
+            pfs.setOffset(searchParameters.getOffset());
+        }
 
-                pfs.setOffset(searchParameters.getOffset());
-            }
+        if (searchParameters.getLimit() != null) {
 
-            if (searchParameters.getLimit() != null) {
+            pfs.setLimit(searchParameters.getLimit());
+        }
 
-                pfs.setLimit(searchParameters.getLimit());
-            }
+        if (searchParameters.getSortAscending() != null) {
 
-            if (searchParameters.getSortAscending() != null) {
+            pfs.setAscending(searchParameters.getSortAscending());
+        }
 
-                pfs.setAscending(searchParameters.getSortAscending());
-            }
+        if (searchParameters.getSort() != null) {
 
-            if (searchParameters.getSort() != null) {
+            pfs.setSortFields(Arrays.asList(searchParameters.getSort(), "modified desc", "id"));
+        }
 
-                pfs.setSortFields(Arrays.asList(searchParameters.getSort(), "modified desc", "id"));
-            }
+        if (query != null && !query.equals("")) {
 
-            if (query != null && !query.equals("")) {
+            query = URLDecoder.decode(query, StandardCharsets.UTF_8);
+            searchParameters.setQuery(query);
 
-                query = URLDecoder.decode(query, StandardCharsets.UTF_8);
-                searchParameters.setQuery(query);
+            final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate", "modified", "privateRefset",
+                "editionShortName", "assignedUser", "projectId", "workflowStatus");
+            String[] queryParts = query.split(" AND ");
+            String filterQuery = "";
+            String termQuery = "";
+            String termQueryForRt2 = "";
 
-                final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate", "modified", "privateRefset",
-                    "editionShortName", "assignedUser", "projectId", "workflowStatus");
-                String[] queryParts = query.split(" AND ");
-                String filterQuery = "";
-                String termQuery = "";
-                String termQueryForRt2 = "";
+            for (final String queryPart : queryParts) {
 
-                for (final String queryPart : queryParts) {
+                String[] keyValue = queryPart.split(":");
 
-                    String[] keyValue = queryPart.split(":");
+                if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
 
-                    if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
+                    final String value = (String.join(":", Arrays.copyOfRange(keyValue, 1, keyValue.length))).replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0");
+                    filterQuery += keyValue[0] + ":" + value + " AND ";
 
-                        final String value = (String.join(":", Arrays.copyOfRange(keyValue, 1, keyValue.length))).replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0");
-                        filterQuery += keyValue[0] + ":" + value + " AND ";
+                } else {
 
-                    } else {
-
-                        termQuery += queryPart + "* AND ";
-                        termQueryForRt2 += queryPart.replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0") + "* AND ";
-                    }
-
+                    termQuery += queryPart + "* AND ";
+                    termQueryForRt2 += queryPart.replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0") + "* AND ";
                 }
 
-                // if the term query isn't empty then search members and build the full term query string
-                if (!termQuery.equals("")) {
+            }
 
-                    termQuery = StringUtils.removeEnd(termQuery, " AND ");
-                    termQueryForRt2 = StringUtils.removeEnd(termQueryForRt2, " AND ");
-                    Set<String> refsetIds = new HashSet<>();
+            // if the term query isn't empty then search members and build the full term query string
+            if (!termQuery.equals("")) {
 
-                    // if it was requested search member concepts
-                    if (searchConcepts) {
+                termQuery = StringUtils.removeEnd(termQuery, " AND ");
+                termQueryForRt2 = StringUtils.removeEnd(termQueryForRt2, " AND ");
+                Set<String> refsetIds = new HashSet<>();
 
-                        refsetIds.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
+                // if it was requested search member concepts
+                if (searchConcepts) {
 
-                        // search descriptions of Simple type reference set (foundation metadata concept) "<446609009"
-                        refsetIds.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009"));
-                    }
+                    refsetIds.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
+
+                    // search descriptions of Simple type reference set (foundation metadata concept) "<446609009"
+                    refsetIds.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009"));
+                }
+
+                if (!refsetIds.isEmpty()) {
+
+                    termQueryForRt2 = "((" + termQueryForRt2 + ")";
 
                     if (!refsetIds.isEmpty()) {
 
-                        termQueryForRt2 = "((" + termQueryForRt2 + ")";
-
-                        if (!refsetIds.isEmpty()) {
-
-                            termQueryForRt2 = termQueryForRt2 + " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
-                        }
-
-                        termQueryForRt2 += ")";
-
-                    } else {
-
-                        termQueryForRt2 = "(" + termQueryForRt2 + ")";
+                        termQueryForRt2 = termQueryForRt2 + " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
                     }
 
-                    termQueryForRt2 = "tags: " + termQueryForRt2;
+                    termQueryForRt2 += ")";
+
+                } else {
+
+                    termQueryForRt2 = "(" + termQueryForRt2 + ")";
                 }
 
-                // if the filter query isn't empty then prepare the query with wildcards
-                if (!filterQuery.equals("")) {
-
-                    filterQuery = "(" + StringUtils.removeEnd(filterQuery, " AND ") + ")";
-                    filterQuery = IndexUtility.addWildcardsToQuery(filterQuery, Refset.class);
-
-                    // if the term query isn't empty then append an 'AND' to the filter query
-                    if (!termQuery.equals("")) {
-
-                        filterQuery += " AND ";
-                    }
-
-                }
-
-                query = filterQuery + termQueryForRt2;
+                termQueryForRt2 = "tags: " + termQueryForRt2;
             }
 
-            if (query != null && !query.equals("")) {
+            // if the filter query isn't empty then prepare the query with wildcards
+            if (!filterQuery.equals("")) {
 
-                query += " AND ";
-            } else {
+                filterQuery = "(" + StringUtils.removeEnd(filterQuery, " AND ") + ")";
+                filterQuery = IndexUtility.addWildcardsToQuery(filterQuery, Refset.class);
 
-                query = "";
-            }
+                // if the term query isn't empty then append an 'AND' to the filter query
+                if (!termQuery.equals("")) {
 
-            String projectFilter = "(";
-
-            @SuppressWarnings("unchecked")
-            LinkedHashMap<String, Project> userProjects = getUserProjects(user);
-
-            for (Project project : userProjects.values()) {
-
-                if (!project.isPrivateProject() || project.getRoles().contains(User.ROLE_VIEWER)) {
-
-                    projectFilter += "(projectId:" + project.getId();
-
-                    // if the user isn't allowed to view private refsets for this project restrict them, otherwise show in development or the latest published version
-                    if (!project.getRoles().contains(User.ROLE_VIEWER)) {
-
-                        projectFilter += " AND privateRefset: false AND latestPublishedVersion: true";
-                    } else {
-
-                        projectFilter += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
-                    }
-
-                    projectFilter += ") OR ";
+                    filterQuery += " AND ";
                 }
 
             }
 
-            query += StringUtils.removeEnd(projectFilter, " OR ") + ")";
-
-            if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
-
-                query += " AND privateRefset: false";
-            }
-
-            // if this is the directory then only show the latest published version, if it is the projects then show in development or the latest published version
-            // if (showInDevelopment) {
-            // query += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
-            // } else {
-            // query += " AND latestPublishedVersion: true";
-            // }
-
-            logger.debug("searchRefsets query: " + query);
-            results = service.find(query, pfs, Refset.class, null);
-
-            for (Refset refset : results.getItems()) {
-
-                refset = setRefsetPermissions(user, refset);
-                // refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
-            }
-
-            results.setTimeTaken(System.currentTimeMillis() - start);
-            results.setTotalKnown(true);
-
-            logger.debug("searchRefsets results: " + ModelUtility.toJson(results));
-
-            return results;
+            query = filterQuery + termQueryForRt2;
         }
 
+        if (query != null && !query.equals("")) {
+
+            query += " AND ";
+        } else {
+
+            query = "";
+        }
+
+        String projectFilter = "(";
+
+        @SuppressWarnings("unchecked")
+        LinkedHashMap<String, Project> userProjects = getUserProjects(user);
+
+        for (Project project : userProjects.values()) {
+
+            if (!project.isPrivateProject() || project.getRoles().contains(User.ROLE_VIEWER)) {
+
+                projectFilter += "(projectId:" + project.getId();
+
+                // if the user isn't allowed to view private refsets for this project restrict them, otherwise show in development or the latest published version
+                if (!project.getRoles().contains(User.ROLE_VIEWER)) {
+
+                    projectFilter += " AND privateRefset: false AND latestPublishedVersion: true";
+                } else {
+
+                    projectFilter += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
+                }
+
+                projectFilter += ") OR ";
+            }
+
+        }
+
+        query += StringUtils.removeEnd(projectFilter, " OR ") + ")";
+
+        if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
+
+            query += " AND privateRefset: false";
+        }
+
+        logger.debug("searchRefsets query: " + query);
+        results = service.find(query, pfs, Refset.class, null);
+
+        if (setPermissions || setVersions) {
+            
+            for (Refset refset : results.getItems()) {
+
+                if (setPermissions) {
+                    refset = setRefsetPermissions(user, refset);
+                }
+                
+                if (setVersions) {
+                    refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
+                }
+            } 
+        }
+
+        results.setTimeTaken(System.currentTimeMillis() - start);
+        results.setTotalKnown(true);
+
+        logger.debug("searchRefsets results: " + ModelUtility.toJson(results));
+
+        return results;
     }
 
     /**
@@ -1749,7 +1752,128 @@ public class RefsetService {
         }
 
     }
+    
+    
+    /**
+     * Search Editions.
+     *
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @return the list of projects
+     * @throws Exception the exception
+     */
+    public static ResultList<Edition> searchEditions(final User user, final SearchParameters searchParameters) throws Exception {
 
+        try (TerminologyService service = new TerminologyService()) {
+
+            final long start = System.currentTimeMillis();
+            ResultList<Edition> results = new ResultList<Edition>();
+            String query = searchParameters.getQuery();
+
+            final PfsParameter pfs = new PfsParameter();
+
+            if (searchParameters.getOffset() != null) {
+
+                pfs.setOffset(searchParameters.getOffset());
+            }
+
+            if (searchParameters.getLimit() != null) {
+
+                pfs.setLimit(searchParameters.getLimit());
+            }
+
+            if (searchParameters.getSortAscending() != null) {
+
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
+
+            if (searchParameters.getSort() != null) {
+
+                pfs.setSort(searchParameters.getSort());
+            }
+
+            if (query != null && !query.equals("")) {
+
+                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
+            }
+
+            results = service.find(query, pfs, Edition.class, null);
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
+
+            return results;
+        }
+
+    }
+
+
+    /**
+     * Search Teams.
+     *
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @return the list of projects
+     * @throws Exception the exception
+     */
+    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            final long start = System.currentTimeMillis();
+            ResultList<Team> results = new ResultList<Team>();
+            String query = searchParameters.getQuery();
+
+            final PfsParameter pfs = new PfsParameter();
+
+            if (searchParameters.getOffset() != null) {
+
+                pfs.setOffset(searchParameters.getOffset());
+            }
+
+            if (searchParameters.getLimit() != null) {
+
+                pfs.setLimit(searchParameters.getLimit());
+            }
+
+            if (searchParameters.getSortAscending() != null) {
+
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
+
+            if (searchParameters.getSort() != null) {
+
+                pfs.setSort(searchParameters.getSort());
+            }
+
+            if (query != null && !query.equals("")) {
+
+                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
+            }
+
+            results = service.find(query, pfs, Team.class, null);
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
+
+            final List<Team> teamList = new ArrayList<>(results.getItems());
+
+            for (Team team : teamList) {
+
+                // TODO FIX
+                // team = setTeamPermissions(user, team);
+                // if (!project.getRoles().contains(User.ROLE_VIEWER)) {
+                //
+                // results.getItems().remove(project);
+                // }
+
+            }
+
+            return results;
+        }
+
+    }
+    
+    
+    
     /**
      * Get the branch and version path for a refset from the internal refset ID.
      *
@@ -1854,10 +1978,11 @@ public class RefsetService {
 
         final List<String> roles = project.getRoles();
         setRoles(user, project, roles);
+        project.setRoles(roles);
 
         return project;
     }
-
+    
     /**
      * Set the user permissions for a refset.
      *
@@ -1875,6 +2000,7 @@ public class RefsetService {
         final Project project = refset.getProject();
         final List<String> roles = refset.getRoles();
         setRoles(user, project, roles);
+        project.setRoles(roles);
 
         return refset;
     }
@@ -1914,7 +2040,7 @@ public class RefsetService {
 
             roles.add(User.ROLE_VIEWER);
         }
-
+                
         return roles;
     }
 
@@ -1970,6 +2096,39 @@ public class RefsetService {
         }
 
         return versionList;
+    }
+    
+    /**
+     * Search for refsets for display in dropdown options
+     *
+     * @param user the user
+     * @param service the terminology service
+     * @param searchParameters the search parameters
+     * @param setPermissions should permissions and roles be set on the refsets
+     * @param setVersions should the version list be set on the refsets
+     * @return the upgrade replacement concept result list
+     * @throws Exception the exception
+     */
+    public static ResultList<Refset> refsetDropdownSearch(final User user, final TerminologyService service, 
+        final SearchParameters searchParameters, final boolean setPermissions, final boolean setVersions) throws Exception 
+    {
+        
+        if (searchParameters.getLimit() <= 0) {
+            searchParameters.setLimit(10);
+        }
+        
+        // set the query appropriately based on what was passed in 
+        if (NumberUtils.isNumber(searchParameters.getQuery())) {
+            searchParameters.setQuery("refsetId:" + searchParameters.getQuery());
+        } else {
+            searchParameters.setQuery("name:" + searchParameters.getQuery());
+        }
+
+        final ResultList<Refset> refsets = searchRefsets(user, service, searchParameters, false, setPermissions, setVersions);
+        
+        logger.debug("refsetDropdownSearch: results: " + ModelUtility.toJson(refsets));
+
+        return refsets;
     }
 
     /**

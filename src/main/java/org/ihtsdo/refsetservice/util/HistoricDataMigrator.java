@@ -994,19 +994,14 @@ public class HistoricDataMigrator {
                                 edition.getDefaultLanguageRefsets().add(defaultLanguageReferencesSetIterator.next().asText());
                             }
 
-                        } else {
+                        } else if (undefinedDefaultLanguageRefsets.containsKey(edition.getName())) {
 
-                            if (undefinedDefaultLanguageRefsets.containsKey(edition.getName())) {
-
-                                edition.getDefaultLanguageRefsets().addAll(undefinedDefaultLanguageRefsets.get(edition.getName()));
-                                logger.debug("No defined Default Language Refsets for " + edition.getName() + ", so adding from txt file: " + undefinedDefaultLanguageRefsets.get(edition.getName()));
-                            } else {
-
-                                edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET);
-                                logger.debug("No defined Default Language Refsets for " + edition.getName() + " nor in text file, so adding default value: " + DEFAULT_LANGUAGE_REFSET);
-                            }
-
+                            edition.getDefaultLanguageRefsets().addAll(undefinedDefaultLanguageRefsets.get(edition.getName()));
+                            logger.debug("No defined Default Language Refsets for " + edition.getName() + ", so adding from txt file: " + undefinedDefaultLanguageRefsets.get(edition.getName()));
                         }
+
+                        // Ensure that DEFAULT_LANG_REFSET is always listed even if not explicitely listed
+                        edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET);
 
                         // Identify Edition's defaultLanguageCode - Per Kai, transform first language in set as defaultLangCode
                         if (!codeSystem.has("languages")) {

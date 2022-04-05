@@ -1026,14 +1026,12 @@ public class RefsetController extends BaseController {
         checkBinding(bindingResult);
         
         User user = SecurityService.getUserFromSession();
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
-        HttpSession session = requestAttributes.getRequest().getSession();
 
         try (TerminologyService service = new TerminologyService()) {
 
             logger.debug("searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + showInDevelopment);
             
-            ResultList<Refset> results = RefsetService.searchRefsets(user, searchParameters, searchConcepts, showInDevelopment);
+            ResultList<Refset> results = RefsetService.searchRefsets(user, service, searchParameters, searchConcepts, true, false);
            
             return results;
 
@@ -1694,6 +1692,7 @@ public class RefsetController extends BaseController {
                 for (Edition edition : editionList) {
                     TypeKeyValue tkv =
                             new TypeKeyValue("edition", edition.getName(), edition.getName());
+                    tkv.setId(edition.getId());
                     entryList.add(tkv);
                 }
                 entryResults.setItems(entryList);
@@ -1828,6 +1827,7 @@ public class RefsetController extends BaseController {
                 for (Organization organization : organizationList) {
                     TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(),
                             organization.getName());
+                    tkv.setId(organization.getId());
                     entryList.add(tkv);
                 }
                 entryResults.setItems(entryList);
@@ -2050,15 +2050,67 @@ public class RefsetController extends BaseController {
         
         User user = SecurityService.getUserFromSession();
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
+            final Refset refset = RefsetMemberService.getRefset(user, service, refsetInternalId);
             ResultList<UpgradeReplacementConcecpt> results = new ResultList<>();
             String query = searchParameters.getQuery();
 
-            logger.debug("replacementConceptSearch: searchConcepts: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
+            logger.debug("replacementConceptSearch: refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
 
             if (query != null && !query.equals("")) {
-                results = RefsetMemberService.replacementConceptSearch(user, refsetInternalId, searchParameters);
+                results = RefsetMemberService.replacementConceptSearch(user, service, refset, searchParameters);
+            }
+
+            return results;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Search for refsets for dropdown menus.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the string
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Search the taxonomy for refset members", response = ResultList.class, notes = API_NOTES)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            // TODO: activeOnly, sort, sortAscending
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = {"/refset/dropdownSearch"}, produces = "application/json")
+    public @ResponseBody ResultList<Refset> searchRefsetsForDropdowns(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+        
+        User user = SecurityService.getUserFromSession();
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            ResultList<Refset> results = new ResultList<>();
+            String query = searchParameters.getQuery();
+
+            logger.debug("refsetDropdownSearch: searchParameters: " + ModelUtility.toJson(searchParameters));
+
+            if (query != null && !query.equals("")) {
+                results = RefsetService.refsetDropdownSearch(user, service, searchParameters, true, true);
             }
 
             return results;
@@ -2087,13 +2139,14 @@ public class RefsetController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
        
             String status = "";
+            RefsetMemberService.refsetsBeingUpdated.add(activeRefsetInternalId);
             
-            logger.debug("compileUpgradeData: activeRefsetInternalId: " + activeRefsetInternalId + "; comparisonRefsetInternalId: " + comparisonRefsetInternalId);
+            logger.debug("compileComparisonData: activeRefsetInternalId: " + activeRefsetInternalId + "; comparisonRefsetInternalId: " + comparisonRefsetInternalId);
             
             // add the list of concepts as members to the refset
             status = RefsetMemberService.compileComparisonData(service, user, activeRefsetInternalId, comparisonRefsetInternalId);
             
-            logger.debug("compileUpgradeData: Finished with status " + status);
+            logger.debug("compileComparisonData: Finished with status " + status);
             
             return "{\"status\": \"" + status + "\"}";
     
@@ -2126,6 +2179,11 @@ public class RefsetController extends BaseController {
             
             // add the list of concepts as members to the refset
             final RefsetMemberComparison results = ModelUtility.fromJson((String)request.getSession().getAttribute("refsetMemberComparison_" + activeRefsetInternalId), RefsetMemberComparison.class);
+            request.getSession().removeAttribute("refsetMemberComparison_" + activeRefsetInternalId);
+            
+            if (results == null) {
+                throw new Exception("There were no comparison results to retrieve for this refset.");
+            }
             
             logger.debug("getComparisonData: results " + results);
             
