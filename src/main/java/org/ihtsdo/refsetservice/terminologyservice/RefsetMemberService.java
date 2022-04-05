@@ -3972,7 +3972,7 @@ public class RefsetMemberService {
             clearAllMemberCaches(branchPath);
 
             // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
-            final String memberSearchUrlBase = SnowstormConnection.BASE_URL + "browser/" + branchPath + "/members?referenceSet=" + refset.getRefsetId() + "&offset=0&active=true" 
+            final String memberSearchUrlBase = SnowstormConnection.BASE_URL + branchPath + "/members?referenceSet=" + refset.getRefsetId() + "&offset=0&active=true" 
             + "&limit=" + URL_MAX_CHAR_LENGTH + "&referencedComponentId=";
             final ArrayNode memberDeleteArray = mapper.createArrayNode();
             final ArrayNode memberUpdateArray = mapper.createArrayNode();
@@ -4030,6 +4030,7 @@ public class RefsetMemberService {
                     final JsonNode conceptNode = iterator.next();
                     final boolean released = conceptNode.get("released").asBoolean();
                     final String membershipId = conceptNode.get("memberId").asText();
+                    String name = "";
                     members.add(conceptNode.get("referencedComponentId").asText());
                     
                     // if the member has not been released then remove the membership
@@ -4057,9 +4058,17 @@ public class RefsetMemberService {
                     
                     logger.debug("removeRefsetMembers conceptNode: " + ModelUtility.toJson(conceptNode)); 
                     
+                    final JsonNode referencedComponent = conceptNode.get("referencedComponent");
+                    
+                    if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
+                        name = referencedComponent.get("pt").get("term").asText();
+                    }
+                    
                     final Map<String, String> status = new HashMap<>();
                     status.put("operation", "Removed");
                     status.put("status", "Success");
+                    status.put("name", name);
+                    status.put("active", referencedComponent.get("active").asText());
                     conceptsStatus.put(conceptNode.get("referencedComponentId").asText(), status);
                 }
             }
@@ -4548,7 +4557,7 @@ public class RefsetMemberService {
                                             upgradeReplacementConcept.setReason(reasonMap.get(replacementConcept.getCode()));
                                             
                                             if (conceptNode.get("descriptions") != null) {
-                                                upgradeReplacementConcept.setDescriptions(ModelUtility.toJson(conceptNode.get("descriptions")));
+                                                upgradeReplacementConcept.setDescriptions(ModelUtility.toJson(replacementConcept.getDescriptions()));
                                             }
                                             
                                             threadService.add(upgradeReplacementConcept);
@@ -4856,8 +4865,10 @@ public class RefsetMemberService {
         final Refset activeRefset = service.get(activeRefsetInternalId, Refset.class);
         final Refset comparisonRefset = service.get(comparisonRefsetInternalId, Refset.class);
         final RefsetMemberComparison refsetMemberComparison = new RefsetMemberComparison();
-        refsetMemberComparison.setActiveRefsetId(activeRefset.getId());
-        refsetMemberComparison.setComparisonRefsetId(comparisonRefset.getId());
+        refsetMemberComparison.setActiveRefsetInternalId(activeRefset.getId());
+        refsetMemberComparison.setComparisonRefsetInternalId(comparisonRefset.getId());
+        refsetMemberComparison.setActiveRefsetId(activeRefset.getRefsetId());
+        refsetMemberComparison.setComparisonRefsetId(comparisonRefset.getRefsetId());
         refsetMemberComparison.setActiveRefsetName(activeRefset.getName());
         refsetMemberComparison.setComparisonRefsetName(comparisonRefset.getName());
         final boolean editing = activeRefset.getWorkflowStatus().equals(WorkflowService.IN_EDIT);
