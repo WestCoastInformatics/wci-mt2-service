@@ -30,6 +30,7 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DefinitionClauseEditHistory;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -75,7 +76,7 @@ public class RefsetService {
 
     /** The module Id of the SIMPLE_TYPE_REFERENCE_SET */
     private static final String SIMPLE_TYPE_REFERENCE_SET_MODULE_ID = "900000000000012004";
-    
+
     /** A cache of the sorted branch versions. */
     private final static Map<String, List<String>> branchVersionCache = new HashMap<>();
 
@@ -1178,7 +1179,7 @@ public class RefsetService {
         }
 
     }
-    
+
     /**
      * Returns a specific refset by internal ID.
      *
@@ -1193,7 +1194,7 @@ public class RefsetService {
 
             logger.debug("setRefsetMemberCount Setting the member count for refset: " + refset.getId());
             refset.setMemberCount(RefsetMemberService.getMemberCount(refset));
-            
+
             // save the refset
             service.update(refset);
             return true;
@@ -1201,7 +1202,7 @@ public class RefsetService {
 
         return false;
     }
-    
+
     /**
      * Returns a specific refset by internal ID.
      *
@@ -1213,14 +1214,14 @@ public class RefsetService {
     public static Refset getRefset(final User user, final String refsetInternalId) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
-            
+
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
-            
+
             return getRefset(service, user, refsetInternalId);
         }
     }
-    
+
     /**
      * Returns a specific refset by internal ID.
      *
@@ -1231,22 +1232,22 @@ public class RefsetService {
      * @throws Exception the exception
      */
     public static Refset getRefset(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
-        
+
         service.setModifiedBy(user.getUserName());
         service.setModifiedFlag(true);
-        
+
         Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
-        
+
         if (refset == null) {
-            
+
             throw new Exception("Unable to retrieve refset " + refsetInternalId);
         }
-        
+
         setCommonRefsetProperties(service, user, refset);
-        
+
         logger.debug("getRefset: refset: " + ModelUtility.toJson(refset));
         return refset;
-        
+
     }
 
     /**
@@ -1261,7 +1262,7 @@ public class RefsetService {
     public static Refset getRefset(final User user, final String refsetId, final String versionDate) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
-            
+
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
@@ -1290,7 +1291,7 @@ public class RefsetService {
         }
 
     }
-    
+
     /**
      * Returns a specific refset by internal ID.
      *
@@ -1300,11 +1301,11 @@ public class RefsetService {
      * @throws Exception the exception
      */
     public static void setCommonRefsetProperties(final TerminologyService service, final User user, final Refset refset) throws Exception {
-        
+
         setRefsetPermissions(user, refset);
         refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
         refset.setBranchPath(getBranchPath(refset));
-        setRefsetMemberCount(service, refset); 
+        setRefsetMemberCount(service, refset);
     }
 
     /**
@@ -1380,9 +1381,8 @@ public class RefsetService {
      * @return the list of found refsets
      * @throws Exception the exception
      */
-    public static ResultList<Refset> searchRefsets(final User user, final TerminologyService service, final SearchParameters searchParameters, 
-        final boolean searchConcepts, final boolean setPermissions, final boolean setVersions) throws Exception 
-    {
+    public static ResultList<Refset> searchRefsets(final User user, final TerminologyService service, final SearchParameters searchParameters, final boolean searchConcepts,
+        final boolean setPermissions, final boolean setVersions) throws Exception {
 
         final long start = System.currentTimeMillis();
         ResultList<Refset> results = new ResultList<Refset>();
@@ -1536,17 +1536,17 @@ public class RefsetService {
         results = service.find(query, pfs, Refset.class, null);
 
         if (setPermissions || setVersions) {
-            
+
             for (Refset refset : results.getItems()) {
 
                 if (setPermissions) {
                     refset = setRefsetPermissions(user, refset);
                 }
-                
+
                 if (setVersions) {
                     refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
                 }
-            } 
+            }
         }
 
         results.setTimeTaken(System.currentTimeMillis() - start);
@@ -1611,7 +1611,7 @@ public class RefsetService {
 
                 oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestPublishedVersion: true", Refset.class, null);
             }
-            
+
             // get the member count for the new version
             newRefsetVersion.setMemberCount(RefsetMemberService.getMemberCount(newRefsetVersion));
 
@@ -1621,12 +1621,12 @@ public class RefsetService {
 
             // Add a workflow history entry for READY_FOR_EDIT
             WorkflowService.addWorkflowHistory(user, WorkflowService.CREATE, newRefsetVersion, "");
-            
+
             // update the workflow to IN_EDIT if required
             if (inEdit) {
-                
+
                 newRefsetVersion = WorkflowService.setWorkflowStatus(user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT, user.getUserName());
-                
+
                 // create an edit history entry based on the new refset version.
                 createRefsetEditHistory(user, newInternalRefsetId);
             }
@@ -1702,7 +1702,14 @@ public class RefsetService {
 
             final long start = System.currentTimeMillis();
             ResultList<Project> results = new ResultList<Project>();
-            String query = searchParameters.getQuery();
+            
+            String query = "";
+            if (searchParameters == null || StringUtils.isBlank(searchParameters.getQuery())) {
+                query = "active:true";
+            }
+            else {
+                query = "(" + searchParameters.getQuery() + ") AND active:true";
+            }  
 
             final PfsParameter pfs = new PfsParameter();
 
@@ -1752,8 +1759,7 @@ public class RefsetService {
         }
 
     }
-    
-    
+
     /**
      * Search Editions.
      *
@@ -1806,7 +1812,6 @@ public class RefsetService {
 
     }
 
-
     /**
      * Search Teams.
      *
@@ -1821,7 +1826,14 @@ public class RefsetService {
 
             final long start = System.currentTimeMillis();
             ResultList<Team> results = new ResultList<Team>();
-            String query = searchParameters.getQuery();
+            
+            String query = "";
+            if (searchParameters == null || StringUtils.isBlank(searchParameters.getQuery())) {
+                query = "active:true";
+            }
+            else {
+                query = "(" + searchParameters.getQuery() + ") AND active:true";
+            }               
 
             final PfsParameter pfs = new PfsParameter();
 
@@ -1854,26 +1866,70 @@ public class RefsetService {
             results.setTimeTaken(System.currentTimeMillis() - start);
             results.setTotalKnown(true);
 
-            final List<Team> teamList = new ArrayList<>(results.getItems());
+            return results;
+        }
 
-            for (Team team : teamList) {
+    }
 
-                // TODO FIX
-                // team = setTeamPermissions(user, team);
-                // if (!project.getRoles().contains(User.ROLE_VIEWER)) {
-                //
-                // results.getItems().remove(project);
-                // }
+    /**
+     * Search Organizations.
+     *
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @return the list of projects
+     * @throws Exception the exception
+     */
+    public static ResultList<Organization> searchOrganizations(final User user, final SearchParameters searchParameters) throws Exception {
 
+        try (TerminologyService service = new TerminologyService()) {
+
+            final long start = System.currentTimeMillis();
+            ResultList<Organization> results = new ResultList<Organization>();
+            
+            String query = "";
+            if (searchParameters == null || StringUtils.isBlank(searchParameters.getQuery())) {
+                query = "active:true";
             }
+            else {
+                query = "(" + searchParameters.getQuery() + ") AND active:true";
+            }  
+
+            final PfsParameter pfs = new PfsParameter();
+
+            if (searchParameters.getOffset() != null) {
+
+                pfs.setOffset(searchParameters.getOffset());
+            }
+
+            if (searchParameters.getLimit() != null) {
+
+                pfs.setLimit(searchParameters.getLimit());
+            }
+
+            if (searchParameters.getSortAscending() != null) {
+
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
+
+            if (searchParameters.getSort() != null) {
+
+                pfs.setSort(searchParameters.getSort());
+            }
+
+            if (query != null && !query.equals("")) {
+
+                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
+            }
+
+            results = service.find(query, pfs, Organization.class, null);
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
 
             return results;
         }
 
     }
-    
-    
-    
+
     /**
      * Get the branch and version path for a refset from the internal refset ID.
      *
@@ -1982,7 +2038,7 @@ public class RefsetService {
 
         return project;
     }
-    
+
     /**
      * Set the user permissions for a refset.
      *
@@ -2040,7 +2096,7 @@ public class RefsetService {
 
             roles.add(User.ROLE_VIEWER);
         }
-                
+
         return roles;
     }
 
@@ -2097,7 +2153,7 @@ public class RefsetService {
 
         return versionList;
     }
-    
+
     /**
      * Search for refsets for display in dropdown options
      *
@@ -2109,15 +2165,14 @@ public class RefsetService {
      * @return the upgrade replacement concept result list
      * @throws Exception the exception
      */
-    public static ResultList<Refset> refsetDropdownSearch(final User user, final TerminologyService service, 
-        final SearchParameters searchParameters, final boolean setPermissions, final boolean setVersions) throws Exception 
-    {
-        
+    public static ResultList<Refset> refsetDropdownSearch(final User user, final TerminologyService service, final SearchParameters searchParameters, final boolean setPermissions,
+        final boolean setVersions) throws Exception {
+
         if (searchParameters.getLimit() <= 0) {
             searchParameters.setLimit(10);
         }
-        
-        // set the query appropriately based on what was passed in 
+
+        // set the query appropriately based on what was passed in
         if (NumberUtils.isNumber(searchParameters.getQuery())) {
             searchParameters.setQuery("refsetId:" + searchParameters.getQuery());
         } else {
@@ -2125,7 +2180,7 @@ public class RefsetService {
         }
 
         final ResultList<Refset> refsets = searchRefsets(user, service, searchParameters, false, setPermissions, setVersions);
-        
+
         logger.debug("refsetDropdownSearch: results: " + ModelUtility.toJson(refsets));
 
         return refsets;
@@ -2217,7 +2272,7 @@ public class RefsetService {
         return (editions != null) ? editions.getItems() : new ArrayList<Edition>();
 
     }
-    
+
     /**
      * Get a branch version cache collection for a branch path.
      *
@@ -2226,14 +2281,14 @@ public class RefsetService {
      * @throws Exception the exception
      */
     public static List<String> getCacheForBranchVersions(final String branchPath) throws Exception {
-        
+
         if (branchVersionCache.containsKey(branchPath)) {
             return branchVersionCache.get(branchPath);
         } else {
             return new ArrayList<>();
         }
     }
-    
+
     /**
      * Clear all caches related to refsets.
      *
@@ -2243,20 +2298,20 @@ public class RefsetService {
     public static void clearAllRefsetCaches(final String branchPath) throws Exception {
 
         if (branchPath != null) {
-            
+
             logger.debug("clearAllRefsetCaches: Clearing caches for branch path: " + branchPath);
-            
+
             branchVersionCache.remove(branchPath);
 
         } else {
-            
+
             logger.debug("clearAllRefsetCaches: Clearing caches for all branches");
-            
+
             branchVersionCache.clear();
         }
-        
+
     }
-    
+
     /**
      * Get a sorted list of versions for a branch.
      *
@@ -2268,16 +2323,16 @@ public class RefsetService {
 
         final String url = SnowstormConnection.BASE_URL + "branches/" + editionPath + "/children?immediateChildren=true";
         final List<String> branchCache = getCacheForBranchVersions(editionPath);
-        
+
         // check if the concept call has been cached
         if (branchCache.size() > 0) {
-            
+
             logger.debug("getBranchVersions USING CACHE");
             return branchCache;
         }
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
-            
+
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                 throw new Exception("Unable to get edition versions. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
@@ -2308,17 +2363,17 @@ public class RefsetService {
                         branchCache.add(childDate);
                     }
                 }
-                
+
                 // stop when branch does not start with a date
-                else if (!childDate.matches("^\\d{4}-\\d{2}-\\d{2}.*")){
+                else if (!childDate.matches("^\\d{4}-\\d{2}-\\d{2}.*")) {
                     break;
                 }
             }
-            
+
             // sort the results in reverse order since that is the usual way they are consumed
             Collections.sort(branchCache, (o1, o2) -> (o2.compareTo(o1)));
         }
-            
+
         branchVersionCache.put(editionPath, branchCache);
         return branchCache;
     }
