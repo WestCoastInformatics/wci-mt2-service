@@ -14,8 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1702,14 +1700,7 @@ public class RefsetService {
 
             final long start = System.currentTimeMillis();
             ResultList<Project> results = new ResultList<Project>();
-            
-            String query = "";
-            if (searchParameters == null || StringUtils.isBlank(searchParameters.getQuery())) {
-                query = "active:true";
-            }
-            else {
-                query = "(" + searchParameters.getQuery() + ") AND active:true";
-            }  
+            String query = getQueryForActiveOnly(searchParameters);
 
             final PfsParameter pfs = new PfsParameter();
 
@@ -1826,14 +1817,7 @@ public class RefsetService {
 
             final long start = System.currentTimeMillis();
             ResultList<Team> results = new ResultList<Team>();
-            
-            String query = "";
-            if (searchParameters == null || StringUtils.isBlank(searchParameters.getQuery())) {
-                query = "active:true";
-            }
-            else {
-                query = "(" + searchParameters.getQuery() + ") AND active:true";
-            }               
+            String query = getQueryForActiveOnly(searchParameters);
 
             final PfsParameter pfs = new PfsParameter();
 
@@ -1885,14 +1869,7 @@ public class RefsetService {
 
             final long start = System.currentTimeMillis();
             ResultList<Organization> results = new ResultList<Organization>();
-            
-            String query = "";
-            if (searchParameters == null || StringUtils.isBlank(searchParameters.getQuery())) {
-                query = "active:true";
-            }
-            else {
-                query = "(" + searchParameters.getQuery() + ") AND active:true";
-            }  
+            String query = getQueryForActiveOnly(searchParameters);
 
             final PfsParameter pfs = new PfsParameter();
 
@@ -2376,5 +2353,21 @@ public class RefsetService {
 
         branchVersionCache.put(editionPath, branchCache);
         return branchCache;
+    }
+
+    private static String getQueryForActiveOnly(final SearchParameters searchParameters) {
+
+        final Boolean activeOnly = (searchParameters == null || searchParameters.getActiveOnly() == null) ? true : searchParameters.getActiveOnly();
+
+        // default to active only if search parameters or active only not supplied
+        if (searchParameters == null) {
+            return "active:true";
+        } else {
+            if (StringUtils.isBlank(searchParameters.getQuery())) {
+                return "active:" + activeOnly;
+            } else {
+                return "(" + searchParameters.getQuery() + ") AND active:" + activeOnly;
+            }
+        }
     }
 }
