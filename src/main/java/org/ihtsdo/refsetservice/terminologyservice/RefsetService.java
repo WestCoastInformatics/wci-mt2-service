@@ -1,3 +1,12 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.net.URLDecoder;
@@ -72,7 +81,7 @@ public class RefsetService {
     /** The refset to language map. */
     private static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
 
-    /** The module Id of the SIMPLE_TYPE_REFERENCE_SET */
+    /**  The module Id of the SIMPLE_TYPE_REFERENCE_SET. */
     private static final String SIMPLE_TYPE_REFERENCE_SET_MODULE_ID = "900000000000012004";
 
     /** A cache of the sorted branch versions. */
@@ -698,7 +707,9 @@ public class RefsetService {
      * Modify a refset definition.
      *
      * @param user the user
-     * @param refsetInternalId the internal refset ID to modify
+     * @param service the service
+     * @param refset the refset
+     * @param modifiedDefinitionClauses the modified definition clauses
      * @return the status of the operation
      * @throws Exception the exception
      */
@@ -1309,6 +1320,7 @@ public class RefsetService {
     /**
      * Gets a list of projects ordered by name.
      *
+     * @param user the user
      * @return the list of found refsets
      * @throws Exception the exception
      */
@@ -1908,6 +1920,58 @@ public class RefsetService {
     }
 
     /**
+     * Search Users.
+     *
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @return the list of projects
+     * @throws Exception the exception
+     */
+    public static ResultList<User> searchUsers(final User user, final SearchParameters searchParameters) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            final long start = System.currentTimeMillis();
+            ResultList<User> results = new ResultList<User>();
+            String query = getQueryForActiveOnly(searchParameters);
+
+            final PfsParameter pfs = new PfsParameter();
+
+            if (searchParameters.getOffset() != null) {
+
+                pfs.setOffset(searchParameters.getOffset());
+            }
+
+            if (searchParameters.getLimit() != null) {
+
+                pfs.setLimit(searchParameters.getLimit());
+            }
+
+            if (searchParameters.getSortAscending() != null) {
+
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
+
+            if (searchParameters.getSort() != null) {
+
+                pfs.setSort(searchParameters.getSort());
+            }
+
+            if (query != null && !query.equals("")) {
+
+                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
+            }
+
+            results = service.find(query, pfs, User.class, null);
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
+
+            return results;
+        }
+
+    }
+
+    /**
      * Get the branch and version path for a refset from the internal refset ID.
      *
      * @param refsetInternalId the internal ID of the refset
@@ -2080,7 +2144,7 @@ public class RefsetService {
     /**
      * Generate a list of version dates sorted in descending order.
      *
-     * @param refsetId the refset Id
+     * @param refset the refset
      * @param service the Terminology Service
      * @param sortAscending should the versions be sorted in ascending order
      * @return the list of version dates sorted in descending order
@@ -2132,7 +2196,7 @@ public class RefsetService {
     }
 
     /**
-     * Search for refsets for display in dropdown options
+     * Search for refsets for display in dropdown options.
      *
      * @param user the user
      * @param service the terminology service
@@ -2227,11 +2291,11 @@ public class RefsetService {
     }
 
     /**
-     * Fetch editions for given branch
-     * 
+     * Fetch editions for given branch.
+     *
      * @param branch the branch
      * @return List <Edition> list of editions matching branch
-     * @throws Exception
+     * @throws Exception the exception
      */
     private static List<Edition> getEditionForBranch(final String branch) throws Exception {
 
@@ -2355,6 +2419,12 @@ public class RefsetService {
         return branchCache;
     }
 
+    /**
+     * Returns the query for active only.
+     *
+     * @param searchParameters the search parameters
+     * @return the query for active only
+     */
     private static String getQueryForActiveOnly(final SearchParameters searchParameters) {
 
         final Boolean activeOnly = (searchParameters == null || searchParameters.getActiveOnly() == null) ? true : searchParameters.getActiveOnly();

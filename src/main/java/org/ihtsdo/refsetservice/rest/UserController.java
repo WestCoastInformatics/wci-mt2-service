@@ -10,19 +10,24 @@
 package org.ihtsdo.refsetservice.rest;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
-import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,8 +35,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -63,17 +71,28 @@ public class UserController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/user/{id}")
-    public @ResponseBody ResponseEntity<User> getUser(@PathVariable(value = "id") final String id) throws Exception {
+    public @ResponseBody ResponseEntity<User> getUser(@PathVariable(value = "id") final String id, @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
         try {
             logger.info("Get user: {}", id);
             // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+            final User authUser = SecurityService.getUserFromSession();
 
             try (final TerminologyService service = new TerminologyService()) {
 
-                final User loginUser = service.get(id, User.class);
+                final User user = service.get(id, User.class);
+
+                if (user == null) {
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find user for " + id + ".");
+                }
+                if (includeMembers) {
+                    user.getOrganizations();
+                } else {
+                    if (user.getOrganizations() != null && !user.getOrganizations().isEmpty()) {
+                        user.getOrganizations().clear();
+                    }
+                }
+
                 return new ResponseEntity<>(user, HttpStatus.OK);
             }
         } catch (final Exception e) {
@@ -100,38 +119,87 @@ public class UserController extends BaseController {
     @PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id, @RequestBody final User user) throws Exception {
 
-        try {
-            logger.info("Update user: {}", user);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User authUser = SecurityService.getUserFromSession();
+        logger.info("Update user: {}", user);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                // Find the user
-                final User original = service.get(user.getId(), User.class);
+            // Find the user
+            final User original = service.get(user.getId(), User.class);
 
-                if (original == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find user for " + user.getId() + ".");
-                }
-
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
-
-                // Apply changes
-                original.patchFrom(user);
-
-                // Update
-                service.update(original);
-                service.commit();
-
-                return new ResponseEntity<>(original, HttpStatus.OK);
+            if (original == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find user for " + user.getId() + ".");
             }
+
+            service.setModifiedBy(authUser.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            // Apply changes
+            original.patchFrom(user);
+
+            // Update
+            service.update(original);
+            service.commit();
+
+            return new ResponseEntity<>(original, HttpStatus.OK);
+
         } catch (final Exception e) {
-            logger.error("Error updating user.  Id: {}", id);
+            logger.error("Error updating user.  Id: {}", id, e);
             handleException(e);
             return null;
         }
     }
+
+    /**
+     * Search users.
+     *
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the string
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Get users search results", response = ResultList.class, notes = API_NOTES)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+        // TODO: activeOnly, sort, sortAscending
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity<ResultList<User>> getUsers(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+
+        logger.info("Search users: {}", ModelUtility.toJson(searchParameters));
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+
+        try {
+
+            final ResultList<User> results = RefsetService.searchUsers(authUser, searchParameters);
+
+            for (User user : results.getItems()) {
+                user.getOrganizations().clear();
+            }
+
+            return new ResponseEntity<>(results, HttpStatus.OK);
+
+        } catch (final ResponseStatusException rse) {
+            throw rse;
+
+        } catch (final Exception e) {
+            logger.error("Error searching organizations.  Search criteria: {} ", searchParameters.toString());
+            handleException(e);
+            return null;
+        }
+    }
+
 }

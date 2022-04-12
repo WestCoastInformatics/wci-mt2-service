@@ -10,9 +10,16 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
@@ -21,9 +28,11 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -62,6 +71,17 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     /** email for primary contact. */
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {
+        CascadeType.ALL
+    })
+    @JoinTable(name = "organization_members", joinColumns = {
+        @JoinColumn(name = "organization_id")
+    }, inverseJoinColumns = {
+        @JoinColumn(name = "user_id")
+    })
+    @Fetch(FetchMode.JOIN)
+    private Set<User> members;
 
     /**
      * Instantiates an empty {@link Organization}.
@@ -202,20 +222,45 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         this.primaryContactEmail = primaryContactEmail;
     }
+    
+    /**
+     * Returns the members.
+     *
+     * @return Members (users) of the organization
+     */
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    @JsonIgnoreProperties("organizations")
+    public Set<User> getMembers() {
+
+        if (members == null) {
+            members = new HashSet<>();
+        }
+        
+        return members;
+    }
+
+    /**
+     * @param members the members
+     */
+    public void setMembers(final Set<User> members) {
+
+        this.members = members;
+    }
 
     /* see superclass */
     @Override
     public int hashCode() {
 
         final int prime = 31;
-        int result = 1;
+        int result = super.hashCode();
         result = prime * result + ((description == null) ? 0 : description.hashCode());
         result = prime * result + ((edition == null) ? 0 : edition.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         return result;
     }
-
+    
+    
     /* see superclass */
     @Override
     public boolean equals(Object obj) {
@@ -229,7 +274,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final Organization other = (Organization) obj;
+        Organization other = (Organization) obj;
         if (description == null) {
             if (other.description != null) {
                 return false;
@@ -264,6 +309,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     /* see superclass */
     @Override
     public String toString() {
+
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {

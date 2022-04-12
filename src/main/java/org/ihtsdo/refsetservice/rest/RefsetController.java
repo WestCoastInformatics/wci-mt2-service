@@ -1807,6 +1807,7 @@ public class RefsetController extends BaseController {
                 ResultList<Organization> results = new ResultList<Organization>();
                 final PfsParameter pfs = new PfsParameter();
                 final QueryParameter query = new QueryParameter();
+                query.setQuery("active:true");
 
                 results = service.find(query, pfs, Organization.class, null);
 

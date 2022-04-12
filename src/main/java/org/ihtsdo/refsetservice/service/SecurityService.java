@@ -1,33 +1,34 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.service;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
 import org.ihtsdo.refsetservice.model.User;
-//import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -90,7 +91,7 @@ public class SecurityService implements AutoCloseable {
         // TODO - Find a better solution for unit tests
         if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
 
-            final User testUser = new User("unitTestUser", "Unit Test User", "", new HashSet<String>());
+            final User testUser = new User("unitTestUser", "Unit Test User", "", "", "", new HashSet<String>());
             testUser.getRoles().add("all-all-author");
             testUser.getRoles().add("all-all-reviewer");
             testUser.getRoles().add("all-all-admin");
@@ -98,7 +99,7 @@ public class SecurityService implements AutoCloseable {
             return testUser;
         }
 
-        final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", new HashSet<String>());
+        final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", "", "", new HashSet<String>());
         logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
 
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -111,9 +112,9 @@ public class SecurityService implements AutoCloseable {
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
 
         Cookie[] cookies = requestAttributes.getRequest().getCookies();
-        
-        if (cookies != null) { 
-            
+
+        if (cookies != null) {
+
             HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
             logger.debug("getUserFromSession cookies: " + ModelUtility.toJson(cookies));
             logger.debug("getUserFromSession Builder Host: " + builder.build().toString());
@@ -165,7 +166,7 @@ public class SecurityService implements AutoCloseable {
         Object object = session.getAttribute(attributeName);
         return object;
     }
-    
+
     /**
      * Get the something from the session.
      *
@@ -220,11 +221,12 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param userName
-     * @param password
-     * @return
-     * @throws Exception
+     * Authenticate.
+     *
+     * @param userName the user name
+     * @param password the password
+     * @return the user
+     * @throws Exception the exception
      */
     public User authenticate(final String userName, final String password) throws Exception {
 
@@ -318,6 +320,12 @@ public class SecurityService implements AutoCloseable {
     }
 
     /* see superclass */
+    /**
+     * Logout.
+     *
+     * @param authToken the auth token
+     * @throws Exception the exception
+     */
     // @Override
     public void logout(final String authToken) throws Exception {
 
@@ -327,10 +335,11 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param id
-     * @return
-     * @throws Exception
+     * Returns the user.
+     *
+     * @param id the id
+     * @return the user
+     * @throws Exception the exception
      */
     public User getUser(final String id) throws Exception {
 
@@ -345,10 +354,11 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param userName
-     * @return
-     * @throws Exception
+     * Returns the user from user name.
+     *
+     * @param userName the user name
+     * @return the user from user name
+     * @throws Exception the exception
      */
     public User getUserFromUserName(final String userName) throws Exception {
 
@@ -363,10 +373,11 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param user
-     * @return
-     * @throws Exception
+     * Adds the user.
+     *
+     * @param user the user
+     * @return the user
+     * @throws Exception the exception
      */
     public User addUser(User user) throws Exception {
 
@@ -382,9 +393,10 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param user
-     * @throws Exception
+     * Removes the user.
+     *
+     * @param user the user
+     * @throws Exception the exception
      */
     public void removeUser(User user) throws Exception {
 
@@ -399,9 +411,10 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param user
-     * @throws Exception
+     * Update user.
+     *
+     * @param user the user
+     * @throws Exception the exception
      */
     public void updateUser(User user) throws Exception {
 
@@ -415,6 +428,7 @@ public class SecurityService implements AutoCloseable {
 
     }
 
+    /* see superclass */
     @Override
     public void close() throws Exception {
         // TODO Auto-generated method stub

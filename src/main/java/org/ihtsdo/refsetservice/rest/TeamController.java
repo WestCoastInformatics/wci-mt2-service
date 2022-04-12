@@ -16,8 +16,6 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
-import org.ihtsdo.refsetservice.model.AuthContext;
-import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
@@ -65,7 +63,7 @@ public class TeamController extends BaseController {
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(TeamController.class);
 
-    /**  Search teams API notes. */
+    /** Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /** The request. */
@@ -84,16 +82,15 @@ public class TeamController extends BaseController {
 
         logger.info("Get team: {}", id);
         // TODO check permissions, fail if not authorized.
-        // final AuthContext context = authorize(request);
-        final User user = SecurityService.getUserFromSession();
+        final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
-            final Team team  = service.findSingle("id: " + id + " AND active:true", Team.class, null);
-            
+            final Team team = service.findSingle("id: " + id + " AND active:true", Team.class, null);
+
             if (team == null) {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find team for id " + id + ".");
             }
-            
+
             return new ResponseEntity<>(team, HttpStatus.OK);
 
         } catch (final Exception e) {
@@ -128,15 +125,14 @@ public class TeamController extends BaseController {
 
         logger.info("Search teams: {}", ModelUtility.toJson(searchParameters));
         // TODO check permissions, fail if not authorized.
-        // final AuthContext context = authorize(request);
-        final User user = SecurityService.getUserFromSession();
+        final User authUser = SecurityService.getUserFromSession();
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
         try {
 
-            final ResultList<Team> results = RefsetService.searchTeams(user, searchParameters);
+            final ResultList<Team> results = RefsetService.searchTeams(authUser, searchParameters);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final ResponseStatusException rse) {
@@ -161,14 +157,13 @@ public class TeamController extends BaseController {
 
         logger.info("Add team: {}", team);
         // TODO check permissions, fail if not authorized.
-        // final AuthContext context = authorize(request);
-        final User user = SecurityService.getUserFromSession();
+        final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team t = (Team) team;
 
-            service.setModifiedBy(user.getId());
+            service.setModifiedBy(authUser.getId());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -205,8 +200,7 @@ public class TeamController extends BaseController {
 
         logger.info("Update team: {}", team);
         // TODO check permissions, fail if not authorized.
-        // final AuthContext context = authorize(request);
-        final User user = SecurityService.getUserFromSession();
+        final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -217,7 +211,7 @@ public class TeamController extends BaseController {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find team for " + team.getId() + ".");
             }
 
-            service.setModifiedBy(user.getId());
+            service.setModifiedBy(authUser.getId());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -248,39 +242,38 @@ public class TeamController extends BaseController {
     @PostMapping("/team/{teamId}/member/{userId}")
     public @ResponseBody ResponseEntity<Void> addUserToTeam(@PathVariable final String teamId, @PathVariable final String userId) throws Exception {
 
-            logger.info("Add user {} to team: {}", userId, teamId);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Add user {} to team: {}", userId, teamId);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                final Team team = service.get(teamId, Team.class);
-                if (team == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
+            final Team team = service.get(teamId, Team.class);
+            if (team == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
+            }
+
+            final User member = service.get(userId, User.class);
+            if (member == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find user for " + userId + ".");
+            }
+
+            if (team.getMembers() != null) {
+                if (team.getMembers().contains(userId)) {
+                    throw new RestException(false, HttpStatus.CONFLICT, "Conflict", "User " + userId + " is already a memeber of team " + teamId + ".");
                 }
+            }
 
-                final User member = service.get(userId, User.class);
-                if (member == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find user for " + userId + ".");
-                }
+            team.getMembers().add(userId);
 
-                if (team.getMembers() != null) {
-                    if (team.getMembers().contains(userId)) {
-                        throw new RestException(false, HttpStatus.CONFLICT, "Conflict", "User " + userId + " is already a memeber of team " + teamId + ".");
-                    }
-                }
+            service.setModifiedBy(authUser.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-                team.getMembers().add(userId);
+            service.update(team);
+            service.commit();
 
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
-
-                service.update(team);
-                service.commit();
-
-                return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
             logger.error("Error adding user: {} to team: {}", userId, teamId);
@@ -300,40 +293,39 @@ public class TeamController extends BaseController {
     @DeleteMapping("/team/{teamId}/member/{userId}")
     public @ResponseBody ResponseEntity<Void> removeUserFromTeam(@PathVariable final String teamId, @PathVariable final String userId) throws Exception {
 
-            logger.info("Remove user {} from team: {}", userId, teamId);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Remove user {} from team: {}", userId, teamId);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                // find team
-                final Team team = service.get(teamId, Team.class);
-                if (team == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
+            // find team
+            final Team team = service.get(teamId, Team.class);
+            if (team == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
+            }
+
+            final User member = service.get(userId, User.class);
+            if (member == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find user for " + userId + ".");
+            }
+
+            if (team.getMembers() != null) {
+                if (team.getMembers().contains(userId)) {
+                    team.getMembers().remove(userId);
+                } else {
+                    throw new RestException(false, HttpStatus.CONFLICT, "Conflict", "User " + userId + " is already a memeber of team " + teamId + ".");
                 }
+            }
 
-                final User member = service.get(userId, User.class);
-                if (member == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find user for " + userId + ".");
-                }
+            service.setModifiedBy(authUser.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-                if (team.getMembers() != null) {
-                    if (team.getMembers().contains(userId)) {
-                        team.getMembers().remove(userId);
-                    } else {
-                        throw new RestException(false, HttpStatus.CONFLICT, "Conflict", "User " + userId + " is already a memeber of team " + teamId + ".");
-                    }
-                }
+            service.update(team);
+            service.commit();
 
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
-
-                service.update(team);
-                service.commit();
-
-                return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
             logger.error("Error removing user: {} from team: {}", userId, teamId);
@@ -353,37 +345,36 @@ public class TeamController extends BaseController {
     @PostMapping("/team/{teamId}/role/{role}")
     public @ResponseBody ResponseEntity<Void> addRoleToTeam(@PathVariable final String teamId, @PathVariable final String role) throws Exception {
 
-            logger.info("Add role {} to team {}", role, teamId);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Add role {} to team {}", role, teamId);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
 
-            try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-                // find team
-                final Team team = service.get(teamId, Team.class);
-                if (team == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
-                }
+            // find team
+            final Team team = service.get(teamId, Team.class);
+            if (team == null) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
+            }
 
-                if (StringUtils.isBlank(role) && !UserRole.allRoles.contains(role.toUpperCase())) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Role " + role + " does not exist.");
-                }
+            if (StringUtils.isBlank(role) && !UserRole.allRoles.contains(role.toUpperCase())) {
+                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Role " + role + " does not exist.");
+            }
 
-                if (team.getRoles().contains(role.toUpperCase())) {
-                    throw new RestException(false, HttpStatus.CONFLICT, "Conflict", "Role " + role + " is already a exists for team " + teamId + ".");
-                }
+            if (team.getRoles().contains(role.toUpperCase())) {
+                throw new RestException(false, HttpStatus.CONFLICT, "Conflict", "Role " + role + " is already a exists for team " + teamId + ".");
+            }
 
-                team.getRoles().add(UserRole.valueOf(role).toString());
+            team.getRoles().add(UserRole.valueOf(role).toString());
 
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
+            service.setModifiedBy(authUser.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-                service.update(team);
-                service.commit();
+            service.update(team);
+            service.commit();
 
-                return new ResponseEntity<>(HttpStatus.CREATED);
+            return new ResponseEntity<>(HttpStatus.CREATED);
 
         } catch (final Exception e) {
             logger.error("Error adding role: {} to team: {}", role, teamId);
@@ -406,8 +397,7 @@ public class TeamController extends BaseController {
         try {
             logger.info("Remove role {} from team: {}", role, teamId);
             // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+            final User authUser = SecurityService.getUserFromSession();
 
             try (final TerminologyService service = new TerminologyService()) {
 
@@ -427,7 +417,7 @@ public class TeamController extends BaseController {
 
                 team.getRoles().remove(UserRole.valueOf(role).toString());
 
-                service.setModifiedBy(user.getId());
+                service.setModifiedBy(authUser.getId());
                 service.setTransactionPerOperation(false);
                 service.beginTransaction();
 
@@ -442,8 +432,7 @@ public class TeamController extends BaseController {
             return null;
         }
     }
-    
-    
+
     /**
      * Logical delete (inactivate) the team.
      *
@@ -462,12 +451,11 @@ public class TeamController extends BaseController {
 
         logger.info("Inactivate team: {}", id);
         // TODO check permissions, fail if not authorized.
-        // final AuthContext context = authorize(request);
-        final User user = SecurityService.getUserFromSession();
+        final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getId());
+            service.setModifiedBy(authUser.getId());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 

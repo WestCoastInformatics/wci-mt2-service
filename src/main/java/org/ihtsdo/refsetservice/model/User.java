@@ -16,8 +16,8 @@ import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
+import javax.persistence.FetchType;
+import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -26,9 +26,12 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +49,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @Entity
 @Table(name = "users")
-@Schema(description = "Represents a message to send (and possibly have confirmed)")
+@Schema(description = "Represents an application user.")
 @JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
@@ -71,6 +74,10 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @Column(nullable = true, length = 250)
     private String title;
 
+    /** The user's title. */
+    @Column(nullable = true, length = 250)
+    private String company;
+
     /** The auth token. */
     @Transient
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -81,11 +88,9 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @Fetch(FetchMode.JOIN)
     private Set<String> roles = new HashSet<>();
 
-    /** The owning organization. */
-    @ManyToOne(targetEntity = Organization.class)
-    @JoinColumn(nullable = true)
+    @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
     @Fetch(FetchMode.JOIN)
-    private Organization organization;
+    private Set<Organization> organizations = new HashSet<>();
 
     /** The admin role. */
     public static final String ROLE_ADMIN = "ADMIN";
@@ -119,13 +124,17 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      * @param userName the username
      * @param name the user's full name
      * @param email the user's email
+     * @param title the title
+     * @param company the company
      * @param roles the roles this user has
      */
-    public User(final String userName, final String name, final String email, final Set<String> roles) {
+    public User(final String userName, final String name, final String email, final String title, final String company, final Set<String> roles) {
 
         this.userName = userName;
         this.name = name;
         this.email = email;
+        this.title = title;
+        this.company = company;
         this.roles = roles;
     }
 
@@ -151,9 +160,9 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         name = other.getName();
         email = other.getEmail();
         title = other.getTitle();
-        roles = other.getRoles();
+        company = other.getCompany();
+        roles = new HashSet<String>(other.getRoles());
         authToken = other.getAuthToken();
-        organization = other.getOrganization();
     }
 
     /**
@@ -168,9 +177,9 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         name = other.getName();
         email = other.getEmail();
         title = other.getTitle();
-        roles = other.getRoles();
+        company = other.getCompany();
+        roles = new HashSet<String>(other.getRoles());
         authToken = other.getAuthToken();
-        organization = other.getOrganization();
     }
 
     /**
@@ -258,7 +267,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     /**
      * Sets the authentication token.
      *
-     * @return
+     * @return the auth token
      */
     public String getAuthToken() {
 
@@ -268,9 +277,9 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     /**
      * Returns the authentication token.
      *
-     * @param authToken
+     * @param authToken the auth token
      */
-    public void setAuthToken(String authToken) {
+    public void setAuthToken(final String authToken) {
 
         this.authToken = authToken;
     }
@@ -302,23 +311,46 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     }
 
     /**
-     * Gets the organization.
+     * Gets the company.
      *
-     * @return the organization
+     * @return the company
      */
-    public Organization getOrganization() {
+    public String getCompany() {
 
-        return organization;
+        return company;
     }
 
     /**
-     * Sets the organization.
+     * Sets the company.
      *
+     * @param company the company
+     */
+    public void setCompany(final String company) {
+
+        this.company = company;
+    }
+
+    /**
+     * @return the organization
+     */
+    @IndexedEmbedded(targetType = Organization.class)
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    @JsonIgnoreProperties("members")
+    public Set<Organization> getOrganizations() {
+
+        if (organizations == null) {
+            organizations = new HashSet<>();
+        }
+
+        return organizations;
+    }
+
+    /**
      * @param organization the organization to set
      */
-    public void setOrganization(final Organization organization) {
+    public void setOrganizations(final Set<Organization> organizations) {
 
-        this.organization = organization;
+        this.organizations = organizations;
     }
 
     /**
@@ -380,11 +412,12 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     public int hashCode() {
 
         final int prime = 31;
-        int result = 1;
+        int result = super.hashCode();
         result = prime * result + ((authToken == null) ? 0 : authToken.hashCode());
+        result = prime * result + ((company == null) ? 0 : company.hashCode());
         result = prime * result + ((email == null) ? 0 : email.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + ((organizations == null) ? 0 : organizations.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         result = prime * result + ((title == null) ? 0 : title.hashCode());
         result = prime * result + ((userName == null) ? 0 : userName.hashCode());
@@ -404,12 +437,19 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final User other = (User) obj;
+        User other = (User) obj;
         if (authToken == null) {
             if (other.authToken != null) {
                 return false;
             }
         } else if (!authToken.equals(other.authToken)) {
+            return false;
+        }
+        if (company == null) {
+            if (other.company != null) {
+                return false;
+            }
+        } else if (!company.equals(other.company)) {
             return false;
         }
         if (email == null) {
@@ -424,13 +464,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                 return false;
             }
         } else if (!name.equals(other.name)) {
-            return false;
-        }
-        if (organization == null) {
-            if (other.organization != null) {
-                return false;
-            }
-        } else if (!organization.equals(other.organization)) {
             return false;
         }
         if (roles == null) {
@@ -491,6 +524,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
     }
 
+    /* see superclass */
     @Override
     public void validateAdd(AuthContext context) throws Exception {
 
@@ -498,6 +532,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
     }
 
+    /* see superclass */
     @Override
     public void validateUpdate(AuthContext context, User other) throws Exception {
 
@@ -505,6 +540,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
     }
 
+    /* see superclass */
     @Override
     public void validateDelete(AuthContext context) throws Exception {
 

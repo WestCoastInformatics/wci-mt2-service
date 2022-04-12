@@ -11,6 +11,7 @@ drop table ${pre_if_exists} refset_tags ${post_if_exists};
 drop table ${pre_if_exists} refsets ${post_if_exists};
 drop table ${pre_if_exists} projects ${post_if_exists};
 drop table ${pre_if_exists} organizations ${post_if_exists};
+drop table ${pre_if_exists} organization_members ${post_if_exists};
 drop table ${pre_if_exists} edition_defaultlanguagerefsets ${post_if_exists};
 drop table ${pre_if_exists} editions ${post_if_exists};
 drop table ${pre_if_exists} teams ${post_if_exists};
@@ -20,6 +21,7 @@ drop table ${pre_if_exists} project_teams ${post_if_exists};
 drop table ${pre_if_exists} discussion_posts ${post_if_exists};
 drop table ${pre_if_exists} discussion_threads ${post_if_exists};
 drop table ${pre_if_exists} discussion_threads_discussion_posts ${post_if_exists};
+
 
 CREATE TABLE `editions` (
   `id` varchar(64) NOT NULL,
@@ -153,15 +155,13 @@ CREATE TABLE `users` (
   `created` datetime(6) NOT NULL,
   `modified` datetime(6) NOT NULL,
   `modifiedBy` varchar(256) NOT NULL,
+  `company` varchar(250) DEFAULT NULL,
   `email` varchar(250) NOT NULL,
   `name` varchar(250) NOT NULL,
-  `title` varchar(250) NULL,
+  `title` varchar(250) DEFAULT NULL,
   `userName` varchar(250) NOT NULL,
-  `organization_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_mmns67o5v4bfippoqitu4v3t6` (`userName`),
-  KEY `FKqpugllwvyv37klq7ft9m8aqxk` (`organization_id`),
-  CONSTRAINT `FKqpugllwvyv37klq7ft9m8aqxk` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+  UNIQUE KEY `UK_mmns67o5v4bfippoqitu4v3t6` (`userName`)
 );
 
 CREATE TABLE `user_roles` (
@@ -169,6 +169,15 @@ CREATE TABLE `user_roles` (
   `roles` varchar(255) DEFAULT NULL,
   KEY `FK7ppgoj8kxsmh27hyahk1m96v7` (`user_id`),
   CONSTRAINT `FK7ppgoj8kxsmh27hyahk1m96v7` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+);
+
+CREATE TABLE `organization_members` (
+  `user_id` varchar(64) NOT NULL,
+  `organization_id` varchar(64) NOT NULL,
+  PRIMARY KEY (`user_id`,`organization_id`),
+  KEY `FK9us8isobqed8ba2wqq6cqoupl` (`organization_id`),
+  CONSTRAINT `FK9us8isobqed8ba2wqq6cqoupl` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `FKmk6i6pb4mvo0gf26cwqh4tlpo` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 );
 
 CREATE TABLE `definition_clauses_history` (

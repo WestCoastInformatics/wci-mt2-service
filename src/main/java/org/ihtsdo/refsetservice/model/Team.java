@@ -200,7 +200,11 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     @JsonGetter()
     public Set<String> getRoles() {
 
-        return (roles != null) ? roles : new HashSet<>();
+        if (roles == null) {
+            roles = new HashSet<>();
+        }
+
+        return roles;
     }
 
     /**
@@ -214,10 +218,14 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     /**
      * @return the members
      */
-    @JsonGetter()
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public Set<String> getMembers() {
 
-        return (members != null) ? members : new HashSet<>();
+        if (members == null) {
+            members = new HashSet<>();
+        }
+
+        return members;
     }
 
     /**
