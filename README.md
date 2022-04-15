@@ -47,6 +47,9 @@ set AWS_FOLDER_DIRECTORY=rt2
 set AWS_ID=changeme
 set AWS_SECRET_KEY=changeme
 set REFSET_EXPORT_DIR=changeme
+set CROWD_URL=changeme 
+set CROWD_USERNAME=changeme
+set CROWD_PASSWORD=changeme
 ```
 
 * Install MySql Database v? or run through a docker container. Configure the database to use the environment values you set above:
