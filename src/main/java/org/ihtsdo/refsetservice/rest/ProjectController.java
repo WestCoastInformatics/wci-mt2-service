@@ -9,17 +9,22 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.AuthContext;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -59,7 +64,7 @@ public class ProjectController extends BaseController {
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(ProjectController.class);
 
-    /**  Search projects API note. */
+    /** Search projects API note. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /** The request. */
@@ -173,34 +178,41 @@ public class ProjectController extends BaseController {
     @PostMapping(value = "/project", consumes = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<Project> addProject(@RequestBody final Project project) throws Exception {
 
-        try {
-            // TODO: consider adding project to Crowd when creating a new project.
-            logger.info("Add project: {}", project);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Add project: {}", project);
+        // TODO check permissions, fail if not authorized.
 
-            final AuthContext context = authorize(request);
-            try (final TerminologyService service = new TerminologyService()) {
+        final User user = SecurityService.getUserFromSession();
 
-                Project proj = (Project) project;
+        final AuthContext context = authorize(request);
+        try (final TerminologyService service = new TerminologyService()) {
 
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
+            Project proj = (Project) project;
 
-                try {
-                    proj.validateAdd(context);
-                } catch (final Exception e) {
-                    throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed Expectation", e.getMessage());
-                }
+            proj.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(proj.getName()));
+            service.setModifiedBy(user.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-                service.add(proj);
-                service.commit();
-                // Return the response
-                final HttpHeaders headers = new HttpHeaders();
-                return new ResponseEntity<>(headers, HttpStatus.CREATED);
+            try {
+                proj.validateAdd(context);
+            } catch (final Exception e) {
+                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed Expectation", e.getMessage());
             }
+
+            service.add(proj);
+            service.commit();
+
+            //try {
+            //    final Organization org = project.getOrganization();
+            //    CrowdAPIClient.addGroup(org.getEdition().getShortName(), proj.getName(), proj.getDescription());
+            //} catch (Exception e) {
+            //    throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed adding Crowd groups.", e.getMessage());
+            //}
+
+            // Return the response
+            final HttpHeaders headers = new HttpHeaders();
+            return new ResponseEntity<>(headers, HttpStatus.CREATED);
+
         } catch (final Exception e) {
             logger.error("Error adding project. {}", project.toString(), e);
             handleException(e);
@@ -227,7 +239,7 @@ public class ProjectController extends BaseController {
 
         logger.info("Update project: {}", project);
         // TODO check permissions, fail if not authorized.
-        // final AuthContext context = authorize(request);
+        final AuthContext context = authorize(request);
         final User user = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -244,6 +256,12 @@ public class ProjectController extends BaseController {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find project for " + project.getId());
             }
 
+            try {
+                original.validateAdd(context);
+            } catch (final Exception e) {
+                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed Expectation", e.getMessage());
+            }               
+            
             // Apply changes
             original.patchFrom(project);
 
@@ -277,7 +295,7 @@ public class ProjectController extends BaseController {
 
         logger.info("Inactivate project: {}", id);
         // TODO check permissions, fail if not authorized.
-        // final AuthContext context = authorize(request);
+        final AuthContext context = authorize(request);
         final User user = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -293,6 +311,12 @@ public class ProjectController extends BaseController {
             if (project == null) {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find project for id:" + id);
             }
+            
+            try {
+                project.validateDelete(context);
+            } catch (final Exception e) {
+                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed Expectation", e.getMessage());
+            } 
 
             // logical delete - setting project to inactive
             project.setActive(false);

@@ -1635,6 +1635,7 @@ public class HistoricDataMigrator {
             project.setDescription(projectDescription);
             project.setOrganization(org);
             project.setPrivateProject(false);
+            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
 
             // Persist
             setMetadata(project, meta);

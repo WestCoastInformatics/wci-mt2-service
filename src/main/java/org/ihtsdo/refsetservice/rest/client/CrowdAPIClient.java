@@ -15,6 +15,7 @@ import java.util.Set;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,48 +70,42 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     public static void addGroup(final String organization, final String projectName, final String projectDescription) throws Exception {
 
         logger.info("Add group {} to organization {} with description of {}", projectName, organization, projectDescription);
+        
         if (StringUtils.isBlank(organization)) {
             throw new Exception("Organization name cannot be empty or null. Received organization: " + organization);
         }
+        
         if (StringUtils.isEmpty(projectName)) {
             throw new Exception("Project name cannot be empty or null. Received project: " + projectName);
         }
+        
         final String description = (!StringUtils.isEmpty(projectDescription)) ? projectDescription.trim() : projectName.trim();
-
-        // membership group ex. rt2-all-training-author
-        // part 1 application -> always rt2
-        // part 2 organization -> edition short name
-        // part 3 project name -> training
-        // part 4 role -> one of admin, author, reviewer or viewer
-
-        // TODO: create all for projects too!
-
-
-        // when adding a group, all a group for all roles
-        final String projectAcronym = projectName.trim().replaceAll("\\B.|\\P{L}", "").toLowerCase();
-
-        final String groupNamePrefix = APP_PREFIX + "-" + organization.trim() + "-" + projectAcronym + "-";
-
-        /* {"name": "rt2-test-test-test", "description": "test crowd client", "type": "GROUP" } */
+        
+        /* {"name": "rt2-test-test-author", "description": "test crowd client", "type": "GROUP" } */
         for (String role : ROLES) {
-            final String entity = "{\"name\": \"" + groupNamePrefix + role + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
-            final Response response = post(ADD_GROUP, entity);
+            
+            final String groupName = CrowdGroupNameAlgorithm.generateName(organization, projectName, role);
+            
+            final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
+            final Response response = post(BASE_URL + ADD_GROUP, entity);
 
             // 201 Returned if the group is successfully created.
             // 400 Returned if the group already exists.
             // 403 Returned if the application is not allowed to create a new group.
-            if (response.getStatus() != 201) {
+            if (response.getStatus() == 201) {
                 // expected 201 status, error occurred.
-                logger.info("Added group {}", groupNamePrefix + role);
+                logger.info("Added group {}", groupName);
             } else if (response.getStatus() == 400) {
                 // ignore 400 and continue?
-                throw new Exception("The group " + groupNamePrefix + role + " already exists");
+                logger.error("The group " + groupName + " already exists");
+                throw new Exception("The group " + groupName + " already exists");
             } else if (response.getStatus() == 403) {
-                throw new Exception("The group " + groupNamePrefix + role + " could not be created. Not allowed.");
+                logger.error("The group " + groupName + " could not be created. Not allowed.");
+                throw new Exception("The group " + groupName + " could not be created. Not allowed.");
             } else {
-                throw new Exception("The group " + groupNamePrefix + role + " could not be created. Received HTTP " + response.getStatus() + " from the API server.");
+                logger.error("The group " + groupName + " could not be created. Received HTTP " + response.getStatus() + " from the API server.");
+                throw new Exception("The group " + groupName + " could not be created. Received HTTP " + response.getStatus() + " from the API server.");
             }
-
         }
     }
 
@@ -213,7 +208,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @param username Name of the user to have their membership added.
      * @throws Exception the exception.
      */
-    public void addMembership(final String groupname, final String username) throws Exception {
+    public static void addMembership(final String groupname, final String username) throws Exception {
 
         logger.info("Add user {} to group {}", username, groupname);
         if (StringUtils.isBlank(groupname)) {
@@ -250,7 +245,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @param username Name of the user to have their membership removed.
      * @throws Exception the exception
      */
-    public void deleteMembership(final String groupname, final String username) throws Exception {
+    public static void deleteMembership(final String groupname, final String username) throws Exception {
 
         logger.info("Remove user {} from group {}", username, groupname);
         if (StringUtils.isBlank(groupname)) {

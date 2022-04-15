@@ -16,13 +16,17 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -171,7 +175,7 @@ public class TeamController extends BaseController {
             service.commit();
 
             final HttpHeaders headers = new HttpHeaders();
-            return new ResponseEntity<>(team, headers, HttpStatus.CREATED);
+            return new ResponseEntity<>(t, headers, HttpStatus.CREATED);
 
         } catch (final Exception e) {
             logger.error("Error adding team.  Team: {}", team.toString());
@@ -272,6 +276,22 @@ public class TeamController extends BaseController {
 
             service.update(team);
             service.commit();
+            
+            // add user to crowd groups
+            /*
+            final Organization organization = team.getOrganization();
+            final String teamsQuery = "teams:" + teamId;
+            
+            final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
+            if (projectList != null && projectList.getItems() != null) {
+                for (Project project : projectList.getItems()) {
+                    for (String role : team.getRoles()) {
+                        final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                        CrowdAPIClient.addMembership(groupName, member.getUserName());
+                    }
+                }
+            }
+            */
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
@@ -324,6 +344,22 @@ public class TeamController extends BaseController {
 
             service.update(team);
             service.commit();
+
+            // remove user from crowd groups
+            /*
+            final Organization organization = team.getOrganization();
+            final String teamsQuery = "teams:" + teamId;
+
+            final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
+            if (projectList != null && projectList.getItems() != null) {
+                for (Project project : projectList.getItems()) {
+                    for (String role : team.getRoles()) {
+                        final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                        CrowdAPIClient.deleteMembership(groupName, member.getUserName());
+                    }
+                }
+            }
+            */
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 

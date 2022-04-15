@@ -70,6 +70,7 @@ CREATE TABLE `projects` (
   `description` varchar(4000) DEFAULT NULL,
   `name` varchar(255) NOT NULL,
   `primaryContactEmail` varchar(255) DEFAULT NULL,
+  `crowdProjectId` varchar(255) DEFAULT NULL,
   `privateProject` bit(1) NOT NULL,
   `organization_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`),

@@ -74,7 +74,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     private String primaryContactEmail;
 
     /** The crowd identifier for this project. */
-    @Transient
     @Column(nullable = true)
     private String crowdProjectId;
 
@@ -259,6 +258,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * @return the teams
      */
     @JsonGetter()
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public Set<String> getTeams() {
 
         if (teams == null) {
