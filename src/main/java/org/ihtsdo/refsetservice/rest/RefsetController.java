@@ -1508,14 +1508,23 @@ public class RefsetController extends BaseController {
     /**
      * Migrates RTT data into the database but only if the database is empty.
      *
+     * @param quickMigration Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is false
      * @return the status of the migration
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/rtt", produces = "application/json")
-    public @ResponseBody String migrateRttData() throws Exception {
+    public @ResponseBody String migrateRttData(@RequestParam(required = false) final Boolean quickMigration) throws Exception {
 
         try {
 
+            boolean runShortMigration = false;
+            
+            if (quickMigration != null && quickMigration.booleanValue()) {
+                
+                logger.info("!!!!! migrateRttData RUNNING QUICK MIGRATION - WILL HAVE MORE THAN ONLY PUBLISHED REFSET VERSIONS");
+                runShortMigration = true;
+            }
+            
             try (TerminologyService service = new TerminologyService()) {
 
                 final ResultList<String> editions = service.findIds("", null, Edition.class, null);
@@ -1528,7 +1537,7 @@ public class RefsetController extends BaseController {
                 logger.info("migrateRttData Starting RTT data migration");
 
                 HistoricDataMigrator migrator = new HistoricDataMigrator();
-                migrator.migrate();
+                migrator.migrate(runShortMigration);
 
                 logger.info("migrateRttData Finished RTT data migration");
 

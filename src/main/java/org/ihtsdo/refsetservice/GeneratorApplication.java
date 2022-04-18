@@ -76,7 +76,7 @@ public class GeneratorApplication extends SpringBootServletInitializer {
                 }
                 
                 HistoricDataMigrator migrator = new HistoricDataMigrator();
-                migrator.migrate();
+                migrator.migrate(false);
                 logger.info("Historic Data Migration Finished");
             }
 

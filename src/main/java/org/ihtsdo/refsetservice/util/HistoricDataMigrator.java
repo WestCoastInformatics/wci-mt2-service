@@ -309,6 +309,9 @@ public class HistoricDataMigrator {
     private Set<String> rttRefsetIds = new HashSet<>();
 
     private boolean supportRtt = false;
+    
+    /** Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. */
+    private boolean runShortMigration = false;
 
     private Map<String, Edition> refsetEditions = new HashMap<>();
 
@@ -330,8 +333,16 @@ public class HistoricDataMigrator {
 
     private Map<String, List<Date>> refsetToPublishedVersionMap = new HashMap<>();
 
-    public void migrate() throws Exception {
+    /**
+     * Gets the list of branch versions.
+     *
+     * @param runShortMigration Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is false 
+     * @throws Exception the exception
+     */
+    public void migrate(final boolean runShortMigration) throws Exception {
 
+        this.runShortMigration = runShortMigration;
+        
         Set<String> internationalModules = createEditionsFromSnowstorm();
         Map<String, SortedMap<Date, String>> branches = identifyBranches();
 
@@ -680,72 +691,78 @@ public class HistoricDataMigrator {
                                     refset.setWorkflowStatus("PUBLISHED");
                                     refset.setActive(true);
 
-                                    // if (refsetId.equals("723264001") || refsetId.equals("721144007")) {
-
-                                    /*-
-                                     * Check new version refset version date. If none returned (null), then:
-                                     * a) no changes to refset itself and 
-                                     * b) thus no need to create  new version.
-                                     * c) Move onto nex refset
-                                     */
-                                    Date refsetVersionDate = null;
-
-                                    if (!testing || refsetId.equals(testingRefset)) {
-
-                                        refsetVersionDate = defineSnowstormRefsetVersionDate(childBranch, refsetId);
-                                    }
-
-                                    if (refsetVersionDate == null) {
-
-                                        if (testing && refsetId.equals(testingRefset)) {
-
-                                            logger.debug(testingRefset + " - qqq - not adding anything on this branch for " + childBranch);
-                                        }
-
-                                        // No changes to refset so don't create a new version
-                                        continue;
-                                    }
-
-                                    Set<Date> editionVersions = branchChildrenByEdition.get(edition.getId()).keySet();
-                                    Date earliestPublishedVersionDate = null;
-
-                                    if (!editionVersions.contains(refsetVersionDate)) {
-
-                                        for (Date editionDate : editionVersions) {
-
-                                            if (refsetVersionDate.after(editionDate)) {
-
-                                                throw new Exception("Don't expect to be here at createRefsetsFromSnowstorm()");
-                                            }
-
-                                            if (earliestPublishedVersionDate == null || editionDate.before(earliestPublishedVersionDate)) {
-
-                                                earliestPublishedVersionDate = editionDate;
-                                            }
-
-                                        }
-
-                                        if (earliestPublishedVersionDate == null) {
-
-                                            throw new Exception("Shouldn't be here at createRefsetsFromSnowstorm()");
-                                        }
-
-                                        refsetVersionDate = earliestPublishedVersionDate;
-                                    }
-
-                                    refset.setVersionDate(refsetVersionDate);
-
-                                    if (editionVersions.contains(refset.getVersionDate())) {
-
-                                        logger.debug(" yyy - edition supports refset: " + refsetId + " === " + refset.getVersionDate());
-
+                                    if (runShortMigration) {
+                                        refset.setVersionDate(branchDate);
+                                        
                                     } else {
-
-                                        logger.debug(" zzz - would fail so need to filter: " + refsetId + " === " + refset.getVersionDate());
-                                        // logger.debug(" zzz2b - with edition ' " + edition.getName() + "' version dates: " + editionVersions.toString());
-
-                                        // Don't add refset versions that don't have corresponding snowstorm -based edition versions
-                                        continue;
+                                     
+                                        // if (refsetId.equals("723264001") || refsetId.equals("721144007")) {
+    
+                                        /*-
+                                         * Check new version refset version date. If none returned (null), then:
+                                         * a) no changes to refset itself and 
+                                         * b) thus no need to create  new version.
+                                         * c) Move onto nex refset
+                                         */
+                                        Date refsetVersionDate = null;
+    
+                                        if (!testing || refsetId.equals(testingRefset)) {
+    
+                                            refsetVersionDate = defineSnowstormRefsetVersionDate(childBranch, refsetId);
+                                        }
+    
+                                        if (refsetVersionDate == null) {
+    
+                                            if (testing && refsetId.equals(testingRefset)) {
+    
+                                                logger.debug(testingRefset + " - qqq - not adding anything on this branch for " + childBranch);
+                                            }
+    
+                                            // No changes to refset so don't create a new version
+                                            continue;
+                                        }
+    
+                                        Set<Date> editionVersions = branchChildrenByEdition.get(edition.getId()).keySet();
+                                        Date earliestPublishedVersionDate = null;
+    
+                                        if (!editionVersions.contains(refsetVersionDate)) {
+    
+                                            for (Date editionDate : editionVersions) {
+    
+                                                if (refsetVersionDate.after(editionDate)) {
+    
+                                                    throw new Exception("Don't expect to be here at createRefsetsFromSnowstorm()");
+                                                }
+    
+                                                if (earliestPublishedVersionDate == null || editionDate.before(earliestPublishedVersionDate)) {
+    
+                                                    earliestPublishedVersionDate = editionDate;
+                                                }
+    
+                                            }
+    
+                                            if (earliestPublishedVersionDate == null) {
+    
+                                                throw new Exception("Shouldn't be here at createRefsetsFromSnowstorm()");
+                                            }
+    
+                                            refsetVersionDate = earliestPublishedVersionDate;
+                                        }
+    
+                                        refset.setVersionDate(refsetVersionDate);
+    
+                                        if (editionVersions.contains(refset.getVersionDate())) {
+    
+                                            logger.debug(" yyy - edition supports refset: " + refsetId + " === " + refset.getVersionDate());
+    
+                                        } else {
+    
+                                            logger.debug(" zzz - would fail so need to filter: " + refsetId + " === " + refset.getVersionDate());
+                                            // logger.debug(" zzz2b - with edition ' " + edition.getName() + "' version dates: " + editionVersions.toString());
+    
+                                            // Don't add refset versions that don't have corresponding snowstorm -based edition versions
+                                            continue;
+                                        }
                                     }
 
                                     // add the edition to a map with the refset ID to retrieve it later
