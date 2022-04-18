@@ -82,6 +82,9 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     })
     @Fetch(FetchMode.JOIN)
     private Set<User> members;
+    
+    @Column(nullable = true, length = 255)
+    private String iconUri;
 
     /**
      * Instantiates an empty {@link Organization}.
@@ -123,6 +126,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         description = other.getDescription();
         edition = other.getEdition();
         primaryContactEmail = other.getPrimaryContactEmail();
+        iconUri = other.iconUri;
     }
 
     /**
@@ -137,6 +141,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         description = other.getDescription();
         edition = other.getEdition();
         primaryContactEmail = other.getPrimaryContactEmail();
+        iconUri = other.iconUri;
     }
 
     /**
@@ -246,6 +251,26 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         this.members = members;
     }
+    
+    /**
+     * Returns the icon URI.
+     *
+     * @return the icon URI
+     */
+    public String getIconUri() {
+
+        return iconUri;
+    }
+
+    /**
+     * Sets the icon URI.
+     *
+     * @param name the icon URI
+     */
+    public void setIconUri(final String iconUri) {
+
+        this.iconUri = iconUri;
+    }
 
     /* see superclass */
     @Override
@@ -257,6 +282,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         result = prime * result + ((edition == null) ? 0 : edition.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
+        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         return result;
     }
     
@@ -301,6 +327,13 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
                 return false;
             }
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
+            return false;
+        }
+        if (iconUri == null) {
+            if (other.iconUri != null) {
+                return false;
+            }
+        } else if (!iconUri.equals(other.iconUri)) {
             return false;
         }
         return true;
