@@ -10,6 +10,8 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -580,8 +582,8 @@ public class OrganizationController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             // find organization record, return 404 if not found
-            final Organization org = service.get(organizationId, Organization.class);
-            if (org == null) {
+            final Organization organization = service.get(organizationId, Organization.class);
+            if (organization == null) {
                 throw new RestException(false, 404, "Not found", "Unable to find organization for " + organizationId);
             }
 
@@ -597,14 +599,16 @@ public class OrganizationController extends BaseController {
             }
 
             // check file size
-            if (inputFile.getSize() > 2000000) {
+            final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.icon.file.maxsize"));
+            if (inputFile.getSize() > maxFileSize) {
                 throw new RestException(false, 413, "Failed expectation", "File size must be less than 2 MB");
             }
 
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
-
-            if (!extension.contentEquals("jpg") && !extension.contentEquals("png") && !extension.contentEquals("svg")) {
-                throw new RestException(false, 417, "Failed expectation", "Format must be .png or .jpg " + fileName);
+            final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
+            
+            if (!fileTypes.contains(extension)) {
+                throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
             final String storageDirectory = PropertyUtility.getProperty("refset.organization.icon.file.dir");
@@ -618,12 +622,12 @@ public class OrganizationController extends BaseController {
 
             final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;
 
-            org.setIconUri(iconUri);
+            organization.setIconUri(iconUri);
 
             service.setModifiedBy(authUser.getId());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
-            service.update(org);
+            service.update(organization);
             service.commit();
 
             // Return the object
@@ -662,8 +666,8 @@ public class OrganizationController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             // find organization record, return 404 if not found
-            final Organization org = service.get(organizationId, Organization.class);
-            if (org == null) {
+            final Organization organization = service.get(organizationId, Organization.class);
+            if (organization == null) {
                 throw new RestException(false, 404, "Not found", "Unable to find organization for " + organizationId);
             }
 
@@ -679,14 +683,16 @@ public class OrganizationController extends BaseController {
             }
 
             // check file size
-            if (inputFile.getSize() > 2000000) {
+            final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.icon.file.maxsize"));
+            if (inputFile.getSize() > maxFileSize) {
                 throw new RestException(false, 413, "Failed expectation", "File size must be less than 2 MB");
             }
 
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
-
-            if (!extension.contentEquals("jpg") && !extension.contentEquals("png") && !extension.contentEquals("svg")) {
-                throw new RestException(false, 417, "Failed expectation", "Format must be .png or .jpg " + fileName);
+            final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
+            
+            if (!fileTypes.contains(extension)) {
+                throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
             final String storageDirectory = PropertyUtility.getProperty("refset.organization.icon.file.dir");
@@ -700,12 +706,12 @@ public class OrganizationController extends BaseController {
 
             final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;
 
-            org.setIconUri(iconUri);
+            organization.setIconUri(iconUri);
 
             service.setModifiedBy(authUser.getId());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
-            service.update(org);
+            service.update(organization);
             service.commit();
 
             // Return the object
