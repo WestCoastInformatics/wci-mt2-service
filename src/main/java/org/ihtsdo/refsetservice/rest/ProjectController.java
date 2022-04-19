@@ -18,7 +18,9 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.AuthContext;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
@@ -295,7 +297,6 @@ public class ProjectController extends BaseController {
 
         logger.info("Inactivate project: {}", id);
         // TODO check permissions, fail if not authorized.
-        final AuthContext context = authorize(request);
         final User user = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -312,14 +313,30 @@ public class ProjectController extends BaseController {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find project for id:" + id);
             }
             
-            try {
-                project.validateDelete(context);
-            } catch (final Exception e) {
-                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed Expectation", e.getMessage());
-            } 
-
-            // logical delete - setting project to inactive
+            // inactivate projects, clear teams, and inactivate refsets
             project.setActive(false);
+            
+            if (project.getTeams() != null && !project.getTeams().isEmpty()) {
+                for(String teamId : project.getTeams()) {
+                    final Team team = service.get(teamId, Team.class);
+                    if (team != null && !team.getMembers().isEmpty()) {
+                        team.getMembers().clear();
+                        service.update(team);
+                    }
+                }
+                project.getTeams().clear();
+            }
+            
+            // also inactivate refsets
+            final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
+            if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
+                for (Refset refset : projRefsets.getItems()) {
+                    if (refset != null && !projRefsets.getItems().isEmpty()) {
+                        refset.setActive(false);
+                        service.update(refset);
+                    }
+                }
+            }
 
             service.update(project);
             service.commit();

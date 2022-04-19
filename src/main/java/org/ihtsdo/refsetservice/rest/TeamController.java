@@ -501,6 +501,10 @@ public class TeamController extends BaseController {
             if (team == null) {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for id:" + id);
             }
+            
+            if (!team.getMembers().isEmpty()) {
+                team.getMembers().clear();
+            }
 
             team.setActive(false);
             service.update(team);
