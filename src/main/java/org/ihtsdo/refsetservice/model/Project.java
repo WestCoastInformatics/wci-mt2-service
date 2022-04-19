@@ -28,9 +28,14 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -81,7 +86,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @ElementCollection
     @Fetch(FetchMode.JOIN)
     private Set<String> teams;
-    
+
     /** The of roles for this project. */
     @Transient
     private List<String> roles;
@@ -138,7 +143,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @Override
     public void patchFrom(final Project other) {
 
-        //super.populateFrom(other);
+        // super.populateFrom(other);
         name = other.getName();
         organization = other.getOrganization();
         description = other.getDescription();
@@ -195,7 +200,9 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * Gets the organization.
      *
      * @return the organization
-     */
+     */   
+    @IndexedEmbedded(targetType = Organization.class)
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public Organization getOrganization() {
 
         return organization;
@@ -264,7 +271,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         if (teams == null) {
             teams = new HashSet<>();
         }
-        
+
         return teams;
     }
 
@@ -277,7 +284,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
         this.teams = teams;
     }
-    
+
     /**
      * Returns the roles.
      *
@@ -289,8 +296,8 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         if (roles == null) {
             roles = new ArrayList<>();
         }
-        return roles;        
-        
+        return roles;
+
     }
 
     /**
@@ -322,8 +329,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
         this.primaryContactEmail = primaryContactEmail;
     }
-
- 
 
     /* see superclass */
     @Override
@@ -414,6 +419,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     /* see superclass */
     @Override
     public String toString() {
+
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {

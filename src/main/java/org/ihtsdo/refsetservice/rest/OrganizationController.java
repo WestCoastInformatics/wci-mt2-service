@@ -22,6 +22,7 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
+import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListProject;
 import org.ihtsdo.refsetservice.model.ResultListTeam;
@@ -313,7 +314,34 @@ public class OrganizationController extends BaseController {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find organization for id:" + id);
             }
 
-            // inactivate teams, projects. remove users?
+            // inactivate projects, clear teams, and inactivate refsets
+            final ResultList<Project> orgProjects = service.find("organization.id:" + id + " AND active:true", null, Project.class, null);
+            
+            if (orgProjects.getItems() != null && !orgProjects.getItems().isEmpty()) {
+                for (Project project : orgProjects.getItems()) {
+                    project.setActive(false);
+                    if (project.getTeams() != null) {
+                        for(String teamId : project.getTeams()) {
+                            final Team team = service.get(teamId, Team.class);
+                            if (team != null && !team.getMembers().isEmpty()) {
+                                team.getMembers().clear();
+                                service.update(team);
+                            }
+                        }
+                    }
+                    service.update(project);
+                    
+                    final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
+                    if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
+                        for (Refset refset : projRefsets.getItems()) {
+                            if (refset != null && !projRefsets.getItems().isEmpty()) {
+                                refset.setActive(false);
+                                service.update(refset);
+                            }
+                        }
+                    }
+                }
+            }
 
             organization.setActive(false);
             service.update(organization);
@@ -435,7 +463,7 @@ public class OrganizationController extends BaseController {
 
             final PfsParameter pfs = new PfsParameter();
             final QueryParameter query = new QueryParameter();
-            query.setQuery("organizationId:" + id + " AND active:true");
+            query.setQuery("organization.id:" + id + " AND active:true");
 
             final ResultList<Project> orgProjects = service.find(query, pfs, Project.class, null);
             return new ResponseEntity<>(new ResultListProject(orgProjects), HttpStatus.OK);
@@ -722,7 +750,7 @@ public class OrganizationController extends BaseController {
             handleException(e);
             return null;
         }
-
+        
     }
 
 }
