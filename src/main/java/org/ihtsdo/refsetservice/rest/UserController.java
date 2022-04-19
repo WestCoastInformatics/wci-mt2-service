@@ -264,7 +264,7 @@ public class UserController extends BaseController {
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
             
-            if (!fileTypes.contains(extension)) {
+            if (!fileTypes.contains("." + extension)) {
                 throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
@@ -349,7 +349,7 @@ public class UserController extends BaseController {
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
             
-            if (!fileTypes.contains(extension)) {
+            if (!fileTypes.contains("." + extension)) {
                 throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
