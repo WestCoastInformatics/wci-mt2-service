@@ -31,13 +31,13 @@ public class CrowdGroupNameAlgorithmTest {
 
         String result = "";
         result = CrowdGroupNameAlgorithm.generateName("SNOMEDCT-WCI", "WCI Testing Project", "author");
-        assertThat(result).isEqualTo("rt2-snomedctwci-wtp-authors");
+        assertThat(result).isEqualTo("rt2-snomedctwci-wtp-author");
         
         result = CrowdGroupNameAlgorithm.generateName("SNOMEDCT-AT", "WCI Testing Project", "admin");
-        assertThat(result).isEqualTo("rt2-snomedctat-wtp-aaa");
+        assertThat(result).isEqualTo("rt2-snomedctat-wtp-admin");
         
         result = CrowdGroupNameAlgorithm.generateName("SNOMEDCT-BE", "Belgian Edition Upgrade dedicated UAT Training Project", "reviewer");
-        assertThat(result).isEqualTo("rt2-snomedctbe-beudutp-admin");
+        assertThat(result).isEqualTo("rt2-snomedctbe-beudutp-reviewer");
         
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.generateName(" ", " ", " ");

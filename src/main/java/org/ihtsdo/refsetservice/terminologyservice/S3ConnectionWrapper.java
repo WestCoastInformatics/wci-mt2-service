@@ -1,7 +1,17 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Properties;
 
@@ -9,7 +19,6 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -17,13 +26,10 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.Headers;
-import com.amazonaws.services.s3.internal.Constants;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
 import com.amazonaws.services.s3.model.DeleteObjectsResult;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -31,9 +37,12 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.amazonaws.services.s3.transfer.Upload;
 
 /**
- * Class to handle making calls to Snowstorm.
+ * Class to handle making calls to Amazon S3.
  */
 public class S3ConnectionWrapper {
 
@@ -46,12 +55,16 @@ public class S3ConnectionWrapper {
     /** The snowstorm url for performing write or update actions. */
     public static String KEY;
 
+    /** The bucket. */
     public static String BUCKET;
 
+    /** The region. */
     public static Regions REGION;
 
+    /** The folder directory. */
     public static String FOLDER_DIRECTORY;
 
+    /** The S3 client. */
     private static AmazonS3 s3Client;
 
     /** The logger. */
@@ -68,19 +81,19 @@ public class S3ConnectionWrapper {
     }
 
     /**
-     * Connect to amazon S 3.
+     * Connect to amazon S3.
      *
-     * @return the amazon S 3
+     * @return the amazon S3
      */
     static public void connectToAmazonS3() {
+
         if (s3Client != null) {
             return;
         }
 
         try {
             // Connect to server using instance profile credentials
-            s3Client = AmazonS3ClientBuilder.standard().withRegion(REGION)
-                    .withCredentials(new InstanceProfileCredentialsProvider(false)).build();
+            s3Client = AmazonS3ClientBuilder.standard().withRegion(REGION).withCredentials(new InstanceProfileCredentialsProvider(false)).build();
 
             // Check if connection was successful. If not, try to connect with
             // static
@@ -90,14 +103,12 @@ public class S3ConnectionWrapper {
             } catch (SdkClientException e) {
                 // Connect to server with static keys
 
-                AmazonS3ClientBuilder clientBuilder =
-                        AmazonS3ClientBuilder.standard().withRegion(REGION);
+                AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().withRegion(REGION);
 
                 if (ID != null && !ID.equals("") && !ID.equals("none") && !ID.equals("change_me")) {
 
-                    BasicAWSCredentials awsCreds = new BasicAWSCredentials(ID, KEY);
-                    clientBuilder = clientBuilder
-                            .withCredentials(new AWSStaticCredentialsProvider(awsCreds));
+                    final BasicAWSCredentials awsCreds = new BasicAWSCredentials(ID, KEY);
+                    clientBuilder = clientBuilder.withCredentials(new AWSStaticCredentialsProvider(awsCreds));
                 }
 
                 s3Client = clientBuilder.build();
@@ -118,47 +129,114 @@ public class S3ConnectionWrapper {
         }
     }
 
-    public static void uploadToS3(String awsUploadPath, String localFilePath, String fileName)
-        throws Exception {
+    /**
+     * Upload file to S3.
+     *
+     * @param awsUploadPath the aws upload path
+     * @param localFilePath the local file path
+     * @param fileName the file name
+     * @throws Exception the exception
+     */
+    public static void uploadToS3(final String awsUploadPath, final String localFilePath, final String fileName) throws Exception {
+
         try {
             // Upload a file as a new object with ContentType and title
             // specified.
-            PutObjectRequest request = new PutObjectRequest(S3ConnectionWrapper.BUCKET,
-                    awsUploadPath + "/" + fileName, new File(localFilePath + "/" + fileName));
-            ObjectMetadata metadata = new ObjectMetadata();
+            final PutObjectRequest request = new PutObjectRequest(S3ConnectionWrapper.BUCKET, awsUploadPath + "/" + fileName, new File(localFilePath + "/" + fileName));
+            final ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType("plain/text");
             metadata.addUserMetadata("title", fileName);
             request.setMetadata(metadata);
             s3Client.putObject(request);
         } catch (Exception e) {
-            throw new Exception("Failed to upload the file: " + fileName + " locally at: "
-                    + localFilePath + " to the awsPath: " + awsUploadPath, e);
+            throw new Exception("Failed to upload the file: " + fileName + " locally at: " + localFilePath + " to the awsPath: " + awsUploadPath, e);
         }
     }
 
-    public static boolean isInS3Cache(String awsPath, String versionFileName) throws Exception {
+    /**
+     * Upload file to S3.
+     *
+     * @param uri the uri
+     * @param is the is
+     * @throws AmazonS3Exception the amazon S 3 exception
+     * @throws Exception the exception
+     */
+    public static void uploadToS3(final String uri, final InputStream is) throws AmazonS3Exception, Exception {
+
+        if (uri.matches("s3\\://.+/.+")) {
+
+            final String bucketName = getBucketName(uri);
+            final String objectName = getObjectName(uri);
+
+            try {
+
+                final ObjectMetadata metadata = new ObjectMetadata();
+                metadata.addUserMetadata("title", objectName);
+
+                final TransferManager tx = TransferManagerBuilder.standard().withS3Client(s3Client).build();
+                final Upload up = tx.upload(bucketName, objectName, is, metadata);
+
+                up.waitForCompletion();
+
+            } catch (AmazonS3Exception awse) {
+                logger.error("Failed to upload the org icon file: " + objectName + " to the aws bucket: " + bucketName, awse);
+                logger.error(awse.getErrorMessage());
+                throw awse;
+            } catch (Exception e) {
+                throw new Exception("Failed to upload the org icon file: " + objectName + " to the aws bucket: " + bucketName, e);
+            }
+        } else {
+            throw new Exception("Bad S3 URI = " + uri);
+        }
+    }
+
+    /**
+     * Indicates whether or not in S3 cache is the case.
+     *
+     * @param awsPath the aws path
+     * @param versionFileName the version file name
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     * @throws Exception the exception
+     */
+    public static boolean isInS3Cache(final String awsPath, final String versionFileName) throws Exception {
+
         return (s3Client.doesObjectExist(BUCKET, awsPath + "/" + versionFileName));
     }
 
-    public static String getS3Url(String awsFilePath, String fileName) throws Exception {
+    /**
+     * Returns the S3 url.
+     *
+     * @param awsFilePath the aws file path
+     * @param fileName the file name
+     * @return the S3 url
+     * @throws Exception the exception
+     */
+    public static String getS3Url(final String awsFilePath, final String fileName) throws Exception {
 
         try {
             return s3Client.getUrl(BUCKET, awsFilePath + "/" + fileName).toExternalForm();
         } catch (Exception e) {
-            throw new Exception("Failed to get the file: " + fileName + " at the expected S3 Path: "
-                    + awsFilePath, e);
+            throw new Exception("Failed to get the file: " + fileName + " at the expected S3 Path: " + awsFilePath, e);
         }
     }
 
-    public static void downloadSnowFromS3(String awsPath, String awsFileName,
-        String downloadLocation) throws Exception {
-        S3Object o = s3Client.getObject(BUCKET, awsPath + "/" + awsFileName);
-        S3ObjectInputStream s3is = o.getObjectContent();
+    /**
+     * Download snow from S3.
+     *
+     * @param awsPath the aws path
+     * @param awsFileName the aws file name
+     * @param downloadLocation the download location
+     * @throws Exception the exception
+     */
+    public static void downloadSnowFromS3(final String awsPath, final String awsFileName, final String downloadLocation) throws Exception {
 
-        FileOutputStream fos = new FileOutputStream(
+        final S3Object o = s3Client.getObject(BUCKET, awsPath + "/" + awsFileName);
+        final S3ObjectInputStream s3is = o.getObjectContent();
 
-                new File(downloadLocation));
-        byte[] readBuf = new byte[1024];
+        final FileOutputStream fos = new FileOutputStream(
+
+            new File(downloadLocation));
+        final byte[] readBuf = new byte[1024];
         int readLen = 0;
         while ((readLen = s3is.read(readBuf)) > 0) {
             fos.write(readBuf, 0, readLen);
@@ -167,30 +245,57 @@ public class S3ConnectionWrapper {
         fos.close();
     }
 
-    public static boolean deleteRefsetFromAws(String awsPath) {
-        ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(BUCKET).withPrefix(awsPath);
-        ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
-        
-        ArrayList<KeyVersion> keys = new ArrayList<KeyVersion>();
+    /**
+     * Delete refset from aws.
+     *
+     * @param awsPath the aws path
+     * @return true, if successful
+     */
+    public static boolean deleteRefsetFromAws(final String awsPath) {
+
+        final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(BUCKET).withPrefix(awsPath);
+        final ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
+
+        final ArrayList<KeyVersion> keys = new ArrayList<KeyVersion>();
         for (S3ObjectSummary obj : listing.getObjectSummaries()) {
             keys.add(new KeyVersion(obj.getKey()));
         }
-        
+
         if (keys.isEmpty()) {
             return true;
         }
-        DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(BUCKET)
-                .withKeys(keys)
-                .withQuiet(false);
+        final DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(BUCKET).withKeys(keys).withQuiet(false);
 
         s3Client.deleteObjects(deleteRequest);
-        DeleteObjectsResult delObjRes = s3Client.deleteObjects(deleteRequest);
-        
-        
-        int successfulDeletes = delObjRes.getDeletedObjects().size();
+        final DeleteObjectsResult delObjRes = s3Client.deleteObjects(deleteRequest);
+
+        final int successfulDeletes = delObjRes.getDeletedObjects().size();
         System.out.println(successfulDeletes + " objects successfully deleted.");
-        
+
         return successfulDeletes > 0;
+    }
+
+    /**
+     * Returns the bucket name.
+     *
+     * @param uri the uri
+     * @return the bucket name
+     */
+    private static String getBucketName(final String uri) {
+
+        return uri.replaceFirst("s3\\://", "").replaceFirst("/.*", "");
+    }
+
+    /**
+     * Returns the object name.
+     *
+     * @param uri the uri
+     * @return the object name
+     */
+    private static String getObjectName(final String uri) {
+
+        return uri.replaceFirst("s3\\://", "").replaceFirst("[^/]+/(.*)", "$1");
+
     }
 
 }

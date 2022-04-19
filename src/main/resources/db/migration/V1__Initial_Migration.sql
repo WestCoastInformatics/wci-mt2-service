@@ -56,6 +56,7 @@ CREATE TABLE `organizations` (
   `name` varchar(255) NOT NULL,
   `primaryContactEmail` varchar(255) DEFAULT NULL,
   `edition_id` varchar(64) DEFAULT NULL,
+  `iconUri` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK9og41jo3e6xe033my21t6wscf` (`edition_id`),
   CONSTRAINT `FK9og41jo3e6xe033my21t6wscf` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`)
@@ -161,6 +162,7 @@ CREATE TABLE `users` (
   `name` varchar(250) NOT NULL,
   `title` varchar(250) DEFAULT NULL,
   `userName` varchar(250) NOT NULL,
+  `iconUri` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_mmns67o5v4bfippoqitu4v3t6` (`userName`)
 );
