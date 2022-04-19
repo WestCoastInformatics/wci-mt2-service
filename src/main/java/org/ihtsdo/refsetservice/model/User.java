@@ -92,6 +92,9 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @Fetch(FetchMode.JOIN)
     private Set<Organization> organizations = new HashSet<>();
 
+    @Column(nullable = true, length = 255)
+    private String iconUri;
+
     /** The admin role. */
     public static final String ROLE_ADMIN = "ADMIN";
 
@@ -163,6 +166,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         company = other.getCompany();
         roles = new HashSet<String>(other.getRoles());
         authToken = other.getAuthToken();
+        iconUri = other.iconUri;
     }
 
     /**
@@ -180,6 +184,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         company = other.getCompany();
         roles = new HashSet<String>(other.getRoles());
         authToken = other.getAuthToken();
+        iconUri = other.iconUri;
     }
 
     /**
@@ -354,6 +359,26 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     }
 
     /**
+     * Returns the icon URI.
+     *
+     * @return the icon URI
+     */
+    public String getIconUri() {
+
+        return iconUri;
+    }
+
+    /**
+     * Sets the icon URI.
+     *
+     * @param name the icon URI
+     */
+    public void setIconUri(final String iconUri) {
+
+        this.iconUri = iconUri;
+    }
+
+    /**
      * Check if the user has the specified role on the refset.
      *
      * @param roleToCheck the role to look for
@@ -421,6 +446,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         result = prime * result + ((title == null) ? 0 : title.hashCode());
         result = prime * result + ((userName == null) ? 0 : userName.hashCode());
+        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         return result;
     }
 
@@ -485,6 +511,13 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                 return false;
             }
         } else if (!userName.equals(other.userName)) {
+            return false;
+        }
+        if (iconUri == null) {
+            if (other.iconUri != null) {
+                return false;
+            }
+        } else if (!iconUri.equals(other.iconUri)) {
             return false;
         }
         return true;

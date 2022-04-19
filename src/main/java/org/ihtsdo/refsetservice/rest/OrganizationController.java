@@ -9,6 +9,10 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
@@ -27,7 +31,10 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
+import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -35,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,8 +51,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
@@ -124,6 +134,7 @@ public class OrganizationController extends BaseController {
     /**
      * Search organizations.
      *
+     * @param includeMembers the include members
      * @param searchParameters the search parameters
      * @param bindingResult the binding result
      * @return the string
@@ -438,8 +449,8 @@ public class OrganizationController extends BaseController {
     /**
      * Add the user to the organization.
      *
-     * @param userId the user id
      * @param organizationId the organization id
+     * @param userId the user id
      * @return the response entity
      * @throws Exception the exception
      */
@@ -493,8 +504,8 @@ public class OrganizationController extends BaseController {
     /**
      * Remove the user from the organization.
      *
-     * @param userId the user id
      * @param organizationId the organization id
+     * @param userId the user id
      * @return the response entity
      * @throws Exception the exception
      */
@@ -543,6 +554,175 @@ public class OrganizationController extends BaseController {
             handleException(e);
             return null;
         }
+    }
+
+    
+    /**
+     * Adds the organization icon.
+     *
+     * @param organizationId the organization id
+     * @param inputFile the input file
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Add icon for organization")
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Saveed icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @PostMapping(value = "/organization/{organizationId}/icon")
+    public ResponseEntity<Void> addOrganizationIcon(@PathVariable("organizationId") final String organizationId, @RequestParam("file") MultipartFile inputFile) throws Exception {
+
+        logger.info("Add icon for organization: {}.", organizationId);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            // find organization record, return 404 if not found
+            final Organization organization = service.get(organizationId, Organization.class);
+            if (organization == null) {
+                throw new RestException(false, 404, "Not found", "Unable to find organization for " + organizationId);
+            }
+
+            // ensure file exists
+            if (inputFile == null) {
+                throw new RestException(false, 417, "Failed expectation", "Uploaded file is null");
+            }
+
+            // check for file
+            final String fileName = inputFile.getOriginalFilename();
+            if (fileName == null) {
+                throw new RestException(false, 417, "Failed expectation", "Uploaded file has null filename");
+            }
+
+            // check file size
+            final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.icon.file.maxsize"));
+            if (inputFile.getSize() > maxFileSize) {
+                throw new RestException(false, 413, "Failed expectation", "File size must be less than 2 MB");
+            }
+
+            final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
+            final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
+            
+            if (!fileTypes.contains(extension)) {
+                throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
+            }
+
+            final String storageDirectory = PropertyUtility.getProperty("refset.organization.icon.file.dir");
+            final String uri = storageDirectory + organizationId + "." + extension;
+
+            logger.debug("Add organization icon uploadUri = " + uri);
+
+            try (InputStream is = inputFile.getInputStream()) {
+                S3ConnectionWrapper.uploadToS3(uri, is);
+            }
+
+            final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;
+
+            organization.setIconUri(iconUri);
+
+            service.setModifiedBy(authUser.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+            service.update(organization);
+            service.commit();
+
+            // Return the object
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+
+        } catch (final Exception e) {
+            logger.error("Trying to add organization icon for organiation " + organizationId, e);
+            handleException(e);
+            return null;
+        }
+
+    }
+
+    /**
+     * Update organization icon.
+     *
+     * @param organizationId the organization id
+     * @param inputFile the input file
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Update icon for organization", response = User.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Updated icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @PutMapping(value = "/organization/{organizationId}/icon")
+    public ResponseEntity<Void> updateOrganizationIcon(@PathVariable("organizationId") final String organizationId, @RequestParam("file") MultipartFile inputFile) throws Exception {
+
+        logger.info("Add icon for organization: {}.", organizationId);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            // find organization record, return 404 if not found
+            final Organization organization = service.get(organizationId, Organization.class);
+            if (organization == null) {
+                throw new RestException(false, 404, "Not found", "Unable to find organization for " + organizationId);
+            }
+
+            // ensure file exists
+            if (inputFile == null) {
+                throw new RestException(false, 417, "Failed expectation", "Uploaded file is null");
+            }
+
+            // check for file
+            final String fileName = inputFile.getOriginalFilename();
+            if (fileName == null) {
+                throw new RestException(false, 417, "Failed expectation", "Uploaded file has null filename");
+            }
+
+            // check file size
+            final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.icon.file.maxsize"));
+            if (inputFile.getSize() > maxFileSize) {
+                throw new RestException(false, 413, "Failed expectation", "File size must be less than 2 MB");
+            }
+
+            final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
+            final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
+            
+            if (!fileTypes.contains(extension)) {
+                throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
+            }
+
+            final String storageDirectory = PropertyUtility.getProperty("refset.organization.icon.file.dir");
+            final String uri = storageDirectory + organizationId + "." + extension;
+
+            logger.debug("Adding organization icon upload URI = " + uri);
+
+            try (InputStream is = inputFile.getInputStream()) {
+                S3ConnectionWrapper.uploadToS3(uri, is);
+            }
+
+            final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;
+
+            organization.setIconUri(iconUri);
+
+            service.setModifiedBy(authUser.getId());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+            service.update(organization);
+            service.commit();
+
+            // Return the object
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+
+        } catch (final Exception e) {
+            logger.error("Trying to add organization icon for organiation " + organizationId, e);
+            handleException(e);
+            return null;
+        }
+
     }
 
 }
