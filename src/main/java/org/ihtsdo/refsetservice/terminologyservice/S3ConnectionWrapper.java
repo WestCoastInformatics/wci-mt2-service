@@ -172,6 +172,7 @@ public class S3ConnectionWrapper {
 
                 final ObjectMetadata metadata = new ObjectMetadata();
                 metadata.addUserMetadata("title", objectName);
+                metadata.setContentLength(is.available());
 
                 final TransferManager tx = TransferManagerBuilder.standard().withS3Client(s3Client).build();
                 final Upload up = tx.upload(bucketName, objectName, is, metadata);
