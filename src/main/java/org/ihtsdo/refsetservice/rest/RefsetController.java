@@ -173,8 +173,8 @@ public class RefsetController extends BaseController {
             final boolean isLocked = RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId);
             String returnString = isLocked + "";
             logger.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
-            logger.debug("********** isRefsetLocked: refsetsUpdatedMembers: " + RefsetMemberService.refsetsUpdatedMembers);
-            logger.debug("********** isRefsetLocked: does update map contain this refset: " + RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId));
+            logger.debug("isRefsetLocked: refsetsUpdatedMembers: " + RefsetMemberService.refsetsUpdatedMembers);
+            logger.debug("isRefsetLocked: does update map contain this refset: " + RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId));
             
             if (!isLocked && RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId)) {
                 
@@ -2188,7 +2188,9 @@ public class RefsetController extends BaseController {
             logger.debug("getComparisonData: activeRefsetInternalId: " + activeRefsetInternalId);
             
             // add the list of concepts as members to the refset
-            final RefsetMemberComparison results = ModelUtility.fromJson((String)request.getSession().getAttribute("refsetMemberComparison_" + activeRefsetInternalId), RefsetMemberComparison.class);
+            final String uuid = (String)request.getSession().getAttribute("refsetMemberComparison_" + activeRefsetInternalId);
+            final RefsetMemberComparison results = (RefsetMemberComparison)SecurityService.getFromInMemoryStorage(uuid);
+            SecurityService.removeFromInMemoryStorage(uuid);
             request.getSession().removeAttribute("refsetMemberComparison_" + activeRefsetInternalId);
             
             if (results == null) {

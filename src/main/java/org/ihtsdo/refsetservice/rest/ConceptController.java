@@ -85,7 +85,7 @@ public class ConceptController extends BaseController {
     final String code) throws Exception {
         try {
 
-            logger.info("*********** getConcept: terminology: " + terminology + " ; code: " + code);
+            logger.info("getConcept: terminology: " + terminology + " ; code: " + code);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -93,7 +93,7 @@ public class ConceptController extends BaseController {
                         + " AND code:" + QueryParserBase.escape(code) + "", Concept.class, null);
 
                 logger.info(
-                        "*********** getConcept: serviceConcept: " + ModelUtility.toJson(concept));
+                        "getConcept: serviceConcept: " + ModelUtility.toJson(concept));
 
                 return concept;
             }
@@ -119,7 +119,7 @@ public class ConceptController extends BaseController {
 
         try {
 
-            logger.info("*********** getConcept: active: " + active + " ; code: " + code);
+            logger.info("getConcept: active: " + active + " ; code: " + code);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -130,7 +130,7 @@ public class ConceptController extends BaseController {
                 service.update(concept);
 
                 logger.info(
-                        "*********** getConcept: serviceConcept: " + ModelUtility.toJson(concept));
+                        "getConcept: serviceConcept: " + ModelUtility.toJson(concept));
 
                 return concept;
             }

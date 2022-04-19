@@ -46,6 +46,9 @@ public class SecurityService implements AutoCloseable {
 
     /** The token login time . */
     private static Map<String, Date> tokenTimeoutMap = Collections.synchronizedMap(new HashMap<String, Date>());
+    
+    /** a place to store temporary user data in memory . */
+    private static Map<String, Map<String, Object>> userInMemoryStorage = Collections.synchronizedMap(new HashMap<String, Map<String, Object>>());
 
     /** The handler. */
     private static SecurityServiceHandler handler = null;
@@ -194,7 +197,7 @@ public class SecurityService implements AutoCloseable {
         session.setAttribute(attributeName, value);
         return true;
     }
-
+    
     /**
      * Remove the something from the session.
      *
@@ -218,6 +221,74 @@ public class SecurityService implements AutoCloseable {
         }
 
         session.removeAttribute(attributeName);
+    }
+    
+    /**
+     * Get something from the user specific in memory storage.
+     *
+     * @param attributeName the storage attribute name
+     * @return the object from the storage or null
+     * @throws Exception the exception
+     */
+    public static Object getFromInMemoryStorage(final String attributeName) throws Exception {
+        
+        final User user = getUserFromSession();
+        Object returnObject = null;
+        
+        if (userInMemoryStorage.containsKey(user.getUserName())) {
+            
+            final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
+            
+            if (storageMap.containsKey(attributeName)) {
+                returnObject = storageMap.get(attributeName);
+            }
+        }
+        
+        return returnObject;
+    }
+    
+    /**
+     * Set something in the user specific in memory storage.
+     *
+     * @param attributeName the storage attribute name
+     * @param value the value to store in the storage
+     * @return true if the value was set in the storage, otherwise false
+     * @throws Exception the exception
+     */
+    public static boolean setInMemoryStorage(final String attributeName, final Object value) throws Exception {
+        
+        final User user = getUserFromSession();
+        
+        if (userInMemoryStorage.containsKey(user.getUserName())) {
+            
+            final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
+            storageMap.put(attributeName, value);
+        
+        } else {
+            
+            final Map<String, Object> storageMap = new HashMap<>();
+            storageMap.put(attributeName, value);
+            userInMemoryStorage.put(user.getUserName(), storageMap);
+        }
+        
+        return true;
+    }
+
+    /**
+     * Remove the something from the in memory storage.
+     *
+     * @param attributeName the storage attribute name
+     * @throws Exception the exception
+     */
+    public static void removeFromInMemoryStorage(final String attributeName) throws Exception {
+
+        final User user = getUserFromSession();
+        
+        if (userInMemoryStorage.containsKey(user.getUserName())) {
+            
+            final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
+            storageMap.remove(attributeName);
+        }
     }
 
     /**

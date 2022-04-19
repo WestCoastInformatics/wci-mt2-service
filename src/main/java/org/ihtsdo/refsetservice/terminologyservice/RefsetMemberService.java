@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -4976,7 +4977,9 @@ public class RefsetMemberService {
         refsetMemberComparison.setActiveRefsetDistinctMembersCount(refsetMemberComparison.getActiveRefsetDistinctMembers().size());
         refsetMemberComparison.setComparisonRefsetDistinctMembersCount(refsetMemberComparison.getComparisonRefsetDistinctMembers().size());
         
-        boolean wasSet = SecurityService.setInSession("refsetMemberComparison_" + activeRefsetInternalId, refsetMemberComparison.toString());
+        final String uuid = UUID.randomUUID().toString();
+        SecurityService.setInMemoryStorage(uuid, refsetMemberComparison);
+        boolean wasSet = SecurityService.setInSession("refsetMemberComparison_" + activeRefsetInternalId, uuid);
         logger.debug("compileComparisonData setInSession: " + wasSet);
         logger.debug("compileComparisonData refsetMemberComparison: " + refsetMemberComparison);
         
