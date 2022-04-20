@@ -139,6 +139,12 @@ public class RefsetController extends BaseController {
                 refset.setLocked(true);
             }
             
+            if (RefsetService.refsetsToShowUpgradeWarning.contains(refset.getId())) {
+                
+                refset.setUpgradeWarning(true);
+                RefsetService.refsetsToShowUpgradeWarning.remove(refset.getId());
+            }
+            
             return refset;
 
         } catch (final Exception e) {
@@ -656,9 +662,9 @@ public class RefsetController extends BaseController {
                     final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refset.getId(), true);
                     refset = RefsetService.getRefset(service, user, newRefsetInternalId);
                     
-                    logger.debug("setWorkflowStatus Published versionDate: " + versionDate + " ; editionVersions: " + editionVersions);
-                    
-                    if (editionVersions.indexOf(versionDate) > 0) {
+                    if (action.equals(WorkflowService.EDIT) && editionVersions.indexOf(versionDate) > 0) {
+                        
+                        RefsetService.refsetsToShowUpgradeWarning.add(newRefsetInternalId);
                         refset.setUpgradeWarning(true);
                     }
                 }

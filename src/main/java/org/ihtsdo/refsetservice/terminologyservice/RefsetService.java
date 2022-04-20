@@ -86,6 +86,9 @@ public class RefsetService {
 
     /** A cache of the sorted branch versions. */
     private final static Map<String, List<String>> branchVersionCache = new HashMap<>();
+    
+    /** A list of refset actively being updated. */
+    public final static Set<String> refsetsToShowUpgradeWarning = new HashSet<>();
 
     static {
 
