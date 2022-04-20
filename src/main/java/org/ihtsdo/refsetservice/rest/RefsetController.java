@@ -656,7 +656,9 @@ public class RefsetController extends BaseController {
                     final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refset.getId(), true);
                     refset = RefsetService.getRefset(service, user, newRefsetInternalId);
                     
-                    if (editionVersions.indexOf(versionDate) > 1) {
+                    logger.debug("setWorkflowStatus Published versionDate: " + versionDate + " ; editionVersions: " + editionVersions);
+                    
+                    if (editionVersions.indexOf(versionDate) > 0) {
                         refset.setUpgradeWarning(true);
                     }
                 }
