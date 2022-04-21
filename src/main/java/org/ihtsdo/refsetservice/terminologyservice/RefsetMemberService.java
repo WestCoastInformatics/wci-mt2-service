@@ -3755,6 +3755,7 @@ public class RefsetMemberService {
                     bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
                     final String memberSearchBody = bodyBase + bodyConceptIds + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\"}";
                     logger.debug("addRefsetMembers member search body: " + memberSearchBody);
+                    logger.debug("addRefsetMembers conceptIds: " + conceptIds);
                     
                     try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
     
@@ -3773,6 +3774,7 @@ public class RefsetMemberService {
     
                             final JsonNode conceptNode = iterator.next();
                             final String conceptId = conceptNode.get("conceptId").asText();
+                            logger.debug("addRefsetMembers removing already member conceptId: " + conceptId);
                             conceptIds.remove(conceptId);
                             
                             final Map<String, String> status = new HashMap<>();
@@ -4375,6 +4377,8 @@ public class RefsetMemberService {
         final ObjectMapper mapper = new ObjectMapper();
         final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(refset.getEdition());
         int replacementCount = 0;
+        final String conceptSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/concepts/search";
+        final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\", ";
         
         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
         final String url = SnowstormConnection.BASE_URL + branchPath + "/members?referenceSet=" + refsetId + "&active=true&offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
@@ -4518,6 +4522,7 @@ public class RefsetMemberService {
                         final List<Concept> replacementConceptsToLookup = new ArrayList<>();
                         String reason = entry.getKey();
                         String replacementConceptIds = entry.getValue().toString();
+                        String replacementBodyConceptIds = "\"conceptIds\":[";
                         
                         if (replacementConceptIds.contains("[")) {
                           replacementConceptIds = replacementConceptIds.substring(1, replacementConceptIds.length() - 1);
@@ -4530,7 +4535,10 @@ public class RefsetMemberService {
                             replacementCount++;
                             reasonMap.put(replacementConceptId, reason);
                             replacementConceptsToLookup.add(new Concept(replacementConceptId));
+                            replacementBodyConceptIds += "\"" + replacementConceptId + "\",";
                         }
+                        
+                        final String threadReplacementBodyConceptIds = StringUtils.removeEnd(replacementBodyConceptIds, ",") + "]";
                         
                         logger.debug("compileUpgradeData replacementConceptsToLookup: " + replacementConceptsToLookup);
                         
@@ -4547,6 +4555,31 @@ public class RefsetMemberService {
 
                                         threadService.setModifiedBy(user.getUserName());
                                         threadService.setModifiedFlag(true);
+                                        
+                                        final List<String> replacementThatAreMembers = new ArrayList<>();
+                                        final String memberSearchBody = bodyBase + threadReplacementBodyConceptIds + "}";
+                                        logger.debug("compileUpgradeData replacement member search url: " + conceptSearchUrl);
+                                        logger.debug("compileUpgradeData replacement member search body: " + memberSearchBody);
+                                        
+                                        try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
+                        
+                                            final String resultString = response.readEntity(String.class);
+                        
+                                            // Only process payload if Rest call is successful
+                                            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                                                throw new Exception("call to url '" + conceptSearchUrl + "' for member search wasn't successful. " + response.toString());
+                                            }
+                        
+                                            final JsonNode root = mapper.readTree(resultString.toString());
+                                            final Iterator<JsonNode> iterator = root.get("items").iterator();
+                                            
+                                            // loop thru the returned member details to mark replacements that are already members
+                                            while (iterator != null && iterator.hasNext()) {
+                        
+                                                final JsonNode conceptNode = iterator.next();
+                                                replacementThatAreMembers.add(conceptNode.get("conceptId").asText());
+                                            }
+                                        }
                             
                                         //logger.debug("compileUpgradeData IN THREAD ID: " + Thread.currentThread().getId());
                                         populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
@@ -4556,6 +4589,10 @@ public class RefsetMemberService {
                                             final UpgradeReplacementConcecpt upgradeReplacementConcept = new UpgradeReplacementConcecpt();
                                             upgradeReplacementConcept.setCode(replacementConcept.getCode());
                                             upgradeReplacementConcept.setReason(reasonMap.get(replacementConcept.getCode()));
+                                            
+                                            if (replacementThatAreMembers.contains(replacementConcept.getCode())) {
+                                                upgradeReplacementConcept.setExistingMember(true);
+                                            }
                                             
                                             if (conceptNode.get("descriptions") != null) {
                                                 upgradeReplacementConcept.setDescriptions(ModelUtility.toJson(replacementConcept.getDescriptions()));
@@ -4720,7 +4757,7 @@ public class RefsetMemberService {
                 RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
                 
                 if (add) {
-                    unchangedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, Arrays.asList(conceptIdToChange));
+                    unchangedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, new ArrayList<>(Arrays.asList(conceptIdToChange)));
                 } else {
                     unchangedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, conceptIdToChange);
                 }
