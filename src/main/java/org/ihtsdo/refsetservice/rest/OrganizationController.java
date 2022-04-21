@@ -635,7 +635,7 @@ public class OrganizationController extends BaseController {
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
             
-            if (!fileTypes.contains(extension)) {
+            if (!fileTypes.contains("." + extension)) {
                 throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
@@ -645,7 +645,7 @@ public class OrganizationController extends BaseController {
             logger.debug("Add organization icon uploadUri = " + uri);
 
             try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadToS3(uri, is);
+                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
             }
 
             final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;
@@ -719,7 +719,7 @@ public class OrganizationController extends BaseController {
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
             
-            if (!fileTypes.contains(extension)) {
+            if (!fileTypes.contains("." + extension)) {
                 throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
@@ -729,7 +729,7 @@ public class OrganizationController extends BaseController {
             logger.debug("Adding organization icon upload URI = " + uri);
 
             try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadToS3(uri, is);
+                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
             }
 
             final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;
