@@ -274,7 +274,7 @@ public class UserController extends BaseController {
             logger.debug("Add user icon uploadUri = " + uri);
 
             try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadToS3(uri, is);
+                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
             }
 
             final String iconUri = PropertyUtility.getProperty("refset.user.icon.url.prefix") + userId + "." + extension;
@@ -359,7 +359,7 @@ public class UserController extends BaseController {
             logger.debug("Adding user icon upload URI " + uri);
 
             try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadToS3(uri, is);
+                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
             }
 
             final String iconUri = PropertyUtility.getProperty("refset.user.icon.url.prefix") + userId + "." + extension;

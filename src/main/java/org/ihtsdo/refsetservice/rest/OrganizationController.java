@@ -645,7 +645,7 @@ public class OrganizationController extends BaseController {
             logger.debug("Add organization icon uploadUri = " + uri);
 
             try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadToS3(uri, is);
+                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
             }
 
             final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;
@@ -729,7 +729,7 @@ public class OrganizationController extends BaseController {
             logger.debug("Adding organization icon upload URI = " + uri);
 
             try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadToS3(uri, is);
+                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
             }
 
             final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;

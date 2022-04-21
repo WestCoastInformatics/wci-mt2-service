@@ -37,14 +37,14 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
-import com.amazonaws.services.s3.transfer.Upload;
 
 /**
  * Class to handle making calls to Amazon S3.
  */
 public class S3ConnectionWrapper {
+
+    /** The logger. */
+    private static final Logger logger = LoggerFactory.getLogger(S3ConnectionWrapper.class);
 
     /** The config properties. */
     private final Properties properties = PropertyUtility.getProperties();
@@ -66,9 +66,6 @@ public class S3ConnectionWrapper {
 
     /** The S3 client. */
     private static AmazonS3 s3Client;
-
-    /** The logger. */
-    private static final Logger logger = LoggerFactory.getLogger(S3ConnectionWrapper.class);
 
     /** Static initialization. */
     static {
@@ -161,7 +158,7 @@ public class S3ConnectionWrapper {
      * @throws AmazonS3Exception the amazon S 3 exception
      * @throws Exception the exception
      */
-    public static void uploadToS3(final String uri, final InputStream is) throws AmazonS3Exception, Exception {
+    public static void uploadImageToS3(final String uri, final InputStream is, final String contentType) throws AmazonS3Exception, Exception {
 
         if (uri.matches("s3\\://.+/.+")) {
 
@@ -171,20 +168,19 @@ public class S3ConnectionWrapper {
             try {
 
                 final ObjectMetadata metadata = new ObjectMetadata();
-                metadata.addUserMetadata("title", objectName);
                 metadata.setContentLength(is.available());
+                metadata.setContentType(contentType);
+                metadata.addUserMetadata("title", objectName);
 
-                final TransferManager tx = TransferManagerBuilder.standard().withS3Client(s3Client).build();
-                final Upload up = tx.upload(bucketName, objectName, is, metadata);
-
-                up.waitForCompletion();
+                connectToAmazonS3();
+                s3Client.putObject(new PutObjectRequest(bucketName, objectName, is, metadata));
 
             } catch (AmazonS3Exception awse) {
-                logger.error("Failed to upload the org icon file: " + objectName + " to the aws bucket: " + bucketName, awse);
+                logger.error("Failed to upload the icon file: " + objectName + " to the aws bucket: " + bucketName, awse);
                 logger.error(awse.getErrorMessage());
                 throw awse;
             } catch (Exception e) {
-                throw new Exception("Failed to upload the org icon file: " + objectName + " to the aws bucket: " + bucketName, e);
+                throw new Exception("Failed to upload the icon file: " + objectName + " to the aws bucket: " + bucketName, e);
             }
         } else {
             throw new Exception("Bad S3 URI = " + uri);
