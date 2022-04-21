@@ -278,6 +278,7 @@ public class TeamController extends BaseController {
             service.commit();
             
             // add user to crowd groups
+            /*
             final Organization organization = team.getOrganization();
             final String teamsQuery = "teams:" + teamId;
             
@@ -290,6 +291,7 @@ public class TeamController extends BaseController {
                     }
                 }
             }
+            */
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
@@ -344,6 +346,7 @@ public class TeamController extends BaseController {
             service.commit();
 
             // remove user from crowd groups
+            /*
             final Organization organization = team.getOrganization();
             final String teamsQuery = "teams:" + teamId;
 
@@ -356,6 +359,7 @@ public class TeamController extends BaseController {
                     }
                 }
             }
+            */
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 

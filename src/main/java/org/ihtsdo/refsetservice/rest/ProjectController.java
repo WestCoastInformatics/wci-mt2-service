@@ -203,12 +203,14 @@ public class ProjectController extends BaseController {
             service.add(proj);
             service.commit();
 
+            /*
             try {
                 final Organization org = project.getOrganization();
                 CrowdAPIClient.addGroup(org.getEdition().getShortName(), proj.getName(), proj.getDescription());
             } catch (Exception e) {
                 throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed adding Crowd groups.", e.getMessage());
             }
+            */
 
             // Return the response
             final HttpHeaders headers = new HttpHeaders();
