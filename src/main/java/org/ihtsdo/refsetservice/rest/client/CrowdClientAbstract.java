@@ -77,6 +77,9 @@ public class CrowdClientAbstract {
             final HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(USER_NAME, PASSWORD);
             client.register(feature);
             final WebTarget target = client.target(url);
+            
+            logger.debug("CROWD API GET Url: {} | u:{} | p:{}", url, USER_NAME, (StringUtils.isNotEmpty(PASSWORD) ? "********" : "Empty") );
+            
             final Response response = target.request(ACCEPT_DEFAULT).get();        
             return response;
         
@@ -102,6 +105,9 @@ public class CrowdClientAbstract {
             client.register(feature);
             final WebTarget target = client.target(url);
             final Builder builder = target.request(ACCEPT_DEFAULT);
+            
+            logger.debug("CROWD API POST Url: {} | u:{} | p:{}", url, USER_NAME, (StringUtils.isNotEmpty(PASSWORD) ? "********" : "Empty") );
+            
             final Response response = builder.post(Entity.json(entity));
             return response;
 
@@ -126,6 +132,9 @@ public class CrowdClientAbstract {
             client.register(feature);
             final WebTarget target = client.target(url);
             final Builder builder = target.request(ACCEPT_DEFAULT);
+            
+            logger.debug("CROWD API DELETE Url: {} | u:{} | p:{}", url, USER_NAME, (StringUtils.isNotEmpty(PASSWORD) ? "********" : "Empty") );
+            
             final Response response = builder.delete();
             
             return response;
