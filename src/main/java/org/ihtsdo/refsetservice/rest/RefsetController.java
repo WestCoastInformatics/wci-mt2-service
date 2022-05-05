@@ -248,7 +248,7 @@ public class RefsetController extends BaseController {
      */
     @PostMapping("/refset/{refsetInternalId}/members")
     public @ResponseBody String addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
+        @RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
         @RequestParam(required = false) final MultipartFile conceptFile,
         @RequestParam(required = false) final String fileType)
         throws Exception {
@@ -325,7 +325,7 @@ public class RefsetController extends BaseController {
      */ 
     @PostMapping("/refset/{refsetInternalId}/removeMembers")
     public @ResponseBody String removeRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
+        @RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
         @RequestParam(required = false) final MultipartFile conceptFile,
         @RequestParam(required = false) final String fileType)
         throws Exception {
@@ -401,7 +401,7 @@ public class RefsetController extends BaseController {
      */
     @PostMapping("/refset/{refsetInternalId}/definitionExceptions")
     public @ResponseBody String addRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
+        @RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
         @RequestParam(required = false) final MultipartFile conceptFile,
         @RequestParam(required = false) final String fileType,
         @RequestParam(required = false) final String definitionExceptionType)
