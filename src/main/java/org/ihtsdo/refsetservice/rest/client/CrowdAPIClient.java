@@ -86,7 +86,10 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             
             final String groupName = CrowdGroupNameAlgorithm.generateName(organization, projectName, role);
             
+            logger.info("CALL CROWD API url:" + BASE_URL + ADD_GROUP);
             final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
+            
+            logger.info("CALL CROWD API payload: " + entity);
             final Response response = post(BASE_URL + ADD_GROUP, entity);
 
             // 201 Returned if the group is successfully created.
