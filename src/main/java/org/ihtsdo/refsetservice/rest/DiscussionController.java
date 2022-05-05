@@ -9,6 +9,8 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 
 import javax.servlet.http.HttpServletRequest;
@@ -19,11 +21,15 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.DiscussionPost;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.DiscussionType;
+import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +42,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -64,48 +71,128 @@ public class DiscussionController extends BaseController {
     HttpServletRequest request;
 
     /**
-     * Returns the discussion thread based on object (ex. refset, refset member) and the object 's id
+     * Returns a list of discussion threads based on the refset and possibly member ID
      *
-     * @param type the object
-     * @param key the object id
-     * @return the discussion thread
+     * @param type Object type, e.g. 'REFSET, REFSET_MEMEBER'
+     * @param refsetInternalId The internal ID of the Refset
+     * @param conceptId The concept ID of the refset member if this is a member type
+     * @return a list of matching discussion threads
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get the discussion for the specified object type and object key", response = DiscussionThread.class)
+    @ApiOperation(value = "Get all discussions for the specified object type and object key", response = DiscussionThread.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested discussion"), @ApiResponse(code = 400, message = "Bad request"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "type", value = "Object type, e.g. 'REFSET, REFSET_MEMEBER'", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "objectKey", value = "Unique id of the Refset or Refset Memeber", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "objectKey", value = "The internal ID of the Refset", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "conceptId", value = "The concept ID of the refset member if this is a member type", required = false, dataType = "string", paramType = "path"),
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/discussion/{type}/{objectKey}")
-    public @ResponseBody ResponseEntity<DiscussionThread> getDiscussion(@PathVariable(value = "type", required = true) final DiscussionType type,
-        @PathVariable(value = "objectKey", required = true) final String objectKey) throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = "/discussion/{type}/{refsetInternalId}")
+    public @ResponseBody ResultList<DiscussionThread> getDiscussions(@PathVariable(value = "type") final DiscussionType type,
+        @PathVariable(value = "refsetInternalId") final String refsetInternalId, 
+        @RequestParam(required = false) final String conceptId) throws Exception {
 
         try {
 
-            logger.info("Get discussion for type: {}, objectKey:", type, objectKey);
+            logger.debug("Get discussions for type: " + type.name() + "; refsetInternalId: " + refsetInternalId + "; conceptId: " + conceptId);
+            // TODO check permissions, fail if not authorized.
+            // final AuthContext context = authorize(request);
+            final User user = SecurityService.getUserFromSession();
+
+            try (TerminologyService service = new TerminologyService()) {
+                
+                final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+
+                String query = "type:" + QueryParserBase.escape(type.name()) + " AND refsetInternalId:" + QueryParserBase.escape(refsetInternalId);
+                
+                if (type.equals(DiscussionType.REFSET_MEMBER) && conceptId != null) {
+                    query += " AND conceptId: " + QueryParserBase.escape(conceptId);
+                }
+
+                final ResultList<DiscussionThread> results = service.find(query, null, DiscussionThread.class, null);
+
+                if (results == null) {
+                    
+                    final String message = "Unable to retrieve discussion threads for type: " + type.name() + "; refsetInternalId: " + refsetInternalId + "; conceptId: " + conceptId;
+                    logger.debug("getDiscussions: " + message);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
+                }
+                
+                for (int i = results.getItems().size() - 1; i >= 0; i--) {
+                    
+                    final DiscussionThread thread = results.getItems().get(i);
+                    
+                    if (thread.isPrivateThread() && !refset.getRoles().contains("VIEWER")) {
+                        results.getItems().remove(i);
+                    }
+                    
+                    thread.setLastPost(thread.getPosts().get(thread.getPosts().size() - 1).getCreated());
+                    thread.setNumberReplies(thread.getPosts().size() - 1);
+                }
+                
+                results.setTotal(results.getItems().size());
+                results.setTotalKnown(true);
+
+                logger.debug("getDiscussionThreads: discussionThread: " + ModelUtility.toJson(results));
+
+                return results;
+            }
+
+        } catch (final RestException re) {
+            throw re;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Returns a single discussion thread
+     *
+     * @param id the discussion ID
+     * @return the discussion thread
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Returns a single discussion thread", response = DiscussionThread.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested discussion"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "The ID of the discussion", required = true, dataType = "string", paramType = "path"),
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/discussion/{id}")
+    public @ResponseBody ResponseEntity<DiscussionThread> getDiscussion(@PathVariable(value = "id") final String id) throws Exception {
+
+        try {
+
+            logger.debug("Get discussion for id: " + id);
+            
             // TODO check permissions, fail if not authorized.
             // final AuthContext context = authorize(request);
             final User user = SecurityService.getUserFromSession();
 
             try (TerminologyService service = new TerminologyService()) {
 
-                final String query = "type:" + QueryParserBase.escape(type.name()) + " AND objectKey:" + QueryParserBase.escape(objectKey) + "";
 
-                final DiscussionThread discussionThread = service.findSingle(query, DiscussionThread.class, null);
+                final DiscussionThread discussionThread = service.get(id, DiscussionThread.class);
 
                 if (discussionThread == null) {
-                    logger.info("getDiscussion: Unable to retrieve discussion Thread type: {}, objectKey: {}.", type.name(),  objectKey);
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to retrieve discussion Thread type: " + type.name() + " objectKey: " + objectKey + ".");
+                    
+                    final String message = "Unable to retrieve discussion thread: " + id;
+                    logger.info("getDiscussion: " + message);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
                 }
 
                 logger.debug("getDiscussionThread: discussionThread: " + ModelUtility.toJson(discussionThread));
 
-                return new ResponseEntity<>(discussionThread, HttpStatus.OK);
+                return new ResponseEntity<>(discussionThread, new HttpHeaders(), HttpStatus.OK);
             }
 
         } catch (final RestException re) {
@@ -121,11 +208,11 @@ public class DiscussionController extends BaseController {
     /**
      * Create a new discussion thread.
      *
-     * @param discussionThread the discussion thread
+     * @param thread the discussion thread
      * @return the response entity
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Create a new discussion for the specified object type and object key", response = DiscussionThread.class)
+    @ApiOperation(value = "Create a new discussion", response = DiscussionThread.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Created"), 
         @ApiResponse(code = 400, message = "Bad request"),
@@ -133,33 +220,40 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "type", value = "Object type, e.g. 'REFSET, REFSET_MEMEBER'", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "thread", value = "The discussion thread to create", required = true, dataType = "DiscussionThread", paramType = "body"),
     })
     @RecordMetric
-    @PostMapping("/discussion/{type}/")
-    public @ResponseBody ResponseEntity<DiscussionThread> createDiscussionThread(@PathVariable(value = "type", required = true) final DiscussionType type,
-        @RequestBody final DiscussionThread discussionThread) throws Exception {
+    @PostMapping("/discussion")
+    public @ResponseBody ResponseEntity<DiscussionThread> createDiscussionThread(@RequestBody final DiscussionThread thread) throws Exception {
 
         try {
 
-            logger.info("Add discussion thread for type: {}, discussionThread", type, discussionThread.toString());
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
+            logger.debug("createDiscussionThread thread: " + thread);
+
             final User user = SecurityService.getUserFromSession();
 
             try (final TerminologyService service = new TerminologyService()) {
 
-                final DiscussionThread dt = (DiscussionThread) discussionThread;
+                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+                final boolean permittedRole = refset.getRoles().contains(User.ROLE_VIEWER);
+                
+                // If the user does not have the correct permissions then return an error
+                if ((refset.isPrivateRefset() || thread.isPrivateThread()) && !permittedRole) {
+                    
+                    logger.error("createDiscussionThread: User does not have permissions to perform this action: {}.", user.getUserName());
+                    throw new RestException(false, HttpStatus.FORBIDDEN, "Not Found", "User does not have permissions to perform this action.");
+                }
+                
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
+                
+                final DiscussionPost post = thread.getPosts().get(0);
+                post.setUser(user);
+                service.add(post);
 
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
+                service.add(thread);
 
-                service.add(dt);
-                service.commit();
-
-                final HttpHeaders headers = new HttpHeaders();
-                return new ResponseEntity<>(dt, headers, HttpStatus.CREATED);
+                return new ResponseEntity<>(thread, new HttpHeaders(), HttpStatus.CREATED);
             }
 
         } catch (final Exception e) {
@@ -170,134 +264,13 @@ public class DiscussionController extends BaseController {
     }
 
     /**
-     * Update the discussion thread.
+     * Add a post to a discussion thread.
      *
-     * @param objectKey the object key
-     * @param discussionThread the discussion thread
+     * @param threadId the discussion thread ID
+     * @param post the post to add
      * @return the response entity
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Update a new discussion for the specified object type and object key", response = DiscussionThread.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully updated the provided discussion"), 
-        @ApiResponse(code = 400, message = "Bad request"), 
-        @ApiResponse(code = 404, message = "Resource not found"),
-        @ApiResponse(code = 500, message = "Server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "discussionThreadId", value = "", required = true, dataType = "string", paramType = "path")
-    })
-    @RecordMetric
-    @PutMapping("/discussion/{discussionThreadId}")
-    public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThread(
-        @PathVariable(value = "discussionThreadId") final String discussionThreadId,
-        @RequestBody final DiscussionThread discussionThread) throws Exception {
-
-        try {
-
-            logger.info("Update discussionThread: {}", discussionThread);
-
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
-
-            try (final TerminologyService service = new TerminologyService()) {
-
-                // Find the discussion thread
-                final DiscussionThread original = service.get(discussionThread.getId(), DiscussionThread.class);
-
-                if (original == null) {
-                    logger.info("updateDiscussionThread: Unable to retrieve discussion thread id: {}.", discussionThread.getId());
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + discussionThread.getId() + ".");
-                }
-
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
-
-                // Apply changes
-                original.patchFrom(discussionThread);
-
-                // Update
-                service.update(original);
-                service.commit();
-
-                return new ResponseEntity<>(original, HttpStatus.OK);
-            }
-
-        } catch (final Exception e) {
-
-            logger.error("Error updating thread for discussionThread: {}", discussionThread.toString());
-            handleException(e);
-            return null;
-        }
-    }
-    
-    /**
-     * Update the discussion thread's status.
-     *
-     * @param objectKey the object key
-     * @param discussionThread the discussion thread
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Resolve/Unresolve a discussion thread.", response = DiscussionThread.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully updated the provided discussion thread's resolve status."), 
-        @ApiResponse(code = 400, message = "Bad request"), 
-        @ApiResponse(code = 404, message = "Resource not found"),
-        @ApiResponse(code = 500, message = "Server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "discussionThreadId", value = "", required = true, dataType = "string", paramType = "path")
-    })
-    @RecordMetric
-    @PutMapping("/discussion/{discussionThreadId}/status")
-    public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadStatus(
-        @PathVariable(value = "discussionThreadId") final String discussionThreadId
-        ) throws Exception {
-
-        try {
-
-            logger.info("Update discussionThreadId: {}", discussionThreadId);
-
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
-
-            try (final TerminologyService service = new TerminologyService()) {
-
-                // Find the discussion thread
-                final DiscussionThread original = service.get(discussionThreadId, DiscussionThread.class);
-
-                if (original == null) {
-                    logger.info("updateDiscussionThread: Unable to retrieve discussion thread id: {}.", discussionThreadId);
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + discussionThreadId + ".");
-                }
-                
-                // flip status
-                original.setResolve(!original.isResolve());
-                original.setResolvedBy(user.getId());
-                
-                service.setModifiedBy(user.getId());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
-
-                // Update
-                service.update(original);
-                service.commit();
-
-                return new ResponseEntity<>(original, HttpStatus.OK);
-            }
-
-        } catch (final Exception e) {
-
-            logger.error("Error updating thread for discussionThread: {}", discussionThreadId);
-            handleException(e);
-            return null;
-        }
-    }
-
     @ApiOperation(value = "Add a new discussion post to a discussion thread", response = DiscussionPost.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Added discussion post to discussion thread."), 
@@ -306,51 +279,507 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "discussionThreadId", value = "Id of the discussion thread to add the post.", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "threadId", value = "Id of the discussion thread to add the post to.", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "post", value = "The post to be added to the discussion thread.", required = true, dataType = "DiscussionPost", paramType = "body"),
     })
     @RecordMetric
-    @PostMapping("/discussion/{discussionThreadId}/post")
-    public @ResponseBody ResponseEntity<Void> addPost(@PathVariable(value = "discussionThreadId") final String discussionThreadId, @RequestBody final DiscussionPost discussionPost) throws Exception {
-
+    @PostMapping("/discussion/{threadId}/post")
+    public @ResponseBody ResponseEntity<DiscussionPost> createPost(@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionPost post) throws Exception {
+        
         try {
-            logger.info("Add post to discussionThreadId: {}", discussionThreadId);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
+            
+            logger.debug("createPost threadId: " + threadId + "; post: " + post);
             final User user = SecurityService.getUserFromSession();
 
             try (final TerminologyService service = new TerminologyService()) {
+                
+                final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
-                final DiscussionThread discussionThread = service.get(discussionThreadId, DiscussionThread.class);
-
-                if (discussionThread == null) {
-                    logger.info("updateDiscussionThread: Unable to retrieve discussion thread id: {}.", discussionThreadId);
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + discussionThreadId + ".");
+                if (thread == null) {
+                    
+                    logger.error("createPost: Unable to retrieve discussion thread id: {}.", threadId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
                 }
                 
-                discussionThread.getPosts().add(discussionPost);            
+                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+                final boolean permittedRole = refset.getRoles().contains(User.ROLE_VIEWER);
                 
-                // add required attributes
-                discussionPost.setCreated(new Date());
-                discussionPost.setModifiedBy(user.getId());
-                discussionPost.setModified(new Date());
+                // If the user does not have the correct permissions then return an error
+                if ((refset.isPrivateRefset() || thread.isPrivateThread()) && !permittedRole) {
+                    
+                    logger.error("createPost: User does not have permissions to perform this action: {}.", user.getUserName());
+                    throw new RestException(false, HttpStatus.FORBIDDEN, "Not Found", "User does not have permissions to perform this action.");
+                }
                 
-                service.setModifiedBy(user.getId());
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
                 service.setTransactionPerOperation(false);
                 service.beginTransaction();
 
-                service.update(discussionThread);
+                post.setUser(user);
+                service.add(post);
+                
+                thread.getPosts().add(post);       
+                service.update(thread);
+                
                 service.commit();
             }
 
-            final HttpHeaders headers = new HttpHeaders();
-            return new ResponseEntity<>(headers, HttpStatus.CREATED);
+            return new ResponseEntity<>(post, new HttpHeaders(), HttpStatus.CREATED);
 
         } catch (final RestException re) {
             throw re;
         }
         
         catch (final Exception e) {
-            logger.error("Error adding post:{} to discussionThreadId: {}", discussionPost, discussionThreadId);
+            
+            logger.error("Error adding post: {} to discussionThreadId: {}", post, threadId);
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Update the discussion thread.
+     *
+     * @param threadId the discussion thread ID
+     * @param thread the discussion thread
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Update a discussion for the specified ID", response = DiscussionThread.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully updated the provided discussion"), 
+        @ApiResponse(code = 400, message = "Bad request"), 
+        @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 500, message = "Server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "threadId", value = "Id of the discussion thread update.", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "thread", value = "The updated discussion thread", required = true, dataType = "DiscussionThread", paramType = "body")
+    })
+    @RecordMetric
+    @PutMapping("/discussion/{threadId}")
+    public @ResponseBody ResponseEntity<Void> updateDiscussionThread(@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionThread thread) throws Exception {
+
+        try {
+
+            logger.debug("updateDiscussionThread threadId: " + threadId + "; thread: " + thread);
+            final User user = SecurityService.getUserFromSession();
+
+            try (final TerminologyService service = new TerminologyService()) {
+                
+                final DiscussionThread originalThread = service.get(threadId, DiscussionThread.class);
+
+                if (thread == null) {
+                    
+                    logger.error("updateDiscussionThread: Unable to retrieve discussion thread id: {}.", threadId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
+                }
+                
+                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+                final String threadUserName = thread.getPosts().get(0).getUser().getUserName();
+                
+                // If the user does not have the correct permissions then return an error
+                if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER)) && threadUserName != user.getUserName()) {
+                    
+                    logger.error("updateDiscussionThread: User does not have permissions to perform this action: {}.", user.getUserName());
+                    throw new RestException(false, HttpStatus.FORBIDDEN, "Not Found", "User does not have permissions to perform this action.");
+                }
+                
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
+                service.setTransactionPerOperation(false);
+                service.beginTransaction();
+
+                originalThread.setSubject(thread.getSubject());
+                originalThread.setStatus(thread.getStatus());
+                originalThread.setVisibility(thread.getVisibility());
+                originalThread.setPrivateThread(thread.isPrivateThread());
+                service.update(originalThread);
+                
+                final DiscussionPost post = originalThread.getPosts().get(0);
+                post.setMessage(thread.getPosts().get(0).getMessage());
+                post.setPrivatePost(thread.isPrivateThread());
+                service.update(post);
+                     
+                service.commit();
+                
+                return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            logger.error("updateDiscussionThread Error updating thread for discussionThread: {}", thread.toString());
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Update the discussion thread's status.
+     *
+     * @param threadId the discussion thread ID
+     * @param status the discussion thread's status
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Set the status a discussion thread.", response = DiscussionThread.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully updated the provided discussion thread's status."), 
+        @ApiResponse(code = 400, message = "Bad request"), 
+        @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 500, message = "Server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "status", value = "", required = true, dataType = "string", paramType = "request")
+    })
+    @RecordMetric
+    @PutMapping("/discussion/{threadId}/status")
+    public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadStatus(
+        @PathVariable(value = "threadId") final String threadId, @RequestParam final String status) throws Exception {
+
+        try {
+
+            logger.debug("updateDiscussionThreadStatus threadId: " + threadId + "; status: " + status);
+
+            final User user = SecurityService.getUserFromSession();
+
+            try (final TerminologyService service = new TerminologyService()) {
+                
+                final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
+                
+                if (thread == null) {
+                    
+                    logger.error("updateDiscussionThreadStatus: Unable to retrieve discussion thread id: {}.", threadId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
+                }
+                
+                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+                final String threadUserName = thread.getPosts().get(0).getUser().getUserName();
+                
+                // If the user does not have the correct permissions then return an error
+                if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER)) && threadUserName != user.getUserName()) {
+                    
+                    logger.error("updateDiscussionThreadStatus: User does not have permissions to perform this action: {}.", user.getUserName());
+                    throw new RestException(false, HttpStatus.FORBIDDEN, "Not Found", "User does not have permissions to perform this action.");
+                }
+                
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
+
+                thread.setStatus(status);
+
+                // Update
+                service.update(thread);
+
+                return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            logger.error("updateDiscussionThreadStatus Error updating thread for discussionThread: {}", threadId);
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Update the discussion thread's privacy.
+     *
+     * @param threadId the discussion thread ID
+     * @param isPrivate is the discussion thread private
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Set the privacy of a discussion thread.", response = DiscussionThread.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully updated the provided discussion thread's privacy."), 
+        @ApiResponse(code = 400, message = "Bad request"), 
+        @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 500, message = "Server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "isPrivate", value = "", required = true, dataType = "boolean", paramType = "request")
+    })
+    @RecordMetric
+    @PutMapping("/discussion/{threadId}/privacy")
+    public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadPrivacy(
+        @PathVariable(value = "threadId") final String threadId, @RequestParam final boolean isPrivate) throws Exception {
+
+        try {
+
+            logger.debug("updateDiscussionThreadPrivacy threadId: " + threadId + "; isPrivate: " + isPrivate);
+
+            final User user = SecurityService.getUserFromSession();
+
+            try (final TerminologyService service = new TerminologyService()) {
+                
+                final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
+                
+                if (thread == null) {
+                    
+                    logger.error("updateDiscussionThreadPrivacy: Unable to retrieve discussion thread id: {}.", threadId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
+                }
+                
+                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+                final String threadUserName = thread.getPosts().get(0).getUser().getUserName();
+                
+                // If the user does not have the correct permissions then return an error
+                if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER)) && threadUserName != user.getUserName()) {
+                    
+                    logger.error("updateDiscussionThreadPrivacy: User does not have permissions to perform this action: {}.", user.getUserName());
+                    throw new RestException(false, HttpStatus.FORBIDDEN, "Not Found", "User does not have permissions to perform this action.");
+                }
+                
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
+                service.setTransactionPerOperation(false);
+                service.beginTransaction();
+
+                thread.setPrivateThread(isPrivate);
+                service.update(thread);
+                
+                final DiscussionPost post = thread.getPosts().get(0);
+                post.setPrivatePost(isPrivate);
+                service.update(post);
+                
+                service.commit();
+
+                return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            logger.error("updateDiscussionThreadPrivacy Error updating thread for discussionThread: {}", threadId);
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Update the discussion thread's visibility.
+     *
+     * @param threadId the discussion thread ID
+     * @param visibility the discussion thread's visibility
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Set the visibility of a discussion thread.", response = DiscussionThread.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully updated the provided discussion thread's visibility."), 
+        @ApiResponse(code = 400, message = "Bad request"), 
+        @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 500, message = "Server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "visibility", value = "", required = true, dataType = "string", paramType = "request")
+    })
+    @RecordMetric
+    @PutMapping("/discussion/{threadId}/visibility")
+    public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadVisibility(
+        @PathVariable(value = "threadId") final String threadId, @RequestParam final String visibility) throws Exception {
+
+        try {
+
+            logger.debug("updateDiscussionThreadVisibility threadId: " + threadId + "; visibility: " + visibility);
+
+            final User user = SecurityService.getUserFromSession();
+
+            try (final TerminologyService service = new TerminologyService()) {
+                
+                final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
+
+                if (thread == null) {
+                    
+                    logger.error("updateDiscussionThreadVisibility: Unable to retrieve discussion thread id: {}.", threadId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
+                }
+
+                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+                final String threadUserName = thread.getPosts().get(0).getUser().getUserName();
+                
+                // If the user does not have the correct permissions then return an error
+                if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER)) && threadUserName != user.getUserName()) {
+                    
+                    logger.error("updateDiscussionThreadVisibility: User does not have permissions to perform this action: {}.", user.getUserName());
+                    throw new RestException(false, HttpStatus.FORBIDDEN, "Not Found", "User does not have permissions to perform this action.");
+                }
+                
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
+   
+                thread.setVisibility(visibility);
+
+                // Update
+                service.update(thread);
+
+                return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            logger.error("updateDiscussionThreadVisibility Error updating thread for discussionThread: {}", threadId);
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Update the discussion post's privacy.
+     *
+     * @param threadId the discussion thread ID
+     * @param postId the discussion post ID
+     * @param isPrivate is the discussion post private
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Set the privacy of a discussion post.", response = DiscussionThread.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully updated the provided discussion post's privacy."), 
+        @ApiResponse(code = 400, message = "Bad request"), 
+        @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 500, message = "Server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "postId", value = "", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "isPrivate", value = "", required = true, dataType = "boolean", paramType = "request")
+    })
+    @RecordMetric
+    @PutMapping("/discussion/{threadId}/post/{postId}/privacy")
+    public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionPostPrivacy(
+        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @RequestParam final boolean isPrivate) throws Exception 
+    {
+
+        try {
+
+            logger.debug("updateDiscussionPostPrivacy threadId: " + threadId + "; postId: " + postId + "; isPrivate: " + isPrivate);
+
+            final User user = SecurityService.getUserFromSession();
+
+            try (final TerminologyService service = new TerminologyService()) {
+                
+                final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
+                
+                if (thread == null) {
+                    
+                    logger.error("updateDiscussionPostPrivacy: Unable to retrieve discussion thread id: {}.", threadId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
+                }
+ 
+                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+                final DiscussionPost post = service.get(postId, DiscussionPost.class);
+                
+                if (post == null) {
+                    
+                    logger.error("updateDiscussionPostPrivacy: Unable to retrieve discussion post id: {}.", postId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion post for " + postId + ".");
+                }
+                
+                logger.debug("******* updateDiscussionPostPrivacy: refset.getRoles(): " + refset.getRoles());
+                logger.debug("******* updateDiscussionPostPrivacy: Collections.disjoint: " + Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER)));
+                logger.debug("******* updateDiscussionPostPrivacy: post.getUser().getUserName(): " + post.getUser().getUserName());
+                logger.debug("******* updateDiscussionPostPrivacy: user.getUserName(): " + user.getUserName());
+                // If the user does not have the correct permissions then return an error
+                if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER)) && post.getUser().getUserName() != user.getUserName()) {
+                    
+                    logger.error("updateDiscussionPostPrivacy: User does not have permissions to perform this action: {}.", user.getUserName());
+                    throw new RestException(false, HttpStatus.FORBIDDEN, "Not Found", "User does not have permissions to perform this action.");
+                }
+                
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
+
+                post.setPrivatePost(isPrivate);
+                service.update(post);
+
+                return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            logger.error("updateDiscussionPostPrivacy: Error updating thread for discussionThread: {}", threadId);
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Update the discussion post's visibility.
+     *
+     * @param threadId the discussion thread ID
+     * @param postId the discussion post ID
+     * @param visibility the discussion post's visibility
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Set the visibility of a discussion post.", response = DiscussionThread.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully updated the provided discussion thread's visibility."), 
+        @ApiResponse(code = 400, message = "Bad request"), 
+        @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 500, message = "Server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "postId", value = "", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "visibility", value = "", required = true, dataType = "string", paramType = "request")
+    })
+    @RecordMetric
+    @PutMapping("/discussion/{threadId}/post/{postId}/visibility")
+    public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionPostVisibility(
+        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @RequestParam final String visibility) throws Exception 
+    {
+
+        try {
+
+            logger.debug("updateDiscussionPostVisibility threadId: " + threadId + "; postId: " + postId + "; visibility: " + visibility);
+
+            final User user = SecurityService.getUserFromSession();
+
+            try (final TerminologyService service = new TerminologyService()) {
+                
+                final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
+                
+                if (thread == null) {
+                    
+                    logger.error("updateDiscussionPostVisibility: Unable to retrieve discussion thread id: {}.", threadId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
+                }
+                
+                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+                final DiscussionPost post = service.get(postId, DiscussionPost.class);
+                
+                if (post == null) {
+                    
+                    logger.error("updateDiscussionPostVisibility: Unable to retrieve discussion post id: {}.", postId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion post for " + postId + ".");
+                }
+                
+                // If the user does not have the correct permissions then return an error
+                if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER)) && post.getUser().getUserName() != user.getUserName()) {
+                    
+                    logger.error("updateDiscussionPostVisibility: User does not have permissions to perform this action: {}.", user.getUserName());
+                    throw new RestException(false, HttpStatus.FORBIDDEN, "Not Found", "User does not have permissions to perform this action.");
+                }
+                
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
+
+                post.setVisibility(visibility);
+                service.update(post);
+
+                return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            logger.error("Error updating thread for discussionThread: {}", threadId);
             handleException(e);
             return null;
         }

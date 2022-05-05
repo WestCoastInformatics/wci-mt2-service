@@ -315,7 +315,10 @@ CREATE TABLE `discussion_posts` (
   `modifiedBy` varchar(256) NOT NULL,
   `message` varchar(4000) NOT NULL,
   `privatePost` bit(1) NOT NULL,
-  PRIMARY KEY (`id`)
+  `visibility` varchar(64) NOT NULL,
+  `User_id` varchar(64) NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `FKryuftl8bipivqyitga72angpb` FOREIGN KEY (`User_id`) REFERENCES `users` (`id`)
 );
 
 CREATE TABLE `discussion_threads` (
@@ -324,14 +327,15 @@ CREATE TABLE `discussion_threads` (
   `created` datetime(6) NOT NULL,
   `modified` datetime(6) NOT NULL,
   `modifiedBy` varchar(256) NOT NULL,
-  `objectKey` varchar(64) NOT NULL,
+  `refsetInternalId` varchar(64) NOT NULL,
+  `conceptId` varchar(64) DEFAULT NULL,
   `privateThread` bit(1) NOT NULL,
-  `resolve` bit(1) NOT NULL,
-  `resolvedBy` varchar(64) NULL,
+  `visibility` varchar(64) NOT NULL,
+  `status` varchar(64) NOT NULL,
+  `resolvedBy` varchar(250) DEFAULT NULL,
   `subject` varchar(4000) NOT NULL,
   `type` varchar(20) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_ibnnc9grph4u984hayecjickc` (`objectKey`)
+  PRIMARY KEY (`id`)
 );
 
 CREATE TABLE `discussion_threads_discussion_posts` (
