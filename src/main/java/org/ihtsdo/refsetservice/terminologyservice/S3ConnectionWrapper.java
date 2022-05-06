@@ -12,9 +12,13 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Properties;
 
+import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,7 +143,9 @@ public class S3ConnectionWrapper {
         try {
             // Upload a file as a new object with ContentType and title
             // specified.
-            final PutObjectRequest request = new PutObjectRequest(S3ConnectionWrapper.BUCKET, awsUploadPath + "/" + fileName, new File(localFilePath + "/" + fileName));
+ 
+            final PutObjectRequest request =
+                new PutObjectRequest(S3ConnectionWrapper.BUCKET, awsUploadPath + ((awsUploadPath.endsWith("/")) ? "" : "/") + fileName, new File(localFilePath + "/" + fileName));
             final ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType("plain/text");
             metadata.addUserMetadata("title", fileName);
@@ -150,42 +156,42 @@ public class S3ConnectionWrapper {
         }
     }
 
-    /**
-     * Upload file to S3.
-     *
-     * @param uri the uri
-     * @param is the is
-     * @throws AmazonS3Exception the amazon S 3 exception
-     * @throws Exception the exception
-     */
-    public static void uploadImageToS3(final String uri, final InputStream is, final String contentType) throws AmazonS3Exception, Exception {
-
-        if (uri.matches("s3\\://.+/.+")) {
-
-            final String bucketName = getBucketName(uri);
-            final String objectName = getObjectName(uri);
-
-            try {
-
-                final ObjectMetadata metadata = new ObjectMetadata();
-                metadata.setContentLength(is.available());
-                metadata.setContentType(contentType);
-                metadata.addUserMetadata("title", objectName);
-
-                connectToAmazonS3();
-                s3Client.putObject(new PutObjectRequest(bucketName, objectName, is, metadata));
-
-            } catch (AmazonS3Exception awse) {
-                logger.error("Failed to upload the icon file: " + objectName + " to the aws bucket: " + bucketName, awse);
-                logger.error(awse.getErrorMessage());
-                throw awse;
-            } catch (Exception e) {
-                throw new Exception("Failed to upload the icon file: " + objectName + " to the aws bucket: " + bucketName, e);
-            }
-        } else {
-            throw new Exception("Bad S3 URI = " + uri);
-        }
-    }
+//    /**
+//     * Upload file to S3.
+//     *
+//     * @param uri the uri
+//     * @param is the is
+//     * @throws AmazonS3Exception the amazon S 3 exception
+//     * @throws Exception the exception
+//     */
+//    public static void uploadImageToS3(final String uri, final InputStream is, final String contentType) throws AmazonS3Exception, Exception {
+//
+//        if (uri.matches("s3\\://.+/.+")) {
+//
+//            final String bucketName = getBucketName(uri);
+//            final String objectName = getObjectName(uri);
+//
+//            try {
+//
+//                final ObjectMetadata metadata = new ObjectMetadata();
+//                metadata.setContentLength(is.available());
+//                metadata.setContentType(contentType);
+//                metadata.addUserMetadata("title", objectName);
+//
+//                connectToAmazonS3();
+//                s3Client.putObject(new PutObjectRequest(bucketName, objectName, is, metadata));
+//
+//            } catch (AmazonS3Exception awse) {
+//                logger.error("Failed to upload the icon file: " + objectName + " to the aws bucket: " + bucketName, awse);
+//                logger.error(awse.getErrorMessage());
+//                throw awse;
+//            } catch (Exception e) {
+//                throw new Exception("Failed to upload the icon file: " + objectName + " to the aws bucket: " + bucketName, e);
+//            }
+//        } else {
+//            throw new Exception("Bad S3 URI = " + uri);
+//        }
+//    }
 
     /**
      * Indicates whether or not in S3 cache is the case.

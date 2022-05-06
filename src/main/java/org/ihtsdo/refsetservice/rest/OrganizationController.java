@@ -9,7 +9,11 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -17,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.io.FileUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -41,6 +46,9 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -79,6 +87,30 @@ public class OrganizationController extends BaseController {
 
     /** Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
+
+    /** The icon file dir. */
+    private static String IMAGES_ROOT_FILE_DIR;
+
+    /** The local directory to store organization icon file. */
+    private static String ICON_DIR;
+
+    /** The url prefix for icon file. */
+    private static String ICON_URL_PREFIX;
+
+    /** The aws root folder directory. */
+    private static String AWS_FOLDER_DIRECTORY;
+    
+    /** The aws images directory. */
+    private static String AWS_IMAGES_DIRECTORY;
+
+    /** Static initialization. */
+    static {
+        IMAGES_ROOT_FILE_DIR = PropertyUtility.getProperty("images.file.dir");
+        ICON_DIR = PropertyUtility.getProperty("refset.organization.icon.file.dir");
+        ICON_URL_PREFIX = PropertyUtility.getProperty("refset.organization.icon.url.prefix");
+        AWS_FOLDER_DIRECTORY = PropertyUtility.getProperty("aws.folder_directory");
+        AWS_IMAGES_DIRECTORY = PropertyUtility.getProperty("refset.organization.icon.aws.dir");
+    }
 
     /** The request. */
     @Autowired
@@ -316,12 +348,12 @@ public class OrganizationController extends BaseController {
 
             // inactivate projects, clear teams, and inactivate refsets
             final ResultList<Project> orgProjects = service.find("organization.id:" + id + " AND active:true", null, Project.class, null);
-            
+
             if (orgProjects.getItems() != null && !orgProjects.getItems().isEmpty()) {
                 for (Project project : orgProjects.getItems()) {
                     project.setActive(false);
                     if (project.getTeams() != null) {
-                        for(String teamId : project.getTeams()) {
+                        for (String teamId : project.getTeams()) {
                             final Team team = service.get(teamId, Team.class);
                             if (team != null && !team.getMembers().isEmpty()) {
                                 team.getMembers().clear();
@@ -330,7 +362,7 @@ public class OrganizationController extends BaseController {
                         }
                     }
                     service.update(project);
-                    
+
                     final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
                     if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
                         for (Refset refset : projRefsets.getItems()) {
@@ -584,7 +616,35 @@ public class OrganizationController extends BaseController {
         }
     }
 
-    
+    /**
+     * Returns the organization icon.
+     *
+     * @param fileName the file name
+     * @return the organization icon
+     * @throws Exception the exception
+     */
+    @RequestMapping(value = "/organization/icon/{fileName}", method = RequestMethod.GET)
+    public @ResponseBody ResponseEntity<Resource> getOrganizationIcon(@PathVariable("fileName") final String fileName) throws Exception {
+
+        try {
+            logger.info("GET icon for organization {}", fileName);
+            final Path localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR + File.separator + fileName);
+            final Resource file = new UrlResource(localFilePath.toUri());
+
+            if (file == null || !file.exists() || !file.isReadable()) {
+                throw new RuntimeException("Could not read the file!");
+            }
+
+            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION).header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(localFilePath))
+                .contentLength(file.contentLength()).body(file);
+
+        } catch (final Exception e) {
+            logger.error("Trying to get organization icon file " + fileName, e);
+            handleException(e);
+            return null;
+        }
+    }
+
     /**
      * Adds the organization icon.
      *
@@ -634,21 +694,34 @@ public class OrganizationController extends BaseController {
 
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
-            
+
             if (!fileTypes.contains("." + extension)) {
                 throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
-            final String storageDirectory = PropertyUtility.getProperty("refset.organization.icon.file.dir");
-            final String uri = storageDirectory + organizationId + "." + extension;
+            final String localFileName = organizationId + "." + extension;
+            final String localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR).toString();
+            final String awsUploadPath = AWS_FOLDER_DIRECTORY + "/" + AWS_IMAGES_DIRECTORY;
+            final File iconFile = new File(localFilePath + File.separator + localFileName);
 
-            logger.debug("Add organization icon uploadUri = " + uri);
-
-            try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
+            logger.debug("Add organization icon localFilePath = " + localFilePath);
+            try (final InputStream is = inputFile.getInputStream()) {
+                // write to local directory
+                FileUtils.copyInputStreamToFile(is, iconFile);
             }
 
-            final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;
+            try {
+
+                S3ConnectionWrapper.connectToAmazonS3();
+                S3ConnectionWrapper.uploadToS3(awsUploadPath, localFilePath, localFileName);
+
+            } catch (Exception ex) {
+                logger.error("Trying to add organization icon for organiation " + organizationId, ex);
+                throw ex;
+            }
+
+            // browser url
+            final String iconUri = ICON_URL_PREFIX + localFileName;
 
             organization.setIconUri(iconUri);
 
@@ -687,7 +760,7 @@ public class OrganizationController extends BaseController {
     @PutMapping(value = "/organization/{organizationId}/icon")
     public ResponseEntity<Void> updateOrganizationIcon(@PathVariable("organizationId") final String organizationId, @RequestParam("file") MultipartFile inputFile) throws Exception {
 
-        logger.info("Add icon for organization: {}.", organizationId);
+        logger.info("Update icon for organization: {}.", organizationId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
 
@@ -718,21 +791,34 @@ public class OrganizationController extends BaseController {
 
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
-            
+
             if (!fileTypes.contains("." + extension)) {
                 throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
-            final String storageDirectory = PropertyUtility.getProperty("refset.organization.icon.file.dir");
-            final String uri = storageDirectory + organizationId + "." + extension;
+            final String localFileName = organizationId + "." + extension;
+            final String localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR).toString();
+            final String awsUploadPath = AWS_FOLDER_DIRECTORY + "/" + AWS_IMAGES_DIRECTORY;
+            final File iconFile = new File(localFilePath + File.separator + localFileName);
 
-            logger.debug("Adding organization icon upload URI = " + uri);
-
-            try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
+            logger.debug("Update organization icon localFilePath = " + localFilePath);
+            try (final InputStream is = inputFile.getInputStream()) {
+                // write to local directory
+                FileUtils.copyInputStreamToFile(is, iconFile);
             }
 
-            final String iconUri = PropertyUtility.getProperty("refset.organization.icon.url.prefix") + organizationId + "." + extension;
+            try {
+
+                S3ConnectionWrapper.connectToAmazonS3();
+                S3ConnectionWrapper.uploadToS3(awsUploadPath, localFilePath, localFileName);
+
+            } catch (Exception ex) {
+                logger.error("Trying to update organization icon for organiation " + organizationId, ex);
+                throw ex;
+            }
+
+            // browser url
+            final String iconUri = ICON_URL_PREFIX + localFileName;
 
             organization.setIconUri(iconUri);
 
@@ -746,11 +832,11 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
-            logger.error("Trying to add organization icon for organiation " + organizationId, e);
+            logger.error("Trying to update organization icon for organiation " + organizationId, e);
             handleException(e);
             return null;
         }
-        
+
     }
 
 }

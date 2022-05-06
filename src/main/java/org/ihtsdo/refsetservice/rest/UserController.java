@@ -9,7 +9,11 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -17,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.io.FileUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
@@ -32,6 +37,9 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -67,8 +75,32 @@ public class UserController extends BaseController {
     /** Logger. */
     private static Logger logger = LoggerFactory.getLogger(UserController.class);
 
-    /**  Search users API notes. */
+    /** Search users API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
+
+    /** The icon file dir. */
+    private static String IMAGES_ROOT_FILE_DIR;
+
+    /** The local directory to store organization icon file. */
+    private static String ICON_DIR;
+
+    /** The url prefix for icon file. */
+    private static String ICON_URL_PREFIX;
+
+    /** The aws root folder directory. */
+    private static String AWS_FOLDER_DIRECTORY;
+    
+    /** The aws images directory. */
+    private static String AWS_IMAGES_DIRECTORY;
+
+    /** Static initialization. */
+    static {
+        IMAGES_ROOT_FILE_DIR = PropertyUtility.getProperty("images.file.dir");
+        ICON_DIR = PropertyUtility.getProperty("refset.user.icon.file.dir");
+        ICON_URL_PREFIX = PropertyUtility.getProperty("refset.user.icon.url.prefix");
+        AWS_FOLDER_DIRECTORY = PropertyUtility.getProperty("aws.folder_directory");
+        AWS_IMAGES_DIRECTORY = PropertyUtility.getProperty("refset.user.icon.aws.dir");
+    }
 
     /** The request. */
     @Autowired
@@ -215,6 +247,35 @@ public class UserController extends BaseController {
     }
 
     /**
+     * Returns the user icon.
+     *
+     * @param fileName the file name
+     * @return the user icon
+     * @throws Exception the exception
+     */
+    @RequestMapping(value = "/user/icon/{fileName}", method = RequestMethod.GET)
+    public @ResponseBody ResponseEntity<Resource> getUserIcon(@PathVariable("fileName") final String fileName) throws Exception {
+
+        try {
+            logger.info("GET icon for user {}", fileName);
+            final Path localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR + File.separator + fileName);
+            final Resource file = new UrlResource(localFilePath.toUri());
+
+            if (file == null || !file.exists() || !file.isReadable()) {
+                throw new RuntimeException("Could not read the file!");
+            }
+
+            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION).header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(localFilePath))
+                .contentLength(file.contentLength()).body(file);
+
+        } catch (final Exception e) {
+            logger.error("Trying to get user icon file " + fileName, e);
+            handleException(e);
+            return null;
+        }
+    }
+
+    /**
      * Adds the user icon.
      *
      * @param userId the user id
@@ -263,21 +324,34 @@ public class UserController extends BaseController {
 
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
-            
+
             if (!fileTypes.contains("." + extension)) {
                 throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
-            final String storageDirectory = PropertyUtility.getProperty("refset.user.icon.file.dir");
-            final String uri = storageDirectory + userId + "." + extension;
+            final String localFileName = userId + "." + extension;
+            final String localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR).toString();
+            final String awsUploadPath = AWS_FOLDER_DIRECTORY + "/" + AWS_IMAGES_DIRECTORY;
+            final File iconFile = new File(localFilePath + File.separator + localFileName);
 
-            logger.debug("Add user icon uploadUri = " + uri);
-
-            try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
+            logger.debug("Add organization icon localFilePath = " + localFilePath);
+            try (final InputStream is = inputFile.getInputStream()) {
+                // write to local directory
+                FileUtils.copyInputStreamToFile(is, iconFile);
             }
 
-            final String iconUri = PropertyUtility.getProperty("refset.user.icon.url.prefix") + userId + "." + extension;
+            try {
+
+                S3ConnectionWrapper.connectToAmazonS3();
+                S3ConnectionWrapper.uploadToS3(awsUploadPath, localFilePath, localFileName);
+
+            } catch (Exception ex) {
+                logger.error("Trying to add user icon for user " + userId, ex);
+                throw ex;
+            }
+
+            // browser url
+            final String iconUri = ICON_URL_PREFIX + localFileName;
 
             user.setIconUri(iconUri);
 
@@ -298,7 +372,6 @@ public class UserController extends BaseController {
 
     }
 
-    
     /**
      * Update user icon.
      *
@@ -317,7 +390,7 @@ public class UserController extends BaseController {
     @PutMapping(value = "/user/{userId}/icon")
     public ResponseEntity<Void> updateUserIcon(@PathVariable("userId") final String userId, @RequestParam("file") MultipartFile inputFile) throws Exception {
 
-        logger.info("Add icon for user: {}.", userId);
+        logger.info("Update icon for user: {}.", userId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
 
@@ -348,21 +421,34 @@ public class UserController extends BaseController {
 
             final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
-            
+
             if (!fileTypes.contains("." + extension)) {
                 throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
             }
 
-            final String storageDirectory = PropertyUtility.getProperty("refset.user.icon.file.dir");
-            final String uri = storageDirectory + userId + "." + extension;
+            final String localFileName = userId + "." + extension;
+            final String localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR).toString();
+            final String awsUploadPath = AWS_FOLDER_DIRECTORY + "/" + AWS_IMAGES_DIRECTORY;
+            final File iconFile = new File(localFilePath + File.separator + localFileName);
 
-            logger.debug("Adding user icon upload URI " + uri);
-
-            try (InputStream is = inputFile.getInputStream()) {
-                S3ConnectionWrapper.uploadImageToS3(uri, is, inputFile.getContentType());
+            logger.debug("Update organization icon localFilePath = " + localFilePath);
+            try (final InputStream is = inputFile.getInputStream()) {
+                // write to local directory
+                FileUtils.copyInputStreamToFile(is, iconFile);
             }
 
-            final String iconUri = PropertyUtility.getProperty("refset.user.icon.url.prefix") + userId + "." + extension;
+            try {
+
+                S3ConnectionWrapper.connectToAmazonS3();
+                S3ConnectionWrapper.uploadToS3(awsUploadPath, localFilePath, localFileName);
+
+            } catch (Exception ex) {
+                logger.error("Trying to add user icon for user " + userId, ex);
+                throw ex;
+            }
+
+            // browser url
+            final String iconUri = ICON_URL_PREFIX + localFileName;
 
             user.setIconUri(iconUri);
 
@@ -376,7 +462,7 @@ public class UserController extends BaseController {
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
-            logger.error("Trying to add user icon for organiation " + userId, e);
+            logger.error("Trying to update user icon for user " + userId, e);
             handleException(e);
             return null;
         }
