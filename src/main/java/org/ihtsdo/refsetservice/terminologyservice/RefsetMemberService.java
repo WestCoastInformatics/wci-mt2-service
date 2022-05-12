@@ -227,7 +227,7 @@ public class RefsetMemberService {
 
                 concepts = getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
                 logger.debug("Refset has " + concepts.size() + " members");
-
+                
             } else {
                 concepts = getMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
             }
@@ -3469,8 +3469,8 @@ public class RefsetMemberService {
         }
     }
     
-    public static boolean cacheMemberAncestors(final User user, String refsetId, final String versionDate) throws Exception {
-        return cacheMemberAncestors(RefsetService.getRefset(user, refsetId, versionDate));
+    public static boolean cacheMemberAncestors(final TerminologyService service, final User user, String refsetId, final String versionDate) throws Exception {
+        return cacheMemberAncestors(RefsetService.getRefset(service, user, refsetId, versionDate));
     }
 
     public static boolean cacheMemberAncestors(final Refset refset) throws Exception {

@@ -9,6 +9,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 
 import org.ihtsdo.refsetservice.model.AuthContext;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -39,7 +40,7 @@ public class BaseController {
      * @throws Exception the exception
      */
     public void handleException(final Exception e) throws Exception {
-        if (e instanceof ResponseStatusException) {
+        if (e instanceof ResponseStatusException || e instanceof RestException) {
             throw e;
         }
 

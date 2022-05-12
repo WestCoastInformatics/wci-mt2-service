@@ -104,6 +104,7 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
 
     /* see superclass */
     @Override
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public Date getCreated() {
         return created;
     }

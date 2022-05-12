@@ -1263,44 +1263,41 @@ public class RefsetService {
     }
 
     /**
-     * Returns a specific refset by Refset ID.
+     * Returns a specific refset by Refset ID and version date.
      *
+     * @param service the Terminology Service
      * @param user the user
      * @param refsetId the refset ID
      * @param versionDate the version date or IN DEVELOPMENT
      * @return the refset
      * @throws Exception the exception
      */
-    public static Refset getRefset(final User user, final String refsetId, final String versionDate) throws Exception {
+    public static Refset getRefset(final TerminologyService service, final User user, final String refsetId, final String versionDate) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        service.setModifiedBy(user.getUserName());
+        service.setModifiedFlag(true);
 
-            service.setModifiedBy(user.getUserName());
-            service.setModifiedFlag(true);
+        String query = "latestPublishedVersion: true";
 
-            String query = "latestPublishedVersion: true";
+        if (versionDate != null && !versionDate.equals("") & !versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
 
-            if (versionDate != null && !versionDate.equals("") & !versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
+            query = "versionDate:" + versionDate;
 
-                query = "versionDate:" + versionDate;
+        } else if (versionDate != null && versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
 
-            } else if (versionDate != null && versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
-
-                query = "versionStatus: " + Refset.IN_DEVELOPMENT;
-            }
-
-            Refset refset = service.findSingle(query + " AND refsetId:" + refsetId, Refset.class, null);
-
-            if (refset == null) {
-
-                throw new Exception("Unable to retrieve refset " + refsetId + " with version date: " + versionDate);
-            }
-
-            setCommonRefsetProperties(service, user, refset);
-
-            logger.debug("getRefset: refset: " + ModelUtility.toJson(refset));
-            return refset;
+            query = "versionStatus: " + Refset.IN_DEVELOPMENT;
         }
+
+        Refset refset = service.findSingle(query + " AND refsetId:" + refsetId, Refset.class, null);
+
+        if (refset == null) {
+
+            throw new Exception("Unable to retrieve refset " + refsetId + " with version date: " + versionDate);
+        }
+
+        setCommonRefsetProperties(service, user, refset);
+
+        return refset;
 
     }
 

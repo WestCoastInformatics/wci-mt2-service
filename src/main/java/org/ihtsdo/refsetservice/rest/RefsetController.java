@@ -36,6 +36,7 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
@@ -121,19 +122,18 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({@ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataType = "string", paramType = "path")})
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = "application/json")
-    public @ResponseBody Refset getRefset(
-        @PathVariable(value = "refsetId") final String refsetId, 
-        @PathVariable(value = "versionDate") final String versionDate, 
-        HttpServletRequest request
-    ) throws Exception {
+    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate) throws Exception {
 
-        try {
+        try (TerminologyService service = new TerminologyService()) {
 
             logger.debug("getRefset: refsetId: " + refsetId + " ; versionDate: " + versionDate);
             
             User user = SecurityService.getUserFromSession();
-            final Refset refset = RefsetService.getRefset(user, refsetId, versionDate);
+            final Refset refset = RefsetService.getRefset(service, user, refsetId, versionDate);
             RefsetService.getRefsetDescriptions(refset);
+            
+            logger.debug("getRefset: Including discussion count");
+            DiscussionService.attachRefsetDiscussionCount(service, user, refset);
             
             if (RefsetMemberService.refsetsBeingUpdated.contains(refset.getId())) {
                 refset.setLocked(true);
@@ -144,6 +144,8 @@ public class RefsetController extends BaseController {
                 refset.setUpgradeWarning(true);
                 RefsetService.refsetsToShowUpgradeWarning.remove(refset.getId());
             }
+            
+            logger.debug("getRefset: refset: " + ModelUtility.toJson(refset));
             
             return refset;
 
@@ -1027,8 +1029,8 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = "application/json")
-    public @ResponseBody ResultList<Refset> searchDirectory(final SearchParameters searchParameters, final boolean searchConcepts, final boolean showInDevelopment,
-        final BindingResult bindingResult, HttpServletRequest request) throws Exception {
+    public @ResponseBody ResultList<Refset> searchRefsets(final SearchParameters searchParameters, final boolean searchConcepts, final boolean showInDevelopment,
+        @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -1037,9 +1039,15 @@ public class RefsetController extends BaseController {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            logger.debug("searchDirectory searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + showInDevelopment);
+            logger.debug("searchRefsets searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + showInDevelopment + " ; countComments: " + countComments);
             
             ResultList<Refset> results = RefsetService.searchRefsets(user, service, searchParameters, searchConcepts, true, false);
+            
+            if (countComments != null && countComments) {
+                
+                logger.debug("searchRefsets: Including discussion count");
+                DiscussionService.attachRefsetDiscussionCounts(service, user, results.getItems());
+            }
            
             return results;
 
@@ -1147,7 +1155,8 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members", produces = "application/json")
     public @ResponseBody ConceptResultList getMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters, 
-            final String displayType, final TaxonomyParameters taxonomyParameters, final BindingResult bindingResult) throws Exception {
+            final String displayType, final TaxonomyParameters taxonomyParameters, @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception 
+    {
 
         checkBinding(bindingResult);
 
@@ -1155,11 +1164,19 @@ public class RefsetController extends BaseController {
         ConceptResultList results = new ConceptResultList();
         User user = SecurityService.getUserFromSession();
 
-        logger.debug("getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters + " ; taxonomyParameters: " + taxonomyParameters + " ; displayType: " + displayType);
+        logger.debug("getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters + " ; taxonomyParameters: " + taxonomyParameters + " ; displayType: " + displayType + " ; countComments: " + countComments);
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final Refset refset = RefsetMemberService.getRefset(user, service, refsetInternalId);
 
             results = RefsetMemberService.getRefsetMembers(user, refsetInternalId, searchParameters, displayType, taxonomyParameters);
+            
+            if (countComments != null && countComments) {
+                
+                logger.debug("getMembers: Including discussion count");
+                DiscussionService.attachMemberDiscussionCounts(service, user, refset, results.getItems());
+            }
             
             results.setTimeTaken(System.currentTimeMillis() - start);
             return results;
@@ -1196,14 +1213,14 @@ public class RefsetController extends BaseController {
         @PathVariable(value = "versionDate") final String versionDate
     ) throws Exception {
 
-        try {
+        try (TerminologyService service = new TerminologyService()) {
 
             User user = SecurityService.getUserFromSession();
             logger.debug("cacheMemberAncestors: refsetId: " + refsetId + " ; versionDate: " + versionDate);
 
             String returnJson = "{\"success\": \"<RESULT>\"}";
 
-            final boolean success = RefsetMemberService.cacheMemberAncestors(user, refsetId, versionDate);
+            final boolean success = RefsetMemberService.cacheMemberAncestors(service, user, refsetId, versionDate);
 
             if (success) {
                 returnJson = returnJson.replace("<RESULT>", "true");

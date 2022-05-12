@@ -169,6 +169,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The external URL. */
     @Column(nullable = true, length = 4000)
     private String externalUrl;
+    
+    /** The count of discussions for this item. */
+    @Transient
+    private int discussionCount;
 
     /** The project. */
     @ManyToOne(targetEntity = Project.class)
@@ -1085,6 +1089,27 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setHasVersionInDevelopment(boolean hasVersionInDevelopment) {
         this.hasVersionInDevelopment = hasVersionInDevelopment;
     }
+    
+    /**
+     * Gets the discussion count.
+     *
+     * @return the discussion count
+     */
+    @JsonGetter()
+    public int getDiscussionCount() {
+        
+        return discussionCount;
+    }
+    
+    /**
+     * Sets the discussion count.
+     *
+     * @param discussionCount the discussion count
+     */
+    public void setDiscussionCount(int discussionCount) {
+        
+        this.discussionCount = discussionCount;
+    }
 
     /**
      * Hash code.
@@ -1114,6 +1139,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         result = prime * result + memberCount;
+        result = prime * result + discussionCount;
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (downloadable ? 1 : 0);
         result = prime * result + (feedbackVisible ? 1 : 0);
@@ -1309,6 +1335,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         }
         
         if (upgradeWarning != other.upgradeWarning) {
+            return false;
+        }
+        
+        if (other.discussionCount != discussionCount) {
             return false;
         }
 

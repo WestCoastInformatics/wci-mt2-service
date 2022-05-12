@@ -147,7 +147,7 @@ public class DiscussionThread extends AbstractHasModified {
      *
      * @return the internal ID of the refset.
      */
-    @FullTextField(analyzer = "standard")
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getRefsetInternalId() {
         return refsetInternalId;
     }
@@ -166,7 +166,7 @@ public class DiscussionThread extends AbstractHasModified {
      *
      * @return the the concept ID of the member.
      */
-    @FullTextField(analyzer = "standard")
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getConceptId() {
         return conceptId;
     }
