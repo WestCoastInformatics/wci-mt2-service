@@ -106,7 +106,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             }
             
             // TODO remove before next UAT push. added 2/2/2022
-            if (user.getUserName().equals("twhalen")) {
+            if (user.getUserName().equals("twhalen") || user.getUserName().equals("twilliams2")) {
                 
                 Set<String> timRoles = new HashSet<>();
                 timRoles.add("be-all-author");
