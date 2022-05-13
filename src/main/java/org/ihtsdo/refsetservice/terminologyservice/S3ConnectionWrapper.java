@@ -256,12 +256,17 @@ public class S3ConnectionWrapper {
      */
     public static boolean deleteRefsetFromAws(final String awsPath) {
 
+        logger.debug("deleteRefsetFromAws: awsPath: " + awsPath);
+        
         final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(BUCKET).withPrefix(awsPath);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
 
         final ArrayList<KeyVersion> keys = new ArrayList<KeyVersion>();
+        
         for (S3ObjectSummary obj : listing.getObjectSummaries()) {
+            
             keys.add(new KeyVersion(obj.getKey()));
+            logger.debug("deleteRefsetFromAws: object to delete: " + obj.getKey());
         }
 
         if (keys.isEmpty()) {
@@ -273,7 +278,7 @@ public class S3ConnectionWrapper {
         final DeleteObjectsResult delObjRes = s3Client.deleteObjects(deleteRequest);
 
         final int successfulDeletes = delObjRes.getDeletedObjects().size();
-        System.out.println(successfulDeletes + " objects successfully deleted.");
+        logger.debug("deleteRefsetFromAws: " + successfulDeletes + " objects successfully deleted.");
 
         return successfulDeletes > 0;
     }

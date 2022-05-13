@@ -33,6 +33,7 @@ import javax.ws.rs.core.Response.Status.Family;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DefinitionClauseEditHistory;
@@ -429,6 +430,10 @@ public class RefsetService {
 
                 statusMessage = modifyRefsetDefinition(user, service, refset, refsetEditParameters.getDefinitionClauses());
             }
+            
+            // we also need to clear the refset export cache on S3
+            final ExportHandler exportHandler = new ExportHandler();
+            exportHandler.deleteFilesFromBranchPath(refset.getBranchPath());
 
             logger.info("Refset " + refset.getRefsetId() + " successfully modified");
             logger.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));

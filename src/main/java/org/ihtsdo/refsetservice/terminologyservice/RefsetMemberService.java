@@ -1591,25 +1591,6 @@ public class RefsetMemberService {
             fileLines.append("Refset Status" + separator + "Inactive" + "\n");
         }
 
-        if (refset.getDefinitionClauses().size() > 0) {
-
-            final List<String> definitionList = new ArrayList<>();
-
-            for (DefinitionClause clause : refset.getDefinitionClauses()) {
-
-                String entry = clause.getValue();
-
-                if (clause.getNegated()) {
-                    entry = "(-) " + entry;
-                }
-
-                definitionList.add(entry);
-            }
-
-            fileLines.append(
-                    "Refset Definition" + separator + String.join(", ", definitionList) + "\n");
-        }
-
         fileLines.append("Tags" + separator + String.join(", ", refset.getTags()) + "\n");
 
         if (refset.getNarrative() != null && !refset.getNarrative().equals("")) {
@@ -1622,6 +1603,12 @@ public class RefsetMemberService {
 
         if (refset.getExternalUrl() != null && !refset.getExternalUrl().equals("")) {
             fileLines.append("External URL" + separator + refset.getExternalUrl() + "\n");
+        }
+        
+        if (refset.getType().equals(Refset.INTENSIONAL)) {
+
+            final String definition = RefsetService.getEclFromDefinition(refset.getDefinitionClauses());
+            fileLines.append("Refset Definition" + separator + definition + "\n");
         }
 
         // print the sctids file
@@ -2375,6 +2362,9 @@ public class RefsetMemberService {
             treeCache.remove(branchPath);
             ancestorsCache.remove(branchPath);
             
+            // we also need to clear the refset export cache on S3
+            final ExportHandler exportHandler = new ExportHandler();
+            exportHandler.deleteFilesFromBranchPath(branchPath);
 
         } else {
             

@@ -11,6 +11,7 @@ import java.util.Set;
 import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
@@ -71,15 +72,19 @@ public class ExportHandler {
         return name;
     }
 
-    public String generateAwsBaseVersionPath(Refset refset, String type, Set<String> dates) {
-        if ("snapshot".equals(type.toLowerCase())) {
-            return TOP_LEVEL_AWS_FOLDER + refset.getRefsetId() + "/" + dates.toArray()[0] + "/"
-                    + type;
-
-        } else {
-            return TOP_LEVEL_AWS_FOLDER + refset.getRefsetId() + "/" + dates.toArray()[0] + "/" + type + "/"
-                    +  (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0])  ;
+    public String generateAwsBaseVersionPath(Refset refset, String type, Set<String> dates) throws Exception {
+        
+        String path =  getAwsBranchPath(refset) + "/" + refset.getRefsetId() + "/" + dates.toArray()[0] + "/" + type;
+            
+        if (!"snapshot".equals(type.toLowerCase())) {
+            path += "/" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
         }
+        
+        return path;
+    }
+    
+    public String getAwsBranchPath(Refset refset) throws Exception {
+        return TOP_LEVEL_AWS_FOLDER + RefsetService.getBranchPath(refset);
     }
 
     public String generateSnowVersionFileName(Refset refset, String type, Set<String> dates) {
@@ -96,6 +101,12 @@ public class ExportHandler {
 
     public String getTopLevelAwsPath() {
         return TOP_LEVEL_AWS_FOLDER;
+    }
+    
+    public boolean deleteFilesFromBranchPath(final String branchPath) throws Exception{
+        
+        S3ConnectionWrapper.connectToAmazonS3();
+        return S3ConnectionWrapper.deleteRefsetFromAws(getTopLevelAwsPath() + branchPath);
     }
 
     public String generateSnowVersionFile(String entityString) throws Exception {
