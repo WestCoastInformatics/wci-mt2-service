@@ -170,7 +170,7 @@ public class RefsetMemberService {
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 386;
     
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
-    private static final int URL_MAX_CHAR_LENGTH = 7500;
+    private static final int URL_MAX_CHAR_LENGTH = 6800;
     
     /** The max number of record elasticsearch will return without erroring. */
     private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
