@@ -36,6 +36,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -91,9 +92,13 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
     @Fetch(FetchMode.JOIN)
     private Set<Organization> organizations = new HashSet<>();
-
+    
     @Column(nullable = true, length = 255)
     private String iconUri;
+    
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Set<Team> teams = new HashSet<>();
 
     /** The admin role. */
     public static final String ROLE_ADMIN = "ADMIN";
@@ -167,6 +172,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         roles = new HashSet<String>(other.getRoles());
         authToken = other.getAuthToken();
         iconUri = other.iconUri;
+        teams = other.teams;
     }
 
     /**
@@ -185,6 +191,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         roles = new HashSet<String>(other.getRoles());
         authToken = other.getAuthToken();
         iconUri = other.iconUri;
+        teams = other.teams;
     }
 
     /**
@@ -379,6 +386,26 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
         this.iconUri = iconUri;
     }
+    
+    
+    @JsonGetter()
+    public Set<Team> getTeams() {
+
+        if (teams == null) {
+            teams = new HashSet<>();
+        }
+
+        return teams;
+    }
+
+    /**
+     * @param organization the organization to set
+     */
+    public void setTeams(final Set<Team> teams) {
+
+        this.teams = teams;
+    }
+
 
     /**
      * Check if the user has the specified role on the refset.
@@ -449,6 +476,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         result = prime * result + ((title == null) ? 0 : title.hashCode());
         result = prime * result + ((userName == null) ? 0 : userName.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
+        result = prime * result + ((teams == null) ? 0 : teams.hashCode());
         return result;
     }
 
@@ -520,6 +548,13 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                 return false;
             }
         } else if (!iconUri.equals(other.iconUri)) {
+            return false;
+        }
+        if (teams == null) {
+            if (other.teams != null) {
+                return false;
+            }
+        } else if (!teams.equals(other.teams)) {
             return false;
         }
         return true;

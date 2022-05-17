@@ -405,7 +405,8 @@ public class OrganizationController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(value = "/organization/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable(value = "id") final String id) throws Exception {
+    public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable(value = "id") final String id,
+        @QueryParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
         logger.info("Get organization users. Id: {}", id);
         // TODO check permissions, fail if not authorized.
@@ -418,11 +419,24 @@ public class OrganizationController extends BaseController {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find organization for id " + id + ".");
             }
 
-            ResultListUser users = new ResultListUser();
-            users.getItems().addAll(organization.getMembers());
-            users.setTotal(users.getItems().size());
+            final ResultListUser usersResultList = new ResultListUser();
+            usersResultList.getItems().addAll(organization.getMembers());
 
-            return new ResponseEntity<>(users, HttpStatus.OK);
+            if (includeTeams && !usersResultList.getItems().isEmpty()) {
+                for (final User user : usersResultList.getItems()) {
+
+                    final SearchParameters sp = new SearchParameters();
+                    sp.setQuery("members:" + user.getId());
+                    final ResultList<Team> teamsResultList = RefsetService.searchTeams(user, sp);
+                    if (teamsResultList != null && teamsResultList.getItems() != null) {
+                        user.getTeams().addAll(teamsResultList.getItems());
+                    }
+                }
+            }
+            
+            usersResultList.setTotal(usersResultList.getItems().size());
+
+            return new ResponseEntity<>(usersResultList, HttpStatus.OK);
 
         } catch (final Exception e) {
             handleException(e);

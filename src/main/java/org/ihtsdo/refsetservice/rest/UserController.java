@@ -24,6 +24,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.RestException;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -89,7 +90,7 @@ public class UserController extends BaseController {
 
     /** The aws root folder directory. */
     private static String AWS_FOLDER_DIRECTORY;
-    
+
     /** The aws images directory. */
     private static String AWS_IMAGES_DIRECTORY;
 
@@ -115,12 +116,17 @@ public class UserController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/user/{id}")
-    public @ResponseBody ResponseEntity<User> getUser(@PathVariable(value = "id") final String id, @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
+    public @ResponseBody ResponseEntity<User> getUser(@PathVariable(value = "id") final String id, @QueryParam(value = "includeOrganizations") final boolean includeOrganizations,
+        @QueryParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
         try {
             logger.info("Get user: {}", id);
             // TODO check permissions, fail if not authorized.
             final User authUser = SecurityService.getUserFromSession();
+            if (authUser == null) {
+                logger.warn("User from session is null.");
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
 
             try (final TerminologyService service = new TerminologyService()) {
 
@@ -129,11 +135,19 @@ public class UserController extends BaseController {
                 if (user == null) {
                     throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find user for " + id + ".");
                 }
-                if (includeMembers) {
+                if (includeOrganizations) {
                     user.getOrganizations();
                 } else {
                     if (user.getOrganizations() != null && !user.getOrganizations().isEmpty()) {
                         user.getOrganizations().clear();
+                    }
+                }
+                if (includeTeams) {
+                    final SearchParameters sp = new SearchParameters();
+                    sp.setQuery("members:" + user.getId());
+                    final ResultList<Team> teamsResultList = RefsetService.searchTeams(user, sp);
+                    if (teamsResultList != null && teamsResultList.getItems() != null) {
+                        user.getTeams().addAll(teamsResultList.getItems());
                     }
                 }
 
@@ -217,7 +231,8 @@ public class UserController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<ResultList<User>> getUsers(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<User>> getUsers(@QueryParam(value = "includeOrganizations") final boolean includeOrganizations,
+        @QueryParam(value = "includeTeams") final boolean includeTeams, final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         logger.info("Search users: {}", ModelUtility.toJson(searchParameters));
         // TODO check permissions, fail if not authorized.
@@ -231,7 +246,21 @@ public class UserController extends BaseController {
             final ResultList<User> results = RefsetService.searchUsers(authUser, searchParameters);
 
             for (User user : results.getItems()) {
-                user.getOrganizations().clear();
+                if (includeOrganizations) {
+                    user.getOrganizations();
+                } else {
+                    if (user.getOrganizations() != null && !user.getOrganizations().isEmpty()) {
+                        user.getOrganizations().clear();
+                    }
+                }
+                if (includeTeams) {
+                    final SearchParameters sp = new SearchParameters();
+                    sp.setQuery("members:" + user.getId());
+                    final ResultList<Team> teamsResultList = RefsetService.searchTeams(user, sp);
+                    if (teamsResultList != null && teamsResultList.getItems() != null) {
+                        user.getTeams().addAll(teamsResultList.getItems());
+                    }
+                }
             }
 
             return new ResponseEntity<>(results, HttpStatus.OK);
