@@ -510,7 +510,7 @@ public class OrganizationController extends BaseController {
      * Add the user to the organization.
      *
      * @param organizationId the organization id
-     * @param userId the user id
+     * @param email the email of the user to add
      * @return the response entity
      * @throws Exception the exception
      */
@@ -521,41 +521,46 @@ public class OrganizationController extends BaseController {
         @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
-    @PostMapping(value = "/organization/{organizationId}/user/{userId}")
-    public @ResponseBody ResponseEntity<Organization> addUserToOrganization(@PathVariable(value = "organizationId") final String organizationId, @PathVariable(value = "userId") final String userId)
+    @PostMapping(value = "/organization/{organizationId}/user")
+    public @ResponseBody ResponseEntity<String> addUserToOrganization(@PathVariable final String organizationId,final String email)
         throws Exception {
 
-        logger.info("Add user: {} to organization: {}.", userId, organizationId);
+        logger.info("Add user: {} to organization: {}.", email, organizationId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
 
             // Find the user
-            final User originalUser = service.get(userId, User.class);
-            if (originalUser == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find user for " + userId + ".");
+            final User user = service.findSingle("email:" + email, User.class, null);
+            
+            if (user == null) {
+                
+                final String message = "Unable to find user for " + email + ".";
+                logger.error(message);
+                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
 
-            final Organization originalOrganization = service.get(organizationId, Organization.class);
-            if (originalOrganization == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find organization for " + organizationId + ".");
+            final Organization organization = service.get(organizationId, Organization.class);
+            
+            if (organization == null) {
+
+                final String message = "Unable to find organization for " + organizationId + ".";
+                logger.error(message);
+                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
 
             service.setModifiedBy(authUser.getId());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
 
-            originalOrganization.getMembers().add(originalUser);
+            organization.getMembers().add(user);
 
             // Update
-            service.update(originalOrganization);
-            service.commit();
+            service.update(organization);
 
-            return new ResponseEntity<>(originalOrganization, HttpStatus.CREATED);
+            return new ResponseEntity<>(HttpStatus.CREATED);
 
         } catch (final Exception e) {
-            logger.error("Error adding user: {} to organization: {}.", userId, organizationId, e);
+            logger.error("Error adding user: {} to organization: {}.", email, organizationId, e);
             handleException(e);
             return null;
         }

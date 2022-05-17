@@ -10,6 +10,7 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.util.Arrays;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
@@ -19,6 +20,7 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.RestException;
+import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
@@ -30,6 +32,7 @@ import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -234,41 +237,113 @@ public class TeamController extends BaseController {
             return null;
         }
     }
+    
+    /**
+     * Return users for the team.
+     *
+     * @param id the id
+     * @return the users
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Get the users for the specified team", response = ResultListUser.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Team identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
+    })
+    @RecordMetric
+    @RequestMapping(value = "/team/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable final String id) throws Exception {
+
+        logger.info("Get team users. Id: {}", id);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            final Team team = service.get(id, Team.class);
+            ResultListUser users = new ResultListUser();
+            
+            if (team == null) {
+
+                final String message = "Unable to find team for " + id + ".";
+                logger.error(message);
+                return new ResponseEntity<>(users, HttpStatus.NOT_FOUND);
+            }
+
+            for (final String userId : team.getMembers()) {
+                
+                final User user = service.get(userId, User.class);
+                users.getItems().add(user);
+            }
+            
+            users.setTotal(users.getItems().size());
+
+            return new ResponseEntity<>(users, HttpStatus.OK);
+
+        } catch (final Exception e) {
+            handleException(e);
+            return null;
+        }
+    }
 
     /**
      * Adds the user to the team.
      *
      * @param teamId the team id
-     * @param userId the user id
+     * @param email the user email
      * @return the response entity
      * @throws Exception the exception
      */
-    @PostMapping("/team/{teamId}/member/{userId}")
-    public @ResponseBody ResponseEntity<Void> addUserToTeam(@PathVariable final String teamId, @PathVariable final String userId) throws Exception {
+    @PostMapping("/team/{teamId}/member")
+    public @ResponseBody ResponseEntity<String> addUserToTeam(@PathVariable final String teamId, final String email) throws Exception {
 
-        logger.info("Add user {} to team: {}", userId, teamId);
+        logger.info("Add user {} to team: {}", email, teamId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team team = service.get(teamId, Team.class);
+            
             if (team == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
-            }
 
-            final User member = service.get(userId, User.class);
-            if (member == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find user for " + userId + ".");
+                final String message = "Unable to find team for " + teamId + ".";
+                logger.error(message);
+                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+            }
+            
+            final Organization organization = team.getOrganization();
+            final Set<User> organizationMembers = organization.getMembers();
+            final User user = service.findSingle("email:" + email, User.class, null);
+
+            if (user == null) {
+                
+                final String message = "Unable to find user for " + email + ".";
+                logger.error(message);
+                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+            }
+            
+            if (!organizationMembers.contains(user)) {
+                
+                final String message = "User " + email + " is not a member of organization " + organization.getName() + ".";
+                logger.error(message);
+                return new ResponseEntity<>(message, HttpStatus.CONFLICT);
             }
 
             if (team.getMembers() != null) {
-                if (team.getMembers().contains(userId)) {
-                    throw new RestException(false, HttpStatus.CONFLICT, "Conflict", "User " + userId + " is already a memeber of team " + teamId + ".");
+                
+                if (team.getMembers().contains(user.getId())) {
+                    
+                    final String message = "User " + email + " is already a member of team " + teamId + ".";
+                    logger.error(message);
+                    return new ResponseEntity<>(message, HttpStatus.CONFLICT);
                 }
             }
 
-            team.getMembers().add(userId);
+            team.getMembers().add(user.getId());
 
             service.setModifiedBy(authUser.getId());
             service.setTransactionPerOperation(false);
@@ -278,23 +353,26 @@ public class TeamController extends BaseController {
             service.commit();
             
             // add user to crowd groups
-            final Organization organization = team.getOrganization();
             final String teamsQuery = "teams:" + teamId;
-            
             final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
+            
             if (projectList != null && projectList.getItems() != null) {
+                
                 for (Project project : projectList.getItems()) {
+                    
                     for (String role : team.getRoles()) {
+                        
                         final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                        CrowdAPIClient.addMembership(groupName, member.getUserName());
+                        CrowdAPIClient.addMembership(groupName, user.getUserName());
                     }
                 }
             }
 
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return new ResponseEntity<>(HttpStatus.CREATED);
 
         } catch (final Exception e) {
-            logger.error("Error adding user: {} to team: {}", userId, teamId);
+            
+            logger.error("Error adding user: {} to team: {}", email, teamId);
             handleException(e);
             return null;
         }

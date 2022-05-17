@@ -234,6 +234,8 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      *
      * @return the email
      */
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "emailSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getEmail() {
 
         return email;
