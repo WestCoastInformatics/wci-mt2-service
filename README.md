@@ -50,6 +50,14 @@ set REFSET_EXPORT_DIR=changeme
 set CROWD_URL=changeme 
 set CROWD_USERNAME=changeme
 set CROWD_PASSWORD=changeme
+set ICON_FILE_DIR=C:/temp/refset_icon
+set REFSET_ORGANIZATION_ICON_FILE_DIR=icon/organization/
+set REFSET_ORGANIZATION_ICON_URL_PREFIX=/refsetservice/organization/icon/
+set REFSET_ORGANIZATION_ICON_AWS_DIR=icon/organization/
+set REFSET_USER_ICON_FILE_DIR=icon/user/
+set REFSET_USER_ICON_URL_PREFIX=/refsetservice/user/icon/
+set REFSET_USER_ICON_AWS_DIR=icon/user/
+set REFSET_ICON_FILE_TYPES=.svg;.png;.jpg;.jpeg
 ```
 
 * Install MySql Database v? or run through a docker container. Configure the database to use the environment values you set above:
