@@ -1,0 +1,77 @@
+Project	Team
+Armenian Extension dedicated UAT Training Project	Armenian Extension Author Team
+Armenian Extension dedicated UAT Training Project	Armenian Extension Reviewer Team
+Armenian Extension dedicated UAT Training Project	Armenian Extension Admin Team
+Armenian Extension dedicated UAT Training Project	Armenian Extension Viewer Team
+Austrian Extension dedicated UAT Training Project	Austrian Extension Author Team
+Austrian Extension dedicated UAT Training Project	Austrian Extension Reviewer Team
+Austrian Extension dedicated UAT Training Project	Austrian Extension Admin Team
+Austrian Extension dedicated UAT Training Project	Austrian Extension Viewer Team
+Belgian Extension Project	Belgian Extension Author Team
+Belgian Extension Project	Belgian Extension Reviewer Team
+Belgian Extension Project	Belgian Extension Admin Team
+Belgian Extension Project	Belgian Extension Viewer Team
+Danish Edition dedicated UAT Training Project	Danish Edition Author Team
+Danish Edition dedicated UAT Training Project	Danish Edition Reviewer Team
+Danish Edition dedicated UAT Training Project	Danish Edition Admin Team
+Danish Edition dedicated UAT Training Project	Danish Edition Viewer Team
+Estonian NRC Project	Estonian Edition Author Team
+Estonian NRC Project	Estonian Edition Reviewer Team
+Estonian NRC Project	Estonian Edition Admin Team
+Estonian NRC Project	Estonian Edition Viewer Team
+Inera National Refset Project	Swedish Edition Author Team
+Inera National Refset Project	Swedish Edition Reviewer Team
+Inera National Refset Project	Swedish Edition Admin Team
+Inera National Refset Project	Swedish Edition Viewer Team
+Irish Edition dedicated UAT Training Project	Irish Edition Author Team
+Irish Edition dedicated UAT Training Project	Irish Edition Reviewer Team
+Irish Edition dedicated UAT Training Project	Irish Edition Admin Team
+Irish Edition dedicated UAT Training Project	Irish Edition Viewer Team
+Korean Extension dedicated UAT Training Project	Korean Extension Author Team
+Korean Extension dedicated UAT Training Project	Korean Extension Reviewer Team
+Korean Extension dedicated UAT Training Project	Korean Extension Admin Team
+Korean Extension dedicated UAT Training Project	Korean Extension Viewer Team
+New Zealand Edition dedicated UAT Training Project	New Zealand Refset Project  Team
+New Zealand Edition dedicated UAT Training Project	New Zealand Refset Project  Team
+New Zealand Edition dedicated UAT Training Project	New Zealand Refset Project  Team
+New Zealand Edition dedicated UAT Training Project	New Zealand Refset Project  Team
+New Zealand Refset Project	New Zealand Refset Project  Team
+New Zealand Refset Project	New Zealand Refset Project  Team
+New Zealand Refset Project	New Zealand Refset Project  Team
+New Zealand Refset Project	New Zealand Refset Project  Team
+Norwegian Edition dedicated UAT Training Project	Norwegian Edition Author Team
+Norwegian Edition dedicated UAT Training Project	Norwegian Edition Reviewer Team
+Norwegian Edition dedicated UAT Training Project	Norwegian Edition Admin Team
+Norwegian Edition dedicated UAT Training Project	Norwegian Edition Viewer Team
+SNOMED International Project	International Edition Author Team
+SNOMED International Project	International Edition Reviewer Team
+SNOMED International Project	International Edition Admin Team
+SNOMED International Project	International Edition Viewer Team
+SNOMED International WIP Project	International Edition Author Team
+SNOMED International WIP Project	International Edition Reviewer Team
+SNOMED International WIP Project	International Edition Admin Team
+SNOMED International WIP Project	International Edition Viewer Team
+Spanish Edition dedicated UAT Training Project	Spanish Edition Author Team
+Spanish Edition dedicated UAT Training Project	Spanish Edition Reviewer Team
+Spanish Edition dedicated UAT Training Project	Spanish Edition Admin Team
+Spanish Edition dedicated UAT Training Project	Spanish Edition Viewer Team
+Sweden NRC Project	Swedish Edition Author Team
+Sweden NRC Project	Swedish Edition Reviewer Team
+Sweden NRC Project	Swedish Edition Admin Team
+Sweden NRC Project	Swedish Edition Viewer Team
+Traditional Medicine dedicated UAT Training Project	Traditional Medicine Author Team
+Traditional Medicine dedicated UAT Training Project	Traditional Medicine Reviewer Team
+Traditional Medicine dedicated UAT Training Project	Traditional Medicine Admin Team
+Traditional Medicine dedicated UAT Training Project	Traditional Medicine Viewer Team
+United States Edition dedicated UAT Training Project	United States Edition Author Team
+United States Edition dedicated UAT Training Project	United States Edition Reviewer Team
+United States Edition dedicated UAT Training Project	United States Edition Admin Team
+United States Edition dedicated UAT Training Project	United States Edition Viewer Team
+Vietnam Extension dedicated UAT Training Project	Vietnam Extension Author Team
+Vietnam Extension dedicated UAT Training Project	Vietnam Extension Reviewer Team
+Vietnam Extension dedicated UAT Training Project	Vietnam Extension Admin Team
+Vietnam Extension dedicated UAT Training Project	Vietnam Extension Viewer Team
+WCI Testing Project	WCI Author Team
+WCI Testing Project	WCI Reviewer Team
+WCI Testing Project	WCI Admin Team
+WCI Testing Project	WCI Viewer Team

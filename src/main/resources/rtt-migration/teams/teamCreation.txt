@@ -1,0 +1,65 @@
+Parent Organization	Name	Role
+Armenian Extension	Armenian Extension Author Team	Author
+Armenian Extension	Armenian Extension Reviewer Team	Reviewer
+Armenian Extension	Armenian Extension Admin Team	Admin
+Armenian Extension	Armenian Extension Viewer Team	Viewer
+Austrian Extension	Austrian Extension Author Team	Author
+Austrian Extension	Austrian Extension Reviewer Team	Reviewer
+Austrian Extension	Austrian Extension Admin Team	Admin
+Austrian Extension	Austrian Extension Viewer Team	Viewer
+Belgian Extension	Belgian Extension Author Team	Author
+Belgian Extension	Belgian Extension Reviewer Team	Reviewer
+Belgian Extension	Belgian Extension Admin Team	Admin
+Belgian Extension	Belgian Extension Viewer Team	Viewer
+Danish Edition	Danish Edition Author Team	Author
+Danish Edition	Danish Edition Reviewer Team	Reviewer
+Danish Edition	Danish Edition Admin Team	Admin
+Danish Edition	Danish Edition Viewer Team	Viewer
+Estonian Edition	Estonian Edition Author Team	Author
+Estonian Edition	Estonian Edition Reviewer Team	Reviewer
+Estonian Edition	Estonian Edition Admin Team	Admin
+Estonian Edition	Estonian Edition Viewer Team	Viewer
+International Edition	International Edition Author Team	Author
+International Edition	International Edition Reviewer Team	Reviewer
+International Edition	International Edition Admin Team	Admin
+International Edition	International Edition Viewer Team	Viewer
+Irish Edition	Irish Edition Author Team	Author
+Irish Edition	Irish Edition Reviewer Team	Reviewer
+Irish Edition	Irish Edition Admin Team	Admin
+Irish Edition	Irish Edition Viewer Team	Viewer
+Korean Extension	Korean Extension Author Team	Author
+Korean Extension	Korean Extension Reviewer Team	Reviewer
+Korean Extension	Korean Extension Admin Team	Admin
+Korean Extension	Korean Extension Viewer Team	Viewer
+New Zealand Edition	New Zealand Edition Author Team	Author
+New Zealand Edition	New Zealand Edition Reviewer Team	Reviewer
+New Zealand Edition	New Zealand Edition Admin Team	Admin
+New Zealand Edition	New Zealand Edition Viewer Team	Viewer
+Norwegian Edition	Norwegian Edition Author Team	Author
+Norwegian Edition	Norwegian Edition Reviewer Team	Reviewer
+Norwegian Edition	Norwegian Edition Admin Team	Admin
+Norwegian Edition	Norwegian Edition Viewer Team	Viewer
+Spanish Edition	Spanish Edition Author Team	Author
+Spanish Edition	Spanish Edition Reviewer Team	Reviewer
+Spanish Edition	Spanish Edition Admin Team	Admin
+Spanish Edition	Spanish Edition Viewer Team	Viewer
+Swedish Edition	Swedish Edition Author Team	Author
+Swedish Edition	Swedish Edition Reviewer Team	Reviewer
+Swedish Edition	Swedish Edition Admin Team	Admin
+Swedish Edition	Swedish Edition Viewer Team	Viewer
+Traditional Medicine	Traditional Medicine Author Team	Author
+Traditional Medicine	Traditional Medicine Reviewer Team	Reviewer
+Traditional Medicine	Traditional Medicine Admin Team	Admin
+Traditional Medicine	Traditional Medicine Viewer Team	Viewer
+United States Edition	United States Edition Author Team	Author
+United States Edition	United States Edition Reviewer Team	Reviewer
+United States Edition	United States Edition Admin Team	Admin
+United States Edition	United States Edition Viewer Team	Viewer
+Vietnam Extension	Vietnam Extension Author Team	Author
+Vietnam Extension	Vietnam Extension Reviewer Team	Reviewer
+Vietnam Extension	Vietnam Extension Admin Team	Admin
+Vietnam Extension	Vietnam Extension Viewer Team	Viewer
+WCI	WCI Author Team	Author
+WCI	WCI Reviewer Team	Reviewer
+WCI	WCI Admin Team	Admin
+WCI	WCI Viewer Team	Viewer
