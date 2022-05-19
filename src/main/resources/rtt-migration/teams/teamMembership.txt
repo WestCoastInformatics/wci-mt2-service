@@ -1,0 +1,65 @@
+Team	User
+Armenian Extension Author Team	rt2-dev-author
+Armenian Extension Reviewer Team	rt2-dev-reviewer 
+Armenian Extension Admin Team	rt2-dev-admin
+Armenian Extension Viewer Team	rt2-dev-viewer
+Austrian Extension Author Team	rt2-dev-author
+Austrian Extension Reviewer Team	rt2-dev-reviewer 
+Austrian Extension Admin Team	rt2-dev-admin
+Austrian Extension Viewer Team	rt2-dev-viewer
+Belgian Extension Author Team	rt2-dev-author
+Belgian Extension Reviewer Team	rt2-dev-reviewer 
+Belgian Extension Admin Team	rt2-dev-admin
+Belgian Extension Viewer Team	rt2-dev-viewer
+Danish Edition Author Team	rt2-dev-author
+Danish Edition Reviewer Team	rt2-dev-reviewer 
+Danish Edition Admin Team	rt2-dev-admin
+Danish Edition Viewer Team	rt2-dev-viewer
+Estonian Edition Author Team	rt2-dev-author
+Estonian Edition Reviewer Team	rt2-dev-reviewer 
+Estonian Edition Admin Team	rt2-dev-admin
+Estonian Edition Viewer Team	rt2-dev-viewer
+International Edition Author Team	rt2-dev-author
+International Edition Reviewer Team	rt2-dev-reviewer 
+International Edition Admin Team	rt2-dev-admin
+International Edition Viewer Team	rt2-dev-viewer
+Irish Edition Author Team	rt2-dev-author
+Irish Edition Reviewer Team	rt2-dev-reviewer 
+Irish Edition Admin Team	rt2-dev-admin
+Irish Edition Viewer Team	rt2-dev-viewer
+Korean Extension Author Team	rt2-dev-author
+Korean Extension Reviewer Team	rt2-dev-reviewer 
+Korean Extension Admin Team	rt2-dev-admin
+Korean Extension Viewer Team	rt2-dev-viewer
+New Zealand Edition Author Team	rt2-dev-author
+New Zealand Edition Reviewer Team	rt2-dev-reviewer 
+New Zealand Edition Admin Team	rt2-dev-admin
+New Zealand Edition Viewer Team	rt2-dev-viewer
+Norwegian Edition Author Team	rt2-dev-author
+Norwegian Edition Reviewer Team	rt2-dev-reviewer 
+Norwegian Edition Admin Team	rt2-dev-admin
+Norwegian Edition Viewer Team	rt2-dev-viewer
+Spanish Edition Author Team	rt2-dev-author
+Spanish Edition Reviewer Team	rt2-dev-reviewer 
+Spanish Edition Admin Team	rt2-dev-admin
+Spanish Edition Viewer Team	rt2-dev-viewer
+Swedish Edition Author Team	rt2-dev-author
+Swedish Edition Reviewer Team	rt2-dev-reviewer 
+Swedish Edition Admin Team	rt2-dev-admin
+Swedish Edition Viewer Team	rt2-dev-viewer
+Traditional Medicine Author Team	rt2-dev-author
+Traditional Medicine Reviewer Team	rt2-dev-reviewer 
+Traditional Medicine Admin Team	rt2-dev-admin
+Traditional Medicine Viewer Team	rt2-dev-viewer
+United States Edition Author Team	rt2-dev-author
+United States Edition Reviewer Team	rt2-dev-reviewer 
+United States Edition Admin Team	rt2-dev-admin
+United States Edition Viewer Team	rt2-dev-viewer
+Vietnam Extension Author Team	rt2-dev-author
+Vietnam Extension Reviewer Team	rt2-dev-reviewer 
+Vietnam Extension Admin Team	rt2-dev-admin
+Vietnam Extension Viewer Team	rt2-dev-viewer
+WCI Author Team	rt2-dev-author
+WCI Reviewer Team	rt2-dev-reviewer 
+WCI Admin Team	rt2-dev-admin
+WCI Viewer Team	rt2-dev-viewer
