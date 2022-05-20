@@ -1384,7 +1384,24 @@ public class HistoricDataMigrator {
 
                 Organization org = uatProject.getOrganization();
 
-                Map<String, Set<String>> organizationTeamInfo = propertyReader.getTeamCreation().get(org.getName());
+                logger.debug("Trying with: " + org.getName());
+                logger.debug("then with: " + org.getEdition().getName());
+
+                Map<String, Set<String>> organizationTeamInfo = null;
+                organizationTeamInfo = propertyReader.getTeamCreation().get(org.getName());
+
+                if (organizationTeamInfo == null) {
+
+                    organizationTeamInfo = propertyReader.getTeamCreation().get(org.getName());
+
+                    if (organizationTeamInfo == null) {
+
+                        logger.debug("error 444 - with " + propertyReader.getTeamCreation().get(org.getName()) + " -- and -- " + propertyReader.getTeamCreation().get(org.getEdition().getName()));
+                        continue;
+                    }
+
+                }
+
                 Set<String> projectTeams = new HashSet<>();
 
                 for (String teamToCreate : organizationTeamInfo.keySet()) {
