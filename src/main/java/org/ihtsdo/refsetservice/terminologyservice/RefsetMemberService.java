@@ -771,7 +771,7 @@ public class RefsetMemberService {
                 } else {
 
                     logger.debug("Downloading snowstorm genned file from S3");
-                    S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath, snowGeneratedFileName,
+                    S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, snowGeneratedFileName,
                             localSnowGeneratedFilePath);
                 }
 
@@ -791,7 +791,7 @@ public class RefsetMemberService {
 
                 if (!Files.exists(Path.of(EXPORT_FILE_DIR + rt2VersionFileName))) {
                     logger.debug("Downloading RT2 genned file from S3");
-                    S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath, rt2VersionFileName,
+                    S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, rt2VersionFileName,
                             EXPORT_FILE_DIR + rt2VersionFileName);
                 }
             }
@@ -919,7 +919,7 @@ public class RefsetMemberService {
                     } else {
 
                         logger.info("Downloading snowstorm genned file from S3, " + snowGeneratedFileName);
-                        S3ConnectionWrapper.downloadSnowFromS3(awsVersionedPath, snowGeneratedFileName, localSnowGeneratedFilePath);
+                        S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, snowGeneratedFileName, localSnowGeneratedFilePath);
                     }
 
                     // append the contents of this snapshot file to the fileContentsArray
@@ -1032,7 +1032,7 @@ public class RefsetMemberService {
                 if (!Files.exists(Path.of(EXPORT_FILE_DIR + deltaRt2VersionFileName))) {
                     
                     logger.debug("Downloading RT2 snapshot genned file from S3");
-                    S3ConnectionWrapper.downloadSnowFromS3(deltaAwsVersionedPath, deltaRt2VersionFileName, EXPORT_FILE_DIR + deltaRt2VersionFileName);
+                    S3ConnectionWrapper.downloadFileFromS3(deltaAwsVersionedPath, deltaRt2VersionFileName, EXPORT_FILE_DIR + deltaRt2VersionFileName);
                 }
             }
             

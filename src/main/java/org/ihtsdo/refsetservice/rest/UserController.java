@@ -78,30 +78,9 @@ public class UserController extends BaseController {
 
     /** Search users API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
-
-    /** The icon file dir. */
-    private static String IMAGES_ROOT_FILE_DIR;
-
-    /** The local directory to store organization icon file. */
-    private static String ICON_DIR;
-
-    /** The url prefix for icon file. */
-    private static String ICON_URL_PREFIX;
-
-    /** The aws root folder directory. */
-    private static String AWS_FOLDER_DIRECTORY;
-
-    /** The aws images directory. */
-    private static String AWS_IMAGES_DIRECTORY;
-
-    /** Static initialization. */
-    static {
-        IMAGES_ROOT_FILE_DIR = PropertyUtility.getProperty("images.file.dir");
-        ICON_DIR = PropertyUtility.getProperty("refset.user.icon.file.dir");
-        ICON_URL_PREFIX = PropertyUtility.getProperty("refset.user.icon.url.prefix");
-        AWS_FOLDER_DIRECTORY = PropertyUtility.getProperty("aws.folder_directory");
-        AWS_IMAGES_DIRECTORY = PropertyUtility.getProperty("refset.user.icon.aws.dir");
-    }
+    
+    /** The local icon file directory. */
+    private static String ICON_URL_PREFIX = "user/icon/";
 
     /** The request. */
     @Autowired
@@ -190,7 +169,7 @@ public class UserController extends BaseController {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find user for " + user.getId() + ".");
             }
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -286,18 +265,15 @@ public class UserController extends BaseController {
     public @ResponseBody ResponseEntity<Resource> getUserIcon(@PathVariable("fileName") final String fileName) throws Exception {
 
         try {
+            
             logger.info("GET icon for user {}", fileName);
-            final Path localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR + File.separator + fileName);
-            final Resource file = new UrlResource(localFilePath.toUri());
-
-            if (file == null || !file.exists() || !file.isReadable()) {
-                throw new RuntimeException("Could not read the file!");
-            }
-
-            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION).header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(localFilePath))
-                .contentLength(file.contentLength()).body(file);
+            final Resource file = FileUtility.getIconFile(fileName);
+            
+            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath())).contentLength(file.contentLength()).body(file);
 
         } catch (final Exception e) {
+            
             logger.error("Trying to get user icon file " + fileName, e);
             handleException(e);
             return null;
@@ -305,14 +281,14 @@ public class UserController extends BaseController {
     }
 
     /**
-     * Adds the user icon.
+     * Edit the user icon.
      *
      * @param userId the user id
      * @param inputFile the input file
-     * @return the response entity
+     * @return the response entity with the icon URI
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Add icon for user")
+    @ApiOperation(value = "edit icon for user")
     @ApiResponses(value = {
         @ApiResponse(code = 202, message = "Saved icon for user"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
@@ -320,182 +296,41 @@ public class UserController extends BaseController {
     })
     @RecordMetric
     @PostMapping(value = "/user/{userId}/icon")
-    public ResponseEntity<Void> addUserIcon(@PathVariable("userId") final String userId, @RequestParam("file") MultipartFile inputFile) throws Exception {
+    public ResponseEntity<String> editUserIcon(@PathVariable("userId") final String userId, @RequestParam("file") MultipartFile inputFile) throws Exception {
 
-        logger.info("Add icon for user: {}.", userId);
-        // TODO check permissions, fail if not authorized.
+        logger.info("Edit icon for user: {}.", userId);
         final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(authUser.getUserName());
 
             // find user record, return 404 if not found
             final User user = service.get(userId, User.class);
+            
             if (user == null) {
                 throw new RestException(false, 404, "Not found", "Unable to find user for " + userId);
             }
-
-            // ensure file exists
-            if (inputFile == null) {
-                throw new RestException(false, 417, "Failed expectation", "Uploaded file is null");
+            
+            String fileToDelete = "";
+            
+            if (user.getIconUri() != null) {
+                fileToDelete = user.getIconUri().replace(ICON_URL_PREFIX, "");
             }
-
-            // check for file
-            final String fileName = inputFile.getOriginalFilename();
-            if (fileName == null) {
-                throw new RestException(false, 417, "Failed expectation", "Uploaded file has null filename");
-            }
-
-            // check file size
-            final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.icon.file.maxsize"));
-            if (inputFile.getSize() > maxFileSize) {
-                throw new RestException(false, 413, "Failed expectation", "File size must be less than 2 MB");
-            }
-
-            final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
-            final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
-
-            if (!fileTypes.contains("." + extension)) {
-                throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
-            }
-
-            final String localFileName = userId + "." + extension;
-            final String localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR).toString();
-            final String awsUploadPath = AWS_FOLDER_DIRECTORY + "/" + AWS_IMAGES_DIRECTORY;
-            final File iconFile = new File(localFilePath + File.separator + localFileName);
-
-            logger.debug("Add organization icon localFilePath = " + localFilePath);
-            try (final InputStream is = inputFile.getInputStream()) {
-                // write to local directory
-                FileUtils.copyInputStreamToFile(is, iconFile);
-            }
-
-            try {
-
-                S3ConnectionWrapper.connectToAmazonS3();
-                S3ConnectionWrapper.uploadToS3(awsUploadPath, localFilePath, localFileName);
-
-            } catch (Exception ex) {
-                logger.error("Trying to add user icon for user " + userId, ex);
-                throw ex;
-            }
-
-            // browser url
-            final String iconUri = ICON_URL_PREFIX + localFileName;
-
-            user.setIconUri(iconUri);
-
-            service.setModifiedBy(authUser.getId());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
+            
+            final File file = FileUtility.saveIconFile(inputFile, userId, fileToDelete);
+            
+            user.setIconUri(ICON_URL_PREFIX + file.getName());
             service.update(user);
-            service.commit();
 
-            // Return the object
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return new ResponseEntity<>("\"" + user.getIconUri() + "\"", HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
-            logger.error("Trying to add user icon for user " + userId, e);
+            
+            logger.error("Trying to edit user icon for user " + userId, e);
             handleException(e);
             return null;
         }
-
-    }
-
-    /**
-     * Update user icon.
-     *
-     * @param userId the user id
-     * @param inputFile the input file
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Update icon for user", response = User.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Updated icon for user"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @RecordMetric
-    @PutMapping(value = "/user/{userId}/icon")
-    public ResponseEntity<Void> updateUserIcon(@PathVariable("userId") final String userId, @RequestParam("file") MultipartFile inputFile) throws Exception {
-
-        logger.info("Update icon for user: {}.", userId);
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            // find user record, return 404 if not found
-            final User user = service.get(userId, User.class);
-            if (user == null) {
-                throw new RestException(false, 404, "Not found", "Unable to find user for " + userId);
-            }
-
-            // ensure file exists
-            if (inputFile == null) {
-                throw new RestException(false, 417, "Failed expectation", "Uploaded file is null");
-            }
-
-            // check for file
-            final String fileName = inputFile.getOriginalFilename();
-            if (fileName == null) {
-                throw new RestException(false, 417, "Failed expectation", "Uploaded file has null filename");
-            }
-
-            // check file size
-            final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.icon.file.maxsize"));
-            if (inputFile.getSize() > maxFileSize) {
-                throw new RestException(false, 413, "Failed expectation", "File size must be less than 2 MB");
-            }
-
-            final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
-            final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
-
-            if (!fileTypes.contains("." + extension)) {
-                throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
-            }
-
-            final String localFileName = userId + "." + extension;
-            final String localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR).toString();
-            final String awsUploadPath = AWS_FOLDER_DIRECTORY + "/" + AWS_IMAGES_DIRECTORY;
-            final File iconFile = new File(localFilePath + File.separator + localFileName);
-
-            logger.debug("Update organization icon localFilePath = " + localFilePath);
-            try (final InputStream is = inputFile.getInputStream()) {
-                // write to local directory
-                FileUtils.copyInputStreamToFile(is, iconFile);
-            }
-
-            try {
-
-                S3ConnectionWrapper.connectToAmazonS3();
-                S3ConnectionWrapper.uploadToS3(awsUploadPath, localFilePath, localFileName);
-
-            } catch (Exception ex) {
-                logger.error("Trying to add user icon for user " + userId, ex);
-                throw ex;
-            }
-
-            // browser url
-            final String iconUri = ICON_URL_PREFIX + localFileName;
-
-            user.setIconUri(iconUri);
-
-            service.setModifiedBy(authUser.getId());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-            service.update(user);
-            service.commit();
-
-            // Return the object
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
-
-        } catch (final Exception e) {
-            logger.error("Trying to update user icon for user " + userId, e);
-            handleException(e);
-            return null;
-        }
-
     }
 
 }

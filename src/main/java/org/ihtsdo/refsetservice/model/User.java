@@ -51,7 +51,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Entity
 @Table(name = "users")
 @Schema(description = "Represents an application user.")
-@JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
 public class User extends AbstractHasModified implements Comparable<User>, Copyable<User>, ValidateCrud<User> {
