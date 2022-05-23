@@ -88,7 +88,7 @@ public class ExportUnitTestUtilities {
             S3ConnectionWrapper.connectToAmazonS3();
             ExportHandler exporter = new ExportHandler();
             String awsPath = exporter.getTopLevelAwsPath() + refsetId + "/" + exportVersion;
-            S3ConnectionWrapper.deleteRefsetFromAws(awsPath);
+            S3ConnectionWrapper.deleteObjectFromAws(awsPath);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -99,7 +99,7 @@ public class ExportUnitTestUtilities {
             S3ConnectionWrapper.connectToAmazonS3();
             ExportHandler exporter = new ExportHandler();
             String awsPath = exporter.getTopLevelAwsPath() + refsetId;
-            S3ConnectionWrapper.deleteRefsetFromAws(awsPath);
+            S3ConnectionWrapper.deleteObjectFromAws(awsPath);
         } catch (Exception e) {
             e.printStackTrace();
         }
