@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.util;
+package org.ihtsdo.refsetservice.migration;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.ihtsdo.refsetservice.util.HistoricDataMigrator.FileProcessType;
+import org.ihtsdo.refsetservice.migration.HistoricDataMigrator.FileProcessType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -85,7 +85,7 @@ public class MigrationPropertyFileReader {
     private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
 
     /** The metadata map. */
-    private final Map<String, Metadata> metadataMap = new HashMap<>();
+    private final Map<String, MigrationMetadata> metadataMap = new HashMap<>();
 
     /**
      * Pre-processing supporting files.
@@ -680,7 +680,7 @@ public class MigrationPropertyFileReader {
             // Store effective Time to avoid handling it within Json
             rttRefsetToEffectiveDateMap.put(rttRefsetId, values[2]);
 
-            Metadata meta = new Metadata(values[3], values[4]);
+            MigrationMetadata meta = new MigrationMetadata(values[3], values[4]);
             metadataMap.put("refset-" + rttRefsetId, meta);
 
             return buf.toString();
@@ -753,7 +753,7 @@ public class MigrationPropertyFileReader {
             buf.append("}");
 
             jsonProjectOrganziationMap.put("project-" + line.split(SPLIT_CHARACTER)[0], organizationName);
-            metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new Metadata(modified, modifiedBy));
+            metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new MigrationMetadata(modified, modifiedBy));
         } catch (Exception e) {
 
             logger.debug("failed to process line #" + lineNumber + " of project json: " + line);
@@ -805,7 +805,7 @@ public class MigrationPropertyFileReader {
         return rttRefsetToEffectiveDateMap;
     }
 
-    public Map<String, Metadata> getMetadataMap() {
+    public Map<String, MigrationMetadata> getMetadataMap() {
 
         return metadataMap;
     }

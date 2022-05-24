@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.util;
+package org.ihtsdo.refsetservice.migration;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The Class Metadata.
  */
-public class Metadata {
+public class MigrationMetadata {
 
     /** The modified. */
     private Date modified;
@@ -18,7 +18,7 @@ public class Metadata {
     private String modifiedBy;
 
     /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(Metadata.class);
+    private final Logger logger = LoggerFactory.getLogger(MigrationMetadata.class);
 
     /** The sdf. */
     private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -29,7 +29,7 @@ public class Metadata {
      * @param modified the modified
      * @param modifiedBy the modified by
      */
-    public Metadata(final String modified, final String modifiedBy) {
+    public MigrationMetadata(final String modified, final String modifiedBy) {
 
         String updatedModified = modified;
 
@@ -56,7 +56,7 @@ public class Metadata {
      * @param modified the modified
      * @param modifiedBy the modified by
      */
-    public Metadata(final Date modified, final String modifiedBy) {
+    public MigrationMetadata(final Date modified, final String modifiedBy) {
 
         try {
 
