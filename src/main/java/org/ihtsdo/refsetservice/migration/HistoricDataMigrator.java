@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.util;
+package org.ihtsdo.refsetservice.migration;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -17,7 +17,6 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.HasModified;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -26,6 +25,9 @@ import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,16 +38,12 @@ public class HistoricDataMigrator {
 
     private static final String SIMPLE_TYPE_REFSET_SCTID = "446609009";
 
-    private static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
-
     private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
-
-    private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
 
     /** The formatter. */
     private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
-    private final Metadata defaultMeta = new Metadata(Metadata.getSdf().format(new Date()), "System initialization");
+    private final MigrationMetadata defaultMeta = new MigrationMetadata(MigrationMetadata.getSdf().format(new Date()), "System initialization");
 
     /**
      * The Class Metadata.
@@ -153,7 +151,7 @@ public class HistoricDataMigrator {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(HistoricDataMigrator.class);
 
-    MigrationPropertyFileReader propertyReader = new MigrationPropertyFileReader();
+    MigrationUtilities utilities = new MigrationUtilities();
 
     /** The max number of record elasticsearch will return without erroring. */
     private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
@@ -220,7 +218,7 @@ public class HistoricDataMigrator {
         createRefsetsFromSnowstorm(branches, internationalModules);
 
         // Read refset metadata and associated information (projects & ECLs)
-        rttRefsetIds = propertyReader.parseRttData(supportRtt);
+        rttRefsetIds = utilities.getPropertyReader().parseRttData(supportRtt);
 
         processRttRefsets();
 
@@ -240,7 +238,7 @@ public class HistoricDataMigrator {
             // file that we are using
             for (Refset refset : snowstormRefsets) {
 
-                if (!propertyReader.getRttRefsetSctIdToRttIdMap().keySet().contains(refset.getRefsetId())) {
+                if (!utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().keySet().contains(refset.getRefsetId())) {
 
                     if (internationalRefsets.contains(refset.getRefsetId())) {
 
@@ -379,11 +377,11 @@ public class HistoricDataMigrator {
                 if (rttRefsetIds.contains(refset.getRefsetId())) {
 
                     /* Refset lived in RTT as well */
-                    final Set<String> rttIds = propertyReader.getRttRefsetSctIdToRttIdMap().get(refset.getRefsetId());
+                    final Set<String> rttIds = utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().get(refset.getRefsetId());
 
                     for (String rttId : rttIds) {
 
-                        final String refsetJsonString = propertyReader.getRttIdToRefsetJsonMap().get(rttId);
+                        final String refsetJsonString = utilities.getPropertyReader().getRttIdToRefsetJsonMap().get(rttId);
 
                         final ObjectMapper mapper = new ObjectMapper();
                         final JsonNode refsetJson = mapper.readTree(refsetJsonString);
@@ -405,9 +403,9 @@ public class HistoricDataMigrator {
 
                         // If has ECL clauses, create and associate with refset (but
                         // don't persist)
-                        if (propertyReader.getRttRefsetToClausesMap().containsKey(rttId)) {
+                        if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
 
-                            for (String clauseJson : propertyReader.getRttRefsetToClausesMap().get(rttId)) {
+                            for (String clauseJson : utilities.getPropertyReader().getRttRefsetToClausesMap().get(rttId)) {
 
                                 final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
 
@@ -476,7 +474,7 @@ public class HistoricDataMigrator {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
-            List<String> ignoredRefsets = propertyReader.readRefsetsToIgnore();
+            List<String> ignoredRefsets = utilities.getPropertyReader().readRefsetsToIgnore();
 
             logger.info("---> Starting to identify Refsets on Snowstorm by edition/version pair");
 
@@ -549,23 +547,17 @@ public class HistoricDataMigrator {
 
                                 try {
 
-                                    Refset refset = new Refset();
+                                    Date versionDate = null;
+                                    String refsetName = null;
 
                                     if (testing && refsetId.equals(testingRefset)) {
 
                                         logger.debug(testingRefset + " - xxx - here with childBranch" + childBranch);
                                     }
 
-                                    refset.setRefsetId(refsetId);
-                                    refset.setModuleId(moduleId);
-                                    refset.setVersionStatus("PUBLISHED");
-                                    refset.setWorkflowStatus("PUBLISHED");
-                                    refset.setActive(true);
-
                                     if (runShortMigration) {
 
-                                        refset.setVersionDate(branchDate);
-
+                                        versionDate = branchDate;
                                     } else {
 
                                         // if (refsetId.equals("723264001") || refsetId.equals("721144007")) {
@@ -621,17 +613,15 @@ public class HistoricDataMigrator {
                                             refsetVersionDate = earliestPublishedVersionDate;
                                         }
 
-                                        refset.setVersionDate(refsetVersionDate);
+                                        versionDate = refsetVersionDate;
 
-                                        if (editionVersions.contains(refset.getVersionDate())) {
+                                        if (editionVersions.contains(versionDate)) {
 
-                                            logger.debug(" yyy - edition supports refset: " + refsetId + " === " + refset.getVersionDate());
+                                            logger.debug(" yyy - edition supports refset: " + refsetId + " === " + versionDate);
 
                                         } else {
 
-                                            logger.debug(" zzz - would fail so need to filter: " + refsetId + " === " + refset.getVersionDate());
-                                            // logger.debug(" zzz2b - with edition ' " + edition.getName() + "' version dates: " + editionVersions.toString());
-
+                                            logger.debug(" zzz - would fail so need to filter: " + refsetId + " === " + versionDate);
                                             // Don't add refset versions that don't have corresponding snowstorm -based edition versions
                                             continue;
                                         }
@@ -643,13 +633,14 @@ public class HistoricDataMigrator {
 
                                     if (refsetNode.get("pt").has("term")) {
 
-                                        refset.setName(refsetNode.get("pt").get("term").asText());
+                                        refsetName = refsetNode.get("pt").get("term").asText();
                                     } else {
 
-                                        refset.setName(lookupRefsetName(refsetId, edition, childBranch));
+                                        refsetName = lookupRefsetName(refsetId, edition, childBranch);
                                     }
 
                                     /* Add refset for later persisting */
+                                    Refset refset = utilities.addRefset(refsetName, refsetId, moduleId, versionDate);
                                     snowstormRefsets.add(refset);
                                     counts.incrementRefsetVersionPairsCounts();
 
@@ -873,8 +864,8 @@ public class HistoricDataMigrator {
         final String url = SnowstormConnection.BASE_URL + "codesystems";
         logger.debug("createEditionsFromSnowstorm url: " + url);
 
-        List<String> ignoredCodeSystemNames = propertyReader.readCodeSystemsToIgnore();
-        Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
+        List<String> ignoredCodeSystemNames = utilities.getPropertyReader().readCodeSystemsToIgnore();
+        Map<String, Set<String>> undefinedDefaultLanguageRefsets = utilities.getPropertyReader().readUndefinedDefaultLanguageRefsets();
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -969,14 +960,14 @@ public class HistoricDataMigrator {
                         // Identify Top Level Module
                         identifyTopLevelModule(edition, codeSystem, internationalModules);
 
-                        setMetadata(edition, defaultMeta);
+                        utilities.setMetadata(edition, defaultMeta);
                         service.add(edition);
 
                         // TODO: Add a description default value or update
                         // snowstorm with value per codesystem
                         final String orgDesc = "";
 
-                        Organization org = addOrganziation(editionOwnerMap.get(edition.getName()), orgDesc, edition, defaultMeta);
+                        Organization org = utilities.addOrganziation(editionOwnerMap.get(edition.getName()), orgDesc, edition, defaultMeta);
 
                         if (org.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
 
@@ -1001,7 +992,7 @@ public class HistoricDataMigrator {
 
         if ("international edition".equals(edition.getName().toLowerCase())) {
 
-            edition.setTopLevelModule(MODULE_ANCESTOR_CONCEPT_SCTID);
+            edition.setTopLevelModule(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
         } else {
 
             Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
@@ -1023,8 +1014,9 @@ public class HistoricDataMigrator {
             if (editionModules.size() == 0) {
 
                 // If no non-CORE modules found, use the default Module
-                edition.setTopLevelModule(MODULE_ANCESTOR_CONCEPT_SCTID);
-                logger.debug("No dedicated modules identified for " + edition.getName() + ": " + editionModules.toString() + ", so adding default: " + MODULE_ANCESTOR_CONCEPT_SCTID);
+                edition.setTopLevelModule(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
+                logger
+                    .debug("No dedicated modules identified for " + edition.getName() + ": " + editionModules.toString() + ", so adding default: " + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
             } else if (editionModules.size() == 1) {
 
                 // If only one non-CORE modules found, use it
@@ -1086,7 +1078,7 @@ public class HistoricDataMigrator {
 
     private Set<String> getModuleChildren(Edition edition) throws Exception {
 
-        String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch() + "/concepts/" + MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
+        String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch() + "/concepts/" + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
         Set<String> childrenSctIds = new HashSet<>();
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -1198,7 +1190,7 @@ public class HistoricDataMigrator {
             // Adding refsets identified on snowstorm
             for (String refsetSctId : refsetVersionsPreProcessed.keySet()) {
 
-                if (propertyReader.getRefsetToClausesInfoMap().containsKey(refsetSctId)) {
+                if (utilities.getPropertyReader().getRefsetToClausesInfoMap().containsKey(refsetSctId)) {
 
                     logger.debug("LLL - Have clause on refset: " + refsetSctId);
                 }
@@ -1206,14 +1198,14 @@ public class HistoricDataMigrator {
                 String narrative = null;
                 Set<String> tags = null;
 
-                if (propertyReader.getRefsetToDescriptionMap().containsKey(refsetSctId)) {
+                if (utilities.getPropertyReader().getRefsetToDescriptionMap().containsKey(refsetSctId)) {
 
-                    narrative = propertyReader.getRefsetToDescriptionMap().get(refsetSctId);
+                    narrative = utilities.getPropertyReader().getRefsetToDescriptionMap().get(refsetSctId);
                 }
 
-                if (propertyReader.getRefsetToTagsMap().containsKey(refsetSctId)) {
+                if (utilities.getPropertyReader().getRefsetToTagsMap().containsKey(refsetSctId)) {
 
-                    tags = propertyReader.getRefsetToTagsMap().get(refsetSctId);
+                    tags = utilities.getPropertyReader().getRefsetToTagsMap().get(refsetSctId);
                 }
 
                 for (Refset snowRefset : refsetVersionsPreProcessed.get(refsetSctId)) {
@@ -1231,12 +1223,10 @@ public class HistoricDataMigrator {
                         // Add Refset. Keep track of which are added this way as to not add them from RTT as well
                         snowRefset.setNarrative(narrative);
                         snowRefset.setTags(tags);
-                        projectCount = processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, propertyReader.getRefsetToProjectsInfoMap(), projectCount);
+                        projectCount =
+                            processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, utilities.getPropertyReader().getRefsetToProjectsInfoMap(), projectCount);
 
                         service.add(snowRefset);
-
-                        /* Don't need member count anymore */
-                        // identifyMemberCount(snowRefset);
 
                         processClauses(rttId, snowRefset);
 
@@ -1270,15 +1260,15 @@ public class HistoricDataMigrator {
 
                     final Edition edition = refsetEditions.get(refsetId);
 
-                    final Set<String> rttIds = propertyReader.getRttRefsetSctIdToRttIdMap().get(refsetId);
+                    final Set<String> rttIds = utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().get(refsetId);
 
                     for (String rttId : rttIds) {
 
-                        final String refsetJsonString = propertyReader.getRttIdToRefsetJsonMap().get(rttId);
-                        final String projectId = propertyReader.getRttIdToProjectsJsonMap().get(rttId);
+                        final String refsetJsonString = utilities.getPropertyReader().getRttIdToRefsetJsonMap().get(rttId);
+                        final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
 
                         final Refset rttRefset = ModelUtility.fromJson(refsetJsonString, Refset.class);
-                        final Date versionDate = Metadata.getSdf().parse(propertyReader.getRttRefsetToEffectiveDateMap().get(rttId));
+                        final Date versionDate = MigrationMetadata.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId));
 
                         if (refsetVersionsProcessed.containsKey(rttRefset.getRefsetId()) && refsetVersionsProcessed.get(rttRefset.getRefsetId()).contains(versionDate)) {
 
@@ -1332,27 +1322,12 @@ public class HistoricDataMigrator {
 
     private void populateInitialDate(TerminologyService service) throws Exception {
 
+        MigrationDataInitializer initializer = new MigrationDataInitializer();
+
         logger.info(" step - Populating initial data");
 
         // Create a dedicated UAT Training Project for each organization
-        logger.info(" Create a dedicated UAT Training Project for each organization");
-        Set<Project> uatProjects = new HashSet<>();
-
-        for (String orgName : organizationsAdded.keySet()) {
-
-            Organization org = organizationsAdded.get(orgName);
-
-            if (wciOrganization != null && wciOrganization.equals(org)) {
-
-                continue;
-            }
-
-            Project uatProject = addProject(org, org.getName() + " dedicated UAT Training Project",
-                "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project",
-                defaultMeta);
-
-            uatProjects.add(uatProject);
-        }
+        Set<Project> uatProjects = initializer.createUATProjects(wciOrganization, organizationsAdded, defaultMeta);
 
         // Create wci-project (for DEV only)
         logger.info(" Create wci-project (for DEV only)");
@@ -1360,67 +1335,13 @@ public class HistoricDataMigrator {
         if (wciOrganization != null) {
 
             logger.info("Adding WCI Testing Org's single project");
-            Project wciProject = addProject(wciOrganization, "WCI Testing Project", "The single project for all WCI testing refsets", defaultMeta);
-
-            Refset wciTestingRefset = new Refset();
-
-            // TODO: Change this to have actual release date created/new Refset
-            wciTestingRefset.setVersionDate(new Date());
-            wciTestingRefset.setRefsetId(WCI_TESTING_REFSET_CONCEPT_ID);
-            wciTestingRefset.setModuleId(MODULE_ANCESTOR_CONCEPT_SCTID);
-            wciTestingRefset.setVersionStatus("PUBLISHED");
-            wciTestingRefset.setWorkflowStatus("PUBLISHED");
-            wciTestingRefset.setActive(true);
-            wciTestingRefset.setType("EXTENSIONAL");
-            wciTestingRefset.setProject(wciProject);
-            wciTestingRefset.setName("Base WCI Refset");
-
-            service.add(wciTestingRefset);
+            initializer.createWCITestingContent(service, wciOrganization, defaultMeta);
 
             logger.info(" Create wci-developer teams for each extensions's UAT Training project (for DEV only)");
-
-            // Create wci-developer teams for each extensions's UAT Training project (for DEV only)
-            for (Project uatProject : uatProjects) {
-
-                Organization org = uatProject.getOrganization();
-
-                logger.debug("Trying with: " + org.getName());
-                logger.debug("then with: " + org.getEdition().getName());
-
-                Map<String, Set<String>> organizationTeamInfo = null;
-                organizationTeamInfo = propertyReader.getTeamCreation().get(org.getName());
-
-                if (organizationTeamInfo == null) {
-
-                    organizationTeamInfo = propertyReader.getTeamCreation().get(org.getName());
-
-                    if (organizationTeamInfo == null) {
-
-                        logger.debug("error 444 - with " + propertyReader.getTeamCreation().get(org.getName()) + " -- and -- " + propertyReader.getTeamCreation().get(org.getEdition().getName()));
-                        continue;
-                    }
-
-                }
-
-                Set<String> projectTeams = new HashSet<>();
-
-                for (String teamToCreate : organizationTeamInfo.keySet()) {
-
-                    Team team = new Team(teamToCreate);
-                    team.setDescription("Providing support for all UAT Extension Training Projects");
-                    team.setOrganization(org);
-                    team.setPrimaryContactEmail("support-rt2@westcoastinformatics.com");
-                    team.setRoles(organizationTeamInfo.get(teamToCreate));
-                    team.setMembers(propertyReader.getTeamMembership().get(teamToCreate));
-
-                    service.add(team);
-                    projectTeams.add(team.getName());
-                }
-
-                uatProject.setTeams(projectTeams);
-            }
-
+            initializer.createWCITeams(service, uatProjects);
         }
+
+        initializer.createTestingFeedback(service, wciOrganization);
 
         logger.info(" step complete - Adding special content");
     }
@@ -1433,9 +1354,9 @@ public class HistoricDataMigrator {
             service.setModifiedFlag(true);
 
             // If has ECL clauses, add them to db & refset
-            if (propertyReader.getRttRefsetToClausesMap().containsKey(rttId)) {
+            if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
 
-                Set<DefinitionClause> clauses = addClause(rttId);
+                Set<DefinitionClause> clauses = utilities.addClause(rttId);
                 refset.getDefinitionClauses().addAll(clauses);
                 service.update(refset);
             }
@@ -1452,13 +1373,13 @@ public class HistoricDataMigrator {
             service.setModifiedBy("Migration");
             service.setModifiedFlag(true);
 
-            final String projectId = propertyReader.getRttIdToProjectsJsonMap().get(rttId);
+            final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
 
-            final Project rttProject = ModelUtility.fromJson(propertyReader.getRttIdToProjectsJsonMap().get(projectId), Project.class);
+            final Project rttProject = ModelUtility.fromJson(utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(projectId), Project.class);
 
             final Organization rttOrg = rttProject.getOrganization();
 
-            final Metadata projectMeta = new Metadata(rttProject.getModified(), rttProject.getModifiedBy());
+            final MigrationMetadata projectMeta = new MigrationMetadata(rttProject.getModified(), rttProject.getModifiedBy());
 
             final String translatedOrgName = translateRttOrg(rttOrg.getName());
 
@@ -1473,8 +1394,10 @@ public class HistoricDataMigrator {
 
             if (!organizationsAdded.containsKey(translatedOrgName)) {
 
-                org = addOrganziation(translatedOrgName, null, edition, defaultMeta);
+                org = utilities.addOrganziation(translatedOrgName, null, edition, defaultMeta);
                 organizationsAdded.put(translatedOrgName, org);
+                counts.incrementOrgsImportedCount();
+
             } else {
 
                 org = organizationsAdded.get(translatedOrgName);
@@ -1482,7 +1405,7 @@ public class HistoricDataMigrator {
 
             if (!projectsAdded.containsKey(rttProject.getName())) {
 
-                final Project project = addProject(org, rttProject.getName(), rttProject.getDescription(), projectMeta);
+                final Project project = utilities.addProject(org, rttProject.getName(), rttProject.getDescription(), projectMeta);
                 projectCount++;
 
                 projectsAdded.put(rttProject.getName(), project);
@@ -1497,29 +1420,14 @@ public class HistoricDataMigrator {
 
             counts.incrementRttMetadataCount();
             rttRefset.setProject(projectsAdded.get(rttProject.getName()));
-            setMetadata(rttRefset, propertyReader.getMetadataMap().get("refset-" + rttId));
+            utilities.setMetadata(rttRefset, utilities.getPropertyReader().getMetadataMap().get("refset-" + rttId));
 
             rttRefset.setVersionStatus("PUBLISHED");
             rttRefset.setWorkflowStatus("PUBLISHED");
-            rttRefset.setVersionDate(Metadata.getSdf().parse(propertyReader.getRttRefsetToEffectiveDateMap().get(rttId)));
+            rttRefset.setVersionDate(MigrationMetadata.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId)));
 
             service.add(rttRefset);
             processClauses(rttId, rttRefset);
-        }
-
-    }
-
-    private void identifyMemberCount(Refset rttRefset) {
-
-        ConceptResultList members;
-
-        try {
-
-            members = RefsetMemberService.getRefsetMembers(SecurityService.getUserFromSession(), rttRefset.getId(), new SearchParameters(), "list", null);
-        } catch (Exception e) {
-
-            logger.error("Failed calling RefsetMemberService.getRefsetMembers()");
-            e.printStackTrace();
         }
 
     }
@@ -1547,7 +1455,7 @@ public class HistoricDataMigrator {
 
         counts.incrementNoMetadataCount();
         refset.setProject(project);
-        setMetadata(refset, defaultMeta);
+        utilities.setMetadata(refset, defaultMeta);
 
         if (!projectsAdded.containsKey(project.getName())) {
 
@@ -1591,7 +1499,7 @@ public class HistoricDataMigrator {
                 return projectsAdded.get(projectDetails[0]);
             }
 
-            final Project project = addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1], defaultMeta);
+            final Project project = utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1], defaultMeta);
 
             return project;
         }
@@ -1605,7 +1513,7 @@ public class HistoricDataMigrator {
             final String projectName = "Default project for " + orgName;
             final String projectDescription = "This is a default project to support initial Snowstorm-based refsets for " + orgName + ".";
 
-            final Project project = addProject(org, projectName, projectDescription, defaultMeta);
+            final Project project = utilities.addProject(org, projectName, projectDescription, defaultMeta);
 
             defaultEditionProjects.put(edition.getId(), project);
         }
@@ -1664,81 +1572,6 @@ public class HistoricDataMigrator {
             return name;
         }
 
-    }
-
-    private Project addProject(Organization org, String projectName, String projectDescription, Metadata meta) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            service.setModifiedBy("Migration");
-            service.setModifiedFlag(true);
-
-            final Project project = new Project();
-            project.setName(projectName);
-            project.setDescription(projectDescription);
-            project.setOrganization(org);
-            project.setPrivateProject(false);
-            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
-
-            // Persist
-            setMetadata(project, meta);
-            return service.add(project);
-        }
-
-    }
-
-    private Organization addOrganziation(final String orgName, String orgDesc, final Edition edition, final Metadata meta) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            service.setModifiedBy("Migration");
-            service.setModifiedFlag(true);
-
-            Organization org = new Organization();
-            org.setName(orgName);
-            org.setDescription(orgDesc);
-            org.setEdition(edition);
-
-            setMetadata(org, meta);
-
-            org = service.add(org);
-            organizationsAdded.put(orgName, org);
-
-            counts.incrementOrgsImportedCount();
-
-            return org;
-        }
-
-    }
-
-    private Set<DefinitionClause> addClause(String rttId) throws Exception {
-
-        Set<DefinitionClause> refsetClauses = new HashSet<>();
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            service.setModifiedBy("Migration");
-            service.setModifiedFlag(true);
-
-            for (String clauseJson : propertyReader.getRttRefsetToClausesMap().get(rttId)) {
-
-                final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
-
-                setMetadata(clause, propertyReader.getMetadataMap().get("refset-" + rttId));
-                DefinitionClause persistedClause = service.add(clause);
-                refsetClauses.add(persistedClause);
-            }
-
-            return refsetClauses;
-        }
-
-    }
-
-    void setMetadata(final HasModified object, final Metadata metadata) {
-
-        object.setModified(metadata.getModified());
-        object.setCreated(metadata.getModified());
-        object.setModifiedBy(metadata.getModifiedBy());
     }
 
 }
