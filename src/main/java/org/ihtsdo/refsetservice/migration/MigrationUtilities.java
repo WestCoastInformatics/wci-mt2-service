@@ -58,7 +58,7 @@ public class MigrationUtilities {
 
     }
 
-    public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate) throws Exception {
+    public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -73,7 +73,9 @@ public class MigrationUtilities {
             refset.setWorkflowStatus("PUBLISHED");
             refset.setActive(true);
             refset.setVersionDate(versionDate);
-
+            refset.setType(type);
+            refset.setNarrative(narrative);
+            
             return service.add(refset);
         }
 
