@@ -41,10 +41,11 @@ CREATE TABLE `editions` (
 
 CREATE TABLE `edition_defaultlanguagerefsets` (
   `Edition_id` varchar(64) NOT NULL,
-  `defaultLanguageRefsets` varchar(255) DEFAULT NULL,
-  KEY `FKsty54m8wa2yvysx49lsgdapq0` (`Edition_id`),
-  CONSTRAINT `FKsty54m8wa2yvysx49lsgdapq0` FOREIGN KEY (`Edition_id`) REFERENCES `editions` (`id`)
+  `defaultLanguageRefsets` varchar(255) DEFAULT NULL
 );
+
+ALTER TABLE `edition_defaultlanguagerefsets` ADD INDEX `FKsty54m8wa2yvysx49lsgdapq0` (`Edition_id`);
+ALTER TABLE `edition_defaultlanguagerefsets` ADD CONSTRAINT `FKsty54m8wa2yvysx49lsgdapq0` FOREIGN KEY (`Edition_id`) REFERENCES `editions` (`id`);
 
 CREATE TABLE `organizations` (
   `id` varchar(64) NOT NULL,
@@ -57,10 +58,10 @@ CREATE TABLE `organizations` (
   `primaryContactEmail` varchar(255) DEFAULT NULL,
   `edition_id` varchar(64) DEFAULT NULL,
   `iconUri` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `FK9og41jo3e6xe033my21t6wscf` (`edition_id`),
-  CONSTRAINT `FK9og41jo3e6xe033my21t6wscf` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`)
+  PRIMARY KEY (`id`)
 );
+ALTER TABLE `organizations` ADD INDEX `FK9og41jo3e6xe033my21t6wscf` (`edition_id`);
+ALTER TABLE `organizations` ADD CONSTRAINT `FK9og41jo3e6xe033my21t6wscf` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`);
 
 CREATE TABLE `projects` (
   `id` varchar(64) NOT NULL,
@@ -74,10 +75,10 @@ CREATE TABLE `projects` (
   `crowdProjectId` varchar(255) DEFAULT NULL,
   `privateProject` bit(1) NOT NULL,
   `organization_id` varchar(64) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `FK3gwrleyyq6prcnqekmkobbimd` (`organization_id`),
-  CONSTRAINT `FK3gwrleyyq6prcnqekmkobbimd` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+  PRIMARY KEY (`id`)
 );
+ALTER TABLE `projects` ADD INDEX `FK3gwrleyyq6prcnqekmkobbimd` (`organization_id`);
+ALTER TABLE `projects` ADD CONSTRAINT `FK3gwrleyyq6prcnqekmkobbimd` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`);
 
 CREATE TABLE `refsets` (
   `id` varchar(64) NOT NULL,
@@ -103,17 +104,17 @@ CREATE TABLE `refsets` (
   `workflowStatus` varchar(256),
   `project_id` varchar(64) DEFAULT NULL,
   `memberCount` int DEFAULT '-1',
-  PRIMARY KEY (`id`),
-  KEY `FKapij9mkufxno7uncjc6oo20en` (`project_id`),
-  CONSTRAINT `FKapij9mkufxno7uncjc6oo20en` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`)
+  PRIMARY KEY (`id`)
 );
+ALTER TABLE `refsets` ADD INDEX `FKapij9mkufxno7uncjc6oo20en` (`project_id`);
+ALTER TABLE `refsets` ADD CONSTRAINT `FKapij9mkufxno7uncjc6oo20en` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`);
 
 CREATE TABLE `refset_tags` (
   `Refset_id` varchar(64) NOT NULL,
-  `tags` varchar(255) DEFAULT NULL,
-  KEY `FKhamy5caidejdqf663hp9gftu6` (`Refset_id`),
-  CONSTRAINT `FKhamy5caidejdqf663hp9gftu6` FOREIGN KEY (`Refset_id`) REFERENCES `refsets` (`id`)
+  `tags` varchar(255) DEFAULT NULL
 );
+ALTER TABLE `refset_tags` ADD INDEX `FKhamy5caidejdqf663hp9gftu6` (`Refset_id`);
+ALTER TABLE `refset_tags` ADD CONSTRAINT `FKhamy5caidejdqf663hp9gftu6` FOREIGN KEY (`Refset_id`) REFERENCES `refsets` (`id`);
 
 CREATE TABLE `definition_clauses` (
   `id` varchar(64) NOT NULL,
@@ -128,12 +129,12 @@ CREATE TABLE `definition_clauses` (
 
 CREATE TABLE `refsets_definition_clauses` (
   `Refset_id` varchar(64) NOT NULL,
-  `definitionClauses_id` varchar(64) NOT NULL,
-  UNIQUE KEY `UK_93xq9bgm9nffpwt4gfjx5f548` (`definitionClauses_id`),
-  KEY `FKdowc61fwiejkojh1wj7wk0mn0` (`Refset_id`),
-  CONSTRAINT `FKbxe21a6g8xufs1yh5537pya8p` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses` (`id`),
-  CONSTRAINT `FKdowc61fwiejkojh1wj7wk0mn0` FOREIGN KEY (`Refset_id`) REFERENCES `refsets` (`id`)
+  `definitionClauses_id` varchar(64) NOT NULL
 );
+ALTER TABLE `refsets_definition_clauses` ADD UNIQUE KEY `UK_93xq9bgm9nffpwt4gfjx5f548` (`definitionClauses_id`);
+ALTER TABLE `refsets_definition_clauses` ADD INDEX `FKdowc61fwiejkojh1wj7wk0mn0` (`Refset_id`);
+ALTER TABLE `refsets_definition_clauses` ADD CONSTRAINT `FKbxe21a6g8xufs1yh5537pya8p` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses` (`id`);
+ALTER TABLE `refsets_definition_clauses` ADD CONSTRAINT `FKdowc61fwiejkojh1wj7wk0mn0` FOREIGN KEY (`Refset_id`) REFERENCES `refsets` (`id`);
 
 CREATE TABLE `workflow_history` (
   `id` varchar(64) NOT NULL,
@@ -146,10 +147,10 @@ CREATE TABLE `workflow_history` (
   `workflowStatus` varchar(256) DEFAULT NULL,
   `workflowAction` varchar(256) DEFAULT NULL,
   `refset_id` varchar(64) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `FK7c0nnfqf1yumohfk60ysf68y7` (`refset_id`),
-  CONSTRAINT `FK7c0nnfqf1yumohfk60ysf68y7` FOREIGN KEY (`refset_id`) REFERENCES `refsets` (`id`)
+  PRIMARY KEY (`id`)
 );
+-- ALTER  TABLE `workflow_history` ADD INDEX `FK7c0nnfqf1yumohfk60ysf68y7` (`refset_id`);
+ALTER  TABLE `workflow_history` ADD CONSTRAINT `FK7c0nnfqf1yumohfk60ysf68y7` FOREIGN KEY (`refset_id`) REFERENCES `refsets` (`id`);
 
 CREATE TABLE `users` (
   `id` varchar(64) NOT NULL,
@@ -163,25 +164,30 @@ CREATE TABLE `users` (
   `title` varchar(250) DEFAULT NULL,
   `userName` varchar(250) NOT NULL,
   `iconUri` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_mmns67o5v4bfippoqitu4v3t6` (`userName`)
+  PRIMARY KEY (`id`)
 );
+ALTER TABLE `users` ADD UNIQUE KEY `UK_mmns67o5v4bfippoqitu4v3t6` (`userName`);
+
+--
+ALTER TABLE `users` ADD index `index_userName` (`username`);
+ALTER TABLE `users` ADD index `index_email` (`email`);
+--
 
 CREATE TABLE `user_roles` (
   `user_id` varchar(64) NOT NULL,
-  `roles` varchar(255) DEFAULT NULL,
-  KEY `FK7ppgoj8kxsmh27hyahk1m96v7` (`user_id`),
-  CONSTRAINT `FK7ppgoj8kxsmh27hyahk1m96v7` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+  `roles` varchar(255) DEFAULT NULL
 );
+ALTER TABLE `user_roles` ADD INDEX `FK7ppgoj8kxsmh27hyahk1m96v7` (`user_id`);
+ALTER TABLE `user_roles` ADD CONSTRAINT `FK7ppgoj8kxsmh27hyahk1m96v7` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 CREATE TABLE `organization_members` (
   `user_id` varchar(64) NOT NULL,
   `organization_id` varchar(64) NOT NULL,
-  PRIMARY KEY (`user_id`,`organization_id`),
-  KEY `FK9us8isobqed8ba2wqq6cqoupl` (`organization_id`),
-  CONSTRAINT `FK9us8isobqed8ba2wqq6cqoupl` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
-  CONSTRAINT `FKmk6i6pb4mvo0gf26cwqh4tlpo` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+  PRIMARY KEY (`user_id`,`organization_id`)
 );
+ALTER TABLE `organization_members` ADD INDEX `FK9us8isobqed8ba2wqq6cqoupl` (`organization_id`);
+ALTER TABLE `organization_members` ADD CONSTRAINT `FK9us8isobqed8ba2wqq6cqoupl` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`);
+ALTER TABLE `organization_members` ADD CONSTRAINT `FKmk6i6pb4mvo0gf26cwqh4tlpo` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 CREATE TABLE `definition_clauses_history` (
   `id` varchar(64) NOT NULL,
@@ -219,19 +225,19 @@ CREATE TABLE `refset_history` (
 
 CREATE TABLE `refsetedithistory_tags` (
   `RefsetEditHistory_id` varchar(64) NOT NULL,
-  `tags` varchar(255) DEFAULT NULL,
-  KEY `FKp3ibc0vuk4awosxcicl40d9mf` (`RefsetEditHistory_id`),
-  CONSTRAINT `FKp3ibc0vuk4awosxcicl40d9mf` FOREIGN KEY (`RefsetEditHistory_id`) REFERENCES `refset_history` (`id`)
+  `tags` varchar(255) DEFAULT NULL
 );
+ALTER TABLE `refsetedithistory_tags` ADD INDEX `FKp3ibc0vuk4awosxcicl40d9mf` (`RefsetEditHistory_id`);
+ALTER TABLE `refsetedithistory_tags` ADD CONSTRAINT `FKp3ibc0vuk4awosxcicl40d9mf` FOREIGN KEY (`RefsetEditHistory_id`) REFERENCES `refset_history` (`id`);
 
 CREATE TABLE `refset_history_definition_clauses_history` (
   `RefsetEditHistory_id` varchar(64) NOT NULL,
-  `definitionClauses_id` varchar(64) NOT NULL,
-  UNIQUE KEY `UK_i1trc62t28cd2ktnwm5mw83n3` (`definitionClauses_id`),
-  KEY `FKwyybq7oy7spmr11a78ix5b4p` (`RefsetEditHistory_id`),
-  CONSTRAINT `FKo21bax91dosoykcp70vg8709n` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses_history` (`id`),
-  CONSTRAINT `FKwyybq7oy7spmr11a78ix5b4p` FOREIGN KEY (`RefsetEditHistory_id`) REFERENCES `refset_history` (`id`)
+  `definitionClauses_id` varchar(64) NOT NULL  
 );
+ALTER TABLE `refset_history_definition_clauses_history` ADD UNIQUE KEY `UK_i1trc62t28cd2ktnwm5mw83n3` (`definitionClauses_id`);
+ALTER TABLE `refset_history_definition_clauses_history` ADD INDEX `FKwyybq7oy7spmr11a78ix5b4p` (`RefsetEditHistory_id`);
+ALTER TABLE `refset_history_definition_clauses_history` ADD CONSTRAINT `FKo21bax91dosoykcp70vg8709n` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses_history` (`id`);
+ALTER TABLE `refset_history_definition_clauses_history` ADD CONSTRAINT `FKwyybq7oy7spmr11a78ix5b4p` FOREIGN KEY (`RefsetEditHistory_id`) REFERENCES `refset_history` (`id`);
 
 CREATE TABLE `upgrade_inactive_concecpts` (
   `id` varchar(64) NOT NULL,
@@ -264,12 +270,12 @@ CREATE TABLE `upgrade_replacement_concecpts` (
 
 CREATE TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` (
   `UpgradeInactiveConcecpt_id` varchar(64) NOT NULL,
-  `replacementConcecpts_id` varchar(64) NOT NULL,
-  UNIQUE KEY `UK_gvw8w97h67cp3wamn80hv4279` (`replacementConcecpts_id`),
-  KEY `FKr832qlbgsqdr1o9do0qseqm4m` (`UpgradeInactiveConcecpt_id`),
-  CONSTRAINT `FKju78x6kjym3y2y90mfmon9lge` FOREIGN KEY (`replacementConcecpts_id`) REFERENCES `upgrade_replacement_concecpts` (`id`),
-  CONSTRAINT `FKr832qlbgsqdr1o9do0qseqm4m` FOREIGN KEY (`UpgradeInactiveConcecpt_id`) REFERENCES `upgrade_inactive_concecpts` (`id`)
+  `replacementConcecpts_id` varchar(64) NOT NULL
 );
+ALTER TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` ADD UNIQUE KEY `UK_gvw8w97h67cp3wamn80hv4279` (`replacementConcecpts_id`);
+ALTER TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` ADD INDEX `FKr832qlbgsqdr1o9do0qseqm4m` (`UpgradeInactiveConcecpt_id`);
+ALTER TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` ADD CONSTRAINT `FKju78x6kjym3y2y90mfmon9lge` FOREIGN KEY (`replacementConcecpts_id`) REFERENCES `upgrade_replacement_concecpts` (`id`);
+ALTER TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` ADD CONSTRAINT `FKr832qlbgsqdr1o9do0qseqm4m` FOREIGN KEY (`UpgradeInactiveConcecpt_id`) REFERENCES `upgrade_inactive_concecpts` (`id`);
 
 CREATE TABLE `teams` (
   `id` varchar(64) NOT NULL,
@@ -281,31 +287,31 @@ CREATE TABLE `teams` (
   `name` varchar(255) NOT NULL,
   `primaryContactEmail` varchar(255) DEFAULT NULL,
   `organization_id` varchar(64) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `FK5i52bhmm0nbq6lrbur63anlmc` (`organization_id`),
-  CONSTRAINT `FK5i52bhmm0nbq6lrbur63anlmc` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+  PRIMARY KEY (`id`)
 );
+ALTER TABLE `teams` ADD INDEX `FK5i52bhmm0nbq6lrbur63anlmc` (`organization_id`);
+ALTER TABLE `teams` ADD CONSTRAINT `FK5i52bhmm0nbq6lrbur63anlmc` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`);
 
 CREATE TABLE `team_members` (
   `Team_id` varchar(64) NOT NULL,
-  `members` varchar(255) DEFAULT NULL,
-  KEY `FKdsgfqq0ak2pnhrs36ayw3flp9` (`Team_id`),
-  CONSTRAINT `FKdsgfqq0ak2pnhrs36ayw3flp9` FOREIGN KEY (`Team_id`) REFERENCES `teams` (`id`)
+  `members` varchar(255) DEFAULT NULL
 );
+ALTER TABLE `team_members` ADD INDEX `FKdsgfqq0ak2pnhrs36ayw3flp9` (`Team_id`);
+ALTER TABLE `team_members` ADD CONSTRAINT `FKdsgfqq0ak2pnhrs36ayw3flp9` FOREIGN KEY (`Team_id`) REFERENCES `teams` (`id`);
 
 CREATE TABLE `team_roles` (
   `Team_id` varchar(64) NOT NULL,
-  `roles` varchar(255) DEFAULT NULL,
-  KEY `FKhfbftl8bipxam7c60hojoghjl` (`Team_id`),
-  CONSTRAINT `FKhfbftl8bipxam7c60hojoghjl` FOREIGN KEY (`Team_id`) REFERENCES `teams` (`id`)
+  `roles` varchar(255) DEFAULT NULL
 );
+ALTER TABLE `team_roles` ADD INDEX `FKhfbftl8bipxam7c60hojoghjl` (`Team_id`);
+ALTER TABLE `team_roles` ADD CONSTRAINT `FKhfbftl8bipxam7c60hojoghjl` FOREIGN KEY (`Team_id`) REFERENCES `teams` (`id`);
 
 CREATE TABLE `project_teams` (
   `Project_id` varchar(64) NOT NULL,
-  `teams` varchar(255) DEFAULT NULL,
-  KEY `FKg82gm3p0ykivqyitgacrko9n4` (`Project_id`),
-  CONSTRAINT `FKg82gm3p0ykivqyitgacrko9n4` FOREIGN KEY (`Project_id`) REFERENCES `projects` (`id`)
+  `teams` varchar(255) DEFAULT NULL
 );
+ALTER TABLE `project_teams` ADD INDEX `FKg82gm3p0ykivqyitgacrko9n4` (`Project_id`);
+ALTER TABLE `project_teams` ADD CONSTRAINT `FKg82gm3p0ykivqyitgacrko9n4` FOREIGN KEY (`Project_id`) REFERENCES `projects` (`id`);
 
 CREATE TABLE `discussion_posts` (
   `id` varchar(64) NOT NULL,
@@ -317,9 +323,9 @@ CREATE TABLE `discussion_posts` (
   `privatePost` bit(1) NOT NULL,
   `visibility` varchar(64) NOT NULL,
   `User_id` varchar(64) NOT NULL,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `FKryuftl8bipivqyitga72angpb` FOREIGN KEY (`User_id`) REFERENCES `users` (`id`)
+  PRIMARY KEY (`id`)
 );
+ALTER TABLE `discussion_posts` ADD CONSTRAINT `FKryuftl8bipivqyitga72angpb` FOREIGN KEY (`User_id`) REFERENCES `users` (`id`);
 
 CREATE TABLE `discussion_threads` (
   `id` varchar(64) NOT NULL,
@@ -340,9 +346,9 @@ CREATE TABLE `discussion_threads` (
 
 CREATE TABLE `discussion_threads_discussion_posts` (
   `DiscussionThread_id` varchar(64) NOT NULL,
-  `posts_id` varchar(64) NOT NULL,
-  UNIQUE KEY `UK_tdj8q5rjs9c9ivyuryqc4vq3a` (`posts_id`),
-  KEY `FK9e03dufefyllv3bea2wcfdj56` (`DiscussionThread_id`),
-  CONSTRAINT `FK9e03dufefyllv3bea2wcfdj56` FOREIGN KEY (`DiscussionThread_id`) REFERENCES `discussion_threads` (`id`),
-  CONSTRAINT `FKjb4q7pwfdqv0kf8wsk6mmi1t0` FOREIGN KEY (`posts_id`) REFERENCES `discussion_posts` (`id`)
+  `posts_id` varchar(64) NOT NULL
 );
+ALTER TABLE `discussion_threads_discussion_posts` ADD UNIQUE KEY `UK_tdj8q5rjs9c9ivyuryqc4vq3a` (`posts_id`);
+ALTER TABLE `discussion_threads_discussion_posts` ADD INDEX `FK9e03dufefyllv3bea2wcfdj56` (`DiscussionThread_id`);
+ALTER TABLE `discussion_threads_discussion_posts` ADD CONSTRAINT `FK9e03dufefyllv3bea2wcfdj56` FOREIGN KEY (`DiscussionThread_id`) REFERENCES `discussion_threads` (`id`);
+ALTER TABLE `discussion_threads_discussion_posts` ADD CONSTRAINT `FKjb4q7pwfdqv0kf8wsk6mmi1t0` FOREIGN KEY (`posts_id`) REFERENCES `discussion_posts` (`id`);

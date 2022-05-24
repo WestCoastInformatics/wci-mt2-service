@@ -38,8 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -91,30 +89,36 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
     @Fetch(FetchMode.JOIN)
     private Set<Organization> organizations = new HashSet<>();
-    
+
     @Column(nullable = true, length = 255)
     private String iconUri;
-    
+
     @Transient
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Set<Team> teams = new HashSet<>();
 
     /** The admin role. */
+    @Transient
     public static final String ROLE_ADMIN = "ADMIN";
 
     /** The lead role. */
+    @Transient
     public static final String ROLE_LEAD = "LEAD";
 
     /** The reviewer role. */
+    @Transient
     public static final String ROLE_REVIEWER = "REVIEWER";
 
     /** The author role. */
+    @Transient
     public static final String ROLE_AUTHOR = "AUTHOR";
 
     /** The user role. */
+    @Transient
     public static final String ROLE_USER = "USER";
 
     /** The user role. */
+    @Transient
     public static final String ROLE_VIEWER = "VIEWER";
 
     /**
@@ -385,8 +389,12 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
         this.iconUri = iconUri;
     }
-    
-    
+
+    /**
+     * Returns the teams.
+     *
+     * @return the teams
+     */
     @JsonGetter()
     public Set<Team> getTeams() {
 
@@ -404,7 +412,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
         this.teams = teams;
     }
-
 
     /**
      * Check if the user has the specified role on the refset.
@@ -465,17 +472,17 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     public int hashCode() {
 
         final int prime = 31;
-        int result = super.hashCode();
+        int result = 1;
         result = prime * result + ((authToken == null) ? 0 : authToken.hashCode());
         result = prime * result + ((company == null) ? 0 : company.hashCode());
         result = prime * result + ((email == null) ? 0 : email.hashCode());
+        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((organizations == null) ? 0 : organizations.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((teams == null) ? 0 : teams.hashCode());
         result = prime * result + ((title == null) ? 0 : title.hashCode());
         result = prime * result + ((userName == null) ? 0 : userName.hashCode());
-        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
-        result = prime * result + ((teams == null) ? 0 : teams.hashCode());
         return result;
     }
 
@@ -485,9 +492,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
         if (this == obj) {
             return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
         }
         if (getClass() != obj.getClass()) {
             return false;
@@ -514,6 +518,13 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         } else if (!email.equals(other.email)) {
             return false;
         }
+        if (iconUri == null) {
+            if (other.iconUri != null) {
+                return false;
+            }
+        } else if (!iconUri.equals(other.iconUri)) {
+            return false;
+        }
         if (name == null) {
             if (other.name != null) {
                 return false;
@@ -521,11 +532,25 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         } else if (!name.equals(other.name)) {
             return false;
         }
+        if (organizations == null) {
+            if (other.organizations != null) {
+                return false;
+            }
+        } else if (!organizations.equals(other.organizations)) {
+            return false;
+        }
         if (roles == null) {
             if (other.roles != null) {
                 return false;
             }
         } else if (!roles.equals(other.roles)) {
+            return false;
+        }
+        if (teams == null) {
+            if (other.teams != null) {
+                return false;
+            }
+        } else if (!teams.equals(other.teams)) {
             return false;
         }
         if (title == null) {
@@ -540,20 +565,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                 return false;
             }
         } else if (!userName.equals(other.userName)) {
-            return false;
-        }
-        if (iconUri == null) {
-            if (other.iconUri != null) {
-                return false;
-            }
-        } else if (!iconUri.equals(other.iconUri)) {
-            return false;
-        }
-        if (teams == null) {
-            if (other.teams != null) {
-                return false;
-            }
-        } else if (!teams.equals(other.teams)) {
             return false;
         }
         return true;

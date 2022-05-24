@@ -10,18 +10,12 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.io.File;
-import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.commons.io.FileUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -37,21 +31,17 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
-import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -109,9 +99,8 @@ public class OrganizationController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Organization identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
+        @ApiImplicitParam(name = "id", value = "Organization identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataTypeClass = String.class, paramType = "path") // ,
     })
-
     @RecordMetric
     @RequestMapping(value = "/organization/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<Organization> getOrganization(@PathVariable(value = "id") final String id, @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
@@ -120,13 +109,18 @@ public class OrganizationController extends BaseController {
             logger.info("Get organization {}", id);
             // TODO check permissions, fail if not authorized.
             final User authUser = SecurityService.getUserFromSession();
+            if (authUser == null) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            }
 
             try (final TerminologyService service = new TerminologyService()) {
                 final Organization organization = service.findSingle("id: " + id + " AND active:true", Organization.class, null);
 
                 if (organization == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find organization for id " + id + ".");
+                    logger.info("Unable to find organization for id {}.", id);
+                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                 }
+
                 if (includeMembers) {
                     organization.getMembers();
                 } else {
@@ -158,9 +152,9 @@ public class OrganizationController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
         // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -225,12 +219,16 @@ public class OrganizationController extends BaseController {
             logger.info("Add organization: {}", organization);
             // TODO check permissions, fail if not authorized.
             final User authUser = SecurityService.getUserFromSession();
+            if (authUser == null) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            }
 
             try (final TerminologyService service = new TerminologyService()) {
 
-                final Organization org = (Organization) organization;
+                final Organization org = new Organization();
+                org.populateFrom(organization);
 
-                service.setModifiedBy(authUser.getId());
+                service.setModifiedBy(authUser.getUserName());
                 service.setTransactionPerOperation(false);
                 service.beginTransaction();
 
@@ -255,8 +253,8 @@ public class OrganizationController extends BaseController {
      */
     @ApiOperation(value = "Update organization", response = Organization.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "Organization successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 201, message = "Organization successfully updated"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
         @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
@@ -266,20 +264,29 @@ public class OrganizationController extends BaseController {
         logger.info("Update organization: {}", organization);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
+            logger.info("Organization is null or organization id does not match id in URL.");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Organization original = service.get(id, Organization.class);
 
             if (original == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find organization for id " + id + ".");
+                logger.info("Unable to find organization for id {}.", id);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
+            original.patchFrom(organization);
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            original.patchFrom(organization);
             service.update(original);
             service.commit();
 
@@ -311,19 +318,23 @@ public class OrganizationController extends BaseController {
         logger.info("Inactivate organization: {}", id);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
-
-            service.setModifiedBy(authUser.getId());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
 
             // Find the object
             final Organization organization = service.get(id, Organization.class);
 
             if (organization == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find organization for id:" + id);
+                logger.info("Unable to find organization for id {}.", id);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
+
+            service.setModifiedBy(authUser.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
             // inactivate projects, clear teams, and inactivate refsets
             final ResultList<Project> orgProjects = service.find("organization.id:" + id + " AND active:true", null, Project.class, null);
@@ -380,12 +391,11 @@ public class OrganizationController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Organization identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
+        @ApiImplicitParam(name = "id", value = "Organization identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataTypeClass = String.class, paramType = "path") // ,
     })
     @RecordMetric
     @RequestMapping(value = "/organization/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable(value = "id") final String id,
-        @QueryParam(value = "includeTeams") final boolean includeTeams) throws Exception {
+    public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable(value = "id") final String id, @QueryParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
         logger.info("Get organization users. Id: {}", id);
         // TODO check permissions, fail if not authorized.
@@ -412,7 +422,7 @@ public class OrganizationController extends BaseController {
                     }
                 }
             }
-            
+
             usersResultList.setTotal(usersResultList.getItems().size());
 
             return new ResponseEntity<>(usersResultList, HttpStatus.OK);
@@ -436,7 +446,7 @@ public class OrganizationController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Organization identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
+        @ApiImplicitParam(name = "id", value = "Organization identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataTypeClass = String.class, paramType = "path") // ,
     })
     @RecordMetric
     @RequestMapping(value = "/organization/{id}/teams", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
@@ -474,7 +484,7 @@ public class OrganizationController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Organization identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
+        @ApiImplicitParam(name = "id", value = "Organization identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataTypeClass = String.class, paramType = "path") // ,
     })
     @RecordMetric
     @RequestMapping(value = "/organization/{id}/projects", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
@@ -515,8 +525,7 @@ public class OrganizationController extends BaseController {
     })
     @RecordMetric
     @PostMapping(value = "/organization/{organizationId}/user")
-    public @ResponseBody ResponseEntity<String> addUserToOrganization(@PathVariable final String organizationId,final String email)
-        throws Exception {
+    public @ResponseBody ResponseEntity<String> addUserToOrganization(@PathVariable final String organizationId, final String email) throws Exception {
 
         logger.info("Add user: {} to organization: {}.", email, organizationId);
         // TODO check permissions, fail if not authorized.
@@ -526,16 +535,16 @@ public class OrganizationController extends BaseController {
 
             // Find the user
             final User user = service.findSingle("email:" + email, User.class, null);
-            
+
             if (user == null) {
-                
+
                 final String message = "Unable to find user for " + email + ".";
                 logger.error(message);
                 return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
 
             final Organization organization = service.get(organizationId, Organization.class);
-            
+
             if (organization == null) {
 
                 final String message = "Unable to find organization for " + organizationId + ".";
@@ -543,7 +552,7 @@ public class OrganizationController extends BaseController {
                 return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
 
             organization.getMembers().add(user);
 
@@ -595,7 +604,7 @@ public class OrganizationController extends BaseController {
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find organization for " + organizationId + ".");
             }
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -625,15 +634,15 @@ public class OrganizationController extends BaseController {
     public @ResponseBody ResponseEntity<Resource> getOrganizationIcon(@PathVariable("fileName") final String fileName) throws Exception {
 
         try {
-            
+
             logger.info("GET icon for organization {}", fileName);
             final Resource file = FileUtility.getIconFile(fileName);
-            
+
             return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
                 .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath())).contentLength(file.contentLength()).body(file);
 
         } catch (final Exception e) {
-            
+
             logger.error("Trying to get organization icon file " + fileName, e);
             handleException(e);
             return null;
@@ -663,31 +672,31 @@ public class OrganizationController extends BaseController {
         final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             service.setModifiedBy(authUser.getUserName());
 
             // find user record, return 404 if not found
             final Organization organization = service.get(organizationId, Organization.class);
-            
+
             if (organization == null) {
                 throw new RestException(false, 404, "Not found", "Unable to find organization for " + organizationId);
             }
-            
+
             String fileToDelete = "";
-            
+
             if (organization.getIconUri() != null) {
                 fileToDelete = organization.getIconUri().replace(ICON_URL_PREFIX, "");
             }
-            
+
             final File file = FileUtility.saveIconFile(inputFile, organizationId, fileToDelete);
-            
+
             organization.setIconUri(ICON_URL_PREFIX + file.getName());
             service.update(organization);
 
             return new ResponseEntity<>("\"" + organization.getIconUri() + "\"", HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
-            
+
             logger.error("Trying to edit user icon for organization " + organizationId, e);
             handleException(e);
             return null;

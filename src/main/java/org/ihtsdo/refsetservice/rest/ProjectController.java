@@ -9,48 +9,39 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import java.util.Set;
+import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.AuthContext;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
-import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
-import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -68,6 +59,9 @@ public class ProjectController extends BaseController {
 
     /** Search projects API note. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
+
+    /** The config properties. */
+    private static final Properties properties = PropertyUtility.getProperties();
 
     /** The request. */
     @Autowired
@@ -87,7 +81,8 @@ public class ProjectController extends BaseController {
     // @ApiResponse(code = 404, message = "Resource not found")
     // })
     // @ApiImplicitParams({
-    // @ApiImplicitParam(name = "id", value = "Project identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
+    // @ApiImplicitParam(name = "id", value = "Project identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataTypeClass = String.class, paramType =
+    // "path") // ,
     // })
     //
     // @RecordMetric
@@ -126,10 +121,12 @@ public class ProjectController extends BaseController {
     // @ApiResponse(code = 404, message = "Resource not found")
     // })
     // @ApiImplicitParams({
-    // @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query",
+    // @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType =
+    // "query",
     // defaultValue = ""),
-    // @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-    // @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+    // @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue =
+    // "0"),
+    // @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
     // // TODO: activeOnly, sort, sortAscending
     // })
     // @RecordMetric
@@ -182,37 +179,48 @@ public class ProjectController extends BaseController {
 
         logger.info("Add project: {}", project);
         // TODO check permissions, fail if not authorized.
-        final User user = SecurityService.getUserFromSession();
-
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
         final AuthContext context = authorize(request);
+
         try (final TerminologyService service = new TerminologyService()) {
 
-            Project proj = (Project) project;
+            final Project localProject = (Project) project;
 
-            proj.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(proj.getName()));
-            service.setModifiedBy(user.getId());
+            localProject.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(localProject.getName()));
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
             try {
-                proj.validateAdd(context);
+                localProject.validateAdd(context);
             } catch (final Exception e) {
-                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed Expectation", e.getMessage());
+                logger.error("Project validation failed for add. Message: {}.", e.getMessage(), e);
+                return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
             }
 
-            service.add(proj);
+            service.add(localProject);
             service.commit();
+            // crowd.unit.test.skip=true
+            if (properties.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(properties.getProperty("crowd.unit.test.skip"))) {
+                logger.info("CALLING CROWD API");
 
-            try {
-                final Organization org = project.getOrganization();
-                CrowdAPIClient.addGroup(org.getEdition().getShortName(), proj.getName(), proj.getDescription());
-            } catch (Exception e) {
-                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed adding Crowd groups.", e.getMessage());
+                try {
+                    final Organization organization = project.getOrganization();
+                    CrowdAPIClient.addGroup(organization.getEdition().getShortName(), localProject.getName(), localProject.getDescription());
+
+                } catch (Exception e) {
+                    logger.error("Failed adding Crowd groups. Message: {}.", e.getMessage(), e);
+                    return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+                }
+            } else {
+                logger.info("SKIP CALLING CROWD API");
             }
 
             // Return the response
-            final HttpHeaders headers = new HttpHeaders();
-            return new ResponseEntity<>(headers, HttpStatus.CREATED);
+            return new ResponseEntity<>(localProject, HttpStatus.CREATED);
 
         } catch (final Exception e) {
             logger.error("Error adding project. {}", project.toString(), e);
@@ -221,7 +229,7 @@ public class ProjectController extends BaseController {
         }
     }
 
-    /**
+    /** 
      * Update project.
      *
      * @param id the id
@@ -231,8 +239,9 @@ public class ProjectController extends BaseController {
      */
     @ApiOperation(value = "Update project")
     @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "Update specified project"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 201, message = "Update specified project"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
     @PutMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)
@@ -240,29 +249,38 @@ public class ProjectController extends BaseController {
 
         logger.info("Update project: {}", project);
         // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
         final AuthContext context = authorize(request);
-        final User user = SecurityService.getUserFromSession();
+
+        if (project == null || !StringUtils.equals(id, project.getId())) {
+            logger.info("Project is null or project id does not match id in URL.");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
             // Find the project
-            final Project original = service.get(project.getId(), Project.class);
+            final Project original = service.get(id, Project.class);
 
-            // not found - HttpStatus.NOT_FOUND
             if (original == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find project for " + project.getId());
+                logger.info("Unable to find project for id {}.", id);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
             try {
-                original.validateAdd(context);
+                original.validateUpdate(context, project);
             } catch (final Exception e) {
-                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Failed Expectation", e.getMessage());
-            }               
-            
+                logger.error("Project validation failed for update. Message: {}.", e.getMessage(), e);
+                return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+            }
+
             // Apply changes
             original.patchFrom(project);
 
@@ -296,11 +314,14 @@ public class ProjectController extends BaseController {
 
         logger.info("Inactivate project: {}", id);
         // TODO check permissions, fail if not authorized.
-        final User user = SecurityService.getUserFromSession();
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -309,14 +330,15 @@ public class ProjectController extends BaseController {
 
             // not found - HttpStatus.NOT_FOUND
             if (project == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find project for id:" + id);
+                logger.info("Unable to find project for id {}.", id);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            
+
             // inactivate projects, clear teams, and inactivate refsets
             project.setActive(false);
-            
+
             if (project.getTeams() != null && !project.getTeams().isEmpty()) {
-                for(String teamId : project.getTeams()) {
+                for (String teamId : project.getTeams()) {
                     final Team team = service.get(teamId, Team.class);
                     if (team != null && !team.getMembers().isEmpty()) {
                         team.getMembers().clear();
@@ -325,7 +347,7 @@ public class ProjectController extends BaseController {
                 }
                 project.getTeams().clear();
             }
-            
+
             // also inactivate refsets
             final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
             if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {

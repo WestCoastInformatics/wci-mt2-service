@@ -243,6 +243,10 @@ test {
    // Use junit platform for unit tests
    systemProperty "spring.profiles.active", "test"
    useJUnitPlatform()
+   //testLogging {
+   //  showStandardStreams = true
+   //}
+   //exclude "**/*IntegrationTest*"
 }
 
 // ./gradlew reindex

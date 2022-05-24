@@ -119,7 +119,7 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 404, message = "Resource not found")
     })
-    @ApiImplicitParams({@ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataType = "string", paramType = "path")})
+    @ApiImplicitParams({@ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path")})
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = "application/json")
     public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate) throws Exception {
@@ -170,7 +170,7 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 404, message = "Resource not found")
     })
-    @ApiImplicitParams({@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataType = "string", paramType = "path")})
+    @ApiImplicitParams({@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataTypeClass = String.class, paramType = "path")})
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/isLocked", produces = "application/json")
     public @ResponseBody String isRefsetLocked(@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request) throws Exception {
@@ -599,10 +599,10 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
             // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -928,31 +928,37 @@ public class RefsetController extends BaseController {
 
     @ApiOperation(value = "Get the project for the specified ID", response = Refset.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
-    @ApiImplicitParams({@ApiImplicitParam(name = "projectId", value = "The ID of the project to return.", required = true, dataType = "string", paramType = "path")})
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "projectId", value = "The ID of the project to return.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/project/{projectId}", produces = "application/json")
-    public @ResponseBody Project getProject(@PathVariable(value = "projectId") final String projectId) throws Exception {
+    public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "projectId") final String projectId) throws Exception {
+
+        logger.info("Project: projectId: " + projectId);
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
+        }
 
         try {
-
-            //logger.debug("getProject: projectId: " + projectId);
-            User user = SecurityService.getUserFromSession();
 
             try (TerminologyService service = new TerminologyService()) {
 
                 final Project project = RefsetService.getProject(projectId);
+                if (project == null) {
+                    logger.info("Unable to find project for id {}.", projectId);
+                    return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+                }
 
-                //logger.debug("getProject: project: " + ModelUtility.toJson(project));
-
-                return project;
+                return new ResponseEntity<>(project, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
+            logger.error("Error fetching project.  Id: {}", projectId, e);
             handleException(e);
             return null;
         }
@@ -973,9 +979,9 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
             // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -1021,10 +1027,10 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
             // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -1077,10 +1083,10 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
             // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -1139,15 +1145,15 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = true, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = true, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "displayType", value = "Should results be a list or taxonomy", required = true, dataType = "string", paramType = "query", defaultValue = "list"),
+            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = true, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = true, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "displayType", value = "Should results be a list or taxonomy", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "list"),
             @ApiImplicitParam(name = "startingConceptId", value = "For taxonomy calls the starting concept ID (exclusive - get the children of this concept not the concept itself)",
-                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
+                    required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
             @ApiImplicitParam(name = "depth", value = "For taxonomy calls the depth - how many levels of children or parents to retrieve",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "1"),
+                    required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "1"),
             @ApiImplicitParam(name = "returnChildren", value = "For taxonomy calls should children be returned. If false then parents will be returned",
                     required = false, dataType = "boolean", paramType = "query", defaultValue = "true"),
             // TODO: activeOnly, sort, sortAscending
@@ -1204,7 +1210,7 @@ public class RefsetController extends BaseController {
     })
     @ApiImplicitParams({
             @ApiImplicitParam(name = "refsetId",
-                    value = "The ID of the refset for which ancestors are to be identified.", required = true, dataType = "string", paramType = "path"),
+                    value = "The ID of the refset for which ancestors are to be identified.", required = true, dataTypeClass = String.class, paramType = "path"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetId}/versionDate/{versionDate}", produces = "application/json")
@@ -1262,24 +1268,24 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "refsetInternalId",
                     value = "The internal ID of the refset to return.", required = true,
-                    dataType = "string", paramType = "path"),
+                    dataTypeClass = String.class, paramType = "path"),
             @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
-                    required = true, dataType = "string", paramType = "query"),
+                    required = true, dataTypeClass = String.class, paramType = "query"),
             @ApiImplicitParam(name = "languageId",
                     value = "For formats with names which language to display the name in.",
-                    required = false, dataType = "string", paramType = "query"),
+                    required = false, dataTypeClass = String.class, paramType = "query"),
             @ApiImplicitParam(name = "format",
                     value = "The type of export: 'rf2', 'rf2_with_names', ' or 'sctids'.",
-                    required = true, dataType = "string", paramType = "query"),
+                    required = true, dataTypeClass = String.class, paramType = "query"),
             @ApiImplicitParam(name = "fileNameDate",
                     value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.",
-                    required = true, dataType = "string", paramType = "query"),
+                    required = true, dataTypeClass = String.class, paramType = "query"),
             @ApiImplicitParam(name = "startEffectiveTime",
                     value = "Format: yyyymmdd. Can be used to produce a delta after content is versioned by filtering a SNAPSHOT export by effectiveTime.",
-                    required = false, dataType = "string", paramType = "query"),
+                    required = false, dataTypeClass = String.class, paramType = "query"),
             @ApiImplicitParam(name = "transientEffectiveTime",
                     value = "Format: yyyymmdd. Add a transient effectiveTime to rows of content which are not yet versioned.",
-                    required = false, dataType = "string", paramType = "query"),
+                    required = false, dataTypeClass = String.class, paramType = "query"),
             @ApiImplicitParam(name = "exportMetadata", value = "e.g.  true or false",
                     required = true, dataType = "boolean", paramType = "query"),
     })
@@ -1363,7 +1369,7 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 404, message = "Resource not found")
     })
-    @ApiImplicitParams({@ApiImplicitParam(name = "fileName", value = "The name of the file to download.", required = true, dataType = "string", paramType = "path")})
+    @ApiImplicitParams({@ApiImplicitParam(name = "fileName", value = "The name of the file to download.", required = true, dataTypeClass = String.class, paramType = "path")})
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}", produces = "application/json")
     public @ResponseBody ResponseEntity<Resource> downloadExport(@PathVariable(value = "fileName")
@@ -1436,8 +1442,8 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "memberId", value = "The ID of the member to return.", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path"),
+            @ApiImplicitParam(name = "memberId", value = "The ID of the member to return.", required = true, dataTypeClass = String.class, paramType = "query"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}", produces = "application/json")
@@ -1494,8 +1500,8 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.", required = true, dataTypeClass = String.class, paramType = "path"),
+            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "query"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{conceptId}", produces = "application/json")
@@ -2069,10 +2075,10 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
             // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -2122,10 +2128,10 @@ public class RefsetController extends BaseController {
             @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataType = "string", paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
             // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
