@@ -20,14 +20,9 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.Team;
-import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,11 +163,11 @@ public class HistoricDataMigrator {
     private final Set<String> internationalRefsets = new HashSet<>();
 
     /** The testing. */
-    private boolean testing = false;
+    private boolean testing = true;
 
-    private final String testingEdition = "elgi";
+    private final String testingEdition = "";
 
-    private final String testingRefset = "741000172102";
+    private final String testingRefset = null;
 
     private final Map<String, String> editionOwnerMap = new HashMap<>();
 
@@ -570,14 +565,14 @@ public class HistoricDataMigrator {
                                          */
                                         Date refsetVersionDate = null;
 
-                                        if (!testing || refsetId.equals(testingRefset)) {
+                                        if (!testing || (!testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
 
                                             refsetVersionDate = defineSnowstormRefsetVersionDate(childBranch, refsetId);
                                         }
 
                                         if (refsetVersionDate == null) {
 
-                                            if (testing && refsetId.equals(testingRefset)) {
+                                            if (testing && (!testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
 
                                                 logger.debug(testingRefset + " - qqq - not adding anything on this branch for " + childBranch);
                                             }
@@ -640,7 +635,7 @@ public class HistoricDataMigrator {
                                     }
 
                                     /* Add refset for later persisting */
-                                    Refset refset = utilities.addRefset(refsetName, refsetId, moduleId, versionDate);
+                                    Refset refset = utilities.addRefset(refsetName, refsetId, moduleId, versionDate, Refset.EXTENSIONAL, "");
                                     snowstormRefsets.add(refset);
                                     counts.incrementRefsetVersionPairsCounts();
 
@@ -1339,9 +1334,11 @@ public class HistoricDataMigrator {
 
             logger.info(" Create wci-developer teams for each extensions's UAT Training project (for DEV only)");
             initializer.createWCITeams(service, uatProjects);
-        }
 
-        initializer.createTestingFeedback(service, wciOrganization);
+            logger.info(" Create Feedback for testing (for DEV only)");
+            initializer.createTestingFeedback(service, wciOrganization);
+
+        }
 
         logger.info(" step complete - Adding special content");
     }

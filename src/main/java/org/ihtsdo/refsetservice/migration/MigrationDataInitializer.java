@@ -120,41 +120,63 @@ public class MigrationDataInitializer {
     public void createTestingFeedback(TerminologyService service, Organization wciOrganization) throws Exception {
 
         // create new refset with name = FeedbackTestingVersion1
-        Refset refset = utilities.addRefset("WCI Testing Feeedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date());
+        Refset refset = utilities.addRefset("WCI Testing Feeedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "");
 
         // add feedback
-        final User user = SecurityService.getUserFromSession();
+        User u = new User();
+        u.setName("FeedbackTesting #1");
+        u.setUserName("feedbackTester1");
+        u.setActive(true);
+        u.setEmail("111@westcoastinformatics.com");
+        final User userInitiator = service.add(u);
 
-        service.setModifiedBy(user.getUserName());
-        service.setModifiedFlag(true);
-        service.setTransactionPerOperation(false);
-        service.beginTransaction();
+        u = new User();
+        u.setName("FeedbackTesting #2");
+        u.setUserName("feedbackTester2");
+        u.setActive(true);
+        u.setEmail("222@westcoastinformatics.com");
+        final User userResponder = service.add(u);
 
         DiscussionThread thread = new DiscussionThread();
         thread.setSubject("Testing discussion thread on refset");
         thread.setType(DiscussionType.REFSET.toString());
         thread.setRefsetInternalId(refset.getId());
+        thread.setStatus("OPEN");
+        thread.setVisibility("VISIBLE");
+        thread.setPrivateThread(false);
         thread = service.add(thread);
 
+        service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
+        service.setModifiedFlag(true);
+        service.setTransactionPerOperation(false);
+        service.beginTransaction();
+
         DiscussionPost post = new DiscussionPost();
-        post.setUser(user);
+        post.setUser(userInitiator);
         post.setMessage("Topic Header");
-        service.add(post);
-        thread.getPosts().add(post);       
-        service.update(thread);
+        post.setVisibility("VISIBLE");
+        post.setPrivatePost(false);
+        post = service.add(post);
+        thread.getPosts().add(post);
 
         post = new DiscussionPost();
-        post.setUser(user);
+        post.setUser(userResponder);
         post.setMessage("Comment #1");
-        service.add(post);
-        thread.getPosts().add(post);       
-        service.update(thread);
+        post.setVisibility("VISIBLE");
+        post.setPrivatePost(false);
+        post = service.add(post);
+        thread.getPosts().add(post);
 
         post = new DiscussionPost();
-        post.setUser(user);
+        post.setUser(userInitiator);
         post.setMessage("Comment #2");
-        service.add(post);
-        thread.getPosts().add(post);       
+        post.setVisibility("VISIBLE");
+        post.setPrivatePost(false);
+        post = service.add(post);
+        thread.getPosts().add(post);
+
+        // Finalize transaction
         service.update(thread);
+        service.commit();
     }
 }
