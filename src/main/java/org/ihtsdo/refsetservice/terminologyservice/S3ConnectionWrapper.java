@@ -16,6 +16,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -65,18 +66,29 @@ public class S3ConnectionWrapper {
     /** The region. */
     public static Regions REGION;
 
-    /** The folder directory. */
-    public static String FOLDER_DIRECTORY;
+    /** The project directory. */
+    public static String PROJECT_DIR;
+    
+    /** The icon directory. */
+    public static String ICON_DIR;
+    
+    /** The artifact directory. */
+    public static String ARTIFACT_DIR;
 
     /** The S3 client. */
     private static AmazonS3 s3Client;
+    
+    /** The S3 separator character. */
+    public static String separator = "/";
 
     /** Static initialization. */
     static {
 
         BUCKET = PropertyUtility.getProperty("aws.bucket");
         REGION = Regions.fromName(PropertyUtility.getProperty("aws.region"));
-        FOLDER_DIRECTORY = PropertyUtility.getProperty("aws.folder_directory");
+        PROJECT_DIR = PropertyUtility.getProperty("aws.project.base.dir");
+        ICON_DIR = PropertyUtility.getProperty("aws.icon.dir");
+        ARTIFACT_DIR = PropertyUtility.getProperty("aws.artifact.dir");
         ID = PropertyUtility.getProperty("aws.access.key.id");
         KEY = PropertyUtility.getProperty("aws.secret.access.key");
     }
@@ -93,17 +105,17 @@ public class S3ConnectionWrapper {
         }
 
         try {
+            
             // Connect to server using instance profile credentials
             s3Client = AmazonS3ClientBuilder.standard().withRegion(REGION).withCredentials(new InstanceProfileCredentialsProvider(false)).build();
 
-            // Check if connection was successful. If not, try to connect with
-            // static
-            // keys instead
+            // Check if connection was successful. If not, try to connect with static keys instead
             try {
                 s3Client.listBuckets();
+                
             } catch (SdkClientException e) {
+                
                 // Connect to server with static keys
-
                 AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().withRegion(REGION);
 
                 if (ID != null && !ID.equals("") && !ID.equals("none") && !ID.equals("change_me")) {
@@ -113,10 +125,6 @@ public class S3ConnectionWrapper {
                 }
 
                 s3Client = clientBuilder.build();
-
-                // Check connection again. If this fails as well, it will throw
-                // the
-                // exception to the calling method
             }
 
             if (s3Client == null) {
@@ -124,7 +132,9 @@ public class S3ConnectionWrapper {
             }
 
             logger.info("Connected to S3 in region: " + REGION);
+            
         } catch (Exception ex) {
+            
             logger.error("Couldn't connect to AWS S3", ex);
             throw ex;
         }
@@ -133,130 +143,101 @@ public class S3ConnectionWrapper {
     /**
      * Upload file to S3.
      *
-     * @param awsUploadPath the aws upload path
+     * @param awsUploadPath the AWS upload path
      * @param localFilePath the local file path
      * @param fileName the file name
      * @throws Exception the exception
      */
     public static void uploadToS3(final String awsUploadPath, final String localFilePath, final String fileName) throws Exception {
 
+        final String filePath = getCorrectAwsFilePath(awsUploadPath);
+        
         try {
-            // Upload a file as a new object with ContentType and title
-            // specified.
- 
-            final PutObjectRequest request =
-                new PutObjectRequest(S3ConnectionWrapper.BUCKET, awsUploadPath + ((awsUploadPath.endsWith("/")) ? "" : "/") + fileName, new File(localFilePath + "/" + fileName));
+            
+            // Upload a file as a new object with ContentType and title specified.
+            final PutObjectRequest request = new PutObjectRequest(S3ConnectionWrapper.BUCKET, filePath + fileName, new File(localFilePath + File.separator + fileName));
             final ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType("plain/text");
             metadata.addUserMetadata("title", fileName);
             request.setMetadata(metadata);
             s3Client.putObject(request);
         } catch (Exception e) {
-            throw new Exception("Failed to upload the file: " + fileName + " locally at: " + localFilePath + " to the awsPath: " + awsUploadPath, e);
+            throw new Exception("Failed to upload the file: " + fileName + " locally at: " + localFilePath + " to the awsPath: " + filePath, e);
         }
     }
 
-//    /**
-//     * Upload file to S3.
-//     *
-//     * @param uri the uri
-//     * @param is the is
-//     * @throws AmazonS3Exception the amazon S 3 exception
-//     * @throws Exception the exception
-//     */
-//    public static void uploadImageToS3(final String uri, final InputStream is, final String contentType) throws AmazonS3Exception, Exception {
-//
-//        if (uri.matches("s3\\://.+/.+")) {
-//
-//            final String bucketName = getBucketName(uri);
-//            final String objectName = getObjectName(uri);
-//
-//            try {
-//
-//                final ObjectMetadata metadata = new ObjectMetadata();
-//                metadata.setContentLength(is.available());
-//                metadata.setContentType(contentType);
-//                metadata.addUserMetadata("title", objectName);
-//
-//                connectToAmazonS3();
-//                s3Client.putObject(new PutObjectRequest(bucketName, objectName, is, metadata));
-//
-//            } catch (AmazonS3Exception awse) {
-//                logger.error("Failed to upload the icon file: " + objectName + " to the aws bucket: " + bucketName, awse);
-//                logger.error(awse.getErrorMessage());
-//                throw awse;
-//            } catch (Exception e) {
-//                throw new Exception("Failed to upload the icon file: " + objectName + " to the aws bucket: " + bucketName, e);
-//            }
-//        } else {
-//            throw new Exception("Bad S3 URI = " + uri);
-//        }
-//    }
-
     /**
-     * Indicates whether or not in S3 cache is the case.
+     * Indicates whether or not the file is in the S3 cache.
      *
-     * @param awsPath the aws path
-     * @param versionFileName the version file name
+     * @param awsPath the AWS path
+     * @param fileName the file name
      * @return <code>true</code> if so, <code>false</code> otherwise
      * @throws Exception the exception
      */
-    public static boolean isInS3Cache(final String awsPath, final String versionFileName) throws Exception {
-
-        return (s3Client.doesObjectExist(BUCKET, awsPath + "/" + versionFileName));
+    public static boolean isInS3Cache(final String awsPath, final String fileName) throws Exception {
+        
+        final String filePath = getCorrectAwsFilePath(awsPath);
+        return (s3Client.doesObjectExist(BUCKET, filePath + fileName));
     }
 
     /**
      * Returns the S3 url.
      *
-     * @param awsFilePath the aws file path
+     * @param awsFilePath the AWS file path
      * @param fileName the file name
      * @return the S3 url
      * @throws Exception the exception
      */
     public static String getS3Url(final String awsFilePath, final String fileName) throws Exception {
 
+        final String filePath = getCorrectAwsFilePath(awsFilePath);
+        
         try {
-            return s3Client.getUrl(BUCKET, awsFilePath + "/" + fileName).toExternalForm();
+            return s3Client.getUrl(BUCKET, filePath + fileName).toExternalForm();
         } catch (Exception e) {
             throw new Exception("Failed to get the file: " + fileName + " at the expected S3 Path: " + awsFilePath, e);
         }
     }
 
     /**
-     * Download snow from S3.
+     * Download a file from S3.
      *
-     * @param awsPath the aws path
-     * @param awsFileName the aws file name
+     * @param awsPath the AWS path
+     * @param awsFileName the AWS file name
      * @param downloadLocation the download location
      * @throws Exception the exception
      */
-    public static void downloadSnowFromS3(final String awsPath, final String awsFileName, final String downloadLocation) throws Exception {
+    public static void downloadFileFromS3(final String awsPath, final String awsFileName, final String downloadLocation) throws Exception {
 
-        final S3Object o = s3Client.getObject(BUCKET, awsPath + "/" + awsFileName);
-        final S3ObjectInputStream s3is = o.getObjectContent();
-
-        final FileOutputStream fos = new FileOutputStream(
-
-            new File(downloadLocation));
-        final byte[] readBuf = new byte[1024];
-        int readLen = 0;
-        while ((readLen = s3is.read(readBuf)) > 0) {
-            fos.write(readBuf, 0, readLen);
+        final String filePath = getCorrectAwsFilePath(awsPath);
+        
+        try (S3Object s3Object = s3Client.getObject(BUCKET, filePath + awsFileName)) {
+        
+            try (final S3ObjectInputStream s3InputStream = s3Object.getObjectContent()) {
+                
+                try (final FileOutputStream fos = new FileOutputStream(new File(downloadLocation))) {
+                    
+                    final byte[] readBuf = new byte[1024];
+                    int readLen = 0;
+                    
+                    while ((readLen = s3InputStream.read(readBuf)) > 0) {
+                        fos.write(readBuf, 0, readLen);
+                    }
+                }
+            }
         }
-        s3is.close();
-        fos.close();
     }
+    
 
     /**
-     * Delete refset from aws.
+     * Delete an object from AWS.
      *
-     * @param awsPath the aws path
+     * @param awsPath the AWS path
      * @return true, if successful
      */
-    public static boolean deleteRefsetFromAws(final String awsPath) {
+    public static boolean deleteObjectFromAws(final String awsPath) {
 
-        logger.debug("deleteRefsetFromAws: awsPath: " + awsPath);
+        logger.debug("deleteObjectFromAws: awsPath: " + awsPath);
         
         final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(BUCKET).withPrefix(awsPath);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
@@ -266,7 +247,7 @@ public class S3ConnectionWrapper {
         for (S3ObjectSummary obj : listing.getObjectSummaries()) {
             
             keys.add(new KeyVersion(obj.getKey()));
-            logger.debug("deleteRefsetFromAws: object to delete: " + obj.getKey());
+            logger.debug("deleteObjectFromAws: object to delete: " + obj.getKey());
         }
 
         if (keys.isEmpty()) {
@@ -278,32 +259,79 @@ public class S3ConnectionWrapper {
         final DeleteObjectsResult delObjRes = s3Client.deleteObjects(deleteRequest);
 
         final int successfulDeletes = delObjRes.getDeletedObjects().size();
-        logger.debug("deleteRefsetFromAws: " + successfulDeletes + " objects successfully deleted.");
+        logger.debug("deleteObjectFromAws: " + successfulDeletes + " objects successfully deleted.");
 
         return successfulDeletes > 0;
     }
-
+    
     /**
-     * Returns the bucket name.
+     * Delete an object from AWS.
      *
-     * @param uri the uri
-     * @return the bucket name
+     * @param awsPath the AWS path
+     * @return the listing of files
      */
-    private static String getBucketName(final String uri) {
+    public static List<String> getDirectoryListing(final String awsPath) {
 
-        return uri.replaceFirst("s3\\://", "").replaceFirst("/.*", "");
+        logger.debug("getDirectoryListing: awsPath: " + awsPath);
+        
+        final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(BUCKET).withPrefix(awsPath);
+        final ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
+        final List<String> files = new ArrayList<String>();
+        
+        for (S3ObjectSummary obj : listing.getObjectSummaries()) {
+            files.add(obj.getKey());
+        }
+
+        return files;
+        
     }
 
+    
     /**
-     * Returns the object name.
+     * Make sure the AWS file path ends with the correct separator.
      *
-     * @param uri the uri
-     * @return the object name
+     * @param awsPath the AWS path
+     * @return the correct AWS path
+     * @throws Exception the exception
      */
-    private static String getObjectName(final String uri) {
-
-        return uri.replaceFirst("s3\\://", "").replaceFirst("[^/]+/(.*)", "$1");
-
+    public static String getCorrectAwsFilePath(final String awsPath) throws Exception {
+        
+        String filePath = awsPath;
+        
+        if (!filePath.endsWith(separator)) {
+            filePath += separator;
+        }
+        
+        return filePath;
     }
-
+    
+    /**
+     * Get the AWS project path with with the end separator.
+     *
+     * @return the AWS project path
+     * @throws Exception the exception
+     */
+    public static String getAwsProjectPath() throws Exception {
+        return PROJECT_DIR + separator;
+    }
+    
+    /**
+     * Get the AWS icon path with with the end separator.
+     *
+     * @return the AWS icon path
+     * @throws Exception the exception
+     */
+    public static String getAwsIconPath() throws Exception {
+        return getAwsProjectPath() + ICON_DIR + separator;
+    }
+    
+    /**
+     * Get the AWS artifact path with with the end separator.
+     *
+     * @return the AWS artifact path
+     * @throws Exception the exception
+     */
+    public static String getAwsArtifactPath() throws Exception {
+        return getAwsProjectPath() + ARTIFACT_DIR + separator;
+    }
 }

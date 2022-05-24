@@ -49,7 +49,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Entity
 @Table(name = "organizations")
 @Schema(description = "Represents an organization.")
-@JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
 public class Organization extends AbstractHasModified implements Copyable<Organization>, ValidateCrud<Organization> {

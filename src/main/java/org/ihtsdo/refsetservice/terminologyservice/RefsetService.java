@@ -1908,6 +1908,9 @@ public class RefsetService {
             if (searchParameters.getSort() != null) {
 
                 pfs.setSort(searchParameters.getSort());
+            
+            } else {
+                pfs.setSort("name");
             }
 
             if (query != null && !query.equals("")) {

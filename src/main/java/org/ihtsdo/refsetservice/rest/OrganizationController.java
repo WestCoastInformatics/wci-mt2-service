@@ -88,29 +88,8 @@ public class OrganizationController extends BaseController {
     /** Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-    /** The icon file dir. */
-    private static String IMAGES_ROOT_FILE_DIR;
-
-    /** The local directory to store organization icon file. */
-    private static String ICON_DIR;
-
-    /** The url prefix for icon file. */
-    private static String ICON_URL_PREFIX;
-
-    /** The aws root folder directory. */
-    private static String AWS_FOLDER_DIRECTORY;
-    
-    /** The aws images directory. */
-    private static String AWS_IMAGES_DIRECTORY;
-
-    /** Static initialization. */
-    static {
-        IMAGES_ROOT_FILE_DIR = PropertyUtility.getProperty("images.file.dir");
-        ICON_DIR = PropertyUtility.getProperty("refset.organization.icon.file.dir");
-        ICON_URL_PREFIX = PropertyUtility.getProperty("refset.organization.icon.url.prefix");
-        AWS_FOLDER_DIRECTORY = PropertyUtility.getProperty("aws.folder_directory");
-        AWS_IMAGES_DIRECTORY = PropertyUtility.getProperty("refset.organization.icon.aws.dir");
-    }
+    /** The local icon file directory. */
+    private static String ICON_URL_PREFIX = "user/icon/";
 
     /** The request. */
     @Autowired
@@ -646,18 +625,15 @@ public class OrganizationController extends BaseController {
     public @ResponseBody ResponseEntity<Resource> getOrganizationIcon(@PathVariable("fileName") final String fileName) throws Exception {
 
         try {
+            
             logger.info("GET icon for organization {}", fileName);
-            final Path localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR + File.separator + fileName);
-            final Resource file = new UrlResource(localFilePath.toUri());
-
-            if (file == null || !file.exists() || !file.isReadable()) {
-                throw new RuntimeException("Could not read the file!");
-            }
-
-            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION).header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(localFilePath))
-                .contentLength(file.contentLength()).body(file);
+            final Resource file = FileUtility.getIconFile(fileName);
+            
+            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath())).contentLength(file.contentLength()).body(file);
 
         } catch (final Exception e) {
+            
             logger.error("Trying to get organization icon file " + fileName, e);
             handleException(e);
             return null;
@@ -665,14 +641,14 @@ public class OrganizationController extends BaseController {
     }
 
     /**
-     * Adds the organization icon.
+     * Edit the organization icon.
      *
      * @param organizationId the organization id
      * @param inputFile the input file
      * @return the response entity
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Add icon for organization")
+    @ApiOperation(value = "Edit icon for organization")
     @ApiResponses(value = {
         @ApiResponse(code = 202, message = "Saveed icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
@@ -680,182 +656,41 @@ public class OrganizationController extends BaseController {
     })
     @RecordMetric
     @PostMapping(value = "/organization/{organizationId}/icon")
-    public ResponseEntity<Void> addOrganizationIcon(@PathVariable("organizationId") final String organizationId, @RequestParam("file") MultipartFile inputFile) throws Exception {
+    public ResponseEntity<String> editOrganizationIcon(@PathVariable("organizationId") final String organizationId, @RequestParam("file") MultipartFile inputFile) throws Exception {
 
         logger.info("Add icon for organization: {}.", organizationId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(authUser.getUserName());
 
-            // find organization record, return 404 if not found
+            // find user record, return 404 if not found
             final Organization organization = service.get(organizationId, Organization.class);
+            
             if (organization == null) {
                 throw new RestException(false, 404, "Not found", "Unable to find organization for " + organizationId);
             }
-
-            // ensure file exists
-            if (inputFile == null) {
-                throw new RestException(false, 417, "Failed expectation", "Uploaded file is null");
+            
+            String fileToDelete = "";
+            
+            if (organization.getIconUri() != null) {
+                fileToDelete = organization.getIconUri().replace(ICON_URL_PREFIX, "");
             }
-
-            // check for file
-            final String fileName = inputFile.getOriginalFilename();
-            if (fileName == null) {
-                throw new RestException(false, 417, "Failed expectation", "Uploaded file has null filename");
-            }
-
-            // check file size
-            final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.icon.file.maxsize"));
-            if (inputFile.getSize() > maxFileSize) {
-                throw new RestException(false, 413, "Failed expectation", "File size must be less than 2 MB");
-            }
-
-            final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
-            final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
-
-            if (!fileTypes.contains("." + extension)) {
-                throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
-            }
-
-            final String localFileName = organizationId + "." + extension;
-            final String localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR).toString();
-            final String awsUploadPath = AWS_FOLDER_DIRECTORY + "/" + AWS_IMAGES_DIRECTORY;
-            final File iconFile = new File(localFilePath + File.separator + localFileName);
-
-            logger.debug("Add organization icon localFilePath = " + localFilePath);
-            try (final InputStream is = inputFile.getInputStream()) {
-                // write to local directory
-                FileUtils.copyInputStreamToFile(is, iconFile);
-            }
-
-            try {
-
-                S3ConnectionWrapper.connectToAmazonS3();
-                S3ConnectionWrapper.uploadToS3(awsUploadPath, localFilePath, localFileName);
-
-            } catch (Exception ex) {
-                logger.error("Trying to add organization icon for organiation " + organizationId, ex);
-                throw ex;
-            }
-
-            // browser url
-            final String iconUri = ICON_URL_PREFIX + localFileName;
-
-            organization.setIconUri(iconUri);
-
-            service.setModifiedBy(authUser.getId());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
+            
+            final File file = FileUtility.saveIconFile(inputFile, organizationId, fileToDelete);
+            
+            organization.setIconUri(ICON_URL_PREFIX + file.getName());
             service.update(organization);
-            service.commit();
 
-            // Return the object
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return new ResponseEntity<>("\"" + organization.getIconUri() + "\"", HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
-            logger.error("Trying to add organization icon for organiation " + organizationId, e);
+            
+            logger.error("Trying to edit user icon for organization " + organizationId, e);
             handleException(e);
             return null;
         }
-
     }
-
-    /**
-     * Update organization icon.
-     *
-     * @param organizationId the organization id
-     * @param inputFile the input file
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Update icon for organization", response = User.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Updated icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @RecordMetric
-    @PutMapping(value = "/organization/{organizationId}/icon")
-    public ResponseEntity<Void> updateOrganizationIcon(@PathVariable("organizationId") final String organizationId, @RequestParam("file") MultipartFile inputFile) throws Exception {
-
-        logger.info("Update icon for organization: {}.", organizationId);
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            // find organization record, return 404 if not found
-            final Organization organization = service.get(organizationId, Organization.class);
-            if (organization == null) {
-                throw new RestException(false, 404, "Not found", "Unable to find organization for " + organizationId);
-            }
-
-            // ensure file exists
-            if (inputFile == null) {
-                throw new RestException(false, 417, "Failed expectation", "Uploaded file is null");
-            }
-
-            // check for file
-            final String fileName = inputFile.getOriginalFilename();
-            if (fileName == null) {
-                throw new RestException(false, 417, "Failed expectation", "Uploaded file has null filename");
-            }
-
-            // check file size
-            final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.icon.file.maxsize"));
-            if (inputFile.getSize() > maxFileSize) {
-                throw new RestException(false, 413, "Failed expectation", "File size must be less than 2 MB");
-            }
-
-            final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(fileName)).toLowerCase();
-            final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.icon.file.types").split(";"));
-
-            if (!fileTypes.contains("." + extension)) {
-                throw new RestException(false, 417, "Failed expectation", "Format must be one of " + org.apache.commons.lang3.StringUtils.join(fileTypes, " ") + ".");
-            }
-
-            final String localFileName = organizationId + "." + extension;
-            final String localFilePath = Paths.get(IMAGES_ROOT_FILE_DIR + File.separator + ICON_DIR).toString();
-            final String awsUploadPath = AWS_FOLDER_DIRECTORY + "/" + AWS_IMAGES_DIRECTORY;
-            final File iconFile = new File(localFilePath + File.separator + localFileName);
-
-            logger.debug("Update organization icon localFilePath = " + localFilePath);
-            try (final InputStream is = inputFile.getInputStream()) {
-                // write to local directory
-                FileUtils.copyInputStreamToFile(is, iconFile);
-            }
-
-            try {
-
-                S3ConnectionWrapper.connectToAmazonS3();
-                S3ConnectionWrapper.uploadToS3(awsUploadPath, localFilePath, localFileName);
-
-            } catch (Exception ex) {
-                logger.error("Trying to update organization icon for organiation " + organizationId, ex);
-                throw ex;
-            }
-
-            // browser url
-            final String iconUri = ICON_URL_PREFIX + localFileName;
-
-            organization.setIconUri(iconUri);
-
-            service.setModifiedBy(authUser.getId());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-            service.update(organization);
-            service.commit();
-
-            // Return the object
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
-
-        } catch (final Exception e) {
-            logger.error("Trying to update organization icon for organiation " + organizationId, e);
-            handleException(e);
-            return null;
-        }
-
-    }
-
 }

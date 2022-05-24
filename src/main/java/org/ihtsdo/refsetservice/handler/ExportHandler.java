@@ -28,7 +28,7 @@ import com.amazonaws.services.s3.AmazonS3;
  */
 public class ExportHandler {
 
-    private static final String TOP_LEVEL_AWS_FOLDER = S3ConnectionWrapper.FOLDER_DIRECTORY + "/";
+    private static final String TOP_LEVEL_AWS_FOLDER = S3ConnectionWrapper.PROJECT_DIR + "/";
 
     /** The logger. */
     @SuppressWarnings("unused")
@@ -106,7 +106,7 @@ public class ExportHandler {
     public boolean deleteFilesFromBranchPath(final String branchPath) throws Exception{
         
         S3ConnectionWrapper.connectToAmazonS3();
-        return S3ConnectionWrapper.deleteRefsetFromAws(getTopLevelAwsPath() + branchPath);
+        return S3ConnectionWrapper.deleteObjectFromAws(getTopLevelAwsPath() + branchPath);
     }
 
     public String generateSnowVersionFile(String entityString) throws Exception {
