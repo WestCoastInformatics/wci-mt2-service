@@ -416,45 +416,51 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Project project) throws Exception {
 
-        String editionName = project.getOrganization().getEdition().getShortName();
-
-        // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
-
-        if (!project.getOrganization().getEdition().getShortName().equals("SNOMEDCT")) {
-            editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
-        } else {
-            editionName = "main";
-        }
-
-        final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
-
-        for (final String role : roles) {
-
-            final String lowerCasedRole = role.toLowerCase();
-            final int indexFirstHyphen = lowerCasedRole.indexOf("-");
-            final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
-            // logger.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
-
-            // first check the edition permissions
-            if (editionPart.equals("all") || editionPart.equals(editionName)) {
-
-                final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
-                final String projectName = project.getName().toLowerCase().replace(" ", "_");
-                // logger.debug("doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
-
-                // then check the project level permissions
-                if (projectPart.equals("all") || projectPart.equals(projectName)) {
-
-                    // logger.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
-
-                    // last check for the role or if they have any permission at this level they have the VIEWER role
-                    if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
-
-                        // logger.debug("doesUserHavePermission = true");
-                        return true;
+        try {
+            
+            String editionName = project.getOrganization().getEdition().getShortName();
+    
+            // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
+    
+            if (!project.getOrganization().getEdition().getShortName().equals("SNOMEDCT")) {
+                editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
+            } else {
+                editionName = "main";
+            }
+    
+            final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
+    
+            for (final String role : roles) {
+    
+                final String lowerCasedRole = role.toLowerCase();
+                final int indexFirstHyphen = lowerCasedRole.indexOf("-");
+                final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
+                // logger.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
+    
+                // first check the edition permissions
+                if (editionPart.equals("all") || editionPart.equals(editionName)) {
+    
+                    final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
+                    final String projectName = project.getName().toLowerCase().replace(" ", "_");
+                    // logger.debug("doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
+    
+                    // then check the project level permissions
+                    if (projectPart.equals("all") || projectPart.equals(projectName)) {
+    
+                        // logger.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
+    
+                        // last check for the role or if they have any permission at this level they have the VIEWER role
+                        if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
+    
+                            // logger.debug("doesUserHavePermission = true");
+                            return true;
+                        }
                     }
                 }
             }
+            
+        } catch (Exception e) {
+            return false;
         }
 
         return false;
