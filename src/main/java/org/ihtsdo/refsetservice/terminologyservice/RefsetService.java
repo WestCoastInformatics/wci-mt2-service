@@ -2448,4 +2448,23 @@ public class RefsetService {
             }
         }
     }
+    
+    /**
+     * Request access to the refset for the specified ID.
+     *
+     * @param user the user
+     * @param service the terminology service
+     * @param refsetInternalId the internal refset id
+     * @param comments Any comments related to the request
+     * @return was the operation successful
+     * @throws Exception the exception
+     */
+
+    public void requestRefsetAccess(final User user, final TerminologyService service, final String refsetInternalId, final String comments) throws Exception {
+        
+        final Refset refset = service.get(refsetInternalId, Refset.class);
+        final Project project = refset.getProject();
+        final String projectAdminEmail = project.getPrimaryContactEmail();
+        
+    }
 }
