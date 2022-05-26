@@ -4579,6 +4579,7 @@ public class RefsetMemberService {
                                             final UpgradeReplacementConcecpt upgradeReplacementConcept = new UpgradeReplacementConcecpt();
                                             upgradeReplacementConcept.setCode(replacementConcept.getCode());
                                             upgradeReplacementConcept.setReason(reasonMap.get(replacementConcept.getCode()));
+                                            upgradeReplacementConcept.setActive(replacementConcept.isActive());
                                             
                                             if (replacementThatAreMembers.contains(replacementConcept.getCode())) {
                                                 upgradeReplacementConcept.setExistingMember(true);
