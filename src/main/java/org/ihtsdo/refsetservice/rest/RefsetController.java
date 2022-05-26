@@ -2224,4 +2224,60 @@ public class RefsetController extends BaseController {
             return null;
         }
     }
+    
+    /**
+     * Request access to the refset for the specified ID.
+     *
+     * @param refsetInternalId the internal refset id
+     * @param comments Any comments related to the request
+     * @return was the operation successful
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Request access to the refset for the specified ID", response = Refset.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+            @ApiResponse(code = 400, message = "Bad request"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "refsetInternalId",
+                    value = "The internal ID of the refset to request access to.", required = true,
+                    dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "comments", value = "Any comments related to the request.",
+                    required = true, dataType = "string", paramType = "query"),
+
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/requestAccess", produces = "application/json")
+    public @ResponseBody boolean requestRefsetAccess(@PathVariable(value = "refsetInternalId")
+    final String refsetInternalId, final String comments) throws Exception {
+
+        try {
+
+            User user = SecurityService.getUserFromSession();
+            logger.debug("requestRefsetAccess: refsetInternalId: " + refsetInternalId + " ; comments: " + comments);
+
+            try (TerminologyService service = new TerminologyService()) {
+
+                try {
+
+                    String url = null;
+
+                    
+
+                    return true;
+
+                } catch (final Exception e) {
+
+                    handleException(e);
+                    return false;
+                }
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return false;
+        }
+    }
 }
