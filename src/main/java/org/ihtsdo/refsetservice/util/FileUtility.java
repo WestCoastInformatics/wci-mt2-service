@@ -67,8 +67,8 @@ public final class FileUtility {
     /** Static initialization. */
     static {
         
-        SERVER_ICON_DIR = PropertyUtility.getProperty("icon.server.dir");
-        SERVER_ARTIFACT_DIR = PropertyUtility.getProperty("artifact.server.dir");
+        SERVER_ICON_DIR = PropertyUtility.getProperty("refset.service.icon.server.dir");
+        SERVER_ARTIFACT_DIR = PropertyUtility.getProperty("refset.service.artifact.server.dir");
     }
 
     /**
@@ -335,8 +335,8 @@ public final class FileUtility {
 
         final String extension = FileUtility.getFileExtension(StringUtils.cleanPath(inputFile.getOriginalFilename())).toLowerCase();
         final String fileName = fileNamePrefix + "-" + (System.currentTimeMillis() / 1000L) + "." + extension;
-        final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("icon.file.maxsize"));
-        final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("icon.file.types").split(";"));
+        final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.service.icon.file.maxsize"));
+        final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.service.icon.file.types").split(";"));
         
         final File file = saveCachedFile(inputFile, fileName, SERVER_ICON_DIR, S3ConnectionWrapper.getAwsIconPath(), maxFileSize, fileTypes, fileNameToDelete);
        
