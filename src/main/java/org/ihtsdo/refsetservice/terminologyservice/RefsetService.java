@@ -50,6 +50,7 @@ import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
+import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -2465,6 +2466,14 @@ public class RefsetService {
         final Refset refset = service.get(refsetInternalId, Refset.class);
         final Project project = refset.getProject();
         final String projectAdminEmail = project.getPrimaryContactEmail();
+        final String subject = "Refset Request: " + refset.getName() + " (" + refset.getRefsetId() + ")";
+        final String body = "A user is requesting access to a project you administer.\n\n" 
+            + "Organization: " + refset.getOrganizationName() + "\n" 
+            + "Project: " + project.getName() + "\n" 
+            + "Refset: " + refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" 
+            + "User: " + user.getName() + " (" + user.getEmail() + ")" + "\n\n" 
+            + "Comments: " + comments;
         
+        EmailUtility.sendEmail(subject, user.getEmail(), projectAdminEmail, body);
     }
 }
