@@ -217,6 +217,34 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
         this.organization = organization;
     }
+    
+    /**
+     * Returns the organization ID.
+     *
+     * @return the organization ID
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @IndexingDependency(derivedFrom = @ObjectPath({@PropertyValue(propertyName = "organization")}))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    public String getOrganizationId() {
+        return organization == null ? null : organization.getId();
+    }
+
+    /**
+     * Sets the organization ID.
+     *
+     * @param organizationId the organization ID to set
+     */
+    public void setProjectId(final String organizationId) {
+
+        if (organization != null) {
+            this.organization.setId(organizationId);
+        } else {
+            
+            this.organization = new Organization();
+            this.organization.setId(organizationId);
+        }
+    }
 
     /**
      * Gets the crowd project/group id.

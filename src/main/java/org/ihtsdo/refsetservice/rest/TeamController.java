@@ -203,7 +203,7 @@ public class TeamController extends BaseController {
     })
     @RecordMetric
     @PutMapping(value = "/team/{id}", consumes = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<Team> updateTeam(@PathVariable(value = "id") final String id, @RequestBody final Team team) throws Exception {
+    public @ResponseBody ResponseEntity<Object> updateTeam(@PathVariable(value = "id") final String id, @RequestBody final Team team) throws Exception {
 
         logger.info("Update team: {}", team);
         // TODO check permissions, fail if not authorized.
@@ -215,7 +215,10 @@ public class TeamController extends BaseController {
             final Team original = service.get(team.getId(), Team.class);
 
             if (original == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find team for " + team.getId() + ".");
+                
+                final String message = "Unable to find team for " + id + ".";
+                logger.error(message);
+                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
 
             service.setModifiedBy(authUser.getId());
@@ -255,7 +258,7 @@ public class TeamController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(value = "/team/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable final String id) throws Exception {
+    public ResponseEntity<Object> getOrganizationUsers(@PathVariable final String id) throws Exception {
 
         logger.info("Get team users. Id: {}", id);
         // TODO check permissions, fail if not authorized.
@@ -270,7 +273,7 @@ public class TeamController extends BaseController {
 
                 final String message = "Unable to find team for " + id + ".";
                 logger.error(message);
-                return new ResponseEntity<>(users, HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
 
             for (final String userId : team.getMembers()) {

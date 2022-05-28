@@ -25,10 +25,10 @@ public final class EmailUtility {
     private static Logger logger = LoggerFactory.getLogger(EmailUtility.class);
     
     /** The email SMTP user. */
-    public static String SMPT_USER;
+    private static String SMPT_USER;
     
     /** The email SMTP password. */
-    public static String SMPT_PASSWORD;
+    private static String SMPT_PASSWORD;
     
     /** The email SMTP host. */
     public static String SMPT_HOST;
@@ -70,23 +70,23 @@ public final class EmailUtility {
      * @param details the details
      * @throws Exception the exception
      */
-    public static void sendEmail(final String subject, final String from, final Set<String> recipients, final String body, final Properties details) throws Exception {
+    public static void sendEmail(final String subject, final String from, final Set<String> recipients, final String body) throws Exception {
 
         if (recipients == null || recipients.isEmpty()) {
             throw new Exception("Email must have recipients");
         }
 
         // avoid sending mail if disabled
-        if ("false".equals(details.getProperty("mail.enabled"))) {
+        if ("false".equals(PropertyUtility.getProperty("mail.enabled"))) {
             return;
         }
         
-        Session session = Session.getInstance(details, new Authenticator() {
+        Session session = Session.getInstance(PropertyUtility.getProperties(), new Authenticator() {
 
             /* see superclass */
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(details.getProperty("mail.smtp.user"), details.getProperty("mail.smtp.password"));
+                return new PasswordAuthentication(SMPT_USER, SMPT_PASSWORD);
             }
         });
 
@@ -118,7 +118,7 @@ public final class EmailUtility {
      * @param details the details
      * @throws Exception the exception
      */
-    public static void sendEmail(final String subject, final String from, final String recipients, final String body, final Properties details) throws Exception {
+    public static void sendEmail(final String subject, final String from, final String recipients, final String body) throws Exception {
 
         if (recipients != null && StringUtils.isNotBlank(recipients)) {
             
@@ -130,7 +130,7 @@ public final class EmailUtility {
                 recipientList = FieldedStringTokenizer.splitAsSet(recipients, ",");
             }
             
-            sendEmail(subject, from, recipientList, body, details);
+            sendEmail(subject, from, recipientList, body);
         } else {
             throw new Exception("Email must have recipients");
         }
@@ -141,18 +141,6 @@ public final class EmailUtility {
      */
     public static class SMTPAuthenticator extends Authenticator {
 
-        /** The config. */
-        private Properties config = null;
-
-        /**
-         * Instantiates an empty {@link SMTPAuthenticator}.
-         *
-         * @param config the config
-         */
-        public SMTPAuthenticator(final Properties config) {
-            this.config = config;
-        }
-
         /**
          * Returns the password authentication.
          *
@@ -162,7 +150,7 @@ public final class EmailUtility {
         @Override
         public PasswordAuthentication getPasswordAuthentication() {
             
-            if (config == null) {
+            if (SMPT_PASSWORD == null) {
                 return null;
             } else {
                 return new PasswordAuthentication(SMPT_USER, SMPT_PASSWORD);
