@@ -1465,7 +1465,7 @@ public class RefsetController extends BaseController {
                     return "Database not empty, migration cancelled";
                 }
 
-                logger.info("migrateRttData Starting RTT data migration");
+                logger.info("migrateRttData Starting RTT data migration with runShortMigration: " + runShortMigration);
 
                 HistoricDataMigrator migrator = new HistoricDataMigrator();
                 migrator.migrate(runShortMigration);

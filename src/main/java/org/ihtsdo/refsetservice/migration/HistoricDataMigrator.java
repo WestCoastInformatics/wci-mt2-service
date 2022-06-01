@@ -163,11 +163,11 @@ public class HistoricDataMigrator {
     private final Set<String> internationalRefsets = new HashSet<>();
 
     /** The testing. */
-    private boolean testing = true;
+    private boolean testing = false;
 
-    private final String testingEdition = "";
+    private final String testingEdition = "stoni";
 
-    private final String testingRefset = null;
+    private final String testingRefset = "141000181108";
 
     private final Map<String, String> editionOwnerMap = new HashMap<>();
 
@@ -262,6 +262,8 @@ public class HistoricDataMigrator {
         final Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
 
         try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
 
             List<Edition> editions = service.getAll(Edition.class);
 
@@ -466,8 +468,7 @@ public class HistoricDataMigrator {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy("Migration");
-            service.setModifiedFlag(true);
+            initializeService(service);
 
             List<String> ignoredRefsets = utilities.getPropertyReader().readRefsetsToIgnore();
 
@@ -874,8 +875,7 @@ public class HistoricDataMigrator {
 
             try (final TerminologyService service = new TerminologyService()) {
 
-                service.setModifiedBy("Migration");
-                service.setModifiedFlag(true);
+                initializeService(service);
 
                 final Iterator<JsonNode> responseIterator = root.iterator();
 
@@ -1148,8 +1148,7 @@ public class HistoricDataMigrator {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy("Migration");
-            service.setModifiedFlag(true);
+            initializeService(service);
 
             // Persist Projects and Organizations from Snowstorm
             Map<String, Project> defaultEditionProjects = new HashMap<>();
@@ -1220,8 +1219,6 @@ public class HistoricDataMigrator {
                         snowRefset.setTags(tags);
                         projectCount =
                             processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, defaultEditionProjects, utilities.getPropertyReader().getRefsetToProjectsInfoMap(), projectCount);
-
-                        service.add(snowRefset);
 
                         processClauses(rttId, snowRefset);
 
@@ -1347,8 +1344,7 @@ public class HistoricDataMigrator {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy("Migration");
-            service.setModifiedFlag(true);
+            initializeService(service);
 
             // If has ECL clauses, add them to db & refset
             if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
@@ -1367,8 +1363,7 @@ public class HistoricDataMigrator {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy("Migration");
-            service.setModifiedFlag(true);
+            initializeService(service);
 
             final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
 
@@ -1436,8 +1431,12 @@ public class HistoricDataMigrator {
         final String editionShortName = edition.getShortName();
 
         // Identify Org Name
-        if (!editionOwnerMap.containsKey(editionName) && !editionOwnerMap.containsKey(editionShortName) || !organizationsAdded.containsKey(editionOwnerMap.get(editionName))) {
+        logger.debug("editionName/editionShortName vars searching on are: " + editionName + "/" + editionShortName);
 
+        if (!editionOwnerMap.containsKey(editionName) && !editionOwnerMap.containsKey(editionShortName) && !organizationsAdded.containsKey(editionOwnerMap.get(editionName))) {
+
+            logger.debug("editionOwnerMap has keys: " + editionOwnerMap.keySet());
+            logger.debug("organizationsAdded has keys: " + organizationsAdded.keySet());
             throw new Exception("Orgnaization based on edition '" + edition + "' should have been created already");
         }
 
@@ -1453,6 +1452,13 @@ public class HistoricDataMigrator {
         counts.incrementNoMetadataCount();
         refset.setProject(project);
         utilities.setMetadata(refset, defaultMeta);
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+            logger.debug("Refset contents are: " + refset);
+            service.update(refset);
+        }
 
         if (!projectsAdded.containsKey(project.getName())) {
 
@@ -1571,4 +1577,10 @@ public class HistoricDataMigrator {
 
     }
 
+    private void initializeService(TerminologyService service) {
+
+        service.setModifiedBy("Migration");
+        service.setModifiedFlag(true);
+
+    }
 }
