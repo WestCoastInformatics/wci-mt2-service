@@ -1,0 +1,505 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
+package org.ihtsdo.refsetservice.rest.test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.UUID;
+
+import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.test.BaseTest;
+import org.ihtsdo.refsetservice.util.ResultList;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.json.JacksonTester;
+import org.springframework.core.env.Environment;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+/**
+ * The Class ProjectControllerIntegrationTest.
+ */
+@ExtendWith(SpringExtension.class)
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class ProjectControllerIntegrationTest extends BaseTest {
+
+    /** The logger. */
+    private static Logger logger = LoggerFactory.getLogger(ProjectControllerIntegrationTest.class);
+
+    /** The mvc. */
+    @Autowired
+    private MockMvc mvc;
+
+    /** The object mapper. */
+    private ObjectMapper objectMapper;
+
+    /** The base url. */
+    private String baseUrl = "";
+
+    /** The env. */
+    @Autowired
+    private Environment env;
+
+    /** The edition. */
+    private Edition edition = null;
+
+    /** The organization. */
+    private Organization organization = null;
+
+    /** The url. */
+    private String url = null;
+
+    /** The result. */
+    private MvcResult result = null;
+
+    /** The content. */
+    private String content = null;
+
+    /**
+     * Creates a required edition, organization for unit tests.
+     */
+    @BeforeAll
+    public void addPrerequisiteData() {
+
+        final Edition tempEdition = new Edition();
+        tempEdition.setId(null);
+        tempEdition.setName("Project Unit Test Edition");
+        tempEdition.setShortName("projectTestShortName");
+        tempEdition.setNamespace("projectTestNamespace");
+        tempEdition.setIconUri("projectTestIconUri");
+        tempEdition.setBranch("/SNOMEDCT");
+
+        try (TerminologyService service = new TerminologyService()) {
+            service.setModifiedBy("projectTestUser");
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+            edition = service.add(tempEdition);
+            service.commit();
+        } catch (Exception e) {
+            logger.error("ERROR {}", e.getMessage(), e);
+            assertTrue(false);
+        }
+
+        assertThat(edition).isNotNull();
+        assertThat(edition.getId()).isNotNull();
+
+        final Organization tempOrganization = new Organization();
+        tempOrganization.setId(null);
+        tempOrganization.setName("Organization for Project Unit Tests");
+        tempOrganization.setActive(true);
+        tempOrganization.setDescription("Generated from unit test");
+        tempOrganization.setIconUri("/organization/icon/");
+        tempOrganization.setPrimaryContactEmail("org@test.com");
+        tempOrganization.setEdition(edition);
+
+        try (TerminologyService service = new TerminologyService()) {
+            service.setModifiedBy("teamTestUser");
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+            organization = service.add(tempOrganization);
+            service.commit();
+        } catch (Exception e) {
+            logger.error("ERROR {}", e.getMessage(), e);
+            assertTrue(false);
+        }
+
+        assertThat(organization).isNotNull();
+        assertThat(organization.getId()).isNotNull();
+
+    }
+
+    /**
+     * Sets the up.
+     */
+    @BeforeEach
+    public void setUp() {
+
+        objectMapper = new ObjectMapper();
+        JacksonTester.initFields(this, objectMapper);
+        baseUrl = "/project";
+
+        url = null;
+        result = null;
+        content = null;
+
+    }
+
+    /**
+     * Test create.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    @Order(1)
+    public void testCreate() throws Exception {
+
+        url = baseUrl;
+
+        final Project originalProject = new Project();
+        originalProject.setId(null);
+        originalProject.setName("Unit Test Create");
+        originalProject.setActive(true);
+        originalProject.setDescription("Generated from unit test");
+        originalProject.setPrivateProject(false);
+        originalProject.setPrimaryContactEmail("project@test.com");
+        originalProject.setOrganization(organization);
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getRoles().add("author");
+        originalProject.getRoles().add("reviewer");
+
+        logger.info(" project = {}", originalProject.toString());
+        // forbidden - unit test user is set so this does not happen
+        // mvc.perform(post(url).content(org.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden()).andReturn();
+
+        // unsupported media type
+        mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_XML)).andExpect(status().isUnsupportedMediaType()).andReturn();
+
+        // method not found
+        mvc.perform(post(url + "xyz").content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+
+        result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
+
+        content = result.getResponse().getContentAsString();
+        logger.info(" PROJECT: content = {}", content);
+        final Project newProject = new ObjectMapper().readValue(content, Project.class);
+        assertThat(compareProjects(originalProject, newProject, true)).isTrue();
+    }
+
+    /**
+     * Test update.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    @Order(2)
+    public void testUpdate() throws Exception {
+
+        url = baseUrl;
+
+        final Project originalProject = new Project();
+        originalProject.setId(null);
+        originalProject.setName("Unit Test Update");
+        originalProject.setActive(true);
+        originalProject.setDescription("Generated for project update unit test");
+        originalProject.setPrivateProject(false);
+        originalProject.setPrimaryContactEmail("project@test.com");
+        originalProject.setOrganization(organization);
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getRoles().add("author");
+        originalProject.getRoles().add("reviewer");
+
+        logger.info(" project = {}", originalProject.toString());
+        // forbidden - unit test user is set so this does not happen
+        // mvc.perform(post(url).content(org.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden()).andReturn();
+
+        // unsupported media type
+        mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_XML)).andExpect(status().isUnsupportedMediaType()).andReturn();
+
+        // method not found
+        mvc.perform(post(url + "xyz").content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+
+        result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
+
+        content = result.getResponse().getContentAsString();
+        logger.info(" PROJECT: content = {}", content);
+        final Project newProject = new ObjectMapper().readValue(content, Project.class);
+        assertThat(compareProjects(originalProject, newProject, true)).isTrue();
+
+        // UPDATE
+        url = baseUrl + "/" + newProject.getId();
+        newProject.setName("Unit Test Update - updated");
+        newProject.setDescription("Generated for project update unit test - updated");
+        newProject.setPrimaryContactEmail("updated@test.com");
+        newProject.setPrivateProject(true);
+
+        // unsupported media type
+        mvc.perform(put(url).content(newProject.toString()).contentType(MediaType.APPLICATION_XML)).andExpect(status().isUnsupportedMediaType()).andReturn();
+
+        // bad request
+        mvc.perform(put(url + "xyz").content(newProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest()).andReturn();
+
+        // method not found
+        mvc.perform(put(baseUrl + "xyz" + "/" + newProject.getId()).content(newProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+
+        // update
+        url = baseUrl + "/" + newProject.getId();
+        logger.info("XXXX UPDATE URL {} | Project {}", url, newProject);
+        result = mvc.perform(put(url).content(newProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = {}", content);
+
+        final Project updatedProject = new ObjectMapper().readValue(content, Project.class);
+        assertThat(compareProjects(newProject, updatedProject, true)).isTrue();
+    }
+
+    /**
+     * Test get.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    @Order(3)
+    public void testGet() throws Exception {
+
+        url = baseUrl;
+
+        final Project originalProject = new Project();
+        originalProject.setId(null);
+        originalProject.setName("Unit Test Get");
+        originalProject.setActive(true);
+        originalProject.setDescription("Generated for project get unit test");
+        originalProject.setPrivateProject(false);
+        originalProject.setPrimaryContactEmail("project@test.com");
+        originalProject.setOrganization(organization);
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getRoles().add("author");
+        originalProject.getRoles().add("reviewer");
+
+        logger.info(" project = {}", originalProject.toString());
+        result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
+
+        content = result.getResponse().getContentAsString();
+        logger.info(" PROJECT: content = {}", content);
+        final Project newProject = new ObjectMapper().readValue(content, Project.class);
+        assertThat(compareProjects(originalProject, newProject, true)).isTrue();
+
+        // get
+        url = baseUrl + "/" + newProject.getId() + "xyz";
+        mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+
+        url = baseUrl + "/" + newProject.getId();
+        result = mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = {}", content);
+
+        final Project getProject = new ObjectMapper().readValue(content, Project.class);
+        assertThat(compareProjects(getProject, newProject, true)).isTrue();
+    }
+
+    /**
+     * Test find.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    @Order(4)
+    public void testFind() throws Exception {
+
+        url = baseUrl;
+
+        final Project originalProject = new Project();
+        originalProject.setId(null);
+        originalProject.setName("FindMe");
+        originalProject.setActive(true);
+        originalProject.setDescription("Generated for project get unit test");
+        originalProject.setPrivateProject(false);
+        originalProject.setPrimaryContactEmail("project@test.com");
+        originalProject.setOrganization(organization);
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getRoles().add("author");
+        originalProject.getRoles().add("reviewer");
+
+        logger.info(" project = {}", originalProject.toString());
+
+        // create
+        result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
+
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = {}", content);
+        final Project newProject = new ObjectMapper().readValue(content, Project.class);
+        assertThat(compareProjects(originalProject, newProject, true)).isTrue();
+
+        // get - search
+        url = baseUrl + "/" + "searchxyz";
+        mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+
+        url = baseUrl + "/" + "search";
+
+        // find by id
+        result = mvc.perform(get(url).queryParam("query", "id:" + newProject.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = {}", content);
+        final ResultList<Project> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
+        }));
+        assertThat(resultList1).isNotNull();
+        assertThat(resultList1.getItems()).isNotNull();
+        assertThat(resultList1.getItems().size()).isEqualTo(1);
+        assertThat(resultList1.getItems().get(0)).isNotNull();
+        assertThat(compareProjects(resultList1.getItems().get(0), newProject, true)).isTrue();
+
+        // find by name
+        result = mvc.perform(get(url).queryParam("query", "name:" + newProject.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = {}", content);
+        final ResultList<Project> resultList2 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
+        }));
+        assertThat(resultList2).isNotNull();
+        assertThat(resultList2.getItems()).isNotNull();
+        assertThat(resultList2.getItems().size()).isEqualTo(1);
+        assertThat(resultList2.getItems().get(0)).isNotNull();
+        assertThat(compareProjects(resultList2.getItems().get(0), newProject, true)).isTrue();
+    }
+
+    /**
+     * Test inactivate.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    @Order(5)
+    public void testInactivate() throws Exception {
+
+        url = baseUrl;
+
+        final Project originalProject = new Project();
+        originalProject.setId(null);
+        originalProject.setName("Test Inactive");
+        originalProject.setActive(true);
+        originalProject.setDescription("Generated for project get unit test");
+        originalProject.setPrivateProject(false);
+        originalProject.setPrimaryContactEmail("project@test.com");
+        originalProject.setOrganization(organization);
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getTeams().add(UUID.randomUUID().toString());
+        originalProject.getRoles().add("author");
+        originalProject.getRoles().add("reviewer");
+
+        logger.info(" project = {}", originalProject.toString());
+
+        // create
+        result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
+
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = {}", content);
+        final Project newProject = new ObjectMapper().readValue(content, Project.class);
+        assertThat(compareProjects(originalProject, newProject, true)).isTrue();
+
+        // inactive tests
+        mvc.perform(delete(url).content(newProject.toString()).contentType(MediaType.APPLICATION_XML)).andExpect(status().isMethodNotAllowed()).andReturn();
+
+        url = baseUrl + "/" + newProject.getId() + "xyz";
+        mvc.perform(delete(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+
+        url = baseUrl + "/" + newProject.getId();
+        mvc.perform(delete(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isAccepted()).andReturn();
+
+        // fetch to validate
+        // TODO Fix controller should not return inactive projects
+        // result = mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+
+        // url = baseUrl + "/search";
+        // // find by id
+        // result = mvc.perform(get(url).queryParam("query", "id:" + newProject.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        // content = result.getResponse().getContentAsString();
+        // logger.info(" content = {}", content);
+        // final ResultList<Project> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
+        // }));
+        // assertThat(resultList1).isNotNull();
+        // assertThat(resultList1.getItems()).isNotNull();
+        // assertThat(resultList1.getItems().size()).isEqualTo(0);
+        //
+        // // find by name
+        // result = mvc.perform(get(url).queryParam("query", "name:" + newProject.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        // content = result.getResponse().getContentAsString();
+        // logger.info(" content = {}", content);
+        // final ResultList<Project> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
+        // }));
+        // assertThat(resultList).isNotNull();
+        // assertThat(resultList.getItems()).isNotNull();
+        // assertThat(resultList.getItems().size()).isEqualTo(0);
+    }
+
+    /**
+     * Compare projects.
+     *
+     * @param newProject the new project
+     * @param originalProject the original project
+     * @param nonUpdatedAttributes the non updated attributes
+     * @return true, if successful
+     */
+    private boolean compareProjects(final Project newProject, final Project originalProject, final boolean nonUpdatedAttributes) {
+
+        boolean pass = false;
+        logger.info("new project record = {}", newProject);
+        assertThat(newProject).isNotNull();
+        assertThat(newProject.getName()).isEqualTo(originalProject.getName());
+        assertThat(newProject.isActive()).isEqualTo(originalProject.isActive());
+        assertThat(newProject.getDescription()).isEqualTo(originalProject.getDescription());
+        assertThat(compareOrganizations(newProject.getOrganization(), originalProject.getOrganization(), true)).isTrue();
+        assertThat(newProject.isPrivateProject()).isEqualTo(originalProject.isPrivateProject());
+        assertThat(newProject.getPrimaryContactEmail()).isEqualTo(originalProject.getPrimaryContactEmail());
+        // not returned in json
+        // assertThat(newProject.getCrowdProjectId()).isEqualTo(originalProject.getCrowdProjectId());
+        assertThat(newProject.getTeams()).isEqualTo(originalProject.getTeams());
+
+        // TODO Get method does not return roles.
+        // assertThat(newProject.getRoles()).isEqualTo(originalProject.getRoles());
+
+        pass = true;
+        return pass;
+    }
+
+    /**
+     * Compare organization.
+     *
+     * @param newOrganization the new organization
+     * @param originalOrganization the original organization
+     * @param nonUpdatedAttributes the non updated attributes
+     * @return true, if successful
+     */
+    private boolean compareOrganizations(final Organization newOrganization, final Organization originalOrganization, final boolean nonUpdatedAttributes) {
+
+        boolean pass = false;
+        logger.info("new org record = {}", newOrganization);
+        assertThat(newOrganization).isNotNull();
+        assertThat(newOrganization.getName()).isEqualTo(originalOrganization.getName());
+        assertThat(newOrganization.isActive()).isEqualTo(originalOrganization.isActive());
+        assertThat(newOrganization.getEdition()).isEqualTo(originalOrganization.getEdition());
+        assertThat(newOrganization.getDescription()).isEqualTo(originalOrganization.getDescription());
+        assertThat(newOrganization.getPrimaryContactEmail()).isEqualTo(originalOrganization.getPrimaryContactEmail());
+        if (nonUpdatedAttributes) {
+            assertThat(newOrganization.getIconUri()).isEqualTo(originalOrganization.getIconUri());
+        }
+        pass = true;
+        return pass;
+    }
+
+}

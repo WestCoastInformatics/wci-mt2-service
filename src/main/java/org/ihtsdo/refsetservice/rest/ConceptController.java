@@ -62,11 +62,11 @@ public class ConceptController extends BaseController {
     })
     @ApiImplicitParams({
             @ApiImplicitParam(name = "terminology", value = "Terminology, e.g. 'ncit'",
-                    required = true, dataType = "string", paramType = "path",
+                    required = true, dataTypeClass = String.class, paramType = "path",
                     defaultValue = "ncit"),
             @ApiImplicitParam(name = "code",
                     value = "Code in the specified terminology, e.g. 'C3224'", required = true,
-                    dataType = "string", paramType = "path"),
+                    dataTypeClass = String.class, paramType = "path"),
             @ApiImplicitParam(name = "include",
                     value = "Indicator of how much data to return. Comma-separated list of any of "
                             + "the following values: minimal, summary, full, associations, "
@@ -74,7 +74,7 @@ public class ConceptController extends BaseController {
                             + "inverseRoles, maps, parents, properties, roles, synonyms. "
                             + "<a href='https://github.com/NCIEVS/evsrestapi-client-SDK/"
                             + "blob/master/doc/INCLUDE.md'>See here for detailed information</a>.",
-                    required = false, dataType = "string", paramType = "query",
+                    required = false, dataTypeClass = String.class, paramType = "query",
                     defaultValue = "summary")
     })
     @RecordMetric
@@ -165,14 +165,14 @@ public class ConceptController extends BaseController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "terminology",
                     value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true,
-                    dataType = "string", paramType = "query", defaultValue = "ncit"),
+                    dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
             @ApiImplicitParam(name = "query",
                     value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
-                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
+                    required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
             @ApiImplicitParam(name = "limit", value = "The max number of results to return",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+                    required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
             @ApiImplicitParam(name = "offset", value = "The offset for the first result",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0")
+                    required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
     // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
