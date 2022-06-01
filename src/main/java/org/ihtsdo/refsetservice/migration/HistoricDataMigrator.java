@@ -1358,6 +1358,9 @@ public class HistoricDataMigrator {
 
     }
 
+    /*
+     * Called when reading in refsets from RTT. Right now, no need to support this
+     */
     private void processRefsetInRTT(String rttId, String rttProjectId, Refset rttRefset, Edition edition, Set<String> refsetsAdded, Map<String, Project> projectsAdded,
         Map<String, Project> defaultEditionProjects, int projectCount) throws Exception {
 
@@ -1367,6 +1370,11 @@ public class HistoricDataMigrator {
 
             final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
 
+            if (projectId == null) {
+                logger.debug(" JE here with missing project for rttId: " + rttId);
+                logger.debug(" JE all keys: " + utilities.getPropertyReader().getRttIdToProjectsJsonMap().keySet());
+                throw new Exception("Failing to match projectId" );
+            }
             final Project rttProject = ModelUtility.fromJson(utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(projectId), Project.class);
 
             final Organization rttOrg = rttProject.getOrganization();

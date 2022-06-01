@@ -2128,6 +2128,8 @@ public class RefsetService {
 
         final Project project = refset.getProject();
         final List<String> roles = refset.getRoles();
+        logger.debug(" JE project: " + project);
+        logger.debug(" JE roles: " + roles);
         setRoles(user, project, roles);
         project.setRoles(roles);
 
