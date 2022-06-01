@@ -2156,9 +2156,9 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "refsetInternalId",
                     value = "The internal ID of the refset to request access to.", required = true,
-                    dataType = "string", paramType = "path"),
+                        dataTypeClass = String.class, paramType = "path"),
             @ApiImplicitParam(name = "comments", value = "Any comments related to the request.",
-                    required = true, dataType = "string", paramType = "query"),
+                    required = true, dataTypeClass = String.class, paramType = "query"),
 
     })
     @RecordMetric

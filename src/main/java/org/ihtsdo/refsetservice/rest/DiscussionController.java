@@ -762,7 +762,7 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
     })
     @RecordMetric
     @DeleteMapping("/discussion/{threadId}")
