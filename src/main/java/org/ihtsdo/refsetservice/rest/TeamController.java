@@ -14,6 +14,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -86,7 +87,7 @@ public class TeamController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/team/{id}")
-    public @ResponseBody ResponseEntity<Team> getTeam(@PathVariable(value = "id") final String id) throws Exception {
+    public @ResponseBody ResponseEntity<Team> getTeam(@PathVariable(value = "id") final String id, @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
         logger.info("Get team: {}", id);
         // TODO check permissions, fail if not authorized.
@@ -101,6 +102,24 @@ public class TeamController extends BaseController {
             if (team == null) {
                 logger.info("Unable to find team for id {}.", id);
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            if (includeMembers) {
+                for (final String userId : team.getMembers()) {
+                    ResultList<User> users = service.find("id:" + userId, null, User.class, null);
+                    if (users != null && users.getItems() != null) {
+                        for (final User user : users.getItems()) {
+
+                            final SearchParameters sp = new SearchParameters();
+                            sp.setQuery("members:" + user.getId());
+                            final ResultList<Team> teamsResultList = RefsetService.searchTeams(user, sp);
+                            if (teamsResultList != null && teamsResultList.getItems() != null) {
+                                user.getTeams().addAll(teamsResultList.getItems());
+                            }
+                        }
+                        team.getMemberList().addAll(users.getItems());
+                    }
+                }
             }
 
             return new ResponseEntity<>(team, HttpStatus.OK);
@@ -133,7 +152,8 @@ public class TeamController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/team/search", produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<ResultList<Team>> getTeams(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<Team>> getTeams(final SearchParameters searchParameters, final BindingResult bindingResult,
+        @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
         logger.info("Search teams: {}", ModelUtility.toJson(searchParameters));
         // TODO check permissions, fail if not authorized.
@@ -147,7 +167,7 @@ public class TeamController extends BaseController {
 
         try {
 
-            final ResultList<Team> results = RefsetService.searchTeams(authUser, searchParameters);
+            final ResultList<Team> results = RefsetService.searchTeams(authUser, searchParameters, includeMembers);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final ResponseStatusException rse) {
@@ -234,7 +254,7 @@ public class TeamController extends BaseController {
             final Team original = service.get(team.getId(), Team.class);
 
             if (original == null) {
-                
+              
                 final String message = "Unable to find team for " + id + ".";
                 logger.error(message);
                 return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
@@ -381,17 +401,17 @@ public class TeamController extends BaseController {
             // crowd.unit.test.skip=true
             if (properties.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(properties.getProperty("crowd.unit.test.skip"))) {
                 logger.info("CALLING CROWD API");
-                // final String teamsQuery = "teams:" + teamId;
-                // final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
-                //
-                // if (projectList != null && projectList.getItems() != null) {
-                // for (Project project : projectList.getItems()) {
-                // for (String role : team.getRoles()) {
-                // final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                // CrowdAPIClient.addMembership(groupName, user.getUserName());
-                // }
-                // }
-                // }
+                final String teamsQuery = "teams:" + teamId;
+                final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
+
+                if (projectList != null && projectList.getItems() != null) {
+                    for (Project project : projectList.getItems()) {
+                        for (String role : team.getRoles()) {
+                            final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                            CrowdAPIClient.addMembership(groupName, user.getUserName());
+                        }
+                    }
+                }
             } else {
                 logger.info("SKIP CALLING CROWD API");
             }
@@ -458,20 +478,18 @@ public class TeamController extends BaseController {
             // crowd.unit.test.skip=true
             if (properties.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(properties.getProperty("crowd.unit.test.skip"))) {
                 logger.info("CALLING CROWD API");
-                // final Organization organization = team.getOrganization();
-                // final String teamsQuery = "teams:" + teamId;
-                //
-                // final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
-                // if (projectList != null && projectList.getItems() != null) {
-                // for (Project project : projectList.getItems()) {
-                // for (String role : team.getRoles()) {
-                // final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                //
-                // CrowdAPIClient.deleteMembership(groupName, member.getUserName());
-                // }
-                //
-                // }
-                // }
+                final Organization organization = team.getOrganization();
+                final String teamsQuery = "teams:" + teamId;
+
+                final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
+                if (projectList != null && projectList.getItems() != null) {
+                    for (Project project : projectList.getItems()) {
+                        for (String role : team.getRoles()) {
+                            final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                            CrowdAPIClient.deleteMembership(groupName, member.getUserName());
+                        }
+                    }
+                }
             } else {
                 logger.info("SKIP CALLING CROWD API");
             }

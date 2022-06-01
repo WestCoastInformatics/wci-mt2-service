@@ -10,7 +10,9 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -19,6 +21,7 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -75,9 +78,13 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     @Fetch(FetchMode.JOIN)
     private Set<String> roles;
 
+    /** The members. (users) */
     @ElementCollection
     @Fetch(FetchMode.JOIN)
     private Set<String> members;
+
+    @Transient
+    private List<User> memberList;
 
     /**
      * Instantiates an empty {@link Team}.
@@ -282,6 +289,20 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     public void setPrimaryContactEmail(final String primaryContactEmail) {
 
         this.primaryContactEmail = primaryContactEmail;
+    }
+
+    @JsonGetter()
+    public List<User> getMemberList() {
+
+        if (memberList == null) {
+            memberList = new ArrayList<>();
+        }
+        return memberList;
+    }
+
+    public void setMemberList(final List<User> memberList) {
+
+        this.memberList = memberList;
     }
 
     /* see superclass */
