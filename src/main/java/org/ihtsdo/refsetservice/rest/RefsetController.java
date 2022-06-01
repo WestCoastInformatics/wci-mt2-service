@@ -917,7 +917,6 @@ public class RefsetController extends BaseController {
      * @return the project
      * @throws Exception the exception
      */
-
     @ApiOperation(value = "Get the project for the specified ID", response = Refset.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),

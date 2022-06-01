@@ -9,9 +9,12 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +29,8 @@ import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.ModelUtility;
+
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
@@ -67,98 +72,130 @@ public class ProjectController extends BaseController {
     @Autowired
     HttpServletRequest request;
 
-    // There is a duplicate in Refset Controller.
-    // /**
-    // * Return the project.
-    // *
-    // * @param id the id
-    // * @return the project
-    // * @throws Exception the exception
-    // */
-    // @ApiOperation(value = "Get the project for the specified identifier", response = Project.class)
-    // @ApiResponses(value = {
-    // @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-    // @ApiResponse(code = 404, message = "Resource not found")
-    // })
-    // @ApiImplicitParams({
-    // @ApiImplicitParam(name = "id", value = "Project identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataTypeClass = String.class, paramType =
-    // "path") // ,
-    // })
-    //
-    // @RecordMetric
-    // @RequestMapping(value = "/project/{id}", produces = MediaType.APPLICATION_JSON)
-    // public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "id") final String id) throws Exception {
-    //
-    // try {
-    // logger.info("Get project: {}", id);
-    // // TODO check permissions, fail if not authorized.
-    // // final AuthContext context = authorize(request);
-    // final User user = SecurityService.getUserFromSession();
-    //
-    // try (final TerminologyService service = new TerminologyService()) {
-    // logger.debug("get project: id: {}", id);
-    // final Project project = service.get(id, Project.class);
-    // return new ResponseEntity<>(project, HttpStatus.OK);
-    // }
-    // } catch (final Exception e) {
-    // handleException(e);
-    // return null;
-    // }
-    // }
+    /**
+     * Returns a specific project.
+     *
+     * @param projectId the project ID
+     * @return the project
+     * @throws Exception the exception
+     */
 
-    // There is a duplicate in Refset Controller.
-    // /**
-    // * Search Projects.
-    // *
-    // * @param searchParameters the search parameters
-    // * @param bindingResult the binding result
-    // * @return the string
-    // * @throws Exception the exception
-    // */
-    // @ApiOperation(value = "Get project search results", response = ResultList.class, notes = API_NOTES)
-    // @ApiResponses(value = {
-    // @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-    // @ApiResponse(code = 404, message = "Resource not found")
-    // })
-    // @ApiImplicitParams({
-    // @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType =
-    // "query",
-    // defaultValue = ""),
-    // @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue =
-    // "0"),
-    // @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-    // // TODO: activeOnly, sort, sortAscending
-    // })
-    // @RecordMetric
-    // @RequestMapping(method = RequestMethod.GET, value = "/project/search", produces = "application/json")
-    // public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
-    //
-    // try {
-    // logger.info("Get projects: {}", searchParameters);
-    // // TODO check permissions, fail if not authorized.
-    // // final AuthContext context = authorize(request);
-    // final User user = SecurityService.getUserFromSession();
-    //
-    // // Check to make sure parameters were properly bound to variables.
-    // checkBinding(bindingResult);
-    //
-    // try {
-    //
-    // logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
-    // ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
-    //
-    // final HttpHeaders headers = new HttpHeaders();
-    // return new ResponseEntity<>(results, headers, HttpStatus.OK);
-    //
-    // } catch (final ResponseStatusException rse) {
-    // throw rse;
-    //
-    // }
-    // } catch (final Exception e) {
-    // handleException(e);
-    // return null;
-    // }
-    // }
+    @ApiOperation(value = "Get the project for the specified ID", response = Refset.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "projectId", value = "The ID of the project to return.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/project/{projectId}", produces = "application/json")
+    public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "projectId") final String projectId, @QueryParam(value = "includeMembers") final boolean includeMembers)
+        throws Exception {
+
+        logger.info("Project: projectId: " + projectId);
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
+        }
+
+        try {
+
+            try (TerminologyService service = new TerminologyService()) {
+
+                final Project project = RefsetService.getProject(projectId);
+                if (project == null) {
+                    logger.info("Unable to find project for id {}.", projectId);
+                    return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+                }
+
+                if (includeMembers) {
+                    final Set<User> members = new HashSet<>();
+                    for (final String teamId : project.getTeams()) {
+                        final Team team = service.get(teamId, Team.class);
+                        if (team != null && team.getMembers() != null) {
+                            for (final String userId : team.getMembers()) {
+                                final User member = service.get(userId, User.class);
+                                members.add(member);
+                            }
+                        }
+                    }
+                    project.getMemberList().addAll(members);
+                }
+
+                return new ResponseEntity<>(project, HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+            logger.error("Error fetching project.  Id: {}", projectId, e);
+            handleException(e);
+            return null;
+        }
+    }
+
+    /**
+     * Search Projects.
+     *
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the string
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Get project search results", response = ResultList.class, notes = API_NOTES)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        // TODO: activeOnly, sort, sortAscending
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/project/search", produces = "application/json")
+    public @ResponseBody ResultList<Project> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult, @QueryParam(value = "includeMembers") final boolean includeMembers)
+        throws Exception {
+
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+
+        try {
+
+            logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
+
+            final User user = SecurityService.getUserFromSession();
+            final ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
+
+            if (includeMembers && results != null && results.getItems() != null) {
+                try (final TerminologyService service = new TerminologyService()) {
+                    for (final Project project : results.getItems()) {
+                        final Set<User> members = new HashSet<>();
+                        for (final String teamId : project.getTeams()) {
+                            final Team team = service.get(teamId, Team.class);
+                            if (team != null && team.getMembers() != null) {
+                                for (final String userId : team.getMembers()) {
+                                    final User member = service.get(userId, User.class);
+                                    members.add(member);
+                                }
+                            }
+                        }
+                        project.getMemberList().addAll(members);
+                    }
+                }
+            }
+
+            return results;
+
+        } catch (final ResponseStatusException rse) {
+            throw rse;
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
 
     /**
      * Add the project.

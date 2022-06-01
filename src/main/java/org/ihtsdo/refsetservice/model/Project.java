@@ -90,6 +90,9 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     /** The of roles for this project. */
     @Transient
     private List<String> roles;
+    
+    @Transient
+    private List<User> memberList;
 
     /**
      * Instantiates an empty {@link Project}.
@@ -145,7 +148,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
         // super.populateFrom(other);
         name = other.getName();
-        organization = other.getOrganization();
         description = other.getDescription();
         privateProject = other.isPrivateProject();
         roles = other.getRoles();
@@ -356,6 +358,20 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public void setPrimaryContactEmail(final String primaryContactEmail) {
 
         this.primaryContactEmail = primaryContactEmail;
+    }
+    
+    @JsonGetter()
+    public List<User> getMemberList() {
+
+        if (memberList == null) {
+            memberList = new ArrayList<>();
+        }
+        return memberList;
+    }
+
+    public void setMemberList(final List<User> memberList) {
+
+        this.memberList = memberList;
     }
 
     /* see superclass */

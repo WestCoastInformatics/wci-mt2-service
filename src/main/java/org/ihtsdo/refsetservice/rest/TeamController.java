@@ -254,7 +254,6 @@ public class TeamController extends BaseController {
             final Team original = service.get(team.getId(), Team.class);
 
             if (original == null) {
-              
                 final String message = "Unable to find team for " + id + ".";
                 logger.error(message);
                 return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
