@@ -565,14 +565,14 @@ public class HistoricDataMigrator {
                                          */
                                         Date refsetVersionDate = null;
 
-                                        if (!testing || (!testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
+                                        if (!testing || (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
 
                                             refsetVersionDate = defineSnowstormRefsetVersionDate(childBranch, refsetId);
                                         }
 
                                         if (refsetVersionDate == null) {
 
-                                            if (testing && (!testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
+                                            if (testing && (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
 
                                                 logger.debug(testingRefset + " - qqq - not adding anything on this branch for " + childBranch);
                                             }
