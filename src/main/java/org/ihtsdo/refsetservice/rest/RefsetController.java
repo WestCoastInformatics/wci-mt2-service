@@ -911,97 +911,97 @@ public class RefsetController extends BaseController {
         }
     }
     
-    /**
-     * Returns a specific project.
-     *
-     * @param projectId the project ID
-     * @return the project
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Get the project for the specified ID", response = Refset.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-        @ApiResponse(code = 404, message = "Resource not found")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "projectId", value = "The ID of the project to return.", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/project/{projectId}", produces = "application/json")
-    public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "projectId") final String projectId) throws Exception {
-
-        logger.info("Project: projectId: " + projectId);
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
-        }
-
-        try {
-
-            try (TerminologyService service = new TerminologyService()) {
-
-                final Project project = RefsetService.getProject(projectId);
-                if (project == null) {
-                    logger.info("Unable to find project for id {}.", projectId);
-                    return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-                }
-
-                return new ResponseEntity<>(project, HttpStatus.OK);
-            }
-
-        } catch (final Exception e) {
-            logger.error("Error fetching project.  Id: {}", projectId, e);
-            handleException(e);
-            return null;
-        }
-    }
+//    /**
+//     * Returns a specific project.
+//     *
+//     * @param projectId the project ID
+//     * @return the project
+//     * @throws Exception the exception
+//     */
+//    @ApiOperation(value = "Get the project for the specified ID", response = Refset.class)
+//    @ApiResponses(value = {
+//        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+//        @ApiResponse(code = 404, message = "Resource not found")
+//    })
+//    @ApiImplicitParams({
+//        @ApiImplicitParam(name = "projectId", value = "The ID of the project to return.", required = true, dataTypeClass = String.class, paramType = "path")
+//    })
+//    @RecordMetric
+//    @RequestMapping(method = RequestMethod.GET, value = "/project/{projectId}", produces = "application/json")
+//    public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "projectId") final String projectId) throws Exception {
+//
+//        logger.info("Project: projectId: " + projectId);
+//        final User authUser = SecurityService.getUserFromSession();
+//        if (authUser == null) {
+//            return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
+//        }
+//
+//        try {
+//
+//            try (TerminologyService service = new TerminologyService()) {
+//
+//                final Project project = RefsetService.getProject(projectId);
+//                if (project == null) {
+//                    logger.info("Unable to find project for id {}.", projectId);
+//                    return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+//                }
+//
+//                return new ResponseEntity<>(project, HttpStatus.OK);
+//            }
+//
+//        } catch (final Exception e) {
+//            logger.error("Error fetching project.  Id: {}", projectId, e);
+//            handleException(e);
+//            return null;
+//        }
+//    }
     
-    /**
-     * Search Projects.
-     *
-     * @param searchParameters the search parameters
-     * @param bindingResult the binding result
-     * @return the string
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Get project search results", response = ResultList.class, notes = API_NOTES)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
-    })
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-            // TODO: activeOnly, sort, sortAscending
-    })
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/project/search", produces = "application/json")
-    public @ResponseBody ResultList<Project> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
-
-        // Check to make sure parameters were properly bound to variables.
-        checkBinding(bindingResult);
-
-        try {
-
-            logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
-            
-            User user = SecurityService.getUserFromSession();
-            ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
-
-            //logger.debug("getProjects results: " + ModelUtility.toJson(results));
-            return results;
-
-        } catch (final ResponseStatusException rse) {
-            throw rse;
-
-        } catch (final Exception e) {
-
-            handleException(e);
-            return null;
-        }
-    }
+//    /**
+//     * Search Projects.
+//     *
+//     * @param searchParameters the search parameters
+//     * @param bindingResult the binding result
+//     * @return the string
+//     * @throws Exception the exception
+//     */
+//    @ApiOperation(value = "Get project search results", response = ResultList.class, notes = API_NOTES)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+//            @ApiResponse(code = 400, message = "Bad request"),
+//            @ApiResponse(code = 404, message = "Resource not found")
+//    })
+//    @ApiImplicitParams({
+//            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+//            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+//            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+//            // TODO: activeOnly, sort, sortAscending
+//    })
+//    @RecordMetric
+//    @RequestMapping(method = RequestMethod.GET, value = "/project/search", produces = "application/json")
+//    public @ResponseBody ResultList<Project> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+//
+//        // Check to make sure parameters were properly bound to variables.
+//        checkBinding(bindingResult);
+//
+//        try {
+//
+//            logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
+//            
+//            User user = SecurityService.getUserFromSession();
+//            ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
+//
+//            //logger.debug("getProjects results: " + ModelUtility.toJson(results));
+//            return results;
+//
+//        } catch (final ResponseStatusException rse) {
+//            throw rse;
+//
+//        } catch (final Exception e) {
+//
+//            handleException(e);
+//            return null;
+//        }
+//    }
 
     /**
      * Search Directory.
