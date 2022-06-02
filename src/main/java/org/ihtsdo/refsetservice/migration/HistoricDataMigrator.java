@@ -163,7 +163,7 @@ public class HistoricDataMigrator {
     private final Set<String> internationalRefsets = new HashSet<>();
 
     /** The testing. */
-    private boolean testing = true;
+    private boolean testing = false;
 
     private final String testingEdition = "stoni";
 
