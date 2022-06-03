@@ -133,11 +133,8 @@ public class SecurityController extends BaseController {
     	try (final SecurityService securityService = new SecurityService()) {
     	
     	    securityService.logout(authToken);
-
-    	    final HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.add("Set-Cookie","Max-Age=0; Path=/; Secure; HttpOnly");
-            
-            return new ResponseEntity<>(null, httpHeaders, HttpStatus.OK);
+                        
+          return new ResponseEntity<>(null, HttpStatus.OK);
             
     	} catch (Exception e) {
     		handleException(e);
