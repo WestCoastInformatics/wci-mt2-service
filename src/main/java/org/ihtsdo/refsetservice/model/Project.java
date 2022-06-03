@@ -235,7 +235,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      *
      * @param organizationId the organization ID to set
      */
-    public void setProjectId(final String organizationId) {
+    public void setOrganizationId(final String organizationId) {
 
         if (organization != null) {
             this.organization.setId(organizationId);
