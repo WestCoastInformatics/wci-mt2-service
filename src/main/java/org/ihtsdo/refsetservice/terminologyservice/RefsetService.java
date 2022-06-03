@@ -1830,6 +1830,18 @@ public class RefsetService {
      * @throws Exception the exception
      */
     public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters) throws Exception {
+        return searchTeams(user, searchParameters, false);
+    }
+    
+    /**
+     * Search Teams.
+     *
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @return the list of projects
+     * @throws Exception the exception
+     */
+    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters, final boolean includeMembers) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1868,6 +1880,17 @@ public class RefsetService {
             results.setTimeTaken(System.currentTimeMillis() - start);
             results.setTotalKnown(true);
 
+            if (includeMembers && results != null && results.getItems() != null) {
+                for(final Team team : results.getItems()) {
+                    for(final String userId : team.getMembers()) {
+                        ResultList<User> users = service.find("id:" + userId , null, User.class, null);
+                        if (users != null && users.getItems() != null) {
+                            team.getMemberList().addAll(users.getItems());
+                        }
+                    }
+                }
+            }
+            
             return results;
         }
 
@@ -2105,6 +2128,8 @@ public class RefsetService {
 
         final Project project = refset.getProject();
         final List<String> roles = refset.getRoles();
+        logger.debug(" JE project: " + project);
+        logger.debug(" JE roles: " + roles);
         setRoles(user, project, roles);
         project.setRoles(roles);
 

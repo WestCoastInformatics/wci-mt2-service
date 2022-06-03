@@ -78,7 +78,7 @@ public class UserController extends BaseController {
 
     /** Search users API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
-    
+
     /** The local icon file directory. */
     private static String ICON_URL_PREFIX = "user/icon/";
 
@@ -94,14 +94,27 @@ public class UserController extends BaseController {
      * @return the user
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/user/{id}")
+    @ApiOperation(value = "Get the user for the specified identifier", response = User.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "User identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataTypeClass = String.class, paramType = "path") // ,
+    })
+    @RecordMetric
+    @RequestMapping(value = "/user/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<User> getUser(@PathVariable(value = "id") final String id, @QueryParam(value = "includeOrganizations") final boolean includeOrganizations,
         @QueryParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
+        logger.info("Get user: {}", id);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         try {
-            logger.info("Get user: {}", id);
-            // TODO check permissions, fail if not authorized.
-            final User authUser = SecurityService.getUserFromSession();
             if (authUser == null) {
                 logger.warn("User from session is null.");
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -112,7 +125,8 @@ public class UserController extends BaseController {
                 final User user = service.get(id, User.class);
 
                 if (user == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find user for " + id + ".");
+                    logger.info("Unable to find user for id {}.", id);
+                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                 }
                 if (includeOrganizations) {
                     user.getOrganizations();
@@ -149,16 +163,24 @@ public class UserController extends BaseController {
     @ApiOperation(value = "Update User", response = User.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "User successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 415, message = "Unsupported Media Type"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
-    @PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON)
+    @PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id, @RequestBody final User user) throws Exception {
 
         logger.info("Update user: {}", user);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+            logger.info("User is null or user id does not match id in URL.");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -166,7 +188,8 @@ public class UserController extends BaseController {
             final User original = service.get(user.getId(), User.class);
 
             if (original == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find user for " + user.getId() + ".");
+                logger.info("Unable to find user for id {}.", id);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
             service.setModifiedBy(authUser.getUserName());
@@ -203,9 +226,9 @@ public class UserController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
         // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -265,15 +288,15 @@ public class UserController extends BaseController {
     public @ResponseBody ResponseEntity<Resource> getUserIcon(@PathVariable("fileName") final String fileName) throws Exception {
 
         try {
-            
+
             logger.info("GET icon for user {}", fileName);
             final Resource file = FileUtility.getIconFile(fileName);
-            
+
             return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
                 .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath())).contentLength(file.contentLength()).body(file);
 
         } catch (final Exception e) {
-            
+
             logger.error("Trying to get user icon file " + fileName, e);
             handleException(e);
             return null;
@@ -302,31 +325,31 @@ public class UserController extends BaseController {
         final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             service.setModifiedBy(authUser.getUserName());
 
             // find user record, return 404 if not found
             final User user = service.get(userId, User.class);
-            
+
             if (user == null) {
                 throw new RestException(false, 404, "Not found", "Unable to find user for " + userId);
             }
-            
+
             String fileToDelete = "";
-            
+
             if (user.getIconUri() != null) {
                 fileToDelete = user.getIconUri().replace(ICON_URL_PREFIX, "");
             }
-            
+
             final File file = FileUtility.saveIconFile(inputFile, userId, fileToDelete);
-            
+
             user.setIconUri(ICON_URL_PREFIX + file.getName());
             service.update(user);
 
             return new ResponseEntity<>("\"" + user.getIconUri() + "\"", HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
-            
+
             logger.error("Trying to edit user icon for user " + userId, e);
             handleException(e);
             return null;

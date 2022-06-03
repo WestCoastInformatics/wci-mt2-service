@@ -126,6 +126,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         edition = other.getEdition();
         primaryContactEmail = other.getPrimaryContactEmail();
         iconUri = other.iconUri;
+        members = other.getMembers();
     }
 
     /**
@@ -140,7 +141,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         description = other.getDescription();
         edition = other.getEdition();
         primaryContactEmail = other.getPrimaryContactEmail();
-        iconUri = other.iconUri;
     }
 
     /**
@@ -234,6 +234,8 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      */
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     @JsonIgnoreProperties("organizations")
+    @JsonSerialize(contentAs = User.class)
+    @JsonDeserialize(contentAs = User.class)
     public Set<User> getMembers() {
 
         if (members == null) {
@@ -279,22 +281,19 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         int result = super.hashCode();
         result = prime * result + ((description == null) ? 0 : description.hashCode());
         result = prime * result + ((edition == null) ? 0 : edition.hashCode());
+        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
+        result = prime * result + ((members == null) ? 0 : members.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
-        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         return result;
     }
-    
-    
+
     /* see superclass */
     @Override
     public boolean equals(Object obj) {
 
         if (this == obj) {
             return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
         }
         if (getClass() != obj.getClass()) {
             return false;
@@ -314,6 +313,20 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         } else if (!edition.equals(other.edition)) {
             return false;
         }
+        if (iconUri == null) {
+            if (other.iconUri != null) {
+                return false;
+            }
+        } else if (!iconUri.equals(other.iconUri)) {
+            return false;
+        }
+        if (members == null) {
+            if (other.members != null) {
+                return false;
+            }
+        } else if (!members.equals(other.members)) {
+            return false;
+        }
         if (name == null) {
             if (other.name != null) {
                 return false;
@@ -326,13 +339,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
                 return false;
             }
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
-            return false;
-        }
-        if (iconUri == null) {
-            if (other.iconUri != null) {
-                return false;
-            }
-        } else if (!iconUri.equals(other.iconUri)) {
             return false;
         }
         return true;

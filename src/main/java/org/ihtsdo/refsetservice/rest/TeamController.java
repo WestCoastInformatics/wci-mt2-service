@@ -10,9 +10,11 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -30,9 +32,9 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
-import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,6 +75,9 @@ public class TeamController extends BaseController {
     /** Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
+    /** The config properties. */
+    private static final Properties properties = PropertyUtility.getProperties();
+
     /** The request. */
     @Autowired
     HttpServletRequest request;
@@ -85,17 +90,39 @@ public class TeamController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/team/{id}")
-    public @ResponseBody ResponseEntity<Team> getTeam(@PathVariable(value = "id") final String id) throws Exception {
+    public @ResponseBody ResponseEntity<Team> getTeam(@PathVariable(value = "id") final String id, @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
         logger.info("Get team: {}", id);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
             final Team team = service.findSingle("id: " + id + " AND active:true", Team.class, null);
 
             if (team == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find team for id " + id + ".");
+                logger.info("Unable to find team for id {}.", id);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            if (includeMembers) {
+                for (final String userId : team.getMembers()) {
+                    ResultList<User> users = service.find("id:" + userId, null, User.class, null);
+                    if (users != null && users.getItems() != null) {
+                        for (final User user : users.getItems()) {
+
+                            final SearchParameters sp = new SearchParameters();
+                            sp.setQuery("members:" + user.getId());
+                            final ResultList<Team> teamsResultList = RefsetService.searchTeams(user, sp);
+                            if (teamsResultList != null && teamsResultList.getItems() != null) {
+                                user.getTeams().addAll(teamsResultList.getItems());
+                            }
+                        }
+                        team.getMemberList().addAll(users.getItems());
+                    }
+                }
             }
 
             return new ResponseEntity<>(team, HttpStatus.OK);
@@ -121,25 +148,29 @@ public class TeamController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
         // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/team/search", produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<ResultList<Team>> getTeams(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<Team>> getTeams(final SearchParameters searchParameters, final BindingResult bindingResult,
+        @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
         logger.info("Search teams: {}", ModelUtility.toJson(searchParameters));
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
         try {
 
-            final ResultList<Team> results = RefsetService.searchTeams(authUser, searchParameters);
+            final ResultList<Team> results = RefsetService.searchTeams(authUser, searchParameters, includeMembers);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final ResponseStatusException rse) {
@@ -165,12 +196,15 @@ public class TeamController extends BaseController {
         logger.info("Add team: {}", team);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team t = (Team) team;
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -208,6 +242,14 @@ public class TeamController extends BaseController {
         logger.info("Update team: {}", team);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        if (team == null || !org.apache.commons.lang3.StringUtils.equals(id, team.getId())) {
+            logger.info("Team is null or team id does not match id in URL.");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -215,13 +257,12 @@ public class TeamController extends BaseController {
             final Team original = service.get(team.getId(), Team.class);
 
             if (original == null) {
-                
                 final String message = "Unable to find team for " + id + ".";
                 logger.error(message);
                 return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -240,7 +281,7 @@ public class TeamController extends BaseController {
             return null;
         }
     }
-    
+
     /**
      * Return users for the team.
      *
@@ -265,10 +306,10 @@ public class TeamController extends BaseController {
         final User authUser = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             final Team team = service.get(id, Team.class);
             ResultListUser users = new ResultListUser();
-            
+
             if (team == null) {
 
                 final String message = "Unable to find team for " + id + ".";
@@ -277,11 +318,11 @@ public class TeamController extends BaseController {
             }
 
             for (final String userId : team.getMembers()) {
-                
+
                 final User user = service.get(userId, User.class);
                 users.getItems().add(user);
             }
-            
+
             users.setTotal(users.getItems().size());
 
             return new ResponseEntity<>(users, HttpStatus.OK);
@@ -306,40 +347,43 @@ public class TeamController extends BaseController {
         logger.info("Add user {} to team: {}", email, teamId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team team = service.get(teamId, Team.class);
-            
+
             if (team == null) {
 
                 final String message = "Unable to find team for " + teamId + ".";
                 logger.error(message);
                 return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
-            
+
             final Organization organization = team.getOrganization();
             final Set<User> organizationMembers = organization.getMembers();
             final User user = service.findSingle("email:" + email, User.class, null);
 
             if (user == null) {
-                
+
                 final String message = "Unable to find user for " + email + ".";
                 logger.error(message);
                 return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
             }
-            
+
             if (!organizationMembers.contains(user)) {
-                
+
                 final String message = "User " + email + " is not a member of organization " + organization.getName() + ".";
                 logger.error(message);
                 return new ResponseEntity<>(message, HttpStatus.CONFLICT);
             }
 
             if (team.getMembers() != null) {
-                
+
                 if (team.getMembers().contains(user.getId())) {
-                    
+
                     final String message = "User " + email + " is already a member of team " + teamId + ".";
                     logger.error(message);
                     return new ResponseEntity<>(message, HttpStatus.CONFLICT);
@@ -348,33 +392,36 @@ public class TeamController extends BaseController {
 
             team.getMembers().add(user.getId());
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
             service.update(team);
             service.commit();
-            
+
             // add user to crowd groups
-            final String teamsQuery = "teams:" + teamId;
-            final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
-            
-            if (projectList != null && projectList.getItems() != null) {
-                
-                for (Project project : projectList.getItems()) {
-                    
-                    for (String role : team.getRoles()) {
-                        
-                        final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                        CrowdAPIClient.addMembership(groupName, user.getUserName());
+            // crowd.unit.test.skip=true
+            if (properties.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(properties.getProperty("crowd.unit.test.skip"))) {
+                logger.info("CALLING CROWD API");
+                final String teamsQuery = "teams:" + teamId;
+                final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
+
+                if (projectList != null && projectList.getItems() != null) {
+                    for (Project project : projectList.getItems()) {
+                        for (String role : team.getRoles()) {
+                            final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                            CrowdAPIClient.addMembership(groupName, user.getUserName());
+                        }
                     }
                 }
+            } else {
+                logger.info("SKIP CALLING CROWD API");
             }
 
             return new ResponseEntity<>(HttpStatus.CREATED);
 
         } catch (final Exception e) {
-            
+
             logger.error("Error adding user: {} to team: {}", email, teamId);
             handleException(e);
             return null;
@@ -395,18 +442,23 @@ public class TeamController extends BaseController {
         logger.info("Remove user {} from team: {}", userId, teamId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
             // find team
             final Team team = service.get(teamId, Team.class);
             if (team == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
+                logger.info("Unable to find team for id {}.", teamId);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
             final User member = service.get(userId, User.class);
             if (member == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find user for " + userId + ".");
+                logger.info("Unable to find user for id {}.", userId);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
             if (team.getMembers() != null) {
@@ -417,7 +469,7 @@ public class TeamController extends BaseController {
                 }
             }
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -425,17 +477,23 @@ public class TeamController extends BaseController {
             service.commit();
 
             // remove user from crowd groups
-            final Organization organization = team.getOrganization();
-            final String teamsQuery = "teams:" + teamId;
+            // crowd.unit.test.skip=true
+            if (properties.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(properties.getProperty("crowd.unit.test.skip"))) {
+                logger.info("CALLING CROWD API");
+                final Organization organization = team.getOrganization();
+                final String teamsQuery = "teams:" + teamId;
 
-            final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
-            if (projectList != null && projectList.getItems() != null) {
-                for (Project project : projectList.getItems()) {
-                    for (String role : team.getRoles()) {
-                        final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                        CrowdAPIClient.deleteMembership(groupName, member.getUserName());
+                final ResultList<Project> projectList = service.find(teamsQuery, null, Project.class, null);
+                if (projectList != null && projectList.getItems() != null) {
+                    for (Project project : projectList.getItems()) {
+                        for (String role : team.getRoles()) {
+                            final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                            CrowdAPIClient.deleteMembership(groupName, member.getUserName());
+                        }
                     }
                 }
+            } else {
+                logger.info("SKIP CALLING CROWD API");
             }
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
@@ -461,26 +519,32 @@ public class TeamController extends BaseController {
         logger.info("Add role {} to team {}", role, teamId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
             // find team
             final Team team = service.get(teamId, Team.class);
             if (team == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
+                logger.info("Unable to find team for id {}.", teamId);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
-            if (StringUtils.isBlank(role) && !UserRole.allRoles.contains(role.toUpperCase())) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Role " + role + " does not exist.");
+            if (StringUtils.isBlank(role) && !UserRole.allRoles.contains(UserRole.valueOf(role))) {
+                logger.info("Role " + role + " does not exist.");
+                return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
             }
 
             if (team.getRoles().contains(role.toUpperCase())) {
-                throw new RestException(false, HttpStatus.CONFLICT, "Conflict", "Role " + role + " is already a exists for team " + teamId + ".");
+                logger.info("Role " + role + " is already a exists for team " + teamId + ".");
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
             }
 
             team.getRoles().add(UserRole.valueOf(role).toString());
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -507,17 +571,22 @@ public class TeamController extends BaseController {
     @DeleteMapping("/team/{teamId}/role/{role}")
     public @ResponseBody ResponseEntity<Void> removeRoleFromTeam(@PathVariable final String teamId, @PathVariable final String role) throws Exception {
 
+        logger.info("Remove role {} from team: {}", role, teamId);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         try {
-            logger.info("Remove role {} from team: {}", role, teamId);
-            // TODO check permissions, fail if not authorized.
-            final User authUser = SecurityService.getUserFromSession();
 
             try (final TerminologyService service = new TerminologyService()) {
 
                 // find team
                 final Team team = service.get(teamId, Team.class);
                 if (team == null) {
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for " + teamId + ".");
+                    logger.info("Unable to find team for id {}.", teamId);
+                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                 }
 
                 if (StringUtils.isBlank(role) && !Arrays.asList(UserRole.values()).contains(role.toUpperCase())) {
@@ -530,7 +599,7 @@ public class TeamController extends BaseController {
 
                 team.getRoles().remove(UserRole.valueOf(role).toString());
 
-                service.setModifiedBy(authUser.getId());
+                service.setModifiedBy(authUser.getUserName());
                 service.setTransactionPerOperation(false);
                 service.beginTransaction();
 
@@ -565,10 +634,13 @@ public class TeamController extends BaseController {
         logger.info("Inactivate team: {}", id);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(authUser.getId());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -576,9 +648,10 @@ public class TeamController extends BaseController {
             final Team team = service.get(id, Team.class);
 
             if (team == null) {
-                throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Unable to find team for id:" + id);
+                logger.info("Unable to find team for id {}.", id);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            
+
             if (!team.getMembers().isEmpty()) {
                 team.getMembers().clear();
             }

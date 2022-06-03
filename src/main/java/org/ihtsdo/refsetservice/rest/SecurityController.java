@@ -1,11 +1,8 @@
 package org.ihtsdo.refsetservice.rest;
 
-import java.util.Set;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
-import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -14,13 +11,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,7 +27,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -97,7 +90,7 @@ public class SecurityController extends BaseController {
     	
     	logger.info("RESTful call POST (Security): authentication for username = {}", userName);
     	
-    	try (SecurityService securityService = new SecurityService()) {
+    	try (final SecurityService securityService = new SecurityService()) {
     	    
     		final User user = securityService.authenticate(userName, password);
     		
@@ -132,18 +125,20 @@ public class SecurityController extends BaseController {
             }, tags = {
                     "auth"
             })
-    public void logout(
+    public @ResponseBody ResponseEntity<Void> logout(
     		@PathVariable(value = "authToken", required = true) final String authToken) throws Exception {
-    	
-    	// TODO: update after demo
-    	
+
     	logger.info("RESTful call POST (Security): logout for authToken = {}", authToken);
     	
-    	try (SecurityService securityService = new SecurityService()) {
-    		securityService.logout(authToken);
+    	try (final SecurityService securityService = new SecurityService()) {
+    	
+    	    securityService.logout(authToken);
+                        
+          return new ResponseEntity<>(null, HttpStatus.OK);
+            
     	} catch (Exception e) {
     		handleException(e);
+    		return null;
     	}
     }
-   
 }

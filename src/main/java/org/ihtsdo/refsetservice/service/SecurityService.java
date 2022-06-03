@@ -142,6 +142,42 @@ public class SecurityService implements AutoCloseable {
 
         return nonLoggedInUser;
     }
+    
+    
+    /**
+     * Clear cookies.
+     *
+     * @throws Exception the exception
+     */
+    private static void clearCookies() throws Exception {
+
+        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (requestAttributes != null && requestAttributes.getRequest() != null) {
+
+            final Cookie[] cookies = requestAttributes.getRequest().getCookies();
+
+            if (cookies != null) {
+
+                final HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
+
+                for (int i = 0; i < cookies.length; i++) {
+
+                    if (cookies[i].getName().contains("ims-ihtsdo")) {
+
+                        logger.debug("clearCookies ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+                        final Cookie cookie = new Cookie(cookies[i].getName(), null);
+                        cookie.setPath("/");
+                        cookie.setDomain(".ihtsdotools.org");
+                        cookie.setHttpOnly(cookies[i].isHttpOnly());
+                        cookie.setMaxAge(0);
+                        response.addCookie(cookie);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Get the something from the session.
@@ -403,6 +439,7 @@ public class SecurityService implements AutoCloseable {
         tokenUsernameMap.remove(authToken);
         tokenTimeoutMap.remove(authToken);
         removeFromSession(SESSION_USER_OBJECT_KEY);
+        clearCookies();
     }
 
     /**

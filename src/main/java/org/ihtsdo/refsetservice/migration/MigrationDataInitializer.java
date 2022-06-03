@@ -27,6 +27,7 @@ public class MigrationDataInitializer {
     private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
 
     public Set<Project> createUATProjects(Organization wciOrganization, Map<String, Organization> organizationsAdded, MigrationMetadata defaultMeta) throws Exception {
+        logger.debug("222c1 creating UAT projects from orgsAdded w/count: " + organizationsAdded.size());
 
         logger.info(" Create a dedicated UAT Training Project for each organization");
         Set<Project> uatProjects = new HashSet<>();
@@ -43,6 +44,7 @@ public class MigrationDataInitializer {
             Project uatProject = utilities.addProject(org, org.getName() + " dedicated UAT Training Project",
                 "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project",
                 defaultMeta);
+            logger.debug("222c2 uatProj Created");
 
             uatProjects.add(uatProject);
         }
@@ -50,7 +52,8 @@ public class MigrationDataInitializer {
         return uatProjects;
     }
 
-    public void createWCITestingContent(TerminologyService service, Organization wciOrganization, MigrationMetadata defaultMeta) throws Exception {
+    public Project createWCITestingContent(TerminologyService service, Organization wciOrganization, MigrationMetadata defaultMeta) throws Exception {
+        logger.debug("222d1 creating testing project");
 
         Project wciProject = utilities.addProject(wciOrganization, "WCI Testing Project", "The single project for all WCI testing refsets", defaultMeta);
 
@@ -68,10 +71,12 @@ public class MigrationDataInitializer {
         wciTestingRefset.setName("Base WCI Refset");
 
         service.add(wciTestingRefset);
-
+        
+        return wciProject;
     }
 
     public void createWCITeams(TerminologyService service, Set<Project> uatProjects) throws Exception {
+        logger.debug("222e1 creating WCI Teams");
 
         // Create wci-developer teams for each extensions's UAT Training project (for DEV only)
         for (Project uatProject : uatProjects) {
@@ -117,11 +122,14 @@ public class MigrationDataInitializer {
 
     }
 
-    public void createTestingFeedback(TerminologyService service, Organization wciOrganization) throws Exception {
+    public void createTestingFeedback(TerminologyService service, Organization wciOrganization, Project wciProject) throws Exception {
+        logger.debug("222e1 creating Testing Feedback");
 
         // create new refset with name = FeedbackTestingVersion1
         Refset refset = utilities.addRefset("WCI Testing Feeedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "");
-
+        refset.setProject(wciProject);
+        refset = service.update(refset);
+        
         // add feedback
         User u = new User();
         u.setName("FeedbackTesting #1");

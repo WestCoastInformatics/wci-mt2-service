@@ -87,9 +87,9 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "type", value = "Object type, e.g. 'REFSET, REFSET_MEMEBER'", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "objectKey", value = "The internal ID of the Refset", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "conceptId", value = "The concept ID of the refset member if this is a member type", required = false, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "type", value = "Object type, e.g. 'REFSET, REFSET_MEMEBER'", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "objectKey", value = "The internal ID of the Refset", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "conceptId", value = "The concept ID of the refset member if this is a member type", required = false, dataTypeClass = String.class, paramType = "path"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/discussion/{type}/{refsetInternalId}")
@@ -137,7 +137,7 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "The ID of the discussion", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "id", value = "The ID of the discussion", required = true, dataTypeClass = String.class, paramType = "path"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/discussion/{id}")
@@ -190,7 +190,7 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "thread", value = "The discussion thread to create", required = true, dataType = "DiscussionThread", paramType = "body"),
+        @ApiImplicitParam(name = "thread", value = "The discussion thread to create", required = true, dataTypeClass = DiscussionThread.class, paramType = "body"),
     })
     @RecordMetric
     @PostMapping("/discussion")
@@ -249,8 +249,8 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "threadId", value = "Id of the discussion thread to add the post to.", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "post", value = "The post to be added to the discussion thread.", required = true, dataType = "DiscussionPost", paramType = "body"),
+        @ApiImplicitParam(name = "threadId", value = "Id of the discussion thread to add the post to.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "post", value = "The post to be added to the discussion thread.", required = true, dataTypeClass = DiscussionPost.class, paramType = "body"),
     })
     @RecordMetric
     @PostMapping("/discussion/{threadId}/post")
@@ -317,7 +317,7 @@ public class DiscussionController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Update a discussion for the specified ID", response = DiscussionThread.class)
+    //@ApiOperation(value = "Update a discussion for the specified ID", response = DiscussionThread.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully updated the provided discussion"), 
         @ApiResponse(code = 400, message = "Bad request"), 
@@ -325,8 +325,8 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "threadId", value = "Id of the discussion thread update.", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "thread", value = "The updated discussion thread", required = true, dataType = "DiscussionThread", paramType = "body")
+        @ApiImplicitParam(name = "threadId", value = "Id of the discussion thread update.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "thread", value = "The updated discussion thread", required = true, dataTypeClass = DiscussionThread.class, paramType = "body")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}")
@@ -401,8 +401,8 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "status", value = "", required = true, dataType = "string", paramType = "request")
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "status", value = "", required = true, dataTypeClass = String.class, paramType = "query")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/status")
@@ -469,13 +469,13 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "isPrivate", value = "", required = true, dataType = "boolean", paramType = "request")
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "isPrivate", value = "", required = true, dataTypeClass = Boolean.class, paramType = "path")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/privacy")
     public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadPrivacy(
-        @PathVariable(value = "threadId") final String threadId, @RequestParam final boolean isPrivate) throws Exception {
+        @PathVariable(value = "threadId") final String threadId, @PathVariable final boolean isPrivate) throws Exception {
 
         try {
 
@@ -543,13 +543,13 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "visibility", value = "", required = true, dataType = "string", paramType = "request")
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "visibility", value = "", required = true, dataTypeClass = String.class, paramType = "path")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/visibility")
     public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadVisibility(
-        @PathVariable(value = "threadId") final String threadId, @RequestParam final String visibility) throws Exception {
+        @PathVariable(value = "threadId") final String threadId, @PathVariable final String visibility) throws Exception {
 
         try {
 
@@ -612,14 +612,14 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "postId", value = "", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "isPrivate", value = "", required = true, dataType = "boolean", paramType = "request")
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "postId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "isPrivate", value = "", required = true, dataTypeClass = Boolean.class, paramType = "path")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/post/{postId}/privacy")
     public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionPostPrivacy(
-        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @RequestParam final boolean isPrivate) throws Exception 
+        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @PathVariable final boolean isPrivate) throws Exception 
     {
 
         try {
@@ -688,14 +688,14 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "postId", value = "", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = "visibility", value = "", required = true, dataType = "string", paramType = "request")
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "postId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "visibility", value = "", required = true, dataTypeClass = String.class, paramType = "path")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/post/{postId}/visibility")
     public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionPostVisibility(
-        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @RequestParam final String visibility) throws Exception 
+        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @PathVariable final String visibility) throws Exception 
     {
 
         try {
@@ -762,7 +762,7 @@ public class DiscussionController extends BaseController {
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "threadId", value = "", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
     })
     @RecordMetric
     @DeleteMapping("/discussion/{threadId}")

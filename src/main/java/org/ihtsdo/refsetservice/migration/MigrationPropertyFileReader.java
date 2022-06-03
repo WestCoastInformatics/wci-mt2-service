@@ -102,6 +102,7 @@ public class MigrationPropertyFileReader {
 
         populateFromFile(clausesResource, FileProcessType.CLAUSE);
         populateFromFile(projectsResource, FileProcessType.PROJECT);
+        logger.debug(" JE Have finished processing projects and have added " + rttIdToProjectsJsonMap.keySet().size() + " projects.");
         populateFromFile(refsetsResource, FileProcessType.REFSET);
 
         // Based on findings, define the list of refsets in RTT
