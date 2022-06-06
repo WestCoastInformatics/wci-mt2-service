@@ -32,12 +32,9 @@ public class UserUnitTest extends BaseTest {
     /** The model object to test. */
     private User object;
 
-    /** The organization object. */
-    private Set<Organization> organizations;
-    
     /** The team object. */
     private Set<Team> teams;
-    
+
     /**
      * Setup.
      *
@@ -47,18 +44,13 @@ public class UserUnitTest extends BaseTest {
     public void setup() throws Exception {
 
         object = new User();
-                
-        final ProxyTester testerOrg = new ProxyTester(new Organization());
-        organizations = new HashSet<>();
-        organizations.add((Organization) testerOrg.createObject(1));
-        organizations.add((Organization) testerOrg.createObject(2));
-        
+
         final ProxyTester testerTeam = new ProxyTester(new Team());
         teams = new HashSet<>();
         teams.add((Team) testerTeam.createObject(1));
         teams.add((Team) testerTeam.createObject(2));
         object.getTeams().addAll(teams);
-        
+
     }
 
     /**
@@ -81,15 +73,14 @@ public class UserUnitTest extends BaseTest {
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
-        final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);        
+        final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
         tester.include("authToken");
         tester.include("company");
         tester.include("email");
         tester.include("iconUri");
         tester.include("name");
-        tester.exclude("organizations");
         tester.exclude("roles");
-        tester.include("title");        
+        tester.include("title");
         tester.include("userName");
         tester.exclude("teams");
 
@@ -111,7 +102,7 @@ public class UserUnitTest extends BaseTest {
 
         final User copyObject = new User();
         copyObject.setTeams(teams);
-        
+
         final CopyConstructorTester tester = new CopyConstructorTester(object);
         assertTrue(tester.testCopyConstructor(User.class));
     }
@@ -127,7 +118,7 @@ public class UserUnitTest extends BaseTest {
         final SerializationTester tester = new SerializationTester(object);
         assertTrue(tester.testJsonSerialization());
     }
-    
+
     /**
      * Test persistence.
      *
@@ -135,7 +126,7 @@ public class UserUnitTest extends BaseTest {
      */
     @Test
     public void testPersistence() throws Exception {
-        
+
         final PersistenceTester tester = new PersistenceTester(object, true, true);
         tester.test();
     }
