@@ -128,13 +128,7 @@ public class UserController extends BaseController {
                     logger.info("Unable to find user for id {}.", id);
                     return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                 }
-                if (includeOrganizations) {
-                    user.getOrganizations();
-                } else {
-                    if (user.getOrganizations() != null && !user.getOrganizations().isEmpty()) {
-                        user.getOrganizations().clear();
-                    }
-                }
+                
                 if (includeTeams) {
                     final SearchParameters sp = new SearchParameters();
                     sp.setQuery("members:" + user.getId());
@@ -248,13 +242,7 @@ public class UserController extends BaseController {
             final ResultList<User> results = RefsetService.searchUsers(authUser, searchParameters);
 
             for (User user : results.getItems()) {
-                if (includeOrganizations) {
-                    user.getOrganizations();
-                } else {
-                    if (user.getOrganizations() != null && !user.getOrganizations().isEmpty()) {
-                        user.getOrganizations().clear();
-                    }
-                }
+
                 if (includeTeams) {
                     final SearchParameters sp = new SearchParameters();
                     sp.setQuery("members:" + user.getId());

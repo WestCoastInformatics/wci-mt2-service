@@ -158,7 +158,6 @@ public class UserControllerIntegrationTest extends BaseTest {
             testUser.setEmail("user@fake.org");
             testUser.setTitle("Senior Mapper");
             testUser.setCompany("The Company");
-            testUser.getOrganizations().add(organization);
 
             final User user2 = new User();
             user2.setUserName("secondTestUser");
@@ -166,7 +165,6 @@ public class UserControllerIntegrationTest extends BaseTest {
             user2.setEmail("2nduser@fake.org");
             user2.setTitle("Another Senior Mapper");
             user2.setCompany("The Company");
-            user2.getOrganizations().add(organization);
 
             try {
                 testUser = addUser(testUser);
@@ -314,8 +312,6 @@ public class UserControllerIntegrationTest extends BaseTest {
         assertThat(newUser.getTitle()).isEqualTo(originalUser.getTitle());
 
         if (nonUpdatedAttributes) {
-            assertThat(newUser.getOrganizations().size()).isEqualTo(originalUser.getOrganizations().size());
-            assertThat(newUser.getOrganizations()).isEqualTo(originalUser.getOrganizations());
             assertThat(newUser.getIconUri()).isEqualTo(originalUser.getIconUri());
         }
         pass = true;

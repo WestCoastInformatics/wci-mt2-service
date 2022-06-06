@@ -86,10 +86,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @Fetch(FetchMode.JOIN)
     private Set<String> roles = new HashSet<>();
 
-    @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.JOIN)
-    private Set<Organization> organizations = new HashSet<>();
-
     @Column(nullable = true, length = 255)
     private String iconUri;
 
@@ -348,29 +344,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     }
 
     /**
-     * @return the organization
-     */
-    @IndexedEmbedded(targetType = Organization.class)
-    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
-    @JsonIgnoreProperties("members")
-    public Set<Organization> getOrganizations() {
-
-        if (organizations == null) {
-            organizations = new HashSet<>();
-        }
-
-        return organizations;
-    }
-
-    /**
-     * @param organization the organization to set
-     */
-    public void setOrganizations(final Set<Organization> organizations) {
-
-        this.organizations = organizations;
-    }
-
-    /**
      * Returns the icon URI.
      *
      * @return the icon URI
@@ -484,7 +457,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         result = prime * result + ((email == null) ? 0 : email.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((organizations == null) ? 0 : organizations.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         result = prime * result + ((teams == null) ? 0 : teams.hashCode());
         result = prime * result + ((title == null) ? 0 : title.hashCode());
@@ -538,13 +510,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         } else if (!name.equals(other.name)) {
             return false;
         }
-        if (organizations == null) {
-            if (other.organizations != null) {
-                return false;
-            }
-        } else if (!organizations.equals(other.organizations)) {
-            return false;
-        }
+
         if (roles == null) {
             if (other.roles != null) {
                 return false;

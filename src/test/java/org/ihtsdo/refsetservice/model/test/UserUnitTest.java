@@ -52,7 +52,6 @@ public class UserUnitTest extends BaseTest {
         organizations = new HashSet<>();
         organizations.add((Organization) testerOrg.createObject(1));
         organizations.add((Organization) testerOrg.createObject(2));
-        object.getOrganizations().addAll(organizations);
         
         final ProxyTester testerTeam = new ProxyTester(new Team());
         teams = new HashSet<>();
@@ -111,7 +110,6 @@ public class UserUnitTest extends BaseTest {
     public void testModelCopy() throws Exception {
 
         final User copyObject = new User();
-        copyObject.setOrganizations(organizations);
         copyObject.setTeams(teams);
         
         final CopyConstructorTester tester = new CopyConstructorTester(object);
