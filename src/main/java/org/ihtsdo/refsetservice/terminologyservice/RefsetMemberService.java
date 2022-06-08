@@ -2798,7 +2798,12 @@ public class RefsetMemberService {
             ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
             lookupParameters.setGetFsn(true);
 
-            return getConceptsFromSnowstorm(url, refset, lookupParameters, language);
+            ConceptResultList results = getConceptsFromSnowstorm(url, refset, lookupParameters, language);
+         
+            // sort the results 
+            Collections.sort(results.getItems(), (object1, object2) -> (object1.compareTo(object2)));
+            
+            return results;
 
         } catch (Exception ex) {
 
