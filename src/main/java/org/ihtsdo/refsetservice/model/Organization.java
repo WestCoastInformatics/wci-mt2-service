@@ -10,7 +10,9 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.persistence.CascadeType;
@@ -22,6 +24,7 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -35,6 +38,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -84,6 +88,10 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     
     @Column(nullable = true, length = 255)
     private String iconUri;
+    
+    /** The of roles for this project. */
+    @Transient
+    private List<String> roles;
 
     /**
      * Instantiates an empty {@link Organization}.
@@ -127,6 +135,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         primaryContactEmail = other.getPrimaryContactEmail();
         iconUri = other.iconUri;
         members = other.getMembers();
+        roles = other.getRoles();
     }
 
     /**
@@ -141,6 +150,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         description = other.getDescription();
         edition = other.getEdition();
         primaryContactEmail = other.getPrimaryContactEmail();
+        roles = other.getRoles();
     }
 
     /**
@@ -272,6 +282,30 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         this.iconUri = iconUri;
     }
+    
+    /**
+     * Returns the roles.
+     *
+     * @return the roles
+     */
+    @JsonGetter()
+    public List<String> getRoles() {
+
+        if (roles == null) {
+            roles = new ArrayList<>();
+        }
+        
+        return roles;
+    }
+
+    /**
+     * Sets the roles.
+     *
+     * @param teams the roles
+     */
+    public void setRoles(final List<String> roles) {
+        this.roles = roles;
+    }
 
     /* see superclass */
     @Override
@@ -285,6 +319,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         result = prime * result + ((members == null) ? 0 : members.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
+        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         return result;
     }
 
@@ -339,6 +374,14 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
                 return false;
             }
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
+            return false;
+        }
+        
+        if (roles == null) {
+            if (other.roles != null) {
+                return false;
+            }
+        } else if (!roles.equals(other.roles)) {
             return false;
         }
         return true;
