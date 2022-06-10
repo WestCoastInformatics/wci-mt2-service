@@ -76,7 +76,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String MAIN_NRC_TESTING_REFSET_ID = "561000172108"; // Belgian
 
-    protected static final String MAIN_NRC_TESTING_REFSET_VERSION = "2021-09-15";
+    protected static final String MAIN_NRC_TESTING_REFSET_VERSION = "2022-03-15";
 
     protected static final String MAIN_CORE_TESTING_REFSET_ID = "721145008"; // Belgian
 

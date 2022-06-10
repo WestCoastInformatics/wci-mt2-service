@@ -619,6 +619,44 @@ public class EditUnitTestUtilities {
         }
     }
     
+    public void removeAllInactiveUpgradeConcepts(String refsetInternalId) {
+        
+        try {
+            
+            String url = baseUrl + "/" + refsetInternalId + "/removeAllUpgradeInactiveConcepts";
+            
+            logger.info("Testing url - " + url);
+    
+            final MvcResult result = mvc.perform(post(url).content("").contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            
+            assertThat(content).contains("All changes made successfully");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public void addAllUpgradeReplacementConcepts(String refsetInternalId) {
+        
+        try {
+            
+            String url = baseUrl + "/" + refsetInternalId + "/addAllUpgradeReplacementConcepts";
+            
+            logger.info("Testing url - " + url);
+    
+            final MvcResult result = mvc.perform(post(url).content("").contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            
+            assertThat(content).contains("All changes made successfully");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
     public ResultList<UpgradeReplacementConcecpt> searchReplacementConcepts(String internalRefsetId, String searchTerm) {
 
         try {

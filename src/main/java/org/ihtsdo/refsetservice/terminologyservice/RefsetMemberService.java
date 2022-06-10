@@ -4810,6 +4810,145 @@ public class RefsetMemberService {
     }
     
     /**
+     * Remove all inactive upgrade concepts.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String removeAllUpgradeInactiveConcepts(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+        
+        try {
+            
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            
+            List<String> unchangedConcepts;
+            String conceptIdsToChange = "";
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            final String refsetId = refset.getRefsetId();
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+            
+            final ResultList<UpgradeInactiveConcecpt> inactiveConceptList = service.find("refsetId: " + refsetId + " AND stillMember: true", null, UpgradeInactiveConcecpt.class, null);      
+
+            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+                conceptIdsToChange += inactiveConcept.getCode() + ",";
+            }
+    
+            conceptIdsToChange = StringUtils.removeEnd(conceptIdsToChange, ",");
+                
+            // remove the concepts as members from the refset
+            unchangedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, conceptIdsToChange);
+            
+            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+                    
+                // don't process concepts that couldn't be removed
+                if (unchangedConcepts.contains(inactiveConcept.getCode())) {
+                    continue;
+                }
+                    
+                inactiveConcept.setStillMember(false);
+                
+                // save the inactive concept
+                service.update(inactiveConcept);
+                logger.debug("removeAllUpgradeInactiveConcepts: member removed: " + inactiveConcept.getCode());
+            }
+            
+            // see if there the concept was unable to be changed and craft the error message
+            if (unchangedConcepts.size() > 0) {
+                return "The concepts " + unchangedConcepts + " were unable to be removed.";
+            }
+            
+            return "All changes made successfully";
+            
+        } catch (final Exception e) {
+            throw new Exception(e);
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+        }
+    }
+    
+    /**
+     * Remove all inactive upgrade concepts.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String addAllUpgradeReplacementConcepts(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+        
+        try {
+            
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            
+            List<String> unchangedConcepts;
+            List<String> conceptIdsToChange = new ArrayList<>();
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            final String refsetId = refset.getRefsetId();
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+            
+            final ResultList<UpgradeInactiveConcecpt> inactiveConceptList = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcecpt.class, null);      
+
+            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+                
+                for (UpgradeReplacementConcecpt replacementConcecpt : inactiveConcept.getReplacementConcecpts()) {
+                    
+                    if (!replacementConcecpt.isAdded() && !replacementConcecpt.isExistingMember()) {
+                        conceptIdsToChange.add(replacementConcecpt.getCode());
+                    }
+                }
+            }
+
+            // add the concepts as members to the refset
+            unchangedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, conceptIdsToChange);
+            
+            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+                
+                boolean hadReplacementsAdded = false;
+                
+                for (UpgradeReplacementConcecpt replacementConcecpt : inactiveConcept.getReplacementConcecpts()) {
+                    
+                    // don't process concepts that couldn't be added or that weren't attempted to be added
+                    if (unchangedConcepts.contains(replacementConcecpt.getCode()) || !conceptIdsToChange.contains(replacementConcecpt.getCode())) {
+                        continue;
+                    }
+                    
+                    hadReplacementsAdded = true;
+                    replacementConcecpt.setAdded(true);
+                    service.update(replacementConcecpt);
+                    logger.debug("addAllUpgradeReplacementConcepts: replacement added as member: " + replacementConcecpt.getCode());
+                }
+                
+                if (hadReplacementsAdded) {
+                    
+                    inactiveConcept.setReplaced(true);
+                    service.update(inactiveConcept);
+                    logger.debug("addAllUpgradeReplacementConcepts: inactive concept updated: " + inactiveConcept.getCode());
+                }
+            }
+            
+            // see if there the concept was unable to be changed and craft the error message
+            if (unchangedConcepts.size() > 0) {
+                return "The concepts " + unchangedConcepts + " were unable to be added.";
+            }
+            
+            return "All changes made successfully";
+            
+        } catch (final Exception e) {
+            throw new Exception(e);
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+        }
+    }
+    
+    /**
      * Search for replacement concepts for Upgrade.
      *
      * @param user the user

@@ -1960,6 +1960,74 @@ public class RefsetController extends BaseController {
     }
     
     /**
+     * Remove all inactive Upgrade concepts at once.
+     *
+     * @param active the active status
+     * @param refsetInternalId the internal refset ID
+     * @return the status
+     * @throws Exception the exception
+     */
+    @PostMapping("/refset/{refsetInternalId}/removeAllUpgradeInactiveConcepts")
+    public @ResponseBody String removeAllUpgradeInactiveConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+        
+        final User user = SecurityService.getUserFromSession();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            String status = "All changes made successfully"; 
+            
+            logger.debug("removeAllUpgradeInactiveConcepts: refsetInternalId: " + refsetInternalId);
+
+            status = RefsetMemberService.removeAllUpgradeInactiveConcepts(service, user, refsetInternalId);
+            
+            logger.debug("removeAllUpgradeInactiveConcepts: Finished with status: " + status);
+
+            return "{\"status\": \"" + status + "\"}";
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Add all replacement Upgrade concepts as members at once.
+     *
+     * @param active the active status
+     * @param refsetInternalId the internal refset ID
+     * @return the status
+     * @throws Exception the exception
+     */
+    @PostMapping("/refset/{refsetInternalId}/addAllUpgradeReplacementConcepts")
+    public @ResponseBody String addAllUpgradeReplacementConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+        
+        final User user = SecurityService.getUserFromSession();
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            String status = "All changes made successfully"; 
+            
+            logger.debug("addAllUpgradeReplacementConcepts: refsetInternalId: " + refsetInternalId);
+            
+            status = RefsetMemberService.addAllUpgradeReplacementConcepts(service, user, refsetInternalId);
+            
+            logger.debug("addAllUpgradeReplacementConcepts: Finished with status: " + status);
+            
+            return "{\"status\": \"" + status + "\"}";
+            
+        } catch (final Exception e) {
+            
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
      * Search for members replacement concepts for upgrade.
      *
      * @param refsetInternalId the internal refset ID

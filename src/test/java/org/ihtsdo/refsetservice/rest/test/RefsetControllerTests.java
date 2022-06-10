@@ -124,7 +124,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      * Sets the up.
      */
     @BeforeEach
-    public void setUp(TestInfo info) {
+    public void setUp(TestInfo info) throws Exception {
 
         if (getUtil == null) {
 
@@ -138,81 +138,73 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         JacksonTester.initFields(this, objectMapper);
         baseUrl = "/refset";
 
-        try {
+        if (firstTimeSetup) {
 
-            if (firstTimeSetup) {
+            readOnlyTestingProjectId = getUtil.getInternalProjectId(READ_ONLY_TESTING_PROJECT_NAME);
+            mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
+            mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
 
-                readOnlyTestingProjectId = getUtil.getInternalProjectId(READ_ONLY_TESTING_PROJECT_NAME);
-                mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
-                mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
+            // Ensure have the export directory created on testing system
 
-                // Ensure have the export directory created on testing system
+            String exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
+            File f = new File(exportFileDir);
 
-                String exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
-                File f = new File(exportFileDir);
+            if (!f.exists()) {
 
-                if (!f.exists()) {
-
-                    throw new Exception("Tests with Export because the expected export directory doesn't exist: " + exportFileDir);
-                }
-
-                mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
-
-                inactiveRefsetVersionInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
-                deltaExportRefsetVersionInternalId = getUtil.getInternalRefsetId(REFSET_DELTA_TO_EXPORT_REFSET_ID, REFSET_DELTA_TO_EXPORT_VERSION);
-
-                try {
-
-                    earlierInactiveRefsetInternalId =
-                        getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION);
-                } catch (Exception e) {
-
-                    logger.info("Snowstorm instance we are running against doesn't have " + REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION + " of the refset "
-                        + REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID + ", thus skip related tests");
-                    skipEarlierInactiveVersionTests = true;
-                }
-
-                refsetWithInactiveConceptAsActiveMemberInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
-
-                firstConceptDescList.add("Venom (substance)");
-                firstConceptDescList.add("Venom");
-                firstConceptDescList.add("venin");
-                firstConceptDescList.add("gif");
-
-                firstConceptParentDescList.add("Animal agent (substance)");
-                firstConceptParentDescList.add("Animal agent");
-                firstConceptParentDescList.add("produit animal");
-                firstConceptParentDescList.add("dierlijk product");
-
-                inactiveConceptDescList.add("Rotator cuff syndrome (disorder)");
-                inactiveConceptDescList.add("Rotator cuff syndrome");
-                inactiveConceptDescList.add("Rotator cuff rupture");
-                inactiveConceptDescList.add("Rotator cuff tear");
-                inactiveConceptDescList.add("Rupture of rotator cuff of shoulder");
-
-                secondConceptAllDescTypeList.add("Non-human hair - material (substance)");
-                secondConceptAllDescTypeList.add("Animal hair");
-                secondConceptAllDescTypeList.add("Non-human hair - material");
-                secondConceptAllDescTypeList.add("poil animal");
-                secondConceptAllDescTypeList.add("dierlijk haar");
-                secondConceptAllDescTypeList.add("dierenhaar");
-                secondConceptAllDescTypeList.add("niet-menselijk haar");
-
-                secondConceptPtAndFsnOnlyDescList.add("Non-human hair - material (substance)");
-                secondConceptPtAndFsnOnlyDescList.add("Animal hair");
-                secondConceptPtAndFsnOnlyDescList.add("poil animal");
-                secondConceptPtAndFsnOnlyDescList.add("dierlijk haar");
-
-                conceptSearchDescList.add("Brazilian pemphigus foliaceus");
-
-                firstTimeSetup = false;
+                throw new Exception("Tests with Export because the expected export directory doesn't exist: " + exportFileDir);
             }
 
-        } catch (Exception e) {
+            mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
 
-            e.printStackTrace();
+            inactiveRefsetVersionInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
+            deltaExportRefsetVersionInternalId = getUtil.getInternalRefsetId(REFSET_DELTA_TO_EXPORT_REFSET_ID, REFSET_DELTA_TO_EXPORT_VERSION);
+
+            try {
+
+                earlierInactiveRefsetInternalId =
+                    getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION);
+            } catch (Exception e) {
+
+                logger.info("Snowstorm instance we are running against doesn't have " + REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION + " of the refset "
+                    + REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID + ", thus skip related tests");
+                skipEarlierInactiveVersionTests = true;
+            }
+
+            refsetWithInactiveConceptAsActiveMemberInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
+
+            firstConceptDescList.add("Venom (substance)");
+            firstConceptDescList.add("Venom");
+            firstConceptDescList.add("venin");
+            firstConceptDescList.add("gif");
+
+            firstConceptParentDescList.add("Animal agent (substance)");
+            firstConceptParentDescList.add("Animal agent");
+            firstConceptParentDescList.add("produit animal");
+            firstConceptParentDescList.add("dierlijk product");
+
+            inactiveConceptDescList.add("Rotator cuff syndrome (disorder)");
+            inactiveConceptDescList.add("Rotator cuff syndrome");
+            inactiveConceptDescList.add("Rotator cuff rupture");
+            inactiveConceptDescList.add("Rotator cuff tear");
+            inactiveConceptDescList.add("Rupture of rotator cuff of shoulder");
+
+            secondConceptAllDescTypeList.add("Non-human hair - material (substance)");
+            secondConceptAllDescTypeList.add("Animal hair");
+            secondConceptAllDescTypeList.add("Non-human hair - material");
+            secondConceptAllDescTypeList.add("poil animal");
+            secondConceptAllDescTypeList.add("dierlijk haar");
+            secondConceptAllDescTypeList.add("dierenhaar");
+            secondConceptAllDescTypeList.add("niet-menselijk haar");
+
+            secondConceptPtAndFsnOnlyDescList.add("Non-human hair - material (substance)");
+            secondConceptPtAndFsnOnlyDescList.add("Animal hair");
+            secondConceptPtAndFsnOnlyDescList.add("poil animal");
+            secondConceptPtAndFsnOnlyDescList.add("dierlijk haar");
+
+            conceptSearchDescList.add("Brazilian pemphigus foliaceus");
+
+            firstTimeSetup = false;
         }
-
     }
 
     /**
