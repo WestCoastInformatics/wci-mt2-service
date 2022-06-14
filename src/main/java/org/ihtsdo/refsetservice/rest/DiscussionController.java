@@ -9,14 +9,9 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.DiscussionPost;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
@@ -24,7 +19,6 @@ import org.ihtsdo.refsetservice.model.DiscussionType;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
@@ -103,7 +97,7 @@ public class DiscussionController extends BaseController {
 
             final User user = SecurityService.getUserFromSession();
 
-            try (TerminologyService service = new TerminologyService()) {
+            try (final TerminologyService service = new TerminologyService()) {
                 
                 final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
@@ -149,7 +143,7 @@ public class DiscussionController extends BaseController {
             
             final User user = SecurityService.getUserFromSession();
 
-            try (TerminologyService service = new TerminologyService()) {
+            try (final TerminologyService service = new TerminologyService()) {
 
                 final DiscussionThread discussionThread = DiscussionService.getDiscussion(service, user, id);
 
@@ -470,12 +464,12 @@ public class DiscussionController extends BaseController {
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "isPrivate", value = "", required = true, dataTypeClass = Boolean.class, paramType = "path")
+        @ApiImplicitParam(name = "isPrivate", value = "true", required = true, dataTypeClass = Boolean.class, paramType = "query")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/privacy")
     public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadPrivacy(
-        @PathVariable(value = "threadId") final String threadId, @PathVariable final boolean isPrivate) throws Exception {
+        @PathVariable(value = "threadId") final String threadId, @RequestParam final boolean isPrivate) throws Exception {
 
         try {
 
@@ -544,12 +538,12 @@ public class DiscussionController extends BaseController {
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "visibility", value = "", required = true, dataTypeClass = String.class, paramType = "path")
+        @ApiImplicitParam(name = "visibility", value = "", required = true, dataTypeClass = String.class, paramType = "query")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/visibility")
     public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadVisibility(
-        @PathVariable(value = "threadId") final String threadId, @PathVariable final String visibility) throws Exception {
+        @PathVariable(value = "threadId") final String threadId, @RequestParam final String visibility) throws Exception {
 
         try {
 
@@ -614,12 +608,12 @@ public class DiscussionController extends BaseController {
     @ApiImplicitParams({
         @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
         @ApiImplicitParam(name = "postId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "isPrivate", value = "", required = true, dataTypeClass = Boolean.class, paramType = "path")
+        @ApiImplicitParam(name = "isPrivate", value = "", required = true, dataTypeClass = Boolean.class, paramType = "query")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/post/{postId}/privacy")
     public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionPostPrivacy(
-        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @PathVariable final boolean isPrivate) throws Exception 
+        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @RequestParam final boolean isPrivate) throws Exception 
     {
 
         try {
@@ -690,12 +684,12 @@ public class DiscussionController extends BaseController {
     @ApiImplicitParams({
         @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
         @ApiImplicitParam(name = "postId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "visibility", value = "", required = true, dataTypeClass = String.class, paramType = "path")
+        @ApiImplicitParam(name = "visibility", value = "", required = true, dataTypeClass = String.class, paramType = "query")
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/post/{postId}/visibility")
     public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionPostVisibility(
-        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @PathVariable final String visibility) throws Exception 
+        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @RequestParam final String visibility) throws Exception 
     {
 
         try {
