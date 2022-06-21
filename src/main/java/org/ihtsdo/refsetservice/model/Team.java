@@ -78,7 +78,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     @Fetch(FetchMode.JOIN)
     private Set<String> roles;
 
-    /** The members. (users) */
+    /** The members. (users by name) */
     @ElementCollection
     @Fetch(FetchMode.JOIN)
     private Set<String> members;

@@ -10,11 +10,17 @@ import org.ihtsdo.refsetservice.model.HasModified;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.Team;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MigrationUtilities {
+
+    private final Logger logger = LoggerFactory.getLogger(MigrationUtilities.class);
 
     static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
@@ -34,8 +40,12 @@ public class MigrationUtilities {
             project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
 
             // Persist
-            setMetadata(project, meta);
-            return service.add(project);
+            Project p = service.add(project);
+
+            logger.debug("Adding new Project: " + project.getId() + " (" + project.getName() + ")");
+
+            return p;
+
         }
 
     }
@@ -51,9 +61,10 @@ public class MigrationUtilities {
             org.setDescription(orgDesc);
             org.setEdition(edition);
 
-            setMetadata(org, meta);
+            org = service.add(org);
+            logger.debug("Adding new Organziation: " + org.getId() + " (" + org.getName() + ")");
 
-            return service.add(org);
+            return org;
         }
 
     }
@@ -75,8 +86,48 @@ public class MigrationUtilities {
             refset.setVersionDate(versionDate);
             refset.setType(type);
             refset.setNarrative(narrative);
-            
+
             return service.add(refset);
+        }
+
+    }
+
+    public User addUser(String name, String userName, String email, Set<String> roles) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            User u = new User();
+
+            u.setName(name);
+            u.setUserName(userName);
+            u.setActive(true);
+            u.setEmail(email);
+            u.setRoles(roles);
+
+            return service.add(u);
+        }
+
+    }
+
+    Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberNames) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            Team team = new Team();
+            team.setName(teamName);
+            team.setDescription(teamDescription);
+            team.setOrganization(organization);
+            team.setPrimaryContactEmail("support-rt2@westcoastinformatics.com");
+            team.setRoles(roles);
+            team.setMembers(memberNames);
+
+            team = service.add(team);
+
+            return team;
         }
 
     }

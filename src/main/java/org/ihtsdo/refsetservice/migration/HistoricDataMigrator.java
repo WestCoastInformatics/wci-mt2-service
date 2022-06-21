@@ -20,6 +20,7 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -156,6 +157,8 @@ public class HistoricDataMigrator {
 
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
+    private static final String WCI_ORG_NAME = "wci";
+
     /** The refsets to ignore. */
     private final Set<String> refsetsToIgnore = new HashSet<>();
 
@@ -163,7 +166,7 @@ public class HistoricDataMigrator {
     private final Set<String> internationalRefsets = new HashSet<>();
 
     /** The testing. */
-    private boolean testing = false;
+    private boolean testing = true;
 
     private final String testingEdition = "stoni";
 
@@ -271,7 +274,7 @@ public class HistoricDataMigrator {
 
             for (Edition edition : editions) {
 
-                if (testing && !edition.getName().contains(testingEdition) && !edition.getName().contains("International")) {
+                if (testing && !edition.getName().contains(testingEdition) && !edition.getName().toLowerCase().contains(WCI_ORG_NAME) && !edition.getName().contains("International")) {
 
                     continue;
                 }
@@ -520,6 +523,9 @@ public class HistoricDataMigrator {
 
                         while (refsetIterator.hasNext()) {
 
+                            String refsetName = null;
+                            Date versionDate = null;
+
                             final JsonNode refsetNode = refsetIterator.next();
 
                             if (!refsetNode.has("moduleId") || !refsetNode.has("conceptId") || !refsetNode.has("active")) {
@@ -545,20 +551,15 @@ public class HistoricDataMigrator {
 
                                 try {
 
-                                    Date versionDate = null;
-                                    String refsetName = null;
-
                                     if (testing && refsetId.equals(testingRefset)) {
 
-                                        logger.debug(testingRefset + " - xxx - here with childBranch" + childBranch);
+                                        logger.debug("Testing refset " + testingRefset + " with childBranch" + childBranch);
                                     }
 
                                     if (runShortMigration) {
 
                                         versionDate = branchDate;
                                     } else {
-
-                                        // if (refsetId.equals("723264001") || refsetId.equals("721144007")) {
 
                                         /*-
                                          * Check new version refset version date. If none returned (null), then:
@@ -575,12 +576,7 @@ public class HistoricDataMigrator {
 
                                         if (refsetVersionDate == null) {
 
-                                            if (testing && (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
-
-                                                logger.debug(testingRefset + " - qqq - not adding anything on this branch for " + childBranch);
-                                            }
-
-                                            // No changes to refset so don't create a new version
+                                            logger.debug("No changes to refset so don't create a new version");
                                             continue;
                                         }
 
@@ -613,14 +609,10 @@ public class HistoricDataMigrator {
 
                                         versionDate = refsetVersionDate;
 
-                                        if (editionVersions.contains(versionDate)) {
+                                        if (!editionVersions.contains(versionDate)) {
 
-                                            logger.debug(" yyy - edition supports refset: " + refsetId + " === " + versionDate);
-
-                                        } else {
-
-                                            logger.debug(" zzz - would fail so need to filter: " + refsetId + " === " + versionDate);
-                                            // Don't add refset versions that don't have corresponding snowstorm -based edition versions
+                                            logger.debug(" Don't add refset versions that don't have corresponding snowstorm -based edition versions with Refset / and VersionDate pair: " + refsetId
+                                                + " / " + versionDate);
                                             continue;
                                         }
 
@@ -665,7 +657,7 @@ public class HistoricDataMigrator {
 
                             if (isInternationalEdition) {
 
-                                logger.debug("Adding international refsetId " + refsetId + " refsets identified");
+                                logger.debug("Identified international refsetId " + refsetId + " " + refsetName + " for " + versionDate);
 
                                 internationalRefsets.add(refsetId);
                             }
@@ -905,7 +897,8 @@ public class HistoricDataMigrator {
                         }
 
                         // Testing
-                        if (testing && !codeSystem.get("name").asText().contains(testingEdition) && !codeSystem.get("name").asText().contains("Inter")) {
+                        if (testing && !codeSystem.get("name").asText().contains(testingEdition) && !codeSystem.get("name").asText().toLowerCase().contains(WCI_ORG_NAME)
+                            && !codeSystem.get("name").asText().contains("Inter")) {
 
                             continue;
                         }
@@ -980,14 +973,11 @@ public class HistoricDataMigrator {
                             // Finally, create a Default Project for the edition
                             if (!defaultOrganizationProjects.containsKey(org.getId())) {
 
-                                logger.debug("4442");
-
                                 // Create default project
                                 final String projectName = orgName + " Default Project";
                                 final String projectDescription = "This is a default project to support initial Snowstorm-based refsets for " + orgName + ".";
 
                                 final Project project = utilities.addProject(org, projectName, projectDescription, defaultMeta);
-                                logger.debug("4443 with project: " + project);
 
                                 defaultOrganizationProjects.put(org.getId(), project);
                             }
@@ -1307,10 +1297,8 @@ public class HistoricDataMigrator {
             }
 
             logger.info(" step complete - Finish persisting gathered Snowstorm & RTT Supporting Objects");
-            logger.debug("222a");
 
             populateInitialDate(service);
-            logger.debug("222z");
 
             logger.info("Have imported from Snowstorm " + projectCount + " projects and " + counts.getOrgsImportedCount() + " organizations");
 
@@ -1339,28 +1327,47 @@ public class HistoricDataMigrator {
 
     private void populateInitialDate(TerminologyService service) throws Exception {
 
-        MigrationDataInitializer initializer = new MigrationDataInitializer();
-        logger.debug("222b");
-
         logger.info(" step - Populating initial data");
 
-        // Create a dedicated UAT Training Project for each organization
-        Set<Project> uatProjects = initializer.createUATProjects(wciOrganization, organizationsAdded, defaultMeta);
+        MigrationDataInitializer initializer = new MigrationDataInitializer();
 
-        // Create wci-project (for DEV only)
-        logger.info(" Create wci-project (for DEV only)");
+        // Create a dedicated UAT Training Project for each organization
+        Map<String, Project> uatProjects = initializer.createUATProjects(wciOrganization, organizationsAdded, defaultMeta);
+        logger.info(" step - 111");
 
         if (wciOrganization != null) {
 
-            logger.info("Adding WCI Testing Org's single project");
+            logger.info(" step - 222");
+            // Create wci-project (for DEV only)
             Project wciProject = initializer.createWCITestingContent(service, wciOrganization, defaultMeta);
-
-            logger.info(" Create wci-developer teams for each extensions's UAT Training project (for DEV only)");
-            initializer.createWCITeams(service, uatProjects);
-
-            logger.info(" Create Feedback for testing (for DEV only)");
             initializer.createTestingFeedback(service, wciOrganization, wciProject);
 
+        }
+
+        logger.info(" step - 333");
+        // Add WCI support to every project in case WCI needs to debug issues
+        initializer.createWCISupport(service, uatProjects);
+
+        logger.info(" step - 444");
+        // Final steps
+        // initializer.addDebugAdminUser(service);
+
+        // Print out orgs & projects
+        final List<Organization> organizations = service.getAll(Organization.class);
+        final List<Project> projects = service.getAll(Project.class);
+
+        for (Organization organization : organizations) {
+
+            logger.debug("Out with org: " + organization.getId() + " (" + organization.getName() + ") with members: ");
+            organization.getMembers().stream().forEach(member -> logger.debug("   Member: " + member.getName()));
+            logger.debug("End members");
+        }
+
+        for (Project project : projects) {
+
+            logger.debug("Out with project: " + project.getId() + " (" + project.getName() + ") with teams: ");
+            project.getTeams().stream().forEach(team -> logger.debug("   Team: " + team));
+            logger.debug("End teams");
         }
 
         logger.info(" step complete - Adding special content");
@@ -1398,9 +1405,7 @@ public class HistoricDataMigrator {
 
             if (projectId == null) {
 
-                logger.debug(" JE here with missing project for rttId: " + rttId);
-                logger.debug(" JE all keys: " + utilities.getPropertyReader().getRttIdToProjectsJsonMap().keySet());
-                throw new Exception("Failing to match projectId");
+                throw new Exception("Failing to match projectId on rttId: " + rttId);
             }
 
             final Project rttProject = ModelUtility.fromJson(utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(projectId), Project.class);
@@ -1433,7 +1438,6 @@ public class HistoricDataMigrator {
 
             if (!projectsAdded.containsKey(rttProject.getName())) {
 
-                logger.debug("111a with org: " + org);
                 final Project project = utilities.addProject(org, rttProject.getName(), rttProject.getDescription(), projectMeta);
                 projectCount++;
 
@@ -1464,14 +1468,10 @@ public class HistoricDataMigrator {
     private int processSnowstormRefset(Refset refset, Edition edition, Set<String> refsetsAdded, Map<String, Project> projectsAdded, Map<String, String> refsetToProjectsInfoMap, int projectCount)
         throws Exception {
 
-        logger.debug("3330 - processing refset: " + refset.getId() + " " + refset.getName());
-
         final String editionName = edition.getName();
         final String editionShortName = edition.getShortName();
 
         // Identify Org Name
-        logger.debug("3331 - editionName/editionShortName vars searching on are: " + editionName + "/" + editionShortName);
-
         if (!editionOwnerMap.containsKey(editionName) && !editionOwnerMap.containsKey(editionShortName) && !organizationsAdded.containsKey(editionOwnerMap.get(editionName))) {
 
             logger.debug("editionOwnerMap has keys: " + editionOwnerMap.keySet());
@@ -1480,19 +1480,11 @@ public class HistoricDataMigrator {
         }
 
         String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
-        logger.debug("3332 - with orgName: " + orgName + " and orgsAdded.size = " + organizationsAdded.size());
         final Organization org = organizationsAdded.get(orgName);
 
-        logger.debug("3333 - with org: " + org);
-
         Project project = defineRefsetProject(refset.getRefsetId(), edition, projectsAdded, refsetToProjectsInfoMap, editionName, editionName);
-        logger.debug("4444 with project: " + project.getName());
-
-        logger.debug("111b with org: " + org);
 
         try (final TerminologyService service = new TerminologyService()) {
-
-            logger.debug("111c");
 
             refset.setProject(project);
             utilities.setMetadata(refset, defaultMeta);
@@ -1500,7 +1492,6 @@ public class HistoricDataMigrator {
             initializeService(service);
 
             refset = service.update(refset);
-            logger.debug("111d - Refset's project - " + refset.getProjectId());
         }
 
         if (!refsetsAdded.contains(refset.getRefsetId())) {
@@ -1529,7 +1520,6 @@ public class HistoricDataMigrator {
 
         String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(ShortName);
         final Organization org = organizationsAdded.get(orgName);
-        logger.debug("555 - Getting project for refsetId: " + refsetId);
 
         // Was part of project on RTT, so pull in project information
         if (refsetToRttProjectInfoMap.containsKey(refsetId)) {
@@ -1537,7 +1527,6 @@ public class HistoricDataMigrator {
             String projectInfo = refsetToRttProjectInfoMap.get(refsetId);
 
             String[] projectDetails = projectInfo.split(",");
-            logger.debug("5551 with ProjectInfo: " + projectInfo);
 
             for (int i = 0; i < 2; i++) {
 
@@ -1553,33 +1542,23 @@ public class HistoricDataMigrator {
 
             }
 
-            logger.debug("5552 with proDetail[0] = " + projectDetails[0]);
-
             if (projectsAdded.containsKey(projectDetails[0])) {
 
-                logger.debug("5553 returning project: " + projectsAdded.get(projectDetails[0]));
                 // Already added project, so just return
                 return projectsAdded.get(projectDetails[0]);
             }
 
-            logger.debug("5554 adding & returning: " + projectDetails[1]);
             return utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1], defaultMeta);
         }
 
         // No project associated with refset, so use default Edition Project
-        logger.debug("4441 grabbing default project for editionName: " + editionName);
-
-        // Create edition
         if (!defaultOrganizationProjects.containsKey(org.getId())) {
-
-            logger.debug("4442");
 
             // Create default project
             final String projectName = orgName + " Default Project";
             final String projectDescription = "This is a default project to support initial Snowstorm-based refsets for " + orgName + ".";
 
             final Project project = utilities.addProject(org, projectName, projectDescription, defaultMeta);
-            logger.debug("4443 with project: " + project);
 
             defaultOrganizationProjects.put(org.getId(), project);
         }

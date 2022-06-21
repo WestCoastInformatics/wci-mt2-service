@@ -36,7 +36,10 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmb
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
+import org.ihtsdo.refsetservice.migration.MigrationDataInitializer;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -90,7 +93,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     /** The of roles for this project. */
     @Transient
     private List<String> roles;
-    
+
     @Transient
     private List<User> memberList;
 
@@ -202,7 +205,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * Gets the organization.
      *
      * @return the organization
-     */   
+     */
     @IndexedEmbedded(targetType = Organization.class)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public Organization getOrganization() {
@@ -219,16 +222,19 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
         this.organization = organization;
     }
-    
+
     /**
      * Returns the organization ID.
      *
      * @return the organization ID
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    @IndexingDependency(derivedFrom = @ObjectPath({@PropertyValue(propertyName = "organization")}))
+    @IndexingDependency(derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "organization")
+    }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationId() {
+
         return organization == null ? null : organization.getId();
     }
 
@@ -240,12 +246,14 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public void setOrganizationId(final String organizationId) {
 
         if (organization != null) {
+
             this.organization.setId(organizationId);
         } else {
-            
+
             this.organization = new Organization();
             this.organization.setId(organizationId);
         }
+
     }
 
     /**
@@ -298,9 +306,15 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public Set<String> getTeams() {
 
+        System.out.println("ZZZ1 here for project: " + getName());
+
         if (teams == null) {
+
+            System.out.println("ZZZ1 ... wow and here!!!!!");
             teams = new HashSet<>();
         }
+
+        System.out.println("ZZZ1 returning : " + teams);
 
         return teams;
     }
@@ -312,6 +326,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      */
     public void setTeams(final Set<String> teams) {
 
+        System.out.println("ZZZ2 should never be here");
         this.teams = teams;
     }
 
@@ -324,8 +339,10 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public List<String> getRoles() {
 
         if (roles == null) {
+
             roles = new ArrayList<>();
         }
+
         return roles;
 
     }
@@ -359,13 +376,15 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
         this.primaryContactEmail = primaryContactEmail;
     }
-    
+
     @JsonGetter()
     public List<User> getMemberList() {
 
         if (memberList == null) {
+
             memberList = new ArrayList<>();
         }
+
         return memberList;
     }
 
@@ -396,67 +415,111 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public boolean equals(final Object obj) {
 
         if (this == obj) {
+
             return true;
         }
+
         if (!super.equals(obj)) {
+
             return false;
         }
+
         if (getClass() != obj.getClass()) {
+
             return false;
         }
+
         final Project other = (Project) obj;
+
         if (crowdProjectId == null) {
+
             if (other.crowdProjectId != null) {
+
                 return false;
             }
+
         } else if (!crowdProjectId.equals(other.crowdProjectId)) {
+
             return false;
         }
+
         if (description == null) {
+
             if (other.description != null) {
+
                 return false;
             }
+
         } else if (!description.equals(other.description)) {
+
             return false;
         }
+
         if (name == null) {
+
             if (other.name != null) {
+
                 return false;
             }
+
         } else if (!name.equals(other.name)) {
+
             return false;
         }
+
         if (organization == null) {
+
             if (other.organization != null) {
+
                 return false;
             }
+
         } else if (!organization.equals(other.organization)) {
+
             return false;
         }
+
         if (primaryContactEmail == null) {
+
             if (other.primaryContactEmail != null) {
+
                 return false;
             }
+
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
+
             return false;
         }
+
         if (privateProject != other.privateProject) {
+
             return false;
         }
+
         if (roles == null) {
+
             if (other.roles != null) {
+
                 return false;
             }
+
         } else if (!roles.equals(other.roles)) {
+
             return false;
         }
+
         if (teams == null) {
+
             if (other.teams != null) {
+
                 return false;
             }
+
         } else if (!teams.equals(other.teams)) {
+
             return false;
         }
+
         return true;
     }
 
@@ -465,10 +528,13 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public String toString() {
 
         try {
+
             return ModelUtility.toJson(this);
         } catch (final Exception e) {
+
             return e.getMessage();
         }
+
     }
 
     /* see superclass */
