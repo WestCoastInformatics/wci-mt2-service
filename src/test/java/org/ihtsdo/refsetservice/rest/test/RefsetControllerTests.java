@@ -885,5 +885,23 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         return concept;
     }
+    
+    /**
+     * Test the RTT Migration **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED.
+     *
+     * @throws Exception the exception
+     */
+    // **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED ****
+    // @Test
+    public void testMigration() throws Exception {
+
+        final String url = "/admin/migration/rtt";
+        logger.info("Testing url - " + url);
+        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        final String content = result.getResponse().getContentAsString();
+        logger.info(" content = " + content);
+
+        assertThat(content).isEqualTo("RTT data migration completed successfully");
+    }
 
 }

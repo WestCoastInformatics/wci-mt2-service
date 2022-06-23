@@ -302,7 +302,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      *
      * @return the teams
      */
-    @JsonGetter()
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public Set<String> getTeams() {
 

@@ -284,6 +284,7 @@ public class MigrationDataInitializer {
         // Finalize transaction
         service.update(thread);
         service.commit();
+        service.setTransactionPerOperation(true);
     }
 
     private void printAllValues(TerminologyService service, Organization organization) throws Exception {
