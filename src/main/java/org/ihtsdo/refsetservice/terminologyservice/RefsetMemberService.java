@@ -3619,7 +3619,6 @@ public class RefsetMemberService {
             final Refset refset = getRefset(user, service, refsetInternalId);
             WorkflowService.canUserEditRefset(user, refset);
             
-            int newMemberCount = 0;
             final String branchPath = RefsetService.getBranchPath(refset);
             final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
 
@@ -3700,7 +3699,6 @@ public class RefsetMemberService {
                             final String conceptId = conceptNode.get("conceptId").asText();
                             String name = "";
                             validatedConcepts.add(conceptId);
-                            newMemberCount++;
                             
                             if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
                                 name = conceptNode.get("pt").get("term").asText();  
@@ -3790,7 +3788,7 @@ public class RefsetMemberService {
             }
 
             // update the member count and save the refset
-            refset.setMemberCount(refset.getMemberCount() + newMemberCount);
+            refset.setMemberCount(refset.getMemberCount() + (conceptIds.size() - unaddedConcepts.size()));
             service.update(refset);
             
             for (final String conceptId : unaddedConcepts) {
@@ -3964,7 +3962,6 @@ public class RefsetMemberService {
             final String refsetId = refset.getRefsetId();
             final String branchPath = RefsetService.getBranchPath(refset);
             final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
-            int removedMemberCount = 0;
 
             // clear the caches for this refset
             clearAllMemberCaches(branchPath);
