@@ -1,3 +1,12 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.handler;
 
@@ -10,10 +19,15 @@ import java.util.Set;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.model.Edition;
+//import org.flywaydb.core.internal.license.Edition;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,23 +54,60 @@ public class ExportHandler {
         return false;
     }
 
-    public String generateRt2VersionFileName(Refset refset, String type, String languageId,
-        Set<String> dates, boolean exportMetadata, boolean withNames) throws Exception {
+    /**
+     * Generate RT2 version file name.
+     *
+     * @param refset the refset
+     * @param type the type
+     * @param languageId the language id
+     * @param dates the dates
+     * @param exportMetadata the export metadata
+     * @param withNames the with names
+     * @return the string
+     * @throws Exception the exception
+     */
+    public String generateRt2VersionFileName(Refset refset, String type, String languageId, Set<String> dates, boolean exportMetadata, boolean withNames) throws Exception {
+
+        // RT2-1037
+        // der2_Refset_<refset_name_in_camelcase><ActiveSnapshot|Delta><CountryCode><Namespace>_<PublicationDate>.txt
+
         if ((type.toLowerCase().contains("snapshot") && dates.size() != 1)
-                // if (("snapshot".equals(type.toLowerCase()) &&
-                // transientEffectiveTime != null)
-                || ("delta".equals(type.toLowerCase()) && dates.size() != 2)) {
-            throw new Exception("Have a " + type + " rf2 request with " + dates.size()
-                    + " number of dates provided");
+            // if (("snapshot".equals(type.toLowerCase()) &&
+            // transientEffectiveTime != null)
+            || ("delta".equals(type.toLowerCase()) && dates.size() != 2)) {
+            throw new Exception("Have a " + type + " rf2 request with " + dates.size() + " number of dates provided");
+        }
+
+        // if (type.toLowerCase().contains("snapshot")) {
+        // name = "refset_" + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" + type;
+        // } else {
+        // name = "refset_" + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" + type + "_"
+        // + dates.toArray()[1];
+        // }
+
+        String namespace = "";
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final String editionId = refset.getEditionId();
+            final Edition edition = service.get(editionId, Edition.class);
+            namespace = edition.getNamespace() != null ? edition.getNamespace() : "";
+        }
+
+        String countryCode = refset.getEditionShortName().replace("SNOMEDCT", "").replace("-", "");
+        if (StringUtils.isBlank(countryCode)) {
+            countryCode = "INT";
         }
 
         String name;
 
-        if (type.toLowerCase().contains("snapshot")) {
-            name = "refset_" + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" + type;
+        if ("snapshot".equals(type.toLowerCase())) {
+
+            name = "der2_Refset_" + StringUtility.camelCase(refset.getName()) + "ActiveSnapshot" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0];
+
         } else {
-            name = "refset_" + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" + type + "_"
-                    + dates.toArray()[1];
+
+            name = "der2_Refset_" + StringUtility.camelCase(refset.getName()) + "Delta" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0] + "_"
+                + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
         }
 
         if (withNames) {
