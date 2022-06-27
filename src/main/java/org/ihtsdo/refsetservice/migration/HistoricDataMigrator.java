@@ -166,7 +166,7 @@ public class HistoricDataMigrator {
     private final Set<String> internationalRefsets = new HashSet<>();
 
     /** The testing. */
-    private boolean testing = true;
+    private boolean testing = false;
 
     private final String testingEdition = "stoni";
 
@@ -941,7 +941,7 @@ public class HistoricDataMigrator {
                         edition.setDefaultLanguageCode(defaultLanguage);
 
                         // Identify Code System Owner
-                        if (codeSystem.has("owner")) {
+                        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
 
                             editionOwnerMap.put(edition.getShortName(), codeSystem.get("owner").asText());
                             editionOwnerMap.put(edition.getName(), codeSystem.get("owner").asText());
