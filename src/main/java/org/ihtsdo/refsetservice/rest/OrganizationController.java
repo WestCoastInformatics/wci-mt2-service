@@ -11,6 +11,8 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -172,18 +174,45 @@ public class OrganizationController extends BaseController {
         try {
 
             final ResultList<Organization> results = RefsetService.searchOrganizations(user, searchParameters);
-            if (includeMembers) {
-                for (Organization organization : results.getItems()) {
-                    organization.getMembers();
+            
+                
+            for (Organization organization : results.getItems()) {
+                
+                boolean giveViewerRole = false;
+                final List<String> roles = new ArrayList<>();
+
+                if (user.doesUserHavePermission(User.ROLE_AUTHOR, organization)) {
+
+                    roles.add(User.ROLE_AUTHOR);
+                    giveViewerRole = true;
                 }
 
-            } else {
-                for (Organization organization : results.getItems()) {
+                if (user.doesUserHavePermission(User.ROLE_REVIEWER, organization)) {
+
+                    roles.add(User.ROLE_REVIEWER);
+                    giveViewerRole = true;
+                }
+
+                if (user.doesUserHavePermission(User.ROLE_ADMIN, organization)) {
+
+                    roles.add(User.ROLE_ADMIN);
+                    giveViewerRole = true;
+                }
+
+                if (user.doesUserHavePermission(User.ROLE_VIEWER, organization) || giveViewerRole) {
+
+                    roles.add(User.ROLE_VIEWER);
+                }
+                organization.setRoles(roles);
+                
+                if (includeMembers) {
+                    organization.getMembers();
+                } else {
+                    
                     if (organization.getMembers() != null && !organization.getMembers().isEmpty()) {
                         organization.getMembers().clear();
-                    }
+                    } 
                 }
-
             }
 
             return new ResponseEntity<>(results, HttpStatus.OK);

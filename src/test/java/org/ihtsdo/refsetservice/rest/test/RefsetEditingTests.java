@@ -47,7 +47,7 @@ public class RefsetEditingTests extends AbstractRefsetTests {
      * Sets the up.
      */
     @BeforeEach
-    public void setUp(TestInfo info) {
+    public void setUp(TestInfo info) throws Exception {
 
         if (getUtil == null) {
 
@@ -60,27 +60,19 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         JacksonTester.initFields(this, objectMapper);
         baseUrl = "/refset";
 
-        try {
+        if (firstTimeSetup) {
 
-            if (firstTimeSetup) {
+            // For read/write testing
+            wciTestingProjectId = getUtil.getInternalProjectId(WCI_TESTING_PROJECT_NAME);
+            wciTestingEditionId = getUtil.getInternalEditionId(WCI_TESTING_EDITION_NAME);
+            refsetWithInactiveConceptAsActiveMemberInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
+            mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
+            mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
 
-                // For read/write testing
-                wciTestingProjectId = getUtil.getInternalProjectId(WCI_TESTING_PROJECT_NAME);
-                wciTestingEditionId = getUtil.getInternalEditionId(WCI_TESTING_EDITION_NAME);
-                refsetWithInactiveConceptAsActiveMemberInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
-                mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
-                mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
+            editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, wciTestingProjectId, wciTestingEditionId);
 
-                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, wciTestingProjectId, wciTestingEditionId);
-
-                firstTimeSetup = false;
-            }
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
+            firstTimeSetup = false;
         }
-
     }
 
     /**
@@ -350,6 +342,59 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         
         // for the the first inactive concept remove the manual replacement again after it is added as a member
         editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REMOVED_MANUAL_REPLACEMENT, inactiveConceptId, replacementConceptId, null);
+        
+        // Finish the upgrade
+        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.CANCEL_UPGRADE, "");
+        
+        // DELETE NEW VERSION
+        editUtil.deleteVersionedRefset(newRefsetInternalId);
+
+        // validate the original refset is back to the latest version
+        try (final TerminologyService service = new TerminologyService()) {
+
+            refset = service.get(refsetWithInactiveConceptAsActiveMemberInternalId, Refset.class);
+            assertThat(refset).isNotNull();
+            //assertThat(refset.isLatestPublishedVersion()).isTrue();
+        }
+    }
+    
+    /**
+     * Test upgrading a refset.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testUpgradeRefsetBulkActions() throws Exception {
+
+        Refset refset = getUtil.getRefsetFromInternalId(refsetWithInactiveConceptAsActiveMemberInternalId);
+        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.EDIT, "");
+        refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
+        final String newRefsetInternalId = refset.getId();
+        
+        // START THE UPGRADE PROCESS
+        editUtil.compileUpgradeData(newRefsetInternalId);
+        editUtil.resolveBackgroundOperation(newRefsetInternalId);
+        
+        // GET THE UPGRADE DATA
+        ResultList<UpgradeInactiveConcecpt> resultList = editUtil.getUpgradeData(newRefsetInternalId);
+        assertThat(resultList.getItems().size()).isGreaterThan(0);
+        
+        // remove the first inactive concept as a member
+        UpgradeInactiveConcecpt upgradeInactiveConcept = resultList.getItems().get(0);
+        final String inactiveConceptId = upgradeInactiveConcept.getCode();
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.INACTIVE_REMOVED, inactiveConceptId, null, null);
+        
+        // remove all the other inactive concepts as members
+        editUtil.removeAllInactiveUpgradeConcepts(newRefsetInternalId);
+        
+        // for the the first inactive concept add the first replacement as a member
+        assertThat(upgradeInactiveConcept.getReplacementConcecpts().size()).isGreaterThan(0);
+        UpgradeReplacementConcecpt upgradeReplacementConcecpt = upgradeInactiveConcept.getReplacementConcecpts().get(0);
+        String replacementConceptId = upgradeReplacementConcecpt.getCode();
+        editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REPLACEMENT_ADDED, inactiveConceptId, replacementConceptId, null);
+        
+        // add all the other replacement concepts as members
+        editUtil.addAllUpgradeReplacementConcepts(newRefsetInternalId);
         
         // Finish the upgrade
         refset = workflowUtil.updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.CANCEL_UPGRADE, "");

@@ -181,6 +181,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
      *
      * @return the stillMember flag
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public boolean isStillMember() {
         return stillMember;
     }

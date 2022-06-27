@@ -75,24 +75,16 @@ public class RefsetWorkflowTests extends AbstractRefsetTests {
         JacksonTester.initFields(this, objectMapper);
         baseUrl = "/refset";
 
-        try {
+        if (firstTimeSetup) {
 
-            if (firstTimeSetup) {
+            // For read/write testing
+            wciTestingProjectId = getUtil.getInternalProjectId(WCI_TESTING_PROJECT_NAME);
+            wciTestingEditionId = getUtil.getInternalEditionId(WCI_TESTING_EDITION_NAME);
 
-                // For read/write testing
-                wciTestingProjectId = getUtil.getInternalProjectId(WCI_TESTING_PROJECT_NAME);
-                wciTestingEditionId = getUtil.getInternalEditionId(WCI_TESTING_EDITION_NAME);
+            editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, wciTestingProjectId, wciTestingEditionId);
 
-                editUtil = new EditUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT, wciTestingProjectId, wciTestingEditionId);
-
-                firstTimeSetup = false;
-            }
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
+            firstTimeSetup = false;
         }
-
     }
 
     /**

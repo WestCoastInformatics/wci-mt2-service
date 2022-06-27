@@ -387,7 +387,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     }
 
     /**
-     * Check if the user has the specified role on the refset.
+     * Check if the user has the specified role on the project.
      *
      * @param roleToCheck the role to look for
      * @param project the project to check permissions against
@@ -435,6 +435,56 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                             // logger.debug("doesUserHavePermission = true");
                             return true;
                         }
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            return false;
+        }
+
+        return false;
+    }
+    
+    /**
+     * Check if the user has the specified role on the organization.
+     *
+     * @param roleToCheck the role to look for
+     * @param project the project to check permissions against
+     * @return if the user has the specified role on the refset
+     * @throws Exception the exception
+     */
+    public boolean doesUserHavePermission(final String roleToCheck, final Organization organization) throws Exception {
+
+        try {
+            
+            String editionName = organization.getEdition().getShortName();
+    
+            // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
+    
+            if (!organization.getEdition().getShortName().equals("SNOMEDCT")) {
+                editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
+            } else {
+                editionName = "main";
+            }
+    
+            final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
+    
+            for (final String role : roles) {
+    
+                final String lowerCasedRole = role.toLowerCase();
+                final int indexFirstHyphen = lowerCasedRole.indexOf("-");
+                final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
+                // logger.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
+    
+                // first check the edition permissions
+                if (editionPart.equals("all") || editionPart.equals(editionName)) {
+    
+                    // last check for the role or if they have any permission at this level they have the VIEWER role
+                    if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
+
+                        // logger.debug("doesUserHavePermission = true");
+                        return true;
                     }
                 }
             }

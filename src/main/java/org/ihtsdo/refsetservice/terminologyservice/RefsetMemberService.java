@@ -2798,7 +2798,12 @@ public class RefsetMemberService {
             ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
             lookupParameters.setGetFsn(true);
 
-            return getConceptsFromSnowstorm(url, refset, lookupParameters, language);
+            ConceptResultList results = getConceptsFromSnowstorm(url, refset, lookupParameters, language);
+         
+            // sort the results 
+            Collections.sort(results.getItems(), (object1, object2) -> (object1.compareTo(object2)));
+            
+            return results;
 
         } catch (Exception ex) {
 
@@ -3614,7 +3619,6 @@ public class RefsetMemberService {
             final Refset refset = getRefset(user, service, refsetInternalId);
             WorkflowService.canUserEditRefset(user, refset);
             
-            int newMemberCount = 0;
             final String branchPath = RefsetService.getBranchPath(refset);
             final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
 
@@ -3695,7 +3699,6 @@ public class RefsetMemberService {
                             final String conceptId = conceptNode.get("conceptId").asText();
                             String name = "";
                             validatedConcepts.add(conceptId);
-                            newMemberCount++;
                             
                             if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
                                 name = conceptNode.get("pt").get("term").asText();  
@@ -3785,7 +3788,7 @@ public class RefsetMemberService {
             }
 
             // update the member count and save the refset
-            refset.setMemberCount(refset.getMemberCount() + newMemberCount);
+            refset.setMemberCount(refset.getMemberCount() + (conceptIds.size() - unaddedConcepts.size()));
             service.update(refset);
             
             for (final String conceptId : unaddedConcepts) {
@@ -3959,7 +3962,6 @@ public class RefsetMemberService {
             final String refsetId = refset.getRefsetId();
             final String branchPath = RefsetService.getBranchPath(refset);
             final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
-            int removedMemberCount = 0;
 
             // clear the caches for this refset
             clearAllMemberCaches(branchPath);
@@ -4792,6 +4794,145 @@ public class RefsetMemberService {
               
             // save the inactive concept
             service.update(upgradeInactiveConcept);
+            
+            return "All changes made successfully";
+            
+        } catch (final Exception e) {
+            throw new Exception(e);
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+        }
+    }
+    
+    /**
+     * Remove all inactive upgrade concepts.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String removeAllUpgradeInactiveConcepts(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+        
+        try {
+            
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            
+            List<String> unchangedConcepts;
+            String conceptIdsToChange = "";
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            final String refsetId = refset.getRefsetId();
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+            
+            final ResultList<UpgradeInactiveConcecpt> inactiveConceptList = service.find("refsetId: " + refsetId + " AND stillMember: true", null, UpgradeInactiveConcecpt.class, null);      
+
+            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+                conceptIdsToChange += inactiveConcept.getCode() + ",";
+            }
+    
+            conceptIdsToChange = StringUtils.removeEnd(conceptIdsToChange, ",");
+                
+            // remove the concepts as members from the refset
+            unchangedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, conceptIdsToChange);
+            
+            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+                    
+                // don't process concepts that couldn't be removed
+                if (unchangedConcepts.contains(inactiveConcept.getCode())) {
+                    continue;
+                }
+                    
+                inactiveConcept.setStillMember(false);
+                
+                // save the inactive concept
+                service.update(inactiveConcept);
+                logger.debug("removeAllUpgradeInactiveConcepts: member removed: " + inactiveConcept.getCode());
+            }
+            
+            // see if there the concept was unable to be changed and craft the error message
+            if (unchangedConcepts.size() > 0) {
+                return "The concepts " + unchangedConcepts + " were unable to be removed.";
+            }
+            
+            return "All changes made successfully";
+            
+        } catch (final Exception e) {
+            throw new Exception(e);
+        }
+        
+        finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+        }
+    }
+    
+    /**
+     * Remove all inactive upgrade concepts.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String addAllUpgradeReplacementConcepts(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+        
+        try {
+            
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            
+            List<String> unchangedConcepts;
+            List<String> conceptIdsToChange = new ArrayList<>();
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            final String refsetId = refset.getRefsetId();
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+            
+            final ResultList<UpgradeInactiveConcecpt> inactiveConceptList = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcecpt.class, null);      
+
+            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+                
+                for (UpgradeReplacementConcecpt replacementConcecpt : inactiveConcept.getReplacementConcecpts()) {
+                    
+                    if (!replacementConcecpt.isAdded() && !replacementConcecpt.isExistingMember()) {
+                        conceptIdsToChange.add(replacementConcecpt.getCode());
+                    }
+                }
+            }
+
+            // add the concepts as members to the refset
+            unchangedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, conceptIdsToChange);
+            
+            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+                
+                boolean hadReplacementsAdded = false;
+                
+                for (UpgradeReplacementConcecpt replacementConcecpt : inactiveConcept.getReplacementConcecpts()) {
+                    
+                    // don't process concepts that couldn't be added or that weren't attempted to be added
+                    if (unchangedConcepts.contains(replacementConcecpt.getCode()) || !conceptIdsToChange.contains(replacementConcecpt.getCode())) {
+                        continue;
+                    }
+                    
+                    hadReplacementsAdded = true;
+                    replacementConcecpt.setAdded(true);
+                    service.update(replacementConcecpt);
+                    logger.debug("addAllUpgradeReplacementConcepts: replacement added as member: " + replacementConcecpt.getCode());
+                }
+                
+                if (hadReplacementsAdded) {
+                    
+                    inactiveConcept.setReplaced(true);
+                    service.update(inactiveConcept);
+                    logger.debug("addAllUpgradeReplacementConcepts: inactive concept updated: " + inactiveConcept.getCode());
+                }
+            }
+            
+            // see if there the concept was unable to be changed and craft the error message
+            if (unchangedConcepts.size() > 0) {
+                return "The concepts " + unchangedConcepts + " were unable to be added.";
+            }
             
             return "All changes made successfully";
             
