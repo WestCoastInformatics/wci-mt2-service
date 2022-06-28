@@ -2,19 +2,23 @@ package org.ihtsdo.refsetservice.migration;
 
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
 import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,6 +112,46 @@ public class MigrationUtilities {
             u.setRoles(roles);
 
             return service.add(u);
+        }
+
+    }
+
+    public User getUser(String name, String userName, String email, Set<String> roles) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final PfsParameter pfs = new PfsParameter();
+            final QueryParameter query = new QueryParameter();
+            query.setQuery("name:" + name + " AND active:true");
+
+            ResultList<User> results = service.find(query, pfs, User.class, null);
+            logger.debug("JESSE: " + results);
+
+            User user = null;
+
+            if (results.getItems() != null && results.getItems().size() == 1) {
+
+                // User already exists
+                return results.getItems().iterator().next();
+            } else {
+
+                List<User> results2 = service.getAll(User.class);
+                logger.debug("JESSE2: " + results2);
+
+                // User already exist, but found otherwise
+                for (User existingUser : results2) {
+
+                    if (existingUser.getName().equals(name) && existingUser.getUserName().equals(userName) && existingUser.getEmail().equals(email) && existingUser.getRoles().equals(roles)) {
+
+                        return existingUser;
+                    }
+
+                }
+
+                // Need to create user
+                return addUser(name, userName, email, roles);
+            }
+
         }
 
     }

@@ -59,7 +59,7 @@ public class MigrationDataInitializer {
 
     static private Project testingProject = null;
 
-    private static final String FEEDBACK_REFSET_NAME_BASE = "WCI Testing Feedback Refset #";
+    private static final String FEEDBACK_REFSET_NAME_BASE = "WCI Testing Feedback Refset ";
 
     private static final String FEEDBACK_REFSET_ID_BASE = "9999999";
 
@@ -67,29 +67,34 @@ public class MigrationDataInitializer {
 
     public MigrationDataInitializer() {
 
-        // Create 5 WCI users (1-per role and a super-user)
+        // Grab wci users or create during first migration. Two types:
+        // a) 5 WCI common users to be added to all orgs (1-per role and a super-user)
+        // b) 2 WCI users specifically for generating a new feedback refset for testing
         try {
 
-            feedbackInitiatiorUser = utilities.addUser("FeedbackTester1", "FeedbackTester1", "testUser1@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-            userResponderUser = utilities.addUser("FeedbackTester2", "FeedbackTester2", "testUser2@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-
-            wciAuthor = utilities.addUser("rt2-dev-author", "rt2-dev-author", "rt2-dev-author@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+            // For 5 WCI users
+            wciAuthor = utilities.getUser("rt2-dev-author", "rt2-dev-author", "rt2-dev-author@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
             userRoleMap.put(User.ROLE_AUTHOR, wciAuthor);
 
-            wciReviewer = utilities.addUser("rt2-dev-reviewer", "rt2-dev-reviewer", "rt2-dev-reviewer@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_REVIEWER)));
+            wciReviewer = utilities.getUser("rt2-dev-reviewer", "rt2-dev-reviewer", "rt2-dev-reviewer@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_REVIEWER)));
             userRoleMap.put(User.ROLE_REVIEWER, wciReviewer);
 
-            wciAdmin = utilities.addUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
+            wciAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             userRoleMap.put(User.ROLE_ADMIN, wciAdmin);
 
-            wciViewer = utilities.addUser("rt2-dev-viewer", "rt2-dev-viewer", "rt2-dev-viewer@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_VIEWER)));
+            wciViewer = utilities.getUser("rt2-dev-viewer", "rt2-dev-viewer", "rt2-dev-viewer@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_VIEWER)));
             userRoleMap.put(User.ROLE_VIEWER, wciViewer);
 
             allRoles.addAll(userRoleMap.keySet());
-            refsetDevUser = utilities.addUser(REFSET_DEV_USER, REFSET_DEV_USER, "refset-dev@westcoastinformatics.com", allRoles);
+            refsetDevUser = utilities.getUser(REFSET_DEV_USER, REFSET_DEV_USER, "refset-dev@westcoastinformatics.com", allRoles);
+
+            // For Feedback Refset
+            feedbackInitiatiorUser = utilities.getUser("feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+            userResponderUser = utilities.getUser("feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
 
             commonWciUsers.add(refsetDevUser);
             commonWciUsers.addAll(userRoleMap.values());
+
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -289,7 +294,7 @@ public class MigrationDataInitializer {
 
         // create new refset with name = FeedbackTestingVersion1
         Refset refset = utilities.addRefset("WCI Testing Feeedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
-        addTestingFeedback(refset, wciProject, wciOrganization);
+        addFeedbackContent(refset, wciProject, wciOrganization);
 
         return refset;
 
@@ -344,14 +349,14 @@ public class MigrationDataInitializer {
                     new Date(), Refset.EXTENSIONAL, "", wciProject);
             }
 
-            addTestingFeedback(newTestingRefset, wciProject, wciOrganization);
+            addFeedbackContent(newTestingRefset, wciProject, wciOrganization);
 
             return newTestingRefset;
         }
 
     }
 
-    private void addTestingFeedback(Refset refset, Project wciProject, Organization wciOrganization) throws Exception {
+    private void addFeedbackContent(Refset refset, Project wciProject, Organization wciOrganization) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -382,7 +387,7 @@ public class MigrationDataInitializer {
                 + singleFeedbackTeam.getOrganization().getName());
 
             logger.debug("888a with project: " + wciProject.getName() + " with members: " + wciProject.getMemberList() + " with roles: " + wciProject.getRoles() + " with teams: "
-                + wciProject.getTeams() + " in org: " + wciProject.getOrganization().getName());
+                + wciProject.getTeams() + " in org: " + wciProject.getOrganization());
 
             logger.debug("999a with org: " + wciOrganization.getName() + " with members: " + wciOrganization.getMembers());
 
@@ -527,7 +532,26 @@ public class MigrationDataInitializer {
 
         if (testingProject == null) {
 
-            testingProject = utilities.addProject(testingOrganization, "WCI Testing Project", "The single project for all WCI testing refsets", defaultMetadata);
+            try (TerminologyService service = new TerminologyService()) {
+
+                List<Project> projects = service.getAll(Project.class);
+
+                for (Project p : projects) {
+
+                    if (p.getName().toLowerCase().contains("wci")) {
+
+                        testingProject = p;
+                    }
+
+                }
+
+            }
+
+            if (testingProject == null) {
+
+                throw new Exception("Shouldn't be running this on a non-Production instanace of RT2");
+            }
+
         }
 
         return testingProject;
