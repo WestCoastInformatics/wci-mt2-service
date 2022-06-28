@@ -99,30 +99,26 @@ public class MigrationDataInitializer {
 
     public void initialize(Organization organization, Map<String, Organization> organizationsAdded, MigrationMetadata defaultMeta) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        // Create a dedicated UAT Training Project for each organization
+        Map<String, Project> uatProjects = createUATProjects(organization, organizationsAdded, defaultMeta);
+        logger.info(" step - 111");
 
-            // Create a dedicated UAT Training Project for each organization
-            Map<String, Project> uatProjects = createUATProjects(organization, organizationsAdded, defaultMeta);
-            logger.info(" step - 111");
+        if (organization != null) {
 
-            if (organization != null) {
-
-                logger.info(" step - 222");
-                // Create wci-project (for DEV only)
-                Project project = createWCITestingContent(organization, defaultMeta);
-                createTestingFeedback(organization, project);
-
-            }
-
-            logger.info(" step - 333");
-            // Add WCI support to every project in case WCI needs to debug issues
-            createWCISupport(uatProjects);
-
-            logger.info(" step - 444");
-            // Final steps
-            // initializer.addDebugAdminUser(service);
+            logger.info(" step - 222");
+            // Create wci-project (for DEV only)
+            Project project = createWCITestingContent(organization, defaultMeta);
+            createTestingFeedback(organization, project);
 
         }
+
+        logger.info(" step - 333");
+        // Add WCI support to every project in case WCI needs to debug issues
+        createWCISupport(uatProjects);
+
+        logger.info(" step - 444");
+        // Final steps
+        // initializer.addDebugAdminUser(service);
 
     }
 
@@ -180,6 +176,8 @@ public class MigrationDataInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
+            initializeService(service);
+
             logger.info("Adding WCI Testing Org's single project");
 
             Project wciProject = utilities.addProject(wciOrganization, "WCI Testing Project", "The single project for all WCI testing refsets", defaultMeta);
@@ -207,6 +205,8 @@ public class MigrationDataInitializer {
     private void createWCISupport(Map<String, Project> uatProjects) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
 
             logger.info(" Create wci-support users & teams and add appropriate wci user as well as refset-dev to each.");
 
@@ -285,16 +285,13 @@ public class MigrationDataInitializer {
      */
     public Refset createTestingFeedback(Organization wciOrganization, Project wciProject) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        logger.info(" Create Feedback for testing (for DEV only)");
 
-            logger.info(" Create Feedback for testing (for DEV only)");
+        // create new refset with name = FeedbackTestingVersion1
+        Refset refset = utilities.addRefset("WCI Testing Feeedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
+        addTestingFeedback(refset, wciProject, wciOrganization);
 
-            // create new refset with name = FeedbackTestingVersion1
-            Refset refset = utilities.addRefset("WCI Testing Feeedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
-            addTestingFeedback(refset, wciProject, wciOrganization);
-
-            return refset;
-        }
+        return refset;
 
     }
 
@@ -357,6 +354,8 @@ public class MigrationDataInitializer {
     private void addTestingFeedback(Refset refset, Project wciProject, Organization wciOrganization) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
 
             refset.setProject(wciProject);
             service.update(refset);
@@ -468,6 +467,8 @@ public class MigrationDataInitializer {
     public void addDebugAdminUser() throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
 
             logger.info(" Add the refset-dev user to all projects' Admin team (Creating team if not already existing)");
 

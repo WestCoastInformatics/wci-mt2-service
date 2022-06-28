@@ -1,7 +1,7 @@
 -- ***** Org & Users
 select id, name, description  from organizations order by name;
 select id, name, branch, shortname, defaultLanguageCode from editions order by name;
-select id, name, email  from users;
+select id, name, email  from users order by name;
 
 
 
@@ -26,11 +26,11 @@ select b.name as Project, a.teams from project_teams a, projects b where b.id = 
 
 -- ***** J - Org Members (basic)  
 --select * from organization_members;
-select b.name, c.name from organization_members a, organizations b, users c where b.id = a.organization_id and c.id = a.user_id order by b.name;
+select b.name, c.name from organization_members a, organizations b, users c where b.id = a.organization_id and c.id = a.user_id order by b.name, c.name;
 
 
 -- ***** J - Team Members (basic)  
-select * from team_members;
+--select * from team_members;
 select b.name, a.members from team_members a, teams b where b.id = a.Team_id order by b.name;
 
 
