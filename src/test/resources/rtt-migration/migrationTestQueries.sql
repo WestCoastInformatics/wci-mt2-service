@@ -26,18 +26,21 @@ select b.name as Project, a.teams from project_teams a, projects b where b.id = 
 
 -- ***** J - Org Members (basic)  
 --select * from organization_members;
+select organization_id, count(*)  from  organization_members group by organization_id;
+select organization_id, count(*)  from  organization_members group by organization_id having count(*) != 5 ;
 select b.name, c.name from organization_members a, organizations b, users c where b.id = a.organization_id and c.id = a.user_id order by b.name, c.name;
 
 
 -- ***** J - Team Members (basic)  
 --select * from team_members;
+select Team_id, count(*)  from  team_members group by Team_id;
+select Team_id, count(*)  from  team_members group by Team_id having count(*) != 2 ;
 select b.name, a.members from team_members a, teams b where b.id = a.Team_id order by b.name;
 
 
 -- ***** J - User Roles  (basic)
 --select * from user_roles;
 select b.name, a.roles  from user_roles a, users b where b.id = a.user_id order by b.name;
--- 
 
 
 
