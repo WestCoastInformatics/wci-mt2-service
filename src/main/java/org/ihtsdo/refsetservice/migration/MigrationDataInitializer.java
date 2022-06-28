@@ -293,7 +293,7 @@ public class MigrationDataInitializer {
         logger.info(" Create Feedback for testing (for DEV only)");
 
         // create new refset with name = FeedbackTestingVersion1
-        Refset refset = utilities.addRefset("WCI Testing Feeedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
+        Refset refset = utilities.addRefset("WCI Testing Feedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
         addFeedbackContent(refset, wciProject, wciOrganization);
 
         return refset;
@@ -319,7 +319,7 @@ public class MigrationDataInitializer {
 
                 if (projectRefset.getRefsetId().startsWith(FEEDBACK_REFSET_ID_BASE)) {
 
-                    final int refsetVersion = Integer.parseInt(projectRefset.getName().substring(projectRefset.getName().indexOf("#") + 1));
+                    final int refsetVersion = Integer.parseInt(projectRefset.getName().substring(FEEDBACK_REFSET_NAME_BASE.length()).trim());
 
                     if (refsetVersion > latestVersion) {
 
