@@ -20,7 +20,6 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -183,6 +182,9 @@ public class HistoricDataMigrator {
     /** Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. */
     private boolean runShortMigration = false;
 
+    /** Should the migration add projects, teams, and other testing data, which it shouldn't do for Production. Default is true. */
+    private boolean forProduction = true;
+
     private Map<String, Edition> refsetEditions = new HashMap<>();
 
     private final Set<Refset> snowstormRefsets = new HashSet<>();
@@ -208,9 +210,10 @@ public class HistoricDataMigrator {
      *            is false
      * @throws Exception the exception
      */
-    public void migrate(final boolean runShortMigration) throws Exception {
+    public void migrate(final boolean runShortMigration, final boolean forProduction) throws Exception {
 
         this.runShortMigration = runShortMigration;
+        this.forProduction = forProduction;
 
         Set<String> internationalModules = createEditionsFromSnowstorm();
         Map<String, SortedMap<Date, String>> branches = identifyBranches();
@@ -551,7 +554,7 @@ public class HistoricDataMigrator {
 
                                 try {
 
-                                    if (testing && refsetId.equals(testingRefset)) {
+                                    if (testing && (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
 
                                         logger.debug("Testing refset " + testingRefset + " with childBranch" + childBranch);
                                     }
@@ -630,7 +633,7 @@ public class HistoricDataMigrator {
                                     }
 
                                     /* Add refset for later persisting */
-                                    Refset refset = utilities.addRefset(refsetName, refsetId, moduleId, versionDate, Refset.EXTENSIONAL, "");
+                                    Refset refset = utilities.addRefset(refsetName, refsetId, moduleId, versionDate, Refset.EXTENSIONAL, "", null);
                                     snowstormRefsets.add(refset);
                                     counts.incrementRefsetVersionPairsCounts();
 
@@ -967,6 +970,11 @@ public class HistoricDataMigrator {
 
                         if (org.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
 
+                            if (forProduction) {
+
+                                throw new Exception("Have a forProd instance running, yet found an unexpected WCI Org");
+                            }
+
                             wciOrganization = org;
                         } else {
 
@@ -986,6 +994,11 @@ public class HistoricDataMigrator {
 
                     }
 
+                }
+
+                if (wciOrganization == null && !forProduction) {
+
+                    throw new Exception("Have a non-Prod instance running, yet didn't find the expected WCI Org");
                 }
 
             }
@@ -1298,7 +1311,10 @@ public class HistoricDataMigrator {
 
             logger.info(" step complete - Finish persisting gathered Snowstorm & RTT Supporting Objects");
 
-            populateInitialDate(service);
+            if (!forProduction) {
+
+                populateInitialDate(service);
+            }
 
             logger.info("Have imported from Snowstorm " + projectCount + " projects and " + counts.getOrgsImportedCount() + " organizations");
 
@@ -1330,45 +1346,8 @@ public class HistoricDataMigrator {
         logger.info(" step - Populating initial data");
 
         MigrationDataInitializer initializer = new MigrationDataInitializer();
-
-        // Create a dedicated UAT Training Project for each organization
-        Map<String, Project> uatProjects = initializer.createUATProjects(wciOrganization, organizationsAdded, defaultMeta);
-        logger.info(" step - 111");
-
-        if (wciOrganization != null) {
-
-            logger.info(" step - 222");
-            // Create wci-project (for DEV only)
-            Project wciProject = initializer.createWCITestingContent(service, wciOrganization, defaultMeta);
-            initializer.createTestingFeedback(service, wciOrganization, wciProject);
-
-        }
-
-        logger.info(" step - 333");
-        // Add WCI support to every project in case WCI needs to debug issues
-        initializer.createWCISupport(service, uatProjects);
-
-        logger.info(" step - 444");
-        // Final steps
-        // initializer.addDebugAdminUser(service);
-
-        // Print out orgs & projects
-        final List<Organization> organizations = service.getAll(Organization.class);
-        final List<Project> projects = service.getAll(Project.class);
-
-        for (Organization organization : organizations) {
-
-            logger.debug("Out with org: " + organization.getId() + " (" + organization.getName() + ") with members: ");
-            organization.getMembers().stream().forEach(member -> logger.debug("   Member: " + member.getName()));
-            logger.debug("End members");
-        }
-
-        for (Project project : projects) {
-
-            logger.debug("Out with project: " + project.getId() + " (" + project.getName() + ") with teams: ");
-            project.getTeams().stream().forEach(team -> logger.debug("   Team: " + team));
-            logger.debug("End teams");
-        }
+        initializer.initialize(wciOrganization, organizationsAdded, defaultMeta);
+        initializer.printResults();
 
         logger.info(" step complete - Adding special content");
     }

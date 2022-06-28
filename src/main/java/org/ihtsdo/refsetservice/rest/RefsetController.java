@@ -19,11 +19,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.migration.HistoricDataMigrator;
+import org.ihtsdo.refsetservice.migration.MigrationDataInitializer;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
-import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
@@ -52,7 +52,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -88,12 +87,13 @@ public class RefsetController extends BaseController {
 
     /** The local directory to store exported refset files. */
     private static String EXPORT_FILE_DIR;
-    
+
     /** The local directory to store exported refset files. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /** Static initialization. */
     static {
+
         EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + "/";
     }
 
@@ -108,11 +108,12 @@ public class RefsetController extends BaseController {
 
     @ApiOperation(value = "Get the refset for the specified ID", response = Refset.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
-    @ApiImplicitParams({@ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path")})
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = "application/json")
     public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate) throws Exception {
@@ -120,26 +121,27 @@ public class RefsetController extends BaseController {
         try (TerminologyService service = new TerminologyService()) {
 
             logger.debug("getRefset: refsetId: " + refsetId + " ; versionDate: " + versionDate);
-            
+
             User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(service, user, refsetId, versionDate);
             RefsetService.getRefsetDescriptions(refset);
-            
+
             logger.debug("getRefset: Including discussion count");
             DiscussionService.attachRefsetDiscussionCount(service, user, refset);
-            
+
             if (RefsetMemberService.refsetsBeingUpdated.contains(refset.getId())) {
+
                 refset.setLocked(true);
             }
-            
+
             if (RefsetService.refsetsToShowUpgradeWarning.contains(refset.getId())) {
-                
+
                 refset.setUpgradeWarning(true);
                 RefsetService.refsetsToShowUpgradeWarning.remove(refset.getId());
             }
-            
+
             logger.debug("getRefset: refset: " + ModelUtility.toJson(refset));
-            
+
             return refset;
 
         } catch (final Exception e) {
@@ -147,8 +149,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Returns the refset.
      *
@@ -159,15 +162,16 @@ public class RefsetController extends BaseController {
 
     @ApiOperation(value = "Returns if the refset is locked", response = Refset.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
-    @ApiImplicitParams({@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataTypeClass = String.class, paramType = "path")})
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/isLocked", produces = "application/json")
     public @ResponseBody String isRefsetLocked(@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request) throws Exception {
- 
+
         try {
 
             User user = SecurityService.getUserFromSession();
@@ -176,13 +180,13 @@ public class RefsetController extends BaseController {
             logger.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
             logger.debug("isRefsetLocked: refsetsUpdatedMembers: " + RefsetMemberService.refsetsUpdatedMembers);
             logger.debug("isRefsetLocked: does update map contain this refset: " + RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId));
-            
+
             if (!isLocked && RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId)) {
-                
+
                 returnString = ModelUtility.toJson(RefsetMemberService.refsetsUpdatedMembers.get(refsetInternalId));
                 RefsetMemberService.refsetsUpdatedMembers.remove(refsetInternalId);
             }
-            
+
             return returnString;
 
         } catch (final Exception e) {
@@ -190,6 +194,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return false + "";
         }
+
     }
 
     /**
@@ -201,23 +206,21 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetInternalId}/changeStatus")
-    public Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetInternalId)
-        throws Exception {
+    public Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetInternalId) throws Exception {
 
         try {
 
-            //logger.debug("updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
+            // logger.debug("updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
 
             try (TerminologyService service = new TerminologyService()) {
 
-                final Refset refset = service.findSingle(
-                        "refsetId:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+                final Refset refset = service.findSingle("refsetId:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
                 refset.setActive(active);
                 service.setModifiedBy("restApi");
                 service.update(refset);
 
-                //logger.debug("updateActive: refset: " + ModelUtility.toJson(refset));
+                // logger.debug("updateActive: refset: " + ModelUtility.toJson(refset));
 
                 return refset;
             }
@@ -227,8 +230,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Add new refset members.
      *
@@ -242,57 +246,59 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/members")
-    public @ResponseBody String addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
-        @RequestParam(required = false) final MultipartFile conceptFile,
-        @RequestParam(required = false) final String fileType)
-        throws Exception {
-        
+    public @ResponseBody String addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
+        @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType) throws Exception {
+
         try {
-            
+
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             List<String> conceptIdList = new ArrayList<>();
             String error = "";
             List<String> unaddedConcepts;
-            final User user = SecurityService.getUserFromSession(); 
-            
+            final User user = SecurityService.getUserFromSession();
+
             logger.debug("addRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
-              
+
             // create the list of concepts based on what was passed in
             if (conceptIds != null && !conceptIds.equals("")) {
+
                 conceptIdList = new ArrayList<String>(Arrays.asList(conceptIds.split(",")));
-                
+
             } else if (ecl != null && !ecl.equals("")) {
-                
+
                 final String branchPath = RefsetService.getBranchPath(refsetInternalId);
                 conceptIdList = RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl);
             } else {
+
                 conceptIdList = RefsetService.getConceptIdsFromFile(conceptFile, fileType);
             }
-         
+
             logger.debug("addRefsetMembers: conceptIdList: " + conceptIdList);
-            
+
             // add the list of concepts as members to the refset
             unaddedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, conceptIdList);
-            
+
             // see if there are any concepts that were unable to be added and craft the error message
             if (unaddedConcepts.size() > 0) {
-                
+
                 error = "Unable to add concepts ";
-                
+
                 for (final String unaddedConcept : unaddedConcepts) {
+
                     error += unaddedConcept + ", ";
                 }
-                
+
                 error = StringUtils.removeEnd(error, ", ");
             }
-            
+
             logger.debug("addRefsetMembers: Finished with " + unaddedConcepts.size() + " invaild concepts");
-            
+
             if (error.equals("")) {
+
                 return "{\"status\": \"All concepts added.\"}";
             } else {
+
                 return "{\"error\": \"" + error + "\"}";
             }
 
@@ -301,12 +307,14 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
-        
+
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
-    
+
     /**
      * Remove or inactivate refset membership for a group of concepts.
      *
@@ -317,57 +325,59 @@ public class RefsetController extends BaseController {
      * @param fileType the type of file uploaded (list or rf2)
      * @return the status of the operation
      * @throws Exception the exception
-     */ 
+     */
     @PostMapping("/refset/{refsetInternalId}/removeMembers")
-    public @ResponseBody String removeRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
-        @RequestParam(required = false) final MultipartFile conceptFile,
-        @RequestParam(required = false) final String fileType)
-        throws Exception {
-        
+    public @ResponseBody String removeRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
+        @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType) throws Exception {
+
         try {
-            
+
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             String conceptsToRemove = null;
             User user = SecurityService.getUserFromSession();
 
             logger.debug("removeRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
-            
+
             String error = "";
-            
+
             // If concepts were passed in use those
             if (conceptIds != null && !conceptIds.equals("")) {
+
                 conceptsToRemove = conceptIds;
-                
+
             } else if (ecl != null && !ecl.equals("")) {
-                
+
                 final String branchPath = RefsetService.getBranchPath(refsetInternalId);
                 conceptsToRemove = String.join(",", RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl));
             } else {
+
                 conceptsToRemove = String.join(",", RefsetService.getConceptIdsFromFile(conceptFile, fileType));
             }
-         
+
             logger.debug("removeRefsetMembers: conceptIds: " + conceptIds);
-            
+
             // add the list of concepts as members to the refset
             final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, conceptsToRemove);
-            
+
             // see if there are any concepts that were unable to be added and craft the error message
             if (unremovedConcepts.size() > 0) {
-                
+
                 error = "Unable to remove concepts ";
-                
+
                 for (final String unremovedConcept : unremovedConcepts) {
+
                     error += unremovedConcept + ", ";
                 }
-                
+
                 error = StringUtils.removeEnd(error, ", ");
             }
-            
+
             if (error.equals("")) {
+
                 return "{\"status\": \"All concepts removed.\"}";
             } else {
+
                 return "{\"error\": \"" + error + "\"}";
             }
 
@@ -376,12 +386,14 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
-        
+
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
-    
+
     /**
      * Add new intensional refset definition exceptions.
      *
@@ -395,43 +407,44 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/definitionExceptions")
-    public @ResponseBody String addRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, 
-        @RequestParam(required = false) final MultipartFile conceptFile,
-        @RequestParam(required = false) final String fileType,
-        @RequestParam(required = false) final String definitionExceptionType)
-        throws Exception {
-        
+    public @ResponseBody String addRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
+        @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType,
+        @RequestParam(required = false) final String definitionExceptionType) throws Exception {
+
         try {
-            
+
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             List<String> conceptIdList = new ArrayList<>();
-            final User user = SecurityService.getUserFromSession(); 
-            
-            logger.debug("addRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType + " ; definitionExceptionType: " + definitionExceptionType);
-               
+            final User user = SecurityService.getUserFromSession();
+
+            logger.debug("addRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType
+                + " ; definitionExceptionType: " + definitionExceptionType);
+
             String inclusionEcl = ecl;
-            
+
             if (ecl == null || ecl.equals("")) {
-                
+
                 // create the list of concepts based on what was passed in
                 if (conceptIds != null && !conceptIds.equals("")) {
+
                     conceptIdList = Arrays.asList(conceptIds.split(","));
-                    
+
                 } else if (ecl == null || ecl.equals("")) {
+
                     conceptIdList = RefsetService.getConceptIdsFromFile(conceptFile, fileType);
                 }
-                
+
                 inclusionEcl = RefsetMemberService.conceptListToEclStatement(conceptIdList);
             }
-            
+
             final String status = RefsetService.addDefinitionException(user, refsetInternalId, inclusionEcl, definitionExceptionType);
-            
-            
+
             if (!status.startsWith("Error")) {
+
                 return "{\"status\": \"Definition exception added.\"}";
             } else {
+
                 return "{\"error\": \"" + status + "\"}";
             }
 
@@ -440,12 +453,14 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
-        
+
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
-    
+
     /**
      * Remove an intensional refset definition exception.
      *
@@ -456,21 +471,22 @@ public class RefsetController extends BaseController {
      */
     @PostMapping("/refset/{refsetInternalId}/removeDefinitionException/{definitionExceptionId}")
     public @ResponseBody String removeRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @PathVariable(value = "definitionExceptionId") final String definitionExceptionId)
-        throws Exception {
-        
+        @PathVariable(value = "definitionExceptionId") final String definitionExceptionId) throws Exception {
+
         try {
-            
+
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
-            final User user = SecurityService.getUserFromSession(); 
+            final User user = SecurityService.getUserFromSession();
             logger.debug("removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; definitionExceptionId: " + definitionExceptionId);
-               
+
             final String status = RefsetService.removeDefinitionException(user, refsetInternalId, definitionExceptionId);
-            
+
             if (!status.startsWith("Error")) {
+
                 return "{\"status\": \"Definition exception removed.\"}";
             } else {
+
                 return "{\"error\": \"" + status + "\"}";
             }
 
@@ -479,12 +495,14 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
-        
+
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
-    
+
     /**
      * Create a new refset.
      *
@@ -493,33 +511,33 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset")
-    public @ResponseBody String createRefset(final @RequestBody Refset refsetParameters,
-        final BindingResult bindingResult)
-        throws Exception {
-        
+    public @ResponseBody String createRefset(final @RequestBody Refset refsetParameters, final BindingResult bindingResult) throws Exception {
+
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
-        
+
         String newRefsetInternalId = null;
 
         try {
 
             logger.debug("createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
-            
+
             User user = SecurityService.getUserFromSession();
             String status = "";
             final Object returned = RefsetService.createRefset(user, refsetParameters);
-            
+
             if (returned instanceof String) {
-                status = (String)returned;
+
+                status = (String) returned;
             } else {
-                
-                final Refset refset = (Refset)returned;
+
+                final Refset refset = (Refset) returned;
                 newRefsetInternalId = refset.getId();
                 status = refset.getRefsetId();
             }
-            
+
             if (status.startsWith("Error")) {
+
                 return "{\"error\": \"" + status + "\"}";
             }
 
@@ -530,12 +548,14 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
-        
+
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(newRefsetInternalId);
         }
+
     }
-    
+
     /**
      * Modify an existing refset that is in edit mode.
      *
@@ -544,11 +564,9 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetInternalId}")
-    public @ResponseBody String modifyRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        final @RequestBody Refset refsetParameters,
-        final BindingResult bindingResult)
+    public @ResponseBody String modifyRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final @RequestBody Refset refsetParameters, final BindingResult bindingResult)
         throws Exception {
-        
+
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
@@ -559,10 +577,12 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             User user = SecurityService.getUserFromSession();
             final String status = RefsetService.modifyRefset(user, refsetInternalId, refsetParameters);
-            
+
             if (!status.startsWith("Error")) {
+
                 return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
             } else {
+
                 return "{\"error\": \"" + status + "\"}";
             }
 
@@ -571,12 +591,14 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
-        
+
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
-    
+
     /**
      * Get Workflow history for a refset.
      *
@@ -587,36 +609,36 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Get Workflow history search results", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-            // TODO: activeOnly, sort, sortAscending
+        @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/workflowHistory", produces = "application/json")
-    public @ResponseBody ResultList<WorkflowHistory> getWorkflowHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResultList<WorkflowHistory> getWorkflowHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters,
+        final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
         try {
 
-            //logger.debug("getWorkflowHistory refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
-            
+            // logger.debug("getWorkflowHistory refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
+
             User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(user, refsetInternalId);
             ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(refset, searchParameters);
-           
+
             return results;
 
         } catch (final ResponseStatusException rse) {
+
             throw rse;
 
         } catch (final Exception e) {
@@ -624,8 +646,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Modify an existing refset that is in edit mode.
      *
@@ -634,48 +657,48 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/workflowStatus")
-    public @ResponseBody Refset setWorkflowStatus(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam final String action, @RequestParam(required = false) final String notes)
-        throws Exception {
-        
+    public @ResponseBody Refset setWorkflowStatus(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam final String action,
+        @RequestParam(required = false) final String notes) throws Exception {
+
         try {
 
             logger.debug("setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; action: " + action + " ; notes: " + notes);
-            
+
             User user = SecurityService.getUserFromSession();
             Refset refset = RefsetService.getRefset(user, refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
-            
+
             // if the status is Published then create a new version of the refset that is ready to be edited
             if (currentStatus == null || currentStatus.equals(WorkflowService.PUBLISHED)) {
-                
+
                 try (final TerminologyService service = new TerminologyService()) {
 
                     final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
                     final String versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
-                    
+
                     final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refset.getId(), true);
                     refset = RefsetService.getRefset(service, user, newRefsetInternalId);
-                    
+
                     if (action.equals(WorkflowService.EDIT) && editionVersions.indexOf(versionDate) > 0) {
-                        
+
                         RefsetService.refsetsToShowUpgradeWarning.add(newRefsetInternalId);
                         refset.setUpgradeWarning(true);
                     }
+
                 }
-                
+
                 return refset;
             }
 
             refset = WorkflowService.setWorkflowStatusByAction(user, action, refset, notes);
-            
+
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
-                
+
                 logger.debug("setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
                 return refset;
             } else {
-                
+
                 logger.debug("setWorkflowStatus: did not update workflow status.");
                 return null;
             }
@@ -685,8 +708,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Modify an existing refset that is in edit mode.
      *
@@ -695,20 +719,18 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetInternalId}/workflowNote")
-    public @ResponseBody String updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestBody(required = true) final String notes)
-        throws Exception {
-        
+    public @ResponseBody String updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = true) final String notes) throws Exception {
+
         try {
 
-            //logger.debug("updateWorkflowNote: refsetInternalId: " + refsetInternalId + " ;notes: " + notes);
+            // logger.debug("updateWorkflowNote: refsetInternalId: " + refsetInternalId + " ;notes: " + notes);
             User user = SecurityService.getUserFromSession();
-            
+
             Refset refset = RefsetService.getRefset(user, refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
-            
+
             WorkflowService.updateWorkflowNote(user, refset, notes);
-            
+
             return "true";
 
         } catch (final Exception e) {
@@ -716,8 +738,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Complete the publication of all Ready for Publication refsetsin a code system.
      *
@@ -727,44 +750,46 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/admin/completeAllRefsetPublications")
-    public @ResponseBody String completeAllRefsetPublications(@RequestParam(required = true) final String versionDate,
-        @RequestParam(required = true) final String codeSystem) throws Exception {
-        
+    public @ResponseBody String completeAllRefsetPublications(@RequestParam(required = true) final String versionDate, @RequestParam(required = true) final String codeSystem) throws Exception {
+
         final User user = SecurityService.getUserFromSession();
-        
+
         if (StringUtility.isEmpty(codeSystem)) {
-            throw new Exception ("A Code System must be specified.");
+
+            throw new Exception("A Code System must be specified.");
         }
-        
-        try (TerminologyService service = new TerminologyService()){
-            
+
+        try (TerminologyService service = new TerminologyService()) {
+
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
             logger.debug("completeAllRefsetPublications: versionDate: " + versionDate + " ; editionShortName (codeSystem): " + codeSystem);
-            
+
             final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, codeSystem);
             String error = "";
-            
+
             // see if there are any refsets that were unable to be updated and craft the error message
             if (refsetsNotUpdated.size() > 0) {
-                
+
                 error = "Unable to complete publication for refsets in code system " + codeSystem + ": ";
-                
+
                 for (final String unremovedConcept : refsetsNotUpdated) {
+
                     error += unremovedConcept + ", ";
                 }
-                
+
                 error = StringUtils.removeEnd(error, ", ");
             }
-            
+
             if (error.equals("")) {
-                
+
                 String message = "All refset publications completed in code system " + codeSystem;
-                
+
                 return "{\"status\": \"" + message + ".\"}";
-                
+
             } else {
+
                 return "{\"error\": \"" + error + "\"}";
             }
 
@@ -773,8 +798,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Set refsets that failed publication back to 'Ready For Edit' status.
      *
@@ -785,34 +811,37 @@ public class RefsetController extends BaseController {
      */
     @PutMapping("/admin/failRefsetPublications")
     public @ResponseBody String failRefsetPublications(@RequestParam(required = true) final String refsetIds, @RequestParam(required = true) final String notes) throws Exception {
-        
+
         final User user = SecurityService.getUserFromSession();
-        
-        try (TerminologyService service = new TerminologyService()){
-            
+
+        try (TerminologyService service = new TerminologyService()) {
+
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
             logger.debug("failRefsetPublications: refset IDs: " + refsetIds + " ; notes: " + notes);
-            
+
             final List<String> refsetsNotUpdated = WorkflowService.setBatchWorkflowStatusByAction(service, user, refsetIds, WorkflowService.FAILS_RVF, notes);
             String error = "";
-            
+
             // see if there are any refsets that were unable to be updated and craft the error message
             if (refsetsNotUpdated.size() > 0) {
-                
+
                 error = "Unable to update refsets: ";
-                
+
                 for (final String unremovedConcept : refsetsNotUpdated) {
+
                     error += unremovedConcept + ", ";
                 }
-                
+
                 error = StringUtils.removeEnd(error, ", ");
             }
-            
+
             if (error.equals("")) {
+
                 return "{\"status\": \"All refsets updated.\"}";
             } else {
+
                 return "{\"error\": \"" + error + "\"}";
             }
 
@@ -821,8 +850,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Create a new version of an existing refset in edit mode.
      *
@@ -831,23 +861,23 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/newVersion")
-    public @ResponseBody String createNewRefsetVersion(@PathVariable(value = "refsetInternalId") final String refsetInternalId)
-        throws Exception {
-        
+    public @ResponseBody String createNewRefsetVersion(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+
         // Check to make sure parameters were properly bound to variables.
-        //checkBinding(bindingResult);
+        // checkBinding(bindingResult);
 
         try {
 
             logger.debug("createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
-            
+
             final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refsetInternalId, true);
-            
+
             if (newRefsetInternalId.startsWith("Error")) {
+
                 return "{\"error\": \"" + newRefsetInternalId + "\"}";
             }
-            
+
             return "{\"refsetInternalId\": \"" + newRefsetInternalId + "\"}";
 
         } catch (final Exception e) {
@@ -855,24 +885,24 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Inactivate a refset.
      *
      * @param refsetInternalId the internal refset ID
      * @return the status of the operation
      * @throws Exception the exception
-     */ 
+     */
     @DeleteMapping("/refset/{refsetInternalId}")
-    public @ResponseBody String inactiveRefset(final @PathVariable String refsetInternalId)
-        throws Exception {
-        
+    public @ResponseBody String inactiveRefset(final @PathVariable String refsetInternalId) throws Exception {
+
         try {
 
-            //logger.debug("inactiveRefset: refsetInternalId: " + refsetInternalId);
+            // logger.debug("inactiveRefset: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
-            
+
             final String status = RefsetService.inactivateRefset(user, refsetInternalId);
 
             return "{\"status\": \"" + status + "\"}";
@@ -882,24 +912,24 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Delete the edit version of a refset.
      *
      * @param refsetInternalId the internal refset ID
      * @return the status of the operation
      * @throws Exception the exception
-     */ 
+     */
     @DeleteMapping("/refset/{refsetInternalId}/editVersion")
-    public @ResponseBody String deleteRefsetEditVersion(final @PathVariable String refsetInternalId)
-        throws Exception {
-        
+    public @ResponseBody String deleteRefsetEditVersion(final @PathVariable String refsetInternalId) throws Exception {
+
         try {
 
-            //logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
+            // logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
-            
+
             final String status = RefsetService.deleteInDevelopmentVersion(user, refsetInternalId, true);
 
             return "{\"status\": \"" + status + "\"}";
@@ -909,8 +939,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Search Directory.
      *
@@ -922,16 +953,15 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Get refset search results", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-            // TODO: activeOnly, sort, sortAscending
+        @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = "application/json")
@@ -940,24 +970,26 @@ public class RefsetController extends BaseController {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
-        
+
         User user = SecurityService.getUserFromSession();
 
         try (TerminologyService service = new TerminologyService()) {
 
-            logger.debug("searchRefsets searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + showInDevelopment + " ; countComments: " + countComments);
-            
+            logger.debug("searchRefsets searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + showInDevelopment
+                + " ; countComments: " + countComments);
+
             ResultList<Refset> results = RefsetService.searchRefsets(user, service, searchParameters, searchConcepts, true, false);
-            
+
             if (countComments != null && countComments) {
-                
+
                 logger.debug("searchRefsets: Including discussion count");
                 DiscussionService.attachRefsetDiscussionCounts(service, user, results.getItems());
             }
-           
+
             return results;
 
         } catch (final ResponseStatusException rse) {
+
             throw rse;
 
         } catch (final Exception e) {
@@ -965,6 +997,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -978,30 +1011,32 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Search the taxonomy for refset members", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-            // TODO: activeOnly, sort, sortAscending
+        @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = {"/refset/{refsetInternalId}/taxonomySearch", "/refset/{refsetInternalId}/conceptSearch"}, produces = "application/json")
-    public @ResponseBody ConceptResultList searchConcepts(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, final SearchParameters searchParameters, final BindingResult bindingResult, HttpServletRequest request) throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = {
+        "/refset/{refsetInternalId}/taxonomySearch", "/refset/{refsetInternalId}/conceptSearch"
+    }, produces = "application/json")
+    public @ResponseBody ConceptResultList searchConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters,
+        final BindingResult bindingResult, HttpServletRequest request) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
-        
+
         User user = SecurityService.getUserFromSession();
         boolean searchRefsetMembers = false;
         final String uri = request.getRequestURI();
-        
+
         if (uri.contains("taxonomySearch")) {
+
             searchRefsetMembers = true;
         }
 
@@ -1010,8 +1045,7 @@ public class RefsetController extends BaseController {
             ConceptResultList results = new ConceptResultList();
             String query = searchParameters.getQuery();
 
-            logger.debug("taxonomySearch: searchConcepts: " + refsetInternalId + " ; searchParameters: "
-                    + ModelUtility.toJson(searchParameters) + " ; searchRefsetMembers: " + searchRefsetMembers);
+            logger.debug("taxonomySearch: searchConcepts: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters) + " ; searchRefsetMembers: " + searchRefsetMembers);
 
             if (query != null && !query.equals("")) {
 
@@ -1025,6 +1059,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -1040,29 +1075,27 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Get refset search results", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = true, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = true, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "displayType", value = "Should results be a list or taxonomy", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "list"),
-            @ApiImplicitParam(name = "startingConceptId", value = "For taxonomy calls the starting concept ID (exclusive - get the children of this concept not the concept itself)",
-                    required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "depth", value = "For taxonomy calls the depth - how many levels of children or parents to retrieve",
-                    required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "1"),
-            @ApiImplicitParam(name = "returnChildren", value = "For taxonomy calls should children be returned. If false then parents will be returned",
-                    required = false, dataType = "boolean", paramType = "query", defaultValue = "true"),
-            // TODO: activeOnly, sort, sortAscending
+        @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = true, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = true, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "displayType", value = "Should results be a list or taxonomy", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "list"),
+        @ApiImplicitParam(name = "startingConceptId", value = "For taxonomy calls the starting concept ID (exclusive - get the children of this concept not the concept itself)", required = false,
+            dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "depth", value = "For taxonomy calls the depth - how many levels of children or parents to retrieve", required = false, dataTypeClass = Integer.class,
+            paramType = "query", defaultValue = "1"),
+        @ApiImplicitParam(name = "returnChildren", value = "For taxonomy calls should children be returned. If false then parents will be returned", required = false, dataType = "boolean",
+            paramType = "query", defaultValue = "true"),
+        // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members", produces = "application/json")
-    public @ResponseBody ConceptResultList getMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters, 
-            final String displayType, final TaxonomyParameters taxonomyParameters, @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception 
-    {
+    public @ResponseBody ConceptResultList getMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters, final String displayType,
+        final TaxonomyParameters taxonomyParameters, @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception {
 
         checkBinding(bindingResult);
 
@@ -1070,20 +1103,21 @@ public class RefsetController extends BaseController {
         ConceptResultList results = new ConceptResultList();
         User user = SecurityService.getUserFromSession();
 
-        logger.debug("getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters + " ; taxonomyParameters: " + taxonomyParameters + " ; displayType: " + displayType + " ; countComments: " + countComments);
+        logger.debug("getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters + " ; taxonomyParameters: " + taxonomyParameters + " ; displayType: "
+            + displayType + " ; countComments: " + countComments);
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = RefsetMemberService.getRefset(user, service, refsetInternalId);
 
             results = RefsetMemberService.getRefsetMembers(user, refsetInternalId, searchParameters, displayType, taxonomyParameters);
-            
+
             if (countComments != null && countComments) {
-                
+
                 logger.debug("getMembers: Including discussion count");
                 DiscussionService.attachMemberDiscussionCounts(service, user, refset, results.getItems());
             }
-            
+
             results.setTimeTaken(System.currentTimeMillis() - start);
             return results;
 
@@ -1092,6 +1126,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -1104,20 +1139,15 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Cache the ancestors of the refset members for the specified refset ID", response = Refset.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully populated the refset's ancestor cache"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully populated the refset's ancestor cache"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetId",
-                    value = "The ID of the refset for which ancestors are to be identified.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "refsetId", value = "The ID of the refset for which ancestors are to be identified.", required = true, dataTypeClass = String.class, paramType = "path"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetId}/versionDate/{versionDate}", produces = "application/json")
-    public @ResponseBody String cacheMemberAncestors(
-        @PathVariable(value = "refsetId") final String refsetId, 
-        @PathVariable(value = "versionDate") final String versionDate
-    ) throws Exception {
+    public @ResponseBody String cacheMemberAncestors(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1129,12 +1159,14 @@ public class RefsetController extends BaseController {
             final boolean success = RefsetMemberService.cacheMemberAncestors(service, user, refsetId, versionDate);
 
             if (success) {
+
                 returnJson = returnJson.replace("<RESULT>", "true");
             } else {
+
                 returnJson = returnJson.replace("<RESULT>", "false");
             }
 
-            //logger.debug("cacheMemberAncestors results: " + returnJson);
+            // logger.debug("cacheMemberAncestors results: " + returnJson);
 
             return returnJson;
 
@@ -1143,6 +1175,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -1161,49 +1194,31 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Export the refset for the specified ID", response = Refset.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId",
-                    value = "The internal ID of the refset to return.", required = true,
-                    dataTypeClass = String.class, paramType = "path"),
-            @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.",
-                    required = true, dataTypeClass = String.class, paramType = "query"),
-            @ApiImplicitParam(name = "languageId",
-                    value = "For formats with names which language to display the name in.",
-                    required = false, dataTypeClass = String.class, paramType = "query"),
-            @ApiImplicitParam(name = "format",
-                    value = "The type of export: 'rf2', 'rf2_with_names', ' or 'sctids'.",
-                    required = true, dataTypeClass = String.class, paramType = "query"),
-            @ApiImplicitParam(name = "fileNameDate",
-                    value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.",
-                    required = true, dataTypeClass = String.class, paramType = "query"),
-            @ApiImplicitParam(name = "startEffectiveTime",
-                    value = "Format: yyyymmdd. Can be used to produce a delta after content is versioned by filtering a SNAPSHOT export by effectiveTime.",
-                    required = false, dataTypeClass = String.class, paramType = "query"),
-            @ApiImplicitParam(name = "transientEffectiveTime",
-                    value = "Format: yyyymmdd. Add a transient effectiveTime to rows of content which are not yet versioned.",
-                    required = false, dataTypeClass = String.class, paramType = "query"),
-            @ApiImplicitParam(name = "exportMetadata", value = "e.g.  true or false",
-                    required = true, dataType = "boolean", paramType = "query"),
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "languageId", value = "For formats with names which language to display the name in.", required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names', ' or 'sctids'.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "fileNameDate", value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "startEffectiveTime", value = "Format: yyyymmdd. Can be used to produce a delta after content is versioned by filtering a SNAPSHOT export by effectiveTime.",
+            required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "transientEffectiveTime", value = "Format: yyyymmdd. Add a transient effectiveTime to rows of content which are not yet versioned.", required = false,
+            dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "exportMetadata", value = "e.g.  true or false", required = true, dataType = "boolean", paramType = "query"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}", produces = "application/json")
-    public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, final String format, final String exportType,
-        final String languageId, final String fileNameDate, String startEffectiveTime,
-        final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
+    public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String format, final String exportType, final String languageId,
+        final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
 
         try {
 
             User user = SecurityService.getUserFromSession();
-            logger.debug("exportRefset: refsetInternalId: " + refsetInternalId
-                    + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: "
-                    + fileNameDate + " ; startEffectiveTime: " + startEffectiveTime
-                    + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: "
-                    + exportMetadata);
+            logger.debug("exportRefset: refsetInternalId: " + refsetInternalId + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: " + fileNameDate + " ; startEffectiveTime: "
+                + startEffectiveTime + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: " + exportMetadata);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -1216,29 +1231,29 @@ public class RefsetController extends BaseController {
                         boolean withNames = false;
 
                         if (format.equals("rf2_with_names")) {
+
                             withNames = true;
                         }
 
                         String uri = "";
 
                         if (exportType.contentEquals("SNAPSHOT")) {
-                            uri = RefsetMemberService.exportRefsetRf2(refsetInternalId, exportType,
-                                    languageId, fileNameDate, startEffectiveTime,
-                                    transientEffectiveTime, exportMetadata, withNames);
+
+                            uri = RefsetMemberService.exportRefsetRf2(refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
                         } else {
-                            uri = RefsetMemberService.exportRefsetRf2Delta(user, refsetInternalId,
-                                    exportType, languageId, fileNameDate, startEffectiveTime,
-                                    transientEffectiveTime, exportMetadata, withNames);
+
+                            uri = RefsetMemberService.exportRefsetRf2Delta(user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
+                                withNames);
                         }
+
                         logger.debug("results: " + uri);
                         url = "{\"url\": \"" + uri + "\"}";
 
                     } else if (format.equals("sctids")) {
 
-                        String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId,
-                                exportMetadata);
+                        String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId, exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
-                    } 
+                    }
 
                     return url;
 
@@ -1247,6 +1262,7 @@ public class RefsetController extends BaseController {
                     handleException(e);
                     return null;
                 }
+
             }
 
         } catch (final Exception e) {
@@ -1254,6 +1270,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -1265,15 +1282,15 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Download the specified refset export file", response = Refset.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
-    @ApiImplicitParams({@ApiImplicitParam(name = "fileName", value = "The name of the file to download.", required = true, dataTypeClass = String.class, paramType = "path")})
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "fileName", value = "The name of the file to download.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}", produces = "application/json")
-    public @ResponseBody ResponseEntity<Resource> downloadExport(@PathVariable(value = "fileName")
-    final String fileName) throws Exception {
+    public @ResponseBody ResponseEntity<Resource> downloadExport(@PathVariable(value = "fileName") final String fileName) throws Exception {
 
         try {
 
@@ -1284,16 +1301,12 @@ public class RefsetController extends BaseController {
             Resource file = new UrlResource(filePath.toUri());
 
             if (!file.exists() || !file.isReadable()) {
+
                 throw new RuntimeException("Could not read the file!");
             }
 
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
-                            HttpHeaders.CONTENT_DISPOSITION)
-                    .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + file.getFilename() + "\"")
-                    .contentLength(file.contentLength()).body(file);
+            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION).header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"").contentLength(file.contentLength()).body(file);
 
             // ContentDisposition contentDisposition =
             // ContentDisposition.builder("inline").filename(fileName).build();
@@ -1325,6 +1338,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -1337,18 +1351,17 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Get the concept for the specified ID", response = Refset.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path"),
-            @ApiImplicitParam(name = "memberId", value = "The ID of the member to return.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "memberId", value = "The ID of the member to return.", required = true, dataTypeClass = String.class, paramType = "query"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}", produces = "application/json")
-    public @ResponseBody ResultList<Map<String, String>> getMemberHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @PathVariable(value = "conceptId")
-        final String conceptId) throws Exception {
+    public @ResponseBody ResultList<Map<String, String>> getMemberHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @PathVariable(value = "conceptId") final String conceptId) throws Exception {
 
         try {
 
@@ -1357,18 +1370,17 @@ public class RefsetController extends BaseController {
 
             try (TerminologyService service = new TerminologyService()) {
 
-                final Refset refset = service.findSingle(
-                        "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+                final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
 
                 if (refset == null) {
+
                     throw new Exception("Unable to retrieve refset " + refsetInternalId);
                 }
 
                 RefsetService.setRefsetPermissions(user, refset);
                 final List<Map<String, String>> versions = RefsetService.getSortedRefsetVersionList(refset, service, true);
 
-                final List<Map<String, String>> memberHistory =
-                        RefsetMemberService.getMemberHistory(conceptId, versions);
+                final List<Map<String, String>> memberHistory = RefsetMemberService.getMemberHistory(conceptId, versions);
 
                 logger.debug("getMemberHistory: member: " + ModelUtility.toJson(memberHistory));
 
@@ -1383,6 +1395,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -1395,36 +1408,34 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Get the concept for the specified ID", response = Refset.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.", required = true, dataTypeClass = String.class, paramType = "path"),
-            @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "query"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{conceptId}", produces = "application/json")
-    public @ResponseBody Concept getConceptDetails(@PathVariable(value = "conceptId")
-    final String conceptId, final String refsetInternalId) throws Exception {
+    public @ResponseBody Concept getConceptDetails(@PathVariable(value = "conceptId") final String conceptId, final String refsetInternalId) throws Exception {
 
         try {
 
             User user = SecurityService.getUserFromSession();
-            //logger.debug("getConceptDetails: conceptId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
-            
+            // logger.debug("getConceptDetails: conceptId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
+
             try (TerminologyService service = new TerminologyService()) {
 
-                final Refset refset = service.findSingle(
-                        "id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+                final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
 
                 if (refset == null) {
+
                     throw new Exception("Unable to retrieve refset " + refsetInternalId);
                 }
 
                 final Concept concept = RefsetMemberService.getConceptDetails(conceptId, refset);
 
-                //logger.debug("getConceptDetails: concept: " + ModelUtility.toJson(concept));
+                // logger.debug("getConceptDetails: concept: " + ModelUtility.toJson(concept));
 
                 return concept;
             }
@@ -1434,41 +1445,52 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
      * Migrates RTT data into the database but only if the database is empty.
      *
-     * @param quickMigration Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is false
+     * @param quickMigration Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is
+     *            false
+     * @param forProduction Should the migration add projects, teams, and other testing data, which it should NOT do for Production. Default is true
      * @return the status of the migration
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/rtt", produces = "application/json")
-    public @ResponseBody String migrateRttData(@RequestParam(required = false) final Boolean quickMigration) throws Exception {
+    public @ResponseBody String migrateRttData(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
         try {
 
             boolean runShortMigration = false;
-            
+            boolean runForProduction = true;
+
             if (quickMigration != null && quickMigration.booleanValue()) {
-                
+
                 logger.info("!!!!! migrateRttData RUNNING QUICK MIGRATION - WILL HAVE MORE THAN ONLY PUBLISHED REFSET VERSIONS");
                 runShortMigration = true;
             }
-            
+
+            if (forProduction != null && !forProduction.booleanValue()) {
+
+                logger.info("!!!!! migrateRttData RUNNING MIGRATION ON PRODUCTION - DOESN'T CONTAIN TESTING PROJECTS, TEAMS, AND REFSETS");
+                runForProduction = false;
+            }
+
             try (TerminologyService service = new TerminologyService()) {
 
                 final ResultList<String> editions = service.findIds("", null, Edition.class, null);
                 String message = "";
 
                 if (editions.size() > 2) {
+
                     return "Database not empty, migration cancelled";
                 }
 
-                logger.info("migrateRttData Starting RTT data migration with runShortMigration: " + runShortMigration);
+                logger.info("migrateRttData Starting RTT data migration");
 
                 HistoricDataMigrator migrator = new HistoricDataMigrator();
-                migrator.migrate(runShortMigration);
+                migrator.migrate(runShortMigration, runForProduction);
 
                 logger.info("migrateRttData Finished RTT data migration");
 
@@ -1480,6 +1502,40 @@ public class RefsetController extends BaseController {
             handleException(e);
             return "Errors occurred, check with the system administrator";
         }
+
+    }
+
+    /**
+     * Creates a new testing refset containing initial feedback. The method will idenify the last refset created for this purpose (based on numbering). It will create a new
+     * one, with the same initial feedback content, but with an incremented number appended to the name and refsetId
+     *
+     * @param quickMigration Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is
+     *            false
+     * @param forDevOnly Should the migration add projects, teams, and other testing data, which it shouldn't do for Production. Default is true
+     * @return the status of the creation
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/feedback", produces = "application/json")
+    public @ResponseBody String createNewFeedbackRefset() throws Exception {
+
+        String status = "Feedback testing refset created succesffully";
+
+        try {
+
+            logger.info("Create new refset, initialized with feedback, for testing purposes");
+
+            MigrationDataInitializer initializer = new MigrationDataInitializer();
+            Refset refset = initializer.createTestingFeedback();
+
+            logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return "Errors occurred, check with the system administrator";
+        }
+
+        return status;
     }
 
     /**
@@ -1490,9 +1546,8 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Gets the version statuses", response = ResultList.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/versionStatuses", produces = "application/json")
@@ -1507,8 +1562,8 @@ public class RefsetController extends BaseController {
                 final List<TypeKeyValue> versionStatuses = new ArrayList<>();
 
                 for (VersionStatus value : VersionStatus.values()) {
-                    TypeKeyValue typeKeyValue =
-                            new TypeKeyValue("status", value.getLable(), value.getLable());
+
+                    TypeKeyValue typeKeyValue = new TypeKeyValue("status", value.getLable(), value.getLable());
                     versionStatuses.add(typeKeyValue);
                 }
 
@@ -1523,8 +1578,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Gets the versions.
      *
@@ -1533,13 +1589,11 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Gets the versions", response = ResultList.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/versions",
-            produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/versions", produces = "application/json")
     public @ResponseBody ResultList<TypeKeyValue> getVersions() throws Exception {
 
         try {
@@ -1558,17 +1612,24 @@ public class RefsetController extends BaseController {
                 ResultList<TypeKeyValue> results = new ResultList<>();
                 List<TypeKeyValue> resultItems = new ArrayList<>();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
                 for (Refset refset : refsets.getItems()) {
+
                     String version = sdf.format(refset.getVersionDate());
                     TypeKeyValue entry = new TypeKeyValue("version", version, version);
+
                     if (!resultItems.contains(entry)) {
+
                         resultItems.add(entry);
                     }
+
                 }
+
                 resultItems.sort(new Comparator<TypeKeyValue>() {
 
                     @Override
                     public int compare(TypeKeyValue o1, TypeKeyValue o2) {
+
                         return o2.getValue().compareTo(o1.getValue());
                     }
 
@@ -1584,6 +1645,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -1594,9 +1656,8 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Gets the editions", response = ResultList.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/editions", produces = "application/json")
@@ -1624,17 +1685,20 @@ public class RefsetController extends BaseController {
 
                     @Override
                     public int compare(Edition o1, Edition o2) {
+
                         return o1.getName().compareTo(o2.getName());
                     }
                 });
                 List<TypeKeyValue> entryList = new ArrayList<>();
                 ResultList<TypeKeyValue> entryResults = new ResultList<>();
+
                 for (Edition edition : editionList) {
-                    TypeKeyValue tkv =
-                            new TypeKeyValue("edition", edition.getName(), edition.getName());
+
+                    TypeKeyValue tkv = new TypeKeyValue("edition", edition.getName(), edition.getName());
                     tkv.setId(edition.getId());
                     entryList.add(tkv);
                 }
+
                 entryResults.setItems(entryList);
                 entryResults.setTotalKnown(true);
 
@@ -1646,8 +1710,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.
      *
@@ -1658,9 +1723,8 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.", response = ResultList.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/general/refsetConcepts", produces = "application/json")
@@ -1668,12 +1732,12 @@ public class RefsetController extends BaseController {
 
         try {
 
-            //logger.debug("getRefsetConcepts: branch: " + branch + "; areParentConcepts: " + areParentConcepts);
+            // logger.debug("getRefsetConcepts: branch: " + branch + "; areParentConcepts: " + areParentConcepts);
 
             User user = SecurityService.getUserFromSession();
             ConceptResultList results = RefsetService.getRefsetConcepts(branch, areParentConcepts);
-            
-            //logger.debug("getRefsetConcepts: results: " + ModelUtility.toJson(results));
+
+            // logger.debug("getRefsetConcepts: results: " + ModelUtility.toJson(results));
 
             return results;
 
@@ -1682,20 +1746,20 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Gets the list of branch versions.
      *
-     * @param branch the branch to get versions from 
+     * @param branch the branch to get versions from
      * @return list of edition versions
      * @throws Exception the exception
      */
     @ApiOperation(value = "Gets the branch versions", response = ResultList.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/general/branchVersions", produces = "application/json")
@@ -1703,15 +1767,15 @@ public class RefsetController extends BaseController {
 
         try {
 
-            //logger.debug("getBranchVersions - branch: " + branch);
+            // logger.debug("getBranchVersions - branch: " + branch);
 
             User user = SecurityService.getUserFromSession();
-            
+
             final ResultList<String> results = new ResultList<>();
             results.setItems(RefsetService.getBranchVersions(branch));
-            
-            //logger.debug("getBranchVersions - results: " + results);
-            
+
+            // logger.debug("getBranchVersions - results: " + results);
+
             return results;
 
         } catch (final Exception e) {
@@ -1719,6 +1783,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -1729,9 +1794,8 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Gets the organizations", response = ResultList.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/organizations", produces = "application/json")
@@ -1754,23 +1818,26 @@ public class RefsetController extends BaseController {
                 results.setTimeTaken(System.currentTimeMillis() - start);
                 results.setTotalKnown(true);
 
-                //logger.debug("results: " + ModelUtility.toJson(results));
+                // logger.debug("results: " + ModelUtility.toJson(results));
                 List<Organization> organizationList = results.getItems();
                 organizationList.sort(new Comparator<Organization>() {
 
                     @Override
                     public int compare(Organization o1, Organization o2) {
+
                         return o1.getName().compareTo(o2.getName());
                     }
                 });
                 List<TypeKeyValue> entryList = new ArrayList<>();
                 ResultList<TypeKeyValue> entryResults = new ResultList<>();
+
                 for (Organization organization : organizationList) {
-                    TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(),
-                            organization.getName());
+
+                    TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(), organization.getName());
                     tkv.setId(organization.getId());
                     entryList.add(tkv);
                 }
+
                 entryResults.setItems(entryList);
                 entryResults.setTotalKnown(true);
 
@@ -1782,6 +1849,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -1792,8 +1860,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/ancestorCache", produces = "application/json")
-    public @ResponseBody String getRefsetAncestorCache(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId) throws Exception {
+    public @ResponseBody String getRefsetAncestorCache(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1801,10 +1868,12 @@ public class RefsetController extends BaseController {
 
             final Refset refset = RefsetMemberService.getRefset(SecurityService.getUserFromSession(), service, refsetInternalId);
             final Map<String, Set<String>> ancestorsCache = RefsetMemberService.getCacheForMemberAncestors(RefsetMemberService.getBranchPath(refset));
-            
+
             if (ancestorsCache.containsKey(refsetInternalId)) {
+
                 return ModelUtility.toJson(ancestorsCache.get(refsetInternalId));
             } else {
+
                 return "Not Cached";
             }
 
@@ -1813,8 +1882,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Returns the ancestor path concepts for a refset member.
      *
@@ -1824,7 +1894,8 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}/ancestorConcepts", produces = "application/json")
-    public @ResponseBody Concept getMemberAncestorConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId) throws Exception {
+    public @ResponseBody Concept getMemberAncestorConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId)
+        throws Exception {
 
         try {
 
@@ -1833,9 +1904,9 @@ public class RefsetController extends BaseController {
             final Refset refset = RefsetService.getRefset(user, refsetInternalId);
             final Concept concept = new Concept();
             concept.setCode(conceptId);
-            
+
             RefsetMemberService.getConceptAncestors(refset, Arrays.asList(concept));
-            
+
             return concept;
 
         } catch (final Exception e) {
@@ -1843,8 +1914,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Compile and store the data to upgrade a refset.
      *
@@ -1854,26 +1926,26 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/compileUpgradeData", produces = "application/json")
-    public @ResponseBody String compileUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = false) final String upgradeBranch) throws Exception {
-        
+    public @ResponseBody String compileUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = false) final String upgradeBranch)
+        throws Exception {
+
         final User user = SecurityService.getUserFromSession();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
-            
+
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             String status = "";
-            
+
             logger.debug("compileUpgradeData: refsetInternalId: " + refsetInternalId + "; upgradeBranch: " + upgradeBranch);
-            
+
             // add the list of concepts as members to the refset
             status = RefsetMemberService.compileUpgradeData(service, user, refsetInternalId, upgradeBranch);
-            
+
             logger.debug("compileUpgradeData: Finished with status " + status);
-            
+
             return "{\"status\": \"" + status + "\"}";
 
         } catch (final Exception e) {
@@ -1881,12 +1953,14 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
-        
+
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
-    
+
     /**
      * Get the stored the data to upgrade a refset.
      *
@@ -1897,18 +1971,18 @@ public class RefsetController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/upgradeData", produces = "application/json")
     public @ResponseBody ResultList<UpgradeInactiveConcecpt> getUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
-        
+
         final User user = SecurityService.getUserFromSession();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             logger.debug("getUpgradeData: refsetInternalId: " + refsetInternalId);
-              
+
             // add the list of concepts as members to the refset
             final ResultList<UpgradeInactiveConcecpt> results = RefsetMemberService.getUpgradeData(service, user, refsetInternalId);
-            
+
             logger.debug("getUpgradeData: results " + results);
-            
+
             return results;
 
         } catch (final Exception e) {
@@ -1916,8 +1990,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Make a change to an upgrade concept.
      *
@@ -1932,22 +2007,22 @@ public class RefsetController extends BaseController {
      */
     @PostMapping("/refset/{refsetInternalId}/modifyUpgradeConcept")
     public @ResponseBody String modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = true) final String inactiveConceptId,
-        @RequestParam(required = false) final String replacementConceptId, @RequestParam(required = true) final String changed, 
+        @RequestParam(required = false) final String replacementConceptId, @RequestParam(required = true) final String changed,
         @RequestBody(required = false) final UpgradeReplacementConcecpt manualReplacementConcept) throws Exception {
-        
+
         final User user = SecurityService.getUserFromSession();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
-            String status = "All changes made successfully"; 
-            
-            logger.debug("modifyUpgradeConcept: refsetInternalId: " + refsetInternalId + "; changed: " + changed + "; inactiveConceptId: " + inactiveConceptId 
-                + "; replacementConceptId: " + replacementConceptId + "; manualReplacementConcept: " + manualReplacementConcept);
+            String status = "All changes made successfully";
+
+            logger.debug("modifyUpgradeConcept: refsetInternalId: " + refsetInternalId + "; changed: " + changed + "; inactiveConceptId: " + inactiveConceptId + "; replacementConceptId: "
+                + replacementConceptId + "; manualReplacementConcept: " + manualReplacementConcept);
 
             status = RefsetMemberService.modifyUpgradeConcept(service, user, refsetInternalId, inactiveConceptId, replacementConceptId, manualReplacementConcept, changed);
-            
+
             logger.debug("modifyUpgradeConcept: Finished with status: " + status);
 
             return "{\"status\": \"" + status + "\"}";
@@ -1957,8 +2032,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Remove all inactive Upgrade concepts at once.
      *
@@ -1969,19 +2045,19 @@ public class RefsetController extends BaseController {
      */
     @PostMapping("/refset/{refsetInternalId}/removeAllUpgradeInactiveConcepts")
     public @ResponseBody String removeAllUpgradeInactiveConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
-        
+
         final User user = SecurityService.getUserFromSession();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
-            String status = "All changes made successfully"; 
-            
+            String status = "All changes made successfully";
+
             logger.debug("removeAllUpgradeInactiveConcepts: refsetInternalId: " + refsetInternalId);
 
             status = RefsetMemberService.removeAllUpgradeInactiveConcepts(service, user, refsetInternalId);
-            
+
             logger.debug("removeAllUpgradeInactiveConcepts: Finished with status: " + status);
 
             return "{\"status\": \"" + status + "\"}";
@@ -1991,8 +2067,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Add all replacement Upgrade concepts as members at once.
      *
@@ -2003,30 +2080,31 @@ public class RefsetController extends BaseController {
      */
     @PostMapping("/refset/{refsetInternalId}/addAllUpgradeReplacementConcepts")
     public @ResponseBody String addAllUpgradeReplacementConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
-        
+
         final User user = SecurityService.getUserFromSession();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
-            String status = "All changes made successfully"; 
-            
+            String status = "All changes made successfully";
+
             logger.debug("addAllUpgradeReplacementConcepts: refsetInternalId: " + refsetInternalId);
-            
+
             status = RefsetMemberService.addAllUpgradeReplacementConcepts(service, user, refsetInternalId);
-            
+
             logger.debug("addAllUpgradeReplacementConcepts: Finished with status: " + status);
-            
+
             return "{\"status\": \"" + status + "\"}";
-            
+
         } catch (final Exception e) {
-            
+
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Search for members replacement concepts for upgrade.
      *
@@ -2038,25 +2116,26 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Search the taxonomy for refset members", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-            // TODO: activeOnly, sort, sortAscending
+        @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = {"/refset/{refsetInternalId}/replacementConceptSearch"}, produces = "application/json")
-    public @ResponseBody ResultList<UpgradeReplacementConcecpt> replacementConceptSearch(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, final SearchParameters searchParameters, final BindingResult bindingResult, HttpServletRequest request) throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = {
+        "/refset/{refsetInternalId}/replacementConceptSearch"
+    }, produces = "application/json")
+    public @ResponseBody ResultList<UpgradeReplacementConcecpt> replacementConceptSearch(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        final SearchParameters searchParameters, final BindingResult bindingResult, HttpServletRequest request) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
-        
+
         User user = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -2068,6 +2147,7 @@ public class RefsetController extends BaseController {
             logger.debug("replacementConceptSearch: refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
 
             if (query != null && !query.equals("")) {
+
                 results = RefsetMemberService.replacementConceptSearch(user, service, refset, searchParameters);
             }
 
@@ -2078,8 +2158,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Search for refsets for dropdown menus.
      *
@@ -2091,24 +2172,25 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Search the taxonomy for refset members", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
-            @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-            @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-            @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-            // TODO: activeOnly, sort, sortAscending
+        @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = {"/refset/dropdownSearch"}, produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = {
+        "/refset/dropdownSearch"
+    }, produces = "application/json")
     public @ResponseBody ResultList<Refset> searchRefsetsForDropdowns(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
-        
+
         User user = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -2119,6 +2201,7 @@ public class RefsetController extends BaseController {
             logger.debug("refsetDropdownSearch: searchParameters: " + ModelUtility.toJson(searchParameters));
 
             if (query != null && !query.equals("")) {
+
                 results = RefsetService.refsetDropdownSearch(user, service, searchParameters, true, true);
             }
 
@@ -2129,6 +2212,7 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
 
     /**
@@ -2142,34 +2226,36 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/compileComparisonData", produces = "application/json")
     public @ResponseBody String compileComparisonData(@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
         @RequestParam(required = true) final String comparisonRefsetInternalId) throws Exception {
-        
+
         final User user = SecurityService.getUserFromSession();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
-       
+
             String status = "";
             RefsetMemberService.refsetsBeingUpdated.add(activeRefsetInternalId);
-            
+
             logger.debug("compileComparisonData: activeRefsetInternalId: " + activeRefsetInternalId + "; comparisonRefsetInternalId: " + comparisonRefsetInternalId);
-            
+
             // add the list of concepts as members to the refset
             status = RefsetMemberService.compileComparisonData(service, user, activeRefsetInternalId, comparisonRefsetInternalId);
-            
+
             logger.debug("compileComparisonData: Finished with status " + status);
-            
+
             return "{\"status\": \"" + status + "\"}";
-    
+
         } catch (final Exception e) {
-    
+
             handleException(e);
             return null;
         }
-        
+
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(activeRefsetInternalId);
         }
+
     }
-    
+
     /**
      * Get the data to compare two refsets.
      *
@@ -2178,26 +2264,28 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/comparisonData", produces = "application/json")
-    public @ResponseBody RefsetMemberComparison getComparisonData(@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId, final HttpServletRequest request) throws Exception {
-        
+    public @ResponseBody RefsetMemberComparison getComparisonData(@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId, final HttpServletRequest request)
+        throws Exception {
+
         final User user = SecurityService.getUserFromSession();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             logger.debug("getComparisonData: activeRefsetInternalId: " + activeRefsetInternalId);
-            
+
             // add the list of concepts as members to the refset
-            final String uuid = (String)request.getSession().getAttribute("refsetMemberComparison_" + activeRefsetInternalId);
-            final RefsetMemberComparison results = (RefsetMemberComparison)SecurityService.getFromInMemoryStorage(uuid);
+            final String uuid = (String) request.getSession().getAttribute("refsetMemberComparison_" + activeRefsetInternalId);
+            final RefsetMemberComparison results = (RefsetMemberComparison) SecurityService.getFromInMemoryStorage(uuid);
             SecurityService.removeFromInMemoryStorage(uuid);
             request.getSession().removeAttribute("refsetMemberComparison_" + activeRefsetInternalId);
-            
+
             if (results == null) {
+
                 throw new Exception("There were no comparison results to retrieve for this refset.");
             }
-            
+
             logger.debug("getComparisonData: results " + results);
-            
+
             return results;
 
         } catch (final Exception e) {
@@ -2205,8 +2293,9 @@ public class RefsetController extends BaseController {
             handleException(e);
             return null;
         }
+
     }
-    
+
     /**
      * Request access to the refset for the specified ID.
      *
@@ -2217,22 +2306,17 @@ public class RefsetController extends BaseController {
      */
     @ApiOperation(value = "Request access to the refset for the specified ID", response = Refset.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "refsetInternalId",
-                    value = "The internal ID of the refset to request access to.", required = true,
-                        dataTypeClass = String.class, paramType = "path"),
-            @ApiImplicitParam(name = "comments", value = "Any comments related to the request.",
-                    required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to request access to.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "comments", value = "Any comments related to the request.", required = true, dataTypeClass = String.class, paramType = "query"),
 
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/requestAccess", produces = "application/json")
-    public @ResponseBody boolean requestRefsetAccess(@PathVariable(value = "refsetInternalId")
-    final String refsetInternalId, final String comments) throws Exception {
+    public @ResponseBody boolean requestRefsetAccess(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String comments) throws Exception {
 
         try {
 
@@ -2245,8 +2329,6 @@ public class RefsetController extends BaseController {
 
                     String url = null;
 
-                    
-
                     return true;
 
                 } catch (final Exception e) {
@@ -2254,6 +2336,7 @@ public class RefsetController extends BaseController {
                     handleException(e);
                     return false;
                 }
+
             }
 
         } catch (final Exception e) {
@@ -2261,5 +2344,6 @@ public class RefsetController extends BaseController {
             handleException(e);
             return false;
         }
+
     }
 }
