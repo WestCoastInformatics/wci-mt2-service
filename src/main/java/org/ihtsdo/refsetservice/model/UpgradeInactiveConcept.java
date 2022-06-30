@@ -31,12 +31,12 @@ import org.slf4j.LoggerFactory;
  * 
  */
 @Entity
-@Table(name = "upgrade_inactive_concecpts")
+@Table(name = "upgrade_inactive_concepts")
 @Indexed
-public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comparable<UpgradeInactiveConcecpt> {
+public class UpgradeInactiveConcept extends AbstractHasModified implements Comparable<UpgradeInactiveConcept> {
 
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(UpgradeInactiveConcecpt.class);
+    private static Logger logger = LoggerFactory.getLogger(UpgradeInactiveConcept.class);
     
     /** The refset ID. */
     @Column(nullable = false, length = 256)
@@ -65,23 +65,23 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
     private boolean replaced;
     
     /** The replacement concepts. */
-    @OneToMany(cascade = CascadeType.ALL, targetEntity = UpgradeReplacementConcecpt.class, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = UpgradeReplacementConcept.class, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("created ASC")
-    private List<UpgradeReplacementConcecpt> replacementConcecpts = new ArrayList<>();
+    private List<UpgradeReplacementConcept> replacementConcepts = new ArrayList<>();
 
     /**
-     * Instantiates an empty {@link UpgradeInactiveConcecpt}.
+     * Instantiates an empty {@link UpgradeInactiveConcept}.
      */
-    public UpgradeInactiveConcecpt() {
+    public UpgradeInactiveConcept() {
         setActive(false);
     }
 
     /**
-     * Instantiates a {@link UpgradeInactiveConcecpt} from the specified parameters.
+     * Instantiates a {@link UpgradeInactiveConcept} from the specified parameters.
      *
      * @param other the other
      */
-    public UpgradeInactiveConcecpt(final UpgradeInactiveConcecpt other) {
+    public UpgradeInactiveConcept(final UpgradeInactiveConcept other) {
         populateFrom(other);
     }
 
@@ -90,7 +90,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
      *
      * @param other the other
      */
-    public void populateFrom(final UpgradeInactiveConcecpt other) {
+    public void populateFrom(final UpgradeInactiveConcept other) {
         
         super.populateFrom(other);
         refsetId = other.getRefsetId();
@@ -99,7 +99,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
         inactivationReason = other.getInactivationReason();
         stillMember = other.isStillMember();
         replaced = other.isReplaced();
-        replacementConcecpts = new ArrayList<UpgradeReplacementConcecpt>(other.getReplacementConcecpts());
+        replacementConcepts = new ArrayList<UpgradeReplacementConcept>(other.getReplacementConcepts());
     }
 
     /**
@@ -216,28 +216,28 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
     /**
      * Gets the replacement concepts.
      *
-     * @return the replacementConcecpts
+     * @return the replacementConcepts
      */
-    @IndexedEmbedded(targetType = UpgradeReplacementConcecpt.class)
+    @IndexedEmbedded(targetType = UpgradeReplacementConcept.class)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
-    public List<UpgradeReplacementConcecpt> getReplacementConcecpts() {
+    public List<UpgradeReplacementConcept> getReplacementConcepts() {
 
-        if (replacementConcecpts == null) {
-            replacementConcecpts = new ArrayList<>();
+        if (replacementConcepts == null) {
+            replacementConcepts = new ArrayList<>();
         }
 
-        return replacementConcecpts;
+        return replacementConcepts;
     }
 
     /**
      * Sets the replacement concepts.
      *
-     * @param replacementConcecpts the replacementConcecpts to set
+     * @param replacementConcepts the replacementConcepts to set
      */
-    public void setReplacementConcecpts(final List<UpgradeReplacementConcecpt> replacementConcecpts) {
+    public void setReplacementConcepts(final List<UpgradeReplacementConcept> replacementConcepts) {
         
-        Collections.sort(replacementConcecpts, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
-        this.replacementConcecpts = replacementConcecpts;
+        Collections.sort(replacementConcepts, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
+        this.replacementConcepts = replacementConcepts;
     }
 
     /**
@@ -253,7 +253,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
         result = prime * result + ((code == null) ? 0 : code.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + ((inactivationReason == null) ? 0 : inactivationReason.hashCode());
-        result = prime * result + ((replacementConcecpts == null) ? 0 : replacementConcecpts.hashCode());
+        result = prime * result + ((replacementConcepts == null) ? 0 : replacementConcepts.hashCode());
         result = prime * result + (stillMember ? 1 : 0);
         result = prime * result + (replaced ? 1 : 0);
         return result;
@@ -280,7 +280,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
             return false;
         }
 
-        final UpgradeInactiveConcecpt other = (UpgradeInactiveConcecpt) obj;
+        final UpgradeInactiveConcept other = (UpgradeInactiveConcept) obj;
 
         if (refsetId == null) {
             if (other.refsetId != null) {
@@ -314,11 +314,11 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
             return false;
         }
         
-        if (replacementConcecpts == null) {
-            if (other.replacementConcecpts != null) {
+        if (replacementConcepts == null) {
+            if (other.replacementConcepts != null) {
                 return false;
             }
-        } else if (!replacementConcecpts.equals(other.replacementConcecpts)) {
+        } else if (!replacementConcepts.equals(other.replacementConcepts)) {
             return false;
         }
 
@@ -340,7 +340,7 @@ public class UpgradeInactiveConcecpt extends AbstractHasModified implements Comp
      * @return the int
      */
     @Override
-    public int compareTo(final UpgradeInactiveConcecpt other) {
+    public int compareTo(final UpgradeInactiveConcept other) {
         // Handle null
         return (code + refsetId).compareToIgnoreCase(other.getCode() + other.getRefsetId());
     }

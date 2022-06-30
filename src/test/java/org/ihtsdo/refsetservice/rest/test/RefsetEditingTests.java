@@ -10,8 +10,8 @@ import java.util.Set;
 import org.assertj.core.util.Arrays;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
-import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
-import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
+import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
+import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
@@ -301,15 +301,15 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         //final String newRefsetInternalId = refset.getId();
         
         // GET THE UPGRADE DATA
-        ResultList<UpgradeInactiveConcecpt> resultList = editUtil.getUpgradeData(newRefsetInternalId);
+        ResultList<UpgradeInactiveConcept> resultList = editUtil.getUpgradeData(newRefsetInternalId);
         assertThat(resultList.getItems().size()).isGreaterThan(0);
         
         // for the the first inactive concept add the first replacement as a member
-        UpgradeInactiveConcecpt upgradeInactiveConcept = resultList.getItems().get(0);
+        UpgradeInactiveConcept upgradeInactiveConcept = resultList.getItems().get(0);
         final String inactiveConceptId = upgradeInactiveConcept.getCode();
-        assertThat(upgradeInactiveConcept.getReplacementConcecpts().size()).isGreaterThan(0);
-        UpgradeReplacementConcecpt upgradeReplacementConcecpt = upgradeInactiveConcept.getReplacementConcecpts().get(0);
-        String replacementConceptId = upgradeReplacementConcecpt.getCode();
+        assertThat(upgradeInactiveConcept.getReplacementConcepts().size()).isGreaterThan(0);
+        UpgradeReplacementConcept upgradeReplacementConcept = upgradeInactiveConcept.getReplacementConcepts().get(0);
+        String replacementConceptId = upgradeReplacementConcept.getCode();
         editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REPLACEMENT_ADDED, inactiveConceptId, replacementConceptId, null);
         
         // for the the first inactive concept remove the first replacement as a member
@@ -322,10 +322,10 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.INACTIVE_ADDED, inactiveConceptId, null, null);
         
         // get a concept to use as a custom replacement
-        final ResultList<UpgradeReplacementConcecpt> replacementSearchResults = editUtil.searchReplacementConcepts(newRefsetInternalId, "sprain");
+        final ResultList<UpgradeReplacementConcept> replacementSearchResults = editUtil.searchReplacementConcepts(newRefsetInternalId, "sprain");
         assertThat(replacementSearchResults).isNotNull();
         assertThat(replacementSearchResults.getItems().size()).isGreaterThan(0);
-        UpgradeReplacementConcecpt manualReplacementConcept = replacementSearchResults.getItems().get(1);
+        UpgradeReplacementConcept manualReplacementConcept = replacementSearchResults.getItems().get(1);
         replacementConceptId = manualReplacementConcept.getCode();
         
         // for the the first inactive concept add the manual replacement
@@ -376,11 +376,11 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         editUtil.resolveBackgroundOperation(newRefsetInternalId);
         
         // GET THE UPGRADE DATA
-        ResultList<UpgradeInactiveConcecpt> resultList = editUtil.getUpgradeData(newRefsetInternalId);
+        ResultList<UpgradeInactiveConcept> resultList = editUtil.getUpgradeData(newRefsetInternalId);
         assertThat(resultList.getItems().size()).isGreaterThan(0);
         
         // remove the first inactive concept as a member
-        UpgradeInactiveConcecpt upgradeInactiveConcept = resultList.getItems().get(0);
+        UpgradeInactiveConcept upgradeInactiveConcept = resultList.getItems().get(0);
         final String inactiveConceptId = upgradeInactiveConcept.getCode();
         editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.INACTIVE_REMOVED, inactiveConceptId, null, null);
         
@@ -388,9 +388,9 @@ public class RefsetEditingTests extends AbstractRefsetTests {
         editUtil.removeAllInactiveUpgradeConcepts(newRefsetInternalId);
         
         // for the the first inactive concept add the first replacement as a member
-        assertThat(upgradeInactiveConcept.getReplacementConcecpts().size()).isGreaterThan(0);
-        UpgradeReplacementConcecpt upgradeReplacementConcecpt = upgradeInactiveConcept.getReplacementConcecpts().get(0);
-        String replacementConceptId = upgradeReplacementConcecpt.getCode();
+        assertThat(upgradeInactiveConcept.getReplacementConcepts().size()).isGreaterThan(0);
+        UpgradeReplacementConcept upgradeReplacementConcept = upgradeInactiveConcept.getReplacementConcepts().get(0);
+        String replacementConceptId = upgradeReplacementConcept.getCode();
         editUtil.updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REPLACEMENT_ADDED, inactiveConceptId, replacementConceptId, null);
         
         // add all the other replacement concepts as members
