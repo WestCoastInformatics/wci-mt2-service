@@ -174,10 +174,11 @@ public class OrganizationController extends BaseController {
         try {
 
             final ResultList<Organization> results = RefsetService.searchOrganizations(user, searchParameters);
-            
-                
-            for (Organization organization : results.getItems()) {
-                
+
+            final ResultList<Organization> resultsWithPermissions = new ResultList<Organization>();
+
+            for (final Organization organization : results.getItems()) {
+
                 boolean giveViewerRole = false;
                 final List<String> roles = new ArrayList<>();
 
@@ -204,18 +205,22 @@ public class OrganizationController extends BaseController {
                     roles.add(User.ROLE_VIEWER);
                 }
                 organization.setRoles(roles);
-                
+
                 if (includeMembers) {
                     organization.getMembers();
                 } else {
-                    
                     if (organization.getMembers() != null && !organization.getMembers().isEmpty()) {
                         organization.getMembers().clear();
-                    } 
+                    }
+                }
+
+                if (giveViewerRole) {
+                    resultsWithPermissions.getItems().add(organization);
                 }
             }
 
-            return new ResponseEntity<>(results, HttpStatus.OK);
+            resultsWithPermissions.setTotal(resultsWithPermissions.getItems().size());
+            return new ResponseEntity<>(resultsWithPermissions, HttpStatus.OK);
 
         } catch (final ResponseStatusException rse) {
             throw rse;
