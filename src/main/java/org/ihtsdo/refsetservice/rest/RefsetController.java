@@ -1,3 +1,12 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.rest;
 
@@ -715,11 +724,13 @@ public class RefsetController extends BaseController {
      * Modify an existing refset that is in edit mode.
      *
      * @param refsetInternalId the internal refset ID
+     * @param notes the notes
      * @return the refset internal ID or errors
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetInternalId}/workflowNote")
-    public @ResponseBody String updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = true) final String notes) throws Exception {
+    public @ResponseBody ResultList<WorkflowHistory> updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = true) final String notes)
+        throws Exception {
 
         try {
 
@@ -727,12 +738,12 @@ public class RefsetController extends BaseController {
             User user = SecurityService.getUserFromSession();
 
             Refset refset = RefsetService.getRefset(user, refsetInternalId);
-            final String currentStatus = refset.getWorkflowStatus();
+            // not used final String currentStatus = refset.getWorkflowStatus();
 
             WorkflowService.updateWorkflowNote(user, refset, notes);
 
-            return "true";
-
+            return WorkflowService.getWorkflowHistory(refset, new SearchParameters());
+            
         } catch (final Exception e) {
 
             handleException(e);
