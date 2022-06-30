@@ -1463,7 +1463,7 @@ public class RefsetController extends BaseController {
         try {
 
             boolean runShortMigration = false;
-            boolean runForProduction = true;
+            boolean runForProduction = false;
 
             if (quickMigration != null && quickMigration.booleanValue()) {
 
@@ -1471,10 +1471,10 @@ public class RefsetController extends BaseController {
                 runShortMigration = true;
             }
 
-            if (forProduction != null && !forProduction.booleanValue()) {
+            if (forProduction != null && forProduction.booleanValue()) {
 
-                logger.info("!!!!! migrateRttData RUNNING MIGRATION ON PRODUCTION - DOESN'T CONTAIN TESTING PROJECTS, TEAMS, AND REFSETS");
-                runForProduction = false;
+                logger.info("!!!!! migrateRttData RUNNING MIGRATION ON PRODUCTION - SHOULDN'T CONTAIN TESTING PROJECTS, TEAMS, AND REFSETS");
+                runForProduction = true;
             }
 
             try (TerminologyService service = new TerminologyService()) {
