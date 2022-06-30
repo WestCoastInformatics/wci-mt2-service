@@ -1,4 +1,4 @@
--- ***** Org & Users
+∞ q- ***** Org & Users
 select id, name, description  from organizations order by name;
 select id, name, branch, shortname, defaultLanguageCode from editions order by name;
 select id, name, email  from users order by name;
@@ -46,4 +46,5 @@ select b.name, a.roles  from user_roles a, users b where b.id = a.user_id order 
 
 
 -- **** WCI Refses ****
-select * from refests where name like '%%';
+select * from refsets where name like '%eedbac%';
+
