@@ -292,7 +292,7 @@ public class MigrationDataInitializer {
 
             for (Refset projectRefset : projectRefsets) {
 
-                if (projectRefset.getRefsetId().startsWith(FEEDBACK_REFSET_ID_BASE)) {
+                if (projectRefset.getRefsetId().startsWith(FEEDBACK_REFSET_ID_BASE) && projectRefset.getName().startsWith(FEEDBACK_REFSET_NAME_BASE)) {
 
                     final int refsetVersion = Integer.parseInt(projectRefset.getName().substring(FEEDBACK_REFSET_NAME_BASE.length()).trim());
 
