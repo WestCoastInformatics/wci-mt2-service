@@ -30,7 +30,7 @@ public class CrowdGroupNameAlgorithm {
      */
     public static String generateName(final String organizationName, final String projectName, final String role) throws Exception {
 
-        if (StringUtils.isAnyBlank(organizationName, projectName)) {
+        if (StringUtils.isAnyBlank(organizationName, projectName, role)) {
             throw new Exception("Parameters cannot be empty or null");
         }
 
@@ -38,7 +38,7 @@ public class CrowdGroupNameAlgorithm {
         groupName.append("rt2-");
         groupName.append(getOrganizationString(organizationName)).append("-");
         groupName.append(getProjectString(projectName)).append("-");
-        groupName.append(role);
+        groupName.append(role.toLowerCase());
 
         return groupName.toString();
     }

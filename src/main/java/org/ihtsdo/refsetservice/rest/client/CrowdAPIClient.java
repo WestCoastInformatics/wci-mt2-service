@@ -265,9 +265,10 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (response.getStatus() == 204) {
             // return true or something?
         } else if (response.getStatus() == 404) {
-            throw new Exception("Failed to remove username " + username.trim() + " to group " + groupname.trim() + ". Group could not be found.");
+            //throw new Exception("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Group could not be found.");
+            logger.info("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Group could not be found.");
         } else {
-            throw new Exception("Failed to remove username " + username.trim() + " to group " + groupname.trim() + ". Received HTTP " + response.getStatus() + " from the API server.");
+            throw new Exception("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Received HTTP " + response.getStatus() + " from the API server.");
         }
     }
 
