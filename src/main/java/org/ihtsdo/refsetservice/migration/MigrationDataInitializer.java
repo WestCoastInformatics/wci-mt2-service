@@ -1,6 +1,7 @@
 package org.ihtsdo.refsetservice.migration;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
@@ -191,9 +192,8 @@ public class MigrationDataInitializer {
             wciTestingRefset.setName("Base WCI Refset");
 
             // Set release date to yesterday midnight
-            Instant now = Instant.now();
-            Instant yesterday = now.minus(1, ChronoUnit.DAYS);
-            wciTestingRefset.setVersionDate(Date.from(yesterday.truncatedTo(ChronoUnit.DAYS)));
+            Date publicationDate = MigrationMetadata.getSdf().parse("2022-01-31 08:00:00");
+            wciTestingRefset.setVersionDate(publicationDate);
 
             service.add(wciTestingRefset);
 
@@ -240,13 +240,13 @@ public class MigrationDataInitializer {
                     User roleBasedUser = userRoleMap.get(role);
 
                     Set<String> memberNames = new HashSet<>();
-                    memberNames.add(roleBasedUser.getName());
-                    memberNames.add(refsetDevUser.getName());
+                    memberNames.add(roleBasedUser.getId());
+                    memberNames.add(refsetDevUser.getId());
 
                     final Team team =
                         utilities.addTeam(organization.getName() + " dev-support-" + role + " Team", organizationTeamDescription, organization, new HashSet<String>(Arrays.asList(role)), memberNames);
 
-                    project.getTeams().add(team.getName());
+                    project.getTeams().add(team.getId());
 
                 }
 
@@ -344,13 +344,13 @@ public class MigrationDataInitializer {
             Set<String> userRole = new HashSet<>();
             userRole.add(User.ROLE_AUTHOR);
             Set<String> memberNames = new HashSet<>();
-            memberNames.add(feedbackInitiatiorUser.getName());
-            memberNames.add(userResponderUser.getName());
-            commonWciUsers.stream().forEach(user -> memberNames.add(user.getName()));
+            memberNames.add(feedbackInitiatiorUser.getId());
+            memberNames.add(userResponderUser.getId());
+            commonWciUsers.stream().forEach(user -> memberNames.add(user.getId()));
 
             final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", wciOrganization, allRoles, memberNames);
 
-            wciProject.getTeams().add(singleFeedbackTeam.getName());
+            wciProject.getTeams().add(singleFeedbackTeam.getId());
             wciProject = service.update(wciProject);
 
             wciOrganization.getMembers().addAll(commonWciUsers);
@@ -414,13 +414,13 @@ public class MigrationDataInitializer {
 
             for (Project project : orgProjects) {
 
-                for (String teamName : project.getTeams()) {
+                for (String teamId : project.getTeams()) {
 
-                    Team team = teams.stream().filter(t -> t.getName().equals(teamName)).findFirst().orElse(null);
+                    Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
 
                     if (team == null) {
 
-                        throw new Exception("  Unable to locate team in project " + project.getName() + " for team: " + teamName);
+                        throw new Exception("  Unable to locate team in project " + project.getName() + " for team: " + teamId);
                     }
 
                 }
