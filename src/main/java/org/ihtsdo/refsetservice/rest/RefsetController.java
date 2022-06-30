@@ -37,8 +37,8 @@ import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
-import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
-import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
+import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
+import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
@@ -1981,7 +1981,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/upgradeData", produces = "application/json")
-    public @ResponseBody ResultList<UpgradeInactiveConcecpt> getUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+    public @ResponseBody ResultList<UpgradeInactiveConcept> getUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
 
@@ -1990,7 +1990,7 @@ public class RefsetController extends BaseController {
             logger.debug("getUpgradeData: refsetInternalId: " + refsetInternalId);
 
             // add the list of concepts as members to the refset
-            final ResultList<UpgradeInactiveConcecpt> results = RefsetMemberService.getUpgradeData(service, user, refsetInternalId);
+            final ResultList<UpgradeInactiveConcept> results = RefsetMemberService.getUpgradeData(service, user, refsetInternalId);
 
             logger.debug("getUpgradeData: results " + results);
 
@@ -2019,7 +2019,7 @@ public class RefsetController extends BaseController {
     @PostMapping("/refset/{refsetInternalId}/modifyUpgradeConcept")
     public @ResponseBody String modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = true) final String inactiveConceptId,
         @RequestParam(required = false) final String replacementConceptId, @RequestParam(required = true) final String changed,
-        @RequestBody(required = false) final UpgradeReplacementConcecpt manualReplacementConcept) throws Exception {
+        @RequestBody(required = false) final UpgradeReplacementConcept manualReplacementConcept) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
 
@@ -2141,7 +2141,7 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = {
         "/refset/{refsetInternalId}/replacementConceptSearch"
     }, produces = "application/json")
-    public @ResponseBody ResultList<UpgradeReplacementConcecpt> replacementConceptSearch(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+    public @ResponseBody ResultList<UpgradeReplacementConcept> replacementConceptSearch(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         final SearchParameters searchParameters, final BindingResult bindingResult, HttpServletRequest request) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -2152,7 +2152,7 @@ public class RefsetController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = RefsetMemberService.getRefset(user, service, refsetInternalId);
-            ResultList<UpgradeReplacementConcecpt> results = new ResultList<>();
+            ResultList<UpgradeReplacementConcept> results = new ResultList<>();
             String query = searchParameters.getQuery();
 
             logger.debug("replacementConceptSearch: refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));

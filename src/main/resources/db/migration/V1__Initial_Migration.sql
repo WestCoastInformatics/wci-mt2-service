@@ -239,7 +239,7 @@ ALTER TABLE `refset_history_definition_clauses_history` ADD INDEX `FKwyybq7oy7sp
 ALTER TABLE `refset_history_definition_clauses_history` ADD CONSTRAINT `FKo21bax91dosoykcp70vg8709n` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses_history` (`id`);
 ALTER TABLE `refset_history_definition_clauses_history` ADD CONSTRAINT `FKwyybq7oy7spmr11a78ix5b4p` FOREIGN KEY (`RefsetEditHistory_id`) REFERENCES `refset_history` (`id`);
 
-CREATE TABLE `upgrade_inactive_concecpts` (
+CREATE TABLE `upgrade_inactive_concepts` (
   `id` varchar(64) NOT NULL,
   `active` bit(1) NOT NULL,
   `created` datetime(6) NOT NULL,
@@ -254,7 +254,7 @@ CREATE TABLE `upgrade_inactive_concecpts` (
   PRIMARY KEY (`id`)
 );
 
-CREATE TABLE `upgrade_replacement_concecpts` (
+CREATE TABLE `upgrade_replacement_concepts` (
   `id` varchar(64) NOT NULL,
   `active` bit(1) NOT NULL,
   `created` datetime(6) NOT NULL,
@@ -268,14 +268,14 @@ CREATE TABLE `upgrade_replacement_concecpts` (
   PRIMARY KEY (`id`)
 );
 
-CREATE TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` (
-  `UpgradeInactiveConcecpt_id` varchar(64) NOT NULL,
-  `replacementConcecpts_id` varchar(64) NOT NULL
+CREATE TABLE `upgrade_inactive_concepts_upgrade_replacement_concepts` (
+  `UpgradeInactiveConcept_id` varchar(64) NOT NULL,
+  `replacementConcepts_id` varchar(64) NOT NULL
 );
-ALTER TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` ADD UNIQUE KEY `UK_gvw8w97h67cp3wamn80hv4279` (`replacementConcecpts_id`);
-ALTER TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` ADD INDEX `FKr832qlbgsqdr1o9do0qseqm4m` (`UpgradeInactiveConcecpt_id`);
-ALTER TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` ADD CONSTRAINT `FKju78x6kjym3y2y90mfmon9lge` FOREIGN KEY (`replacementConcecpts_id`) REFERENCES `upgrade_replacement_concecpts` (`id`);
-ALTER TABLE `upgrade_inactive_concecpts_upgrade_replacement_concecpts` ADD CONSTRAINT `FKr832qlbgsqdr1o9do0qseqm4m` FOREIGN KEY (`UpgradeInactiveConcecpt_id`) REFERENCES `upgrade_inactive_concecpts` (`id`);
+ALTER TABLE `upgrade_inactive_concepts_upgrade_replacement_concepts` ADD UNIQUE KEY `UK_gvw8w97h67cp3wamn80hv4279` (`replacementConcepts_id`);
+ALTER TABLE `upgrade_inactive_concepts_upgrade_replacement_concepts` ADD INDEX `FKr832qlbgsqdr1o9do0qseqm4m` (`UpgradeInactiveConcept_id`);
+ALTER TABLE `upgrade_inactive_concepts_upgrade_replacement_concepts` ADD CONSTRAINT `FKju78x6kjym3y2y90mfmon9lge` FOREIGN KEY (`replacementConcepts_id`) REFERENCES `upgrade_replacement_concepts` (`id`);
+ALTER TABLE `upgrade_inactive_concepts_upgrade_replacement_concepts` ADD CONSTRAINT `FKr832qlbgsqdr1o9do0qseqm4m` FOREIGN KEY (`UpgradeInactiveConcept_id`) REFERENCES `upgrade_inactive_concepts` (`id`);
 
 CREATE TABLE `teams` (
   `id` varchar(64) NOT NULL,

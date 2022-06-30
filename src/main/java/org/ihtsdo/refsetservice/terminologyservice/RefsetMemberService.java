@@ -56,8 +56,8 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
-import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
-import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
+import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
+import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -4354,7 +4354,7 @@ public class RefsetMemberService {
         
         List<Concept> inactiveMemberList = new ArrayList<>();
         List<String> activeMemberList = new ArrayList<>();
-        LinkedHashMap<String, UpgradeInactiveConcecpt> inactiveData = new LinkedHashMap<>();
+        LinkedHashMap<String, UpgradeInactiveConcept> inactiveData = new LinkedHashMap<>();
         final String branchPath = getBranchPath(refset);
         final String refsetId = refset.getRefsetId();
         ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
@@ -4451,7 +4451,7 @@ public class RefsetMemberService {
                 
                 Concept member = inactiveMemberList.get(searchIndex);
                 final String conceptId = member.getCode();
-                final UpgradeInactiveConcecpt inactiveConcept = new UpgradeInactiveConcecpt();
+                final UpgradeInactiveConcept inactiveConcept = new UpgradeInactiveConcept();
                 inactiveConcept.setRefsetId(refsetId);
                 inactiveConcept.setCode(member.getCode());
                 inactiveConcept.setStillMember(true);
@@ -4490,7 +4490,7 @@ public class RefsetMemberService {
                 while (iterator != null && iterator.hasNext()) {
 
                     final JsonNode conceptNode = iterator.next();
-                    final UpgradeInactiveConcecpt inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asText());
+                    final UpgradeInactiveConcept inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asText());
                     
                     if (conceptNode.get("descriptions") != null) {
                         
@@ -4578,7 +4578,7 @@ public class RefsetMemberService {
                                         
                                         for (final Concept replacementConcept: replacementConceptsToLookup) {
                                             
-                                            final UpgradeReplacementConcecpt upgradeReplacementConcept = new UpgradeReplacementConcecpt();
+                                            final UpgradeReplacementConcept upgradeReplacementConcept = new UpgradeReplacementConcept();
                                             upgradeReplacementConcept.setCode(replacementConcept.getCode());
                                             upgradeReplacementConcept.setReason(reasonMap.get(replacementConcept.getCode()));
                                             upgradeReplacementConcept.setActive(replacementConcept.isActive());
@@ -4593,7 +4593,7 @@ public class RefsetMemberService {
                                             
                                             threadService.add(upgradeReplacementConcept);
                                             logger.debug("compileUpgradeData added Replacement Concept: " + upgradeReplacementConcept);
-                                            inactiveConcept.getReplacementConcecpts().add(upgradeReplacementConcept);
+                                            inactiveConcept.getReplacementConcepts().add(upgradeReplacementConcept);
                                         }
                                         
                                         threadService.add(inactiveConcept);
@@ -4627,14 +4627,14 @@ public class RefsetMemberService {
      * @return The upgrade data
      * @throws Exception the exception
      */
-    public static ResultList<UpgradeInactiveConcecpt> getUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+    public static ResultList<UpgradeInactiveConcept> getUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
         
         final Refset refset = RefsetService.getRefset(user, refsetInternalId);
         final String refsetId = refset.getRefsetId();
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("code");
         
-        ResultList<UpgradeInactiveConcecpt> results = service.find("refsetId: " + refsetId, pfs, UpgradeInactiveConcecpt.class, null);
+        ResultList<UpgradeInactiveConcept> results = service.find("refsetId: " + refsetId, pfs, UpgradeInactiveConcept.class, null);
         results.setTotal(results.getItems().size());
         results.setTotalKnown(true);
         results.setMiscCountA(refset.getMemberCount() - results.getItems().size());
@@ -4652,12 +4652,12 @@ public class RefsetMemberService {
      * @return The upgrade data
      * @throws Exception the exception
      */
-    public static UpgradeInactiveConcecpt getUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final String inactiveConceptId) throws Exception {
+    public static UpgradeInactiveConcept getUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final String inactiveConceptId) throws Exception {
         
         final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
         final String refsetId = refset.getRefsetId();
         
-        UpgradeInactiveConcecpt upgradeInactiveConcept = service.findSingle("refsetId: " + refsetId + " AND code:" + inactiveConceptId, UpgradeInactiveConcecpt.class, null);
+        UpgradeInactiveConcept upgradeInactiveConcept = service.findSingle("refsetId: " + refsetId + " AND code:" + inactiveConceptId, UpgradeInactiveConcept.class, null);
         return upgradeInactiveConcept;
     }
     
@@ -4674,9 +4674,9 @@ public class RefsetMemberService {
         final Refset refset = RefsetService.getRefset(user, refsetInternalId);
         final String refsetId = refset.getRefsetId();
         
-        ResultList<UpgradeInactiveConcecpt> results = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcecpt.class, null);
+        ResultList<UpgradeInactiveConcept> results = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcept.class, null);
         
-        for (final UpgradeInactiveConcecpt upgradeInactiveConcept: results.getItems()) {
+        for (final UpgradeInactiveConcept upgradeInactiveConcept: results.getItems()) {
             service.removeObject(upgradeInactiveConcept);
         }
     }
@@ -4695,7 +4695,7 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     public static String modifyUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final String inactiveConceptId, 
-        final String replacementConceptId, final UpgradeReplacementConcecpt manualReplacementConcept, final String changed) throws Exception {
+        final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception {
         
         try {
             
@@ -4706,8 +4706,8 @@ public class RefsetMemberService {
             boolean add = true;
             String changeText = "added";
             boolean memberChange = true;
-            final UpgradeInactiveConcecpt upgradeInactiveConcept = getUpgradeConcept(service, user, refsetInternalId, inactiveConceptId);
-            UpgradeReplacementConcecpt upgradeReplacementConcept = null;
+            final UpgradeInactiveConcept upgradeInactiveConcept = getUpgradeConcept(service, user, refsetInternalId, inactiveConceptId);
+            UpgradeReplacementConcept upgradeReplacementConcept = null;
             String conceptIdToChange = inactiveConceptId;
             
             if (changed.contains("REMOVED")) {
@@ -4719,11 +4719,11 @@ public class RefsetMemberService {
             // if the operation needs it get the stored replacement concept
             if (replacementChangeStatuses.contains(changed)) {
                  
-                for (UpgradeReplacementConcecpt replacementConcecpt : upgradeInactiveConcept.getReplacementConcecpts()) {
+                for (UpgradeReplacementConcept replacementConcept : upgradeInactiveConcept.getReplacementConcepts()) {
                     
-                    if (replacementConcecpt.getCode().equals(replacementConceptId)) {
+                    if (replacementConcept.getCode().equals(replacementConceptId)) {
                         
-                        upgradeReplacementConcept = replacementConcecpt;
+                        upgradeReplacementConcept = replacementConcept;
                         conceptIdToChange = replacementConceptId;
                         
                         if (changed.equals(REMOVED_MANUAL_REPLACEMENT) && !upgradeReplacementConcept.isAdded()) {
@@ -4739,7 +4739,7 @@ public class RefsetMemberService {
                 
                 // save the replacement concept and add it to the inactive concept
                 service.add(upgradeReplacementConcept);
-                upgradeInactiveConcept.getReplacementConcecpts().add(upgradeReplacementConcept);
+                upgradeInactiveConcept.getReplacementConcepts().add(upgradeReplacementConcept);
             }
             
             logger.debug("modifyUpgradeConcept: member change: " + conceptIdToChange);
@@ -4778,7 +4778,7 @@ public class RefsetMemberService {
                 // save or remove the replacement concept
                 if (changed.equals(REMOVED_MANUAL_REPLACEMENT)) {
                     
-                    upgradeInactiveConcept.getReplacementConcecpts().remove(upgradeReplacementConcept);
+                    upgradeInactiveConcept.getReplacementConcepts().remove(upgradeReplacementConcept);
                     service.remove(upgradeReplacementConcept);
                     logger.debug("modifyUpgradeConcept: removed the replacement concept: " + conceptIdToChange);
                 } else {
@@ -4827,9 +4827,9 @@ public class RefsetMemberService {
             final String refsetId = refset.getRefsetId();
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             
-            final ResultList<UpgradeInactiveConcecpt> inactiveConceptList = service.find("refsetId: " + refsetId + " AND stillMember: true", null, UpgradeInactiveConcecpt.class, null);      
+            final ResultList<UpgradeInactiveConcept> inactiveConceptList = service.find("refsetId: " + refsetId + " AND stillMember: true", null, UpgradeInactiveConcept.class, null);      
 
-            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+            for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
                 conceptIdsToChange += inactiveConcept.getCode() + ",";
             }
     
@@ -4838,7 +4838,7 @@ public class RefsetMemberService {
             // remove the concepts as members from the refset
             unchangedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, conceptIdsToChange);
             
-            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+            for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
                     
                 // don't process concepts that couldn't be removed
                 if (unchangedConcepts.contains(inactiveConcept.getCode())) {
@@ -4889,14 +4889,14 @@ public class RefsetMemberService {
             final String refsetId = refset.getRefsetId();
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             
-            final ResultList<UpgradeInactiveConcecpt> inactiveConceptList = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcecpt.class, null);      
+            final ResultList<UpgradeInactiveConcept> inactiveConceptList = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcept.class, null);      
 
-            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+            for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
                 
-                for (UpgradeReplacementConcecpt replacementConcecpt : inactiveConcept.getReplacementConcecpts()) {
+                for (UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
                     
-                    if (!replacementConcecpt.isAdded() && !replacementConcecpt.isExistingMember()) {
-                        conceptIdsToChange.add(replacementConcecpt.getCode());
+                    if (!replacementConcept.isAdded() && !replacementConcept.isExistingMember()) {
+                        conceptIdsToChange.add(replacementConcept.getCode());
                     }
                 }
             }
@@ -4904,21 +4904,21 @@ public class RefsetMemberService {
             // add the concepts as members to the refset
             unchangedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, conceptIdsToChange);
             
-            for (final UpgradeInactiveConcecpt inactiveConcept : inactiveConceptList.getItems()) {
+            for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
                 
                 boolean hadReplacementsAdded = false;
                 
-                for (UpgradeReplacementConcecpt replacementConcecpt : inactiveConcept.getReplacementConcecpts()) {
+                for (UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
                     
                     // don't process concepts that couldn't be added or that weren't attempted to be added
-                    if (unchangedConcepts.contains(replacementConcecpt.getCode()) || !conceptIdsToChange.contains(replacementConcecpt.getCode())) {
+                    if (unchangedConcepts.contains(replacementConcept.getCode()) || !conceptIdsToChange.contains(replacementConcept.getCode())) {
                         continue;
                     }
                     
                     hadReplacementsAdded = true;
-                    replacementConcecpt.setAdded(true);
-                    service.update(replacementConcecpt);
-                    logger.debug("addAllUpgradeReplacementConcepts: replacement added as member: " + replacementConcecpt.getCode());
+                    replacementConcept.setAdded(true);
+                    service.update(replacementConcept);
+                    logger.debug("addAllUpgradeReplacementConcepts: replacement added as member: " + replacementConcept.getCode());
                 }
                 
                 if (hadReplacementsAdded) {
@@ -4955,15 +4955,15 @@ public class RefsetMemberService {
      * @return the upgrade replacement concept result list
      * @throws Exception the exception
      */
-    public static ResultList<UpgradeReplacementConcecpt> replacementConceptSearch(final User user, final TerminologyService service, final Refset refset, final SearchParameters searchParameters) throws Exception {
+    public static ResultList<UpgradeReplacementConcept> replacementConceptSearch(final User user, final TerminologyService service, final Refset refset, final SearchParameters searchParameters) throws Exception {
 
-        ResultList<UpgradeReplacementConcecpt> replacementConcepts = new ResultList<>();
+        ResultList<UpgradeReplacementConcept> replacementConcepts = new ResultList<>();
 
         final ConceptResultList concepts = conceptDropdownSearch(user, service, refset, searchParameters, "non members", true);
 
         for (Concept concept : concepts.getItems()) {
             
-            final UpgradeReplacementConcecpt replacementConcept = new UpgradeReplacementConcecpt();
+            final UpgradeReplacementConcept replacementConcept = new UpgradeReplacementConcept();
             replacementConcept.setCode(concept.getCode());
             replacementConcept.setReason("MANUAL_REPLACEMENT");
             
