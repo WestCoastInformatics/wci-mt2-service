@@ -125,9 +125,6 @@ public class MigrationUtilities {
             query.setQuery("name:" + name + " AND active:true");
 
             ResultList<User> results = service.find(query, pfs, User.class, null);
-            logger.debug("JESSE: " + results);
-
-            User user = null;
 
             if (results.getItems() != null && results.getItems().size() == 1) {
 
@@ -136,7 +133,6 @@ public class MigrationUtilities {
             } else {
 
                 List<User> results2 = service.getAll(User.class);
-                logger.debug("JESSE2: " + results2);
 
                 // User already exist, but found otherwise
                 for (User existingUser : results2) {
