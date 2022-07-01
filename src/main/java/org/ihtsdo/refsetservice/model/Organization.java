@@ -40,11 +40,10 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import io.micrometer.core.instrument.util.StringUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -85,10 +84,10 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     })
     @Fetch(FetchMode.JOIN)
     private Set<User> members;
-    
+
     @Column(nullable = true, length = 255)
     private String iconUri;
-    
+
     /** The of roles for this project. */
     @Transient
     private List<String> roles;
@@ -236,7 +235,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         this.primaryContactEmail = primaryContactEmail;
     }
-    
+
     /**
      * Returns the members.
      *
@@ -251,7 +250,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         if (members == null) {
             members = new HashSet<>();
         }
-        
+
         return members;
     }
 
@@ -262,7 +261,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         this.members = members;
     }
-    
+
     /**
      * Returns the icon URI.
      *
@@ -282,7 +281,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         this.iconUri = iconUri;
     }
-    
+
     /**
      * Returns the roles.
      *
@@ -294,7 +293,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         if (roles == null) {
             roles = new ArrayList<>();
         }
-        
+
         return roles;
     }
 
@@ -304,6 +303,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      * @param teams the roles
      */
     public void setRoles(final List<String> roles) {
+
         this.roles = roles;
     }
 
@@ -376,7 +376,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
             return false;
         }
-        
+
         if (roles == null) {
             if (other.roles != null) {
                 return false;
@@ -407,22 +407,46 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
     /* see superclass */
     @Override
-    public void validateAdd(AuthContext context) throws Exception {
+    public void validateAdd() throws Exception {
 
-        // TODO validate add
+        if (getId() != null) {
+            throw new Exception("Unexpected non-null id");
+        }
+        if (getEdition() == null) {
+            throw new Exception("Unexpected null/empty edition");
+        }
+        if (StringUtils.isBlank(getName())) {
+            throw new Exception("Unexpected null/empty name");
+        }
+        if (StringUtils.isBlank(getPrimaryContactEmail())) {
+            throw new Exception("Unexpected null/empty primary contact email");
+        }
     }
 
     /* see superclass */
     @Override
-    public void validateUpdate(AuthContext context, Organization other) throws Exception {
+    public void validateUpdate(Organization other) throws Exception {
 
-        // TODO validate update
+        if (StringUtils.isBlank(getId())) {
+            throw new Exception("Unexpected null/empty id");
+        }
+        if (getEdition() == null) {
+            throw new Exception("Unexpected null/empty edition");
+        }
+        if (StringUtils.isBlank(getName())) {
+            throw new Exception("Unexpected null/empty name");
+        }
+        if (StringUtils.isBlank(getPrimaryContactEmail())) {
+            throw new Exception("Unexpected null/empty primary contact email");
+        }
     }
 
     /* see superclass */
     @Override
-    public void validateDelete(AuthContext context) throws Exception {
+    public void validateDelete() throws Exception {
 
-        // TODO valiidate delete
+        if (StringUtils.isBlank(getId())) {
+            throw new Exception("Unexpected null/empty id");
+        }
     }
 }

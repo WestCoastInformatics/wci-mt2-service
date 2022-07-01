@@ -190,30 +190,49 @@ public class TeamController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @PostMapping("/team")
-    public @ResponseBody ResponseEntity<Team> addTeam(@RequestBody final Team team) throws Exception {
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Add project", response = Project.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Organization successfully created"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @PostMapping(value = "/team", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity addTeam(@RequestBody final Team team) throws Exception {
 
-        logger.info("Add team: {}", team);
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        try {
+            
+            logger.info("Add team: {}", team);
+            // TODO check permissions, fail if not authorized.
+            final User authUser = SecurityService.getUserFromSession();
+            if (authUser == null) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
+            }
+            
+            if (team == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing team");
+            }
 
-        try (final TerminologyService service = new TerminologyService()) {
+            try {
+                team.validateAdd();
+            } catch (final Exception e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            }
 
-            final Team t = (Team) team;
+            try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(authUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
+                final Team t = (Team) team;
 
-            service.add(t);
-            service.commit();
+                service.setModifiedBy(authUser.getUserName());
+                service.setTransactionPerOperation(false);
+                service.beginTransaction();
 
-            final HttpHeaders headers = new HttpHeaders();
-            return new ResponseEntity<>(t, headers, HttpStatus.CREATED);
+                service.add(t);
+                service.commit();
 
+                return ResponseEntity.status(HttpStatus.CREATED).body(t);
+            }
         } catch (final Exception e) {
             logger.error("Error adding team.  Team: {}", team.toString());
             handleException(e);
@@ -229,6 +248,7 @@ public class TeamController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
+    @SuppressWarnings("rawtypes")
     @ApiOperation(value = "Update team", response = Team.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Team successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
@@ -237,31 +257,39 @@ public class TeamController extends BaseController {
     })
     @RecordMetric
     @PutMapping(value = "/team/{id}", consumes = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<Object> updateTeam(@PathVariable(value = "id") final String id, @RequestBody final Team team) throws Exception {
+    public @ResponseBody ResponseEntity updateTeam(@PathVariable(value = "id") final String id, @RequestBody final Team team) throws Exception {
 
         logger.info("Update team: {}", team);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
         if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
         }
 
         if (team == null || !org.apache.commons.lang3.StringUtils.equals(id, team.getId())) {
-            logger.info("Team is null or team id does not match id in URL.");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            final String errorMessage = "Team is null or team id does not match id in URL."; 
+            logger.error(errorMessage);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
         }
 
+        try {
+            team.validateUpdate(null);
+        } catch (final Exception e) {
+            logger.error("Bad request for team update.", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+        
         try (final TerminologyService service = new TerminologyService()) {
 
             // Find the team
             final Team original = service.get(team.getId(), Team.class);
 
             if (original == null) {
-                final String message = "Unable to find team for " + id + ".";
-                logger.error(message);
-                return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+                final String errorMessage = String.format("Unable to find team for id {}.", id); 
+                logger.info(errorMessage);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
             }
-
+            
             service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
@@ -273,10 +301,10 @@ public class TeamController extends BaseController {
             service.update(original);
             service.commit();
 
-            return new ResponseEntity<>(original, HttpStatus.OK);
+            return ResponseEntity.status(HttpStatus.OK).body(original);
 
         } catch (final Exception e) {
-            logger.error("Error upadting team.  Team: {}", team.toString());
+            logger.error("Error updating team. Team: {}", team);
             handleException(e);
             return null;
         }

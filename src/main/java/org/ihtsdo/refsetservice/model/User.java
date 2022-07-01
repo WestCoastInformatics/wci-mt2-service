@@ -628,7 +628,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
     /* see superclass */
     @Override
-    public void validateAdd(AuthContext context) throws Exception {
+    public void validateAdd() throws Exception {
 
         // TODO Auto-generated method stub
 
@@ -636,7 +636,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
     /* see superclass */
     @Override
-    public void validateUpdate(AuthContext context, User other) throws Exception {
+    public void validateUpdate(final User other) throws Exception {
 
         // TODO Auto-generated method stub
 
@@ -644,7 +644,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
     /* see superclass */
     @Override
-    public void validateDelete(AuthContext context) throws Exception {
+    public void validateDelete() throws Exception {
 
         // TODO Auto-generated method stub
 

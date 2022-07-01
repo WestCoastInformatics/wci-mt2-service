@@ -88,7 +88,8 @@ public class ProjectController extends BaseController {
      * @throws Exception the exception
      */
 
-    @ApiOperation(value = "Get the project for the specified ID", response = Refset.class)
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Get the project for the specified ID", response = Project.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
         @ApiResponse(code = 404, message = "Resource not found")
@@ -97,14 +98,14 @@ public class ProjectController extends BaseController {
         @ApiImplicitParam(name = "projectId", value = "The ID of the project to return.", required = true, dataTypeClass = String.class, paramType = "path")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/project/{projectId}", produces = "application/json")
-    public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "projectId") final String projectId, @QueryParam(value = "includeMembers") final boolean includeMembers)
+    @RequestMapping(method = RequestMethod.GET, value = "/project/{projectId}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity getProject(@PathVariable(value = "projectId") final String projectId, @QueryParam(value = "includeMembers") final boolean includeMembers)
         throws Exception {
 
         logger.info("Project: projectId: " + projectId);
         final User authUser = SecurityService.getUserFromSession();
         if (authUser == null) {
-            return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
         }
 
         try {
@@ -114,7 +115,7 @@ public class ProjectController extends BaseController {
                 final Project project = RefsetService.getProject(projectId);
                 if (project == null) {
                     logger.info("Unable to find project for id {}.", projectId);
-                    return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Project not found");
                 }
 
                 if (includeMembers) {
@@ -161,7 +162,7 @@ public class ProjectController extends BaseController {
         // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/project/search", produces = "application/json")
+    @RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResultList<Project> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult, @QueryParam(value = "includeMembers") final boolean includeMembers)
         throws Exception {
 
@@ -212,61 +213,70 @@ public class ProjectController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
+    @SuppressWarnings("rawtypes")
     @ApiOperation(value = "Add project", response = Project.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "Project successfully created"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 201, message = "Project successfully created"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
-    @PostMapping(value = "/project", consumes = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<Project> addProject(@RequestBody final Project project) throws Exception {
+    @PostMapping(value = "/project", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity addProject(@RequestBody final Project project) throws Exception {
 
         logger.info("Add project: {}", project);
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-        final AuthContext context = authorize(request);
-
-        try (final TerminologyService service = new TerminologyService()) {
-
+        
+        try {
+            
+            // TODO check permissions, fail if not authorized.
+            final User authUser = SecurityService.getUserFromSession();
+            if (authUser == null) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
+            }
+            
             final Project localProject = (Project) project;
 
-            localProject.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(localProject.getName()));
-            service.setModifiedBy(authUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-
+            if (localProject == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing project");
+            }
+            
             try {
-                localProject.validateAdd(context);
+                localProject.validateAdd();
             } catch (final Exception e) {
-                logger.error("Project validation failed for add. Message: {}.", e.getMessage(), e);
-                return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+                final String errorMessage = String.format("Project validation failed for add. Message: {}.", e.getMessage()); 
+                logger.error(errorMessage, e);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
             }
 
-            service.add(localProject);
-            service.commit();
-            // crowd.unit.test.skip=true
-            if (properties.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(properties.getProperty("crowd.unit.test.skip"))) {
-                logger.info("CALLING CROWD API");
+            try (final TerminologyService service = new TerminologyService()) {
 
-                try {
-                    final Organization organization = project.getOrganization();
-                    CrowdAPIClient.addGroup(organization.getEdition().getShortName(), localProject.getName(), localProject.getDescription());
+                localProject.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(localProject.getName()));
+                service.setModifiedBy(authUser.getUserName());
+                service.setTransactionPerOperation(false);
+                service.beginTransaction();
 
-                } catch (Exception e) {
-                    logger.error("Failed adding Crowd groups. Message: {}.", e.getMessage(), e);
-                    return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+                service.add(localProject);
+                service.commit();
+                // crowd.unit.test.skip=true
+                if (properties.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(properties.getProperty("crowd.unit.test.skip"))) {
+                    logger.info("CALLING CROWD API");
+
+                    try {
+                        final Organization organization = project.getOrganization();
+                        CrowdAPIClient.addGroup(organization.getEdition().getShortName(), localProject.getName(), localProject.getDescription());
+
+                    } catch (Exception e) {
+                        final String errorMessage = String.format("Failed adding Crowd groups. Message: {}.", e.getMessage());
+                        logger.error(errorMessage, e);
+                        return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("");
+                    }
+                } else {
+                    logger.info("SKIP CALLING CROWD API");
                 }
-            } else {
-                logger.info("SKIP CALLING CROWD API");
+
+                // Return the response
+                return ResponseEntity.status(HttpStatus.CREATED).body(localProject);
             }
-
-            // Return the response
-            return new ResponseEntity<>(localProject, HttpStatus.CREATED);
-
         } catch (final Exception e) {
             logger.error("Error adding project. {}", project.toString(), e);
             handleException(e);
@@ -274,7 +284,7 @@ public class ProjectController extends BaseController {
         }
     }
 
-    /** 
+    /**
      * Update project.
      *
      * @param id the id
@@ -282,15 +292,16 @@ public class ProjectController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Update project")
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Update project", response = Project.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Update specified project"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
         @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
         @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
-    @PutMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<Project> updateProject(@PathVariable(value = "id") final String id, @RequestBody final Project project) throws Exception {
+    @PutMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity updateProject(@PathVariable(value = "id") final String id, @RequestBody final Project project) throws Exception {
 
         logger.info("Update project: {}", project);
         // TODO check permissions, fail if not authorized.
@@ -298,13 +309,20 @@ public class ProjectController extends BaseController {
         if (authUser == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        final AuthContext context = authorize(request);
 
-        if (project == null || !StringUtils.equals(id, project.getId())) {
-            logger.info("Project is null or project id does not match id in URL.");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
+            final String errorMessage = "Project is null or project id does not match id in URL."; 
+            logger.error(errorMessage);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
         }
 
+        try {
+            project.validateUpdate(null);
+        } catch (final Exception e) {
+            logger.error("Bad request for project update.", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+        
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(authUser.getUserName());
@@ -315,15 +333,9 @@ public class ProjectController extends BaseController {
             final Project original = service.get(id, Project.class);
 
             if (original == null) {
-                logger.info("Unable to find project for id {}.", id);
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-
-            try {
-                original.validateUpdate(context, project);
-            } catch (final Exception e) {
-                logger.error("Project validation failed for update. Message: {}.", e.getMessage(), e);
-                return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+                final String errorMessage = String.format("Unable to find project for id {}.", id); 
+                logger.error(errorMessage);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
             }
 
             // Apply changes
@@ -332,7 +344,7 @@ public class ProjectController extends BaseController {
             // Update
             service.update(original);
             service.commit();
-            return new ResponseEntity<>(original, HttpStatus.OK);
+            return ResponseEntity.status(HttpStatus.OK).body(original);
 
         } catch (final Exception e) {
             logger.error("Error updating project.  Id: {}", id, e);
@@ -348,14 +360,15 @@ public class ProjectController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
+    @SuppressWarnings("rawtypes")
     @ApiOperation(value = "Inactivate project")
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Inactivate specified project"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
-    @DeleteMapping(value = "/project/{id}")
-    public ResponseEntity<Void> deleteProject(@PathVariable("id") final String id) throws Exception {
+    @DeleteMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)
+    public ResponseEntity deleteProject(@PathVariable("id") final String id) throws Exception {
 
         logger.info("Inactivate project: {}", id);
         // TODO check permissions, fail if not authorized.
