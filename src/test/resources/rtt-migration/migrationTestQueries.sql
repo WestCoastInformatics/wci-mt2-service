@@ -18,11 +18,11 @@ select id, name, email  from users order by name;
 
 -- ***** Teams (basic & stats)
 -- select id, name, description  from teams order by name;
-select organization_id, count(*)  from  teams group by organization_id;
+select organization_id, count(*) as Num_teams  from  teams group by organization_id;
 
 -- ***** Projects (basic, stats & basic-join)
 -- select id, name, description  from projects order by name;
---select organization_id, count(*)  from  projects group by organization_id;
+--select organization_id, count(*) as num_projects from  projects group by organization_id;
 select a.id as org_id, a.name as org, b.name as project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and b.name not like '%UAT%' and b.name not like '%Default Project%' order by a.name;
 -- select a.name as org, b.name as project from organizations a, projects b where a.id = b.organization_id;
 
@@ -37,16 +37,16 @@ select b.name as Project, c.name as Team from project_teams a, projects b, teams
 
 -- ***** J - Org Members (basic)  
 --select * from organization_members;
-select organization_id, count(*)  from  organization_members group by organization_id;
-select organization_id, count(*)  from  organization_members group by organization_id having count(*) != 5 ;
+select organization_id, count(*) as num_members  from  organization_members group by organization_id;
+select organization_id, count(*)  as num_Members from  organization_members group by organization_id having count(*) != 5 ;
 select b.name org_name, c.name user_name from organization_members a, organizations b, users c where b.id = a.organization_id and c.id = a.user_id order by b.name, c.name;
 select c.name user_name, b.name org_name from organization_members a, organizations b, users c where b.id = a.organization_id and c.id = a.user_id order by c.name, b.name;
 
 
 -- ***** J - Team Members (basic)  
 --select * from team_members;
-select Team_id, count(*)  from  team_members group by Team_id;
-select Team_id, count(*)  from  team_members group by Team_id having count(*) != 2 ;
+select Team_id, count(*) as num_members from  team_members group by Team_id;
+select Team_id, count(*) as num_members from  team_members group by Team_id having count(*) != 2 ;
 select b.name as Team_Name, c.name as User_Name from team_members a, teams b, users c where b.id = a.Team_id and c.id = a.members order by b.name, c.name;
 select c.name as User_Name, b.name as Team_Name from team_members a, teams b, users c where b.id = a.Team_id and c.id = a.members order by c.name, b.name;
 

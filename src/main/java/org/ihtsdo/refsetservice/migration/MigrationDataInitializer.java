@@ -102,7 +102,7 @@ public class MigrationDataInitializer {
 
     }
 
-    public void initialize(Organization organization, Map<String, Organization> organizationsAdded, MigrationMetadata defaultMeta) throws Exception {
+    public void initialize(Organization organization, Map<String, Organization> organizationsAdded, Map<String, Project> defaultOrganizationProjects, MigrationMetadata defaultMeta) throws Exception {
 
         // Create a dedicated UAT Training Project for each organization
         Map<String, Project> uatProjects = createUATProjects(organization, organizationsAdded, defaultMeta);
@@ -116,7 +116,7 @@ public class MigrationDataInitializer {
         }
 
         // Add WCI support to every project in case WCI needs to debug issues
-        createWCISupport(uatProjects);
+        createWCISupport(uatProjects, defaultOrganizationProjects);
 
     }
 
@@ -201,7 +201,7 @@ public class MigrationDataInitializer {
 
     }
 
-    private void createWCISupport(Map<String, Project> uatProjects) throws Exception {
+    private void createWCISupport(Map<String, Project> uatProjects, Map<String, Project> defaultOrganizationProjects) throws Exception {
         // Formalize very simply for now (nothing specific about org or role in team's description)
 
         try (TerminologyService service = new TerminologyService()) {
@@ -216,9 +216,9 @@ public class MigrationDataInitializer {
             for (Organization organization : organizations) {
 
                 final String organizationTeamDescription = organization.getName() + " " + ORGANIZATION_TEAM_DESCRIPTION_BASE_NAME;
-                final Project organizationUatProject = uatProjects.get(organization.getName());
+                final Project uatProject = uatProjects.get(organization.getName());
 
-                if (organizationUatProject == null) {
+                if (uatProject == null) {
 
                     logger.debug("Org is " + organization.getName() + " and it should be WCI. No need to process it in support of UAT");
                     continue;
@@ -236,9 +236,14 @@ public class MigrationDataInitializer {
                     final Team team =
                         utilities.addTeam(organization.getName() + " dev-support-" + role + " Team", organizationTeamDescription, organization, new HashSet<String>(Arrays.asList(role)), memberNames);
 
-                    organizationUatProject.getTeams().add(team.getId());
+                    uatProject.getTeams().add(team.getId());
+                    defaultOrganizationProjects.get(organization.getId()).getTeams().add(team.getId());
 
                 }
+
+                // Persist all new org teams onto Project UAT and org's Default project
+                service.update(uatProject);
+                service.update(defaultOrganizationProjects.get(organization.getId()));
 
                 // Finally, add the users to the organizaiton
                 organization.getMembers().addAll(commonWciUsers);

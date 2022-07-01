@@ -372,7 +372,6 @@ public class HistoricDataMigrator {
                 logger.debug("111a - Have clause on refset: " + refset.getRefsetId());
             }
 
-            // Set refset Project making sure to cache it based on refsetId
             associateRefsetProject(refset, rttProjects);
 
             // For now, default all refsets to PUBLIC
@@ -452,19 +451,38 @@ public class HistoricDataMigrator {
 
     private void associateRefsetProject(Refset refset, Map<String, Project> rttProjects) throws Exception {
 
-        final String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
-        final String rttProjectId = projectInfo.split("\t")[0];
+        Project project = null;
 
-        if (!rttProjects.containsKey(rttProjectId)) {
+        // Set refset Project making sure to cache it based on refsetId
+        if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refset.getRefsetId())) {
 
-            logger.debug("Creating new project for refset: " + refset.getRefsetId());
-            final Project project = createRefsetProject(refset.getRefsetId());
+            final String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
+            final String rttProjectId = projectInfo.split("\t")[0];
 
-            rttProjects.put(rttProjectId, project);
+            if (!rttProjects.containsKey(rttProjectId)) {
+
+                logger.debug("Creating new project for refset: " + refset.getRefsetId());
+                project = createRefsetProject(refset.getRefsetId());
+
+                rttProjects.put(rttProjectId, project);
+            }
+
+            project = rttProjects.get(rttProjectId);
+        } else {
+
+            // User Org's default project
+            Organization org = getOrgFromRefset(refset.getRefsetId());
+
+            project = defaultOrganizationProjects.get(org.getId());
+        }
+
+        if (project == null) {
+
+            throw new Exception("Must have created from RTT, already crearted from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
         }
 
         logger.debug("Associating project with refset: " + refset.getRefsetId());
-        refset.setProject(rttProjects.get(rttProjectId));
+        refset.setProject(project);
     }
 
     /**
@@ -1361,7 +1379,7 @@ public class HistoricDataMigrator {
         
                org = organizationsAdded.get(translatedOrgName);
            }
-        
+        “““
            if (!refsetToProjectMap.containsKey(rttProject.getName())) {
         
                final Project project = utilities.addProject(org, rttProject.getName(), rttProject.getDescription(), projectMeta);
@@ -1396,11 +1414,7 @@ public class HistoricDataMigrator {
      */
     private Project createRefsetProject(String refsetId) throws Exception {
 
-        final String editionName = refsetEditions.get(refsetId).getName();
-        final String editionShortName = refsetEditions.get(refsetId).getShortName();
-
-        String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
-        final Organization org = organizationsAdded.get(orgName);
+        Organization org = getOrgFromRefset(refsetId);
 
         logger.debug(".... Creating project for refsetId " + refsetId);
 
@@ -1442,6 +1456,17 @@ public class HistoricDataMigrator {
             return defaultOrganizationProjects.get(org.getId());
         }
 
+    }
+
+    private Organization getOrgFromRefset(String refsetId) {
+
+        final String editionName = refsetEditions.get(refsetId).getName();
+        final String editionShortName = refsetEditions.get(refsetId).getShortName();
+
+        String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
+        final Organization org = organizationsAdded.get(orgName);
+
+        return org;
     }
 
     private String translateRttOrg(String name) {
