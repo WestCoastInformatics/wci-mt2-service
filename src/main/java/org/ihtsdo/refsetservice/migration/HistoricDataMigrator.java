@@ -1316,7 +1316,7 @@ public class HistoricDataMigrator {
         logger.info(" step - Populating initial data");
 
         MigrationDataInitializer initializer = new MigrationDataInitializer();
-        initializer.initialize(wciOrganization, organizationsAdded, defaultMeta);
+        initializer.initialize(wciOrganization, organizationsAdded, defaultOrganizationProjects, defaultMeta);
         initializer.printResults();
 
         logger.info(" step complete - Adding special content");
