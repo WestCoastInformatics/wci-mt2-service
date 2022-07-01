@@ -23,12 +23,13 @@ select organization_id, count(*) as Num_teams  from  teams group by organization
 -- ***** Projects (basic, stats & basic-join)
 -- select id, name, description  from projects order by name;
 --select organization_id, count(*) as num_projects from  projects group by organization_id;
+ select a.id as org_id, a.name as org, b.name as project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and (b.name like '%UAT%' or  b.name like '%Default Project%') order by a.name, b.name;
 select a.id as org_id, a.name as org, b.name as project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and b.name not like '%UAT%' and b.name not like '%Default Project%' order by a.name;
 -- select a.name as org, b.name as project from organizations a, projects b where a.id = b.organization_id;
 
 
 -- ***** J - Project Teams (basic)
-select b.name as Project, c.name as Team from project_teams a, projects b, teams c where b.id = a.project_id and c.id = a.teams;
+select d.name as Org, b.name as Project, c.name as Team from project_teams a, projects b, teams c, organizations d where b.id = a.project_id and c.id = a.teams and d.id = b.organization_id order by d.name, b.name, c.name;
 
 
 
