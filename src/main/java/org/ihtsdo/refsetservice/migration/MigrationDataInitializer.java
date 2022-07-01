@@ -1,8 +1,5 @@
 package org.ihtsdo.refsetservice.migration;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -191,10 +188,10 @@ public class MigrationDataInitializer {
             wciTestingRefset.setActive(true);
             wciTestingRefset.setType("EXTENSIONAL");
             wciTestingRefset.setProject(wciProject);
-            wciTestingRefset.setName("Base WCI Refset");
+            wciTestingRefset.setName("Default Single WCI Testing Refset");
 
             // Set release date to yesterday midnight
-            Date publicationDate = MigrationMetadata.getSdf().parse("2022-01-31 08:00:00");
+            Date publicationDate = utilities.getSdf().parse("2022-01-31 08:00:00");
             wciTestingRefset.setVersionDate(publicationDate);
 
             service.add(wciTestingRefset);
@@ -205,6 +202,7 @@ public class MigrationDataInitializer {
     }
 
     private void createWCISupport(Map<String, Project> uatProjects) throws Exception {
+        // Formalize very simply for now (nothing specific about org or role in team's description)
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -212,31 +210,21 @@ public class MigrationDataInitializer {
 
             logger.info(" Create wci-support users & teams and add appropriate wci user as well as refset-dev to each.");
 
+            // Create dedicated UAT project per organization
             List<Organization> organizations = service.getAll(Organization.class);
 
-            // Formalize very simply for now (nothing specific about org or role in team's description)
             for (Organization organization : organizations) {
 
                 final String organizationTeamDescription = organization.getName() + " " + ORGANIZATION_TEAM_DESCRIPTION_BASE_NAME;
+                final Project organizationUatProject = uatProjects.get(organization.getName());
 
-                int counter = 0;
-
-                Project project = uatProjects.get(organization.getName());
-
-                if (project == null) {
+                if (organizationUatProject == null) {
 
                     logger.debug("Org is " + organization.getName() + " and it should be WCI. No need to process it in support of UAT");
                     continue;
                 }
 
-                String idCounter = ((++counter < 10) ? String.valueOf(counter) : "0" + String.valueOf(counter));
-
-                Refset refset = utilities.addRefset("WCI " + organization.getEdition().getShortName() + " base refset for: " + project.getName(), "9999999" + idCounter,
-                    organization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", project);
-
-                refset.setProject(project);
-                refset = service.update(refset);
-
+                // Create team per role-type and add user-role and refsetDevUser (SUPER) to each
                 for (String role : userRoleMap.keySet()) {
 
                     User roleBasedUser = userRoleMap.get(role);
@@ -248,10 +236,11 @@ public class MigrationDataInitializer {
                     final Team team =
                         utilities.addTeam(organization.getName() + " dev-support-" + role + " Team", organizationTeamDescription, organization, new HashSet<String>(Arrays.asList(role)), memberNames);
 
-                    project.getTeams().add(team.getId());
+                    organizationUatProject.getTeams().add(team.getId());
 
                 }
 
+                // Finally, add the users to the organizaiton
                 organization.getMembers().addAll(commonWciUsers);
                 organization = service.update(organization);
 
@@ -269,8 +258,9 @@ public class MigrationDataInitializer {
 
         logger.info(" Create Feedback for testing (for DEV only)");
 
-        // create new refset with name = FeedbackTestingVersion1
-        Refset refset = utilities.addRefset("WCI Testing Feedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
+        // create new refset with name = FeedbackTestingVersion1 with July 31 2022 version off International Edition
+        Refset refset = utilities.addRefset("WCI Testing Feedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
+            Refset.EXTENSIONAL, "", wciProject);
 
         try (TerminologyService service = new TerminologyService()) {
 

@@ -1,5 +1,6 @@
 package org.ihtsdo.refsetservice.migration;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +26,9 @@ import org.slf4j.LoggerFactory;
 public class MigrationUtilities {
 
     private final Logger logger = LoggerFactory.getLogger(MigrationUtilities.class);
+
+    /** The sdf. */
+    private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
@@ -212,6 +216,11 @@ public class MigrationUtilities {
     MigrationPropertyFileReader getPropertyReader() {
 
         return propertyReader;
+    }
+
+    public SimpleDateFormat getSdf() {
+
+        return sdf;
     }
 
 }

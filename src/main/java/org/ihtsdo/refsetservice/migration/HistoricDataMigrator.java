@@ -38,7 +38,7 @@ public class HistoricDataMigrator {
     /** The formatter. */
     private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
-    private final MigrationMetadata defaultMeta = new MigrationMetadata(MigrationMetadata.getSdf().format(new Date()), "System initialization");
+    private final MigrationMetadata defaultMeta = new MigrationMetadata(new Date(), "System initialization");
 
     /**
      * The Class Metadata.
@@ -1241,7 +1241,7 @@ public class HistoricDataMigrator {
                         final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
 
                         final Refset rttRefset = ModelUtility.fromJson(refsetJsonString, Refset.class);
-                        final Date versionDate = MigrationMetadata.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId));
+                        final Date versionDate = utilities.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId));
 
                         // TODO: only process those refsets that aren't in Snowstorm
 
