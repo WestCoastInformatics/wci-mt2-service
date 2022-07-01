@@ -306,15 +306,10 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public Set<String> getTeams() {
 
-        System.out.println("ZZZ1 here for project: " + getName());
-
         if (teams == null) {
 
-            System.out.println("ZZZ1 ... wow and here!!!!!");
             teams = new HashSet<>();
         }
-
-        System.out.println("ZZZ1 returning : " + teams);
 
         return teams;
     }
@@ -326,7 +321,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      */
     public void setTeams(final Set<String> teams) {
 
-        System.out.println("ZZZ2 should never be here");
         this.teams = teams;
     }
 
@@ -549,12 +543,17 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public void validateAdd() throws Exception {
 
         if (getId() != null) {
+
             throw new Exception("Unexpected non-null id");
         }
+
         if (getOrganization() == null) {
+
             throw new Exception("Unexpected null/empty organization");
         }
+
         if (StringUtils.isBlank(getName())) {
+
             throw new Exception("Unexpected null/empty name");
         }
 
@@ -565,14 +564,20 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public void validateUpdate(final Project other) throws Exception {
 
         if (StringUtils.isBlank(getId())) {
+
             throw new Exception("Unexpected null/empty id");
         }
+
         if (getOrganization() == null) {
+
             throw new Exception("Unexpected null/empty organization");
         }
+
         if (StringUtils.isBlank(getName())) {
+
             throw new Exception("Unexpected null/empty name");
         }
+
     }
 
     /* see superclass */
@@ -580,7 +585,9 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public void validateDelete() throws Exception {
 
         if (StringUtils.isBlank(getId())) {
+
             throw new Exception("Unexpected null/empty id");
         }
+
     }
 }
