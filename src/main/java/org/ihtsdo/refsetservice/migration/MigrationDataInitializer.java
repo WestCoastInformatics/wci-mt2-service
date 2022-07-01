@@ -64,6 +64,10 @@ public class MigrationDataInitializer {
 
     private static final String FEEDBACK_REFSET_ID_BASE = "9999999";
 
+    private static final String WCI_TESTING_PROJECT_NAME = "WCI Testing Project";
+
+    private static final String WCI_TESTING_PROJECT_DESCRIPTION = "The single project for all WCI testing refsets";
+
     public MigrationDataInitializer() {
 
         // Grab wci users or create during first migration. Two types:
@@ -129,16 +133,14 @@ public class MigrationDataInitializer {
 
             for (Organization organization : organizations) {
 
-                logger.debug("Out with org: " + organization.getId() + " (" + organization.getName() + ") with members: ");
-                organization.getMembers().stream().forEach(member -> logger.debug("   Member: " + member.getName()));
-                logger.debug("End members");
+                logger.info("Have Out with org: " + organization.getId() + " (" + organization.getName() + ") with members: ");
+                organization.getMembers().stream().forEach(member -> logger.info("   Member: " + member.getName()));
             }
 
             for (Project project : projects) {
 
-                logger.debug("Out with project: " + project.getId() + " (" + project.getName() + ") with teams: ");
-                project.getTeams().stream().forEach(team -> logger.debug("   Team: " + team));
-                logger.debug("End teams");
+                logger.info("Out with project: " + project.getId() + " (" + project.getName() + ") with teams: ");
+                project.getTeams().stream().forEach(team -> logger.info("   Team: " + team));
             }
 
         }
@@ -159,7 +161,7 @@ public class MigrationDataInitializer {
                 continue;
             }
 
-            Project uatProject = utilities.addProject(org, org.getName() + " dedicated UAT Training Project",
+            Project uatProject = utilities.addProject(org, org.getName() + " UAT Training Project",
                 "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project",
                 defaultMeta);
 
@@ -177,7 +179,7 @@ public class MigrationDataInitializer {
 
             logger.info("Adding WCI Testing Org's single project");
 
-            Project wciProject = utilities.addProject(wciOrganization, "WCI Testing Project", "The single project for all WCI testing refsets", defaultMeta);
+            Project wciProject = utilities.addProject(wciOrganization, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, defaultMeta);
 
             Refset wciTestingRefset = new Refset();
 
@@ -229,7 +231,7 @@ public class MigrationDataInitializer {
 
                 String idCounter = ((++counter < 10) ? String.valueOf(counter) : "0" + String.valueOf(counter));
 
-                Refset refset = utilities.addRefset("WCI " + organization.getEdition().getShortName() + " base refset for project " + project.getName(), "9999999" + idCounter,
+                Refset refset = utilities.addRefset("WCI " + organization.getEdition().getShortName() + " base refset for: " + project.getName(), "9999999" + idCounter,
                     organization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", project);
 
                 refset.setProject(project);
@@ -269,9 +271,36 @@ public class MigrationDataInitializer {
 
         // create new refset with name = FeedbackTestingVersion1
         Refset refset = utilities.addRefset("WCI Testing Feedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
-        addFeedbackContent(refset, wciProject, wciOrganization);
 
-        return refset;
+        try (TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            refset.setProject(wciProject);
+            service.update(refset);
+
+            // Create users and teams, then add to org/project
+            Set<String> userRole = new HashSet<>();
+            userRole.add(User.ROLE_AUTHOR);
+            Set<String> memberNames = new HashSet<>();
+            memberNames.add(feedbackInitiatiorUser.getId());
+            memberNames.add(userResponderUser.getId());
+            commonWciUsers.stream().forEach(user -> memberNames.add(user.getId()));
+
+            final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", wciOrganization, allRoles, memberNames);
+
+            wciProject.getTeams().add(singleFeedbackTeam.getId());
+            wciProject = service.update(wciProject);
+
+            wciOrganization.getMembers().addAll(commonWciUsers);
+            wciOrganization.getMembers().add(feedbackInitiatiorUser);
+            wciOrganization.getMembers().add(userResponderUser);
+            wciOrganization = service.update(wciOrganization);
+
+            addFeedbackContent(refset);
+
+            return refset;
+        }
 
     }
 
@@ -324,39 +353,18 @@ public class MigrationDataInitializer {
                     new Date(), Refset.EXTENSIONAL, "", wciProject);
             }
 
-            addFeedbackContent(newTestingRefset, wciProject, wciOrganization);
+            addFeedbackContent(newTestingRefset);
 
             return newTestingRefset;
         }
 
     }
 
-    private void addFeedbackContent(Refset refset, Project wciProject, Organization wciOrganization) throws Exception {
+    private void addFeedbackContent(Refset refset) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
-
-            refset.setProject(wciProject);
-            service.update(refset);
-
-            // Create users and teams, then add to org/project
-            Set<String> userRole = new HashSet<>();
-            userRole.add(User.ROLE_AUTHOR);
-            Set<String> memberNames = new HashSet<>();
-            memberNames.add(feedbackInitiatiorUser.getId());
-            memberNames.add(userResponderUser.getId());
-            commonWciUsers.stream().forEach(user -> memberNames.add(user.getId()));
-
-            final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", wciOrganization, allRoles, memberNames);
-
-            wciProject.getTeams().add(singleFeedbackTeam.getId());
-            wciProject = service.update(wciProject);
-
-            wciOrganization.getMembers().addAll(commonWciUsers);
-            wciOrganization.getMembers().add(feedbackInitiatiorUser);
-            wciOrganization.getMembers().add(userResponderUser);
-            wciOrganization = service.update(wciOrganization);
 
             // add feedback
             DiscussionThread thread = new DiscussionThread();
@@ -441,7 +449,7 @@ public class MigrationDataInitializer {
 
                 for (Project p : projects) {
 
-                    if (p.getName().toLowerCase().contains("wci")) {
+                    if (p.getName().equals(WCI_TESTING_PROJECT_NAME)) {
 
                         testingProject = p;
                     }

@@ -173,7 +173,7 @@ public class MigrationUtilities {
 
     }
 
-    Set<DefinitionClause> addClause(String rttId) throws Exception {
+    Set<DefinitionClause> getRefsetClauses(String rttId) throws Exception {
 
         Set<DefinitionClause> refsetClauses = new HashSet<>();
         MigrationPropertyFileReader propertyReader = new MigrationPropertyFileReader();
