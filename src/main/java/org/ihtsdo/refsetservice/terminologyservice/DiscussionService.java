@@ -11,6 +11,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -20,12 +21,16 @@ import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.DiscussionType;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Service class to handle getting and modifying discussion information.
@@ -54,6 +59,7 @@ public class DiscussionService {
             return new ResultList<DiscussionThread>();
         }
         
+        boolean canViewPrivate = true;
         String query = "type:" + QueryParserBase.escape(type.name()) + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("created");
@@ -64,14 +70,29 @@ public class DiscussionService {
         }
         
         if (!canUserViewPrivateThread(user, refset)) {
+            
+            canViewPrivate = false;
             query += " AND privateThread: false";
         }
 
         final ResultList<DiscussionThread> results = service.find(query, pfs, DiscussionThread.class, null);
         
+        // private posts need to be removed if the user does not have permission to view them
         for (int i = results.getItems().size() - 1; i >= 0; i--) {
             
             final DiscussionThread thread = results.getItems().get(i);
+            final List<DiscussionPost> postList = ModelUtility.jsonCopy(thread.getPosts(), new TypeReference<List<DiscussionPost>>(){});
+            thread.getPosts().clear();
+            
+            for (final DiscussionPost post : postList) {
+                
+                if (post.isPrivatePost() && !canViewPrivate) {
+                    continue;
+                }
+                
+                thread.getPosts().add(post);
+            }
+            
             thread.setLastPost(thread.getPosts().get(thread.getPosts().size() - 1).getCreated());
             thread.setNumberReplies(thread.getPosts().size() - 1);
         }
@@ -216,7 +237,7 @@ public class DiscussionService {
         final String threadUserName = thread.getPosts().get(0).getUser().getUserName();
         
         // if the user does not have the correct roles on the refset or they did not create the thread then they can't edit it
-        if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER)) && !threadUserName.equals(user.getUserName())) {
+        if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !threadUserName.equals(user.getUserName())) {
             return false;
         } else {
             return true;
@@ -255,7 +276,7 @@ public class DiscussionService {
         final String postUserName = post.getUser().getUserName();
         
         // if the user does not have the correct roles on the refset or they did not create the post then they can't edit it
-        if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER)) && !postUserName.equals(user.getUserName())) {
+        if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !postUserName.equals(user.getUserName())) {
             return false;
         } else {
             return true;

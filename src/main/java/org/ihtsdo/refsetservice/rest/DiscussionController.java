@@ -324,7 +324,7 @@ public class DiscussionController extends BaseController {
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}")
-    public @ResponseBody ResponseEntity<Void> updateDiscussionThread(@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionThread thread) throws Exception {
+    public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThread(@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionThread thread) throws Exception {
 
         try {
 
@@ -368,7 +368,7 @@ public class DiscussionController extends BaseController {
                      
                 service.commit();
                 
-                return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+                return new ResponseEntity<>(originalThread, new HttpHeaders(), HttpStatus.OK);
             }
 
         } catch (final Exception e) {
@@ -653,6 +653,17 @@ public class DiscussionController extends BaseController {
 
                 post.setPrivatePost(isPrivate);
                 service.update(post);
+                
+                for (final DiscussionPost threadPost : thread.getPosts()) {
+                    
+                    if (threadPost.getId().equals(post.getId())) {
+                        
+                        threadPost.setPrivatePost(isPrivate);
+                        break;
+                    }
+                }
+                
+                service.update(thread);
 
                 return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
             }
@@ -666,17 +677,17 @@ public class DiscussionController extends BaseController {
     }
     
     /**
-     * Update the discussion post's visibility.
+     * Update a discussion post.
      *
      * @param threadId the discussion thread ID
      * @param postId the discussion post ID
-     * @param visibility the discussion post's visibility
+     * @param updatedPost the post to update
      * @return the response entity
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Set the visibility of a discussion post.", response = DiscussionThread.class)
+    @ApiOperation(value = "Updates a discussion post.", response = DiscussionThread.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully updated the provided discussion thread's visibility."), 
+        @ApiResponse(code = 200, message = "Successfully updated the discussion post."), 
         @ApiResponse(code = 400, message = "Bad request"), 
         @ApiResponse(code = 404, message = "Resource not found"),
         @ApiResponse(code = 500, message = "Server error")
@@ -684,17 +695,17 @@ public class DiscussionController extends BaseController {
     @ApiImplicitParams({
         @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
         @ApiImplicitParam(name = "postId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "visibility", value = "", required = true, dataTypeClass = String.class, paramType = "query")
+        @ApiImplicitParam(name = "updatedPost", value = "", required = true, dataTypeClass = DiscussionPost.class, paramType = "query")
     })
     @RecordMetric
-    @PutMapping("/discussion/{threadId}/post/{postId}/visibility")
-    public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionPostVisibility(
-        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @RequestParam final String visibility) throws Exception 
+    @PutMapping("/discussion/{threadId}/post/{postId}")
+    public @ResponseBody ResponseEntity<DiscussionPost> updateDiscussionPost(
+        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @RequestBody final DiscussionPost updatedPost) throws Exception 
     {
 
         try {
 
-            logger.debug("updateDiscussionPostVisibility threadId: " + threadId + "; postId: " + postId + "; visibility: " + visibility);
+            logger.debug("updateDiscussionPost threadId: " + threadId + "; postId: " + postId + "; post: " + updatedPost);
 
             final User user = SecurityService.getUserFromSession();
 
@@ -702,40 +713,145 @@ public class DiscussionController extends BaseController {
                 
                 final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
                 
+                if (!postId.equals(updatedPost.getId())) {
+                    
+                    final String message = "The postId parameter " + postId + " does not match the id property of the updatedPost parameter " + updatedPost.getId() + ".";
+                    logger.error("updateDiscussionPost: " + message);
+                    throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message);
+                }
+
                 if (thread == null) {
                     
-                    logger.error("updateDiscussionPostVisibility: Unable to retrieve discussion thread id: {}.", threadId);
+                    logger.error("updateDiscussionPost: Unable to retrieve discussion thread id: {}.", threadId);
                     throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
                 }
                 
                 final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-                final DiscussionPost post = service.get(postId, DiscussionPost.class);
+                final DiscussionPost existingPost = service.get(postId, DiscussionPost.class);
                 
-                if (post == null) {
+                if (existingPost == null) {
                     
-                    logger.error("updateDiscussionPostVisibility: Unable to retrieve discussion post id: {}.", postId);
+                    logger.error("updateDiscussionPost: Unable to retrieve discussion post id: {}.", postId);
                     throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion post for " + postId + ".");
                 }
                 
                 // If the user does not have the correct permissions then return an error
-                if (!DiscussionService.canUserEditPost(user, refset, post)) {
+                if (!DiscussionService.canUserEditPost(user, refset, existingPost)) {
                     
-                    logger.error("updateDiscussionPostVisibility: User does not have permissions to perform this action: {}.", user.getUserName());
+                    logger.error("updateDiscussionPost: User does not have permissions to perform this action: {}.", user.getUserName());
                     throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
                 }
                 
                 service.setModifiedBy(user.getUserName());
                 service.setModifiedFlag(true);
 
-                post.setVisibility(visibility);
-                service.update(post);
+                existingPost.setMessage(updatedPost.getMessage());
+                existingPost.setPrivatePost(updatedPost.isPrivatePost());
+                service.update(existingPost);
+                
+                for (final DiscussionPost threadPost : thread.getPosts()) {
+                    
+                    if (threadPost.getId().equals(existingPost.getId())) {
+                        
+                        threadPost.populateFrom(existingPost);
+                        break;
+                    }
+                }
+                
+                service.update(thread);
+
+                return new ResponseEntity<>(existingPost, new HttpHeaders(), HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            logger.error("Error updating discussion post: {}; for thread: {}", postId, threadId);
+            handleException(e);
+            return null;
+        }
+    }
+    
+    /**
+     * Delete a discussion post.
+     *
+     * @param threadId the discussion thread ID
+     * @param postId the discussion post ID
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Deletes a discussion post.", response = DiscussionThread.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully updated the discussion post."), 
+        @ApiResponse(code = 400, message = "Bad request"), 
+        @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 500, message = "Server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "threadId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "postId", value = "", required = true, dataTypeClass = String.class, paramType = "path"),
+    })
+    @RecordMetric
+    @DeleteMapping("/discussion/{threadId}/post/{postId}")
+    public @ResponseBody ResponseEntity<DiscussionThread> deleteDiscussionPost(
+        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId) throws Exception 
+    {
+
+        try {
+
+            logger.debug("deleteDiscussionPost threadId: " + threadId + "; postId: " + postId);
+
+            final User user = SecurityService.getUserFromSession();
+
+            try (final TerminologyService service = new TerminologyService()) {
+                
+                final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
+
+                if (thread == null) {
+                    
+                    logger.error("deleteDiscussionPost: Unable to retrieve discussion thread id: {}.", threadId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
+                }
+                
+                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+                final DiscussionPost existingPost = service.get(postId, DiscussionPost.class);
+                
+                if (existingPost == null) {
+                    
+                    logger.error("deleteDiscussionPost: Unable to retrieve discussion post id: {}.", postId);
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion post for " + postId + ".");
+                }
+                
+                // If the user does not have the correct permissions then return an error
+                if (!DiscussionService.canUserEditPost(user, refset, existingPost)) {
+                    
+                    logger.error("deleteDiscussionPost: User does not have permissions to perform this action: {}.", user.getUserName());
+                    throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
+                }
+                
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
+
+                service.remove(existingPost);
+                
+                for (int i = 0; i > thread.getPosts().size(); i++) {
+                    
+                    final DiscussionPost threadPost = thread.getPosts().get(i);
+                    
+                    if (threadPost.getId().equals(postId)) {
+                        
+                        thread.getPosts().remove(i);
+                        break;
+                    }
+                }
+                
+                service.update(thread);
 
                 return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
             }
 
         } catch (final Exception e) {
 
-            logger.error("Error updating thread for discussionThread: {}", threadId);
+            logger.error("Error deleting discussion post: {}; for thread: {}", postId, threadId);
             handleException(e);
             return null;
         }
