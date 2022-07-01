@@ -41,8 +41,6 @@ public class MigrationDataInitializer {
 
     private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
 
-    private static final Object ADMIN_ROLE = "Admin";
-
     private static final String REFSET_DEV_USER = "refset-dev";
 
     private static final String ORGANIZATION_TEAM_DESCRIPTION_BASE_NAME = "Dedicated to providing tooling support for all projects";
@@ -63,7 +61,9 @@ public class MigrationDataInitializer {
 
     private static final String FEEDBACK_REFSET_ID_BASE = "9999999";
 
-    private MigrationMetadata defaultMetadata = null;
+    private static final String WCI_TESTING_PROJECT_NAME = "WCI Testing Project";
+
+    private static final String WCI_TESTING_PROJECT_DESCRIPTION = "The single project for all WCI testing refsets";
 
     public MigrationDataInitializer() {
 
@@ -102,28 +102,21 @@ public class MigrationDataInitializer {
 
     }
 
-    public void initialize(Organization organization, Map<String, Organization> organizationsAdded, MigrationMetadata defaultMeta) throws Exception {
+    public void initialize(Organization organization, Map<String, Organization> organizationsAdded, Map<String, Project> defaultOrganizationProjects, MigrationMetadata defaultMeta) throws Exception {
 
         // Create a dedicated UAT Training Project for each organization
         Map<String, Project> uatProjects = createUATProjects(organization, organizationsAdded, defaultMeta);
-        logger.info(" step - 111");
 
         if (organization != null) {
 
-            logger.info(" step - 222");
             // Create wci-project (for DEV only)
             Project project = createWCITestingContent(organization, defaultMeta);
             createTestingFeedback(organization, project);
 
         }
 
-        logger.info(" step - 333");
         // Add WCI support to every project in case WCI needs to debug issues
-        createWCISupport(uatProjects);
-
-        logger.info(" step - 444");
-        // Final steps
-        // initializer.addDebugAdminUser(service);
+        createWCISupport(uatProjects, defaultOrganizationProjects);
 
     }
 
@@ -137,16 +130,14 @@ public class MigrationDataInitializer {
 
             for (Organization organization : organizations) {
 
-                logger.debug("Out with org: " + organization.getId() + " (" + organization.getName() + ") with members: ");
-                organization.getMembers().stream().forEach(member -> logger.debug("   Member: " + member.getName()));
-                logger.debug("End members");
+                logger.info("Have Out with org: " + organization.getId() + " (" + organization.getName() + ") with members: ");
+                organization.getMembers().stream().forEach(member -> logger.info("   Member: " + member.getName()));
             }
 
             for (Project project : projects) {
 
-                logger.debug("Out with project: " + project.getId() + " (" + project.getName() + ") with teams: ");
-                project.getTeams().stream().forEach(team -> logger.debug("   Team: " + team));
-                logger.debug("End teams");
+                logger.info("Out with project: " + project.getId() + " (" + project.getName() + ") with teams: ");
+                project.getTeams().stream().forEach(team -> logger.info("   Team: " + team));
             }
 
         }
@@ -167,7 +158,7 @@ public class MigrationDataInitializer {
                 continue;
             }
 
-            Project uatProject = utilities.addProject(org, org.getName() + " dedicated UAT Training Project",
+            Project uatProject = utilities.addProject(org, org.getName() + " UAT Training Project",
                 "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project",
                 defaultMeta);
 
@@ -185,11 +176,10 @@ public class MigrationDataInitializer {
 
             logger.info("Adding WCI Testing Org's single project");
 
-            Project wciProject = utilities.addProject(wciOrganization, "WCI Testing Project", "The single project for all WCI testing refsets", defaultMeta);
+            Project wciProject = utilities.addProject(wciOrganization, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, defaultMeta);
 
             Refset wciTestingRefset = new Refset();
 
-            // TODO: Change this to have actual release date created/new Refset
             wciTestingRefset.setVersionDate(new Date());
             wciTestingRefset.setRefsetId(WCI_TESTING_REFSET_CONCEPT_ID);
             wciTestingRefset.setModuleId(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
@@ -198,7 +188,11 @@ public class MigrationDataInitializer {
             wciTestingRefset.setActive(true);
             wciTestingRefset.setType("EXTENSIONAL");
             wciTestingRefset.setProject(wciProject);
-            wciTestingRefset.setName("Base WCI Refset");
+            wciTestingRefset.setName("Default Single WCI Testing Refset");
+
+            // Set release date to yesterday midnight
+            Date publicationDate = utilities.getSdf().parse("2022-01-31 08:00:00");
+            wciTestingRefset.setVersionDate(publicationDate);
 
             service.add(wciTestingRefset);
 
@@ -207,7 +201,8 @@ public class MigrationDataInitializer {
 
     }
 
-    private void createWCISupport(Map<String, Project> uatProjects) throws Exception {
+    private void createWCISupport(Map<String, Project> uatProjects, Map<String, Project> defaultOrganizationProjects) throws Exception {
+        // Formalize very simply for now (nothing specific about org or role in team's description)
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -215,66 +210,42 @@ public class MigrationDataInitializer {
 
             logger.info(" Create wci-support users & teams and add appropriate wci user as well as refset-dev to each.");
 
-            // 1) SET NAMES
-            // 2) Create team with memberNames and appropriate roles
-            // 3) Add team to project
-            // 4 Add members to org
-            // 5) Update org
-
+            // Create dedicated UAT project per organization
             List<Organization> organizations = service.getAll(Organization.class);
-
-            // Formalize very simply for now (nothing specific about org or role in team's description)
 
             for (Organization organization : organizations) {
 
                 final String organizationTeamDescription = organization.getName() + " " + ORGANIZATION_TEAM_DESCRIPTION_BASE_NAME;
+                final Project uatProject = uatProjects.get(organization.getName());
 
-                logger.debug("111 with org: " + organization.getName());
-
-                int counter = 0;
-
-                Project project = uatProjects.get(organization.getName());
-
-                if (project == null) {
+                if (uatProject == null) {
 
                     logger.debug("Org is " + organization.getName() + " and it should be WCI. No need to process it in support of UAT");
                     continue;
                 }
 
-                logger.debug("222 with project: " + project.getName());
-
-                String idCounter = ((++counter < 10) ? String.valueOf(counter) : "0" + String.valueOf(counter));
-
-                Refset refset = utilities.addRefset("WCI " + organization.getEdition().getShortName() + " base refset for project " + project.getName(), "9999999" + idCounter,
-                    organization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", project);
-                refset.setProject(project);
-                refset = service.update(refset);
-
+                // Create team per role-type and add user-role and refsetDevUser (SUPER) to each
                 for (String role : userRoleMap.keySet()) {
-
-                    logger.debug("333 with role: " + role);
 
                     User roleBasedUser = userRoleMap.get(role);
 
                     Set<String> memberNames = new HashSet<>();
-                    memberNames.add(roleBasedUser.getName());
-                    memberNames.add(refsetDevUser.getName());
-                    memberNames.stream().forEach(name -> logger.debug("444 with member Names: " + name));
+                    memberNames.add(roleBasedUser.getId());
+                    memberNames.add(refsetDevUser.getId());
 
                     final Team team =
                         utilities.addTeam(organization.getName() + " dev-support-" + role + " Team", organizationTeamDescription, organization, new HashSet<String>(Arrays.asList(role)), memberNames);
-                    logger.debug("555 with Team: " + team);
 
-                    project.getTeams().add(team.getName());
+                    uatProject.getTeams().add(team.getId());
+                    defaultOrganizationProjects.get(organization.getId()).getTeams().add(team.getId());
 
                 }
 
-                project = service.update(project);
-                logger.debug("666 with project: " + project);
+                // Persist all new org teams onto Project UAT and org's Default project
+                service.update(uatProject);
+                service.update(defaultOrganizationProjects.get(organization.getId()));
 
-                Project p2 = service.get(project.getId(), Project.class);
-                p2.getTeams().stream().forEach(team -> logger.debug("777 with team Names: " + team));
-
+                // Finally, add the users to the organizaiton
                 organization.getMembers().addAll(commonWciUsers);
                 organization = service.update(organization);
 
@@ -292,11 +263,39 @@ public class MigrationDataInitializer {
 
         logger.info(" Create Feedback for testing (for DEV only)");
 
-        // create new refset with name = FeedbackTestingVersion1
-        Refset refset = utilities.addRefset("WCI Testing Feedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
-        addFeedbackContent(refset, wciProject, wciOrganization);
+        // create new refset with name = FeedbackTestingVersion1 with July 31 2022 version off International Edition
+        Refset refset = utilities.addRefset("WCI Testing Feedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
+            Refset.EXTENSIONAL, "", wciProject);
 
-        return refset;
+        try (TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            refset.setProject(wciProject);
+            service.update(refset);
+
+            // Create users and teams, then add to org/project
+            Set<String> userRole = new HashSet<>();
+            userRole.add(User.ROLE_AUTHOR);
+            Set<String> memberNames = new HashSet<>();
+            memberNames.add(feedbackInitiatiorUser.getId());
+            memberNames.add(userResponderUser.getId());
+            commonWciUsers.stream().forEach(user -> memberNames.add(user.getId()));
+
+            final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", wciOrganization, allRoles, memberNames);
+
+            wciProject.getTeams().add(singleFeedbackTeam.getId());
+            wciProject = service.update(wciProject);
+
+            wciOrganization.getMembers().addAll(commonWciUsers);
+            wciOrganization.getMembers().add(feedbackInitiatiorUser);
+            wciOrganization.getMembers().add(userResponderUser);
+            wciOrganization = service.update(wciOrganization);
+
+            addFeedbackContent(refset);
+
+            return refset;
+        }
 
     }
 
@@ -317,7 +316,7 @@ public class MigrationDataInitializer {
 
             for (Refset projectRefset : projectRefsets) {
 
-                if (projectRefset.getRefsetId().startsWith(FEEDBACK_REFSET_ID_BASE)) {
+                if (projectRefset.getRefsetId().startsWith(FEEDBACK_REFSET_ID_BASE) && projectRefset.getName().startsWith(FEEDBACK_REFSET_NAME_BASE)) {
 
                     final int refsetVersion = Integer.parseInt(projectRefset.getName().substring(FEEDBACK_REFSET_NAME_BASE.length()).trim());
 
@@ -325,8 +324,8 @@ public class MigrationDataInitializer {
 
                         latestVersion = refsetVersion;
                     }
-                    // Iterate through the refsets, look at the refset name, and find the integer list after the '#' symbol
-                    // if keysize = 0, this is first one. So create with RefsetId:
+                    // Iterate through the refsets, look at the refset name, and find the integer list after the default name.
+                    // if keysize = 0, this is first one. So create with RefsetId: based on the FEEDBACK_REFSET_ID_BASE and iteration.
                     // else, if the refset integer is greater than the greatest one seen, make this the new refsetName & refsetId integer
 
                 }
@@ -349,47 +348,18 @@ public class MigrationDataInitializer {
                     new Date(), Refset.EXTENSIONAL, "", wciProject);
             }
 
-            addFeedbackContent(newTestingRefset, wciProject, wciOrganization);
+            addFeedbackContent(newTestingRefset);
 
             return newTestingRefset;
         }
 
     }
 
-    private void addFeedbackContent(Refset refset, Project wciProject, Organization wciOrganization) throws Exception {
+    private void addFeedbackContent(Refset refset) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
-
-            refset.setProject(wciProject);
-            service.update(refset);
-
-            // Create users and teams, then add to org/project
-            Set<String> userRole = new HashSet<>();
-            userRole.add(User.ROLE_AUTHOR);
-            Set<String> memberNames = new HashSet<>();
-            memberNames.add(feedbackInitiatiorUser.getName());
-            memberNames.add(userResponderUser.getName());
-            commonWciUsers.stream().forEach(user -> memberNames.add(user.getName()));
-
-            final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", wciOrganization, allRoles, memberNames);
-            logger.debug("999 a: Single Feedback Team: " + singleFeedbackTeam);
-            wciProject.getTeams().add(singleFeedbackTeam.getName());
-            wciProject = service.update(wciProject);
-
-            wciOrganization.getMembers().addAll(commonWciUsers);
-            wciOrganization.getMembers().add(feedbackInitiatiorUser);
-            wciOrganization.getMembers().add(userResponderUser);
-            wciOrganization = service.update(wciOrganization);
-
-            logger.debug("777a with team: " + singleFeedbackTeam.getName() + " with members: " + singleFeedbackTeam.getMembers() + " with roles: " + singleFeedbackTeam.getRoles() + " with org: "
-                + singleFeedbackTeam.getOrganization().getName());
-
-            logger.debug("888a with project: " + wciProject.getName() + " with members: " + wciProject.getMemberList() + " with roles: " + wciProject.getRoles() + " with teams: "
-                + wciProject.getTeams() + " in org: " + wciProject.getOrganization());
-
-            logger.debug("999a with org: " + wciOrganization.getName() + " with members: " + wciOrganization.getMembers());
 
             // add feedback
             DiscussionThread thread = new DiscussionThread();
@@ -442,84 +412,20 @@ public class MigrationDataInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            logger.debug("666");
             final List<Project> orgProjects = service.find("organization.id:" + organization.getId(), null, Project.class, null).getItems();
             final List<Team> teams = service.getAll(Team.class);
 
             for (Project project : orgProjects) {
 
-                for (String teamName : project.getTeams()) {
+                for (String teamId : project.getTeams()) {
 
-                    Team team = teams.stream().filter(t -> t.getName().equals(teamName)).findFirst().orElse(null);
+                    Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
 
                     if (team == null) {
 
-                        throw new Exception("777b - Unable to locate team in project " + project.getName() + " for team: " + teamName);
+                        throw new Exception("  Unable to locate team in project " + project.getName() + " for team: " + teamId);
                     }
 
-                    logger.debug("777b with team: " + team.getName() + " with members: " + team.getMembers() + " with roles: " + team.getRoles() + " with org: " + team.getOrganization().getName());
-                }
-
-                logger.debug("888b with project: " + project.getName() + " with members: " + project.getMemberList() + " with roles: " + project.getRoles() + " with teams: " + project.getTeams()
-                    + " in org: " + project.getOrganization().getName());
-            }
-
-            logger.debug("999b with org: " + organization.getName() + " with members: " + organization.getMembers());
-        }
-
-    }
-
-    public void addDebugAdminUser() throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            logger.info(" Add the refset-dev user to all projects' Admin team (Creating team if not already existing)");
-
-            final List<Team> teams = service.getAll(Team.class);
-
-            // get refsetDev users
-
-            Map<Organization, Set<Team>> orgTeams = new HashMap<>();
-
-            // identify all teams with an admin role and associate them with each org
-            for (Team team : teams) {
-
-                if (team.getRoles().contains(ADMIN_ROLE)) {
-
-                    if (!orgTeams.keySet().contains(team.getOrganization())) {
-
-                        orgTeams.put(team.getOrganization(), new HashSet<Team>());
-                    }
-
-                    orgTeams.get(team.getOrganization()).add(team);
-                }
-
-            }
-
-            final List<Organization> organizations = service.getAll(Organization.class);
-
-            // identify all orgs without admin teams `
-            for (Organization organization : organizations) {
-
-                if (!orgTeams.containsKey(organization)) {
-
-                    /* Create Admin Team TODO */
-                    // Team t = new Admin Team
-                    // orgTeams.add(org, t)
-                }
-
-            }
-
-            for (Organization organization : orgTeams.keySet()) {
-
-                Set<Team> adminTeams = orgTeams.get(organization);
-
-                for (Team team : adminTeams) {
-
-                    team.getMembers().add(refsetDevUser.getUserName());
-                    service.update(team);
                 }
 
             }
@@ -538,7 +444,7 @@ public class MigrationDataInitializer {
 
                 for (Project p : projects) {
 
-                    if (p.getName().toLowerCase().contains("wci")) {
+                    if (p.getName().equals(WCI_TESTING_PROJECT_NAME)) {
 
                         testingProject = p;
                     }
@@ -593,140 +499,3 @@ public class MigrationDataInitializer {
     }
 
 }
-
-/*
- * for (Organization organization : organizations) {
- * 
- * logger.debug("111 with org: " + organization.getName());
- * 
- * Set<Team> orgTeams = new HashSet<>();
- * 
- * for (String role : userRoleMap.keySet()) {
- * 
- * User roleUser = userRoleMap.get(role);
- * 
- * logger.debug("222 with role: " + role);
- * 
- * organization.getMembers().add(refsetDevUser); organization.getMembers().add(roleUser);
- * 
- * logger.debug("333 with members: " + organization.getMembers());
- * 
- * Set<String> memberNames = new HashSet<>(); memberNames.add(roleUser.getName()); memberNames.add(refsetDevUser.getName());
- * 
- * memberNames.stream().forEach(name -> logger.debug("444 with member Names: " + name));
- * 
- * final Team team = utilities.addTeam("dev-support-" + role + "-" + organization.getName(), organizationTeamDescription, organization, new
- * HashSet<String>(Arrays.asList(role)), memberNames);
- * 
- * logger.debug("555 - 999 b: Team: " + team);
- * 
- * orgTeams.add(team); }
- * 
- * logger.debug("666"); final List<Project> orgProjects = service.find("organization.id:" + organization.getId(), null, Project.class, null).getItems();
- * 
- * for (Project project : orgProjects) {
- * 
- * for (Team team : orgTeams) {
- * 
- * logger.debug("777b with team: " + team.getName() + " with members: " + team.getMembers() + " with roles: " + team.getRoles() + " with org: " +
- * team.getOrganization().getName());
- * 
- * project.getTeams().add(team.getName()); }
- * 
- * project = service.update(project); logger.debug("888b with project: " + project.getName() + " with members: " + project.getMemberList() + " with roles: " +
- * project.getRoles() + " with teams: " + project.getTeams() + " in org: " + project.getOrganization().getName()); }
- * 
- * logger.debug("999b with org: " + organization.getName() + " with members: " + organization.getMembers());
- * 
- * service.update(organization); }
- */
-
-/*
- * 
- * for (Organization org : organizations) {
- * 
- * org.getMembers().stream().forEach(member -> logger.debug("222b with org: " + org.getName() + " and member: " + member.getName()));
- * 
- * // Add users to each organization org.getMembers().addAll(allWciUsers); service.update(org);
- * 
- * org.getMembers().stream().forEach(member -> logger.debug("222c with org: " + org.getName() + " and member: " + member.getName()));
- * 
- * }
- * 
- * organizations = service.getAll(Organization.class);
- * 
- * for (Organization org : organizations) {
- * 
- * org.getMembers().stream().forEach(member -> logger.debug("222d with org: " + org.getName() + " and member: " + member.getName()));
- * 
- * }
- * 
- */
-
-/* Finished initializations, now begin */
-/*
- * organizations.stream().forEach(organization -> {
- * 
- * 
- * logger.debug("111a with org: " + organization);
- * 
- * // Add users to each organization organization.getMembers().addAll(allWciUsers);
- * 
- * try {
- * 
- * service.update(organization); } catch (Exception e1) {
- * 
- * // TODO Auto-generated catch block e1.printStackTrace(); }
- * 
- * logger.debug("JE: Adding these users to " + organization.getName() + ": " + allWciUsers);
- * 
- * // Create a team with a dedicated role per organization userRoleMap.keySet().stream().forEach(role -> {
- * 
- * try {
- * 
- * logger.debug("111b with role: " + role);
- * 
- * // Create users and teams, then add to org/project Set<String> memberNames = new HashSet<>(); memberNames.add(userRoleMap.get(role).getName());
- * memberNames.add(refsetDevUser.getName());
- * 
- * final Team team = utilities.addTeam("dev-support-" + role + "-" + organization.getName(), organizationTeamDescription, organization, new
- * HashSet<String>(Arrays.asList(role)), memberNames);
- * 
- * logger.debug("111c with team: " + team);
- * 
- * final List<Project> orgProjects = service.find("organization.id:" + organization.getId(), null, Project.class, null).getItems();
- * 
- * logger.debug("111d with orgProjects: " + orgProjects);
- * 
- * // Assign new teams to all projects in organization orgProjects.stream().forEach(project -> {
- * 
- * logger.debug("111e with project: " + project + " and team: " + team.getName());
- * 
- * try {
- * 
- * project.getTeams().add(team.getName()); service.update(project); } catch (Exception e) {
- * 
- * // TODO Auto-generated catch block e.printStackTrace(); }
- * 
- * }); logger.debug("111f");
- * 
- * organizationProjects.addAll(orgProjects); } catch (Exception e) {
- * 
- * throw new RuntimeException(e); }
- * 
- * logger.debug("111g"); });
- * 
- * logger.debug("111h"); }); logger.debug("111i");
- * 
- * // Persist all Projects & Orgs for (Organization organization : organizations) {
- * 
- * organization.getMembers().stream().forEach(name -> logger.debug("JE: organization " + organization.getName() + " member is: " + name)); service.update(organization); }
- * 
- * for (Project project : organizationProjects) {
- * 
- * logger.debug("JE: project " + project.getName() + "'s " + project.getTeams().size() + " teams are: " + project.getTeams());
- * 
- * Project dbProject = service.get(project.getId(), Project.class);
- * 
- * logger.debug("JE: while dbProject's " + dbProject.getTeams().size() + " teams are: " + dbProject.getTeams()); }
- */

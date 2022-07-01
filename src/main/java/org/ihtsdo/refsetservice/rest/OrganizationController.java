@@ -239,6 +239,7 @@ public class OrganizationController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
+    @SuppressWarnings("rawtypes")
     @ApiOperation(value = "Add organization", response = Organization.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Organization successfully created"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
@@ -246,17 +247,28 @@ public class OrganizationController extends BaseController {
         @ApiResponse(code = 500, message = "Internal server error")
     })
     @RecordMetric
-    @PostMapping(value = "/organization", consumes = MediaType.APPLICATION_JSON)
-    public ResponseEntity<Organization> addOrganization(@RequestBody final Organization organization) throws Exception {
+    @PostMapping(value = "/organization", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity addOrganization(@RequestBody final Organization organization) throws Exception {
 
         try {
+            
             logger.info("Add organization: {}", organization);
             // TODO check permissions, fail if not authorized.
             final User authUser = SecurityService.getUserFromSession();
             if (authUser == null) {
-                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
             }
-
+            
+            if (organization == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing organization");
+            }
+            
+            try {
+                organization.validateAdd();
+            } catch (final Exception e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            }
+            
             try (final TerminologyService service = new TerminologyService()) {
 
                 final Organization org = new Organization();
@@ -269,7 +281,7 @@ public class OrganizationController extends BaseController {
                 service.add(org);
                 service.commit();
 
-                return new ResponseEntity<>(org, HttpStatus.CREATED);
+                return ResponseEntity.status(HttpStatus.CREATED).body(org);
             }
         } catch (final Exception e) {
             handleException(e);
@@ -285,6 +297,7 @@ public class OrganizationController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
+    @SuppressWarnings("rawtypes")
     @ApiOperation(value = "Update organization", response = Organization.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Organization successfully updated"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
@@ -293,27 +306,36 @@ public class OrganizationController extends BaseController {
     })
     @RecordMetric
     @PutMapping(value = "/organization/{id}", consumes = MediaType.APPLICATION_JSON)
-    public ResponseEntity<Organization> updateOrganization(@PathVariable(value = "id") final String id, @RequestBody final Organization organization) throws Exception {
+    public ResponseEntity updateOrganization(@PathVariable(value = "id") final String id, @RequestBody final Organization organization) throws Exception {
 
         logger.info("Update organization: {}", organization);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
         if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
         }
 
         if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
-            logger.info("Organization is null or organization id does not match id in URL.");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            final String errorMessage = "Organization is null or organization id does not match id in URL."; 
+            logger.error(errorMessage);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
         }
-
+        
+        try {
+            organization.validateUpdate(null);
+        } catch (final Exception e) {
+            logger.error("Bad request for organization update.", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+        
         try (final TerminologyService service = new TerminologyService()) {
 
             final Organization original = service.get(id, Organization.class);
 
             if (original == null) {
-                logger.info("Unable to find organization for id {}.", id);
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                final String errorMessage = String.format("Unable to find organization for id {}.", id); 
+                logger.info(errorMessage);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
             }
             original.patchFrom(organization);
 
@@ -324,10 +346,10 @@ public class OrganizationController extends BaseController {
             service.update(original);
             service.commit();
 
-            return new ResponseEntity<>(original, HttpStatus.OK);
+            return ResponseEntity.status(HttpStatus.OK).body(original);
 
         } catch (final Exception e) {
-            logger.error("Error updating organization. Id: {}", id);
+            logger.error("Error updating organization. Organization: {}", organization);
             handleException(e);
             return null;
         }

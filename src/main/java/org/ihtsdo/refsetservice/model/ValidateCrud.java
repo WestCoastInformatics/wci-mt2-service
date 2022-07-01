@@ -22,7 +22,7 @@ public interface ValidateCrud<T> {
      * @param context the context
      * @throws Exception the exception indicating validation failure
      */
-    public void validateAdd(AuthContext context) throws Exception;
+    public void validateAdd() throws Exception;
 
     /**
      * Validate update.
@@ -31,7 +31,7 @@ public interface ValidateCrud<T> {
      * @param other the other
      * @throws Exception the exception indicating validation failure
      */
-    public void validateUpdate(AuthContext context, T other) throws Exception;
+    public void validateUpdate(T other) throws Exception;
 
     /**
      * Validate delete.
@@ -39,6 +39,6 @@ public interface ValidateCrud<T> {
      * @param context the context
      * @throws Exception the exception indicating validation failure
      */
-    public void validateDelete(AuthContext context) throws Exception;
+    public void validateDelete() throws Exception;
 
 }

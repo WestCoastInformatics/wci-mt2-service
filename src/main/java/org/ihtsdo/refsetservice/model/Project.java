@@ -46,6 +46,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import io.micrometer.core.instrument.util.StringUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -305,15 +306,10 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public Set<String> getTeams() {
 
-        System.out.println("ZZZ1 here for project: " + getName());
-
         if (teams == null) {
 
-            System.out.println("ZZZ1 ... wow and here!!!!!");
             teams = new HashSet<>();
         }
-
-        System.out.println("ZZZ1 returning : " + teams);
 
         return teams;
     }
@@ -325,7 +321,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      */
     public void setTeams(final Set<String> teams) {
 
-        System.out.println("ZZZ2 should never be here");
         this.teams = teams;
     }
 
@@ -545,22 +540,54 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     /* see superclass */
     @Override
-    public void validateAdd(final AuthContext context) throws Exception {
+    public void validateAdd() throws Exception {
 
-        // TODO validate add
+        if (getId() != null) {
+
+            throw new Exception("Unexpected non-null id");
+        }
+
+        if (getOrganization() == null) {
+
+            throw new Exception("Unexpected null/empty organization");
+        }
+
+        if (StringUtils.isBlank(getName())) {
+
+            throw new Exception("Unexpected null/empty name");
+        }
+
     }
 
     /* see superclass */
     @Override
-    public void validateUpdate(final AuthContext context, final Project other) throws Exception {
+    public void validateUpdate(final Project other) throws Exception {
 
-        // TODO validate update
+        if (StringUtils.isBlank(getId())) {
+
+            throw new Exception("Unexpected null/empty id");
+        }
+
+        if (getOrganization() == null) {
+
+            throw new Exception("Unexpected null/empty organization");
+        }
+
+        if (StringUtils.isBlank(getName())) {
+
+            throw new Exception("Unexpected null/empty name");
+        }
+
     }
 
     /* see superclass */
     @Override
-    public void validateDelete(final AuthContext context) throws Exception {
+    public void validateDelete() throws Exception {
 
-        // TODO valiidate delete
+        if (StringUtils.isBlank(getId())) {
+
+            throw new Exception("Unexpected null/empty id");
+        }
+
     }
 }

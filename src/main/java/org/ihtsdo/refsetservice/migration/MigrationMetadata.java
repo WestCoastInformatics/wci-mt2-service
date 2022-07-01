@@ -1,6 +1,5 @@
 package org.ihtsdo.refsetservice.migration;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.slf4j.Logger;
@@ -20,8 +19,7 @@ public class MigrationMetadata {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(MigrationMetadata.class);
 
-    /** The sdf. */
-    private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    MigrationUtilities utilities = new MigrationUtilities();
 
     /**
      * Instantiates a new metadata.
@@ -31,17 +29,21 @@ public class MigrationMetadata {
      */
     public MigrationMetadata(final String modified, final String modifiedBy) {
 
-        String updatedModified = modified;
+        String updatedModified = utilities.getSdf().format(modified);
 
         try {
 
+            this.modifiedBy = modifiedBy;
+
             if (modified == null || modified.isEmpty() || modified.equals("NULL")) {
 
-                updatedModified = new Date().toString();
+                this.modified = new Date();
+
+            } else {
+
+                this.modified = utilities.getSdf().parse(modified.replaceAll("\"", ""));
             }
 
-            this.modified = sdf.parse(updatedModified.replaceAll("\"", ""));
-            this.modifiedBy = modifiedBy;
         } catch (Exception e) {
 
             logger.error("Failed with mod/modBy: " + updatedModified.replaceAll("\"", "") + " / " + modifiedBy);
@@ -88,10 +90,5 @@ public class MigrationMetadata {
     public String getModifiedBy() {
 
         return modifiedBy;
-    }
-
-    public static SimpleDateFormat getSdf() {
-
-        return sdf;
     }
 }

@@ -38,7 +38,7 @@ public class HistoricDataMigrator {
     /** The formatter. */
     private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
-    private final MigrationMetadata defaultMeta = new MigrationMetadata(MigrationMetadata.getSdf().format(new Date()), "System initialization");
+    private final MigrationMetadata defaultMeta = new MigrationMetadata(new Date(), "System initialization");
 
     /**
      * The Class Metadata.
@@ -197,8 +197,6 @@ public class HistoricDataMigrator {
 
     private final Set<String> debugRttOrgTranslations = new HashSet<>();
 
-    private Map<DefinitionClause, Refset> clausesRefsetMap = new HashMap<>();
-
     private Organization wciOrganization = null;
 
     private Map<String, List<Date>> refsetToPublishedVersionMap = new HashMap<>();
@@ -226,8 +224,10 @@ public class HistoricDataMigrator {
         processRttRefsets();
 
         // With metadata from RTT project (defined in parseRTTMetadata())
-        updateRefsets();
-        persistObjects();
+        updateRefsetsWithRttMetadata();
+
+        // Create supporting projects and finalize refsets
+        persistRefsetObjects();
     }
 
     private void processRttRefsets() {
@@ -349,14 +349,15 @@ public class HistoricDataMigrator {
     }
 
     /**
-     * Update refsets with values from json and with identifying latestVersion
+     * Update refsets with values from json and with identifying latestVersion, but do not persist at this point.
      *
      * @param allRefsets the all refsets
      * @throws Exception
      */
-    private void updateRefsets() throws Exception {
+    private void updateRefsetsWithRttMetadata() throws Exception {
 
         Map<String, Date> latestRefsetCache = new HashMap<>();
+        Map<String, Project> rttProjects = new HashMap<>();
 
         for (Refset refset : snowstormRefsets) {
 
@@ -366,69 +367,56 @@ public class HistoricDataMigrator {
                 continue;
             }
 
+            if (utilities.getPropertyReader().getRefsetToClausesInfoMap().containsKey(refset.getRefsetId())) {
+
+                logger.debug("111a - Have clause on refset: " + refset.getRefsetId());
+            }
+
+            associateRefsetProject(refset, rttProjects);
+
             // For now, default all refsets to PUBLIC
             refset.setPrivateRefset(false);
 
-            if (!supportRtt) {
+            // Update refset from JSON for Narrative, Type, tags, and ecl clauses. Project too.
+            if (rttRefsetIds.contains(refset.getRefsetId())) {
 
-                // Defaults for type (extensional) & narrative (blank)
-                refset.setType("EXTENSIONAL");
-                refset.setNarrative("");
+                /* Refset lived in RTT as well */
+                final Set<String> rttIds = utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().get(refset.getRefsetId());
 
-            } else {
+                // Add Refset. Keep track of which are added this way as to not add them from RTT as well
 
-                // Update refset from JSON. If JSON not available to the refset, it
-                // means it resides exclusively on Snowstorm.
-                if (rttRefsetIds.contains(refset.getRefsetId())) {
+                for (String rttId : rttIds) {
 
-                    /* Refset lived in RTT as well */
-                    final Set<String> rttIds = utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().get(refset.getRefsetId());
+                    final String refsetJsonString = utilities.getPropertyReader().getRttIdToRefsetJsonMap().get(rttId);
 
-                    for (String rttId : rttIds) {
+                    final ObjectMapper mapper = new ObjectMapper();
+                    final JsonNode refsetJson = mapper.readTree(refsetJsonString);
 
-                        final String refsetJsonString = utilities.getPropertyReader().getRttIdToRefsetJsonMap().get(rttId);
+                    refset.setType(refsetJson.get("type").asText());
+                    refset.setNarrative(refsetJson.get("narrative").asText());
 
-                        final ObjectMapper mapper = new ObjectMapper();
-                        final JsonNode refsetJson = mapper.readTree(refsetJsonString);
+                    // Tags
+                    if (refsetJson.has("tags")) {
 
-                        refset.setType(refsetJson.get("type").asText());
-                        refset.setNarrative(refsetJson.get("narrative").asText());
+                        Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
 
-                        // Tags
-                        if (refsetJson.has("tags")) {
+                        while (tagsIterator.hasNext()) {
 
-                            Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
-
-                            while (tagsIterator.hasNext()) {
-
-                                refset.getTags().add(tagsIterator.next().asText());
-                            }
-
-                        }
-
-                        // If has ECL clauses, create and associate with refset (but
-                        // don't persist)
-                        if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
-
-                            for (String clauseJson : utilities.getPropertyReader().getRttRefsetToClausesMap().get(rttId)) {
-
-                                final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
-
-                                clausesRefsetMap.put(clause, refset);
-                            }
-
+                            refset.getTags().add(tagsIterator.next().asText());
                         }
 
                     }
 
-                } else {
-
-                    /* Refsets in Snowstorm but not RTT */
-                    // Defaults for type & narrative
-                    refset.setType("EXTENSIONAL");
-                    refset.setNarrative("None as refset lives on Snowstorm, but not in RTT");
+                    // If has ECL clauses, create and associate with refset
+                    associateRefsetClauses(rttId, refset);
                 }
 
+            } else {
+                // If JSON not available to the refset, it means it resides exclusively on Snowstorm.
+
+                // Set defaults for type & narrative
+                refset.setType("EXTENSIONAL");
+                refset.setNarrative("No corresponding refset information found on RTT for " + refset.getRefsetId());
             }
 
             // Keep track of the latest version per refsetId
@@ -461,6 +449,42 @@ public class HistoricDataMigrator {
 
     }
 
+    private void associateRefsetProject(Refset refset, Map<String, Project> rttProjects) throws Exception {
+
+        Project project = null;
+
+        // Set refset Project making sure to cache it based on refsetId
+        if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refset.getRefsetId())) {
+
+            final String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
+            final String rttProjectId = projectInfo.split("\t")[0];
+
+            if (!rttProjects.containsKey(rttProjectId)) {
+
+                logger.debug("Creating new project for refset: " + refset.getRefsetId());
+                project = createRefsetProject(refset.getRefsetId());
+
+                rttProjects.put(rttProjectId, project);
+            }
+
+            project = rttProjects.get(rttProjectId);
+        } else {
+
+            // User Org's default project
+            Organization org = getOrgFromRefset(refset.getRefsetId());
+
+            project = defaultOrganizationProjects.get(org.getId());
+        }
+
+        if (project == null) {
+
+            throw new Exception("Must have created from RTT, already crearted from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
+        }
+
+        logger.debug("Associating project with refset: " + refset.getRefsetId());
+        refset.setProject(project);
+    }
+
     /**
      * Populate editions.
      *
@@ -470,6 +494,8 @@ public class HistoricDataMigrator {
      * @throws Exception the exception
      */
     private Set<Refset> createRefsetsFromSnowstorm(Map<String, SortedMap<Date, String>> branchChildrenByEdition, Set<String> internationalModules) throws Exception {
+
+        int nonInternationalRefsetCount = 0;
 
         logger.debug("Num internationalModules: " + internationalModules.size());
         logger.debug("Num branches: " + branchChildrenByEdition.size());
@@ -663,6 +689,9 @@ public class HistoricDataMigrator {
                                 logger.debug("Identified international refsetId " + refsetId + " " + refsetName + " for " + versionDate);
 
                                 internationalRefsets.add(refsetId);
+                            } else {
+
+                                nonInternationalRefsetCount++;
                             }
 
                         }
@@ -675,7 +704,8 @@ public class HistoricDataMigrator {
 
         }
 
-        logger.info("Finished processing CodeSystems in Snowstorm with " + snowstormRefsets.size() + " refsets identified out of which " + internationalRefsets.size() + " are international Refsets");
+        logger.info(
+            "Finished processing CodeSystems in Snowstorm with " + internationalRefsets.size() + " international Refsets and " + nonInternationalRefsetCount + " non-intenrantioal refsets created.");
 
         return snowstormRefsets;
     }
@@ -983,7 +1013,8 @@ public class HistoricDataMigrator {
 
                                 // Create default project
                                 final String projectName = orgName + " Default Project";
-                                final String projectDescription = "This is a default project to support initial Snowstorm-based refsets for " + orgName + ".";
+                                final String projectDescription =
+                                    "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + orgName + ".";
 
                                 final Project project = utilities.addProject(org, projectName, projectDescription, defaultMeta);
 
@@ -1167,12 +1198,12 @@ public class HistoricDataMigrator {
     }
 
     /**
-     * Import refset json.
+     * Create supporting projects and finalize refsets.
      *
      * @param allRefsets the all refsets
      * @throws Exception the exception
      */
-    private void persistObjects() throws Exception {
+    private void persistRefsetObjects() throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -1180,88 +1211,30 @@ public class HistoricDataMigrator {
 
             // Persist Projects and Organizations from Snowstorm
             int projectCount = 0;
-            final Set<String> refsetsAdded = new HashSet<>();
-            final Map<String, Project> projectsAdded = new HashMap<>();
             int count = 0;
             int ignoreCounter = 0;
 
-            Map<String, Set<Refset>> refsetVersionsPreProcessed = new HashMap<>();
-            Map<String, Set<Date>> refsetVersionsProcessed = new HashMap<>();
-
-            // Preprocess Snowstorm refsets for analysis purposes
-            // Adding refsets identified on snowstorm
             logger.debug(" step - Start persisting gathered Snowstorm & RTT Supporting Objects");
 
+            // Adding refsets identified on snowstorm
             for (Refset snowRefset : snowstormRefsets) {
 
-                if (testing && testingRefset != null && !testingRefset.equals(snowRefset.getRefsetId())) {
+                if (refsetsToIgnore.contains(snowRefset.getRefsetId())) {
 
+                    ignoreCounter++;
                     continue;
+
+                } else {
+
+                    // Final Persistance of refset object
+                    utilities.setMetadata(snowRefset, defaultMeta);
+                    snowRefset = service.update(snowRefset);
+
                 }
 
-                if (!refsetVersionsPreProcessed.containsKey(snowRefset.getRefsetId())) {
+                if (++count % 250 == 0) {
 
-                    refsetVersionsPreProcessed.put(snowRefset.getRefsetId(), new HashSet<Refset>());
-                }
-
-                refsetVersionsPreProcessed.get(snowRefset.getRefsetId()).add(snowRefset);
-
-            }
-
-            // Adding refsets identified on snowstorm
-            for (String refsetSctId : refsetVersionsPreProcessed.keySet()) {
-
-                if (utilities.getPropertyReader().getRefsetToClausesInfoMap().containsKey(refsetSctId)) {
-
-                    logger.debug("LLL - Have clause on refset: " + refsetSctId);
-                }
-
-                String narrative = null;
-                Set<String> tags = null;
-
-                if (utilities.getPropertyReader().getRefsetToDescriptionMap().containsKey(refsetSctId)) {
-
-                    narrative = utilities.getPropertyReader().getRefsetToDescriptionMap().get(refsetSctId);
-                }
-
-                if (utilities.getPropertyReader().getRefsetToTagsMap().containsKey(refsetSctId)) {
-
-                    tags = utilities.getPropertyReader().getRefsetToTagsMap().get(refsetSctId);
-                }
-
-                for (Refset snowRefset : refsetVersionsPreProcessed.get(refsetSctId)) {
-
-                    String rttId = null;
-                    final Edition edition = refsetEditions.get(snowRefset.getRefsetId());
-
-                    if (refsetsToIgnore.contains(snowRefset.getRefsetId())) {
-
-                        ignoreCounter++;
-                        continue;
-
-                    } else {
-
-                        // Add Refset. Keep track of which are added this way as to not add them from RTT as well
-                        snowRefset.setNarrative(narrative);
-                        snowRefset.setTags(tags);
-                        projectCount = processSnowstormRefset(snowRefset, edition, refsetsAdded, projectsAdded, utilities.getPropertyReader().getRefsetToProjectsInfoMap(), projectCount);
-
-                        processClauses(rttId, snowRefset);
-
-                        if (!refsetVersionsProcessed.containsKey(snowRefset.getRefsetId())) {
-
-                            refsetVersionsProcessed.put(snowRefset.getRefsetId(), new HashSet<Date>());
-                        }
-
-                        refsetVersionsProcessed.get(snowRefset.getRefsetId()).add(snowRefset.getVersionDate());
-
-                    }
-
-                    if (++count % 250 == 0) {
-
-                        logger.info("Imported + " + count + " refsets thus far");
-                    }
-
+                    logger.info("Imported + " + count + " refsets thus far");
                 }
 
             }
@@ -1286,14 +1259,9 @@ public class HistoricDataMigrator {
                         final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
 
                         final Refset rttRefset = ModelUtility.fromJson(refsetJsonString, Refset.class);
-                        final Date versionDate = MigrationMetadata.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId));
+                        final Date versionDate = utilities.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId));
 
-                        if (refsetVersionsProcessed.containsKey(rttRefset.getRefsetId()) && refsetVersionsProcessed.get(rttRefset.getRefsetId()).contains(versionDate)) {
-
-                            continue;
-                        }
-
-                        // only process those refsets that aren't in Snowstorm
+                        // TODO: only process those refsets that aren't in Snowstorm
 
                         // TODO Temp fix so there are no refsets or orgs without editions
                         if (edition == null || edition.getId() == null || edition.getId().equals("")) {
@@ -1302,7 +1270,9 @@ public class HistoricDataMigrator {
                             continue;
                         }
 
-                        processRefsetInRTT(rttId, projectId, rttRefset, edition, refsetsAdded, projectsAdded, projectCount);
+                        final Map<String, Project> refsetToProjectMap = new HashMap<>();
+
+                        processRefsetInRTT(rttId, projectId, rttRefset, edition, refsetToProjectMap, projectCount);
                     }
 
                 }
@@ -1346,26 +1316,20 @@ public class HistoricDataMigrator {
         logger.info(" step - Populating initial data");
 
         MigrationDataInitializer initializer = new MigrationDataInitializer();
-        initializer.initialize(wciOrganization, organizationsAdded, defaultMeta);
+        initializer.initialize(wciOrganization, organizationsAdded, defaultOrganizationProjects, defaultMeta);
         initializer.printResults();
 
         logger.info(" step complete - Adding special content");
     }
 
-    private void processClauses(final String rttId, final Refset refset) throws Exception {
+    // Do not persist as will be done later
+    private void associateRefsetClauses(final String rttId, final Refset refset) throws Exception {
 
-        try (final TerminologyService service = new TerminologyService()) {
+        // If has ECL clauses, associate them with refset
+        if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
 
-            initializeService(service);
-
-            // If has ECL clauses, add them to db & refset
-            if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
-
-                Set<DefinitionClause> clauses = utilities.addClause(rttId);
-                refset.getDefinitionClauses().addAll(clauses);
-                service.update(refset);
-            }
-
+            Set<DefinitionClause> clauses = utilities.getRefsetClauses(rttId);
+            refset.getDefinitionClauses().addAll(clauses);
         }
 
     }
@@ -1373,140 +1337,96 @@ public class HistoricDataMigrator {
     /*
      * Called when reading in refsets from RTT. Right now, no need to support this
      */
-    private void processRefsetInRTT(String rttId, String rttProjectId, Refset rttRefset, Edition edition, Set<String> refsetsAdded, Map<String, Project> projectsAdded, int projectCount)
-        throws Exception {
+    private void processRefsetInRTT(String rttId, String rttProjectId, Refset rttRefset, Edition edition, Map<String, Project> refsetToProjectMap, int projectCount) throws Exception {
 
+        /*-
+        
         try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
-
-            if (projectId == null) {
-
-                throw new Exception("Failing to match projectId on rttId: " + rttId);
-            }
-
-            final Project rttProject = ModelUtility.fromJson(utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(projectId), Project.class);
-
-            final Organization rttOrg = rttProject.getOrganization();
-
-            final MigrationMetadata projectMeta = new MigrationMetadata(rttProject.getModified(), rttProject.getModifiedBy());
-
-            final String translatedOrgName = translateRttOrg(rttOrg.getName());
-
-            if (translatedOrgName == null) {
-
-                // Only supporting those a) whose org name is defined in RTT, b) Is not a training project in RTT, and c) has a corresponding Snowstorm Code System (and
-                // ignoring those not)
-                return;
-            }
-
-            Organization org = null;
-
-            if (!organizationsAdded.containsKey(translatedOrgName)) {
-
-                org = utilities.addOrganziation(translatedOrgName, null, edition, defaultMeta);
-                organizationsAdded.put(translatedOrgName, org);
-                counts.incrementOrgsImportedCount();
-
-            } else {
-
-                org = organizationsAdded.get(translatedOrgName);
-            }
-
-            if (!projectsAdded.containsKey(rttProject.getName())) {
-
-                final Project project = utilities.addProject(org, rttProject.getName(), rttProject.getDescription(), projectMeta);
-                projectCount++;
-
-                projectsAdded.put(rttProject.getName(), project);
-            }
-
-            if (!refsetsAdded.contains(rttRefset.getRefsetId())) {
-
-                refsetsAdded.add(rttRefset.getRefsetId());
-                counts.incrementUniqueRttMetadataCount();
-
-            }
-
-            counts.incrementRttMetadataCount();
-            rttRefset.setProject(projectsAdded.get(rttProject.getName()));
-            utilities.setMetadata(rttRefset, utilities.getPropertyReader().getMetadataMap().get("refset-" + rttId));
-
-            rttRefset.setVersionStatus("PUBLISHED");
-            rttRefset.setWorkflowStatus("PUBLISHED");
-            rttRefset.setVersionDate(MigrationMetadata.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId)));
-
-            service.add(rttRefset);
-            processClauses(rttId, rttRefset);
+        
+           initializeService(service);
+        
+           final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
+        
+           if (projectId == null) {
+        
+               throw new Exception("Failing to match projectId on rttId: " + rttId);
+           }
+        
+           final Project rttProject = ModelUtility.fromJson(utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(projectId), Project.class);
+        
+           final Organization rttOrg = rttProject.getOrganization();
+        
+           final MigrationMetadata projectMeta = new MigrationMetadata(rttProject.getModified(), rttProject.getModifiedBy());
+        
+           final String translatedOrgName = translateRttOrg(rttOrg.getName());
+        
+           if (translatedOrgName == null) {
+        
+               // Only supporting those a) whose org name is defined in RTT, b) Is not a training project in RTT, and c) has a corresponding Snowstorm Code System (and
+               // ignoring those not)
+               return;
+           }
+        
+           Organization org = null;
+        
+           if (!organizationsAdded.containsKey(translatedOrgName)) {
+        
+               org = utilities.addOrganziation(translatedOrgName, null, edition, defaultMeta);
+               organizationsAdded.put(translatedOrgName, org);
+               counts.incrementOrgsImportedCount();
+        
+           } else {
+        
+               org = organizationsAdded.get(translatedOrgName);
+           }
+        “““
+           if (!refsetToProjectMap.containsKey(rttProject.getName())) {
+        
+               final Project project = utilities.addProject(org, rttProject.getName(), rttProject.getDescription(), projectMeta);
+               projectCount++;
+        
+               refsetToProjectMap.put(rttProject.getName(), project);
+           }
+        
+           if (!refsetToProjectMap.keySet().contains(rttRefset.getRefsetId())) {
+        
+               counts.incrementUniqueRttMetadataCount();
+        
+           }
+        
+           counts.incrementRttMetadataCount();
+           rttRefset.setProject(refsetToProjectMap.get(rttProject.getName()));
+           utilities.setMetadata(rttRefset, utilities.getPropertyReader().getMetadataMap().get("refset-" + rttId));
+        
+           rttRefset.setVersionStatus("PUBLISHED");
+           rttRefset.setWorkflowStatus("PUBLISHED");
+           rttRefset.setVersionDate(MigrationMetadata.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId)));
+        
+           service.add(rttRefset);
+           associateRefsetClauses(rttId, rttRefset);
         }
-
-    }
-
-    private int processSnowstormRefset(Refset refset, Edition edition, Set<String> refsetsAdded, Map<String, Project> projectsAdded, Map<String, String> refsetToProjectsInfoMap, int projectCount)
-        throws Exception {
-
-        final String editionName = edition.getName();
-        final String editionShortName = edition.getShortName();
-
-        // Identify Org Name
-        if (!editionOwnerMap.containsKey(editionName) && !editionOwnerMap.containsKey(editionShortName) && !organizationsAdded.containsKey(editionOwnerMap.get(editionName))) {
-
-            logger.debug("editionOwnerMap has keys: " + editionOwnerMap.keySet());
-            logger.debug("organizationsAdded has keys: " + organizationsAdded.keySet());
-            throw new Exception("Orgnaization based on edition '" + edition + "' should have been created already");
-        }
-
-        String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
-        final Organization org = organizationsAdded.get(orgName);
-
-        Project project = defineRefsetProject(refset.getRefsetId(), edition, projectsAdded, refsetToProjectsInfoMap, editionName, editionName);
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            refset.setProject(project);
-            utilities.setMetadata(refset, defaultMeta);
-
-            initializeService(service);
-
-            refset = service.update(refset);
-        }
-
-        if (!refsetsAdded.contains(refset.getRefsetId())) {
-
-            refsetsAdded.add(refset.getRefsetId());
-            counts.incrementUniqueNoMetadataCount();
-
-        }
-
-        counts.incrementNoMetadataCount();
-
-        if (!projectsAdded.containsKey(project.getName())) {
-
-            projectsAdded.put(project.getName(), project);
-            projectCount++;
-        }
-
-        return projectCount;
+        
+        */
     }
 
     /*
      * First checks if the refset is associated with an RTT project. If so return. If not, return the default Edition's project (creating it if not already existing)
      */
-    private Project defineRefsetProject(String refsetId, Edition edition, Map<String, Project> projectsAdded, Map<String, String> refsetToRttProjectInfoMap, String editionName, String ShortName)
-        throws Exception {
+    private Project createRefsetProject(String refsetId) throws Exception {
 
-        String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(ShortName);
-        final Organization org = organizationsAdded.get(orgName);
+        Organization org = getOrgFromRefset(refsetId);
 
-        // Was part of project on RTT, so pull in project information
-        if (refsetToRttProjectInfoMap.containsKey(refsetId)) {
+        logger.debug(".... Creating project for refsetId " + refsetId);
 
-            String projectInfo = refsetToRttProjectInfoMap.get(refsetId);
+        if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refsetId)) {
 
+            // identify project name and description from Rtt Json
+            String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refsetId);
             String[] projectDetails = projectInfo.split(",");
 
+            logger.debug("    Refset has an associated project is defined in RTT with the following: " + projectInfo);
+
+            // Clean out project Details
             for (int i = 0; i < 2; i++) {
 
                 if (projectDetails[i].startsWith("\"")) {
@@ -1521,28 +1441,32 @@ public class HistoricDataMigrator {
 
             }
 
-            if (projectsAdded.containsKey(projectDetails[0])) {
+            logger.info("    Creating new project based on project in RTT for " + projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
+            return utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1], defaultMeta);
+        } else {
 
-                // Already added project, so just return
-                return projectsAdded.get(projectDetails[0]);
+            logger.debug("    Refset doesn't have an associated project in RTT, so use Org's RT2-default");
+
+            // No project associated with refset, so use default Edition Project
+            if (!defaultOrganizationProjects.containsKey(org.getId())) {
+
+                throw new Exception("Default project should have already been created of Org: " + org.getName());
             }
 
-            return utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1], defaultMeta);
+            return defaultOrganizationProjects.get(org.getId());
         }
 
-        // No project associated with refset, so use default Edition Project
-        if (!defaultOrganizationProjects.containsKey(org.getId())) {
+    }
 
-            // Create default project
-            final String projectName = orgName + " Default Project";
-            final String projectDescription = "This is a default project to support initial Snowstorm-based refsets for " + orgName + ".";
+    private Organization getOrgFromRefset(String refsetId) {
 
-            final Project project = utilities.addProject(org, projectName, projectDescription, defaultMeta);
+        final String editionName = refsetEditions.get(refsetId).getName();
+        final String editionShortName = refsetEditions.get(refsetId).getShortName();
 
-            defaultOrganizationProjects.put(org.getId(), project);
-        }
+        String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
+        final Organization org = organizationsAdded.get(orgName);
 
-        return defaultOrganizationProjects.get(org.getId());
+        return org;
     }
 
     private String translateRttOrg(String name) {

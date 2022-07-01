@@ -1,5 +1,6 @@
 package org.ihtsdo.refsetservice.migration;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +26,9 @@ import org.slf4j.LoggerFactory;
 public class MigrationUtilities {
 
     private final Logger logger = LoggerFactory.getLogger(MigrationUtilities.class);
+
+    /** The sdf. */
+    private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
@@ -125,9 +129,6 @@ public class MigrationUtilities {
             query.setQuery("name:" + name + " AND active:true");
 
             ResultList<User> results = service.find(query, pfs, User.class, null);
-            logger.debug("JESSE: " + results);
-
-            User user = null;
 
             if (results.getItems() != null && results.getItems().size() == 1) {
 
@@ -136,7 +137,6 @@ public class MigrationUtilities {
             } else {
 
                 List<User> results2 = service.getAll(User.class);
-                logger.debug("JESSE2: " + results2);
 
                 // User already exist, but found otherwise
                 for (User existingUser : results2) {
@@ -177,7 +177,7 @@ public class MigrationUtilities {
 
     }
 
-    Set<DefinitionClause> addClause(String rttId) throws Exception {
+    Set<DefinitionClause> getRefsetClauses(String rttId) throws Exception {
 
         Set<DefinitionClause> refsetClauses = new HashSet<>();
         MigrationPropertyFileReader propertyReader = new MigrationPropertyFileReader();
@@ -216,6 +216,11 @@ public class MigrationUtilities {
     MigrationPropertyFileReader getPropertyReader() {
 
         return propertyReader;
+    }
+
+    public SimpleDateFormat getSdf() {
+
+        return sdf;
     }
 
 }

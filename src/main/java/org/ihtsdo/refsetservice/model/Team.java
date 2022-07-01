@@ -42,6 +42,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import io.micrometer.core.instrument.util.StringUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -204,16 +205,19 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
 
         this.organization = organization;
     }
-    
+
     /**
      * Returns the organization ID.
      *
      * @return the organization ID
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    @IndexingDependency(derivedFrom = @ObjectPath({@PropertyValue(propertyName = "organization")}))
+    @IndexingDependency(derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "organization")
+    }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationId() {
+
         return organization == null ? null : organization.getId();
     }
 
@@ -227,7 +231,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         if (organization != null) {
             this.organization.setId(organizationId);
         } else {
-            
+
             this.organization = new Organization();
             this.organization.setId(organizationId);
         }
@@ -399,22 +403,40 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
 
     /* see superclass */
     @Override
-    public void validateAdd(final AuthContext context) throws Exception {
+    public void validateAdd() throws Exception {
 
-        // TODO validate add
+        if (getId() != null) {
+            throw new Exception("Unexpected non-null id");
+        }
+        if (StringUtils.isBlank(getName())) {
+            throw new Exception("Unexpected null/empty name");
+        }
+        if (getRoles() == null || getRoles().isEmpty()) {
+            throw new Exception("Unexpected null/empty roles");
+        }
     }
 
     /* see superclass */
     @Override
-    public void validateUpdate(final AuthContext context, final Team other) throws Exception {
+    public void validateUpdate(final Team other) throws Exception {
 
-        // TODO validate update
+        if (StringUtils.isBlank(getId())) {
+            throw new Exception("Unexpected null/empty id");
+        }
+        if (StringUtils.isBlank(getName())) {
+            throw new Exception("Unexpected null/empty name");
+        }
+        if (getRoles() == null || getRoles().isEmpty()) {
+            throw new Exception("Unexpected null/empty roles");
+        }
     }
 
     /* see superclass */
     @Override
-    public void validateDelete(final AuthContext context) throws Exception {
+    public void validateDelete() throws Exception {
 
-        // TODO valiidate delete
+        if (StringUtils.isBlank(getId())) {
+            throw new Exception("Unexpected null/empty id");
+        }
     }
 }
