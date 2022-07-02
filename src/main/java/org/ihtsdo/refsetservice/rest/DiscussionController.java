@@ -796,58 +796,18 @@ public class DiscussionController extends BaseController {
         @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId) throws Exception 
     {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             logger.debug("deleteDiscussionPost threadId: " + threadId + "; postId: " + postId);
 
             final User user = SecurityService.getUserFromSession();
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
 
-            try (final TerminologyService service = new TerminologyService()) {
-                
-                final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
+            DiscussionService.deletePost(service, user, threadId, postId);
 
-                if (thread == null) {
-                    
-                    logger.error("deleteDiscussionPost: Unable to retrieve discussion thread id: {}.", threadId);
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
-                }
-                
-                final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-                final DiscussionPost existingPost = service.get(postId, DiscussionPost.class);
-                
-                if (existingPost == null) {
-                    
-                    logger.error("deleteDiscussionPost: Unable to retrieve discussion post id: {}.", postId);
-                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion post for " + postId + ".");
-                }
-                
-                // If the user does not have the correct permissions then return an error
-                if (!DiscussionService.canUserEditPost(user, refset, existingPost)) {
-                    
-                    logger.error("deleteDiscussionPost: User does not have permissions to perform this action: {}.", user.getUserName());
-                    throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
-                }
-                
-                service.setModifiedBy(user.getUserName());
-                service.setModifiedFlag(true);
-
-                service.remove(existingPost);
-                
-                for (int i = 0; i > thread.getPosts().size(); i++) {
-                    
-                    final DiscussionPost threadPost = thread.getPosts().get(i);
-                    
-                    if (threadPost.getId().equals(postId)) {
-                        
-                        thread.getPosts().remove(i);
-                        break;
-                    }
-                }
-                
-                service.update(thread);
-
-                return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
-            }
+            return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
 
         } catch (final Exception e) {
 

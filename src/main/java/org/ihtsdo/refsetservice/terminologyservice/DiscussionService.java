@@ -21,6 +21,7 @@ import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.DiscussionType;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
@@ -29,6 +30,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -94,7 +96,11 @@ public class DiscussionService {
             }
             
             thread.setLastPost(thread.getPosts().get(thread.getPosts().size() - 1).getCreated());
-            thread.setNumberReplies(thread.getPosts().size() - 1);
+            
+            if (thread.getPosts().size() > 1) {
+                thread.setNumberReplies(thread.getPosts().size() - 1);
+            }
+            
         }
         
         results.setTotal(results.getItems().size());
@@ -108,7 +114,7 @@ public class DiscussionService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param id the discussion ID
+     * @param id the discussion thread ID
      * @return the discussion thread
      * @throws Exception the exception
      */
@@ -117,6 +123,22 @@ public class DiscussionService {
         final DiscussionThread discussionThread = service.get(id, DiscussionThread.class);
         
         return discussionThread;
+    }
+    
+    /**
+     * Returns a single discussion post
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param id the discussion post ID
+     * @return the discussion post
+     * @throws Exception the exception
+     */
+    public static DiscussionPost getDiscussionPost(final TerminologyService service, final User user, final String id) throws Exception {
+        
+        final DiscussionPost discussionPost = service.get(id, DiscussionPost.class);
+        
+        return discussionPost;
     }
     
     /**
@@ -284,6 +306,60 @@ public class DiscussionService {
     }
     
     /**
+     * Delete a discussion post by ID
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param threadId The ID of the thread
+     * @param postId The ID of the post
+     * @throws Exception the exception
+     */
+    public static void deletePost(final TerminologyService service, final User user, final String threadId, final String postId) throws Exception {
+        
+        final DiscussionThread thread = getDiscussion(service, user, threadId);
+        
+        if (thread == null) {
+            
+            logger.error("deletePost: Unable to retrieve discussion thread id: {}.", threadId);
+            throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
+        }
+
+        final DiscussionPost post = getDiscussionPost(service, user, postId);
+        final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+        
+        if (post == null) {
+            
+            logger.error("deletePost: Unable to retrieve discussion post id: {}.", postId);
+            throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion post for " + postId + ".");
+        }
+        
+        if (!DiscussionService.canUserEditPost(user, refset, post)) {
+            
+            logger.error("deletePost: User does not have permissions to perform this action: {}.", user.getUserName());
+            throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to delete this discussion post.");
+        }
+        
+        service.setTransactionPerOperation(false);
+        service.beginTransaction();
+        
+        service.remove(post);
+        
+        for (int i = 0; i < thread.getPosts().size(); i++) {
+            
+            final DiscussionPost threadPost = thread.getPosts().get(i);
+            
+            if (threadPost.getId().equals(postId)) {
+                
+                thread.getPosts().remove(i);
+                break;
+            }
+        }
+        
+        service.update(thread);
+        service.commit();
+    }
+    
+    /**
      * Delete a discussion thread by ID
      *
      * @param service the Terminology Service
@@ -294,13 +370,19 @@ public class DiscussionService {
     public static void deleteThread(final TerminologyService service, final User user, final String threadId) throws Exception {
         
         final DiscussionThread thread = getDiscussion(service, user, threadId);
-        final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-        final String threadUserName = thread.getPosts().get(0).getUser().getUserName();
         
-        if (user.getUserName().equals(SecurityService.GUEST_USERNAME) || !(refset.getRoles().contains(User.ROLE_ADMIN) || threadUserName.equals(user.getUserName()))) {
+        if (thread == null) {
+            
+            logger.error("deleteThread: Unable to retrieve discussion thread id: {}.", threadId);
+            throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
+        }
+
+        final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
+        
+        if (!DiscussionService.canUserEditThread(user, refset, thread)) {
             
             logger.error("deleteThread: User does not have permissions to perform this action: {}.", user.getUserName());
-            throw new Exception("User does not have permission to delete this discussion thread.");
+            throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to delete this discussion thread.");
         }
         
         service.setTransactionPerOperation(false);
