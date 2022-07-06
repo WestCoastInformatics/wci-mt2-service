@@ -743,7 +743,7 @@ public class RefsetController extends BaseController {
             WorkflowService.updateWorkflowNote(user, refset, notes);
 
             return WorkflowService.getWorkflowHistory(refset, new SearchParameters());
-            
+
         } catch (final Exception e) {
 
             handleException(e);

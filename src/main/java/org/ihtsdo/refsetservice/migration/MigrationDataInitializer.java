@@ -41,6 +41,8 @@ public class MigrationDataInitializer {
 
     private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
 
+    private static final String WCI_TESTING_REFSET_NAME = "Default Single WCI Testing Refset";
+
     private static final String REFSET_DEV_USER = "refset-dev";
 
     private static final String ORGANIZATION_TEAM_DESCRIPTION_BASE_NAME = "Dedicated to providing tooling support for all projects";
@@ -110,8 +112,8 @@ public class MigrationDataInitializer {
         if (organization != null) {
 
             // Create wci-project (for DEV only)
-            Project project = createWCITestingContent(organization, defaultMeta);
-            createTestingFeedback(organization, project);
+            createWCITestingContent(organization, defaultMeta);
+            createTestingFeedback(organization);
 
         }
 
@@ -168,7 +170,7 @@ public class MigrationDataInitializer {
         return uatProjects;
     }
 
-    private Project createWCITestingContent(Organization wciOrganization, MigrationMetadata defaultMeta) throws Exception {
+    private void createWCITestingContent(Organization wciOrganization, MigrationMetadata defaultMeta) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -176,27 +178,10 @@ public class MigrationDataInitializer {
 
             logger.info("Adding WCI Testing Org's single project");
 
-            Project wciProject = utilities.addProject(wciOrganization, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, defaultMeta);
+            testingProject = utilities.addProject(wciOrganization, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, defaultMeta);
 
-            Refset wciTestingRefset = new Refset();
-
-            wciTestingRefset.setVersionDate(new Date());
-            wciTestingRefset.setRefsetId(WCI_TESTING_REFSET_CONCEPT_ID);
-            wciTestingRefset.setModuleId(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
-            wciTestingRefset.setVersionStatus("PUBLISHED");
-            wciTestingRefset.setWorkflowStatus("PUBLISHED");
-            wciTestingRefset.setActive(true);
-            wciTestingRefset.setType("EXTENSIONAL");
-            wciTestingRefset.setProject(wciProject);
-            wciTestingRefset.setName("Default Single WCI Testing Refset");
-
-            // Set release date to yesterday midnight
-            Date publicationDate = utilities.getSdf().parse("2022-01-31 08:00:00");
-            wciTestingRefset.setVersionDate(publicationDate);
-
-            service.add(wciTestingRefset);
-
-            return wciProject;
+            utilities.addRefset(WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
+                Refset.EXTENSIONAL, "", testingProject);
         }
 
     }
@@ -259,20 +244,17 @@ public class MigrationDataInitializer {
     /*
      * Called when creating the first instance of testing-feedback refset
      */
-    public Refset createTestingFeedback(Organization wciOrganization, Project wciProject) throws Exception {
+    public Refset createTestingFeedback(Organization wciOrganization) throws Exception {
 
         logger.info(" Create Feedback for testing (for DEV only)");
 
         // create new refset with name = FeedbackTestingVersion1 with July 31 2022 version off International Edition
-        Refset refset = utilities.addRefset("WCI Testing Feedback Refset 1", "999999991", wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
-            Refset.EXTENSIONAL, "", wciProject);
+        Refset refset = utilities.addRefset("WCI Testing Feedback Refset 1", "999999901", wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
+            Refset.EXTENSIONAL, "", testingProject);
 
         try (TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
-
-            refset.setProject(wciProject);
-            service.update(refset);
 
             // Create users and teams, then add to org/project
             Set<String> userRole = new HashSet<>();
@@ -284,8 +266,8 @@ public class MigrationDataInitializer {
 
             final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", wciOrganization, allRoles, memberNames);
 
-            wciProject.getTeams().add(singleFeedbackTeam.getId());
-            wciProject = service.update(wciProject);
+            testingProject.getTeams().add(singleFeedbackTeam.getId());
+            testingProject = service.update(testingProject);
 
             wciOrganization.getMembers().addAll(commonWciUsers);
             wciOrganization.getMembers().add(feedbackInitiatiorUser);
@@ -455,7 +437,7 @@ public class MigrationDataInitializer {
 
             if (testingProject == null) {
 
-                throw new Exception("Shouldn't be running this on a non-Production instanace of RT2");
+                throw new Exception("Testing Project doesn't exist. Shouldn't be running this on a non-Production instanace of RT2");
             }
 
         }
@@ -484,7 +466,7 @@ public class MigrationDataInitializer {
 
             if (testingOrganization == null) {
 
-                throw new Exception("Shouldn't be running this on a non-Production instanace of RT2");
+                throw new Exception("Testing Organization doesn't exist. Shouldn't be running this on a non-Production instanace of RT2");
             }
 
         }

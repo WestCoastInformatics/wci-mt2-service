@@ -167,9 +167,9 @@ public class HistoricDataMigrator {
     /** The testing. */
     private boolean testing = false;
 
-    private final String testingEdition = "stoni";
+    private final String testingEdition = "elgia";
 
-    private final String testingRefset = "181000181102";
+    private final String testingRefset = "741000172102";
 
     private final Map<String, String> editionOwnerMap = new HashMap<>();
 
@@ -360,6 +360,11 @@ public class HistoricDataMigrator {
         Map<String, Project> rttProjects = new HashMap<>();
 
         for (Refset refset : snowstormRefsets) {
+
+            if (testing && (testingRefset != null && !testingRefset.isEmpty() && refset.getRefsetId().equals(testingRefset))) {
+
+                continue;
+            }
 
             // No need to update refsets to be ignored
             if (refsetsToIgnore.contains(refset.getRefsetId())) {
@@ -658,7 +663,7 @@ public class HistoricDataMigrator {
                                         refsetName = lookupRefsetName(refsetId, edition, childBranch);
                                     }
 
-                                    /* Add refset for later persisting */
+                                    /* Add refset/version for later persisting */
                                     Refset refset = utilities.addRefset(refsetName, refsetId, moduleId, versionDate, Refset.EXTENSIONAL, "", null);
                                     snowstormRefsets.add(refset);
                                     counts.incrementRefsetVersionPairsCounts();
@@ -1219,18 +1224,21 @@ public class HistoricDataMigrator {
             // Adding refsets identified on snowstorm
             for (Refset snowRefset : snowstormRefsets) {
 
+                if (testing && (testingRefset != null && !testingRefset.isEmpty() && snowRefset.getRefsetId().equals(testingRefset))) {
+
+                    continue;
+                }
+
                 if (refsetsToIgnore.contains(snowRefset.getRefsetId())) {
 
                     ignoreCounter++;
                     continue;
 
-                } else {
-
-                    // Final Persistance of refset object
-                    utilities.setMetadata(snowRefset, defaultMeta);
-                    snowRefset = service.update(snowRefset);
-
                 }
+
+                // Final Persistance of refset object
+                utilities.setMetadata(snowRefset, defaultMeta);
+                snowRefset = service.update(snowRefset);
 
                 if (++count % 250 == 0) {
 

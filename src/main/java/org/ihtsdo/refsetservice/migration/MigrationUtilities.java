@@ -48,9 +48,9 @@ public class MigrationUtilities {
             project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
 
             // Persist
-            Project p = service.add(project);
+            final Project p = service.add(project);
 
-            logger.debug("Adding new Project: " + project.getId() + " (" + project.getName() + ")");
+            logger.debug("Adding new Project: " + project.getId() + " (" + project.getName() + ") " + project);
 
             return p;
 
@@ -64,15 +64,17 @@ public class MigrationUtilities {
 
             initializeService(service);
 
-            Organization org = new Organization();
+            final Organization org = new Organization();
             org.setName(orgName);
             org.setDescription(orgDesc);
             org.setEdition(edition);
 
-            org = service.add(org);
-            logger.debug("Adding new Organziation: " + org.getId() + " (" + org.getName() + ")");
+            // Persist
+            final Organization o = service.add(org);
 
-            return org;
+            logger.debug("Adding new Organziation: " + o.getId() + " (" + o.getName() + ") " + org);
+
+            return o;
         }
 
     }
@@ -83,7 +85,7 @@ public class MigrationUtilities {
 
             initializeService(service);
 
-            Refset refset = new Refset();
+            final Refset refset = new Refset();
 
             refset.setName(name);
             refset.setRefsetId(refsetId);
@@ -95,8 +97,14 @@ public class MigrationUtilities {
             refset.setType(type);
             refset.setNarrative(narrative);
             refset.setProject(project);
+            refset.setLatestPublishedVersion(true);
 
-            return service.add(refset);
+            // Persist
+            final Refset r = service.add(refset);
+
+            logger.debug("Adding new Refset: " + r.getId() + " (" + r.getName() + ") " + r);
+
+            return r;
         }
 
     }
@@ -107,15 +115,20 @@ public class MigrationUtilities {
 
             initializeService(service);
 
-            User u = new User();
+            final User user = new User();
 
-            u.setName(name);
-            u.setUserName(userName);
-            u.setActive(true);
-            u.setEmail(email);
-            u.setRoles(roles);
+            user.setName(name);
+            user.setUserName(userName);
+            user.setActive(true);
+            user.setEmail(email);
+            user.setRoles(roles);
 
-            return service.add(u);
+            // Persist
+            final User u = service.add(user);
+
+            logger.debug("Adding new User: " + u.getId() + " (" + u.getName() + ") " + u);
+
+            return u;
         }
 
     }
@@ -127,6 +140,7 @@ public class MigrationUtilities {
             final PfsParameter pfs = new PfsParameter();
             final QueryParameter query = new QueryParameter();
             query.setQuery("name:" + name + " AND active:true");
+            logger.debug("  user search query: " + query);
 
             ResultList<User> results = service.find(query, pfs, User.class, null);
 
@@ -170,9 +184,12 @@ public class MigrationUtilities {
             team.setRoles(roles);
             team.setMembers(memberNames);
 
-            team = service.add(team);
+            // Persist
+            final Team t = service.add(team);
 
-            return team;
+            logger.debug("Adding new Team: " + t.getId() + " (" + t.getName() + ") " + t);
+
+            return t;
         }
 
     }

@@ -83,12 +83,12 @@ public class RefsetService {
     /** The refset to language map. */
     private static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
 
-    /**  The module Id of the SIMPLE_TYPE_REFERENCE_SET. */
+    /** The module Id of the SIMPLE_TYPE_REFERENCE_SET. */
     private static final String SIMPLE_TYPE_REFERENCE_SET_MODULE_ID = "900000000000012004";
 
     /** A cache of the sorted branch versions. */
     private final static Map<String, List<String>> branchVersionCache = new HashMap<>();
-    
+
     /** A list of refset actively being updated. */
     public final static Set<String> refsetsToShowUpgradeWarning = new HashSet<>();
 
@@ -431,7 +431,7 @@ public class RefsetService {
 
                 statusMessage = modifyRefsetDefinition(user, service, refset, refsetEditParameters.getDefinitionClauses());
             }
-            
+
             // we also need to clear the refset export cache on S3
             final ExportHandler exportHandler = new ExportHandler();
             exportHandler.deleteFilesFromBranchPath(refset.getBranchPath());
@@ -1238,6 +1238,7 @@ public class RefsetService {
 
             return getRefset(service, user, refsetInternalId);
         }
+
     }
 
     /**
@@ -1556,13 +1557,17 @@ public class RefsetService {
             for (Refset refset : results.getItems()) {
 
                 if (setPermissions) {
+
                     refset = setRefsetPermissions(user, refset);
                 }
 
                 if (setVersions) {
+
                     refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
                 }
+
             }
+
         }
 
         results.setTimeTaken(System.currentTimeMillis() - start);
@@ -1830,9 +1835,10 @@ public class RefsetService {
      * @throws Exception the exception
      */
     public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters) throws Exception {
+
         return searchTeams(user, searchParameters, false);
     }
-    
+
     /**
      * Search Teams.
      *
@@ -1881,16 +1887,24 @@ public class RefsetService {
             results.setTotalKnown(true);
 
             if (includeMembers && results != null && results.getItems() != null) {
-                for(final Team team : results.getItems()) {
-                    for(final String userId : team.getMembers()) {
-                        ResultList<User> users = service.find("id:" + userId , null, User.class, null);
+
+                for (final Team team : results.getItems()) {
+
+                    for (final String userId : team.getMembers()) {
+
+                        ResultList<User> users = service.find("id:" + userId, null, User.class, null);
+
                         if (users != null && users.getItems() != null) {
+
                             team.getMemberList().addAll(users.getItems());
                         }
+
                     }
+
                 }
+
             }
-            
+
             return results;
         }
 
@@ -1932,8 +1946,9 @@ public class RefsetService {
             if (searchParameters.getSort() != null) {
 
                 pfs.setSort(searchParameters.getSort());
-            
+
             } else {
+
                 pfs.setSort("name");
             }
 
@@ -2244,13 +2259,16 @@ public class RefsetService {
         final boolean setVersions) throws Exception {
 
         if (searchParameters.getLimit() <= 0) {
+
             searchParameters.setLimit(10);
         }
 
         // set the query appropriately based on what was passed in
         if (NumberUtils.isNumber(searchParameters.getQuery())) {
+
             searchParameters.setQuery("refsetId:" + searchParameters.getQuery());
         } else {
+
             searchParameters.setQuery("name:" + searchParameters.getQuery());
         }
 
@@ -2358,10 +2376,13 @@ public class RefsetService {
     public static List<String> getCacheForBranchVersions(final String branchPath) throws Exception {
 
         if (branchVersionCache.containsKey(branchPath)) {
+
             return branchVersionCache.get(branchPath);
         } else {
+
             return new ArrayList<>();
         }
+
     }
 
     /**
@@ -2410,6 +2431,7 @@ public class RefsetService {
 
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+
                 throw new Exception("Unable to get edition versions. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
             }
 
@@ -2426,6 +2448,7 @@ public class RefsetService {
                 String childDate = childBranch.replace(editionPath, "");
 
                 if (childDate.startsWith("/")) {
+
                     childDate = childDate.substring(1);
                 }
 
@@ -2435,14 +2458,18 @@ public class RefsetService {
                     Date branchDate = DateUtility.getDate(childDate, DateUtility.DATE_FORMAT_REVERSE, null);
 
                     if (branchDate.before(new Date())) {
+
                         branchCache.add(childDate);
                     }
+
                 }
 
                 // stop when branch does not start with a date
                 else if (!childDate.matches("^\\d{4}-\\d{2}-\\d{2}.*")) {
+
                     break;
                 }
+
             }
 
             // sort the results in reverse order since that is the usual way they are consumed
@@ -2465,16 +2492,22 @@ public class RefsetService {
 
         // default to active only if search parameters or active only not supplied
         if (searchParameters == null) {
+
             return "active:true";
         } else {
+
             if (StringUtils.isBlank(searchParameters.getQuery())) {
+
                 return "active:" + activeOnly;
             } else {
+
                 return "(" + searchParameters.getQuery() + ") AND active:" + activeOnly;
             }
+
         }
+
     }
-    
+
     /**
      * Request access to the refset for the specified ID.
      *
@@ -2487,18 +2520,14 @@ public class RefsetService {
      */
 
     public void requestRefsetAccess(final User user, final TerminologyService service, final String refsetInternalId, final String comments) throws Exception {
-        
+
         final Refset refset = service.get(refsetInternalId, Refset.class);
         final Project project = refset.getProject();
         final String projectAdminEmail = project.getPrimaryContactEmail();
         final String subject = "Refset Request: " + refset.getName() + " (" + refset.getRefsetId() + ")";
-        final String body = "A user is requesting access to a project you administer.\n\n" 
-            + "Organization: " + refset.getOrganizationName() + "\n" 
-            + "Project: " + project.getName() + "\n" 
-            + "Refset: " + refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" 
-            + "User: " + user.getName() + " (" + user.getEmail() + ")" + "\n\n" 
-            + "Comments: " + comments;
-        
+        final String body = "A user is requesting access to a project you administer.\n\n" + "Organization: " + refset.getOrganizationName() + "\n" + "Project: " + project.getName() + "\n"
+            + "Refset: " + refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" + "User: " + user.getName() + " (" + user.getEmail() + ")" + "\n\n" + "Comments: " + comments;
+
         EmailUtility.sendEmail(subject, user.getEmail(), projectAdminEmail, body);
     }
 }
