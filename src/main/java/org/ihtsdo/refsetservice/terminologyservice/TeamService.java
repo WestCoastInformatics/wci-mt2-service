@@ -265,7 +265,7 @@ public class TeamService extends BaseService {
 
             final User userToAdd = service.findSingle("email:" + email, User.class, null);
             if (userToAdd == null) {
-                final String message = "Unable to user with email " + email + ".";
+                final String message = "User with " + email + " does not exist.";
                 logger.error(message);
                 throw new NotFoundException(message);
             }
@@ -275,7 +275,7 @@ public class TeamService extends BaseService {
 
             if (!organizationMembers.contains(userToAdd)) {
 
-                final String message = "User " + email + " is not a member of organization " + organization.getName() + ".";
+                final String message = "User with " + email + " is not a member of organization " + organization.getName() + ".";
                 logger.error(message);
                 throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message);
             }
@@ -283,7 +283,7 @@ public class TeamService extends BaseService {
             if (team.getMembers() != null) {
 
                 if (team.getMembers().contains(user.getId())) {
-                    final String message = "User " + email + " is already a member of team " + teamId + ".";
+                    final String message = "User with " + email + " is already a member of team " + team.getName() + ".";
                     logger.error(message);
                     throw new RestException(false, HttpStatus.CONFLICT, "Conflict", message);
                 }
