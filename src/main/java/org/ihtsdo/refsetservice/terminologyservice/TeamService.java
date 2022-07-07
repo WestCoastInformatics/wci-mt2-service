@@ -289,14 +289,14 @@ public class TeamService extends BaseService {
                 }
             }
 
-            team.getMembers().add(user.getId());
+            team.getMembers().add(userToAdd.getId());
 
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
             service.update(team);
-            service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToAdd));
+            service.add(AuditEntryHelper.addUserToTeamEntry(team, userToAdd));
             service.commit();
 
             return team;
