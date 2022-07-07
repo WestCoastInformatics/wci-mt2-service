@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.test.BaseTest;

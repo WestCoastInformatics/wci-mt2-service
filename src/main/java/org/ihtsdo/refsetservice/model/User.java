@@ -16,8 +16,6 @@ import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -26,12 +24,9 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
-import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,9 +81,11 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @Fetch(FetchMode.JOIN)
     private Set<String> roles = new HashSet<>();
 
+    /** The icon uri. */
     @Column(nullable = true, length = 255)
     private String iconUri;
 
+    /** The teams. */
     @Transient
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Set<Team> teams = new HashSet<>();
@@ -356,7 +353,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     /**
      * Sets the icon URI.
      *
-     * @param name the icon URI
+     * @param iconUri the icon uri
      */
     public void setIconUri(final String iconUri) {
 
@@ -379,7 +376,9 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     }
 
     /**
-     * @param organization the organization to set
+     * Sets the teams.
+     *
+     * @param teams the teams
      */
     public void setTeams(final Set<Team> teams) {
 
@@ -397,89 +396,89 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     public boolean doesUserHavePermission(final String roleToCheck, final Project project) throws Exception {
 
         try {
-            
+
             String editionName = project.getOrganization().getEdition().getShortName();
-    
+
             // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
-    
+
             if (!project.getOrganization().getEdition().getShortName().equals("SNOMEDCT")) {
                 editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
             } else {
                 editionName = "main";
             }
-    
+
             final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
-    
+
             for (final String role : roles) {
-    
+
                 final String lowerCasedRole = role.toLowerCase();
                 final int indexFirstHyphen = lowerCasedRole.indexOf("-");
                 final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
                 // logger.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
-    
+
                 // first check the edition permissions
                 if (editionPart.equals("all") || editionPart.equals(editionName)) {
-    
+
                     final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
                     final String projectName = project.getName().toLowerCase().replace(" ", "_");
                     // logger.debug("doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
-    
+
                     // then check the project level permissions
                     if (projectPart.equals("all") || projectPart.equals(projectName)) {
-    
+
                         // logger.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
-    
+
                         // last check for the role or if they have any permission at this level they have the VIEWER role
                         if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
-    
+
                             // logger.debug("doesUserHavePermission = true");
                             return true;
                         }
                     }
                 }
             }
-            
+
         } catch (Exception e) {
             return false;
         }
 
         return false;
     }
-    
+
     /**
      * Check if the user has the specified role on the organization.
      *
      * @param roleToCheck the role to look for
-     * @param project the project to check permissions against
+     * @param organization the organization
      * @return if the user has the specified role on the refset
      * @throws Exception the exception
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Organization organization) throws Exception {
 
         try {
-            
+
             String editionName = organization.getEdition().getShortName();
-    
+
             // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
-    
+
             if (!organization.getEdition().getShortName().equals("SNOMEDCT")) {
                 editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
             } else {
                 editionName = "main";
             }
-    
+
             final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
-    
+
             for (final String role : roles) {
-    
+
                 final String lowerCasedRole = role.toLowerCase();
                 final int indexFirstHyphen = lowerCasedRole.indexOf("-");
                 final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
                 // logger.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
-    
+
                 // first check the edition permissions
                 if (editionPart.equals("all") || editionPart.equals(editionName)) {
-    
+
                     // last check for the role or if they have any permission at this level they have the VIEWER role
                     if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
 
@@ -488,7 +487,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                     }
                 }
             }
-            
+
         } catch (Exception e) {
             return false;
         }
@@ -516,7 +515,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
     /* see superclass */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -524,7 +523,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         if (getClass() != obj.getClass()) {
             return false;
         }
-        User other = (User) obj;
+        final User other = (User) obj;
         if (authToken == null) {
             if (other.authToken != null) {
                 return false;

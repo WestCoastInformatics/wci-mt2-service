@@ -10,40 +10,32 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.io.File;
-import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.commons.io.FileUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
-import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
+import org.ihtsdo.refsetservice.terminologyservice.UserService;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -80,17 +72,18 @@ public class UserController extends BaseController {
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /** The local icon file directory. */
-    private static String ICON_URL_PREFIX = "user/icon/";
+    private static final String ICON_URL_PREFIX = "user/icon/";
 
     /** The request. */
     @Autowired
-    HttpServletRequest request;
+    private HttpServletRequest request;
 
     /**
      * Returns the user.
      *
      * @param id the id of the user
-     * @param includeMembers the include members
+     * @param includeOrganizations the include organizations
+     * @param includeTeams the include teams
      * @return the user
      * @throws Exception the exception
      */
@@ -115,31 +108,14 @@ public class UserController extends BaseController {
         }
 
         try {
-            if (authUser == null) {
-                logger.warn("User from session is null.");
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
 
-            try (final TerminologyService service = new TerminologyService()) {
+            final User user = UserService.getUser(id, includeTeams);
+            return new ResponseEntity<>(user, HttpStatus.OK);
 
-                final User user = service.get(id, User.class);
+        } catch (final NotFoundException nfe) {
+            logger.error("Error getting user. Id {} not found.", id);
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
-                if (user == null) {
-                    logger.info("Unable to find user for id {}.", id);
-                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                }
-                
-                if (includeTeams) {
-                    final SearchParameters sp = new SearchParameters();
-                    sp.setQuery("members:" + user.getId());
-                    final ResultList<Team> teamsResultList = RefsetService.searchTeams(user, sp);
-                    if (teamsResultList != null && teamsResultList.getItems() != null) {
-                        user.getTeams().addAll(teamsResultList.getItems());
-                    }
-                }
-
-                return new ResponseEntity<>(user, HttpStatus.OK);
-            }
         } catch (final Exception e) {
             handleException(e);
             return null;
@@ -176,28 +152,14 @@ public class UserController extends BaseController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        try (final TerminologyService service = new TerminologyService()) {
+        try {
 
-            // Find the user
-            final User original = service.get(user.getId(), User.class);
-
-            if (original == null) {
-                logger.info("Unable to find user for id {}.", id);
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-
-            service.setModifiedBy(authUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-
-            // Apply changes
-            original.patchFrom(user);
-
-            // Update
-            service.update(original);
-            service.commit();
-
+            final User original = UserService.updateUser(authUser, user);
             return new ResponseEntity<>(original, HttpStatus.OK);
+
+        } catch (final NotFoundException nfe) {
+            logger.error("Error getting user. Id {} not found.", id);
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
             logger.error("Error updating user.  Id: {}", id, e);
@@ -209,6 +171,8 @@ public class UserController extends BaseController {
     /**
      * Search users.
      *
+     * @param includeOrganizations the include organizations
+     * @param includeTeams the include teams
      * @param searchParameters the search parameters
      * @param bindingResult the binding result
      * @return the string
@@ -233,20 +197,23 @@ public class UserController extends BaseController {
         logger.info("Search users: {}", ModelUtility.toJson(searchParameters));
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
         try {
 
-            final ResultList<User> results = RefsetService.searchUsers(authUser, searchParameters);
+            final ResultList<User> results = UserService.searchUsers(searchParameters);
 
-            for (User user : results.getItems()) {
+            for (final User user : results.getItems()) {
 
                 if (includeTeams) {
                     final SearchParameters sp = new SearchParameters();
                     sp.setQuery("members:" + user.getId());
-                    final ResultList<Team> teamsResultList = RefsetService.searchTeams(user, sp);
+                    final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
                     if (teamsResultList != null && teamsResultList.getItems() != null) {
                         user.getTeams().addAll(teamsResultList.getItems());
                     }
@@ -311,14 +278,12 @@ public class UserController extends BaseController {
 
         logger.info("Edit icon for user: {}.", userId);
         final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            service.setModifiedBy(authUser.getUserName());
-
-            // find user record, return 404 if not found
-            final User user = service.get(userId, User.class);
-
+        try {
+            final User user = UserService.getUser(userId, false);
             if (user == null) {
                 throw new RestException(false, 404, "Not found", "Unable to find user for " + userId);
             }
@@ -330,9 +295,8 @@ public class UserController extends BaseController {
             }
 
             final File file = FileUtility.saveIconFile(inputFile, userId, fileToDelete);
-
             user.setIconUri(ICON_URL_PREFIX + file.getName());
-            service.update(user);
+            UserService.updateUser(authUser, user);
 
             return new ResponseEntity<>("\"" + user.getIconUri() + "\"", HttpStatus.ACCEPTED);
 

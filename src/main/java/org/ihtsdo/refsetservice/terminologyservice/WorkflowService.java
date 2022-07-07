@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -21,12 +20,12 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
-import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -235,6 +234,7 @@ public final class WorkflowService {
             refset.setLatestPublishedVersion(true);
             
             service.update(refset);
+            service.add(AuditEntryHelper.completeRefsetPublicationEntry(refset));
             
             if (!refset.getWorkflowStatus().equals(PUBLISHED)) {
                 throw new Exception("Refset was not able to have publication completed " + refset.getId());
@@ -508,6 +508,7 @@ public final class WorkflowService {
             
             // Update an object
             service.update(refset);
+            service.add(AuditEntryHelper.statusUpdateRefsetEntry(refset));
             logger.info("Refset workflow status set to " + status + " for refset " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
 
             // update the refset permissions
@@ -537,6 +538,7 @@ public final class WorkflowService {
 
             // Add an object
             service.add(workflow);
+            service.add(AuditEntryHelper.addWorkflowHistoryEntry(workflow, refset));
             final String newWorkflowId = workflow.getId();
 
             if (newWorkflowId == null) {
@@ -638,6 +640,7 @@ public final class WorkflowService {
 
             // Update an object
             service.update(workflow);
+            service.add(AuditEntryHelper.updateWorkflowNoteEntry(workflow, refset));
             logger.info("Note for workflow history entry with status " + refset.getWorkflowStatus() + " updated for refset " + refset.getId());
         }
     }
@@ -941,7 +944,6 @@ public final class WorkflowService {
     public static boolean deleteBranch(final String branchPath) throws Exception {
 
         final long start = System.currentTimeMillis();
-        String refsetBranchPath = null;
         final String url = SnowstormConnection.BASE_URL + "admin/" + branchPath + "/actions/hard-delete";
 
         logger.debug("deleteBranch URL: " + url);
@@ -1002,7 +1004,6 @@ public final class WorkflowService {
     public static void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment) throws Exception {
 
         final long start = System.currentTimeMillis();
-        String refsetBranchPath = null;
         final String url = SnowstormConnection.BASE_URL + "merges";
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath)

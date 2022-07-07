@@ -95,6 +95,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @Transient
     private List<String> roles;
 
+    /**  The member list. */
     @Transient
     private List<User> memberList;
 
@@ -246,15 +247,10 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      */
     public void setOrganizationId(final String organizationId) {
 
-        if (organization != null) {
-
-            this.organization.setId(organizationId);
-        } else {
-
+        if (organization == null) {
             this.organization = new Organization();
-            this.organization.setId(organizationId);
         }
-
+        this.organization.setId(organizationId);
     }
 
     /**
@@ -344,7 +340,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     /**
      * Sets the roles.
      *
-     * @param teams the roles
+     * @param roles the roles
      */
     public void setRoles(final List<String> roles) {
 
@@ -371,6 +367,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         this.primaryContactEmail = primaryContactEmail;
     }
 
+    /**
+     * Returns the member list.
+     *
+     * @return the member list
+     */
     @JsonGetter()
     public List<User> getMemberList() {
 
@@ -382,6 +383,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         return memberList;
     }
 
+    /**
+     * Sets the member list.
+     *
+     * @param memberList the member list
+     */
     public void setMemberList(final List<User> memberList) {
 
         this.memberList = memberList;

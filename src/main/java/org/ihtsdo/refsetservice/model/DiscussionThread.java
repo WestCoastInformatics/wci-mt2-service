@@ -15,7 +15,6 @@ import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
@@ -23,8 +22,6 @@ import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
@@ -68,11 +65,11 @@ public class DiscussionThread extends AbstractHasModified {
     @Column(nullable = false, length = 20)
     private String type;
 
-    /** the internal ID of the refset.*/
+    /** the internal ID of the refset. */
     @Column(nullable = false, length = 64)
     private String refsetInternalId;
-    
-    /** the concept ID of the member if this is a member type.*/
+
+    /** the concept ID of the member if this is a member type. */
     @Column(nullable = true, length = 64)
     private String conceptId;
 
@@ -84,7 +81,7 @@ public class DiscussionThread extends AbstractHasModified {
     /** Indicate if thread is private. */
     @Column(nullable = false)
     private boolean privateThread;
-    
+
     /** The visibility of the thread. */
     @Column(nullable = false, length = 64)
     private String visibility;
@@ -96,11 +93,11 @@ public class DiscussionThread extends AbstractHasModified {
     /** The username that resolved the thread. */
     @Column(nullable = true, length = 205)
     private String resolvedBy;
-    
+
     /** The date of the last post in the thread. */
     @Transient
     private Date lastPost;
-    
+
     /** The number of replies in the thread. */
     @Transient
     private int numberReplies;
@@ -111,6 +108,7 @@ public class DiscussionThread extends AbstractHasModified {
      * @return the subject
      */
     public String getSubject() {
+
         return subject;
     }
 
@@ -119,7 +117,8 @@ public class DiscussionThread extends AbstractHasModified {
      *
      * @param subject the subject to set
      */
-    public void setSubject(String subject) {
+    public void setSubject(final String subject) {
+
         this.subject = subject;
     }
 
@@ -130,6 +129,7 @@ public class DiscussionThread extends AbstractHasModified {
      */
     @FullTextField(analyzer = "standard")
     public String getType() {
+
         return type;
     }
 
@@ -138,7 +138,8 @@ public class DiscussionThread extends AbstractHasModified {
      *
      * @param type the discussion type
      */
-    public void setType(String type) {
+    public void setType(final String type) {
+
         this.type = type;
     }
 
@@ -149,6 +150,7 @@ public class DiscussionThread extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getRefsetInternalId() {
+
         return refsetInternalId;
     }
 
@@ -157,10 +159,11 @@ public class DiscussionThread extends AbstractHasModified {
      *
      * @param refsetInternalId the internal ID of the refset.
      */
-    public void setRefsetInternalId(String refsetInternalId) {
+    public void setRefsetInternalId(final String refsetInternalId) {
+
         this.refsetInternalId = refsetInternalId;
     }
-    
+
     /**
      * Returns the concept ID of the member if this is a member type.
      *
@@ -168,15 +171,17 @@ public class DiscussionThread extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getConceptId() {
+
         return conceptId;
     }
-    
+
     /**
      * Sets the concept ID of the member if this is a member type.
      *
      * @param conceptId the concept ID of the member.
      */
-    public void setConceptId(String conceptId) {
+    public void setConceptId(final String conceptId) {
+
         this.conceptId = conceptId;
     }
 
@@ -190,7 +195,7 @@ public class DiscussionThread extends AbstractHasModified {
         if (posts == null) {
             posts = new ArrayList<DiscussionPost>();
         }
-        
+
         return posts;
     }
 
@@ -199,7 +204,8 @@ public class DiscussionThread extends AbstractHasModified {
      *
      * @param posts the posts to set
      */
-    public void setPosts(List<DiscussionPost> posts) {
+    public void setPosts(final List<DiscussionPost> posts) {
+
         this.posts = posts;
     }
 
@@ -210,6 +216,7 @@ public class DiscussionThread extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean isPrivateThread() {
+
         return privateThread;
     }
 
@@ -218,25 +225,28 @@ public class DiscussionThread extends AbstractHasModified {
      *
      * @param privateThread the privateThread to set
      */
-    public void setPrivateThread(boolean privateThread) {
+    public void setPrivateThread(final boolean privateThread) {
+
         this.privateThread = privateThread;
     }
-    
+
     /**
      * Get the visibility of the thread.
      *
      * @return the visibility of the thread
      */
     public String getVisibility() {
+
         return visibility;
     }
-    
+
     /**
      * Sets the visibility of the thread.
      *
      * @param visibility the visibility of the thread
      */
-    public void setVisibility(String visibility) {
+    public void setVisibility(final String visibility) {
+
         this.visibility = visibility;
     }
 
@@ -247,6 +257,7 @@ public class DiscussionThread extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getStatus() {
+
         return status;
     }
 
@@ -255,7 +266,8 @@ public class DiscussionThread extends AbstractHasModified {
      *
      * @param status the visibility of the thread
      */
-    public void setStatus(String status) {
+    public void setStatus(final String status) {
+
         this.status = status;
     }
 
@@ -265,6 +277,7 @@ public class DiscussionThread extends AbstractHasModified {
      * @return the resolvedBy
      */
     public String getResolvedBy() {
+
         return resolvedBy;
     }
 
@@ -273,10 +286,11 @@ public class DiscussionThread extends AbstractHasModified {
      *
      * @param resolvedBy the resolvedBy to set
      */
-    public void setResolvedBy(String resolvedBy) {
+    public void setResolvedBy(final String resolvedBy) {
+
         this.resolvedBy = resolvedBy;
     }
-    
+
     /**
      * Returns the date of the last post in the thread.
      *
@@ -284,18 +298,20 @@ public class DiscussionThread extends AbstractHasModified {
      */
     @JsonGetter()
     public Date getLastPost() {
+
         return lastPost;
     }
-    
+
     /**
      * Sets the date of the last post in the thread.
      *
      * @param lastPost the date of the last post in the thread
      */
-    public void setLastPost(Date lastPost) {
+    public void setLastPost(final Date lastPost) {
+
         this.lastPost = lastPost;
     }
-    
+
     /**
      * Returns the number of replies in the thread.
      *
@@ -303,15 +319,17 @@ public class DiscussionThread extends AbstractHasModified {
      */
     @JsonGetter()
     public int getNumberReplies() {
+
         return numberReplies;
     }
-    
+
     /**
      * Sets the number of replies in the thread.
      *
      * @param numberReplies the number of replies in the thread
      */
-    public void setNumberReplies(int numberReplies) {
+    public void setNumberReplies(final int numberReplies) {
+
         this.numberReplies = numberReplies;
     }
 
@@ -373,7 +391,7 @@ public class DiscussionThread extends AbstractHasModified {
 
     /* see superclass */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -384,101 +402,101 @@ public class DiscussionThread extends AbstractHasModified {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        
-        DiscussionThread other = (DiscussionThread) obj;
-        
+
+        final DiscussionThread other = (DiscussionThread) obj;
+
         if (refsetInternalId == null) {
-            
+
             if (other.refsetInternalId != null) {
                 return false;
             }
-            
+
         } else if (!refsetInternalId.equals(other.refsetInternalId)) {
             return false;
         }
-        
+
         if (conceptId == null) {
-            
+
             if (other.conceptId != null) {
                 return false;
             }
-            
+
         } else if (!conceptId.equals(other.conceptId)) {
             return false;
         }
-        
+
         if (posts == null) {
-            
+
             if (other.posts != null) {
                 return false;
             }
-            
+
         } else if (!posts.equals(other.posts)) {
             return false;
         }
-        
+
         if (visibility == null) {
-            
+
             if (other.visibility != null) {
                 return false;
             }
-            
+
         } else if (!visibility.equals(other.visibility)) {
             return false;
         }
-        
+
         if (status == null) {
-            
+
             if (other.status != null) {
                 return false;
             }
-            
+
         } else if (!status.equals(other.status)) {
             return false;
         }
-        
+
         if (resolvedBy == null) {
-            
+
             if (other.resolvedBy != null) {
                 return false;
             }
-            
+
         } else if (!resolvedBy.equals(other.resolvedBy)) {
             return false;
         }
-        
+
         if (lastPost == null) {
-            
+
             if (other.lastPost != null) {
                 return false;
             }
-            
+
         } else if (!lastPost.equals(other.lastPost)) {
             return false;
         }
-        
+
         if (subject == null) {
-            
+
             if (other.subject != null) {
                 return false;
             }
-            
+
         } else if (!subject.equals(other.subject)) {
             return false;
         }
-        
+
         if (privateThread != other.privateThread) {
             return false;
         }
-        
+
         if (type != other.type) {
             return false;
         }
-        
+
         if (numberReplies != other.numberReplies) {
             return false;
         }
-        
+
         return true;
     }
 

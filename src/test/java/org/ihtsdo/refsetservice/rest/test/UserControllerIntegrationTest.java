@@ -20,8 +20,8 @@ import java.util.Properties;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.service.SecurityService;
-import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeAll;
@@ -64,7 +64,7 @@ public class UserControllerIntegrationTest extends BaseTest {
 
     /** The test properties. */
     @Autowired
-    Properties testProperties;
+    private Properties testProperties;
 
     /** The object mapper. */
     private ObjectMapper objectMapper;
@@ -111,6 +111,20 @@ public class UserControllerIntegrationTest extends BaseTest {
     @BeforeAll
     public void addData() {
 
+        testUser = new User();
+        testUser.setUserName("unitTestUser");
+        testUser.setName("Unit Test User");
+        testUser.setEmail("user@fake.org");
+        testUser.setTitle("Senior Mapper");
+        testUser.setCompany("The Company");
+
+        try {
+            testUser = addUser(testUser);
+        } catch (Exception e) {
+            logger.error("ERROR {}", e.getMessage(), e);
+            assertTrue(false);
+        }
+
         final Edition tempEdition = new Edition();
         tempEdition.setId(null);
         tempEdition.setName("User Unit Test Edition");
@@ -119,9 +133,8 @@ public class UserControllerIntegrationTest extends BaseTest {
         tempEdition.setIconUri("userTestIconUri");
         tempEdition.setBranch("/SNOMEDCT");
 
-        try (TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy("userTestUser");
-            edition = service.add(tempEdition);
+        try {
+            edition = EditionService.createEdition(testUser, tempEdition);
         } catch (Exception e) {
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
@@ -139,9 +152,8 @@ public class UserControllerIntegrationTest extends BaseTest {
         tempOrganization.setPrimaryContactEmail("org@test.com");
         tempOrganization.setEdition(edition);
 
-        try (TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy("userTestUser");
-            organization = service.add(tempOrganization);
+        try {
+            organization = OrganizationService.createOrganization(testUser, tempOrganization);
         } catch (Exception e) {
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
@@ -152,13 +164,6 @@ public class UserControllerIntegrationTest extends BaseTest {
 
         try {
 
-            testUser = new User();
-            testUser.setUserName("unitTestUser");
-            testUser.setName("Unit Test User");
-            testUser.setEmail("user@fake.org");
-            testUser.setTitle("Senior Mapper");
-            testUser.setCompany("The Company");
-
             final User user2 = new User();
             user2.setUserName("secondTestUser");
             user2.setName("Second Unit Tester");
@@ -167,7 +172,6 @@ public class UserControllerIntegrationTest extends BaseTest {
             user2.setCompany("The Company");
 
             try {
-                testUser = addUser(testUser);
                 addUser(user2);
             } catch (Exception e) {
                 logger.error("Exception adding users : {}", e);
@@ -316,26 +320,6 @@ public class UserControllerIntegrationTest extends BaseTest {
         }
         pass = true;
         return pass;
-
-    }
-
-    /**
-     * Adds the user.
-     *
-     * @param user the user
-     * @return the user
-     * @throws Exception the exception
-     */
-    private User addUser(final User user) throws Exception {
-
-        try (final SecurityService service = new SecurityService()) {
-            service.addUser(user);
-
-            return user;
-        } catch (Exception e) {
-            logger.error("Error adding user: {}", user, e);
-            throw e;
-        }
 
     }
 

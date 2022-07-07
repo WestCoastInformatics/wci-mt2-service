@@ -1,3 +1,12 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.rest.client;
 /*
  * Copyright 2022 SNOMED International - All Rights Reserved.
@@ -32,30 +41,30 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     private static final Logger logger = LoggerFactory.getLogger(CrowdAPIClient.class);
 
     /** Group name prefix for RT2 application. */
-    private static final String APP_PREFIX = "rt2-";
+    private static final String appPrefix = "rt2-";
 
     // USER
-    /**  Get user GET. */
+    /** Get user GET. */
     private static final String GET_USER = "/rest/usermanagement/1/user";
 
-    /**  Get avatar for user EXPERIMENTAL GET. */
+    /** Get avatar for user EXPERIMENTAL GET. */
     private static final String GET_AVATAR_FOR_USER = "/rest/usermanagement/1/user/avatar?username=";
 
-    /**  Get direct groups GET. */
+    /** Get direct groups GET. */
     private static final String GET_DIRECT_GROUPS = "/rest/usermanagement/1/user/group/direct?username=";
 
     // GROUP
-    /**  Get group GET. */
+    /** Get group GET. */
     private static final String GET_GROUP = "/rest/usermanagement/1/group?groupname=";
 
-    /**  Add group POST. */
+    /** Add group POST. */
     private static final String ADD_GROUP = "/rest/usermanagement/1/group";
 
     // MEMBERSHIP
     /** Add a user to a group. */
     private static final String ADD_USER_TO_GROUP = "/rest/usermanagement/1/group/user/direct?groupname=";
 
-    /**  Remove user from group DELETE. */
+    /** Remove user from group DELETE. */
     private static final String REMOVE_USER_FROM_GROUP = "/rest/usermanagement/1/user/group/direct";
 
     /**
@@ -70,25 +79,25 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     public static void addGroup(final String organization, final String projectName, final String projectDescription) throws Exception {
 
         logger.info("Add group {} to organization {} with description of {}", projectName, organization, projectDescription);
-        
+
         if (StringUtils.isBlank(organization)) {
             throw new Exception("Organization name cannot be empty or null. Received organization: " + organization);
         }
-        
+
         if (StringUtils.isEmpty(projectName)) {
             throw new Exception("Project name cannot be empty or null. Received project: " + projectName);
         }
-        
+
         final String description = (!StringUtils.isEmpty(projectDescription)) ? projectDescription.trim() : projectName.trim();
-        
+
         /* {"name": "rt2-test-test-author", "description": "test crowd client", "type": "GROUP" } */
         for (String role : ROLES) {
-            
+
             final String groupName = CrowdGroupNameAlgorithm.generateName(organization, projectName, role);
-            
+
             logger.info("CALL CROWD API url:" + BASE_URL + ADD_GROUP);
             final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
-            
+
             logger.info("CALL CROWD API payload: " + entity);
             final Response response = post(BASE_URL + ADD_GROUP, entity);
 
@@ -170,7 +179,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             if (groups != null && !groups.isEmpty()) {
                 groups.forEach(groupName -> {
                     final String name = groupName.findValue("name").asText();
-                    if (name.startsWith(APP_PREFIX)) {
+                    if (name.startsWith(appPrefix)) {
                         userGroups.add(name);
                     }
                 });

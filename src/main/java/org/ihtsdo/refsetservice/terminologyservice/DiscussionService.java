@@ -43,34 +43,33 @@ public class DiscussionService {
     private static Logger logger = LoggerFactory.getLogger(DiscussionService.class);
 
     /**
-     * Returns a list of discussion threads based on the refset and possibly member ID
+     * Returns a list of discussion threads based on the refset and possibly member ID.
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refset the refset
      * @param type Object type, e.g. 'REFSET, REFSET_MEMEBER'
+     * @param refset the refset
      * @param conceptId The concept ID of the refset member if this is a member type
      * @return a list of matching discussion threads
      * @throws Exception the exception
      */
-    public static ResultList<DiscussionThread> getDiscussions(final TerminologyService service, final User user, final DiscussionType type,
-        final Refset refset, final String conceptId) throws Exception 
-    {
+    public static ResultList<DiscussionThread> getDiscussions(final TerminologyService service, final User user, final DiscussionType type, final Refset refset, final String conceptId)
+        throws Exception {
 
         if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
             return new ResultList<DiscussionThread>();
         }
-        
+
         boolean canViewPrivate = true;
         String query = "type:" + QueryParserBase.escape(type.name()) + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("created");
         pfs.setAscending(false);
-        
+
         if (type.equals(DiscussionType.REFSET_MEMBER) && conceptId != null) {
             query += " AND conceptId: " + QueryParserBase.escape(conceptId);
         }
-        
+
         if (!canUserViewPrivateThread(user, refset)) {
             
             canViewPrivate = false;
@@ -78,10 +77,10 @@ public class DiscussionService {
         }
 
         final ResultList<DiscussionThread> results = service.find(query, pfs, DiscussionThread.class, null);
-        
+
         // private posts need to be removed if the user does not have permission to view them
         for (int i = results.getItems().size() - 1; i >= 0; i--) {
-            
+
             final DiscussionThread thread = results.getItems().get(i);
             final List<DiscussionPost> postList = ModelUtility.jsonCopy(thread.getPosts(), new TypeReference<List<DiscussionPost>>(){});
             thread.getPosts().clear();
@@ -102,15 +101,15 @@ public class DiscussionService {
             }
             
         }
-        
+
         results.setTotal(results.getItems().size());
         results.setTotalKnown(true);
-        
+
         return results;
     }
-    
+
     /**
-     * Returns a single discussion thread
+     * Returns a single discussion thread.
      *
      * @param service the Terminology Service
      * @param user the user
@@ -119,12 +118,12 @@ public class DiscussionService {
      * @throws Exception the exception
      */
     public static DiscussionThread getDiscussion(final TerminologyService service, final User user, final String id) throws Exception {
-        
+
         final DiscussionThread discussionThread = service.get(id, DiscussionThread.class);
-        
+
         return discussionThread;
     }
-    
+
     /**
      * Returns a single discussion post
      *
@@ -146,12 +145,12 @@ public class DiscussionService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refset the refset
+     * @param refsets the refsets
      * @return the refset with discussion count included
      * @throws Exception the exception
      */
     public static List<Refset> attachRefsetDiscussionCounts(final TerminologyService service, final User user, final List<Refset> refsets) throws Exception {
-        
+
         if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
             return refsets;
         }
@@ -162,9 +161,9 @@ public class DiscussionService {
 
         return refsets;
     }
-    
+
     /**
-     * Adds discussion count to a refset
+     * Adds discussion count to a refset.
      *
      * @param service the Terminology Service
      * @param user the user
@@ -173,27 +172,27 @@ public class DiscussionService {
      * @throws Exception the exception
      */
     public static Refset attachRefsetDiscussionCount(final TerminologyService service, final User user, final Refset refset) throws Exception {
-        
+
         if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
             return refset;
         }
-        
+
         String query = "type:" + DiscussionType.REFSET + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
-        
+
         if (!canUserViewPrivateThread(user, refset)) {
             query += " AND privateThread: false";
         }
-        
+
         final ResultList<DiscussionThread> results = service.find(query, null, DiscussionThread.class, null);
         int count = results.getItems().size();
-        
+
         refset.setDiscussionCount(count);
-        
+
         return refset;
     }
-    
+
     /**
-     * Adds discussion counts to a list of refset member concepts
+     * Adds discussion counts to a list of refset member concepts.
      *
      * @param service the Terminology Service
      * @param user the user
@@ -203,50 +202,50 @@ public class DiscussionService {
      * @throws Exception the exception
      */
     public static List<Concept> attachMemberDiscussionCounts(final TerminologyService service, final User user, final Refset refset, final List<Concept> concepts) throws Exception {
-        
+
         if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
             return concepts;
         }
-        
+
         String query = "type:" + DiscussionType.REFSET_MEMBER + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("conceptId");
-        
+
         if (!canUserViewPrivateThread(user, refset)) {
             query += " AND privateThread: false";
         }
-        
+
         final ResultList<DiscussionThread> results = service.find(query, pfs, DiscussionThread.class, null);
-        
+
         if (results.getItems().size() == 0) {
             return concepts;
         }
-        
+
         for (final Concept concept : concepts) {
-            
+
             int count = 0;
-            
+
             for (final DiscussionThread thread : results.getItems()) {
-                
+
                 if (!thread.getConceptId().equals(concept.getCode()) && count == 0) {
                     continue;
-                    
+
                 } else if (thread.getConceptId().equals(concept.getCode())) {
                     count++;
-                    
+
                 } else {
                     break;
                 }
             }
-            
+
             concept.setDiscussionCount(count);
         }
-        
+
         return concepts;
     }
-    
+
     /**
-     * Check if the user can edit a discussion thread
+     * Check if the user can edit a discussion thread.
      *
      * @param user the user
      * @param refset the refset
@@ -255,9 +254,9 @@ public class DiscussionService {
      * @throws Exception the exception
      */
     public static boolean canUserEditThread(final User user, final Refset refset, final DiscussionThread thread) throws Exception {
-        
+
         final String threadUserName = thread.getPosts().get(0).getUser().getUserName();
-        
+
         // if the user does not have the correct roles on the refset or they did not create the thread then they can't edit it
         if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !threadUserName.equals(user.getUserName())) {
             return false;
@@ -265,9 +264,9 @@ public class DiscussionService {
             return true;
         }
     }
-    
+
     /**
-     * Check if the user can view a private discussion thread
+     * Check if the user can view a private discussion thread.
      *
      * @param user the user
      * @param refset the refset
@@ -275,7 +274,7 @@ public class DiscussionService {
      * @throws Exception the exception
      */
     public static boolean canUserViewPrivateThread(final User user, final Refset refset) throws Exception {
-        
+
         // if the user does not have the correct roles on the refset or they did not create the thread then they can't edit it
         if (refset.getRoles().contains(User.ROLE_VIEWER)) {
             return true;
@@ -285,7 +284,7 @@ public class DiscussionService {
     }
 
     /**
-     * Check if the user can edit a discussion thread post
+     * Check if the user can edit a discussion thread post.
      *
      * @param user the user
      * @param refset the refset
@@ -294,9 +293,9 @@ public class DiscussionService {
      * @throws Exception the exception
      */
     public static boolean canUserEditPost(final User user, final Refset refset, final DiscussionPost post) throws Exception {
-        
+
         final String postUserName = post.getUser().getUserName();
-        
+
         // if the user does not have the correct roles on the refset or they did not create the post then they can't edit it
         if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !postUserName.equals(user.getUserName())) {
             return false;
@@ -304,7 +303,7 @@ public class DiscussionService {
             return true;
         }
     }
-    
+
     /**
      * Delete a discussion post by ID
      *
@@ -368,7 +367,7 @@ public class DiscussionService {
      * @throws Exception the exception
      */
     public static void deleteThread(final TerminologyService service, final User user, final String threadId) throws Exception {
-        
+
         final DiscussionThread thread = getDiscussion(service, user, threadId);
         
         if (thread == null) {
@@ -378,22 +377,22 @@ public class DiscussionService {
         }
 
         final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-        
+
         if (!DiscussionService.canUserEditThread(user, refset, thread)) {
-            
+
             logger.error("deleteThread: User does not have permissions to perform this action: {}.", user.getUserName());
             throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to delete this discussion thread.");
         }
-        
+
         service.setTransactionPerOperation(false);
         service.beginTransaction();
-        
+
         for (int i = thread.getPosts().size() - 1; i >= 0; i--) {
-            
+
             final DiscussionPost post = thread.getPosts().get(i);
             service.remove(post);
         }
-        
+
         service.remove(thread);
         service.commit();
     }

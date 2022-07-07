@@ -14,24 +14,20 @@ import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
-import org.ihtsdo.refsetservice.model.AuthContext;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
-import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
-import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
-import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -74,16 +70,17 @@ public class ProjectController extends BaseController {
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /** The config properties. */
-    private static final Properties properties = PropertyUtility.getProperties();
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /** The request. */
     @Autowired
-    HttpServletRequest request;
+    private HttpServletRequest request;
 
     /**
      * Returns a specific project.
      *
      * @param projectId the project ID
+     * @param includeMembers the include members
      * @return the project
      * @throws Exception the exception
      */
@@ -99,8 +96,7 @@ public class ProjectController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/project/{projectId}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity getProject(@PathVariable(value = "projectId") final String projectId, @QueryParam(value = "includeMembers") final boolean includeMembers)
-        throws Exception {
+    public @ResponseBody ResponseEntity getProject(@PathVariable(value = "projectId") final String projectId, @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
         logger.info("Project: projectId: " + projectId);
         final User authUser = SecurityService.getUserFromSession();
@@ -110,30 +106,12 @@ public class ProjectController extends BaseController {
 
         try {
 
-            try (TerminologyService service = new TerminologyService()) {
+            final Project project = ProjectService.getProject(projectId, includeMembers);
+            return new ResponseEntity<>(project, HttpStatus.OK);
 
-                final Project project = RefsetService.getProject(projectId);
-                if (project == null) {
-                    logger.info("Unable to find project for id {}.", projectId);
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Project not found");
-                }
+        } catch (final NotFoundException npe) {
 
-                if (includeMembers) {
-                    final Set<User> members = new HashSet<>();
-                    for (final String teamId : project.getTeams()) {
-                        final Team team = service.get(teamId, Team.class);
-                        if (team != null && team.getMembers() != null) {
-                            for (final String userId : team.getMembers()) {
-                                final User member = service.get(userId, User.class);
-                                members.add(member);
-                            }
-                        }
-                    }
-                    project.getMemberList().addAll(members);
-                }
-
-                return new ResponseEntity<>(project, HttpStatus.OK);
-            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(npe.getMessage());
 
         } catch (final Exception e) {
             logger.error("Error fetching project.  Id: {}", projectId, e);
@@ -147,6 +125,7 @@ public class ProjectController extends BaseController {
      *
      * @param searchParameters the search parameters
      * @param bindingResult the binding result
+     * @param includeMembers the include members
      * @return the string
      * @throws Exception the exception
      */
@@ -174,23 +153,16 @@ public class ProjectController extends BaseController {
             logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
 
             final User user = SecurityService.getUserFromSession();
-            final ResultList<Project> results = RefsetService.searchProjects(user, searchParameters);
+            final ResultList<Project> results = ProjectService.searchProjects(user, searchParameters);
 
             if (includeMembers && results != null && results.getItems() != null) {
-                try (final TerminologyService service = new TerminologyService()) {
-                    for (final Project project : results.getItems()) {
-                        final Set<User> members = new HashSet<>();
-                        for (final String teamId : project.getTeams()) {
-                            final Team team = service.get(teamId, Team.class);
-                            if (team != null && team.getMembers() != null) {
-                                for (final String userId : team.getMembers()) {
-                                    final User member = service.get(userId, User.class);
-                                    members.add(member);
-                                }
-                            }
-                        }
-                        project.getMemberList().addAll(members);
+                for (final Project project : results.getItems()) {
+                    final Set<User> members = new HashSet<>();
+                    for (final String teamId : project.getTeams()) {
+                        final Team team = TeamService.getTeam(teamId, includeMembers);
+                        members.addAll(team.getMemberList());
                     }
+                    project.getMemberList().addAll(members);
                 }
             }
 
@@ -225,58 +197,48 @@ public class ProjectController extends BaseController {
     public @ResponseBody ResponseEntity addProject(@RequestBody final Project project) throws Exception {
 
         logger.info("Add project: {}", project);
-        
+
         try {
-            
+
             // TODO check permissions, fail if not authorized.
             final User authUser = SecurityService.getUserFromSession();
             if (authUser == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
             }
-            
-            final Project localProject = (Project) project;
 
-            if (localProject == null) {
+            if (project == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing project");
             }
-            
+
             try {
-                localProject.validateAdd();
+                project.validateAdd();
             } catch (final Exception e) {
-                final String errorMessage = String.format("Project validation failed for add. Message: {}.", e.getMessage()); 
+                final String errorMessage = "Project validation failed for add. Message: " + e.getMessage();
                 logger.error(errorMessage, e);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
             }
 
-            try (final TerminologyService service = new TerminologyService()) {
+            final Project localProject = ProjectService.addProject(authUser, project);
 
-                localProject.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(localProject.getName()));
-                service.setModifiedBy(authUser.getUserName());
-                service.setTransactionPerOperation(false);
-                service.beginTransaction();
+            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+                logger.info("CALLING CROWD API");
 
-                service.add(localProject);
-                service.commit();
-                // crowd.unit.test.skip=true
-                if (properties.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(properties.getProperty("crowd.unit.test.skip"))) {
-                    logger.info("CALLING CROWD API");
+                try {
+                    final Organization organization = project.getOrganization();
+                    CrowdAPIClient.addGroup(organization.getEdition().getShortName(), localProject.getName(), localProject.getDescription());
 
-                    try {
-                        final Organization organization = project.getOrganization();
-                        CrowdAPIClient.addGroup(organization.getEdition().getShortName(), localProject.getName(), localProject.getDescription());
-
-                    } catch (Exception e) {
-                        final String errorMessage = String.format("Failed adding Crowd groups. Message: {}.", e.getMessage());
-                        logger.error(errorMessage, e);
-                        return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("");
-                    }
-                } else {
-                    logger.info("SKIP CALLING CROWD API");
+                } catch (Exception e) {
+                    final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
+                    logger.error(errorMessage, e);
+                    return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("");
                 }
-
-                // Return the response
-                return ResponseEntity.status(HttpStatus.CREATED).body(localProject);
+            } else {
+                logger.info("SKIP CALLING CROWD API");
             }
+
+            // Return the response
+            return ResponseEntity.status(HttpStatus.CREATED).body(localProject);
+
         } catch (final Exception e) {
             logger.error("Error adding project. {}", project.toString(), e);
             handleException(e);
@@ -311,7 +273,7 @@ public class ProjectController extends BaseController {
         }
 
         if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
-            final String errorMessage = "Project is null or project id does not match id in URL."; 
+            final String errorMessage = "Project is null or project id does not match id in URL.";
             logger.error(errorMessage);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
         }
@@ -322,29 +284,11 @@ public class ProjectController extends BaseController {
             logger.error("Bad request for project update.", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-        
-        try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(authUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
+        try {
 
-            // Find the project
-            final Project original = service.get(id, Project.class);
-
-            if (original == null) {
-                final String errorMessage = String.format("Unable to find project for id {}.", id); 
-                logger.error(errorMessage);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
-            }
-
-            // Apply changes
-            original.patchFrom(project);
-
-            // Update
-            service.update(original);
-            service.commit();
-            return ResponseEntity.status(HttpStatus.OK).body(original);
+            final Project proj = ProjectService.updateProjects(authUser, id, project);
+            return ResponseEntity.status(HttpStatus.OK).body(proj);
 
         } catch (final Exception e) {
             logger.error("Error updating project.  Id: {}", id, e);
@@ -377,49 +321,14 @@ public class ProjectController extends BaseController {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
-        try (final TerminologyService service = new TerminologyService()) {
+        try {
 
-            service.setModifiedBy(authUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-
-            // Find the object
-            final Project project = service.get(id, Project.class);
-
-            // not found - HttpStatus.NOT_FOUND
-            if (project == null) {
-                logger.info("Unable to find project for id {}.", id);
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-
-            // inactivate projects, clear teams, and inactivate refsets
-            project.setActive(false);
-
-            if (project.getTeams() != null && !project.getTeams().isEmpty()) {
-                for (String teamId : project.getTeams()) {
-                    final Team team = service.get(teamId, Team.class);
-                    if (team != null && !team.getMembers().isEmpty()) {
-                        team.getMembers().clear();
-                        service.update(team);
-                    }
-                }
-                project.getTeams().clear();
-            }
-
-            // also inactivate refsets
-            final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
-            if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
-                for (Refset refset : projRefsets.getItems()) {
-                    if (refset != null && !projRefsets.getItems().isEmpty()) {
-                        refset.setActive(false);
-                        service.update(refset);
-                    }
-                }
-            }
-
-            service.update(project);
-            service.commit();
+            ProjectService.inactivateProject(authUser, id);
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
+
+        } catch (final NotFoundException nfe) {
+            logger.error("Error getting team. Id {} not found", id);
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
             logger.error("Error inactivating project.  Id: {}", id, e);
@@ -427,5 +336,4 @@ public class ProjectController extends BaseController {
             return null;
         }
     }
-
 }

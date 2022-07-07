@@ -42,6 +42,7 @@ public class AuthContext extends BaseModel {
      * Instantiates an empty {@link AuthContext}.
      */
     public AuthContext() {
+
         // n/a
     }
 
@@ -51,6 +52,7 @@ public class AuthContext extends BaseModel {
      * @return the claims
      */
     public Map<String, String> getClaims() {
+
         if (claims == null) {
             claims = new HashMap<>();
         }
@@ -63,6 +65,7 @@ public class AuthContext extends BaseModel {
      * @param claims the claims
      */
     public void setClaims(final Map<String, String> claims) {
+
         this.claims = claims;
     }
 
@@ -72,6 +75,7 @@ public class AuthContext extends BaseModel {
      * @return the jwt
      */
     public String getJwt() {
+
         return jwt;
     }
 
@@ -81,6 +85,7 @@ public class AuthContext extends BaseModel {
      * @param jwt the jwt
      */
     public void setJwt(final String jwt) {
+
         this.jwt = jwt;
     }
 
@@ -90,6 +95,7 @@ public class AuthContext extends BaseModel {
      * @return the user id
      */
     public String getUserId() {
+
         return userId;
     }
 
@@ -99,6 +105,7 @@ public class AuthContext extends BaseModel {
      * @param userId the user id
      */
     public void setUserId(final String userId) {
+
         this.userId = userId;
     }
 
@@ -108,6 +115,7 @@ public class AuthContext extends BaseModel {
      * @return the organization id
      */
     public String getOrganizationId() {
+
         return organizationId;
     }
 
@@ -117,6 +125,7 @@ public class AuthContext extends BaseModel {
      * @param organizationId the organization id
      */
     public void setOrganizationId(final String organizationId) {
+
         this.organizationId = organizationId;
     }
 
@@ -126,6 +135,7 @@ public class AuthContext extends BaseModel {
      * @return the correlation id
      */
     public String getCorrelationId() {
+
         return correlationId;
     }
 
@@ -135,6 +145,7 @@ public class AuthContext extends BaseModel {
      * @param correlationId the correlation id
      */
     public void setCorrelationId(final String correlationId) {
+
         this.correlationId = correlationId;
     }
 
@@ -144,6 +155,7 @@ public class AuthContext extends BaseModel {
      * @return the role
      */
     public String getRole() {
+
         return role;
     }
 
@@ -153,6 +165,7 @@ public class AuthContext extends BaseModel {
      * @param role the role
      */
     public void setRole(final String role) {
+
         this.role = role;
     }
 
@@ -162,6 +175,7 @@ public class AuthContext extends BaseModel {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public boolean isSkipHeader() {
+
         return skipHeader;
     }
 
@@ -171,7 +185,7 @@ public class AuthContext extends BaseModel {
      * @param skipHeader the skip header
      */
     public void setSkipHeader(final boolean skipHeader) {
+
         this.skipHeader = skipHeader;
     }
-
 }

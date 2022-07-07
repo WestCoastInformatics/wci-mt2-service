@@ -49,7 +49,7 @@ public class ProjectUnitTest extends BaseTest {
     }
 
     /**
-     * Test equals and hascode methods.
+     * Test equals and hashcode methods.
      *
      * @throws Exception the exception
      */
@@ -66,6 +66,7 @@ public class ProjectUnitTest extends BaseTest {
         tester.include("name");
         tester.include("description");
         tester.exclude("organization");
+        tester.exclude("organizationId");
         tester.include("privateProject");
         tester.include("primaryContactEmail");
         tester.include("crowdProjectId");

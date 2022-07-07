@@ -19,7 +19,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
-import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeAll;
@@ -70,6 +71,9 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
     @Autowired
     private Environment env;
 
+    /** The test user. */
+    private User testUser = null;
+
     /** The edition. */
     private Edition edition = null;
 
@@ -86,7 +90,21 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
      * Creates a required edition.
      */
     @BeforeAll
-    public void addPrerequisiteData() {
+    public void addData() {
+
+        testUser = new User();
+        testUser.setUserName("orgUnitTestUser");
+        testUser.setName("Unit Test User");
+        testUser.setEmail("user@fake.org");
+        testUser.setTitle("Senior Mapper");
+        testUser.setCompany("The Company");
+
+        try {
+            testUser = addUser(testUser);
+        } catch (Exception e) {
+            logger.error("ERROR {}", e.getMessage(), e);
+            assertTrue(false);
+        }
 
         final Edition tempEdition = new Edition();
         tempEdition.setId(null);
@@ -96,9 +114,8 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         tempEdition.setIconUri("orgTestIconUri");
         tempEdition.setBranch("/SNOMEDCT");
 
-        try (TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy("orgTestUser");
-            edition = service.add(tempEdition);
+        try {
+            edition = EditionService.createEdition(testUser, tempEdition);
         } catch (Exception e) {
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);

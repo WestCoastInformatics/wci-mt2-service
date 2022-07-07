@@ -1,17 +1,13 @@
 package org.ihtsdo.refsetservice.rest;
 
-import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
-import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -49,7 +45,7 @@ public class EditionController extends BaseController {
 
     /** The request. */
     @Autowired
-    HttpServletRequest request;
+    private HttpServletRequest request;
 
     /**
      * Return the edition.
@@ -70,16 +66,17 @@ public class EditionController extends BaseController {
     @RequestMapping(value = "/edition/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<Edition> getEdition(@PathVariable(value = "id") final String id) throws Exception {
 
-        try {
-            logger.info("Get edition for id: {}", id);
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            final User user = SecurityService.getUserFromSession();
+        logger.info("Get edition for id: {}", id);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
-            try (final TerminologyService service = new TerminologyService()) {
-                final Edition edition = service.get(id, Edition.class);
-                return new ResponseEntity<>(edition, HttpStatus.OK);
-            }
+        try {
+            final Edition edition = EditionService.getEdition(id);
+            return new ResponseEntity<>(edition, HttpStatus.OK);
+
         } catch (final Exception e) {
             handleException(e);
             return null;
@@ -89,7 +86,6 @@ public class EditionController extends BaseController {
     /**
      * Return the edition.
      *
-     * @param id the id
      * @return the edition
      * @throws Exception the exception
      */
@@ -102,17 +98,16 @@ public class EditionController extends BaseController {
     @RequestMapping(value = "/edition/", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
 
-        final User user = SecurityService.getUserFromSession();
+        logger.info("Get all editions ");
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         try {
-            logger.info("Get all editions ");
-            // TODO check permissions, fail if not authorized.
-            // final AuthContext context = authorize(request);
-            try (final TerminologyService service = new TerminologyService()) {
 
-                final ResultList<Edition> results = RefsetService.searchEditions(user, new SearchParameters());
-                return new ResponseEntity<>(results, HttpStatus.OK);
-            }
+            final ResultList<Edition> results = EditionService.getEditions();
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
             handleException(e);
@@ -141,20 +136,21 @@ public class EditionController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = "application/json")
-    public @ResponseBody ResultList<Edition> getEditions(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+
+        logger.debug("getEditions searchParameters: " + ModelUtility.toJson(searchParameters));
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
         try {
 
-            logger.debug("getEditions searchParameters: " + ModelUtility.toJson(searchParameters));
-
-            User user = SecurityService.getUserFromSession();
-            ResultList<Edition> results = RefsetService.searchEditions(user, searchParameters);
-
-            // logger.debug("getEditions results: " + ModelUtility.toJson(results));
-            return results;
+            final ResultList<Edition> results = EditionService.searchEditions(searchParameters);
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final ResponseStatusException rse) {
             throw rse;

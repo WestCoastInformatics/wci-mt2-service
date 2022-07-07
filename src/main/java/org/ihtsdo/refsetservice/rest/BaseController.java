@@ -2,17 +2,12 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.ihtsdo.refsetservice.model.AuthContext;
 import org.ihtsdo.refsetservice.model.RestException;
-import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.service.SecurityService;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -49,7 +44,7 @@ public class BaseController {
                 "Unexpected error occurred in the system. Please contact info@snomed.org";
         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage);
     }
-    
+
     /**
      * Check to make sure parameters were properly bound to variables.
      *
@@ -57,7 +52,7 @@ public class BaseController {
      * @throws Exception the exception
      */
     public void checkBinding(final BindingResult bindingResult) throws Exception {
-        
+
      // Check whether or not parameter binding was successful
         if (bindingResult.hasErrors()) {
 
@@ -76,7 +71,7 @@ public class BaseController {
                     String.join("\n ", errorMessages));
         }
     }
-    
+
     /**
      * Authorize.
      *

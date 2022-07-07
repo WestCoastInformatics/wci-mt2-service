@@ -74,6 +74,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
 
+    /** The members. */
     @ManyToMany(fetch = FetchType.LAZY, cascade = {
         CascadeType.ALL
     })
@@ -85,6 +86,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @Fetch(FetchMode.JOIN)
     private Set<User> members;
 
+    /** The icon uri. */
     @Column(nullable = true, length = 255)
     private String iconUri;
 
@@ -255,6 +257,8 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     }
 
     /**
+     * Sets the members.
+     *
      * @param members the members
      */
     public void setMembers(final Set<User> members) {
@@ -275,7 +279,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     /**
      * Sets the icon URI.
      *
-     * @param name the icon URI
+     * @param iconUri the icon uri
      */
     public void setIconUri(final String iconUri) {
 
@@ -300,7 +304,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     /**
      * Sets the roles.
      *
-     * @param teams the roles
+     * @param roles the roles
      */
     public void setRoles(final List<String> roles) {
 
@@ -325,7 +329,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
     /* see superclass */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -333,7 +337,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         if (getClass() != obj.getClass()) {
             return false;
         }
-        Organization other = (Organization) obj;
+        final Organization other = (Organization) obj;
         if (description == null) {
             if (other.description != null) {
                 return false;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 SNOMED International - All Rights Reserved.
+ * Copyright 2022 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -30,8 +30,6 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 
 /**
@@ -79,6 +77,7 @@ public class Edition extends AbstractHasModified {
      * Instantiates an empty {@link Edition}.
      */
     public Edition() {
+
         // n/a
     }
 
@@ -88,6 +87,7 @@ public class Edition extends AbstractHasModified {
      * @param other the other
      */
     public Edition(final Edition other) {
+
         populateFrom(other);
     }
 
@@ -97,6 +97,7 @@ public class Edition extends AbstractHasModified {
      * @param name the value
      */
     public Edition(final String name) {
+
         this.name = name;
     }
 
@@ -106,6 +107,7 @@ public class Edition extends AbstractHasModified {
      * @param other the other
      */
     public void populateFrom(final Edition other) {
+
         super.populateFrom(other);
         name = other.getName();
         namespace = other.getNamespace();
@@ -125,6 +127,7 @@ public class Edition extends AbstractHasModified {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
+
         return name;
     }
 
@@ -134,6 +137,7 @@ public class Edition extends AbstractHasModified {
      * @param name the name
      */
     public void setName(final String name) {
+
         this.name = name;
     }
 
@@ -145,6 +149,7 @@ public class Edition extends AbstractHasModified {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "namespaceSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getNamespace() {
+
         return namespace;
     }
 
@@ -154,6 +159,7 @@ public class Edition extends AbstractHasModified {
      * @param namespace the namespace
      */
     public void setNamespace(final String namespace) {
+
         this.namespace = namespace;
     }
 
@@ -163,6 +169,7 @@ public class Edition extends AbstractHasModified {
      * @return the iconUri
      */
     public String getIconUri() {
+
         return iconUri;
     }
 
@@ -172,6 +179,7 @@ public class Edition extends AbstractHasModified {
      * @param iconUri the iconUri to set
      */
     public void setIconUri(final String iconUri) {
+
         this.iconUri = iconUri;
     }
 
@@ -183,6 +191,7 @@ public class Edition extends AbstractHasModified {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "branchSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getBranch() {
+
         return branch;
     }
 
@@ -192,6 +201,7 @@ public class Edition extends AbstractHasModified {
      * @param branch the branch to set
      */
     public void setBranch(final String branch) {
+
         this.branch = branch;
     }
 
@@ -201,6 +211,7 @@ public class Edition extends AbstractHasModified {
      * @return the top level module
      */
     public String getTopLevelModule() {
+
         return topLevelModule;
     }
 
@@ -210,6 +221,7 @@ public class Edition extends AbstractHasModified {
      * @param topLevelModule the top level module to set
      */
     public void setTopLevelModule(final String topLevelModule) {
+
         this.topLevelModule = topLevelModule;
     }
 
@@ -219,27 +231,24 @@ public class Edition extends AbstractHasModified {
      * @return the default language refsets
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    //@IndexedEmbedded
+    // @IndexedEmbedded
     public Set<String> getDefaultLanguageRefsets() {
-        
+
         if (defaultLanguageRefsets == null) {
             defaultLanguageRefsets = new HashSet<>();
         }
-        
+
         return defaultLanguageRefsets;
     }
 
     /**
-     * Gets the default language refsets qualified with the language code and
-     * types.
+     * Gets the default language refsets qualified with the language code and types.
      *
-     * @return the default language refsets qualified with the language code and
-     *         types.
+     * @return the default language refsets qualified with the language code and types.
      */
     public List<Map<String, String>> getFullyQualifiedLanguageRefsets() {
 
-        final Map<String, String> refsetToLanguagesMap =
-                RefsetMemberService.getRefsetToLanguagesMap();
+        final Map<String, String> refsetToLanguagesMap = RefsetMemberService.getRefsetToLanguagesMap();
         final List<Map<String, String>> qualifiedLanguageList = new ArrayList<>();
 
         for (final String languageRefsetCode : getDefaultLanguageRefsets()) {
@@ -258,8 +267,7 @@ public class Edition extends AbstractHasModified {
 
             // if this is the default language code make sure it is first and
             // add a FSN version
-            if (languageCode.equalsIgnoreCase(defaultLanguageCode)
-                    || languageCode.equalsIgnoreCase("en")) {
+            if (languageCode.equalsIgnoreCase(defaultLanguageCode) || languageCode.equalsIgnoreCase("en")) {
 
                 if (languageCode.equalsIgnoreCase(defaultLanguageCode)) {
                     languageDetails.put("default", "true");
@@ -269,11 +277,8 @@ public class Edition extends AbstractHasModified {
 
                 if (languageCode.equals("en")) {
 
-                    qualifiedLanguageList.add(1,
-                            Map.of("languageRefset", languageRefsetCode, "languageCode",
-                                    languageCode, "qualifiedLanguageRefset",
-                                    languageRefsetCode + "FSN", "qualifiedLanguageCode",
-                                    languageCode.toUpperCase() + " (FSN)"));
+                    qualifiedLanguageList.add(1, Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset", languageRefsetCode + "FSN",
+                        "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"));
                 }
             } else {
 
@@ -288,10 +293,12 @@ public class Edition extends AbstractHasModified {
     /**
      * This is solely for bean validation, method does nothing.
      *
-     ** @param qualifiedLanguageList
+     * @param qualifiedLanguageList the qualified language list
      */
-    public void setFullyQualifiedLanguageRefsets(List<Map<String, String>> qualifiedLanguageList) {
-        /* NA */}
+    public void setFullyQualifiedLanguageRefsets(final List<Map<String, String>> qualifiedLanguageList) {
+
+        /* NA */
+    }
 
     /**
      * Sets the default language refsets.
@@ -299,6 +306,7 @@ public class Edition extends AbstractHasModified {
      * @param defaultLanguageRefsets the set of default language refset Ids
      */
     public void setDefaultLanguageRefsets(final Set<String> defaultLanguageRefsets) {
+
         this.defaultLanguageRefsets = defaultLanguageRefsets;
     }
 
@@ -308,6 +316,7 @@ public class Edition extends AbstractHasModified {
      * @return the default language code
      */
     public String getDefaultLanguageCode() {
+
         return defaultLanguageCode;
     }
 
@@ -317,6 +326,7 @@ public class Edition extends AbstractHasModified {
      * @param defaultLanguageCode the set of default language refset Ids
      */
     public void setDefaultLanguageCode(final String defaultLanguageCode) {
+
         this.defaultLanguageCode = defaultLanguageCode;
     }
 
@@ -328,6 +338,7 @@ public class Edition extends AbstractHasModified {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "shortNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getShortName() {
+
         return shortName;
     }
 
@@ -337,6 +348,7 @@ public class Edition extends AbstractHasModified {
      * @param shortName the new short name
      */
     public void setShortName(final String shortName) {
+
         this.shortName = shortName;
     }
 
@@ -355,10 +367,8 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((branch == null) ? 0 : branch.hashCode());
         result = prime * result + ((topLevelModule == null) ? 0 : topLevelModule.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
-        result = prime * result
-                + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
-        result = prime * result
-                + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
+        result = prime * result + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
+        result = prime * result + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
         result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
         return result;
     }

@@ -24,7 +24,7 @@ public class CrowdGroupNameAlgorithm {
      *
      * @param organizationName the organization name
      * @param projectName the project name
-     * @param teamName the team name
+     * @param role the role
      * @return the string
      * @throws Exception the exception
      */
