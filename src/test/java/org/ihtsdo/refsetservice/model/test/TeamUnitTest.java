@@ -66,6 +66,7 @@ public class TeamUnitTest extends BaseTest {
         tester.include("name");
         tester.include("description");
         tester.exclude("organization");
+        tester.exclude("organizationId");
         tester.include("primaryContactEmail");
         tester.exclude("roles");
         tester.exclude("members");

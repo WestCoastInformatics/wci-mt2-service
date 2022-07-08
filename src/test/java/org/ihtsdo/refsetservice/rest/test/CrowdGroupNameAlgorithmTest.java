@@ -25,34 +25,43 @@ public class CrowdGroupNameAlgorithmTest {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(CrowdGroupNameAlgorithmTest.class);
 
-    
+    /**
+     * Test generate name.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testGenerateName() throws Exception {
 
         String result = "";
         result = CrowdGroupNameAlgorithm.generateName("SNOMEDCT-WCI", "WCI Testing Project", "author");
         assertThat(result).isEqualTo("rt2-snomedctwci-wtp-author");
-        
+
         result = CrowdGroupNameAlgorithm.generateName("SNOMEDCT-AT", "WCI Testing Project", "admin");
         assertThat(result).isEqualTo("rt2-snomedctat-wtp-admin");
-        
+
         result = CrowdGroupNameAlgorithm.generateName("SNOMEDCT-BE", "Belgian Edition Upgrade dedicated UAT Training Project", "reviewer");
         assertThat(result).isEqualTo("rt2-snomedctbe-beudutp-reviewer");
-        
+
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.generateName(" ", " ", " ");
         });
-        
+
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.generateName(" ", " b ", " ");
         });
-        
+
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.generateName(" a ", "  ", " ");
         });
-        
+
     }
-    
+
+    /**
+     * Test organization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testOrganization() throws Exception {
 
@@ -121,17 +130,22 @@ public class CrowdGroupNameAlgorithmTest {
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.getOrganizationString("");
         });
-        
+
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.getOrganizationString(null);
         });
-        
+
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.getOrganizationString("    ");
         });
 
     }
 
+    /**
+     * Test project.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testProject() throws Exception {
 
@@ -223,21 +237,21 @@ public class CrowdGroupNameAlgorithmTest {
 
         result = CrowdGroupNameAlgorithm.getProjectString("Default project for Belgian Extension");
         assertThat(result).isEqualTo("dpfbe");
-        
+
         result = CrowdGroupNameAlgorithm.getProjectString("a 7 a");
         assertThat(result).isEqualTo("a7a");
-        
+
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.getProjectString("");
         });
-        
+
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.getProjectString(null);
         });
-        
+
         assertThrows(Exception.class, () -> {
             CrowdGroupNameAlgorithm.getProjectString("    ");
         });
-        
+
     }
 }

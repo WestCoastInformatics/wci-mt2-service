@@ -11,7 +11,6 @@ package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
@@ -47,7 +46,7 @@ public class DiscussionPost extends AbstractHasModified {
     /** The user. */
     @OneToOne(targetEntity = User.class)
     private User user;
-    
+
     /** The message. */
     @Column(nullable = false, length = 4000)
     private String message;
@@ -55,11 +54,11 @@ public class DiscussionPost extends AbstractHasModified {
     /** Indicate if post is private. */
     @Column(nullable = false)
     private boolean privatePost;
-    
+
     /** The visibility of the post. */
     @Column(nullable = false, length = 64)
     private String visibility;
-    
+
     /**
      * Populate from.
      *
@@ -80,24 +79,27 @@ public class DiscussionPost extends AbstractHasModified {
      * @return the user
      */
     public User getUser() {
+
         return user;
     }
-    
+
     /**
      * Sets the user.
      *
      * @param user the user to set
      */
-    public void setUser(User user) {
+    public void setUser(final User user) {
+
         this.user = user;
     }
-    
+
     /**
      * Returns the message.
      *
      * @return the message
      */
     public String getMessage() {
+
         return message;
     }
 
@@ -106,7 +108,8 @@ public class DiscussionPost extends AbstractHasModified {
      *
      * @param message the message to set
      */
-    public void setMessage(String message) {
+    public void setMessage(final String message) {
+
         this.message = message;
     }
 
@@ -116,6 +119,7 @@ public class DiscussionPost extends AbstractHasModified {
      * @return the privatePost
      */
     public boolean isPrivatePost() {
+
         return privatePost;
     }
 
@@ -124,26 +128,28 @@ public class DiscussionPost extends AbstractHasModified {
      *
      * @param privatePost the privatePost to set
      */
-    public void setPrivatePost(boolean privatePost) {
+    public void setPrivatePost(final boolean privatePost) {
 
         this.privatePost = privatePost;
     }
-    
+
     /**
      * Get the visibility of the thread.
      *
      * @return the visibility of the thread
      */
     public String getVisibility() {
+
         return visibility;
     }
-    
+
     /**
      * Sets the visibility of the thread.
      *
      * @param visibility the visibility of the thread
      */
-    public void setVisibility(String visibility) {
+    public void setVisibility(final String visibility) {
+
         this.visibility = visibility;
     }
 
@@ -162,56 +168,56 @@ public class DiscussionPost extends AbstractHasModified {
 
     /* see superclass */
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(final Object object) {
 
         if (this == object) {
             return true;
         }
-        
+
         if (!super.equals(object)) {
             return false;
         }
-        
+
         if (getClass() != object.getClass()) {
             return false;
         }
-        
-        DiscussionPost other = (DiscussionPost) object;
-        
+
+        final DiscussionPost other = (DiscussionPost) object;
+
         if (user == null) {
-            
+
             if (other.user != null) {
                 return false;
             }
-            
+
         } else if (!user.equals(other.user)) {
             return false;
         }
-        
+
         if (message == null) {
-            
+
             if (other.message != null) {
                 return false;
             }
-            
+
         } else if (!message.equals(other.message)) {
             return false;
         }
-        
+
         if (visibility == null) {
-            
+
             if (other.visibility != null) {
                 return false;
             }
-            
+
         } else if (!visibility.equals(other.visibility)) {
             return false;
         }
-        
+
         if (privatePost != other.privatePost) {
             return false;
         }
-        
+
         return true;
     }
 

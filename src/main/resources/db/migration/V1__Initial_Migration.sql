@@ -352,3 +352,14 @@ ALTER TABLE `discussion_threads_discussion_posts` ADD UNIQUE KEY `UK_tdj8q5rjs9c
 ALTER TABLE `discussion_threads_discussion_posts` ADD INDEX `FK9e03dufefyllv3bea2wcfdj56` (`DiscussionThread_id`);
 ALTER TABLE `discussion_threads_discussion_posts` ADD CONSTRAINT `FK9e03dufefyllv3bea2wcfdj56` FOREIGN KEY (`DiscussionThread_id`) REFERENCES `discussion_threads` (`id`);
 ALTER TABLE `discussion_threads_discussion_posts` ADD CONSTRAINT `FKjb4q7pwfdqv0kf8wsk6mmi1t0` FOREIGN KEY (`posts_id`) REFERENCES `discussion_posts` (`id`);
+
+CREATE TABLE `audit_entries` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `details` varchar(4000) DEFAULT NULL,
+  `message` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);

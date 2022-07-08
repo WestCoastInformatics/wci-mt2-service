@@ -22,7 +22,9 @@ import java.util.UUID;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
-import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeAll;
@@ -73,6 +75,9 @@ public class ProjectControllerIntegrationTest extends BaseTest {
     @Autowired
     private Environment env;
 
+    /** The test user. */
+    private User testUser = null;
+
     /** The edition. */
     private Edition edition = null;
 
@@ -92,7 +97,21 @@ public class ProjectControllerIntegrationTest extends BaseTest {
      * Creates a required edition, organization for unit tests.
      */
     @BeforeAll
-    public void addPrerequisiteData() {
+    public void addData() {
+
+        testUser = new User();
+        testUser.setUserName("projectUnitTestUser");
+        testUser.setName("Unit Test User");
+        testUser.setEmail("user@fake.org");
+        testUser.setTitle("Senior Mapper");
+        testUser.setCompany("The Company");
+
+        try {
+            testUser = addUser(testUser);
+        } catch (Exception e) {
+            logger.error("ERROR {}", e.getMessage(), e);
+            assertTrue(false);
+        }
 
         final Edition tempEdition = new Edition();
         tempEdition.setId(null);
@@ -102,12 +121,8 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         tempEdition.setIconUri("projectTestIconUri");
         tempEdition.setBranch("/SNOMEDCT");
 
-        try (TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy("projectTestUser");
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-            edition = service.add(tempEdition);
-            service.commit();
+        try {
+            edition = EditionService.createEdition(testUser, tempEdition);
         } catch (Exception e) {
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
@@ -125,12 +140,8 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         tempOrganization.setPrimaryContactEmail("org@test.com");
         tempOrganization.setEdition(edition);
 
-        try (TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy("teamTestUser");
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-            organization = service.add(tempOrganization);
-            service.commit();
+        try {
+            organization = OrganizationService.createOrganization(testUser, tempOrganization);
         } catch (Exception e) {
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
@@ -422,29 +433,28 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         mvc.perform(delete(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isAccepted()).andReturn();
 
         // fetch to validate
-        // TODO Fix controller should not return inactive projects
-        // result = mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+        result = mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
 
-        // url = baseUrl + "/search";
+        url = baseUrl + "/search";
         // // find by id
-        // result = mvc.perform(get(url).queryParam("query", "id:" + newProject.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
-        // content = result.getResponse().getContentAsString();
-        // logger.info(" content = {}", content);
-        // final ResultList<Project> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
-        // }));
-        // assertThat(resultList1).isNotNull();
-        // assertThat(resultList1.getItems()).isNotNull();
-        // assertThat(resultList1.getItems().size()).isEqualTo(0);
-        //
-        // // find by name
-        // result = mvc.perform(get(url).queryParam("query", "name:" + newProject.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
-        // content = result.getResponse().getContentAsString();
-        // logger.info(" content = {}", content);
-        // final ResultList<Project> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
-        // }));
-        // assertThat(resultList).isNotNull();
-        // assertThat(resultList.getItems()).isNotNull();
-        // assertThat(resultList.getItems().size()).isEqualTo(0);
+        result = mvc.perform(get(url).queryParam("query", "id:" + newProject.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = {}", content);
+        final ResultList<Project> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
+        }));
+        assertThat(resultList1).isNotNull();
+        assertThat(resultList1.getItems()).isNotNull();
+        assertThat(resultList1.getItems().size()).isEqualTo(0);
+
+        // find by name
+        result = mvc.perform(get(url).queryParam("query", "name:" + newProject.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        content = result.getResponse().getContentAsString();
+        logger.info(" content = {}", content);
+        final ResultList<Project> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
+        }));
+        assertThat(resultList).isNotNull();
+        assertThat(resultList.getItems()).isNotNull();
+        assertThat(resultList.getItems().size()).isEqualTo(0);
     }
 
     /**

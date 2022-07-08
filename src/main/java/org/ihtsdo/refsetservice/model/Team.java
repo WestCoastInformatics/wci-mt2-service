@@ -70,11 +70,11 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     @Fetch(FetchMode.JOIN)
     private Organization organization;
 
-    /** email for primary contact */
+    /**  email for primary contact. */
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
 
-    /** roles for team */
+    /**  roles for team. */
     @ElementCollection
     @Fetch(FetchMode.JOIN)
     private Set<String> roles;
@@ -84,6 +84,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     @Fetch(FetchMode.JOIN)
     private Set<String> members;
 
+    /**  The member list. */
     @Transient
     private List<User> memberList;
 
@@ -127,6 +128,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         description = other.getDescription();
         primaryContactEmail = other.getPrimaryContactEmail();
         organization = other.getOrganization();
+        roles = other.getRoles();
     }
 
     /**
@@ -142,6 +144,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         description = other.getDescription();
         primaryContactEmail = other.getPrimaryContactEmail();
         organization = other.getOrganization();
+        roles = other.getRoles();
     }
 
     /**
@@ -226,18 +229,17 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
      *
      * @param organizationId the organization ID to set
      */
-    public void setProjectId(final String organizationId) {
+    public void setOrganizationId(final String organizationId) {
 
-        if (organization != null) {
-            this.organization.setId(organizationId);
-        } else {
-
+        if (organization == null) {
             this.organization = new Organization();
-            this.organization.setId(organizationId);
         }
+        this.organization.setId(organizationId);
     }
 
     /**
+     * Returns the roles.
+     *
      * @return the roles
      */
     @JsonGetter()
@@ -251,6 +253,8 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     }
 
     /**
+     * Sets the roles.
+     *
      * @param roles the roles
      */
     public void setRoles(final Set<String> roles) {
@@ -259,6 +263,8 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     }
 
     /**
+     * Returns the members.
+     *
      * @return the members
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
@@ -272,6 +278,8 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     }
 
     /**
+     * Sets the members.
+     *
      * @param members the members
      */
     public void setMembers(final Set<String> members) {
@@ -280,6 +288,8 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     }
 
     /**
+     * Returns the primary contact email.
+     *
      * @return the primaryContactEmail
      */
     public String getPrimaryContactEmail() {
@@ -288,6 +298,8 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     }
 
     /**
+     * Sets the primary contact email.
+     *
      * @param primaryContactEmail the primaryContactEmail
      */
     public void setPrimaryContactEmail(final String primaryContactEmail) {
@@ -295,6 +307,11 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         this.primaryContactEmail = primaryContactEmail;
     }
 
+    /**
+     * Returns the member list.
+     *
+     * @return the member list
+     */
     @JsonGetter()
     public List<User> getMemberList() {
 
@@ -304,6 +321,11 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         return memberList;
     }
 
+    /**
+     * Sets the member list.
+     *
+     * @param memberList the member list
+     */
     public void setMemberList(final List<User> memberList) {
 
         this.memberList = memberList;

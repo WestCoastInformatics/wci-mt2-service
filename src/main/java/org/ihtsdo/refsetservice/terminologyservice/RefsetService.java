@@ -38,16 +38,15 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DefinitionClauseEditHistory;
 import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetEditHistory;
-import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.EmailUtility;
@@ -402,7 +401,7 @@ public class RefsetService {
      */
     public static String modifyRefset(final User user, final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             String statusMessage = "Success";
             Refset refset = getRefset(user, refsetInternalId);
@@ -452,7 +451,7 @@ public class RefsetService {
      */
     public static void createRefsetEditHistory(final User user, final String refsetInternalId) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             Refset refset = getRefset(user, refsetInternalId);
 
@@ -500,7 +499,7 @@ public class RefsetService {
 
         logger.debug("replaceRefsetWithEditHistory: refsetInternalId: " + refsetInternalId);
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             Refset refset = getRefset(user, refsetInternalId);
 
@@ -569,7 +568,7 @@ public class RefsetService {
      */
     public static void removeRefsetEditHistory(final User user, final String refsetId) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             RefsetEditHistory history = service.findSingle("refsetId:" + QueryParserBase.escape(refsetId) + "", RefsetEditHistory.class, null);
 
@@ -601,7 +600,7 @@ public class RefsetService {
      */
     public static String addDefinitionException(final User user, final String refsetInternalId, final String ecl, final String definitionExceptionType) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -667,7 +666,7 @@ public class RefsetService {
      */
     public static String removeDefinitionException(final User user, final String refsetInternalId, final String definitionExceptionId) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -897,6 +896,7 @@ public class RefsetService {
             // inactivate the refset object in the DB
             refset.setActive(false);
             service.update(refset);
+            service.add(AuditEntryHelper.inactivateRefsetEntry(refset));
             logger.info("Inactivated refset in database: " + refsetInternalId);
         }
 
@@ -1176,29 +1176,6 @@ public class RefsetService {
     }
 
     /**
-     * Returns a specific project.
-     *
-     * @param projectId the project ID
-     * @return the project
-     * @throws Exception the exception
-     */
-    public static Project getProject(final String projectId) throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            final Project project = service.findSingle("id:" + QueryParserBase.escape(projectId) + "", Project.class, null);
-
-            if (project == null) {
-
-                throw new Exception("Unable to retrieve project " + projectId);
-            }
-
-            return project;
-        }
-
-    }
-
-    /**
      * Returns a specific refset by internal ID.
      *
      * @param service the Terminology Service
@@ -1231,7 +1208,7 @@ public class RefsetService {
      */
     public static Refset getRefset(final User user, final String refsetInternalId) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -1365,7 +1342,7 @@ public class RefsetService {
 
         if (projectCache.size() == 0) {
 
-            try (TerminologyService service = new TerminologyService()) {
+            try (final TerminologyService service = new TerminologyService()) {
 
                 final PfsParameter pfs = new PfsParameter();
                 pfs.setAscending(true);
@@ -1593,7 +1570,7 @@ public class RefsetService {
         Refset newRefsetVersion = new Refset();
         String newInternalRefsetId = "";
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -1681,7 +1658,7 @@ public class RefsetService {
 
         Refset refsetLatestVersion = null;
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             final PfsParameter pfs = new PfsParameter();
             pfs.setSort("versionDate");
@@ -1706,315 +1683,6 @@ public class RefsetService {
             }
 
             return refsetLatestVersion;
-        }
-
-    }
-
-    /**
-     * Search Projects.
-     *
-     * @param user the user
-     * @param searchParameters the search parameters
-     * @return the list of projects
-     * @throws Exception the exception
-     */
-    public static ResultList<Project> searchProjects(final User user, final SearchParameters searchParameters) throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            final long start = System.currentTimeMillis();
-            ResultList<Project> results = new ResultList<Project>();
-            String query = getQueryForActiveOnly(searchParameters);
-
-            final PfsParameter pfs = new PfsParameter();
-
-            if (searchParameters.getOffset() != null) {
-
-                pfs.setOffset(searchParameters.getOffset());
-            }
-
-            if (searchParameters.getLimit() != null) {
-
-                pfs.setLimit(searchParameters.getLimit());
-            }
-
-            if (searchParameters.getSortAscending() != null) {
-
-                pfs.setAscending(searchParameters.getSortAscending());
-            }
-
-            if (searchParameters.getSort() != null) {
-
-                pfs.setSort(searchParameters.getSort());
-            }
-
-            if (query != null && !query.equals("")) {
-
-                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
-            }
-
-            results = service.find(query, pfs, Project.class, null);
-            results.setTimeTaken(System.currentTimeMillis() - start);
-            results.setTotalKnown(true);
-
-            final List<Project> projectList = new ArrayList<>(results.getItems());
-
-            for (Project project : projectList) {
-
-                project = setProjectPermissions(user, project);
-
-                if (!project.getRoles().contains(User.ROLE_VIEWER)) {
-
-                    results.getItems().remove(project);
-                }
-
-            }
-
-            return results;
-        }
-
-    }
-
-    /**
-     * Search Editions.
-     *
-     * @param user the user
-     * @param searchParameters the search parameters
-     * @return the list of projects
-     * @throws Exception the exception
-     */
-    public static ResultList<Edition> searchEditions(final User user, final SearchParameters searchParameters) throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            final long start = System.currentTimeMillis();
-            ResultList<Edition> results = new ResultList<Edition>();
-            String query = searchParameters.getQuery();
-
-            final PfsParameter pfs = new PfsParameter();
-
-            if (searchParameters.getOffset() != null) {
-
-                pfs.setOffset(searchParameters.getOffset());
-            }
-
-            if (searchParameters.getLimit() != null) {
-
-                pfs.setLimit(searchParameters.getLimit());
-            }
-
-            if (searchParameters.getSortAscending() != null) {
-
-                pfs.setAscending(searchParameters.getSortAscending());
-            }
-
-            if (searchParameters.getSort() != null) {
-
-                pfs.setSort(searchParameters.getSort());
-            }
-
-            if (query != null && !query.equals("")) {
-
-                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
-            }
-
-            results = service.find(query, pfs, Edition.class, null);
-            results.setTimeTaken(System.currentTimeMillis() - start);
-            results.setTotalKnown(true);
-
-            return results;
-        }
-
-    }
-
-    /**
-     * Search Teams.
-     *
-     * @param user the user
-     * @param searchParameters the search parameters
-     * @return the list of projects
-     * @throws Exception the exception
-     */
-    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters) throws Exception {
-
-        return searchTeams(user, searchParameters, false);
-    }
-
-    /**
-     * Search Teams.
-     *
-     * @param user the user
-     * @param searchParameters the search parameters
-     * @return the list of projects
-     * @throws Exception the exception
-     */
-    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters, final boolean includeMembers) throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            final long start = System.currentTimeMillis();
-            ResultList<Team> results = new ResultList<Team>();
-            String query = getQueryForActiveOnly(searchParameters);
-
-            final PfsParameter pfs = new PfsParameter();
-
-            if (searchParameters.getOffset() != null) {
-
-                pfs.setOffset(searchParameters.getOffset());
-            }
-
-            if (searchParameters.getLimit() != null) {
-
-                pfs.setLimit(searchParameters.getLimit());
-            }
-
-            if (searchParameters.getSortAscending() != null) {
-
-                pfs.setAscending(searchParameters.getSortAscending());
-            }
-
-            if (searchParameters.getSort() != null) {
-
-                pfs.setSort(searchParameters.getSort());
-            }
-
-            if (query != null && !query.equals("")) {
-
-                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
-            }
-
-            results = service.find(query, pfs, Team.class, null);
-            results.setTimeTaken(System.currentTimeMillis() - start);
-            results.setTotalKnown(true);
-
-            if (includeMembers && results != null && results.getItems() != null) {
-
-                for (final Team team : results.getItems()) {
-
-                    for (final String userId : team.getMembers()) {
-
-                        ResultList<User> users = service.find("id:" + userId, null, User.class, null);
-
-                        if (users != null && users.getItems() != null) {
-
-                            team.getMemberList().addAll(users.getItems());
-                        }
-
-                    }
-
-                }
-
-            }
-
-            return results;
-        }
-
-    }
-
-    /**
-     * Search Organizations.
-     *
-     * @param user the user
-     * @param searchParameters the search parameters
-     * @return the list of projects
-     * @throws Exception the exception
-     */
-    public static ResultList<Organization> searchOrganizations(final User user, final SearchParameters searchParameters) throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            final long start = System.currentTimeMillis();
-            ResultList<Organization> results = new ResultList<Organization>();
-            String query = getQueryForActiveOnly(searchParameters);
-
-            final PfsParameter pfs = new PfsParameter();
-
-            if (searchParameters.getOffset() != null) {
-
-                pfs.setOffset(searchParameters.getOffset());
-            }
-
-            if (searchParameters.getLimit() != null) {
-
-                pfs.setLimit(searchParameters.getLimit());
-            }
-
-            if (searchParameters.getSortAscending() != null) {
-
-                pfs.setAscending(searchParameters.getSortAscending());
-            }
-
-            if (searchParameters.getSort() != null) {
-
-                pfs.setSort(searchParameters.getSort());
-
-            } else {
-
-                pfs.setSort("name");
-            }
-
-            if (query != null && !query.equals("")) {
-
-                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
-            }
-
-            results = service.find(query, pfs, Organization.class, null);
-            results.setTimeTaken(System.currentTimeMillis() - start);
-            results.setTotalKnown(true);
-
-            return results;
-        }
-
-    }
-
-    /**
-     * Search Users.
-     *
-     * @param user the user
-     * @param searchParameters the search parameters
-     * @return the list of projects
-     * @throws Exception the exception
-     */
-    public static ResultList<User> searchUsers(final User user, final SearchParameters searchParameters) throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            final long start = System.currentTimeMillis();
-            ResultList<User> results = new ResultList<User>();
-            String query = getQueryForActiveOnly(searchParameters);
-
-            final PfsParameter pfs = new PfsParameter();
-
-            if (searchParameters.getOffset() != null) {
-
-                pfs.setOffset(searchParameters.getOffset());
-            }
-
-            if (searchParameters.getLimit() != null) {
-
-                pfs.setLimit(searchParameters.getLimit());
-            }
-
-            if (searchParameters.getSortAscending() != null) {
-
-                pfs.setAscending(searchParameters.getSortAscending());
-            }
-
-            if (searchParameters.getSort() != null) {
-
-                pfs.setSort(searchParameters.getSort());
-            }
-
-            if (query != null && !query.equals("")) {
-
-                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
-            }
-
-            results = service.find(query, pfs, User.class, null);
-            results.setTimeTaken(System.currentTimeMillis() - start);
-            results.setTotalKnown(true);
-
-            return results;
         }
 
     }
@@ -2353,7 +2021,7 @@ public class RefsetService {
 
         ResultList<Edition> editions = new ResultList<>();
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             editions = service.find("active:true AND branch:" + QueryParserBase.escape(branch), null, Edition.class, null);
         } catch (Exception e) {
@@ -2478,34 +2146,6 @@ public class RefsetService {
 
         branchVersionCache.put(editionPath, branchCache);
         return branchCache;
-    }
-
-    /**
-     * Returns the query for active only.
-     *
-     * @param searchParameters the search parameters
-     * @return the query for active only
-     */
-    private static String getQueryForActiveOnly(final SearchParameters searchParameters) {
-
-        final Boolean activeOnly = (searchParameters == null || searchParameters.getActiveOnly() == null) ? true : searchParameters.getActiveOnly();
-
-        // default to active only if search parameters or active only not supplied
-        if (searchParameters == null) {
-
-            return "active:true";
-        } else {
-
-            if (StringUtils.isBlank(searchParameters.getQuery())) {
-
-                return "active:" + activeOnly;
-            } else {
-
-                return "(" + searchParameters.getQuery() + ") AND active:" + activeOnly;
-            }
-
-        }
-
     }
 
     /**

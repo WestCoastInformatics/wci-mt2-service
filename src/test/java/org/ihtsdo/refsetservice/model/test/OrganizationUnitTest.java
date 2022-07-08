@@ -40,15 +40,15 @@ public class OrganizationUnitTest extends BaseTest {
 
     /** The model object to test. */
     private Organization object;
-    
+
     /** The edition object. */
     private Edition edition;
-    
-    /**  The members. */
+
+    /** The members. */
     private Set<User> members;
 
     /**
-     * Setup
+     * Setup before each test.
      *
      * @throws Exception the exception
      */
@@ -56,16 +56,16 @@ public class OrganizationUnitTest extends BaseTest {
     public void setup() throws Exception {
 
         object = new Organization();
-        
+
         final ProxyTester tester1 = new ProxyTester(new Edition());
         edition = (Edition) tester1.createObject(1);
-        
+
         final ProxyTester tester2 = new ProxyTester(new User());
         members = new HashSet<>();
         members.add((User) tester2.createObject(1));
         members.add((User) tester2.createObject(2));
         object.getMembers().addAll(members);
-        
+
     }
 
     /**
@@ -93,6 +93,7 @@ public class OrganizationUnitTest extends BaseTest {
         tester.include("description");
         tester.exclude("edition");
         tester.exclude("members");
+        tester.exclude("roles");
         tester.include("primaryContactEmail");
         tester.include("iconUri");
 
@@ -115,7 +116,7 @@ public class OrganizationUnitTest extends BaseTest {
         final Organization copyObject = new Organization();
         copyObject.setMembers(members);
         copyObject.setEdition(edition);
-        
+
         final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
         assertTrue(tester.testCopyConstructor(Organization.class));
     }
@@ -131,7 +132,7 @@ public class OrganizationUnitTest extends BaseTest {
         final SerializationTester tester = new SerializationTester(object);
         assertTrue(tester.testJsonSerialization());
     }
-    
+
     /**
      * Test persistence.
      *
@@ -139,7 +140,7 @@ public class OrganizationUnitTest extends BaseTest {
      */
     @Test
     public void testPersistence() throws Exception {
-        
+
         try (final TerminologyService service = new TerminologyService()) {
 
             final ProxyTester tester2 = new ProxyTester(new Organization());
@@ -148,7 +149,7 @@ public class OrganizationUnitTest extends BaseTest {
             object.setId(null);
             object.setEdition(null);
             object.setMembers(null);
-            
+
             service.setModifiedBy("test");
             service.setModifiedFlag(true);
 
@@ -157,7 +158,7 @@ public class OrganizationUnitTest extends BaseTest {
             edition.setId(null);
             service.add(edition);
             object.setEdition(edition);
-            
+
             for (final User user : members) {
 
                 user.setId(null);
@@ -178,7 +179,7 @@ public class OrganizationUnitTest extends BaseTest {
             if (retrievedObject.getEdition() == null || !retrievedObject.getEdition().getName().equals("1")) {
                 throw new Exception("Refset edition not properly saved = " + retrievedObject.getId());
             }
-            
+
             // test that the correct number of members are present.
             if (retrievedObject.getMembers().size() != 2) {
                 throw new Exception("Expected 2 members (users), found = " + retrievedObject.getMembers().size());
@@ -193,6 +194,6 @@ public class OrganizationUnitTest extends BaseTest {
                 throw new Exception("Search results size is unexpectedly not empty = " + retrievedObject.getId());
             }
         }
-         
+
     }
 }

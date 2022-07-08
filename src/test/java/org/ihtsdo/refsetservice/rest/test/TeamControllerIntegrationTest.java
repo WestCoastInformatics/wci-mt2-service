@@ -25,7 +25,10 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Team;
-import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeAll;
@@ -76,6 +79,9 @@ public class TeamControllerIntegrationTest extends BaseTest {
     @Autowired
     private Environment env;
 
+    /** The test user. */
+    private User testUser = null;
+
     /** The edition. */
     private Edition edition = null;
 
@@ -98,7 +104,21 @@ public class TeamControllerIntegrationTest extends BaseTest {
      * Creates a required edition, organization and project for unit tests.
      */
     @BeforeAll
-    public void addPrerequisiteData() {
+    public void addData() {
+
+        testUser = new User();
+        testUser.setUserName("teamUnitTestUser");
+        testUser.setName("Unit Test User");
+        testUser.setEmail("user@fake.org");
+        testUser.setTitle("Senior Mapper");
+        testUser.setCompany("The Company");
+
+        try {
+            testUser = addUser(testUser);
+        } catch (Exception e) {
+            logger.error("ERROR {}", e.getMessage(), e);
+            assertTrue(false);
+        }
 
         final Edition tempEdition = new Edition();
         tempEdition.setId(null);
@@ -108,12 +128,8 @@ public class TeamControllerIntegrationTest extends BaseTest {
         tempEdition.setIconUri("teamTestIconUri");
         tempEdition.setBranch("/SNOMEDCT");
 
-        try (TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy("teamTestUser");
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-            edition = service.add(tempEdition);
-            service.commit();
+        try {
+            edition = EditionService.createEdition(testUser, tempEdition);
         } catch (Exception e) {
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
@@ -131,12 +147,8 @@ public class TeamControllerIntegrationTest extends BaseTest {
         tempOrganization.setPrimaryContactEmail("org@test.com");
         tempOrganization.setEdition(edition);
 
-        try (TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy("teamTestUser");
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-            organization = service.add(tempOrganization);
-            service.commit();
+        try {
+            organization = OrganizationService.createOrganization(testUser, tempOrganization);
         } catch (Exception e) {
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
@@ -158,12 +170,8 @@ public class TeamControllerIntegrationTest extends BaseTest {
         tempProject.getRoles().add("author");
         tempProject.getRoles().add("reviewer");
 
-        try (TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy("teamTestUser");
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-            project = service.add(tempProject);
-            service.commit();
+        try {
+            project = ProjectService.addProject(testUser, tempProject);
         } catch (Exception e) {
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
@@ -175,7 +183,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
     }
 
     /**
-     * Sets the up.
+     * Re-sets variables brefore each test.
      */
     @BeforeEach
     public void setUp() {
@@ -190,17 +198,14 @@ public class TeamControllerIntegrationTest extends BaseTest {
 
     }
 
+    /**
+     * Test create.
+     *
+     * @throws Exception the exception
+     */
     @Test
     @Order(1)
     public void testCreate() throws Exception {
-
-        // create organization
-        // result = mvc.perform(post("/organization").content(organization.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
-        // content = result.getResponse().getContentAsString();
-        // logger.info(" content = {}", content);
-        // organization = new ObjectMapper().readValue(content, Organization.class);
-        // assertThat(organization).isNotNull();
-        // assertThat(organization.getId()).isNotNull();
 
         url = baseUrl;
 
@@ -236,6 +241,11 @@ public class TeamControllerIntegrationTest extends BaseTest {
         assertThat(compareTeams(originalTeam, newTeam, true)).isTrue();
     }
 
+    /**
+     * Test update.
+     *
+     * @throws Exception the exception
+     */
     @Test
     @Order(2)
     public void testUpdate() throws Exception {
@@ -300,6 +310,11 @@ public class TeamControllerIntegrationTest extends BaseTest {
         assertThat(compareTeams(newTeam, updatedTeam, true)).isTrue();
     }
 
+    /**
+     * Test get.
+     *
+     * @throws Exception the exception
+     */
     @Test
     @Order(3)
     public void testGet() throws Exception {
@@ -349,17 +364,14 @@ public class TeamControllerIntegrationTest extends BaseTest {
         assertThat(compareTeams(getTeam, newTeam, true)).isTrue();
     }
 
+    /**
+     * Test find.
+     *
+     * @throws Exception the exception
+     */
     @Test
     @Order(4)
     public void testFind() throws Exception {
-
-        // create organization
-        // result = mvc.perform(post("/organization").content(organization.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
-        // content = result.getResponse().getContentAsString();
-        // logger.info(" content = {}", content);
-        // organization = new ObjectMapper().readValue(content, Organization.class);
-        // assertThat(organization).isNotNull();
-        // assertThat(organization.getId()).isNotNull();
 
         url = baseUrl;
 
@@ -418,17 +430,14 @@ public class TeamControllerIntegrationTest extends BaseTest {
         assertThat(compareTeams(resultList2.getItems().get(0), newTeam, true)).isTrue();
     }
 
+    /**
+     * Test inactivate.
+     *
+     * @throws Exception the exception
+     */
     @Test
     @Order(5)
     public void testInactivate() throws Exception {
-
-        // create organization
-        // result = mvc.perform(post("/organization").content(organization.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
-        // content = result.getResponse().getContentAsString();
-        // logger.info(" content = {}", content);
-        // organization = new ObjectMapper().readValue(content, Organization.class);
-        // assertThat(organization).isNotNull();
-        // assertThat(organization.getId()).isNotNull();
 
         url = baseUrl;
 
@@ -441,7 +450,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
         originalTeam.getRoles().add("reviewer");
 
         originalTeam.setOrganization(organization);
-        Set<String> members = new HashSet<>();
+        final Set<String> members = new HashSet<>();
         members.add(UUID.randomUUID().toString());
         members.add(UUID.randomUUID().toString());
         originalTeam.setMembers(members);
@@ -537,5 +546,4 @@ public class TeamControllerIntegrationTest extends BaseTest {
         pass = true;
         return pass;
     }
-
 }

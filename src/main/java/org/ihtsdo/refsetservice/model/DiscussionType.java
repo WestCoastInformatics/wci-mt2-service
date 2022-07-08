@@ -9,15 +9,14 @@
  */
 package org.ihtsdo.refsetservice.model;
 
-
 /**
  * The Enum DiscussionType.
  */
 public enum DiscussionType {
-    
-    /**  The refset. */
+
+    /** The refset. */
     REFSET,
-    
-    /**  The refset member. */
+
+    /** The refset member. */
     REFSET_MEMBER
 }

@@ -63,11 +63,11 @@ public class EditionUnitTest extends BaseTest {
         tester.include("namespace");
         tester.include("shortName");
         tester.include("iconUri");
-        tester.include("branch");       
+        tester.include("branch");
         tester.include("topLevelModule");
         tester.include("defaultLanguageCode");
         tester.exclude("defaultLanguageRefsets");
-        
+
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
         assertTrue(tester.testIdentityFieldNotEquals());

@@ -14,19 +14,19 @@ package org.ihtsdo.refsetservice.model;
  */
 public class CrowdGroup {
 
-    /**  The application. */
+    /** The application. */
     private String application;
 
-    /**  The organization. */
+    /** The organization. */
     private String organization;
 
-    /**  The project. */
+    /** The project. */
     private String project;
-    
-    /**  The project. */
+
+    /** The project. */
     private String projectDescription;
 
-    /**  The crowd group name. */
+    /** The crowd group name. */
     private String crowdGroupName;
 
     /**
@@ -51,7 +51,7 @@ public class CrowdGroup {
      *
      * @param application the application to set
      */
-    public void setApplication(String application) {
+    public void setApplication(final String application) {
 
         this.application = application;
     }
@@ -71,7 +71,7 @@ public class CrowdGroup {
      *
      * @param organization the organization to set
      */
-    public void setOrganization(String organization) {
+    public void setOrganization(final String organization) {
 
         this.organization = organization;
     }
@@ -91,7 +91,7 @@ public class CrowdGroup {
      *
      * @param project the project to set
      */
-    public void setProject(String project) {
+    public void setProject(final String project) {
 
         this.project = project;
     }
@@ -111,7 +111,7 @@ public class CrowdGroup {
      *
      * @param projectDescription the project description
      */
-    public void setProjectDescription(String projectDescription) {
+    public void setProjectDescription(final String projectDescription) {
 
         this.projectDescription = projectDescription;
     }
@@ -131,7 +131,7 @@ public class CrowdGroup {
      *
      * @param crowdGroupName the crowdGroupName to set
      */
-    public void setCrowdGroupName(String crowdGroupName) {
+    public void setCrowdGroupName(final String crowdGroupName) {
 
         this.crowdGroupName = crowdGroupName;
     }
@@ -152,7 +152,7 @@ public class CrowdGroup {
 
     /* see superclass */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;

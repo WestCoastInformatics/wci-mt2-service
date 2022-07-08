@@ -33,15 +33,15 @@ public enum UserRole {
     /** The value. */
     private String value;
 
-    /** Enums as list */
-    public static List<UserRole> allRoles = Arrays.asList(UserRole.values());
+    /** Enums as list. */
+    private static final List<UserRole> ALL_ROLES = Arrays.asList(UserRole.values());
 
     /**
      * Instantiates a {@link UserRole} from the specified parameters.
      *
      * @param value the value
      */
-    private UserRole(String value) {
+    private UserRole(final String value) {
 
         this.value = value;
     }
@@ -54,6 +54,16 @@ public enum UserRole {
     public String getValue() {
 
         return value;
+    }
+
+    /**
+     * Returns the all roles.
+     *
+     * @return the all roles
+     */
+    public static List<UserRole> getAllRoles() {
+
+        return ALL_ROLES;
     }
 
     // /**
