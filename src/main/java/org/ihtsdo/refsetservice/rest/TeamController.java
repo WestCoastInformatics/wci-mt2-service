@@ -26,6 +26,7 @@ import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
+import org.ihtsdo.refsetservice.terminologyservice.UserService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -379,7 +380,7 @@ public class TeamController extends BaseController {
         try {
 
             final Team team = TeamService.removeUserFromTeam(authUser, teamId, userId);
-            final User user = new User(); // UserService.getUser();
+            final User user = UserService.getUser(userId, false);
 
             // remove user from crowd groups
             // crowd.unit.test.skip=true
