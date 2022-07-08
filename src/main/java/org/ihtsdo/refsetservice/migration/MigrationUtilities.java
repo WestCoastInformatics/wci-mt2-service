@@ -128,7 +128,7 @@ public class MigrationUtilities {
         final String currentStatus = refset.getWorkflowStatus();
 
         // if the status is Published then create a new version of the refset that is ready to be edited
-        refset = WorkflowService.setWorkflowStatusByAction(MigrationDataInitializer.getAuthorUser(), WorkflowService.EDIT, refset, "");
+        refset = WorkflowService.setWorkflowStatusByAction(MigrationDataInitializer.getMigrationUser(), WorkflowService.EDIT, refset, "");
 
         // if the status changed return the updated refset else return null
         if (!currentStatus.equals(refset.getWorkflowStatus())) {
