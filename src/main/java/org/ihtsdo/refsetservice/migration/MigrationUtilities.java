@@ -16,8 +16,12 @@ import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
@@ -33,6 +37,8 @@ public class MigrationUtilities {
     static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
     private static final MigrationPropertyFileReader propertyReader = new MigrationPropertyFileReader();
+
+    private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
 
     Project addProject(Organization org, String projectName, String projectDescription, MigrationMetadata meta) throws Exception {
 
@@ -79,6 +85,64 @@ public class MigrationUtilities {
 
     }
 
+    public Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String type, String narrative, Project project) throws Exception {
+
+        final Refset refsetParameters = new Refset();
+
+        refsetParameters.setName(name);
+        refsetParameters.setRefsetId(refsetId);
+        refsetParameters.setModuleId("");
+        refsetParameters.setVersionStatus("PUBLISHED");
+        refsetParameters.setWorkflowStatus("PUBLISHED");
+        refsetParameters.setActive(true);
+        refsetParameters.setVersionDate(versionDate);
+        refsetParameters.setVersionNotes("");
+        refsetParameters.setType(type);
+        refsetParameters.setNarrative(narrative);
+        refsetParameters.setParentConceptId(DEFAULT_WCI_REFSET_PARENT_CONCEPT);
+        refsetParameters.setProject(project);
+        refsetParameters.setLatestPublishedVersion(false);
+
+        final Object returned = RefsetService.createRefset(u, refsetParameters);
+
+        if (returned instanceof String) {
+
+            throw new Exception((String) returned);
+        } else {
+
+            final Refset refset = (Refset) returned;
+
+            logger.info("Created new WCI Refset - " + refset);
+
+            Refset updatedRefset = setToReadyForEditWorkflowStatus(refset);
+
+            logger.info("Update Workflow Status - " + updatedRefset);
+
+            return updatedRefset;
+        }
+
+    }
+
+    private Refset setToReadyForEditWorkflowStatus(Refset refset) throws Exception {
+
+        final String currentStatus = refset.getWorkflowStatus();
+
+        // if the status is Published then create a new version of the refset that is ready to be edited
+        refset = WorkflowService.setWorkflowStatusByAction(MigrationDataInitializer.getAuthorUser(), WorkflowService.EDIT, refset, "");
+
+        // if the status changed return the updated refset else return null
+        if (!currentStatus.equals(refset.getWorkflowStatus())) {
+
+            logger.debug("setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
+            return refset;
+        } else {
+
+            logger.debug("setWorkflowStatus: did not update workflow status.");
+            return null;
+        }
+
+    }
+
     public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative, Project project) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -89,7 +153,7 @@ public class MigrationUtilities {
 
             refset.setName(name);
             refset.setRefsetId(refsetId);
-            refset.setModuleId(moduleId);
+            refset.setModuleId("");
             refset.setVersionStatus("PUBLISHED");
             refset.setWorkflowStatus("PUBLISHED");
             refset.setActive(true);
@@ -97,7 +161,7 @@ public class MigrationUtilities {
             refset.setType(type);
             refset.setNarrative(narrative);
             refset.setProject(project);
-            refset.setLatestPublishedVersion(true);
+            refset.setLatestPublishedVersion(false);
 
             // Persist
             final Refset r = service.add(refset);
@@ -139,8 +203,9 @@ public class MigrationUtilities {
 
             final PfsParameter pfs = new PfsParameter();
             final QueryParameter query = new QueryParameter();
-            query.setQuery("name:" + name + " AND active:true");
-            logger.debug("  user search query: " + query);
+            query.setQuery("userName:" + userName + " AND active:true");
+
+            logger.debug("  userName search query: " + query);
 
             ResultList<User> results = service.find(query, pfs, User.class, null);
 
@@ -149,18 +214,6 @@ public class MigrationUtilities {
                 // User already exists
                 return results.getItems().iterator().next();
             } else {
-
-                List<User> results2 = service.getAll(User.class);
-
-                // User already exist, but found otherwise
-                for (User existingUser : results2) {
-
-                    if (existingUser.getName().equals(name) && existingUser.getUserName().equals(userName) && existingUser.getEmail().equals(email) && existingUser.getRoles().equals(roles)) {
-
-                        return existingUser;
-                    }
-
-                }
 
                 // Need to create user
                 return addUser(name, userName, email, roles);

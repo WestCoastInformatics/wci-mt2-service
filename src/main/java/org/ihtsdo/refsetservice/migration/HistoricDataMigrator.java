@@ -169,7 +169,7 @@ public class HistoricDataMigrator {
 
     private final String testingEdition = "elgia";
 
-    private final String testingRefset = "741000172102";
+    private static final String testingRefset = "741000172102";
 
     private final Map<String, String> editionOwnerMap = new HashMap<>();
 
@@ -374,7 +374,7 @@ public class HistoricDataMigrator {
 
             if (utilities.getPropertyReader().getRefsetToClausesInfoMap().containsKey(refset.getRefsetId())) {
 
-                logger.debug("111a - Have clause on refset: " + refset.getRefsetId());
+                logger.info("Have clause on refset: " + refset.getRefsetId());
             }
 
             associateRefsetProject(refset, rttProjects);
@@ -710,7 +710,7 @@ public class HistoricDataMigrator {
         }
 
         logger.info(
-            "Finished processing CodeSystems in Snowstorm with " + internationalRefsets.size() + " international Refsets and " + nonInternationalRefsetCount + " non-intenrantioal refsets created.");
+            "Finished migrating with Snowstorm having created " + internationalRefsets.size() + " international Refsets and " + nonInternationalRefsetCount + " non-International refsets.");
 
         return snowstormRefsets;
     }
@@ -1535,5 +1535,9 @@ public class HistoricDataMigrator {
         service.setModifiedBy("Migration");
         service.setModifiedFlag(true);
 
+    }
+    
+    public static String getTestingRefset() { 
+        return testingRefset;
     }
 }

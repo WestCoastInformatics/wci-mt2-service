@@ -27,6 +27,8 @@ public class MigrationDataInitializer {
 
     private MigrationUtilities utilities = new MigrationUtilities();
 
+    private static User migrationUser = null;
+
     private static User feedbackInitiatiorUser = null;
 
     private static User userResponderUser = null;
@@ -96,6 +98,7 @@ public class MigrationDataInitializer {
 
             commonWciUsers.add(refsetDevUser);
             commonWciUsers.addAll(userRoleMap.values());
+
 
         } catch (Exception e) {
 
@@ -180,7 +183,7 @@ public class MigrationDataInitializer {
 
             testingProject = utilities.addProject(wciOrganization, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, defaultMeta);
 
-            utilities.addRefset(WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
+            utilities.addWCIRefset(getMigrationUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
                 Refset.EXTENSIONAL, "", testingProject);
         }
 
@@ -249,7 +252,7 @@ public class MigrationDataInitializer {
         logger.info(" Create Feedback for testing (for DEV only)");
 
         // create new refset with name = FeedbackTestingVersion1 with July 31 2022 version off International Edition
-        Refset refset = utilities.addRefset("WCI Testing Feedback Refset 1", "999999901", wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
+        Refset refset = utilities.addWCIRefset(getMigrationUser(), "WCI Testing Feedback Refset 1", "999999901", wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
             Refset.EXTENSIONAL, "", testingProject);
 
         try (TerminologyService service = new TerminologyService()) {
@@ -318,7 +321,7 @@ public class MigrationDataInitializer {
 
             if (latestVersion == 0) {
 
-                newTestingRefset = utilities.addRefset(FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_REFSET_ID_BASE + "01", wciOrganization.getEdition().getTopLevelModule(), new Date(),
+                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_REFSET_ID_BASE + "01", wciOrganization.getEdition().getTopLevelModule(), new Date(),
                     Refset.EXTENSIONAL, "", wciProject);
             } else {
 
@@ -326,7 +329,7 @@ public class MigrationDataInitializer {
                 String tensValue = Integer.toString(latestVersion / 10);
                 String onesValue = Integer.toString(latestVersion % 10);
 
-                newTestingRefset = utilities.addRefset(FEEDBACK_REFSET_NAME_BASE + latestVersion, FEEDBACK_REFSET_ID_BASE + tensValue + onesValue, wciOrganization.getEdition().getTopLevelModule(),
+                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + latestVersion, FEEDBACK_REFSET_ID_BASE + tensValue + onesValue, wciOrganization.getEdition().getTopLevelModule(),
                     new Date(), Refset.EXTENSIONAL, "", wciProject);
             }
 
@@ -480,4 +483,19 @@ public class MigrationDataInitializer {
         service.setModifiedFlag(true);
     }
 
+    static User getMigrationUser() {
+        if (migrationUser == null) {
+            migrationUser = new User();
+            migrationUser.setName("Migrator");
+            migrationUser.setUserName("Migrator");
+            migrationUser.setActive(true);
+            migrationUser.setEmail("test@wci.com");
+    
+            Set<String> roles = new HashSet<>();
+            roles.add("all_all_all");
+            migrationUser.setRoles(roles);
+        }
+        
+        return migrationUser;
+    }
 }
