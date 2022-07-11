@@ -429,7 +429,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                         // logger.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
 
                         // last check for the role or if they have any permission at this level they have the VIEWER role
-                        if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
+                        if (lowerCasedRole.endsWith("-all") || lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
 
                             // logger.debug("doesUserHavePermission = true");
                             return true;

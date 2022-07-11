@@ -126,6 +126,10 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @BeforeEach
     public void setUp(TestInfo info) throws Exception {
 
+        if (info.getDisplayName().equals("testMigration()")) {
+            return;
+        }
+        
         if (getUtil == null) {
 
             getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
@@ -884,7 +888,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     // **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED ****
-    // @Test
+    //@Test
     public void testMigration() throws Exception {
 
         final String url = "/admin/migration/rtt";
@@ -894,6 +898,12 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         logger.info(" content = " + content);
 
         assertThat(content).isEqualTo("RTT data migration completed successfully");
+        
+        final String feedbackUrl = "/admin/migration/feedback";
+        logger.info("Testing feedbackUrl - " + feedbackUrl);
+        final MvcResult feedbackResult = mvc.perform(get(feedbackUrl)).andExpect(status().isOk()).andReturn();
+        final String feedbackContent = feedbackResult.getResponse().getContentAsString();
+        logger.info(" feedbackContent = " + feedbackContent);
     }
 
 }

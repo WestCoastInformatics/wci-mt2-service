@@ -492,7 +492,7 @@ public class MigrationDataInitializer {
             migrationUser.setEmail("test@wci.com");
     
             Set<String> roles = new HashSet<>();
-            roles.add("all_all_all");
+            roles.add("all-all-all");
             migrationUser.setRoles(roles);
         }
         
