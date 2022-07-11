@@ -210,6 +210,11 @@ public class ProjectController extends BaseController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing project");
             }
 
+            final Set<String> projectNames = ProjectService.getProjectNamesForOrganization(project.getOrganizationId());
+            if (projectNames.contains(project.getName())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("A project with the name " + project.getName() + " already exists for this organization.");
+            }
+
             try {
                 project.validateAdd();
             } catch (final Exception e) {

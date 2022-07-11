@@ -81,7 +81,7 @@ public class ProjectService extends BaseService {
             final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
 
             if (project == null) {
-                final String errorMessage = "Unable to find project for id " + projectId + "."; 
+                final String errorMessage = "Unable to find project for id " + projectId + ".";
                 logger.info(errorMessage);
                 throw new NotFoundException(errorMessage);
             }
@@ -101,6 +101,33 @@ public class ProjectService extends BaseService {
             }
 
             return project;
+        }
+    }
+
+    /**
+     * Returns the project names for organization.
+     *
+     * @param organizationId the organization id
+     * @return the project names for organization
+     * @throws Exception the exception
+     */
+    public static Set<String> getProjectNamesForOrganization(final String organizationId) throws Exception {
+
+        final Set<String> projectNames = new HashSet<>();
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final ResultList<Project> projects = service.find("organization.id: " + organizationId + " AND active:true", null, Project.class, null);
+
+            if (projects == null) {
+                return projectNames;
+            }
+
+            projects.getItems().forEach(project -> {
+                projectNames.add(project.getName());
+            });
+
+            return projectNames;
         }
     }
 
