@@ -2084,6 +2084,10 @@ public class RefsetMemberService {
                 url += encodedSpace + "AND" + encodedSpace + encodedCaret + refset.getRefsetId();
             }
         }
+        
+        if (searchParameters.getActiveOnly() != null && searchParameters.getActiveOnly()) {
+            url += "&activeFilter=true"; 
+        }
 
         String searchAfter = "";
         boolean hasMorePages = true;
@@ -4958,6 +4962,7 @@ public class RefsetMemberService {
     public static ResultList<UpgradeReplacementConcept> replacementConceptSearch(final User user, final TerminologyService service, final Refset refset, final SearchParameters searchParameters) throws Exception {
 
         ResultList<UpgradeReplacementConcept> replacementConcepts = new ResultList<>();
+        searchParameters.setActiveOnly(true);
 
         final ConceptResultList concepts = conceptDropdownSearch(user, service, refset, searchParameters, "non members", true);
 
