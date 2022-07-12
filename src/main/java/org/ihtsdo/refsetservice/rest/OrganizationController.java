@@ -632,32 +632,6 @@ public class OrganizationController extends BaseController {
 
             return new ResponseEntity<>("\"" + organization.getIconUri() + "\"", HttpStatus.ACCEPTED);
 
-            //
-            //
-            // try (final TerminologyService service = new TerminologyService()) {
-            //
-            // service.setModifiedBy(authUser.getUserName());
-            //
-            // // find user record, return 404 if not found
-            // final Organization organization = service.get(organizationId, Organization.class);
-            //
-            // if (organization == null) {
-            // throw new RestException(false, 404, "Not found", "Unable to find organization for " + organizationId);
-            // }
-            //
-            // String fileToDelete = "";
-            //
-            // if (organization.getIconUri() != null) {
-            // fileToDelete = organization.getIconUri().replace(ICON_URL_PREFIX, "");
-            // }
-            //
-            // final File file = FileUtility.saveIconFile(inputFile, organizationId, fileToDelete);
-            //
-            // organization.setIconUri(ICON_URL_PREFIX + file.getName());
-            // service.update(organization);
-            //
-            // return new ResponseEntity<>("\"" + organization.getIconUri() + "\"", HttpStatus.ACCEPTED);
-
         } catch (final Exception e) {
 
             logger.error("Trying to edit user icon for organization " + organizationId, e);

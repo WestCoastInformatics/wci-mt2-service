@@ -277,7 +277,7 @@ public class TeamController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Team identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataType = "string", paramType = "path") // ,
+        @ApiImplicitParam(name = "id", value = "Team identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataTypeClass = String.class, paramType = "path") // ,
     })
     @RecordMetric
     @RequestMapping(value = "/team/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)

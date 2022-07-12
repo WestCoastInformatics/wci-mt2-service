@@ -280,13 +280,11 @@ public class TeamService extends BaseService {
                 throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message);
             }
 
-            if (team.getMembers() != null) {
+            if (team.getMembers() != null && team.getMembers().contains(user.getId())) {
 
-                if (team.getMembers().contains(user.getId())) {
-                    final String message = "User with " + email + " is already a member of team " + team.getName() + ".";
-                    logger.error(message);
-                    throw new RestException(false, HttpStatus.CONFLICT, "Conflict", message);
-                }
+                final String message = "User with " + email + " is already a member of team " + team.getName() + ".";
+                logger.error(message);
+                throw new RestException(false, HttpStatus.CONFLICT, "Conflict", message);
             }
 
             team.getMembers().add(userToAdd.getId());

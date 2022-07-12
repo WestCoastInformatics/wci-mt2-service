@@ -30,12 +30,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * Represents a project.
  */
 @Entity
-@Table(name = "audit_entries")
-@Schema(description = "Represents an audit entry")
+@Table(name = "artifacts")
+@Schema(description = "Represents an artifact")
 @JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class AuditEntry extends AbstractHasModified {
+public class Artifact extends AbstractHasModified {
 
     /** The entity type. */
     @Column(nullable = false, length = 64)
@@ -45,44 +45,48 @@ public class AuditEntry extends AbstractHasModified {
     @Column(nullable = false, length = 64)
     private String entityId;
 
-    /** The message. */
-    @Column(nullable = true, length = 255)
-    private String message;
+    /** The fileName. */
+    @Column(nullable = false, length = 500)
+    private String fileName;
 
-    /** The details. */
+    /** The fileName. */
+    @Column(nullable = false, length = 10)
+    private String fileType;
+
+    /** The fileType. */
     @Column(nullable = true, length = 4000)
-    private String details;
+    private String description;
 
     /**
-     * Instantiates an empty {@link AuditEntry}.
+     * Instantiates an empty {@link Artifact}.
      */
-    public AuditEntry() {
+    public Artifact() {
 
         // n/a
     }
 
     /**
-     * Instantiates a {@link AuditEntry} from the specified parameters.
+     * Instantiates a {@link Artifact} from the specified parameters.
      *
-     * @param entityType the entity type
-     * @param entityId the entity id
-     * @param message the message
-     * @param details the details
+     * @param fileName the file name
+     * @param fileType the file type
+     * @param description the description
      */
-    public AuditEntry(final String entityType, final String entityId, final String message, final String details) {
+    public Artifact(final String entityType, final String entityId, final String fileName, final String fileType, final String description) {
 
         this.entityType = entityType;
         this.entityId = entityId;
-        this.message = message;
-        this.details = details;
+        this.fileName = fileName;
+        this.fileType = fileType;
+        this.description = description;
     }
 
     /**
-     * Instantiates a {@link AuditEntry} from the specified parameters.
+     * Instantiates a {@link Artifact} from the specified parameters.
      *
      * @param other the other
      */
-    public AuditEntry(final AuditEntry other) {
+    public Artifact(final Artifact other) {
 
         populateFrom(other);
     }
@@ -92,13 +96,14 @@ public class AuditEntry extends AbstractHasModified {
      *
      * @param other the other
      */
-    public void populateFrom(final AuditEntry other) {
+    public void populateFrom(final Artifact other) {
 
         super.populateFrom(other);
         entityType = other.getEntityType();
         entityId = other.getEntityId();
-        message = other.getMessage();
-        details = other.getDetails();
+        fileName = other.getFileName();
+        fileType = other.getFileType();
+        this.description = other.getDescription();
 
     }
 
@@ -146,46 +151,67 @@ public class AuditEntry extends AbstractHasModified {
     }
 
     /**
-     * Returns the message.
+     * Returns the fileName.
      *
-     * @return the message
+     * @return the fileName
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "messageSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    public String getMessage() {
+    @GenericField(name = "fileNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    public String getFileName() {
 
-        return message;
+        return fileName;
     }
 
     /**
-     * Sets the message.
+     * Sets the fileName.
      *
-     * @param message the message to set
+     * @param fileName the fileName to set
      */
-    public void setMessage(final String message) {
+    public void setFileName(final String fileName) {
 
-        this.message = message;
+        this.fileName = fileName;
     }
 
     /**
-     * Returns the details.
+     * Returns the fileType.
      *
-     * @return the details
+     * @return the fileType
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    public String getDetails() {
+    public String getFileType() {
 
-        return details;
+        return fileType;
     }
 
     /**
-     * Sets the details.
+     * Sets the fileType.
      *
-     * @param details the details to set
+     * @param fileType the fileType to set
      */
-    public void setDetails(final String details) {
+    public void setFileType(final String fileType) {
 
-        this.details = details;
+        this.fileType = fileType;
+    }
+
+    /**
+     * Returns the description.
+     *
+     * @return the description
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public String getDescription() {
+
+        return description;
+    }
+
+    /**
+     * Sets the description.
+     *
+     * @param description the description
+     */
+    public void setDescription(final String description) {
+
+        this.description = description;
     }
 
     /* see superclass */
@@ -194,10 +220,11 @@ public class AuditEntry extends AbstractHasModified {
 
         final int prime = 31;
         int result = super.hashCode();
-        result = prime * result + ((details == null) ? 0 : details.hashCode());
+        result = prime * result + ((description == null) ? 0 : description.hashCode());
         result = prime * result + ((entityId == null) ? 0 : entityId.hashCode());
         result = prime * result + ((entityType == null) ? 0 : entityType.hashCode());
-        result = prime * result + ((message == null) ? 0 : message.hashCode());
+        result = prime * result + ((fileName == null) ? 0 : fileName.hashCode());
+        result = prime * result + ((fileType == null) ? 0 : fileType.hashCode());
         return result;
     }
 
@@ -211,15 +238,15 @@ public class AuditEntry extends AbstractHasModified {
         if (!super.equals(obj)) {
             return false;
         }
-        if (!(obj instanceof AuditEntry)) {
+        if (!(obj instanceof Artifact)) {
             return false;
         }
-        final AuditEntry other = (AuditEntry) obj;
-        if (details == null) {
-            if (other.details != null) {
+        final Artifact other = (Artifact) obj;
+        if (description == null) {
+            if (other.description != null) {
                 return false;
             }
-        } else if (!details.equals(other.details)) {
+        } else if (!description.equals(other.description)) {
             return false;
         }
         if (entityId == null) {
@@ -236,11 +263,18 @@ public class AuditEntry extends AbstractHasModified {
         } else if (!entityType.equals(other.entityType)) {
             return false;
         }
-        if (message == null) {
-            if (other.message != null) {
+        if (fileName == null) {
+            if (other.fileName != null) {
                 return false;
             }
-        } else if (!message.equals(other.message)) {
+        } else if (!fileName.equals(other.fileName)) {
+            return false;
+        }
+        if (fileType == null) {
+            if (other.fileType != null) {
+                return false;
+            }
+        } else if (!fileType.equals(other.fileType)) {
             return false;
         }
         return true;
@@ -253,7 +287,8 @@ public class AuditEntry extends AbstractHasModified {
      */
     public String toLogString() {
 
-        return "AUDIT [entityType=" + entityType + ", entityId=" + entityId + ", message=" + message + ", details=" + details + ", modified=" + getModified() + ", modified=" + getModifiedBy() + "]";
+        return "ARTIFACT [entityType=" + entityType + ", entityId=" + entityId + ", fileName=" + fileName + ", fileType=" + fileType + ", modified=" + getModified() + ", modified=" + getModifiedBy()
+            + "]";
     }
 
     /* see superclass */
