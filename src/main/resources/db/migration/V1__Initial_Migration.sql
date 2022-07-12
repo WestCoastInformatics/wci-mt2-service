@@ -21,6 +21,8 @@ drop table ${pre_if_exists} project_teams ${post_if_exists};
 drop table ${pre_if_exists} discussion_posts ${post_if_exists};
 drop table ${pre_if_exists} discussion_threads ${post_if_exists};
 drop table ${pre_if_exists} discussion_threads_discussion_posts ${post_if_exists};
+drop table ${pre_if_exists} audit_entries ${post_if_exists};
+drop table ${pre_if_exists} artifact_entries ${post_if_exists};
 
 
 CREATE TABLE `editions` (
@@ -359,7 +361,24 @@ CREATE TABLE `audit_entries` (
   `created` datetime(6) NOT NULL,
   `modified` datetime(6) NOT NULL,
   `modifiedBy` varchar(256) NOT NULL,
+  `entityType` varchar(64) DEFAULT NULL,
+  `entityId` varchar(64) DEFAULT NULL,
   `details` varchar(4000) DEFAULT NULL,
   `message` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
+
+CREATE TABLE `artifacts` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `entityType` varchar(64) DEFAULT NULL,
+  `entityId` varchar(64) DEFAULT NULL,
+  `fileName` varchar(500) DEFAULT NULL,
+  `fileType` varchar(10) DEFAULT NULL,
+  `description` varchar(4000) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
+

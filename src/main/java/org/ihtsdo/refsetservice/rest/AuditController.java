@@ -73,7 +73,7 @@ public class AuditController extends BaseController {
         searchParameters.setQuery("id: " + id);
         ResultList<AuditEntry> result = AuditService.searchAuditEntry(searchParameters);
 
-        return new ResponseEntity<>(result.getItems().get(0), HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(result.getItems().get(0));
 
     }
 
@@ -85,19 +85,19 @@ public class AuditController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get auditEntryImpls search results", response = ResultList.class)
+    @ApiOperation(value = "Get audit entries search results", response = ResultList.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataType = "string", paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataType = "int", paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataType = "int", paramType = "query", defaultValue = "0")
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
         // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/audit/search", produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/audit", produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntries(@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         final User authUser = SecurityService.getUserFromSession();
@@ -113,13 +113,13 @@ public class AuditController extends BaseController {
         try {
 
             final ResultList<AuditEntry> results = AuditService.searchAuditEntry(searchParameters);
-            return new ResponseEntity<>(results, HttpStatus.OK);
+            return ResponseEntity.status(HttpStatus.OK).body(results);
 
         } catch (final ResponseStatusException rse) {
             throw rse;
 
         } catch (final Exception e) {
-            logger.error("Error searching auditEntryImpls.  Search criteria: {} ", searchParameters.toString());
+            logger.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
             handleException(e);
             return null;
         }
