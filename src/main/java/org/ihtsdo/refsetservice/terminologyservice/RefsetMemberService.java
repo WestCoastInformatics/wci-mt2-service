@@ -1571,7 +1571,7 @@ public class RefsetMemberService {
         fileLines.append("Edition Branch" + separator + refset.getEdition().getBranch() + "\n");
         fileLines.append("Organization" + separator + refset.getOrganizationName() + "\n");
         fileLines.append("Project" + separator + refset.getProject().getName() + "\n");
-        fileLines.append("Module ID" + separator + refset.getModuleId() + "\n");
+        fileLines.append("Module ID" + separator + refset.getProject().getOrganization().getEdition().getTopLevelModule() + "\n");
         fileLines.append("Refset Version Status" + separator + refset.getVersionStatus() + "\n");
 
         if (refset.getVersionDate() != null) {
