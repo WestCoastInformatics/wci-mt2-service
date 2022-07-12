@@ -22,7 +22,7 @@ drop table ${pre_if_exists} discussion_posts ${post_if_exists};
 drop table ${pre_if_exists} discussion_threads ${post_if_exists};
 drop table ${pre_if_exists} discussion_threads_discussion_posts ${post_if_exists};
 drop table ${pre_if_exists} audit_entries ${post_if_exists};
-drop table ${pre_if_exists} artifact_entries ${post_if_exists};
+drop table ${pre_if_exists} artifacts ${post_if_exists};
 
 
 CREATE TABLE `editions` (
