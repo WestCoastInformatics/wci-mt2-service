@@ -320,12 +320,13 @@ public class TeamController extends BaseController {
         try {
 
             final Team team = TeamService.addUserToTeam(authUser, teamId, email);
-            final Organization organization = team.getOrganization();
-            final User user = new User(); // UserService.getUser();
 
             // add user to crowd groups
             // crowd.unit.test.skip=true
             if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+                final Organization organization = team.getOrganization();
+                final User user = UserService.getUserByEmail(email);
+
                 logger.info("CALLING CROWD API");
                 final String teamsQuery = "teams:" + teamId;
                 final SearchParameters searchParameters = new SearchParameters();
@@ -335,7 +336,7 @@ public class TeamController extends BaseController {
                 if (projectList != null && projectList.getItems() != null) {
                     for (Project project : projectList.getItems()) {
                         for (String role : team.getRoles()) {
-                            final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                            final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
                             CrowdAPIClient.addMembership(groupName, user.getUserName());
                         }
                     }
@@ -394,7 +395,7 @@ public class TeamController extends BaseController {
                 if (projectList != null && projectList.getItems() != null) {
                     for (Project project : projectList.getItems()) {
                         for (String role : team.getRoles()) {
-                            final String groupName = CrowdGroupNameAlgorithm.generateName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                            final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
                             CrowdAPIClient.deleteMembership(groupName, user.getUserName());
                         }
                     }

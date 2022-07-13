@@ -9,18 +9,24 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.util.Set;
+
 import javax.ws.rs.NotFoundException;
 
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 /**
  * The Class UserService.
@@ -45,8 +51,9 @@ public class UserService extends BaseService {
             final User user = service.get(userId, User.class);
 
             if (user == null) {
-                logger.info("Unable to find user for id {}.", userId);
-                throw new NotFoundException();
+                final String message = "Unable to find user for id " + userId + ".";
+                logger.error(message);
+                throw new NotFoundException(message);
             }
 
             if (includeTeams) {
@@ -56,6 +63,29 @@ public class UserService extends BaseService {
                 if (teamsResultList != null && teamsResultList.getItems() != null) {
                     user.getTeams().addAll(teamsResultList.getItems());
                 }
+            }
+
+            return user;
+        }
+    }
+
+    
+    /**
+     * Returns the user by email
+     *
+     * @param email the email
+     * @return the user
+     * @throws Exception the exception
+     */
+    public static User getUserByEmail(final String email) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final User user = service.findSingle("email:" + email, User.class, null);
+            if (user == null) {
+                final String message = "User with " + email + " does not exist.";
+                logger.error(message);
+                throw new NotFoundException(message);
             }
 
             return user;

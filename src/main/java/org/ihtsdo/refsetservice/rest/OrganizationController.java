@@ -13,6 +13,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
@@ -27,10 +28,14 @@ import org.ihtsdo.refsetservice.model.ResultListTeam;
 import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.UserService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -60,6 +65,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Hidden;
 
 /**
  * Controller for /organization endpoints.
@@ -78,6 +84,9 @@ public class OrganizationController extends BaseController {
 
     /** The local icon file directory. */
     private static final String ICON_URL_PREFIX = "user/icon/";
+
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /** The request. */
     @Autowired
@@ -163,7 +172,7 @@ public class OrganizationController extends BaseController {
 
             final ResultList<Organization> results = OrganizationService.searchOrganizations(authUser, searchParameters);
             final ResultList<Organization> resultsWithPermissions = new ResultList<>();
-            
+
             for (Organization organization : results.getItems()) {
 
                 boolean giveViewerRole = false;
@@ -239,25 +248,41 @@ public class OrganizationController extends BaseController {
     public ResponseEntity addOrganization(@RequestBody final Organization organization) throws Exception {
 
         try {
-            
+
             logger.info("Add organization: {}", organization);
             // TODO check permissions, fail if not authorized.
             final User authUser = SecurityService.getUserFromSession();
             if (authUser == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
             }
-            
+
             if (organization == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing organization");
             }
-            
+
             try {
                 organization.validateAdd();
             } catch (final Exception e) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
             }
-            
+
             final Organization org = OrganizationService.createOrganization(authUser, organization);
+
+            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+                logger.info("CALLING CROWD API");
+
+                try {
+                    CrowdAPIClient.addGroup(organization.getEdition().getShortName(), "all", "Organization Admins");
+
+                } catch (Exception e) {
+                    final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
+                    logger.error(errorMessage, e);
+                    return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("");
+                }
+
+            } else {
+                logger.info("SKIP CALLING CROWD API");
+            }
 
             return new ResponseEntity<>(org, HttpStatus.CREATED);
 
@@ -294,18 +319,18 @@ public class OrganizationController extends BaseController {
         }
 
         if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
-            final String errorMessage = "Organization is null or organization id does not match id in URL."; 
+            final String errorMessage = "Organization is null or organization id does not match id in URL.";
             logger.error(errorMessage);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
         }
-        
+
         try {
             organization.validateUpdate(null);
         } catch (final Exception e) {
             logger.error("Bad request for organization update.", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-        
+
         try {
 
             final Organization org = OrganizationService.updateOrganization(authUser, organization);
@@ -638,4 +663,89 @@ public class OrganizationController extends BaseController {
             return null;
         }
     }
+
+    @SuppressWarnings("rawtypes")
+    @Hidden
+    @PostMapping(value = "/organization/{organizationId}/user/{userId}")
+    public ResponseEntity addOrganizationAdminUser(@PathVariable("organizationId") final String organizationId, @PathVariable("userId") final String userId) throws Exception {
+
+        logger.info("Add icon for organization: {}.", organizationId);
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        try {
+
+            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+                // throws not found exception
+                final Organization organization = OrganizationService.getOrganization(organizationId, false);
+
+                // throws not found exception
+                final User user = UserService.getUser(userId, false);
+
+                final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization.getEdition().getShortName(), "all", "admin");
+                CrowdAPIClient.addMembership(groupName, user.getUserName());
+
+            } else {
+                logger.info("SKIP CALLING CROWD API");
+            }
+
+            return new ResponseEntity<>(HttpStatus.CREATED);
+
+        } catch (final NotFoundException nfe) {
+
+            return new ResponseEntity<>(nfe.getMessage(), HttpStatus.NOT_FOUND);
+
+        } catch (final Exception e) {
+
+            logger.error("Trying to edit user icon for organization " + organizationId, e);
+            handleException(e);
+            return null;
+        }
+
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Hidden
+    @DeleteMapping(value = "/organization/{organizationId}/user/{userId}")
+    public ResponseEntity removeOrganizationAdminUser(@PathVariable("organizationId") final String organizationId, @PathVariable("userId") final String userId) throws Exception {
+
+        logger.info("Add icon for organization: {}.", organizationId);
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        try {
+
+            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+                // throws not found exception
+                final Organization organization = OrganizationService.getOrganization(organizationId, false);
+
+                // throws not found exception
+                final User user = UserService.getUser(userId, false);
+
+                final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization.getEdition().getShortName(), "all", "admin");
+                CrowdAPIClient.deleteMembership(groupName, user.getUserName());
+
+            } else {
+                logger.info("SKIP CALLING CROWD API");
+            }
+
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+
+        } catch (final NotFoundException nfe) {
+
+            return new ResponseEntity<>(nfe.getMessage(), HttpStatus.NOT_FOUND);
+
+        } catch (final Exception e) {
+
+            logger.error("Trying to edit user icon for organization " + organizationId, e);
+            handleException(e);
+            return null;
+        }
+
+    }
+
 }

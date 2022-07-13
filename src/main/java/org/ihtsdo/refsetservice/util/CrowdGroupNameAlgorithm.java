@@ -20,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 public class CrowdGroupNameAlgorithm {
 
     /**
-     * Generate name.
+     * Generate crowd group name.
      *
      * @param organizationName the organization name
      * @param projectName the project name
@@ -28,7 +28,7 @@ public class CrowdGroupNameAlgorithm {
      * @return the string
      * @throws Exception the exception
      */
-    public static String generateName(final String organizationName, final String projectName, final String role) throws Exception {
+    public static String generateCrowdGroupName(final String organizationName, final String projectName, final String role) throws Exception {
 
         if (StringUtils.isAnyBlank(organizationName, projectName, role)) {
             throw new Exception("Parameters cannot be empty or null");
@@ -50,7 +50,7 @@ public class CrowdGroupNameAlgorithm {
      * @return the organization string
      * @throws Exception the exception
      */
-    public static String getOrganizationString(final String organizationName) throws Exception {
+    private static String getOrganizationString(final String organizationName) throws Exception {
 
         if (StringUtils.isAnyBlank(organizationName)) {
             throw new Exception("Organization name cannot be null or empty.");
@@ -72,7 +72,7 @@ public class CrowdGroupNameAlgorithm {
             throw new Exception("Project name cannot be null or empty.");
         }
 
-        final String project = Arrays.stream(projectName.trim().split(" ")).map(s -> s.substring(0, 1)).collect(Collectors.joining());
+        final String project = Arrays.stream(projectName.trim().split(" ")).map(s -> s.substring(0, 1)).collect(Collectors.joining()).replaceAll("[^a-zA-Z0-9]", "");
 
         return project.toLowerCase().trim();
     }

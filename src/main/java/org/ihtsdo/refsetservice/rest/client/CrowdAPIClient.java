@@ -90,10 +90,10 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
         final String description = (!StringUtils.isEmpty(projectDescription)) ? projectDescription.trim() : projectName.trim();
 
-        /* {"name": "rt2-test-test-author", "description": "test crowd client", "type": "GROUP" } */
+        /* {"name": "rt2-test-all-author", "description": "test crowd client", "type": "GROUP" } */
         for (String role : ROLES) {
 
-            final String groupName = CrowdGroupNameAlgorithm.generateName(organization, projectName, role);
+            final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, projectName, role);
 
             logger.info("CALL CROWD API url:" + BASE_URL + ADD_GROUP);
             final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
@@ -119,6 +119,55 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                 throw new Exception("The group " + groupName + " could not be created. Received HTTP " + response.getStatus() + " from the API server.");
             }
         }
+    }
+
+    /**
+     * Add admin group for an organization.
+     *
+     * @param organization the organization
+     * @param projectName the project name
+     * @param projectDescription the project description
+     * @throws Exception the exception
+     */
+    public static void addAdminGroup(final String organization, final String adminGroupName, final String description) throws Exception {
+
+        logger.info("Add group {} to organization {} with description of {}", adminGroupName, organization, description);
+
+        if (StringUtils.isBlank(organization)) {
+            throw new Exception("Organization name cannot be empty or null. Received organization: " + organization);
+        }
+
+        if (StringUtils.isEmpty(adminGroupName)) {
+            throw new Exception("Project name cannot be empty or null. Received project: " + adminGroupName);
+        }
+
+        /* {"name": "rt2-test-all-admin", "description": "admin for organization", "type": "GROUP" } */
+        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, "all", "admin");
+
+        logger.info("CALL CROWD API url:" + BASE_URL + ADD_GROUP);
+        final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
+
+        logger.info("CALL CROWD API payload: " + entity);
+        final Response response = post(BASE_URL + ADD_GROUP, entity);
+
+        // 201 Returned if the group is successfully created.
+        // 400 Returned if the group already exists.
+        // 403 Returned if the application is not allowed to create a new group.
+        if (response.getStatus() == 201) {
+            // expected 201 status, error occurred.
+            logger.info("Added group {}", groupName);
+        } else if (response.getStatus() == 400) {
+            // ignore 400 and continue?
+            logger.error("The group " + groupName + " already exists");
+            throw new Exception("The group " + groupName + " already exists");
+        } else if (response.getStatus() == 403) {
+            logger.error("The group " + groupName + " could not be created. Not allowed.");
+            throw new Exception("The group " + groupName + " could not be created. Not allowed.");
+        } else {
+            logger.error("The group " + groupName + " could not be created. Received HTTP " + response.getStatus() + " from the API server.");
+            throw new Exception("The group " + groupName + " could not be created. Received HTTP " + response.getStatus() + " from the API server.");
+        }
+
     }
 
     /**
@@ -274,7 +323,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (response.getStatus() == 204) {
             // return true or something?
         } else if (response.getStatus() == 404) {
-            //throw new Exception("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Group could not be found.");
+            // throw new Exception("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Group could not be found.");
             logger.info("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Group could not be found.");
         } else {
             throw new Exception("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Received HTTP " + response.getStatus() + " from the API server.");
