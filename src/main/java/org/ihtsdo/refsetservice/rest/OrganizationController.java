@@ -666,7 +666,7 @@ public class OrganizationController extends BaseController {
 
     @SuppressWarnings("rawtypes")
     @Hidden
-    @PostMapping(value = "/organization/{organizationId}/user/{userId}")
+    @PostMapping(value = "/organization/{organizationId}/user/{userId}/temp")
     public ResponseEntity addOrganizationAdminUser(@PathVariable("organizationId") final String organizationId, @PathVariable("userId") final String userId) throws Exception {
 
         logger.info("Add icon for organization: {}.", organizationId);
@@ -708,7 +708,7 @@ public class OrganizationController extends BaseController {
 
     @SuppressWarnings("rawtypes")
     @Hidden
-    @DeleteMapping(value = "/organization/{organizationId}/user/{userId}")
+    @DeleteMapping(value = "/organization/{organizationId}/user/{userId}/temp")
     public ResponseEntity removeOrganizationAdminUser(@PathVariable("organizationId") final String organizationId, @PathVariable("userId") final String userId) throws Exception {
 
         logger.info("Add icon for organization: {}.", organizationId);
