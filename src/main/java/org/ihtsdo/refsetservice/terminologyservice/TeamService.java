@@ -484,6 +484,23 @@ public class TeamService extends BaseService {
     }
     
     /**
+     * Check if this is a special organization level team
+     *
+     * @param user the user
+     * @param team the team
+     * @return is this a special organization level team
+     * @throws Exception the exception
+     */
+    public static boolean isOrganizationTeam(final Team team) throws Exception {
+        
+        if (team.getName().startsWith("rt2-snomedct") && team.getName().endsWith("-all-admin")) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    /**
      * Throw an exception if a user can't edit a team.
      *
      * @param user the user
@@ -505,6 +522,7 @@ public class TeamService extends BaseService {
      *
      * @param user the user
      * @param team the team
+     * @return can the user edit the team
      * @throws Exception the exception
      */
     public static boolean canUserEditTeam(final User user, final Team team) throws Exception {
@@ -524,6 +542,7 @@ public class TeamService extends BaseService {
      *
      * @param user the user
      * @param team the team
+     * @return can the user view the team
      * @throws Exception the exception
      */
     public static boolean canUserViewTeam(final User user, final Team team) throws Exception {

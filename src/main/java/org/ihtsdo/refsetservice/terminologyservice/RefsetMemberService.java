@@ -691,10 +691,10 @@ public class RefsetMemberService {
         final String languageId, final String fileNameDate, final String startEffectiveTime,
         final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames)
         throws Exception {
-        // TODO: Turn this into a method variable
+        
         final Set<String> dates = new HashSet<>();
-
         dates.add(transientEffectiveTime);
+        
         if (startEffectiveTime != null) {
             dates.add(startEffectiveTime);
         }
@@ -831,8 +831,7 @@ public class RefsetMemberService {
 
         try (final TerminologyService service = new TerminologyService()) {
             
-            final Refset refset = service.get(refsetInternalId, Refset.class);
-            RefsetService.setRefsetPermissions(user, refset);
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
             if (refset == null) {
                 throw new Exception("Refset Internal Id: " + refsetInternalId
@@ -882,7 +881,16 @@ public class RefsetMemberService {
                     
                     dates.clear();
                     dates.add(versionInScope.replaceAll("-", ""));
-
+                    
+                    Refset refsetVersion = refset;
+                    
+                    try {
+                        refsetVersion = RefsetService.getRefset(service, user, refset.getRefsetId(), versionInScope);
+                    
+                    } catch (Exception ex) {
+                        // N/A
+                    }
+                    
                     String awsVersionedPath = exporter.generateAwsBaseVersionPath(refset, "DELTA-SNAPSHOT", dates);
 
                     String rt2VersionFileName = exporter.generateRt2VersionFileName(refset, "SNAPSHOT", languageId, dates, exportMetadata, withNames);
@@ -897,8 +905,8 @@ public class RefsetMemberService {
                     if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
                         
                         // Base-SnowVersion file is not on S3, so generate it, and after downloading it, store it on S3
-                        final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId() + "\"],  \"branchPath\": \"" + refset.getEdition().getBranch() + "/"
-                                + versionInScope + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
+                        final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId() + "\"],  \"branchPath\": \"" + refsetVersion.getBranchPath()
+                                + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
                                 + versionInScope.replaceAll("-", "") + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
                                 + (versionInScope == null ? "" : ",  \"startEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"")
                                 + (versionInScope == null ? "" : ",  \"transientEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"") + "}";
