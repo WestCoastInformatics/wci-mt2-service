@@ -9,9 +9,12 @@
  */
 package org.ihtsdo.refsetservice.model;
 
+import java.util.Date;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
@@ -20,6 +23,8 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextFi
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -50,12 +55,20 @@ public class Artifact extends AbstractHasModified {
     private String fileName;
 
     /** The fileName. */
+    @Column(nullable = false, length = 500)
+    private String storedFileName;
+
+    /** The fileName. */
     @Column(nullable = false, length = 10)
     private String fileType;
 
     /** The fileType. */
     @Column(nullable = true, length = 4000)
     private String description;
+    
+    /**  URL for artifact download. */
+    @Transient
+    private String downloadUrl;
 
     /**
      * Instantiates an empty {@link Artifact}.
@@ -68,6 +81,8 @@ public class Artifact extends AbstractHasModified {
     /**
      * Instantiates a {@link Artifact} from the specified parameters.
      *
+     * @param entityType the entity type
+     * @param entityId the entity id
      * @param fileName the file name
      * @param fileType the file type
      * @param description the description
@@ -112,7 +127,7 @@ public class Artifact extends AbstractHasModified {
      *
      * @return the entityType
      */
-
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getEntityType() {
 
         return entityType;
@@ -123,7 +138,6 @@ public class Artifact extends AbstractHasModified {
      *
      * @param entityType the entityType to set
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public void setEntityType(String entityType) {
 
         this.entityType = entityType;
@@ -173,11 +187,33 @@ public class Artifact extends AbstractHasModified {
     }
 
     /**
+     * Returns the stored fileName.
+     *
+     * @return the fileName
+     */
+    @JsonIgnore
+    public String getStoredFileName() {
+
+        return storedFileName;
+    }
+
+    /**
+     * Sets the fileName.
+     *
+     * @param storedFileName the stored file name
+     */
+    public void setStoredFileName(final String storedFileName) {
+
+        this.storedFileName = storedFileName;
+    }
+
+    /**
      * Returns the fileType.
      *
      * @return the fileType
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "fileTypeSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getFileType() {
 
         return fileType;
@@ -198,7 +234,8 @@ public class Artifact extends AbstractHasModified {
      *
      * @return the description
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "descriptionSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getDescription() {
 
         return description;
@@ -213,6 +250,28 @@ public class Artifact extends AbstractHasModified {
 
         this.description = description;
     }
+    
+    
+    /**
+     * Sets the download url.
+     *
+     * @param downloadUrl the download url
+     */
+    public void setDownloadUrl(final String downloadUrl) {
+        this.downloadUrl = downloadUrl;
+    }
+    
+    /**
+     * Returns the download url.
+     *
+     * @return the download url
+     */
+    @JsonGetter()
+    public String getDownloadUrl() {
+        return downloadUrl;
+    }
+    
+    
 
     /* see superclass */
     @Override
@@ -225,6 +284,7 @@ public class Artifact extends AbstractHasModified {
         result = prime * result + ((entityType == null) ? 0 : entityType.hashCode());
         result = prime * result + ((fileName == null) ? 0 : fileName.hashCode());
         result = prime * result + ((fileType == null) ? 0 : fileType.hashCode());
+        result = prime * result + ((storedFileName == null) ? 0 : storedFileName.hashCode());
         return result;
     }
 
@@ -277,6 +337,13 @@ public class Artifact extends AbstractHasModified {
         } else if (!fileType.equals(other.fileType)) {
             return false;
         }
+        if (storedFileName == null) {
+            if (other.storedFileName != null) {
+                return false;
+            }
+        } else if (!storedFileName.equals(other.storedFileName)) {
+            return false;
+        }
         return true;
     }
 
@@ -288,7 +355,7 @@ public class Artifact extends AbstractHasModified {
     public String toLogString() {
 
         return "ARTIFACT [entityType=" + entityType + ", entityId=" + entityId + ", fileName=" + fileName + ", fileType=" + fileType + ", modified=" + getModified() + ", modified=" + getModifiedBy()
-            + "]";
+            + ", storedFileName=" + storedFileName + "]";
     }
 
     /* see superclass */

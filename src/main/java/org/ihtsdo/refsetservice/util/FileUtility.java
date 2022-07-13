@@ -364,7 +364,7 @@ public final class FileUtility {
         final int maxFileSize = -1;
         final List<String> fileTypes = new ArrayList<>();
         
-        final File file = saveCachedFile(inputFile, fileName, SERVER_ICON_DIR, S3ConnectionWrapper.getAwsArtifactPath(), maxFileSize, fileTypes, fileNameToDelete);
+        final File file = saveCachedFile(inputFile, fileName, SERVER_ARTIFACT_DIR, S3ConnectionWrapper.getAwsArtifactPath(), maxFileSize, fileTypes, fileNameToDelete);
        
         return file;
     }

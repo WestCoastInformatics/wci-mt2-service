@@ -53,18 +53,34 @@ public class AuditService {
     }
 
     /**
-     * Search audit entries.
+     * Find audit entries.
      *
      * @param searchParameters the search parameters
      * @return the result list ResultList of audit entries
      * @throws Exception the exception
      */
-    public static ResultList<AuditEntry> searchAuditEntry(final SearchParameters searchParameters) throws Exception {
+    public static ResultList<AuditEntry> findAuditEntries(final SearchParameters searchParameters) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final PfsParameter pfs = new PfsParameter();
-            pfs.setAscending(false);
+            if (searchParameters.getOffset() != null) {
+                pfs.setOffset(searchParameters.getOffset());
+            }
+
+            if (searchParameters.getLimit() != null) {
+                pfs.setLimit(searchParameters.getLimit());
+            }
+
+            if (searchParameters.getSortAscending() != null) {
+                pfs.setAscending(searchParameters.getSortAscending());
+            } else {
+                pfs.setAscending(false);
+            }
+
+            if (searchParameters.getSort() != null) {
+                pfs.setSort(searchParameters.getSort());
+            }
 
             final ResultList<AuditEntry> results = service.find(searchParameters.getQuery(), pfs, AuditEntry.class, null);
 
