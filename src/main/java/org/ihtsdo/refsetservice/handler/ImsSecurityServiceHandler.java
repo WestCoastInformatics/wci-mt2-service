@@ -159,7 +159,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             if (user.getUserName().equals("twhalen") || user.getUserName().equals("twilliams2")) {
                 
                 Set<String> timRoles = new HashSet<>();
-                timRoles.add("be-all-author");
+                timRoles.add("be-all-all");
                 user.setRoles(timRoles);
             }
 

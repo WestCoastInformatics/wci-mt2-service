@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -29,6 +30,8 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 /**
  * The Class ProjectService.
@@ -50,19 +53,20 @@ public class ProjectService extends BaseService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final Project localProject = (Project) project;
+            RefsetService.setProjectPermissions(user, project);
+            checkPermissions(user, project);
 
-            localProject.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(localProject.getName()));
+            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            service.add(localProject);
-            service.add(AuditEntryHelper.newProjectEntry(localProject));
+            service.add(project);
+            service.add(AuditEntryHelper.newProjectEntry(project));
             service.commit();
 
             // Return the response
-            return localProject;
+            return project;
         }
     }
 
@@ -176,7 +180,7 @@ public class ProjectService extends BaseService {
             final List<Project> projectList = new ArrayList<>(results.getItems());
 
             for (Project project : projectList) {
-                project = setProjectPermissions(user, project);
+                project = RefsetService.setProjectPermissions(user, project);
                 if (!project.getRoles().contains(User.ROLE_VIEWER)) {
                     results.getItems().remove(project);
                 }
@@ -200,26 +204,24 @@ public class ProjectService extends BaseService {
         try (final TerminologyService service = new TerminologyService()) {
 
             // Find the project
-            final Project original = service.get(projectId, Project.class);
-
-            if (original == null) {
-                logger.info("Unable to find project for id {}.", projectId);
-                throw new NotFoundException();
-            }
+            final Project existingProject = getProject(projectId, true);
+            
+            RefsetService.setProjectPermissions(user, existingProject);
+            checkPermissions(user, project);
 
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
             // Apply changes
-            original.patchFrom(project);
+            existingProject.patchFrom(project);
 
             // Update
-            service.update(original);
-            service.add(AuditEntryHelper.updateProjectEntry(original));
+            service.update(existingProject);
+            service.add(AuditEntryHelper.updateProjectEntry(existingProject));
             service.commit();
 
-            return original;
+            return existingProject;
         }
     }
 
@@ -235,11 +237,10 @@ public class ProjectService extends BaseService {
         try (final TerminologyService service = new TerminologyService()) {
 
             // Find the object
-            final Project project = service.get(projectId, Project.class);
-            if (project == null) {
-                logger.info("Unable to find project for id {}.", projectId);
-                throw new NotFoundException();
-            }
+            final Project project = getProject(projectId, true);
+            
+            RefsetService.setProjectPermissions(user, project);
+            checkPermissions(user, project);
 
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
@@ -276,61 +277,21 @@ public class ProjectService extends BaseService {
             service.commit();
         }
     }
-
+    
     /**
-     * Set the user permissions for a refset.
+     * Check if a user can edit a project.
      *
      * @param user the user
      * @param project the project
-     * @return the refset with permissions
      * @throws Exception the exception
      */
-    public static Project setProjectPermissions(final User user, final Project project) throws Exception {
-
-        final List<String> roles = project.getRoles();
-        setRoles(user, project, roles);
-        project.setRoles(roles);
-
-        return project;
+    public static void checkPermissions(final User user, final Project project) throws Exception {
+        
+        if (!project.getRoles().contains(User.ROLE_ADMIN)) {
+            
+            logger.error("User does not have permission to edit this project.");
+            throw new ForbiddenException("User does not have permission to edit this project.");
+        }
+        
     }
-
-    /**
-     * set the list of roles a user has for a project.
-     *
-     * @param user the user
-     * @param project the project
-     * @param roles the role list to populate
-     * @return the list of roles for the project
-     * @throws Exception the exception
-     */
-    private static List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception {
-
-        boolean giveViewerRole = false;
-
-        if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
-
-            roles.add(User.ROLE_AUTHOR);
-            giveViewerRole = true;
-        }
-
-        if (user.doesUserHavePermission(User.ROLE_REVIEWER, project)) {
-
-            roles.add(User.ROLE_REVIEWER);
-            giveViewerRole = true;
-        }
-
-        if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
-
-            roles.add(User.ROLE_ADMIN);
-            giveViewerRole = true;
-        }
-
-        if (user.doesUserHavePermission(User.ROLE_VIEWER, project) || giveViewerRole) {
-
-            roles.add(User.ROLE_VIEWER);
-        }
-
-        return roles;
-    }
-
 }

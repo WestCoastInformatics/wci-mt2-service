@@ -203,7 +203,7 @@ public class OrganizationController extends BaseController {
                     }
                 }
 
-                if (giveViewerRole) {
+                if (roles.contains(User.ROLE_VIEWER)) {
                     resultsWithPermissions.getItems().add(organization);
                 }
             }

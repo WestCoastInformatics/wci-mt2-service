@@ -394,14 +394,39 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      * @throws Exception the exception
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Project project) throws Exception {
+        return checkPermission(roleToCheck, project.getOrganization().getEdition(), project.getCrowdProjectId());
+    }
+
+    /**
+     * Check if the user has the specified role on the organization.
+     *
+     * @param roleToCheck the role to look for
+     * @param organization the organization
+     * @return if the user has the specified role on the refset
+     * @throws Exception the exception
+     */
+    public boolean doesUserHavePermission(final String roleToCheck, final Organization organization) throws Exception {
+        return checkPermission(roleToCheck, organization.getEdition(), null);
+    }
+    
+    /**
+     * Check if the user has the specified role on the organization or project.
+     *
+     * @param roleToCheck the role to look for
+     * @param edition the edition to check permissions against
+     * @param projectCrowdId the crowd ID of the project to check permissions against or null for org level permission
+     * @return if the user has the specified role on the refset
+     * @throws Exception the exception
+     */
+    public boolean checkPermission(final String roleToCheck, final Edition edition, final String projectCrowdId) throws Exception {
 
         try {
 
-            String editionName = project.getOrganization().getEdition().getShortName();
+            String editionName = edition.getShortName();
 
             // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
 
-            if (!project.getOrganization().getEdition().getShortName().equals("SNOMEDCT")) {
+            if (!edition.getShortName().equals("SNOMEDCT")) {
                 editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
             } else {
                 editionName = "main";
@@ -420,11 +445,10 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                 if (editionPart.equals("all") || editionPart.equals(editionName)) {
 
                     final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
-                    final String projectName = project.getName().toLowerCase().replace(" ", "_");
                     // logger.debug("doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
 
-                    // then check the project level permissions
-                    if (projectPart.equals("all") || projectPart.equals(projectName)) {
+                    // then check the project level permissions against 1: all access, 2: org level viewer, 3: project level project name
+                    if (projectPart.equals("all") || (projectCrowdId == null && roleToCheck.equals(ROLE_VIEWER)) || (projectCrowdId != null && projectPart.equals(projectCrowdId))) {
 
                         // logger.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
 
@@ -434,56 +458,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                             // logger.debug("doesUserHavePermission = true");
                             return true;
                         }
-                    }
-                }
-            }
-
-        } catch (Exception e) {
-            return false;
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if the user has the specified role on the organization.
-     *
-     * @param roleToCheck the role to look for
-     * @param organization the organization
-     * @return if the user has the specified role on the refset
-     * @throws Exception the exception
-     */
-    public boolean doesUserHavePermission(final String roleToCheck, final Organization organization) throws Exception {
-
-        try {
-
-            String editionName = organization.getEdition().getShortName();
-
-            // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
-
-            if (!organization.getEdition().getShortName().equals("SNOMEDCT")) {
-                editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
-            } else {
-                editionName = "main";
-            }
-
-            final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
-
-            for (final String role : roles) {
-
-                final String lowerCasedRole = role.toLowerCase();
-                final int indexFirstHyphen = lowerCasedRole.indexOf("-");
-                final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
-                // logger.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
-
-                // first check the edition permissions
-                if (editionPart.equals("all") || editionPart.equals(editionName)) {
-
-                    // last check for the role or if they have any permission at this level they have the VIEWER role
-                    if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
-
-                        // logger.debug("doesUserHavePermission = true");
-                        return true;
                     }
                 }
             }

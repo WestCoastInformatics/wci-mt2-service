@@ -26,6 +26,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -321,14 +322,13 @@ public class ProjectController extends BaseController {
 
         logger.info("Inactivate project: {}", id);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        final User user = SecurityService.getUserFromSession();
+        final Project project = ProjectService.getProject(id, false);
+        
 
         try {
 
-            ProjectService.inactivateProject(authUser, id);
+            ProjectService.inactivateProject(user, id);
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
         } catch (final NotFoundException nfe) {
