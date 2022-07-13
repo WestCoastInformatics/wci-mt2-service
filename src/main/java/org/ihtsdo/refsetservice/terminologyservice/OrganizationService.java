@@ -9,6 +9,8 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.util.Properties;
+
 import javax.ws.rs.NotFoundException;
 
 import org.ihtsdo.refsetservice.model.Organization;
@@ -16,16 +18,20 @@ import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.IndexUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 /**
  * The Class OrganizationService.
@@ -34,6 +40,9 @@ public class OrganizationService extends BaseService {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(OrganizationService.class);
+
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /**
      * Creates the organization.
@@ -58,9 +67,35 @@ public class OrganizationService extends BaseService {
             service.add(AuditEntryHelper.newOrganizationEntry(org));
             service.commit();
 
+            // create admin team when creating an organization
+            final Team adminTeam = new Team();
+            adminTeam.setDescription("Application users which can administrator organization " + organization.getName());
+            adminTeam.setName("Administrator(s) for organization " + organization.getName());
+            adminTeam.setPrimaryContactEmail(organization.getPrimaryContactEmail());
+            adminTeam.getMemberList().add(user);
+            adminTeam.setOrganization(org);
+            TeamService.createTeam(user, adminTeam);
+
+            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+                logger.info("CALLING CROWD API");
+
+                try {
+                    final String crowdGroupName = CrowdAPIClient.addAdminGroup(org.getEdition().getShortName(), "Organization Administrator(s)");
+                    CrowdAPIClient.addMembership(crowdGroupName, user.getUserName());
+
+                } catch (Exception e) {
+
+                    final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
+                    logger.error(errorMessage, e);
+                    throw new RestException(false, HttpStatus.EXPECTATION_FAILED, e.getMessage(), "Error creating organization.");
+                }
+
+            } else {
+                logger.info("SKIP CALLING CROWD API");
+            }
+
             return org;
         }
-
     }
 
     /**

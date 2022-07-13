@@ -129,20 +129,16 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @param projectDescription the project description
      * @throws Exception the exception
      */
-    public static void addAdminGroup(final String organization, final String adminGroupName, final String description) throws Exception {
+    public static String addAdminGroup(final String organization, final String description) throws Exception {
 
-        logger.info("Add group {} to organization {} with description of {}", adminGroupName, organization, description);
+        logger.info("Add group {} to organization {} with description of {}", "all", organization, description);
 
         if (StringUtils.isBlank(organization)) {
             throw new Exception("Organization name cannot be empty or null. Received organization: " + organization);
         }
 
-        if (StringUtils.isEmpty(adminGroupName)) {
-            throw new Exception("Project name cannot be empty or null. Received project: " + adminGroupName);
-        }
-
         /* {"name": "rt2-test-all-admin", "description": "admin for organization", "type": "GROUP" } */
-        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, "all", "admin");
+        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, "all", "admin", true);
 
         logger.info("CALL CROWD API url:" + BASE_URL + ADD_GROUP);
         final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
@@ -159,7 +155,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         } else if (response.getStatus() == 400) {
             // ignore 400 and continue?
             logger.error("The group " + groupName + " already exists");
-            throw new Exception("The group " + groupName + " already exists");
+            // throw new Exception("The group " + groupName + " already exists");
         } else if (response.getStatus() == 403) {
             logger.error("The group " + groupName + " could not be created. Not allowed.");
             throw new Exception("The group " + groupName + " could not be created. Not allowed.");
@@ -168,6 +164,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             throw new Exception("The group " + groupName + " could not be created. Received HTTP " + response.getStatus() + " from the API server.");
         }
 
+        return groupName;
     }
 
     /**

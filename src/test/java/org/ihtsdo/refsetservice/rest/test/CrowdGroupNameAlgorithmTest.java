@@ -34,25 +34,25 @@ public class CrowdGroupNameAlgorithmTest {
     public void testGenerateName() throws Exception {
 
         String result = "";
-        result = CrowdGroupNameAlgorithm.generateName("SNOMEDCT-WCI", "WCI Testing Project", "author");
+        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("SNOMEDCT-WCI", "WCI Testing Project", "author");
         assertThat(result).isEqualTo("rt2-snomedctwci-wtp-author");
 
-        result = CrowdGroupNameAlgorithm.generateName("SNOMEDCT-AT", "WCI Testing Project", "admin");
+        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("SNOMEDCT-AT", "WCI Testing Project", "admin");
         assertThat(result).isEqualTo("rt2-snomedctat-wtp-admin");
 
-        result = CrowdGroupNameAlgorithm.generateName("SNOMEDCT-BE", "Belgian Edition Upgrade dedicated UAT Training Project", "reviewer");
+        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("SNOMEDCT-BE", "Belgian Edition Upgrade dedicated UAT Training Project", "reviewer");
         assertThat(result).isEqualTo("rt2-snomedctbe-beudutp-reviewer");
 
         assertThrows(Exception.class, () -> {
-            CrowdGroupNameAlgorithm.generateName(" ", " ", " ");
+            CrowdGroupNameAlgorithm.generateCrowdGroupName(" ", " ", " ");
         });
 
         assertThrows(Exception.class, () -> {
-            CrowdGroupNameAlgorithm.generateName(" ", " b ", " ");
+            CrowdGroupNameAlgorithm.generateCrowdGroupName(" ", " b ", " ");
         });
 
         assertThrows(Exception.class, () -> {
-            CrowdGroupNameAlgorithm.generateName(" a ", "  ", " ");
+            CrowdGroupNameAlgorithm.generateCrowdGroupName(" a ", "  ", " ");
         });
 
     }
