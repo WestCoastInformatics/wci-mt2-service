@@ -102,11 +102,11 @@ public class ExportHandler {
 
         if ("snapshot".equals(type.toLowerCase())) {
 
-            name = "der2_Refset_" + StringUtility.camelCase(refset.getName()) + "ActiveSnapshot" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0];
+            name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-")) + "ActiveSnapshot" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0];
 
         } else {
 
-            name = "der2_Refset_" + StringUtility.camelCase(refset.getName()) + "Delta" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0] + "_"
+            name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-")) + "Delta" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0] + "_"
                 + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
         }
 
