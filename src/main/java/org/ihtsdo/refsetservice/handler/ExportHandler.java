@@ -69,7 +69,7 @@ public class ExportHandler {
     public String generateRt2VersionFileName(Refset refset, String type, String languageId, Set<String> dates, boolean exportMetadata, boolean withNames) throws Exception {
 
         // RT2-1037
-        // der2_Refset_<refset_name_in_camelcase><ActiveSnapshot|Delta><CountryCode><Namespace>_<PublicationDate>.txt
+        // der2_Refset_<refset_name_in_camelcase><Snapshot|Delta><CountryCode><Namespace>_<PublicationDate>.txt
 
         if ((type.toLowerCase().contains("snapshot") && dates.size() != 1)
             // if (("snapshot".equals(type.toLowerCase()) &&
@@ -102,7 +102,7 @@ public class ExportHandler {
 
         if ("snapshot".equals(type.toLowerCase())) {
 
-            name = "der2_Refset_" + StringUtility.camelCase(refset.getName()) + "ActiveSnapshot" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0];
+            name = "der2_Refset_" + StringUtility.camelCase(refset.getName()) + "Snapshot" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0];
 
         } else {
 
