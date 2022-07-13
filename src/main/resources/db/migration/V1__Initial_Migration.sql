@@ -377,6 +377,7 @@ CREATE TABLE `artifacts` (
   `entityType` varchar(64) DEFAULT NULL,
   `entityId` varchar(64) DEFAULT NULL,
   `fileName` varchar(500) DEFAULT NULL,
+  `storedFileName` varchar(500) DEFAULT NULL,
   `fileType` varchar(10) DEFAULT NULL,
   `description` varchar(4000) DEFAULT NULL,
   PRIMARY KEY (`id`)

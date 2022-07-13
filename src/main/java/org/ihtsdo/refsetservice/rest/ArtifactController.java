@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Artifact;
 import org.ihtsdo.refsetservice.model.User;
@@ -32,10 +34,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -79,95 +81,22 @@ public class ArtifactController extends BaseController {
 
         logger.info("Get artifact entry: {}", id);
 
-        final SearchParameters searchParameters = new SearchParameters();
-        searchParameters.setQuery("id: " + id);
-        ResultList<Artifact> result = ArtifactService.searchArtifact(searchParameters);
-
-        return new ResponseEntity<>(result.getItems().get(0), HttpStatus.OK);
-
-    }
-
-    /**
-     * Adds the artifact.
-     *
-     * @param artifact the artifact entry
-     * @param inputFile the input file
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Add artifact")
-    @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Saveed icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @RecordMetric
-    @PostMapping(value = "/artifact")
-    public ResponseEntity addArtifact(@RequestBody final Artifact artifact, @RequestParam("file") final MultipartFile inputFile) throws Exception {
-
-        logger.info("Add artifact: " + artifact);
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
-        }
-
         try {
 
-            final File file = FileUtility.saveArtifactFile(inputFile, "artifact", null);
-            artifact.setFileName(file.getCanonicalFile().toString());
+            final Artifact artifact = ArtifactService.getArtifact(id);
 
-            final Artifact newArtifact = ArtifactService.addArtifact(authUser, artifact);
+            return new ResponseEntity<>(artifact, HttpStatus.OK);
 
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(newArtifact);
+        } catch (final ResponseStatusException rse) {
+            logger.error("Error getting artifactd  {}.", id);
+            throw rse;
 
         } catch (final Exception e) {
-
-            logger.error("Trying to add artifact " + artifact, e);
+            logger.error("Error getting artifactd  {}.", id);
             handleException(e);
             return null;
         }
-    }
 
-    /**
-     * Download the artifact.
-     *
-     * @param artifact the artifact entry
-     * @param inputFile the input file
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Download artifact")
-    @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Saveed icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @RecordMetric
-    @PostMapping(value = "/artifact/{id}")
-    public ResponseEntity addArtifact(@PathVariable("id") final String id) throws Exception {
-
-        logger.info("Download artifact: " + id);
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
-        }
-
-        try {
-
-            final Artifact artifact = ArtifactService.getAudit(id);
-            final Resource file = FileUtility.getArtifactFile(artifact.getFileName());
-
-            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
-                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath())).contentLength(file.contentLength()).body(file);
-
-        } catch (final Exception e) {
-
-            logger.error("Trying to download artifact for id:" + id + ".", e);
-            handleException(e);
-            return null;
-        }
     }
 
     /**
@@ -187,11 +116,10 @@ public class ArtifactController extends BaseController {
         @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
         @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
         @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-        // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/artifact", produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<ResultList<Artifact>> searchArtifactEntries(@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<Artifact>> findArtifacts(@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         final User authUser = SecurityService.getUserFromSession();
         if (authUser == null) {
@@ -205,16 +133,125 @@ public class ArtifactController extends BaseController {
 
         try {
 
-            final ResultList<Artifact> results = ArtifactService.searchArtifact(searchParameters);
+            final ResultList<Artifact> results = ArtifactService.findArtifacts(searchParameters);
+
+            if (results != null && results.getItems() != null && !results.getItems().isEmpty()) {
+                for (final Artifact artifact : results.getItems()) {
+                    artifact.setDownloadUrl("/artifact/" + artifact.getId() + "/file");
+                }
+            }
+
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final ResponseStatusException rse) {
             throw rse;
 
         } catch (final Exception e) {
-            logger.error("Error searching artifactImpls.  Search criteria: {} ", searchParameters.toString());
+            logger.error("Error searching artifacts.  Search criteria: {} ", searchParameters.toString());
             handleException(e);
             return null;
         }
     }
+
+    /**
+     * Adds the artifact.
+     *
+     * @param artifact the artifact entry
+     * @param inputFile the input file
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Add artifact")
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Saveed icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @PostMapping(value = "/artifact")
+    public ResponseEntity addArtifact(@RequestParam final String artifact, @RequestParam("file") final MultipartFile inputFile) throws Exception {
+
+        logger.info("Add artifact: " + artifact);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
+        }
+
+        try {
+
+            final Artifact artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+
+            final File file = FileUtility.saveArtifactFile(inputFile, artifactEntry.getEntityType() + "-" + artifactEntry.getEntityId(), null);
+
+            artifactEntry.setStoredFileName(file.getName());
+            artifactEntry.setFileName(inputFile.getOriginalFilename());
+
+            final String fileType = (FilenameUtils.getExtension(file.getCanonicalFile().toString()));
+            if (StringUtils.isNotBlank(fileType)) {
+                artifactEntry.setFileType(fileType.toUpperCase());
+            }
+
+            final Artifact newArtifact = ArtifactService.addArtifact(authUser, artifactEntry);
+
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(newArtifact);
+
+        } catch (final Exception e) {
+
+            logger.error("Trying to add artifact " + artifact, e);
+            handleException(e);
+            return null;
+        }
+    }
+
+    /**
+     * Download artifact.
+     *
+     * @param id the id
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Download artifact")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Retrieved artifact"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @GetMapping(value = "/artifact/{id}/file")
+    public ResponseEntity<Resource> downloadArtifact(@PathVariable("id") final String id) throws Exception {
+
+        logger.info("Download artifact: " + id);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        try {
+
+            final Artifact artifact = ArtifactService.getArtifact(id);
+            if (artifact == null) {
+                logger.info("Artifact: " + id + " not found.");
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final Resource file = FileUtility.getArtifactFile(artifact.getStoredFileName());
+
+            if (file == null) {
+                logger.error("Artifact: file " + artifact.getStoredFileName() + " not found.");
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath())).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + artifact.getFileName() + "\"")
+                .contentLength(file.contentLength()).body(file);
+
+        } catch (final Exception e) {
+
+            logger.error("Trying to download artifact for id:" + id + ".", e);
+            handleException(e);
+            return null;
+        }
+    }
+
 }

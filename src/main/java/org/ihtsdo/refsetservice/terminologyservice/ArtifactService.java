@@ -40,7 +40,7 @@ public class ArtifactService {
      * @return the artifact
      * @throws Exception the exception
      */
-    public static Artifact getAudit(final String id) throws Exception {
+    public static Artifact getArtifact(final String id) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -54,18 +54,35 @@ public class ArtifactService {
     }
 
     /**
-     * Search artifact entries.
+     * Find artifact entries.
      *
      * @param searchParameters the search parameters
      * @return the result list ResultList of artifact entries
      * @throws Exception the exception
      */
-    public static ResultList<Artifact> searchArtifact(final SearchParameters searchParameters) throws Exception {
+    public static ResultList<Artifact> findArtifacts(final SearchParameters searchParameters) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final PfsParameter pfs = new PfsParameter();
-            pfs.setAscending(false);
+
+            if (searchParameters.getOffset() != null) {
+                pfs.setOffset(searchParameters.getOffset());
+            }
+
+            if (searchParameters.getLimit() != null) {
+                pfs.setLimit(searchParameters.getLimit());
+            }
+
+            if (searchParameters.getSortAscending() != null) {
+                pfs.setAscending(searchParameters.getSortAscending());
+            } else {
+                pfs.setAscending(false);
+            }
+
+            if (searchParameters.getSort() != null) {
+                pfs.setSort(searchParameters.getSort());
+            }
 
             final ResultList<Artifact> results = service.find(searchParameters.getQuery(), pfs, Artifact.class, null);
 
@@ -90,7 +107,7 @@ public class ArtifactService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getId());
+            service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 

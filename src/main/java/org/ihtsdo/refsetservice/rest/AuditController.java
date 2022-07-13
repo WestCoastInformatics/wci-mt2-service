@@ -71,7 +71,7 @@ public class AuditController extends BaseController {
 
         final SearchParameters searchParameters = new SearchParameters();
         searchParameters.setQuery("id: " + id);
-        ResultList<AuditEntry> result = AuditService.searchAuditEntry(searchParameters);
+        ResultList<AuditEntry> result = AuditService.findAuditEntries(searchParameters);
 
         return ResponseEntity.status(HttpStatus.OK).body(result.getItems().get(0));
 
@@ -94,7 +94,6 @@ public class AuditController extends BaseController {
         @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
         @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
         @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-        // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/audit", produces = MediaType.APPLICATION_JSON)
@@ -112,7 +111,7 @@ public class AuditController extends BaseController {
 
         try {
 
-            final ResultList<AuditEntry> results = AuditService.searchAuditEntry(searchParameters);
+            final ResultList<AuditEntry> results = AuditService.findAuditEntries(searchParameters);
             return ResponseEntity.status(HttpStatus.OK).body(results);
 
         } catch (final ResponseStatusException rse) {
