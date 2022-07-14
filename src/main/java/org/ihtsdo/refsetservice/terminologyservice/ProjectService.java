@@ -207,7 +207,7 @@ public class ProjectService extends BaseService {
             final Project existingProject = getProject(projectId, true);
             
             RefsetService.setProjectPermissions(user, existingProject);
-            checkPermissions(user, project);
+            checkPermissions(user, existingProject);
 
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);

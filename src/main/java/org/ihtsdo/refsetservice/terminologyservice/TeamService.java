@@ -16,6 +16,7 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -27,8 +28,10 @@ import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.IndexUtility;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -40,6 +43,9 @@ public class TeamService extends BaseService {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(TeamService.class);
+    
+    /** The name prefix for organization level teams. */
+    public static String organizationLevelTeamPrefix = "Application users which can administrator organization ";
 
     /**
      * Creates the team.
@@ -56,6 +62,7 @@ public class TeamService extends BaseService {
             final Team newTeam = new Team(team);
             newTeam.getRoles().clear();
             checkEditPermissions(user, newTeam);
+            validateTeamData(service, newTeam, true);
            
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
@@ -66,6 +73,59 @@ public class TeamService extends BaseService {
             service.commit();
 
             return team;
+        }
+    }
+    
+    /**
+     * Validate team data.
+     *
+     * @param user the user
+     * @param team the team
+     * @return the team
+     * @throws Exception the exception
+     */
+    public static void validateTeamData(final TerminologyService service, final Team team, final boolean isNew) throws Exception {
+
+        final boolean isOrganizationTeam = isOrganizationTeam(team);
+        
+        if (!StringUtility.isEmpty(team.getName())) {
+            
+            String query = "(name: " + QueryParserBase.escape(team.getName()) + ") AND organizationId: " + team.getOrganizationId();
+            
+            if (!isNew) {
+                query += " AND !(id: " + team.getId() + ")";
+            }
+            
+            final ResultList<Team> results = service.find(query, null, Team.class, null);
+            
+            if (results.getTotal() > 0) {
+                
+                final String message = "There is already a team with that name in this Organization";
+                logger.error(message);
+                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message); 
+            }
+        }
+        
+        if (team.getRoles().isEmpty() && isNew) {
+            
+            final String message = "A new team must have at least one role associated with it";
+            logger.error(message);
+            throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message); 
+            
+        } else if (!team.getRoles().isEmpty()) {
+            
+            if (isOrganizationTeam && !team.getRoles().contains(User.ROLE_ADMIN)) {
+                
+                logger.warn("An organization level team must include the admin role, adding it to team");
+                team.getRoles().add(User.ROLE_ADMIN);
+            }
+        }
+        
+        if (team.getMembers().isEmpty() && !isNew && isOrganizationTeam) {
+            
+            final String message = "This team must have at least one member assigned to it";
+            logger.error(message);
+            throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message); 
         }
     }
 
@@ -124,6 +184,7 @@ public class TeamService extends BaseService {
             final Team existingTeam = getTeam(team.getId(), true);
 
             checkEditPermissions(user, team);
+            validateTeamData(service, team, false);
 
             existingTeam.patchFrom(team);
 
@@ -155,6 +216,13 @@ public class TeamService extends BaseService {
             final Team team = getTeam(teamId, true);
 
             checkEditPermissions(user, team);
+            
+            if (isOrganizationTeam(team)) {
+                
+                final String message = "You can not inactivate this team.";
+                logger.error(message);
+                throw new RestException(false, HttpStatus.NOT_ACCEPTABLE, "Not Acceptable", message);
+            }
             
             if (!team.getMembers().isEmpty()) {
                 team.getMembers().clear();
@@ -251,7 +319,7 @@ public class TeamService extends BaseService {
             resultsToReturn.setTotalKnown(true);
             resultsToReturn.setTotal(resultsToReturn.getItems().size());
             
-            logger.debug("************* TEAM SEARCH resultsToReturn: " + resultsToReturn);
+            logger.debug("TEAM SEARCH resultsToReturn: " + resultsToReturn);
 
             return resultsToReturn;
         }
@@ -349,6 +417,8 @@ public class TeamService extends BaseService {
                     throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message);
                 }
             }
+            
+            validateTeamData(service, team, false);
 
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
@@ -420,24 +490,28 @@ public class TeamService extends BaseService {
             checkEditPermissions(user, team);
             
             if (team == null) {
+                
                 final String message = "Unable to find team for id " + teamId + ".";
                 logger.error(message);
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
             }
 
             if (StringUtils.isBlank(role) && !Arrays.asList(UserRole.values()).contains(role.toUpperCase())) {
+                
                 final String message = "Role " + role + " does not exist.";
                 logger.error(message);
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", message);
             }
 
             if (!team.getRoles().contains(role.toUpperCase())) {
+                
                 final String message = "Role " + role + " does not exist for team " + teamId + ".";
                 logger.error(message);
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", message);
             }
 
             team.getRoles().remove(UserRole.valueOf(role).toString());
+            validateTeamData(service, team, false);
 
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
@@ -466,6 +540,7 @@ public class TeamService extends BaseService {
             final ResultListUser users = new ResultListUser();
 
             if (team == null) {
+                
                 final String message = "Unable to find team for id " + teamId + ".";
                 logger.error(message);
                 throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
@@ -493,7 +568,7 @@ public class TeamService extends BaseService {
      */
     public static boolean isOrganizationTeam(final Team team) throws Exception {
         
-        if (team.getName().startsWith("rt2-snomedct") && team.getName().endsWith("-all-admin")) {
+        if (team.getName().equals(organizationLevelTeamPrefix + team.getOrganization().getName())) {
             return true;
         } else {
             return false;
@@ -511,8 +586,9 @@ public class TeamService extends BaseService {
         
         if (!canUserEditTeam(user, team)) {
             
-            logger.error("User does not have permission to edit this team.");
-            throw new ForbiddenException("User does not have permission to edit this team.");
+            final String message = "User does not have permission to edit this team.";
+            logger.error(message);
+            throw new RestException(false, HttpStatus.UNAUTHORIZED, "Not Authorized", message);
         }
         
     }
