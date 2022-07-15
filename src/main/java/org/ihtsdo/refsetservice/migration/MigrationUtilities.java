@@ -102,45 +102,53 @@ public class MigrationUtilities {
         refsetParameters.setParentConceptId(DEFAULT_WCI_REFSET_PARENT_CONCEPT);
         refsetParameters.setProject(project);
         refsetParameters.setLatestPublishedVersion(false);
+        
+        try (final TerminologyService service = new TerminologyService()) {
 
-        final Object returned = RefsetService.createRefset(u, refsetParameters);
+            initializeService(service);
+            
+            final Object returned = RefsetService.createRefset(service, u, refsetParameters);
 
-        if (returned instanceof String) {
-
-            throw new Exception((String) returned);
-        } else {
-
-            final Refset refset = (Refset) returned;
-
-            logger.info("Created new WCI Refset - " + refset);
-
-            Refset updatedRefset = setToReadyForEditWorkflowStatus(refset);
-
-            logger.info("Update Workflow Status - " + updatedRefset);
-
-            return updatedRefset;
+            if (returned instanceof String) {
+    
+                throw new Exception((String) returned);
+            } else {
+    
+                final Refset refset = (Refset) returned;
+    
+                logger.info("Created new WCI Refset - " + refset);
+    
+                Refset updatedRefset = setToReadyForEditWorkflowStatus(refset);
+    
+                logger.info("Update Workflow Status - " + updatedRefset);
+    
+                return updatedRefset;
+            }
         }
-
     }
 
     private Refset setToReadyForEditWorkflowStatus(Refset refset) throws Exception {
 
         final String currentStatus = refset.getWorkflowStatus();
 
-        // if the status is Published then create a new version of the refset that is ready to be edited
-        refset = WorkflowService.setWorkflowStatusByAction(MigrationDataInitializer.getMigrationUser(), WorkflowService.FINISH_EDIT, refset, "");
+        try (final TerminologyService service = new TerminologyService()) {
 
-        // if the status changed return the updated refset else return null
-        if (!currentStatus.equals(refset.getWorkflowStatus())) {
-
-            logger.debug("setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
-            return refset;
-        } else {
-
-            logger.debug("setWorkflowStatus: did not update workflow status.");
-            return null;
+            initializeService(service);
+            
+            // if the status is Published then create a new version of the refset that is ready to be edited
+            refset = WorkflowService.setWorkflowStatusByAction(service, MigrationDataInitializer.getMigrationUser(), WorkflowService.FINISH_EDIT, refset, "");
+        
+            // if the status changed return the updated refset else return null
+            if (!currentStatus.equals(refset.getWorkflowStatus())) {
+    
+                logger.debug("setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
+                return refset;
+            } else {
+    
+                logger.debug("setWorkflowStatus: did not update workflow status.");
+                return null;
+            }
         }
-
     }
 
     public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative, Project project) throws Exception {

@@ -45,7 +45,7 @@ public class TeamService extends BaseService {
     private static Logger logger = LoggerFactory.getLogger(TeamService.class);
     
     /** The name prefix for organization level teams. */
-    public static String organizationLevelTeamPrefix = "Application users which can administrator organization ";
+    public static String organizationLevelTeamPrefix = "Administrator(s) for organization ";
 
     /**
      * Creates the team.

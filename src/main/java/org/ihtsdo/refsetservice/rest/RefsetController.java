@@ -258,7 +258,7 @@ public class RefsetController extends BaseController {
     public @ResponseBody String addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
         @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType) throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
@@ -266,6 +266,10 @@ public class RefsetController extends BaseController {
             String error = "";
             List<String> unaddedConcepts;
             final User user = SecurityService.getUserFromSession();
+            
+            service.setModifiedBy(user.getUserName());
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
 
             logger.debug("addRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
 
@@ -276,7 +280,7 @@ public class RefsetController extends BaseController {
 
             } else if (ecl != null && !ecl.equals("")) {
 
-                final String branchPath = RefsetService.getBranchPath(refsetInternalId);
+                final String branchPath = RefsetService.getBranchPath(service, refsetInternalId);
                 conceptIdList = RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl);
             } else {
 
@@ -286,7 +290,7 @@ public class RefsetController extends BaseController {
             logger.debug("addRefsetMembers: conceptIdList: " + conceptIdList);
 
             // add the list of concepts as members to the refset
-            unaddedConcepts = RefsetMemberService.addRefsetMembers(user, refsetInternalId, conceptIdList);
+            unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refsetInternalId, conceptIdList);
 
             // see if there are any concepts that were unable to be added and craft the error message
             if (unaddedConcepts.size() > 0) {
@@ -301,6 +305,7 @@ public class RefsetController extends BaseController {
                 error = StringUtils.removeEnd(error, ", ");
             }
 
+            // service.commit();
             logger.debug("addRefsetMembers: Finished with " + unaddedConcepts.size() + " invaild concepts");
 
             if (error.equals("")) {
@@ -339,12 +344,16 @@ public class RefsetController extends BaseController {
     public @ResponseBody String removeRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
         @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType) throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             String conceptsToRemove = null;
             User user = SecurityService.getUserFromSession();
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
             logger.debug("removeRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
 
@@ -357,7 +366,7 @@ public class RefsetController extends BaseController {
 
             } else if (ecl != null && !ecl.equals("")) {
 
-                final String branchPath = RefsetService.getBranchPath(refsetInternalId);
+                final String branchPath = RefsetService.getBranchPath(service, refsetInternalId);
                 conceptsToRemove = String.join(",", RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl));
             } else {
 
@@ -367,7 +376,8 @@ public class RefsetController extends BaseController {
             logger.debug("removeRefsetMembers: conceptIds: " + conceptIds);
 
             // add the list of concepts as members to the refset
-            final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(user, refsetInternalId, conceptsToRemove);
+            final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refsetInternalId, conceptsToRemove);
+            //service.commit();
 
             // see if there are any concepts that were unable to be added and craft the error message
             if (unremovedConcepts.size() > 0) {
@@ -420,12 +430,16 @@ public class RefsetController extends BaseController {
         @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType,
         @RequestParam(required = false) final String definitionExceptionType) throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             List<String> conceptIdList = new ArrayList<>();
             final User user = SecurityService.getUserFromSession();
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
             logger.debug("addRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType
                 + " ; definitionExceptionType: " + definitionExceptionType);
@@ -447,7 +461,8 @@ public class RefsetController extends BaseController {
                 inclusionEcl = RefsetMemberService.conceptListToEclStatement(conceptIdList);
             }
 
-            final String status = RefsetService.addDefinitionException(user, refsetInternalId, inclusionEcl, definitionExceptionType);
+            final String status = RefsetService.addDefinitionException(service, user, refsetInternalId, inclusionEcl, definitionExceptionType);
+            //service.commit();
 
             if (!status.startsWith("Error")) {
 
@@ -482,14 +497,19 @@ public class RefsetController extends BaseController {
     public @ResponseBody String removeRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         @PathVariable(value = "definitionExceptionId") final String definitionExceptionId) throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             final User user = SecurityService.getUserFromSession();
             logger.debug("removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; definitionExceptionId: " + definitionExceptionId);
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
-            final String status = RefsetService.removeDefinitionException(user, refsetInternalId, definitionExceptionId);
+            final String status = RefsetService.removeDefinitionException(service, user, refsetInternalId, definitionExceptionId);
+            //service.commit();
 
             if (!status.startsWith("Error")) {
 
@@ -527,13 +547,18 @@ public class RefsetController extends BaseController {
 
         String newRefsetInternalId = null;
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             logger.debug("createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
 
             User user = SecurityService.getUserFromSession();
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
+            
             String status = "";
-            final Object returned = RefsetService.createRefset(user, refsetParameters);
+            final Object returned = RefsetService.createRefset(service, user, refsetParameters);
 
             if (returned instanceof String) {
 
@@ -544,6 +569,8 @@ public class RefsetController extends BaseController {
                 newRefsetInternalId = refset.getId();
                 status = refset.getRefsetId();
             }
+            
+            //service.commit();
 
             if (status.startsWith("Error")) {
 
@@ -579,13 +606,19 @@ public class RefsetController extends BaseController {
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             logger.debug("modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             User user = SecurityService.getUserFromSession();
-            final String status = RefsetService.modifyRefset(user, refsetInternalId, refsetParameters);
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
+            
+            final String status = RefsetService.modifyRefset(service, user, refsetInternalId, refsetParameters);
+            //service.commit();
 
             if (!status.startsWith("Error")) {
 
@@ -636,13 +669,13 @@ public class RefsetController extends BaseController {
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             // logger.debug("getWorkflowHistory refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
 
             User user = SecurityService.getUserFromSession();
-            final Refset refset = RefsetService.getRefset(user, refsetInternalId);
-            ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(refset, searchParameters);
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(service, refset, searchParameters);
 
             return results;
 
@@ -669,38 +702,39 @@ public class RefsetController extends BaseController {
     public @ResponseBody Refset setWorkflowStatus(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam final String action,
         @RequestParam(required = false) final String notes) throws Exception {
 
-        try {
-
+        try (final TerminologyService service = new TerminologyService()) {
+            
             logger.debug("setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; action: " + action + " ; notes: " + notes);
 
             User user = SecurityService.getUserFromSession();
-            Refset refset = RefsetService.getRefset(user, refsetInternalId);
+            Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
             // if the status is Published then create a new version of the refset that is ready to be edited
             if (currentStatus == null || currentStatus.equals(WorkflowService.PUBLISHED)) {
+                
+                final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
+                final String versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
 
-                try (final TerminologyService service = new TerminologyService()) {
+                final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, refset.getId(), true);
+                refset = RefsetService.getRefset(service, user, newRefsetInternalId);
 
-                    final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
-                    final String versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
+                if (action.equals(WorkflowService.EDIT) && editionVersions.indexOf(versionDate) > 0) {
 
-                    final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refset.getId(), true);
-                    refset = RefsetService.getRefset(service, user, newRefsetInternalId);
-
-                    if (action.equals(WorkflowService.EDIT) && editionVersions.indexOf(versionDate) > 0) {
-
-                        RefsetService.refsetsToShowUpgradeWarning.add(newRefsetInternalId);
-                        refset.setUpgradeWarning(true);
-                    }
-
+                    RefsetService.refsetsToShowUpgradeWarning.add(newRefsetInternalId);
+                    refset.setUpgradeWarning(true);
                 }
 
                 return refset;
             }
 
-            refset = WorkflowService.setWorkflowStatusByAction(user, action, refset, notes);
-
+            refset = WorkflowService.setWorkflowStatusByAction(service, user, action, refset, notes);
+            //service.commit();
+            
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
 
@@ -732,17 +766,22 @@ public class RefsetController extends BaseController {
     public @ResponseBody ResultList<WorkflowHistory> updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = true) final String notes)
         throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             // logger.debug("updateWorkflowNote: refsetInternalId: " + refsetInternalId + " ;notes: " + notes);
             User user = SecurityService.getUserFromSession();
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
-            Refset refset = RefsetService.getRefset(user, refsetInternalId);
+            Refset refset = RefsetService.getRefset(service,user, refsetInternalId);
             // not used final String currentStatus = refset.getWorkflowStatus();
 
-            WorkflowService.updateWorkflowNote(user, refset, notes);
+            WorkflowService.updateWorkflowNote(service,user, refset, notes);
+            //service.commit();
 
-            return WorkflowService.getWorkflowHistory(refset, new SearchParameters());
+            return WorkflowService.getWorkflowHistory(service, refset, new SearchParameters());
 
         } catch (final Exception e) {
 
@@ -877,12 +916,17 @@ public class RefsetController extends BaseController {
         // Check to make sure parameters were properly bound to variables.
         // checkBinding(bindingResult);
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             logger.debug("createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
-            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(user, refsetInternalId, true);
+            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, refsetInternalId, true);
+            //service.commit();
 
             if (newRefsetInternalId.startsWith("Error")) {
 
@@ -909,12 +953,17 @@ public class RefsetController extends BaseController {
     @DeleteMapping("/refset/{refsetInternalId}")
     public @ResponseBody String inactiveRefset(final @PathVariable String refsetInternalId) throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             // logger.debug("inactiveRefset: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
-            final String status = RefsetService.inactivateRefset(user, refsetInternalId);
+            final String status = RefsetService.inactivateRefset(service, user, refsetInternalId);
+            //service.commit();
 
             return "{\"status\": \"" + status + "\"}";
 
@@ -936,12 +985,17 @@ public class RefsetController extends BaseController {
     @DeleteMapping("/refset/{refsetInternalId}/editVersion")
     public @ResponseBody String deleteRefsetEditVersion(final @PathVariable String refsetInternalId) throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             // logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
-            final String status = RefsetService.deleteInDevelopmentVersion(user, refsetInternalId, true);
+            final String status = RefsetService.deleteInDevelopmentVersion(service, user, refsetInternalId, true);
+            //service.commit();
 
             return "{\"status\": \"" + status + "\"}";
 
@@ -1051,7 +1105,7 @@ public class RefsetController extends BaseController {
             searchRefsetMembers = true;
         }
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             ConceptResultList results = new ConceptResultList();
             String query = searchParameters.getQuery();
@@ -1060,7 +1114,7 @@ public class RefsetController extends BaseController {
 
             if (query != null && !query.equals("")) {
 
-                results = RefsetMemberService.prepareConceptSearch(user, refsetInternalId, searchParameters, searchRefsetMembers);
+                results = RefsetMemberService.prepareConceptSearch(service, user, refsetInternalId, searchParameters, searchRefsetMembers);
             }
 
             return results;
@@ -1121,7 +1175,7 @@ public class RefsetController extends BaseController {
 
             final Refset refset = RefsetMemberService.getRefset(user, service, refsetInternalId);
 
-            results = RefsetMemberService.getRefsetMembers(user, refsetInternalId, searchParameters, displayType, taxonomyParameters);
+            results = RefsetMemberService.getRefsetMembers(service, user, refsetInternalId, searchParameters, displayType, taxonomyParameters);
 
             if (countComments != null && countComments) {
 
@@ -1250,10 +1304,10 @@ public class RefsetController extends BaseController {
 
                         if (exportType.contentEquals("SNAPSHOT")) {
 
-                            uri = RefsetMemberService.exportRefsetRf2(refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+                            uri = RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
                         } else {
 
-                            uri = RefsetMemberService.exportRefsetRf2Delta(user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
+                            uri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
                                 withNames);
                         }
 
@@ -1262,7 +1316,7 @@ public class RefsetController extends BaseController {
 
                     } else if (format.equals("sctids")) {
 
-                        String uri = RefsetMemberService.exportRefsetSctidList(refsetInternalId, exportMetadata);
+                        String uri = RefsetMemberService.exportRefsetSctidList(service, refsetInternalId, exportMetadata);
                         url = "{\"url\": \"" + uri + "\"}";
                     }
 
@@ -1391,7 +1445,7 @@ public class RefsetController extends BaseController {
                 RefsetService.setRefsetPermissions(user, refset);
                 final List<Map<String, String>> versions = RefsetService.getSortedRefsetVersionList(refset, service, true);
 
-                final List<Map<String, String>> memberHistory = RefsetMemberService.getMemberHistory(conceptId, versions);
+                final List<Map<String, String>> memberHistory = RefsetMemberService.getMemberHistory(service, conceptId, versions);
 
                 logger.debug("getMemberHistory: member: " + ModelUtility.toJson(memberHistory));
 
@@ -1741,12 +1795,12 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/general/refsetConcepts", produces = "application/json")
     public @ResponseBody ConceptResultList getRefsetConcepts(final String branch, final boolean areParentConcepts) throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             // logger.debug("getRefsetConcepts: branch: " + branch + "; areParentConcepts: " + areParentConcepts);
 
             User user = SecurityService.getUserFromSession();
-            ConceptResultList results = RefsetService.getRefsetConcepts(branch, areParentConcepts);
+            ConceptResultList results = RefsetService.getRefsetConcepts(service, branch, areParentConcepts);
 
             // logger.debug("getRefsetConcepts: results: " + ModelUtility.toJson(results));
 
@@ -1908,11 +1962,11 @@ public class RefsetController extends BaseController {
     public @ResponseBody Concept getMemberAncestorConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId)
         throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             logger.debug("getMemberAncestorConcepts: refsetInternalId: " + refsetInternalId + " ; conceptId: " + conceptId);
             final User user = SecurityService.getUserFromSession();
-            final Refset refset = RefsetService.getRefset(user, refsetInternalId);
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             final Concept concept = new Concept();
             concept.setCode(conceptId);
 

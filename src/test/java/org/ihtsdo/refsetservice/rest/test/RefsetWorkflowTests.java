@@ -361,60 +361,61 @@ public class RefsetWorkflowTests extends AbstractRefsetTests {
 
             refsetBranchPath = releaseBranchPath + "/" + WorkflowService.REFSET_BRANCH_PREFIX + refsetId;
             logger.debug("Have internalId: " + refsetInternalId + " and branch: " + releaseBranchPath);
+        
+            // Validate that refset is at expected state
+            List<String> allowedWorkflowStatuses = WorkflowService.getAllowedActions(SecurityService.getUserFromSession(), refset);
+            assertThat(allowedWorkflowStatuses).contains(WorkflowService.EDIT);
+    
+            /* Mimic Start Editing */
+            // Verify number of members at start
+            ConceptResultList members = getUtil.getMembers(refsetInternalId);
+            assertThat(members.size()).isEqualTo(5);
+    
+            // Create Edit branch
+            // TODO: Remove this as it's unnecessary given bring refset into EDIT state automatically creates the branch
+            // final String editBranchPath = snowUtil.createEditBranch(refsetBranchPath, refsetInternalId, refsetId);
+            // assertThat(editBranchPath).isNotNull();
+    
+            String comment = "Starting testing editing cycle";
+            refset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.EDIT, refset, comment);
+    
+            // Verify still have the same 5 members in the refset found under the newly edit branch
+            members = getUtil.getMembers(refsetInternalId);
+            assertThat(members.size()).isEqualTo(5);
+    
+            // populate with one new member
+            boolean success = editUtil.addMembers(refsetInternalId, Arrays.asList("404684003"));
+            assertThat(success).isTrue();
+    
+            // Verify still have the same 6 members in the refset found under the newly create branch
+            members = getUtil.getMembers(refsetInternalId);
+            assertThat(members.size()).isEqualTo(6);
+    
+            // Update Workflow State to review
+            comment = "The refset is at ready_for_review";
+            refset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.REQUEST_REVIEW, refset, comment);
+    
+            /* Merge/promote edit branch to refset branch */
+            // Verify still have the same 5 members in the refset branch
+            members = getUtil.getMembers(refsetInternalId);
+            assertThat(members.size()).isEqualTo(5);
+    
+            // Merge Edit branch back to Refset branch
+            success = WorkflowService.mergeEditIntoRefsetBranch(refset.getEdition().getBranch(), refsetId, refset.getEditBranchId(), "Merging after adding one member to refset");
+            assertThat(success).isTrue();
+    
+            // Verify still have the same 6 members in the refset found under the newly create branch
+            members = getUtil.getMembers(refsetInternalId);
+            assertThat(members.size()).isEqualTo(6);
+    
+            // Update Workflow State to review
+            comment = "The refset is at ready_for_publication";
+            refset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.REQUEST_PUBLICATION, refset, comment);
+            
         } catch (Exception e) {
 
             throw e;
         }
-
-        // Validate that refset is at expected state
-        List<String> allowedWorkflowStatuses = WorkflowService.getAllowedActions(SecurityService.getUserFromSession(), refset);
-        assertThat(allowedWorkflowStatuses).contains(WorkflowService.EDIT);
-
-        /* Mimic Start Editing */
-        // Verify number of members at start
-        ConceptResultList members = getUtil.getMembers(refsetInternalId);
-        assertThat(members.size()).isEqualTo(5);
-
-        // Create Edit branch
-        // TODO: Remove this as it's unnecessary given bring refset into EDIT state automatically creates the branch
-        // final String editBranchPath = snowUtil.createEditBranch(refsetBranchPath, refsetInternalId, refsetId);
-        // assertThat(editBranchPath).isNotNull();
-
-        String comment = "Starting testing editing cycle";
-        refset = WorkflowService.setWorkflowStatusByAction(SecurityService.getUserFromSession(), WorkflowService.EDIT, refset, comment);
-
-        // Verify still have the same 5 members in the refset found under the newly edit branch
-        members = getUtil.getMembers(refsetInternalId);
-        assertThat(members.size()).isEqualTo(5);
-
-        // populate with one new member
-        boolean success = editUtil.addMembers(refsetInternalId, Arrays.asList("404684003"));
-        assertThat(success).isTrue();
-
-        // Verify still have the same 6 members in the refset found under the newly create branch
-        members = getUtil.getMembers(refsetInternalId);
-        assertThat(members.size()).isEqualTo(6);
-
-        // Update Workflow State to review
-        comment = "The refset is at ready_for_review";
-        refset = WorkflowService.setWorkflowStatusByAction(SecurityService.getUserFromSession(), WorkflowService.REQUEST_REVIEW, refset, comment);
-
-        /* Merge/promote edit branch to refset branch */
-        // Verify still have the same 5 members in the refset branch
-        members = getUtil.getMembers(refsetInternalId);
-        assertThat(members.size()).isEqualTo(5);
-
-        // Merge Edit branch back to Refset branch
-        success = WorkflowService.mergeEditIntoRefsetBranch(refset.getEdition().getBranch(), refsetId, refset.getEditBranchId(), "Merging after adding one member to refset");
-        assertThat(success).isTrue();
-
-        // Verify still have the same 6 members in the refset found under the newly create branch
-        members = getUtil.getMembers(refsetInternalId);
-        assertThat(members.size()).isEqualTo(6);
-
-        // Update Workflow State to review
-        comment = "The refset is at ready_for_publication";
-        refset = WorkflowService.setWorkflowStatusByAction(SecurityService.getUserFromSession(), WorkflowService.REQUEST_PUBLICATION, refset, comment);
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -432,7 +433,7 @@ public class RefsetWorkflowTests extends AbstractRefsetTests {
         // refset.getEdition().get
 
         // Delete refset branch - This is done once we are notified that
-        comment = "The refset editing cycle is done. Delete refset branch from about-to-be-published release branch.";
+        // comment = "The refset editing cycle is done. Delete refset branch from about-to-be-published release branch.";
         // WorkflowService.getdeleteBranch(publicationVersionDate);
     }
 
