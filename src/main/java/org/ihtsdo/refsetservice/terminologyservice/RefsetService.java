@@ -502,7 +502,6 @@ public class RefsetService {
         refset.setEditBranchId(null);
         refset.setPrivateRefset(history.isPrivateRefset());
         refset.setTags(new HashSet<String>(history.getTags()));
-        refset.setDefinitionClauses(new ArrayList<>());
         refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
         refset.setAssignedUser(null);
         refset.setMemberCount(history.getMemberCount());
@@ -512,6 +511,8 @@ public class RefsetService {
         // if this is an intensional refset save the definition
         if (refset.getType().equals(Refset.INTENSIONAL)) {
 
+            refset.setDefinitionClauses(new ArrayList<>());
+            
             List<DefinitionClause> clauseList = new ArrayList<>();
 
             for (DefinitionClauseEditHistory historyClause : history.getDefinitionClauses()) {
