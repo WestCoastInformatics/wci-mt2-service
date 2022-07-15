@@ -23,8 +23,8 @@ select organization_id, count(*) as Num_teams  from  teams group by organization
 -- ***** Projects (basic, stats & basic-join)
 -- select id, name, description  from projects order by name;
 --select organization_id, count(*) as num_projects from  projects group by organization_id;
- select a.id as org_id, a.name as org, b.name as uat-or-default-project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and (b.name like '%UAT%' or  b.name like '%Default Project%') order by a.name, b.name;
-select a.id as org_id, a.name as org, b.name as non-uat-default-project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and b.name not like '%UAT%' and b.name not like '%Default Project%' order by a.name;
+ select a.id as org_id, a.name as org, b.name as uat_or_default_project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and (b.name like '%UAT%' or  b.name like '%Default Project%') order by a.name, b.name;
+select a.id as org_id, a.name as org, b.name as non_uat_default_project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and b.name not like '%UAT%' and b.name not like '%Default Project%' order by a.name;
 -- select a.name as org, b.name as project from organizations a, projects b where a.id = b.organization_id;
 
 
@@ -60,7 +60,7 @@ select a.roles, b.name from user_roles a, users b where b.id = a.user_id order b
 
 
 
--- **** WCI Refses ****
+-- **** WCI Refsets ****
 -- select * from refsets where project_id in (select distinct(project_id) from refsets where name like '%WCI%');
 select id, name, refsetId, moduleId, narrative, privateRefset, type, project_id from refsets where project_id in (select distinct(project_id) from refsets where name like '%WCI%') order by name;
 select id, name, refsetId, latestPublishedVersion,hasVersionInDevelopment, editBranchId, assignedUser, versionDate, versionNotes, versionStatus, workflowStatus from refsets where project_id in (select distinct(project_id) from refsets where name like '%WCI%') order by name;
