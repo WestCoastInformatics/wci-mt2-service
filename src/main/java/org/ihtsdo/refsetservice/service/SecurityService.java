@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -22,11 +23,17 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.UserProjectRole;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -46,7 +53,7 @@ public class SecurityService implements AutoCloseable {
 
     /** The token login time . */
     private static Map<String, Date> tokenTimeoutMap = Collections.synchronizedMap(new HashMap<String, Date>());
-    
+
     /** a place to store temporary user data in memory . */
     private static Map<String, Map<String, Object>> userInMemoryStorage = Collections.synchronizedMap(new HashMap<String, Map<String, Object>>());
 
@@ -142,8 +149,7 @@ public class SecurityService implements AutoCloseable {
 
         return nonLoggedInUser;
     }
-    
-    
+
     /**
      * Clear cookies.
      *
@@ -233,7 +239,7 @@ public class SecurityService implements AutoCloseable {
         session.setAttribute(attributeName, value);
         return true;
     }
-    
+
     /**
      * Remove the something from the session.
      *
@@ -258,7 +264,7 @@ public class SecurityService implements AutoCloseable {
 
         session.removeAttribute(attributeName);
     }
-    
+
     /**
      * Get something from the user specific in memory storage.
      *
@@ -267,22 +273,22 @@ public class SecurityService implements AutoCloseable {
      * @throws Exception the exception
      */
     public static Object getFromInMemoryStorage(final String attributeName) throws Exception {
-        
+
         final User user = getUserFromSession();
         Object returnObject = null;
-        
+
         if (userInMemoryStorage.containsKey(user.getUserName())) {
-            
+
             final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
-            
+
             if (storageMap.containsKey(attributeName)) {
                 returnObject = storageMap.get(attributeName);
             }
         }
-        
+
         return returnObject;
     }
-    
+
     /**
      * Set something in the user specific in memory storage.
      *
@@ -292,21 +298,21 @@ public class SecurityService implements AutoCloseable {
      * @throws Exception the exception
      */
     public static boolean setInMemoryStorage(final String attributeName, final Object value) throws Exception {
-        
+
         final User user = getUserFromSession();
-        
+
         if (userInMemoryStorage.containsKey(user.getUserName())) {
-            
+
             final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
             storageMap.put(attributeName, value);
-        
+
         } else {
-            
+
             final Map<String, Object> storageMap = new HashMap<>();
             storageMap.put(attributeName, value);
             userInMemoryStorage.put(user.getUserName(), storageMap);
         }
-        
+
         return true;
     }
 
@@ -319,9 +325,9 @@ public class SecurityService implements AutoCloseable {
     public static void removeFromInMemoryStorage(final String attributeName) throws Exception {
 
         final User user = getUserFromSession();
-        
+
         if (userInMemoryStorage.containsKey(user.getUserName())) {
-            
+
             final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
             storageMap.remove(attributeName);
         }
@@ -423,7 +429,43 @@ public class SecurityService implements AutoCloseable {
         final User result = getUser(userId);
         result.setAuthToken(token);
 
+        checkAndAddUserToOrganization(authUser);
+
         return result;
+    }
+
+    /**
+     * Adds the user to organization if entered in Crowd but not a member in RT2's organization.
+     *
+     * @param user the user
+     * @throws Exception the exception
+     */
+    private void checkAndAddUserToOrganization(final User user) throws Exception {
+
+        // break down org-project-role
+        if (user == null || user.getRoles() == null || user.getRoles().isEmpty()) {
+            return;
+        }
+
+        final Set<String> memberships = new HashSet<>();
+        for (final String groupName : user.getRoles()) {
+            final UserProjectRole userProjectRole = new UserProjectRole(groupName);
+            memberships.add(userProjectRole.getOrganization());
+        }
+
+        final ResultList<Organization> organizations = OrganizationService.searchOrganizations(user, new SearchParameters());
+        final Map<String, Organization> organizationAndUsers = new HashMap<>();
+        for (final Organization org : organizations.getItems()) {
+            organizationAndUsers.put(CrowdGroupNameAlgorithm.getOrganizationString(org.getEdition().getShortName()), org);
+        }
+
+        for (final String org : memberships) {
+            if (organizationAndUsers.get(org) != null && !organizationAndUsers.get(org).getMembers().contains(user)) {
+                logger.debug("Add user " + user.getUserName() + " to org " + org);
+                OrganizationService.addUserToOrganization(user, organizationAndUsers.get(org).getId(), user.getEmail());
+            }
+        }
+
     }
 
     /* see superclass */
