@@ -3827,6 +3827,10 @@ public class RefsetMemberService {
         }
 
         // update the member count and save the refset
+        if (refset.getMemberCount() == -1) {
+            refset.setMemberCount(0);
+        }
+        
         refset.setMemberCount(refset.getMemberCount() + (conceptIds.size() - unaddedConcepts.size()));
         service.update(refset);
         

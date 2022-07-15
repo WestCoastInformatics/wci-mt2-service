@@ -291,6 +291,7 @@ public class RefsetService {
 
             // add the list of concepts as members to the refset
             final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset.getId(), conceptIdList);
+            WorkflowService.mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), branchId, "Initial intensional refset creation.");
         }
 
         logger.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added. Time: " + (System.currentTimeMillis() - start));
@@ -510,10 +511,28 @@ public class RefsetService {
 
         // if this is an intensional refset save the definition
         if (refset.getType().equals(Refset.INTENSIONAL)) {
-
-            refset.setDefinitionClauses(new ArrayList<>());
             
-            List<DefinitionClause> clauseList = new ArrayList<>();
+//            List<DefinitionClause> clauseList = new ArrayList<>();
+//
+//            for (DefinitionClauseEditHistory historyClause : history.getDefinitionClauses()) {
+//
+//                DefinitionClause clause = new DefinitionClause();
+//                clause.setValue(historyClause.getValue());
+//                clause.setNegated(historyClause.getNegated());
+//
+//                service.add(clause);
+//                clauseList.add(clause);
+//            }
+//            
+//            modifyRefsetDefinition(user, service, refset, clauseList);
+
+            for (DefinitionClause oldClause : new ArrayList<DefinitionClause>(refset.getDefinitionClauses())) {
+
+                refset.getDefinitionClauses().remove(oldClause);
+                service.remove(oldClause);
+            }
+            
+            service.update(refset);
 
             for (DefinitionClauseEditHistory historyClause : history.getDefinitionClauses()) {
 
@@ -522,12 +541,9 @@ public class RefsetService {
                 clause.setNegated(historyClause.getNegated());
 
                 service.add(clause);
-                clauseList.add(clause);
+                refset.getDefinitionClauses().add(clause);
             }
 
-            refset.setDefinitionClauses(clauseList);
-
-            // update the refset with the definition
             service.update(refset);
         }
 
