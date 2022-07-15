@@ -41,96 +41,6 @@ public class HistoricDataMigrator {
     private final MigrationMetadata defaultMeta = new MigrationMetadata(new Date(), "System initialization");
 
     /**
-     * The Class Metadata.
-     */
-    public class Counts {
-
-        private int refsetsVersionPairsOnSnowstorm;
-
-        private int uniquRefsetsOnSnowstorm;
-
-        private int rttMetadataRefsets;
-
-        private int uniqueRttMetadataRefsets;
-
-        private int noMetadataRefsets;
-
-        private int uniqueNoMetadataRefsets;
-
-        private int orgsImported;
-
-        public void incrementRefsetVersionPairsCounts() {
-
-            refsetsVersionPairsOnSnowstorm++;
-        }
-
-        public void incrementUniqueRefsetsCounts() {
-
-            uniquRefsetsOnSnowstorm++;
-        }
-
-        public void incrementRttMetadataCount() {
-
-            rttMetadataRefsets++;
-        }
-
-        public void incrementUniqueRttMetadataCount() {
-
-            uniqueRttMetadataRefsets++;
-        }
-
-        public void incrementNoMetadataCount() {
-
-            noMetadataRefsets++;
-        }
-
-        public void incrementUniqueNoMetadataCount() {
-
-            uniqueNoMetadataRefsets++;
-        }
-
-        public void incrementOrgsImportedCount() {
-
-            orgsImported++;
-        }
-
-        public int getRefsetVersionPairsCounts() {
-
-            return refsetsVersionPairsOnSnowstorm;
-        }
-
-        public int getUniqueRefsetsCounts() {
-
-            return uniquRefsetsOnSnowstorm;
-        }
-
-        public int getRttMetadataCreatedCount() {
-
-            return rttMetadataRefsets;
-        }
-
-        public int getUniqueRttMetadataCreatedCount() {
-
-            return uniqueRttMetadataRefsets;
-        }
-
-        public int getNoMetadataCreatedCount() {
-
-            return noMetadataRefsets;
-        }
-
-        public int getUniqueNoMetadataCreatedCount() {
-
-            return uniqueNoMetadataRefsets;
-        }
-
-        public int getOrgsImportedCount() {
-
-            return orgsImported;
-        }
-    }
-
-    /**
      * The Enum FileProcessType.
      */
     public enum FileProcessType {
@@ -192,8 +102,6 @@ public class HistoricDataMigrator {
     private final Set<String> uniqueRefsetIds = new HashSet<>();
 
     private final Map<String, Organization> organizationsAdded = new HashMap<>();
-
-    private final Counts counts = new Counts();
 
     private final Set<String> debugRttOrgTranslations = new HashSet<>();
 
@@ -666,7 +574,6 @@ public class HistoricDataMigrator {
                                     /* Add refset/version for later persisting */
                                     Refset refset = utilities.addRefset(refsetName, refsetId, moduleId, versionDate, Refset.EXTENSIONAL, "", null);
                                     snowstormRefsets.add(refset);
-                                    counts.incrementRefsetVersionPairsCounts();
 
                                     if (!uniqueRefsetIds.contains(refsetId)) {
 
@@ -675,7 +582,6 @@ public class HistoricDataMigrator {
                                          * .format(refset.getVersionDate()));
                                          */
                                         uniqueRefsetIds.add(refsetId);
-                                        counts.incrementUniqueRefsetsCounts();
                                     } else {
 
                                         // logger.debug("Again seeing: " +
@@ -1294,21 +1200,9 @@ public class HistoricDataMigrator {
                 populateInitialDate(service);
             }
 
-            logger.info("Have imported from Snowstorm " + projectCount + " projects and " + counts.getOrgsImportedCount() + " organizations");
+            logger.info("Have imported from Snowstorm " + projectCount + " projects and " + organizationsAdded.size() + " organizations");
 
             logger.info("Have NOT imported anything from RTT that isn't in Snowstorm");
-
-            // Unique Counts
-            logger.info("\n*** Unique Refsets Count ***");
-            logger.info("Have identified " + counts.getUniqueRefsetsCounts() + " unique refsets on Snowstorm");
-            logger.info("Have imported " + counts.getUniqueRttMetadataCreatedCount() + " unique refsets with metadata pulled from RTT");
-            logger.info("Have imported " + counts.getUniqueNoMetadataCreatedCount() + " unique refsets with no metadata at all");
-
-            // Refset/Verfsion Pair Counts
-            logger.info("\n*** Refsets/Version Pair Count ***");
-            logger.info("Have identified " + counts.getRefsetVersionPairsCounts() + " refset/version pairs on Snowstorm");
-            logger.info("Have imported " + counts.getRttMetadataCreatedCount() + " refset/version pairs with metadata pulled from RTT");
-            logger.info("Have imported " + counts.getNoMetadataCreatedCount() + " refset/version pairs with no metadata at all");
 
             logger.info("Total of " + ignoreCounter + " refsets ignored");
         } catch (Exception e) {
