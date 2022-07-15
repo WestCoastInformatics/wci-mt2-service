@@ -24,6 +24,7 @@ import java.util.Set;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,45 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
     /** Remove user from group DELETE. */
     private static final String REMOVE_USER_FROM_GROUP = "/rest/usermanagement/1/user/group/direct";
+
+    /**
+     * Returns the user from Crowd
+     *
+     * @param username the username
+     * @return the user
+     * @throws Exception the exception
+     */
+    public static User getUser(final String userName) throws Exception {
+
+        logger.debug("Get information for user {}", userName);
+        if (StringUtils.isEmpty(userName)) {
+            throw new Exception("User name cannot be empty or null. Received username: " + userName);
+        }
+
+        final User user = new User();
+        final Response response = get(BASE_URL + GET_USER + "?username=" + userName);
+
+        // 200 OK.
+        // 404 the user could not be found.
+        if (response.getStatus() == 200) {
+
+            final String jsonString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(jsonString);
+
+            user.setName(root.get("display-name").asText());
+            user.setEmail(root.get("email").asText());
+            user.setUserName(userName);
+
+            return user;
+
+        } else if (response.getStatus() == 400) {
+            throw new Exception("The user " + userName + " could not be found.");
+        } else {
+            throw new Exception("The user " + userName + " could not be found. Received HTTP " + response.getStatus() + " from the API server.");
+        }
+
+    }
 
     /**
      * Add all groups with roles e.g. rt2-no-abc-author. - rt2 is the application - no is the two letter code for the organization (country) - abc is the acronym of the group
