@@ -129,6 +129,8 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         primaryContactEmail = other.getPrimaryContactEmail();
         organization = other.getOrganization();
         roles = other.getRoles();
+        memberList = other.getMemberList();
+        members = other.getMembers();
     }
 
     /**
@@ -145,6 +147,8 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         primaryContactEmail = other.getPrimaryContactEmail();
         organization = other.getOrganization();
         roles = other.getRoles();
+        memberList = other.getMemberList();
+        members = other.getMembers();
     }
 
     /**
@@ -343,6 +347,8 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         result = prime * result + ((organization == null) ? 0 : organization.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((memberList == null) ? 0 : memberList.hashCode());
+        result = prime * result + ((members == null) ? 0 : members.hashCode());
         return result;
     }
 
@@ -372,6 +378,13 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
                 return false;
             }
         } else if (!members.equals(other.members)) {
+            return false;
+        }
+        if (memberList == null) {
+            if (other.memberList != null) {
+                return false;
+            }
+        } else if (!memberList.equals(other.memberList)) {
             return false;
         }
         if (name == null) {

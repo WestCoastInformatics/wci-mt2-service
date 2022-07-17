@@ -9,7 +9,10 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.ForbiddenException;
@@ -60,7 +63,6 @@ public class TeamService extends BaseService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team newTeam = new Team(team);
-            newTeam.getRoles().clear();
             checkEditPermissions(user, newTeam);
             validateTeamData(service, newTeam, true);
            
@@ -140,26 +142,34 @@ public class TeamService extends BaseService {
     public static Team getTeam(final String id, final boolean includeMembers) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
+            
             final Team team = service.findSingle("id: " + id + " AND active:true", Team.class, null);
 
             if (team == null) {
+                
                 logger.info("Unable to find team for id {}.", id);
                 throw new NotFoundException();
             }
 
             if (includeMembers) {
+                
                 for (final String userId : team.getMembers()) {
+                    
                     ResultList<User> users = service.find("id:" + userId, null, User.class, null);
+                    
                     if (users != null && users.getItems() != null) {
+                        
                         for (final User user : users.getItems()) {
 
                             final SearchParameters sp = new SearchParameters();
                             sp.setQuery("members:" + user.getId());
                             final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
+                            
                             if (teamsResultList != null && teamsResultList.getItems() != null) {
                                 user.getTeams().addAll(teamsResultList.getItems());
                             }
                         }
+                        
                         team.getMemberList().addAll(users.getItems());
                     }
                 }
@@ -249,7 +259,7 @@ public class TeamService extends BaseService {
      */
     public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters) throws Exception {
 
-        return searchTeams(user, searchParameters, false);
+        return searchTeams(user, searchParameters, false, false);
     }
 
     /**
@@ -258,10 +268,11 @@ public class TeamService extends BaseService {
      * @param user the user
      * @param searchParameters the search parameters
      * @param includeMembers the include members
+     * @param onlyUsersTeams return only the teams the user is a member off or has permission to admin
      * @return the list of projects
      * @throws Exception the exception
      */
-    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters, final boolean includeMembers) throws Exception {
+    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters, final boolean includeMembers, final boolean onlyUsersTeams) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -296,18 +307,16 @@ public class TeamService extends BaseService {
 
             for (final Team team : results.getItems()) {
                 
-                if (!canUserViewTeam(user, team)) { 
-                    continue;
-                }
-                
                 if (includeMembers) {
                     
                     for (final String userId : team.getMembers()) {
                         
-                        ResultList<User> users = service.find("id:" + userId, null, User.class, null);
+                        ResultList<User> members = service.find("id:" + userId, null, User.class, null);
                         
-                        if (users != null && users.getItems() != null) {
-                            team.getMemberList().addAll(users.getItems());
+                        for (final User member : members.getItems()) {
+                            
+                            member.setTeams(new HashSet<Team>(getUserTeams(user, member, team.getOrganizationId(), true)));
+                            team.getMemberList().add(member);
                         }
                     }
                 }
@@ -324,7 +333,41 @@ public class TeamService extends BaseService {
             return resultsToReturn;
         }
     }
+    
+    /**
+     * Returns the teams a user can is either a member of or can admin, depending on flags.
+     *
+     * @param user the user making the call
+     * @param teamUser the user to look up teams for
+     * @param organizationId the organization id to limit the teams to, or null for all teams
+     * @param onlyMemberOf return only teams the user is a member of, not ones they can admin
+     * @return the user's teams
+     * @throws Exception the exception
+     */
+    public static List<Team> getUserTeams(final User user, final User teamUser, final String organizationId, final boolean onlyMemberOf) throws Exception {
 
+        try (final TerminologyService service = new TerminologyService()) {
+
+            String query = "";
+            
+            if (organizationId != null) {
+                query = "organizationId: " + organizationId;
+            }
+            
+            final ResultList<Team> results = service.find(query, null, Team.class, null);
+            final List<Team> teamList = new ArrayList<>();
+
+            for (final Team team : results.getItems()) {
+                
+                if (canUserViewTeam(teamUser, team, onlyMemberOf)) {
+                    teamList.add(team);
+                }
+            }
+            
+            return teamList;
+        }
+    }
+    
     /**
      * Adds the user to team.
      *
@@ -335,49 +378,80 @@ public class TeamService extends BaseService {
      * @throws Exception the exception
      */
     public static Team addUserToTeam(final User user, final String teamId, final String email) throws Exception {
-
+        
         try (final TerminologyService service = new TerminologyService()) {
 
+            service.setModifiedBy(user.getUserName());
+            
             final Team team = getTeam(teamId, true);
 
-            checkEditPermissions(user, team);
-
-            final User userToAdd = service.findSingle("email:" + email, User.class, null);
-            if (userToAdd == null) {
-                final String message = "User with " + email + " does not exist.";
-                logger.error(message);
-                throw new NotFoundException(message);
-            }
-
-            final Organization organization = team.getOrganization();
-            final Set<User> organizationMembers = organization.getMembers();
-
-            if (!organizationMembers.contains(userToAdd)) {
-
-                final String message = "User with " + email + " is not a member of organization " + organization.getName() + ".";
-                logger.error(message);
-                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message);
-            }
-
-            if (team.getMembers() != null && team.getMembers().contains(user.getId())) {
-
-                final String message = "User with " + email + " is already a member of team " + team.getName() + ".";
-                logger.error(message);
-                throw new RestException(false, HttpStatus.CONFLICT, "Conflict", message);
-            }
-
-            team.getMembers().add(userToAdd.getId());
-
-            service.setModifiedBy(user.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-
-            service.update(team);
-            service.add(AuditEntryHelper.addUserToTeamEntry(team, userToAdd));
-            service.commit();
-
-            return team;
+            return addUserToTeam(service, user, team, email);
         }
+    }
+    
+    /**
+     * Adds the user to team.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param team the team
+     * @param email the email
+     * @return the team
+     * @throws Exception the exception
+     */
+    public static Team addUserToTeam(final TerminologyService service, final User user, final Team team, final String email) throws Exception {
+        
+        final User userToAdd = service.findSingle("email:" + email, User.class, null);
+        
+        if (userToAdd == null) {
+            
+            final String message = "User with " + email + " does not exist.";
+            logger.error(message);
+            throw new NotFoundException(message);
+        }
+        
+        return addUserToTeam(service, user, team, userToAdd);
+    }
+
+    /**
+     * Adds the user to team.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param team the team
+     * @param userToAdd the user to add to the team
+     * @return the team
+     * @throws Exception the exception
+     */
+    public static Team addUserToTeam(final TerminologyService service, final User user, final Team team, final User userToAdd) throws Exception {
+
+        checkEditPermissions(user, team);
+
+        final Organization organization = team.getOrganization();
+        final Set<User> organizationMembers = organization.getMembers();
+
+        if (!organizationMembers.contains(userToAdd)) {
+
+            final String message = "User with " + userToAdd.getEmail() + " is not a member of organization " + organization.getName() + ".";
+            logger.error(message);
+            throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message);
+        }
+
+        if (team.getMembers() != null && team.getMembers().contains(user.getId())) {
+
+            final String message = "User with " + userToAdd.getEmail() + " is already a member of team " + team.getName() + ".";
+            logger.error(message);
+            throw new RestException(false, HttpStatus.CONFLICT, "Conflict", message);
+        }
+
+        team.getMembers().add(userToAdd.getId());
+
+        service.beginTransaction();
+        service.update(team);
+        service.add(AuditEntryHelper.addUserToTeamEntry(team, userToAdd));
+        service.commit();
+
+        return team;
     }
 
     /**
@@ -618,19 +692,19 @@ public class TeamService extends BaseService {
      *
      * @param user the user
      * @param team the team
+     * @param onlyMemberOf return only teams the user is a member of, not ones they can admin
      * @return can the user view the team
      * @throws Exception the exception
      */
-    public static boolean canUserViewTeam(final User user, final Team team) throws Exception {
+    public static boolean canUserViewTeam(final User user, final Team team, final boolean onlyMemberOf) throws Exception {
         
         final Organization organization = team.getOrganization();
         final boolean isOrganizationAdmin = user.doesUserHavePermission(User.ROLE_ADMIN, organization);
         
-        if (isOrganizationAdmin || team.getMembers().contains(user.getId())) {
+        if ((!onlyMemberOf && isOrganizationAdmin) || team.getMembers().contains(user.getId())) {
             return true;
         } else {
             return false;
         }
     }
-
 }

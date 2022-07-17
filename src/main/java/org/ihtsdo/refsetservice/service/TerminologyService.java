@@ -72,6 +72,12 @@ public class TerminologyService implements RootService {
 
     /** The transaction per operation. */
     private boolean transactionPerOperation = true;
+    
+    /** Should multiple transactions per operation be automatically allowed. */
+    private boolean autoMultipleTransactionsPerOperation = true;
+    
+    /** The transaction per operation internally changed. */
+    private boolean transactionPerOperationIntenallyChanged = false;
 
     /** The transaction entity. */
     private EntityTransaction transaction;
@@ -248,13 +254,13 @@ public class TerminologyService implements RootService {
     @Override
     public void beginTransaction() throws Exception {
 
-        if (getTransactionPerOperation()) {
-            throw new IllegalStateException(
-                    "Error attempting to begin a transaction when using transactions "
-                            + "per operation mode.");
+        if (transactionPerOperation && autoMultipleTransactionsPerOperation) {
+            
+            transactionPerOperation = false;
+            transactionPerOperationIntenallyChanged = true;
+            
         } else if (transaction != null && transaction.isActive()) {
-            throw new IllegalStateException("Error attempting to begin a transaction when there "
-                    + "is already an active transaction");
+            throw new IllegalStateException("Error attempting to begin a transaction when there " + "is already an active transaction");
         }
 
         transaction = manager.getTransaction();
@@ -270,16 +276,22 @@ public class TerminologyService implements RootService {
     @Override
     public void commit() throws Exception {
 
-        if (getTransactionPerOperation()) {
-            throw new IllegalStateException(
-                    "Error attempting to commit a transaction when using transactions per "
-                            + "operation mode.");
+        if (transactionPerOperation) {
+            throw new IllegalStateException("Error attempting to commit a transaction when using transactions per operation mode.");
+            
         } else if (transaction != null && !transaction.isActive()) {
-            throw new IllegalStateException("Error attempting to commit a transaction when there "
-                    + "is no active transaction");
+            throw new IllegalStateException("Error attempting to commit a transaction when there is no active transaction");
+            
         } else if (transaction != null) {
+            
             transaction.commit();
             manager.clear();
+            
+            if (transactionPerOperationIntenallyChanged) {
+                
+                transactionPerOperationIntenallyChanged = false;
+                transactionPerOperation = true;
+            }
         }
     }
 
