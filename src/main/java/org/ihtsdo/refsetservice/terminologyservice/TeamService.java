@@ -50,6 +50,8 @@ public class TeamService extends BaseService {
     /** The name prefix for organization level teams. */
     public static String organizationLevelTeamPrefix = "Administrator(s) for organization ";
 
+    public static String organizationLevelTeamDescription = "'s dedicated ADMIN Team to manage their projects, members, and teams with.";
+
     /**
      * Creates the team.
      *
@@ -63,6 +65,7 @@ public class TeamService extends BaseService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team newTeam = new Team(team);
+            newTeam.getRoles().clear();
             checkEditPermissions(user, newTeam);
             validateTeamData(service, newTeam, true);
            
@@ -706,5 +709,27 @@ public class TeamService extends BaseService {
         } else {
             return false;
         }
+    }
+    
+    /**
+     * Calculates and returns the name of the organization admin team.
+     *
+     * @param organization the organization the admin team is for
+     * @return the name of the organization admin team
+     */
+    public static String generateOrgTeamName(Organization organization) {
+
+        return organizationLevelTeamPrefix + organization.getName();
+    }
+
+    /**
+     * Calculates and returns the description of the organization admin team.
+     *
+     * @param organization the organization the admin team is for
+     * @return the description of the organization admin team
+     */
+    public static String getOrgTeamDescription(Organization organization) {
+
+        return organization.getName() + organizationLevelTeamDescription;
     }
 }

@@ -28,7 +28,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Entry point for webapp.
  */
 @SpringBootApplication(exclude = {
-        FlywayAutoConfiguration.class
+    FlywayAutoConfiguration.class
 })
 @EnableCaching
 @EnableScheduling
@@ -37,7 +37,7 @@ public class Application extends SpringBootServletInitializer {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(Application.class);
-    
+
     /**
      * Configure.
      *
@@ -46,6 +46,7 @@ public class Application extends SpringBootServletInitializer {
      */
     @Override
     protected SpringApplicationBuilder configure(final SpringApplicationBuilder application) {
+
         // TODO: I don't think this ever gets called..
         logger.debug("************ Configure method called");
         return application.sources(Application.class);
@@ -61,32 +62,36 @@ public class Application extends SpringBootServletInitializer {
     public static void main(final String[] args) throws Exception {
 
         try {
-            
+
             SpringApplication.run(Application.class, args);
-            
+
             try (final TerminologyService service = new TerminologyService()) {
                 // just kicking off the lucene reindexing
+
+                // also delete user sessions on application startup
+                service.clearUserSessions();
+
             }
-        
+
         } catch (PersistenceException e) {
-            
+
             logger.error("Elasticsearch error", e);
             System.exit(1);
         }
-        
+
         logger.debug("REFSET SERVICE MAIN APPLICATION START");
-        
+
         init();
     }
-    
+
     /**
      * Initialize the application once it is started.
      */
-    private static void init() throws Exception{
+    private static void init() throws Exception {
 
         // don't run this method during tests
         if (!PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
-            //RefsetMemberService.cacheAllMemberAncestors();
+            // RefsetMemberService.cacheAllMemberAncestors();
         } else {
             logger.debug("Not caching all members during tests.");
         }

@@ -22,6 +22,7 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.LockModeType;
 import javax.persistence.NoResultException;
 import javax.persistence.Persistence;
+import javax.persistence.Query;
 
 import org.hibernate.CacheMode;
 import org.hibernate.search.mapper.orm.Search;
@@ -1556,6 +1557,26 @@ public class TerminologyService implements RootService {
     public void addCache(final String cache, final String key, final String value)
         throws Exception {
         // TODO Auto-generated method stub
+
+    }
+    
+    /**
+     * Clear user sessions.
+     *
+     * @throws Exception the exception
+     */
+    public void clearUserSessions() throws Exception {
+
+        this.setTransactionPerOperation(false);
+        this.beginTransaction();
+
+        final Query query1 = manager.createNativeQuery("DELETE from spring_session_attributes");
+        query1.executeUpdate();
+
+        final Query query2 = manager.createNativeQuery("DELETE from spring_session");
+        query2.executeUpdate();
+
+        this.commit();
 
     }
 

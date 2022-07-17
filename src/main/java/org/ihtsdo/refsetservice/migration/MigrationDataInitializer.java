@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.DiscussionPost;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
@@ -18,6 +19,7 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,29 +35,19 @@ public class MigrationDataInitializer {
 
     private static User userResponderUser = null;
 
-    private static User wciAuthor = null;
-
-    private static User wciReviewer = null;
-
-    private static User wciViewer = null;
-
     private static User wciAdmin = null;
+
+    private static User superUser = null;
+
+    private static final Set<String> allRoles = new HashSet<>();
 
     private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
 
     private static final String WCI_TESTING_REFSET_NAME = "Default Single WCI Testing Refset";
 
-    private static final String REFSET_DEV_USER = "refset-dev";
+    private static final String SUPER_USER_NAME = "refset-dev";
 
-    private static final String ORGANIZATION_TEAM_DESCRIPTION_BASE_NAME = "Dedicated to providing tooling support for all projects";
-
-    private static final Map<String, User> userRoleMap = new HashMap<>();
-
-    private static final Set<User> commonWciUsers = new HashSet<>();
-
-    private static final Set<String> allRoles = new HashSet<>();
-
-    private static User refsetDevUser = null;
+    private static final Set<User> adminUsers = new HashSet<>();
 
     static private Organization testingOrganization = null;
 
@@ -76,29 +68,15 @@ public class MigrationDataInitializer {
         // b) 2 WCI users specifically for generating a new feedback refset for testing
         try {
 
-            // For 5 WCI users
-            wciAuthor = utilities.getUser("rt2-dev-author", "rt2-dev-author", "rt2-dev-author@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-            userRoleMap.put(User.ROLE_AUTHOR, wciAuthor);
-
-            wciReviewer = utilities.getUser("rt2-dev-reviewer", "rt2-dev-reviewer", "rt2-dev-reviewer@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_REVIEWER)));
-            userRoleMap.put(User.ROLE_REVIEWER, wciReviewer);
-
             wciAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
-            userRoleMap.put(User.ROLE_ADMIN, wciAdmin);
+            superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
 
-            wciViewer = utilities.getUser("rt2-dev-viewer", "rt2-dev-viewer", "rt2-dev-viewer@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_VIEWER)));
-            userRoleMap.put(User.ROLE_VIEWER, wciViewer);
-
-            allRoles.addAll(userRoleMap.keySet());
-            refsetDevUser = utilities.getUser(REFSET_DEV_USER, REFSET_DEV_USER, "refset-dev@westcoastinformatics.com", allRoles);
+            adminUsers.add(wciAdmin);
+            adminUsers.add(superUser);
 
             // For Feedback Refset
             feedbackInitiatiorUser = utilities.getUser("feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
             userResponderUser = utilities.getUser("feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-
-            commonWciUsers.add(refsetDevUser);
-            commonWciUsers.addAll(userRoleMap.values());
-
 
         } catch (Exception e) {
 
@@ -107,21 +85,52 @@ public class MigrationDataInitializer {
 
     }
 
-    public void initialize(Organization organization, Map<String, Organization> organizationsAdded, Map<String, Project> defaultOrganizationProjects, MigrationMetadata defaultMeta) throws Exception {
+    public void initialize(Organization wciOrganization, Map<String, Organization> organizationsAdded, Map<String, Project> defaultOrganizationProjects, MigrationMetadata defaultMeta)
+        throws Exception {
 
         // Create a dedicated UAT Training Project for each organization
-        Map<String, Project> uatProjects = createUATProjects(organization, organizationsAdded, defaultMeta);
+        createUATProjects(wciOrganization, organizationsAdded, defaultMeta);
 
-        if (organization != null) {
+        // wciOrg only exists in DEV & UAT, so is a useful way to determine environments
+        if (wciOrganization != null) {
 
             // Create wci-project (for DEV only)
-            createWCITestingContent(organization, defaultMeta);
-            createTestingFeedback(organization);
+            createWCITestingContent(wciOrganization, defaultMeta);
+
+            // Create wci-feedback-testing refset(for DEV only)
+            createTestingFeedback(wciOrganization);
+
+            // Create a single Admin team per Org
+            createAdminOrganizationTeams(organizationsAdded);
 
         }
 
-        // Add WCI support to every project in case WCI needs to debug issues
-        createWCISupport(uatProjects, defaultOrganizationProjects);
+    }
+
+    private void createAdminOrganizationTeams(Map<String, Organization> organizationsAdded) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            for (String orgName : organizationsAdded.keySet()) {
+
+                final Organization organization = organizationsAdded.get(orgName);
+
+                Set<String> memberIds = new HashSet<>();
+                memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
+
+                utilities.addTeam(TeamService.generateOrgTeamName(organization), TeamService.getOrgTeamDescription(organization), organization, new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)),
+                    memberIds);
+
+                // Finally, add the users to the organizaiton
+                organization.getMembers().addAll(adminUsers);
+                Organization updatedOrganization = service.update(organization);
+
+                printAllValues(updatedOrganization);
+            }
+
+        }
 
     }
 
@@ -183,63 +192,8 @@ public class MigrationDataInitializer {
 
             testingProject = utilities.addProject(wciOrganization, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, defaultMeta);
 
-            utilities.addWCIRefset(getMigrationUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
-                Refset.EXTENSIONAL, "", testingProject);
-        }
-
-    }
-
-    private void createWCISupport(Map<String, Project> uatProjects, Map<String, Project> defaultOrganizationProjects) throws Exception {
-        // Formalize very simply for now (nothing specific about org or role in team's description)
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            logger.info(" Create wci-support users & teams and add appropriate wci user as well as refset-dev to each.");
-
-            // Create dedicated UAT project per organization
-            List<Organization> organizations = service.getAll(Organization.class);
-
-            for (Organization organization : organizations) {
-
-                final String organizationTeamDescription = organization.getName() + " " + ORGANIZATION_TEAM_DESCRIPTION_BASE_NAME;
-                final Project uatProject = uatProjects.get(organization.getName());
-
-                if (uatProject == null) {
-
-                    logger.debug("Org is " + organization.getName() + " and it should be WCI. No need to process it in support of UAT");
-                    continue;
-                }
-
-                // Create team per role-type and add user-role and refsetDevUser (SUPER) to each
-                for (String role : userRoleMap.keySet()) {
-
-                    User roleBasedUser = userRoleMap.get(role);
-
-                    Set<String> memberNames = new HashSet<>();
-                    memberNames.add(roleBasedUser.getId());
-                    memberNames.add(refsetDevUser.getId());
-
-                    final Team team =
-                        utilities.addTeam(organization.getName() + " dev-support-" + role + " Team", organizationTeamDescription, organization, new HashSet<String>(Arrays.asList(role)), memberNames);
-
-                    uatProject.getTeams().add(team.getId());
-                    defaultOrganizationProjects.get(organization.getId()).getTeams().add(team.getId());
-
-                }
-
-                // Persist all new org teams onto Project UAT and org's Default project
-                service.update(uatProject);
-                service.update(defaultOrganizationProjects.get(organization.getId()));
-
-                // Finally, add the users to the organizaiton
-                organization.getMembers().addAll(commonWciUsers);
-                organization = service.update(organization);
-
-                printAllValues(organization);
-            }
-
+            utilities.addWCIRefset(getMigrationUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, wciOrganization.getEdition().getTopLevelModule(),
+                utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);
         }
 
     }
@@ -252,8 +206,8 @@ public class MigrationDataInitializer {
         logger.info(" Create Feedback for testing (for DEV only)");
 
         // create new refset with name = FeedbackTestingVersion1 with July 31 2022 version off International Edition
-        Refset refset = utilities.addWCIRefset(getMigrationUser(), "WCI Testing Feedback Refset 1", "999999901", wciOrganization.getEdition().getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
-            Refset.EXTENSIONAL, "", testingProject);
+        Refset refset = utilities.addWCIRefset(getMigrationUser(), "WCI Testing Feedback Refset 1", "999999901", wciOrganization.getEdition().getTopLevelModule(),
+            utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -262,17 +216,17 @@ public class MigrationDataInitializer {
             // Create users and teams, then add to org/project
             Set<String> userRole = new HashSet<>();
             userRole.add(User.ROLE_AUTHOR);
-            Set<String> memberNames = new HashSet<>();
-            memberNames.add(feedbackInitiatiorUser.getId());
-            memberNames.add(userResponderUser.getId());
-            commonWciUsers.stream().forEach(user -> memberNames.add(user.getId()));
+            Set<String> memberIds = new HashSet<>();
+            memberIds.add(feedbackInitiatiorUser.getId());
+            memberIds.add(userResponderUser.getId());
+            adminUsers.stream().forEach(user -> memberIds.add(user.getId()));
 
-            final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", wciOrganization, allRoles, memberNames);
+            final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", wciOrganization, allRoles, memberIds);
 
             testingProject.getTeams().add(singleFeedbackTeam.getId());
             testingProject = service.update(testingProject);
 
-            wciOrganization.getMembers().addAll(commonWciUsers);
+            wciOrganization.getMembers().addAll(adminUsers);
             wciOrganization.getMembers().add(feedbackInitiatiorUser);
             wciOrganization.getMembers().add(userResponderUser);
             wciOrganization = service.update(wciOrganization);
@@ -321,16 +275,16 @@ public class MigrationDataInitializer {
 
             if (latestVersion == 0) {
 
-                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_REFSET_ID_BASE + "01", wciOrganization.getEdition().getTopLevelModule(), new Date(),
-                    Refset.EXTENSIONAL, "", wciProject);
+                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_REFSET_ID_BASE + "01", wciOrganization.getEdition().getTopLevelModule(),
+                    new Date(), Refset.EXTENSIONAL, "", wciProject);
             } else {
 
                 latestVersion++;
                 String tensValue = Integer.toString(latestVersion / 10);
                 String onesValue = Integer.toString(latestVersion % 10);
 
-                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + latestVersion, FEEDBACK_REFSET_ID_BASE + tensValue + onesValue, wciOrganization.getEdition().getTopLevelModule(),
-                    new Date(), Refset.EXTENSIONAL, "", wciProject);
+                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + latestVersion, FEEDBACK_REFSET_ID_BASE + tensValue + onesValue,
+                    wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
             }
 
             addFeedbackContent(newTestingRefset);
@@ -484,18 +438,31 @@ public class MigrationDataInitializer {
     }
 
     static User getMigrationUser() {
+
         if (migrationUser == null) {
+
             migrationUser = new User();
             migrationUser.setName("Migrator");
             migrationUser.setUserName("Migrator");
             migrationUser.setActive(true);
             migrationUser.setEmail("test@wci.com");
-    
+
             Set<String> roles = new HashSet<>();
             roles.add("all-all-all");
             migrationUser.setRoles(roles);
         }
-        
+
         return migrationUser;
     }
+
+    public static Set<User> getAdminUsers() {
+
+        return adminUsers;
+    }
+
+    public static List<String> getAdminUserIds() {
+
+        return adminUsers.stream().map(User::getId).collect(Collectors.toList());
+    }
+
 }

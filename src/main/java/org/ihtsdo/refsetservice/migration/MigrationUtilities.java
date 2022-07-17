@@ -3,7 +3,6 @@ package org.ihtsdo.refsetservice.migration;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
@@ -16,12 +15,10 @@ import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
-import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
@@ -102,29 +99,31 @@ public class MigrationUtilities {
         refsetParameters.setParentConceptId(DEFAULT_WCI_REFSET_PARENT_CONCEPT);
         refsetParameters.setProject(project);
         refsetParameters.setLatestPublishedVersion(false);
-        
+
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
-            
+
             final Object returned = RefsetService.createRefset(service, u, refsetParameters);
 
             if (returned instanceof String) {
-    
+
                 throw new Exception((String) returned);
             } else {
-    
+
                 final Refset refset = (Refset) returned;
-    
+
                 logger.info("Created new WCI Refset - " + refset);
-    
+
                 Refset updatedRefset = setToReadyForEditWorkflowStatus(refset);
-    
+
                 logger.info("Update Workflow Status - " + updatedRefset);
-    
+
                 return updatedRefset;
             }
+
         }
+
     }
 
     private Refset setToReadyForEditWorkflowStatus(Refset refset) throws Exception {
@@ -134,21 +133,23 @@ public class MigrationUtilities {
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
-            
+
             // if the status is Published then create a new version of the refset that is ready to be edited
             refset = WorkflowService.setWorkflowStatusByAction(service, MigrationDataInitializer.getMigrationUser(), WorkflowService.FINISH_EDIT, refset, "");
-        
+
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
-    
+
                 logger.debug("setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
                 return refset;
             } else {
-    
+
                 logger.debug("setWorkflowStatus: did not update workflow status.");
                 return null;
             }
+
         }
+
     }
 
     public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative, Project project) throws Exception {
@@ -207,6 +208,8 @@ public class MigrationUtilities {
 
     public User getUser(String name, String userName, String email, Set<String> roles) throws Exception {
 
+        User user = null;
+
         try (final TerminologyService service = new TerminologyService()) {
 
             final PfsParameter pfs = new PfsParameter();
@@ -220,18 +223,20 @@ public class MigrationUtilities {
             if (results.getItems() != null && results.getItems().size() == 1) {
 
                 // User already exists
-                return results.getItems().iterator().next();
+                user = results.getItems().iterator().next();
             } else {
 
                 // Need to create user
-                return addUser(name, userName, email, roles);
+                user = addUser(name, userName, email, roles);
             }
 
         }
 
+        return user;
+
     }
 
-    Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberNames) throws Exception {
+    Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberIds) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -243,7 +248,7 @@ public class MigrationUtilities {
             team.setOrganization(organization);
             team.setPrimaryContactEmail("support-rt2@westcoastinformatics.com");
             team.setRoles(roles);
-            team.setMembers(memberNames);
+            team.setMembers(memberIds);
 
             // Persist
             final Team t = service.add(team);
