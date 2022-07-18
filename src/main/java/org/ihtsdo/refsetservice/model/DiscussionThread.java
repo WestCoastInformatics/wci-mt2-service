@@ -45,7 +45,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Entity
 @Table(name = "discussion_threads")
 @Schema(description = "A discussion thread for a refset or refset memeber.")
-@JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
 public class DiscussionThread extends AbstractHasModified {

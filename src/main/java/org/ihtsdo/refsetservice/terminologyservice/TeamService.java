@@ -28,6 +28,7 @@ import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.IndexUtility;
@@ -76,6 +77,8 @@ public class TeamService extends BaseService {
             service.add(team);
             service.add(AuditEntryHelper.newTeamEntry(team));
             service.commit();
+            
+            setUserRoles(user, newTeam, newTeam.getUserRoles());
 
             return team;
         }
@@ -84,8 +87,10 @@ public class TeamService extends BaseService {
     /**
      * Validate team data.
      *
+     * @param service the Terminology Service
      * @param user the user
      * @param team the team
+     * @param isNew is this a new team
      * @return the team
      * @throws Exception the exception
      */
@@ -177,6 +182,8 @@ public class TeamService extends BaseService {
                     }
                 }
             }
+            
+            setUserRoles(SecurityService.getUserFromSession(), team, team.getUserRoles());
 
             return team;
         }
@@ -310,6 +317,11 @@ public class TeamService extends BaseService {
 
             for (final Team team : results.getItems()) {
                 
+                // if only the user's teams should be returned then make sure the user is an admin or a member of the team
+                if (onlyUsersTeams && !canUserViewTeam(user, team, false)) {
+                    continue;
+                }
+                
                 if (includeMembers) {
                     
                     for (final String userId : team.getMembers()) {
@@ -324,6 +336,7 @@ public class TeamService extends BaseService {
                     }
                 }
                 
+                setUserRoles(user, team, team.getUserRoles());
                 resultsToReturn.getItems().add(team);
             }
             
@@ -453,6 +466,8 @@ public class TeamService extends BaseService {
         service.update(team);
         service.add(AuditEntryHelper.addUserToTeamEntry(team, userToAdd));
         service.commit();
+        
+        setUserRoles(user, team, team.getUserRoles());
 
         return team;
     }
@@ -709,6 +724,28 @@ public class TeamService extends BaseService {
         } else {
             return false;
         }
+    }
+    
+    /**
+     * set the list of roles a user has for a team.
+     *
+     * @param user the user
+     * @param team the team
+     * @param roles the role list to populate
+     * @return the list of roles for the team
+     * @throws Exception the exception
+     */
+    public static List<String> setUserRoles(final User user, final Team team, final List<String> roles) throws Exception {
+
+        if (canUserEditTeam(user, team)) {
+            roles.add(User.ROLE_ADMIN);
+        }
+        
+        if (canUserViewTeam(user, team, false)) {
+            roles.add(User.ROLE_VIEWER);
+        }
+
+        return roles;
     }
     
     /**
