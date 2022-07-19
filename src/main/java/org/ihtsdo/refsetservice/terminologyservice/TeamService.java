@@ -66,7 +66,6 @@ public class TeamService extends BaseService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team newTeam = new Team(team);
-            newTeam.getRoles().clear();
             checkEditPermissions(user, newTeam);
             validateTeamData(service, newTeam, true);
            

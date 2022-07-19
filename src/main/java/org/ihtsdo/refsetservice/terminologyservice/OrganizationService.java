@@ -62,6 +62,29 @@ public class OrganizationService extends BaseService {
 
         checkEditPermissions(user, null);
         
+        SearchParameters organizationsParameters = new SearchParameters();
+        organizationsParameters.setQuery("editionId:" + organization.getEditionId());
+        
+        List<Organization> organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
+        
+        if (organizationList.size() > 0) {
+            
+            final String errorMessage = "There is already an organization tied to that edition.";
+            logger.error(errorMessage);
+            throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", "Error creating organization.");
+        }
+        
+        organizationsParameters.setQuery("name:" + organization.getName());
+        
+        organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
+        
+        if (organizationList.size() > 0) {
+            
+            final String errorMessage = "There is already an organization with that name.";
+            logger.error(errorMessage);
+            throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", "Error creating organization.");
+        }
+        
         final User userToAdd = service.findSingle("id:" + user.getId(), User.class, null);
 
         final Organization newOrganization = new Organization();

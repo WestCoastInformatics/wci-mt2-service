@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.QueryParam;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -45,6 +46,7 @@ import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
@@ -1716,6 +1718,7 @@ public class RefsetController extends BaseController {
     /**
      * Gets the editions.
      *
+     * @param onlyEditionsWithoutOrganizations should the results be limited to editions that do not have an organization tied to them
      * @return the editions
      * @throws Exception the exception
      */
@@ -1726,7 +1729,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/editions", produces = "application/json")
-    public @ResponseBody ResultList<TypeKeyValue> getEditions() throws Exception {
+    public @ResponseBody ResultList<TypeKeyValue> getEditions(@QueryParam(value = "onlyUsersTeams") final boolean onlyEditionsWithoutOrganizations) throws Exception {
 
         try {
 
@@ -1738,6 +1741,11 @@ public class RefsetController extends BaseController {
                 ResultList<Edition> results = new ResultList<Edition>();
                 final PfsParameter pfs = new PfsParameter();
                 final QueryParameter query = new QueryParameter();
+                List<Organization> organizationList = new ArrayList<>();
+                
+                if (onlyEditionsWithoutOrganizations) {
+                    organizationList = OrganizationService.searchOrganizations(service, user, new SearchParameters(), false).getItems();
+                }
 
                 results = service.find(query, pfs, Edition.class, null);
 
@@ -1759,6 +1767,23 @@ public class RefsetController extends BaseController {
 
                 for (Edition edition : editionList) {
 
+                    // if this flag is set skip any edition already tied to an organization
+                    if (onlyEditionsWithoutOrganizations) {
+                        
+                        boolean hasOrganization = false;
+                        
+                        for (Organization organization : organizationList) {
+                            
+                            if (organization.getEdition().getId().equals(edition.getId())) {
+                                hasOrganization = true;
+                            }
+                        }
+                        
+                        if (hasOrganization) {
+                            continue;
+                        }
+                    }
+                    
                     TypeKeyValue tkv = new TypeKeyValue("edition", edition.getName(), edition.getName());
                     tkv.setId(edition.getId());
                     entryList.add(tkv);
