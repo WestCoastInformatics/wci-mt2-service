@@ -406,7 +406,14 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      * @throws Exception the exception
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Organization organization) throws Exception {
-        return checkPermission(roleToCheck, organization.getEdition(), null);
+        
+        Edition edition = null;
+        
+        if (organization != null) {
+            edition = organization.getEdition();
+        }
+        
+        return checkPermission(roleToCheck, edition, null);
     }
     
     /**
@@ -422,16 +429,24 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
         try {
 
-            String editionName = edition.getShortName();
+            String editionName = null;
+            
+            if (edition == null && projectCrowdId == null) {
+                editionName = "all";
+            
+            } else if (edition != null) {
+                
+                editionName = edition.getShortName();
 
-            // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
+                // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
 
-            if (!edition.getShortName().equals("SNOMEDCT")) {
-                editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
-            } else {
-                editionName = "main";
+                if (!edition.getShortName().equals("SNOMEDCT")) {
+                    editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
+                } else {
+                    editionName = "main";
+                }
             }
-
+            
             final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
 
             for (final String role : roles) {

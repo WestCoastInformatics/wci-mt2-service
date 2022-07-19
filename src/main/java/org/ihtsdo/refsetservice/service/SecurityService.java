@@ -446,26 +446,39 @@ public class SecurityService implements AutoCloseable {
         if (user == null || user.getRoles() == null || user.getRoles().isEmpty()) {
             return;
         }
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-        final Set<String> memberships = new HashSet<>();
-        for (final String groupName : user.getRoles()) {
-            final UserProjectRole userProjectRole = new UserProjectRole(groupName);
-            memberships.add(userProjectRole.getOrganization());
-        }
-
-        final ResultList<Organization> organizations = OrganizationService.searchOrganizations(user, new SearchParameters());
-        final Map<String, Organization> organizationAndUsers = new HashMap<>();
-        for (final Organization org : organizations.getItems()) {
-            organizationAndUsers.put(CrowdGroupNameAlgorithm.getOrganizationString(org.getEdition().getShortName()), org);
-        }
-
-        for (final String org : memberships) {
-            if (organizationAndUsers.get(org) != null && !organizationAndUsers.get(org).getMembers().contains(user)) {
-                logger.debug("Add user " + user.getUserName() + " to org " + org);
-                OrganizationService.addUserToOrganization(user, organizationAndUsers.get(org).getId(), user.getEmail());
+            final Set<String> memberships = new HashSet<>();
+            
+            for (final String groupName : user.getRoles()) {
+                
+                final UserProjectRole userProjectRole = new UserProjectRole(groupName);
+                memberships.add(userProjectRole.getOrganization());
             }
+    
+            final ResultList<Organization> organizations = OrganizationService.searchOrganizations(service, user, new SearchParameters(), true);
+            final Map<String, Organization> organizationAndUsers = new HashMap<>();
+            
+            for (final Organization org : organizations.getItems()) {
+                organizationAndUsers.put(CrowdGroupNameAlgorithm.getOrganizationString(org.getEdition().getShortName()), org);
+            }
+    
+            for (final String org : memberships) {
+                
+                if (organizationAndUsers.get(org) != null && !organizationAndUsers.get(org).getMembers().contains(user)) {
+                    
+                    logger.debug("Add user " + user.getUserName() + " to org " + org);
+                    OrganizationService.addUserToOrganization(service, user, organizationAndUsers.get(org).getId(), user.getEmail());
+                }
+            }
+            
+            service.commit();
         }
-
     }
 
     /* see superclass */

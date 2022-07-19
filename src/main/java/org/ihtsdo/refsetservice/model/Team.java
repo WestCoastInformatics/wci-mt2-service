@@ -51,7 +51,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Entity
 @Table(name = "teams")
 @Schema(description = "Represents a team with organization, roles and members (users).")
-@JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
 public class Team extends AbstractHasModified implements Copyable<Team>, ValidateCrud<Team> {
@@ -87,6 +86,10 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     /**  The member list. */
     @Transient
     private List<User> memberList;
+    
+    /** The user's roles for this team. */
+    @Transient
+    private List<String> userRoles;
 
     /**
      * Instantiates an empty {@link Team}.
@@ -129,6 +132,9 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         primaryContactEmail = other.getPrimaryContactEmail();
         organization = other.getOrganization();
         roles = other.getRoles();
+        memberList = other.getMemberList();
+        members = other.getMembers();
+        userRoles = other.getUserRoles();
     }
 
     /**
@@ -145,6 +151,9 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         primaryContactEmail = other.getPrimaryContactEmail();
         organization = other.getOrganization();
         roles = other.getRoles();
+        memberList = other.getMemberList();
+        members = other.getMembers();
+        userRoles = other.getUserRoles();
     }
 
     /**
@@ -330,6 +339,31 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
 
         this.memberList = memberList;
     }
+    
+    /**
+     * Returns the user's roles for this team.
+     *
+     * @return the user's roles
+     */
+    @JsonGetter()
+    public List<String> getUserRoles() {
+
+        if (userRoles == null) {
+            userRoles = new ArrayList<>();
+        }
+
+        return userRoles;
+
+    }
+
+    /**
+     * Sets the user's roles for this team.
+     *
+     * @param userRoles the user's roles
+     */
+    public void setUserRoles(final List<String> userRoles) {
+        this.userRoles = userRoles;
+    }
 
     /* see superclass */
     @Override
@@ -343,6 +377,9 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         result = prime * result + ((organization == null) ? 0 : organization.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((memberList == null) ? 0 : memberList.hashCode());
+        result = prime * result + ((members == null) ? 0 : members.hashCode());
+        result = prime * result + ((userRoles == null) ? 0 : userRoles.hashCode());
         return result;
     }
 
@@ -374,6 +411,13 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         } else if (!members.equals(other.members)) {
             return false;
         }
+        if (memberList == null) {
+            if (other.memberList != null) {
+                return false;
+            }
+        } else if (!memberList.equals(other.memberList)) {
+            return false;
+        }
         if (name == null) {
             if (other.name != null) {
                 return false;
@@ -400,6 +444,13 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
                 return false;
             }
         } else if (!roles.equals(other.roles)) {
+            return false;
+        }
+        if (userRoles == null) {
+            if (other.userRoles != null) {
+                return false;
+            }
+        } else if (!userRoles.equals(other.userRoles)) {
             return false;
         }
         return true;

@@ -36,6 +36,8 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextFi
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -216,6 +218,34 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public void setEdition(final Edition edition) {
 
         this.edition = edition;
+    }
+    
+    /**
+     * Returns the edition ID.
+     *
+     * @return the edition ID
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @IndexingDependency(derivedFrom = @ObjectPath({@PropertyValue(propertyName = "edition")}))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    public String getEditionId() {
+        return edition == null ? null : edition.getId();
+    }
+
+    /**
+     * Sets the edition ID.
+     *
+     * @param editionId the edition ID to set
+     */
+    public void getEditionId(final String editionId) {
+
+        if (edition != null) {
+            this.edition.setId(editionId);
+        } else {
+            
+            this.edition = new Edition();
+            this.edition.setId(editionId);
+        }
     }
 
     /**

@@ -28,6 +28,7 @@ import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -103,15 +104,17 @@ public class OrganizationController extends BaseController {
     @RequestMapping(value = "/organization/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<Organization> getOrganization(@PathVariable(value = "id") final String id, @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
+            
             logger.info("Get organization {}", id);
             // TODO check permissions, fail if not authorized.
-            final User authUser = SecurityService.getUserFromSession();
-            if (authUser == null) {
+            final User user = SecurityService.getUserFromSession();
+            
+            if (user == null) {
                 return new ResponseEntity<>(HttpStatus.FORBIDDEN);
             }
 
-            final Organization organization = OrganizationService.getOrganization(id, includeMembers);
+            final Organization organization = OrganizationService.getOrganization(service, user, id, includeMembers);
             return new ResponseEntity<>(organization, HttpStatus.OK);
 
         } catch (final NotFoundException nfe) {
@@ -120,6 +123,7 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+            
             handleException(e);
             return null;
         }
@@ -151,69 +155,25 @@ public class OrganizationController extends BaseController {
 
         logger.info("Search organizations: {}", ModelUtility.toJson(searchParameters));
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
+        final User user = SecurityService.getUserFromSession();
+        
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultList<Organization> results = OrganizationService.searchOrganizations(authUser, searchParameters);
-            final ResultList<Organization> resultsWithPermissions = new ResultList<>();
-
-            for (Organization organization : results.getItems()) {
-
-                boolean giveViewerRole = false;
-                final List<String> roles = new ArrayList<>();
-
-                if (authUser.doesUserHavePermission(User.ROLE_AUTHOR, organization)) {
-
-                    roles.add(User.ROLE_AUTHOR);
-                    giveViewerRole = true;
-                }
-
-                if (authUser.doesUserHavePermission(User.ROLE_REVIEWER, organization)) {
-
-                    roles.add(User.ROLE_REVIEWER);
-                    giveViewerRole = true;
-                }
-
-                if (authUser.doesUserHavePermission(User.ROLE_ADMIN, organization)) {
-
-                    roles.add(User.ROLE_ADMIN);
-                    giveViewerRole = true;
-                }
-
-                if (authUser.doesUserHavePermission(User.ROLE_VIEWER, organization) || giveViewerRole) {
-
-                    roles.add(User.ROLE_VIEWER);
-                }
-                organization.setRoles(roles);
-
-                if (includeMembers) {
-                    organization.getMembers();
-                } else {
-
-                    if (organization.getMembers() != null && !organization.getMembers().isEmpty()) {
-                        organization.getMembers().clear();
-                    }
-                }
-
-                if (roles.contains(User.ROLE_VIEWER)) {
-                    resultsWithPermissions.getItems().add(organization);
-                }
-            }
-
-            resultsWithPermissions.setTotal(resultsWithPermissions.getItems().size());
-            return new ResponseEntity<>(resultsWithPermissions, HttpStatus.OK);
+            final ResultList<Organization> results = OrganizationService.searchOrganizations(service, user, searchParameters, includeMembers);
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final ResponseStatusException rse) {
             throw rse;
 
         } catch (final Exception e) {
+            
             logger.error("Error searching organizations.  Search criteria: {} ", searchParameters.toString());
             handleException(e);
             return null;
@@ -238,18 +198,23 @@ public class OrganizationController extends BaseController {
     @PostMapping(value = "/organization", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity addOrganization(@RequestBody final Organization organization) throws Exception {
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
             logger.info("Add organization: {}", organization);
             // TODO check permissions, fail if not authorized.
-            final User authUser = SecurityService.getUserFromSession();
-            if (authUser == null) {
+            final User user = SecurityService.getUserFromSession();
+            
+            if (user == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
             }
 
             if (organization == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing organization");
             }
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
             try {
                 organization.validateAdd();
@@ -257,11 +222,13 @@ public class OrganizationController extends BaseController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
             }
 
-            final Organization org = OrganizationService.createOrganization(authUser, organization);
+            final Organization org = OrganizationService.createOrganization(service, user, organization);
+            //service.commit();
 
             return new ResponseEntity<>(org, HttpStatus.CREATED);
 
         } catch (final Exception e) {
+            
             handleException(e);
             return null;
         }
@@ -288,12 +255,14 @@ public class OrganizationController extends BaseController {
 
         logger.info("Update organization: {}", organization);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
+        final User user = SecurityService.getUserFromSession();
+        
+        if (user == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
         }
 
         if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
+            
             final String errorMessage = "Organization is null or organization id does not match id in URL.";
             logger.error(errorMessage);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
@@ -302,13 +271,20 @@ public class OrganizationController extends BaseController {
         try {
             organization.validateUpdate(null);
         } catch (final Exception e) {
+            
             logger.error("Bad request for organization update.", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
 
-            final Organization org = OrganizationService.updateOrganization(authUser, organization);
+            final Organization org = OrganizationService.updateOrganization(service, user, organization);
+            //service.commit();
+            
             return new ResponseEntity<>(org, HttpStatus.OK);
 
         } catch (final NotFoundException nfe) {
@@ -317,6 +293,7 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+            
             logger.error("Error updating organization. Organization: {}", organization);
             handleException(e);
             return null;
@@ -342,13 +319,21 @@ public class OrganizationController extends BaseController {
 
         logger.info("Inactivate organization: {}", id);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
+        final User user = SecurityService.getUserFromSession();
+        
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
-        try {
-            OrganizationService.inactivateOrganization(authUser, id);
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
+            
+            OrganizationService.inactivateOrganization(service, user, id);
+            //service.commit();
+            
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
         } catch (final NotFoundException nfe) {
@@ -357,6 +342,7 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+            
             logger.error("Error inactivating organization.  Id: {}", id);
             handleException(e);
             return null;
@@ -385,14 +371,15 @@ public class OrganizationController extends BaseController {
 
         logger.info("Get organization users. Id: {}", id);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
+        final User user = SecurityService.getUserFromSession();
+        
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultListUser usersResultList = OrganizationService.getOrganizationUsers(id, includeTeams);
+            final ResultListUser usersResultList = OrganizationService.getOrganizationUsers(service, id, includeTeams);
             return new ResponseEntity<>(usersResultList, HttpStatus.OK);
 
         } catch (final NotFoundException nfe) {
@@ -401,6 +388,7 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+            
             handleException(e);
             return null;
         }
@@ -427,17 +415,19 @@ public class OrganizationController extends BaseController {
 
         logger.info("Get organization teams. Id: {}", id);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
+        final User user = SecurityService.getUserFromSession();
+        
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(id);
+            final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, id);
             return new ResponseEntity<>(new ResultListTeam(orgTeams), HttpStatus.OK);
 
         } catch (final Exception e) {
+            
             handleException(e);
             return null;
         }
@@ -464,17 +454,19 @@ public class OrganizationController extends BaseController {
 
         logger.info("Get organization teams. Id: {}", id);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
+        final User user = SecurityService.getUserFromSession();
+        
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultList<Project> orgProjects = OrganizationService.getOrganizationProjects(id);
+            final ResultList<Project> orgProjects = OrganizationService.getOrganizationProjects(service, id);
             return new ResponseEntity<>(new ResultListProject(orgProjects), HttpStatus.OK);
 
         } catch (final Exception e) {
+            
             handleException(e);
             return null;
         }
@@ -500,14 +492,21 @@ public class OrganizationController extends BaseController {
 
         logger.info("Add user: {} to organization: {}.", email, organizationId);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
+        final User user = SecurityService.getUserFromSession();
+        
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            OrganizationService.addUserToOrganization(authUser, organizationId, email);
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
+            
+            OrganizationService.addUserToOrganization(service, user, organizationId, email);
+            //service.commit();
+            
             return new ResponseEntity<>(HttpStatus.CREATED);
 
         } catch (final NotFoundException nfe) {
@@ -516,6 +515,7 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+            
             logger.error("Error adding user: {} to organization: {}.", email, organizationId, e);
             handleException(e);
             return null;
@@ -543,14 +543,21 @@ public class OrganizationController extends BaseController {
 
         logger.info("Add user: {} to organization: {}.", userId, organizationId);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
+        final User user = SecurityService.getUserFromSession();
+        
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            final Organization org = OrganizationService.removeUserFromOrganization(authUser, userId, organizationId);
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
+            
+            final Organization org = OrganizationService.removeUserFromOrganization(service, user, userId, organizationId);
+            //service.commit();
+            
             return new ResponseEntity<>(org, HttpStatus.ACCEPTED);
 
         } catch (final NotFoundException nfe) {
@@ -559,6 +566,7 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+            
             logger.error("Error adding user: {} to organization: {}.", userId, organizationId, e);
             handleException(e);
             return null;
@@ -611,13 +619,19 @@ public class OrganizationController extends BaseController {
 
         logger.info("Add icon for organization: {}.", organizationId);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
+        final User user = SecurityService.getUserFromSession();
+        
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
-        try {
-            final Organization organization = OrganizationService.getOrganization(organizationId, false);
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            //service.setTransactionPerOperation(false);
+            //service.beginTransaction();
+            
+            final Organization organization = OrganizationService.getOrganization(service, user, organizationId, false);
 
             String fileToDelete = "";
 
@@ -627,7 +641,8 @@ public class OrganizationController extends BaseController {
 
             final File file = FileUtility.saveIconFile(inputFile, organizationId, fileToDelete);
 
-            OrganizationService.updateOrganizationIcon(authUser, organizationId, ICON_URL_PREFIX, file.getName());
+            OrganizationService.updateOrganizationIcon(service, user, organizationId, ICON_URL_PREFIX, file.getName());
+            //service.commit();
 
             return new ResponseEntity<>("\"" + organization.getIconUri() + "\"", HttpStatus.ACCEPTED);
 

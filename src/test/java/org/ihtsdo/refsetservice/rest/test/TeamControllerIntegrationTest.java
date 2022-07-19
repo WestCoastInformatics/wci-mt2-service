@@ -26,6 +26,7 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
@@ -147,9 +148,18 @@ public class TeamControllerIntegrationTest extends BaseTest {
         tempOrganization.setPrimaryContactEmail("org@test.com");
         tempOrganization.setEdition(edition);
 
-        try {
-            organization = OrganizationService.createOrganization(testUser, tempOrganization);
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(testUser.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+            
+            organization = OrganizationService.createOrganization(service, testUser, tempOrganization);
+            
+            service.commit();
+            
         } catch (Exception e) {
+            
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }

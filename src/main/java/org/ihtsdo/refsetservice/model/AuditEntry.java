@@ -107,7 +107,7 @@ public class AuditEntry extends AbstractHasModified {
      *
      * @return the entityType
      */
-
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getEntityType() {
 
         return entityType;
@@ -118,7 +118,6 @@ public class AuditEntry extends AbstractHasModified {
      *
      * @param entityType the entityType to set
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public void setEntityType(String entityType) {
 
         this.entityType = entityType;
@@ -172,7 +171,7 @@ public class AuditEntry extends AbstractHasModified {
      *
      * @return the details
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getDetails() {
 
         return details;

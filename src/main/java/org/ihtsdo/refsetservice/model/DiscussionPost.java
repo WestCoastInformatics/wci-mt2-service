@@ -31,7 +31,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Entity
 @Table(name = "discussion_posts")
 @Schema(description = "A post of a discussion thread")
-@JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
 public class DiscussionPost extends AbstractHasModified {

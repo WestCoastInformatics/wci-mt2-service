@@ -118,6 +118,7 @@ public class TeamController extends BaseController {
      * @param searchParameters the search parameters
      * @param bindingResult the binding result
      * @param includeMembers the include members
+     * @param onlyUsersTeams return only the teams the user is a member off or has permission to admin
      * @return the string
      * @throws Exception the exception
      */
@@ -134,9 +135,9 @@ public class TeamController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/team/search", produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<ResultList<Team>> getTeams(final SearchParameters searchParameters, final BindingResult bindingResult,
-        @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
+        @QueryParam(value = "includeMembers") final boolean includeMembers, @QueryParam(value = "onlyUsersTeams") final boolean onlyUsersTeams) throws Exception {
 
-        logger.info("Search teams: {}", ModelUtility.toJson(searchParameters));
+        logger.info("Search teams includeMembers: {} ; searchParameters: {}", includeMembers, ModelUtility.toJson(searchParameters));
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
         if (authUser == null) {
@@ -148,7 +149,7 @@ public class TeamController extends BaseController {
 
         try {
 
-            final ResultList<Team> results = TeamService.searchTeams(authUser, searchParameters, includeMembers);
+            final ResultList<Team> results = TeamService.searchTeams(authUser, searchParameters, includeMembers, onlyUsersTeams);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final ResponseStatusException rse) {
