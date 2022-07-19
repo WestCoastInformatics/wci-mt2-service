@@ -75,7 +75,7 @@ public class HistoricDataMigrator {
     private final Set<String> internationalRefsets = new HashSet<>();
 
     /** The testing. */
-    private boolean testing = false;
+    private boolean testing = true;
 
     private final String testingEdition = "elgia";
 
@@ -129,7 +129,10 @@ public class HistoricDataMigrator {
         // Read refset metadata and associated information (projects & ECLs)
         rttRefsetIds = utilities.getPropertyReader().parseRttData(supportRtt);
 
-        processRttRefsets();
+        if (supportRtt) {
+
+            processRttRefsets();
+        }
 
         // With metadata from RTT project (defined in parseRTTMetadata())
         updateRefsetsWithRttMetadata();
@@ -140,24 +143,17 @@ public class HistoricDataMigrator {
 
     private void processRttRefsets() {
 
-        if (!supportRtt) {
+        // Ignore those refsets that while on SnowS, are not yet in RTT DB dmp.
+        // file that we are using
+        for (Refset refset : snowstormRefsets) {
 
-            logger.info("Nothing to do in processRttRefses() as we are nNot pulling refsets from RTT (due to supportRtt value of: " + supportRtt + ")");
-        } else {
+            if (!utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().keySet().contains(refset.getRefsetId())) {
 
-            // Skip those refsets that live on SnowS, but are not yet in RTT DB dmp
-            // file that we are using
-            for (Refset refset : snowstormRefsets) {
+                if (internationalRefsets.contains(refset.getRefsetId())) {
 
-                if (!utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().keySet().contains(refset.getRefsetId())) {
+                    refsetsToIgnore.add(refset.getRefsetId());
 
-                    if (internationalRefsets.contains(refset.getRefsetId())) {
-
-                        refsetsToIgnore.add(refset.getRefsetId());
-
-                        logger.debug("Going to ignore Int'l refsets supported in " + refset.getEditionName() + " - " + refset.getRefsetId() + " - " + refset.getName());
-                    }
-
+                    logger.debug("Going to ignore Int'l refsets supported in " + refset.getEditionName() + " - " + refset.getRefsetId() + " - " + refset.getName());
                 }
 
             }
@@ -615,8 +611,7 @@ public class HistoricDataMigrator {
 
         }
 
-        logger.info(
-            "Finished migrating with Snowstorm having created " + internationalRefsets.size() + " international Refsets and " + nonInternationalRefsetCount + " non-International refsets.");
+        logger.info("Finished migrating with Snowstorm having created " + internationalRefsets.size() + " international Refsets and " + nonInternationalRefsetCount + " non-International refsets.");
 
         return snowstormRefsets;
     }
@@ -980,15 +975,14 @@ public class HistoricDataMigrator {
 
                 // If no non-CORE modules found, use the default Module
                 edition.setTopLevelModule(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
-                logger
-                    .debug("No dedicated modules identified for " + edition.getName() + ": " + editionModules.toString() + ", so adding default: " + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
+                logger.info("Didn't identify dedicated module for " + edition.getName() + ": " + editionModules.toString() + ", so using default: " + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
             } else if (editionModules.size() == 1) {
 
                 // If only one non-CORE modules found, use it
                 edition.setTopLevelModule(editionModules.iterator().next());
             } else {
 
-                logger.debug("Have multiple modules identified for " + edition.getName() + ": " + editionModules.toString());
+                logger.info("Have multiple modules identified for " + edition.getName() + ": " + editionModules.toString());
 
                 // If multiple non-CORE modules found, TODO: Fill in
                 Set<String> childrenModules = new HashSet<>();
@@ -1125,7 +1119,7 @@ public class HistoricDataMigrator {
             int count = 0;
             int ignoreCounter = 0;
 
-            logger.debug(" step - Start persisting gathered Snowstorm & RTT Supporting Objects");
+            logger.info(" step - Start persisting gathered Snowstorm & RTT Supporting Objects");
 
             // Adding refsets identified on snowstorm
             for (Refset snowRefset : snowstormRefsets) {
@@ -1180,7 +1174,7 @@ public class HistoricDataMigrator {
                         // TODO Temp fix so there are no refsets or orgs without editions
                         if (edition == null || edition.getId() == null || edition.getId().equals("")) {
 
-                            logger.debug("Skipping refset with no Edition: " + rttRefset.getRefsetId());
+                            // Skipping refset with no Edition
                             continue;
                         }
 
@@ -1430,8 +1424,26 @@ public class HistoricDataMigrator {
         service.setModifiedFlag(true);
 
     }
-    
-    public static String getTestingRefset() { 
+
+    public static String getTestingRefset() {
+
         return testingRefset;
+    }
+
+    public void syncWithSnowstorm(boolean runForProduction) throws Exception {
+
+        final SyncAgent agent = new SyncAgent(runForProduction);
+
+        logger.debug(" 111-a");
+        final JsonNode organizationJsonRootNode = agent.getSnowstormCodeSystems();
+
+        logger.debug(" 111-b codeSystems json: " + organizationJsonRootNode);
+        agent.processCodeSystems(organizationJsonRootNode);
+
+        // TODO: This is next
+        // Map<String, SortedMap<Date, String>> branches = identifyBranches();
+
+        logger.debug(" 111-return + ");
+
     }
 }

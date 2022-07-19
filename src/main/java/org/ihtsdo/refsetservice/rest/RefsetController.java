@@ -266,7 +266,7 @@ public class RefsetController extends BaseController {
             String error = "";
             List<String> unaddedConcepts;
             final User user = SecurityService.getUserFromSession();
-            
+
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
@@ -350,10 +350,10 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             String conceptsToRemove = null;
             User user = SecurityService.getUserFromSession();
-            
+
             service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
 
             logger.debug("removeRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
 
@@ -377,7 +377,7 @@ public class RefsetController extends BaseController {
 
             // add the list of concepts as members to the refset
             final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refsetInternalId, conceptsToRemove);
-            //service.commit();
+            // service.commit();
 
             // see if there are any concepts that were unable to be added and craft the error message
             if (unremovedConcepts.size() > 0) {
@@ -436,10 +436,10 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             List<String> conceptIdList = new ArrayList<>();
             final User user = SecurityService.getUserFromSession();
-            
+
             service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
 
             logger.debug("addRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType
                 + " ; definitionExceptionType: " + definitionExceptionType);
@@ -462,7 +462,7 @@ public class RefsetController extends BaseController {
             }
 
             final String status = RefsetService.addDefinitionException(service, user, refsetInternalId, inclusionEcl, definitionExceptionType);
-            //service.commit();
+            // service.commit();
 
             if (!status.startsWith("Error")) {
 
@@ -503,13 +503,13 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             final User user = SecurityService.getUserFromSession();
             logger.debug("removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; definitionExceptionId: " + definitionExceptionId);
-            
+
             service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
 
             final String status = RefsetService.removeDefinitionException(service, user, refsetInternalId, definitionExceptionId);
-            //service.commit();
+            // service.commit();
 
             if (!status.startsWith("Error")) {
 
@@ -552,11 +552,11 @@ public class RefsetController extends BaseController {
             logger.debug("createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
 
             User user = SecurityService.getUserFromSession();
-            
+
             service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
-            
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
+
             String status = "";
             final Object returned = RefsetService.createRefset(service, user, refsetParameters);
 
@@ -569,8 +569,8 @@ public class RefsetController extends BaseController {
                 newRefsetInternalId = refset.getId();
                 status = refset.getRefsetId();
             }
-            
-            //service.commit();
+
+            // service.commit();
 
             if (status.startsWith("Error")) {
 
@@ -612,13 +612,13 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             User user = SecurityService.getUserFromSession();
-            
+
             service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
-            
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
+
             final String status = RefsetService.modifyRefset(service, user, refsetInternalId, refsetParameters);
-            //service.commit();
+            // service.commit();
 
             if (!status.startsWith("Error")) {
 
@@ -703,20 +703,20 @@ public class RefsetController extends BaseController {
         @RequestParam(required = false) final String notes) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             logger.debug("setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; action: " + action + " ; notes: " + notes);
 
             User user = SecurityService.getUserFromSession();
             Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             final String currentStatus = refset.getWorkflowStatus();
-            
+
             service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
 
             // if the status is Published then create a new version of the refset that is ready to be edited
             if (currentStatus == null || currentStatus.equals(WorkflowService.PUBLISHED)) {
-                
+
                 final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
                 final String versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
 
@@ -733,8 +733,8 @@ public class RefsetController extends BaseController {
             }
 
             refset = WorkflowService.setWorkflowStatusByAction(service, user, action, refset, notes);
-            //service.commit();
-            
+            // service.commit();
+
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
 
@@ -770,16 +770,16 @@ public class RefsetController extends BaseController {
 
             // logger.debug("updateWorkflowNote: refsetInternalId: " + refsetInternalId + " ;notes: " + notes);
             User user = SecurityService.getUserFromSession();
-            
-            service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
 
-            Refset refset = RefsetService.getRefset(service,user, refsetInternalId);
+            service.setModifiedBy(user.getUserName());
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
+
+            Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             // not used final String currentStatus = refset.getWorkflowStatus();
 
-            WorkflowService.updateWorkflowNote(service,user, refset, notes);
-            //service.commit();
+            WorkflowService.updateWorkflowNote(service, user, refset, notes);
+            // service.commit();
 
             return WorkflowService.getWorkflowHistory(service, refset, new SearchParameters());
 
@@ -920,13 +920,13 @@ public class RefsetController extends BaseController {
 
             logger.debug("createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
-            
+
             service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
 
             final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, refsetInternalId, true);
-            //service.commit();
+            // service.commit();
 
             if (newRefsetInternalId.startsWith("Error")) {
 
@@ -957,13 +957,13 @@ public class RefsetController extends BaseController {
 
             // logger.debug("inactiveRefset: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
-            
+
             service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
 
             final String status = RefsetService.inactivateRefset(service, user, refsetInternalId);
-            //service.commit();
+            // service.commit();
 
             return "{\"status\": \"" + status + "\"}";
 
@@ -989,13 +989,13 @@ public class RefsetController extends BaseController {
 
             // logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
-            
+
             service.setModifiedBy(user.getUserName());
-            //service.setTransactionPerOperation(false);
-            //service.beginTransaction();
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
 
             final String status = RefsetService.deleteInDevelopmentVersion(service, user, refsetInternalId, true);
-            //service.commit();
+            // service.commit();
 
             return "{\"status\": \"" + status + "\"}";
 
@@ -1304,11 +1304,12 @@ public class RefsetController extends BaseController {
 
                         if (exportType.contentEquals("SNAPSHOT")) {
 
-                            uri = RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+                            uri = RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
+                                withNames);
                         } else {
 
-                            uri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
-                                withNames);
+                            uri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime,
+                                exportMetadata, withNames);
                         }
 
                         logger.debug("results: " + uri);
@@ -1560,6 +1561,49 @@ public class RefsetController extends BaseController {
                 logger.info("migrateRttData Finished RTT data migration");
 
                 return message + "RTT data migration completed successfully";
+            }
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return "Errors occurred, check with the system administrator";
+        }
+
+    }
+
+    /**
+     * Sync against snowstorm still relying upon latest RTT data files to sync. Compares against all of a given refets's versions on snowstorm, so no need for a quickMigration
+     * option
+     * 
+     * TODO: Determine if can do a nightly update of datafiles programatically
+     *
+     * @param forProduction Should the migration add projects, teams, and other testing data, which it should NOT do for Production. Default is true
+     * @return the status of the migration
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
+    public @ResponseBody String syncSnowstorm(@RequestParam(required = false) final Boolean forProduction) throws Exception {
+
+        try {
+
+            boolean runForProduction = false;
+
+            if (forProduction != null && forProduction.booleanValue()) {
+
+                logger.info("!!!!! migrateRttData RUNNING MIGRATION ON PRODUCTION - SHOULDN'T CONTAIN TESTING PROJECTS, TEAMS, AND REFSETS");
+                runForProduction = true;
+            }
+
+            try (TerminologyService service = new TerminologyService()) {
+
+                logger.info("syncSnowstorm Starting Syncing with Snowstorm");
+
+                HistoricDataMigrator migrator = new HistoricDataMigrator();
+                migrator.syncWithSnowstorm(runForProduction);
+
+                logger.info("syncSnowstorm Finished Syncing with Snowstorm");
+
+                return "Syncing with Snowstorm completed successfully";
             }
 
         } catch (final Exception e) {
