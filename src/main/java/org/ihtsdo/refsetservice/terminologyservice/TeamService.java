@@ -61,15 +61,15 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team createTeam(final User user, final Team team) throws Exception {
+    public static Team createTeam(final User authUser, final Team team) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team newTeam = new Team(team);
-            checkEditPermissions(user, newTeam);
+            checkEditPermissions(authUser, newTeam);
             validateTeamData(service, newTeam, true);
            
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -77,7 +77,7 @@ public class TeamService extends BaseService {
             service.add(AuditEntryHelper.newTeamEntry(team));
             service.commit();
             
-            setUserRoles(user, newTeam, newTeam.getUserRoles());
+            setUserRoles(authUser, newTeam, newTeam.getUserRoles());
 
             return team;
         }
@@ -196,18 +196,18 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team updateTeam(final User user, final Team team) throws Exception {
+    public static Team updateTeam(final User authUser, final Team team) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team existingTeam = getTeam(team.getId(), true);
 
-            checkEditPermissions(user, team);
+            checkEditPermissions(authUser, team);
             validateTeamData(service, team, false);
 
             existingTeam.patchFrom(team);
 
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -227,14 +227,14 @@ public class TeamService extends BaseService {
      * @return the list
      * @throws Exception the exception
      */
-    public static void inactivateTeam(final User user, final String teamId) throws Exception {
+    public static void inactivateTeam(final User authUser, final String teamId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             // Find the object
             final Team team = getTeam(teamId, true);
 
-            checkEditPermissions(user, team);
+            checkEditPermissions(authUser, team);
             
             if (isOrganizationTeam(team)) {
                 
@@ -247,7 +247,7 @@ public class TeamService extends BaseService {
                 team.getMembers().clear();
             }
 
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -266,9 +266,9 @@ public class TeamService extends BaseService {
      * @return the list of projects
      * @throws Exception the exception
      */
-    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters) throws Exception {
+    public static ResultList<Team> searchTeams(final User authUser, final SearchParameters searchParameters) throws Exception {
 
-        return searchTeams(user, searchParameters, false, false);
+        return searchTeams(authUser, searchParameters, false, false);
     }
 
     /**
@@ -392,15 +392,15 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team addUserToTeam(final User user, final String teamId, final String email) throws Exception {
+    public static Team addUserToTeam(final User authUser, final String teamId, final String email) throws Exception {
         
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             
             final Team team = getTeam(teamId, true);
 
-            return addUserToTeam(service, user, team, email);
+            return addUserToTeam(service, authUser, team, email);
         }
     }
     
@@ -414,7 +414,7 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team addUserToTeam(final TerminologyService service, final User user, final Team team, final String email) throws Exception {
+    public static Team addUserToTeam(final TerminologyService service, final User authUser, final Team team, final String email) throws Exception {
         
         final User userToAdd = service.findSingle("email:" + email, User.class, null);
         
@@ -425,7 +425,7 @@ public class TeamService extends BaseService {
             throw new NotFoundException(message);
         }
         
-        return addUserToTeam(service, user, team, userToAdd);
+        return addUserToTeam(service, authUser, team, userToAdd);
     }
 
     /**
@@ -438,9 +438,9 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team addUserToTeam(final TerminologyService service, final User user, final Team team, final User userToAdd) throws Exception {
+    public static Team addUserToTeam(final TerminologyService service, final User authUser, final Team team, final User userToAdd) throws Exception {
 
-        checkEditPermissions(user, team);
+        checkEditPermissions(authUser, team);
 
         final Organization organization = team.getOrganization();
         final Set<User> organizationMembers = organization.getMembers();
@@ -452,7 +452,7 @@ public class TeamService extends BaseService {
             throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message);
         }
 
-        if (team.getMembers() != null && team.getMembers().contains(user.getId())) {
+        if (team.getMembers() != null && team.getMembers().contains(userToAdd.getId())) {
 
             final String message = "User with " + userToAdd.getEmail() + " is already a member of team " + team.getName() + ".";
             logger.error(message);
@@ -466,7 +466,7 @@ public class TeamService extends BaseService {
         service.add(AuditEntryHelper.addUserToTeamEntry(team, userToAdd));
         service.commit();
         
-        setUserRoles(user, team, team.getUserRoles());
+        setUserRoles(userToAdd, team, team.getUserRoles());
 
         return team;
     }
@@ -480,7 +480,7 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team removeUserFromTeam(final User user, final String teamId, final String userId) throws Exception {
+    public static Team removeUserFromTeam(final User authUser, final String teamId, final String userId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -511,7 +511,7 @@ public class TeamService extends BaseService {
             
             validateTeamData(service, team, false);
 
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -531,14 +531,14 @@ public class TeamService extends BaseService {
      * @param role the role
      * @throws Exception the exception
      */
-    public static void addRoleToTeam(final User user, final String teamId, final String role) throws Exception {
+    public static void addRoleToTeam(final User authUser, final String teamId, final String role) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             // find team
             final Team team = getTeam(teamId, true);
 
-            checkEditPermissions(user, team);
+            checkEditPermissions(authUser, team);
 
             if (StringUtils.isBlank(role) && !UserRole.getAllRoles().contains(UserRole.valueOf(role))) {
                 final String message = "Role " + role + " does not exist.";
@@ -554,7 +554,7 @@ public class TeamService extends BaseService {
 
             team.getRoles().add(UserRole.valueOf(role).toString());
 
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -572,13 +572,13 @@ public class TeamService extends BaseService {
      * @param role the role
      * @throws Exception the exception
      */
-    public static void removeRoleFromTeam(final User user, final String teamId, final String role) throws Exception {
+    public static void removeRoleFromTeam(final User authUser, final String teamId, final String role) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             final Team team = getTeam(teamId, true);
 
-            checkEditPermissions(user, team);
+            checkEditPermissions(authUser, team);
             
             if (team == null) {
                 
@@ -604,7 +604,7 @@ public class TeamService extends BaseService {
             team.getRoles().remove(UserRole.valueOf(role).toString());
             validateTeamData(service, team, false);
 
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
@@ -623,7 +623,7 @@ public class TeamService extends BaseService {
      * @return the team users
      * @throws Exception the exception
      */
-    public static ResultListUser getTeamUsers(final User user, final String teamId) throws Exception {
+    public static ResultListUser getTeamUsers(final User authUser, final String teamId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
