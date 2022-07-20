@@ -1,7 +1,6 @@
 package org.ihtsdo.refsetservice.migration;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -218,13 +217,13 @@ public class SyncAgent {
             // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
             Set<Edition> syncedEditions = syncEdition(codeSystem);
 
-            if (!syncedEditions.isEmpty()) {
+            if (syncedEditions != null && !syncedEditions.isEmpty()) {
 
                 // Process only one edition.
                 Organization syncedOrg = syncOrganization(codeSystem, syncedEditions.iterator().next().getId());
 
                 /* Organization is done at this point. Check if WCI Organization */
-                if (syncedOrg.getEdition().getShortName().equals("SNOMEDCT-WCI"))
+                if (syncedOrg != null && syncedOrg.getEdition().getShortName().equals("SNOMEDCT-WCI"))
 
                 {
 
@@ -284,10 +283,9 @@ public class SyncAgent {
                 }
 
                 // TODO: Add a description default value or update snowstorm with value per codesystem
-                final String orgDesc = "";
-                final String orgName = editionOwnerMap.get(edition.getName());
+                String organizationDescription = "";
+                Organization org = utilities.addOrganziation(editionOwnerMap.get(edition.getName()), organizationDescription, edition);
 
-                Organization org = utilities.addOrganziation(orgName, orgDesc, edition);
                 organizationsAdded.put(org.getName(), org);
 
                 if (org.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
@@ -304,8 +302,8 @@ public class SyncAgent {
                     if (!defaultOrganizationProjects.containsKey(org.getId())) {
 
                         // Create default project
-                        final String projectName = orgName + " Default Project";
-                        final String projectDescription = "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + orgName + ".";
+                        final String projectName = org.getName() + " Default Project";
+                        final String projectDescription = "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + org.getName() + ".";
 
                         final Project project = utilities.addProject(org, projectName, projectDescription);
 
