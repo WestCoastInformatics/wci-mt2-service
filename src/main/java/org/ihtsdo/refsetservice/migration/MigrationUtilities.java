@@ -329,11 +329,8 @@ public class MigrationUtilities {
 
     String identifyTopLevelModule(String editionName, String shortName, String editionBranch, JsonNode codeSystem) throws Exception {
 
-        logger.debug(" 333a - Identify Top Level Module: " + editionName + " / " + shortName + " / " + editionBranch + " / " + codeSystem);
-
         if ("international edition".equals(editionName.toLowerCase())) {
 
-            logger.debug(" 333b");
             return MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
         } else {
 
@@ -345,10 +342,6 @@ public class MigrationUtilities {
             while (moduleIterator.hasNext()) {
 
                 JsonNode module = moduleIterator.next();
-                logger.debug(" 333c1 with moduleIterator: " + module);
-                logger.debug(" 333c2 with internationalModules: " + internationalModules);
-                logger.debug(" 333c3 with internationalModules: " + module.get("conceptId").asText());
-                logger.debug(" 333c4 with internationalModules: " + module.get("moduleId").asText());
 
                 if (!internationalModules.contains(module.get("conceptId").asText()) && !module.get("moduleId").asText().equals("900000000000012004")) {
 
@@ -357,23 +350,17 @@ public class MigrationUtilities {
 
             }
 
-            logger.debug(" 333d with editionModules: " + editionModules);
-
             if (editionModules.size() == 0) {
 
                 // If no non-CORE modules found, use the default Module
                 logger.info("Didn't identify dedicated module for " + editionName + ": " + editionModules.toString() + ", so using default: " + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
-                logger.debug(" 333e");
+
                 return MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
             } else if (editionModules.size() == 1) {
-
-                logger.debug(" 333f and will return: " + editionModules.iterator().next());
 
                 // If only one non-CORE modules found, use it
                 return editionModules.iterator().next();
             } else {
-
-                logger.debug(" 333g");
 
                 logger.info("Have multiple modules identified for " + editionName + ": " + editionModules.toString());
 
@@ -390,8 +377,6 @@ public class MigrationUtilities {
                     }
 
                 }
-
-                logger.debug(" 333h with childrenModules: " + childrenModules);
 
                 // TODO: Remove Hard coded solution for Netherlands and
                 // Australia -> These are from previous test data and are deprecated
@@ -416,8 +401,6 @@ public class MigrationUtilities {
                     childrenModules.remove("5991000124107");
                 }
 
-                logger.debug(" 333i with childrenModules: " + childrenModules);
-
                 if (childrenModules.size() == 0 || childrenModules.size() > 1) {
 
                     String msg = "Seeing odd number of modules during secondary analysis for " + editionName + ": " + childrenModules.toString();
@@ -425,8 +408,6 @@ public class MigrationUtilities {
                     logger.info(msg);
                     throw new Exception("This situation shouldn't happen during sync: " + msg);
                 } else {
-
-                    logger.debug(" 333j returning module: " + childrenModules.iterator().next());
 
                     return childrenModules.iterator().next();
                 }
