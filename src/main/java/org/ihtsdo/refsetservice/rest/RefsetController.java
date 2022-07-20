@@ -17,6 +17,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,8 @@ import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.migration.HistoricDataMigrator;
 import org.ihtsdo.refsetservice.migration.MigrationDataInitializer;
+import org.ihtsdo.refsetservice.migration.MigrationUtilities;
+import org.ihtsdo.refsetservice.migration.SyncMetadata;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
@@ -1632,10 +1635,10 @@ public class RefsetController extends BaseController {
         String status = "Feedback testing refset created succesffully";
 
         try {
-
+            MigrationUtilities utilities = new MigrationUtilities(new SyncMetadata(new Date(), MigrationUtilities.FEEDBACK_TESTING_USER_NAME));
+            
             logger.info("Create new refset, initialized with feedback, for testing purposes");
-
-            MigrationDataInitializer initializer = new MigrationDataInitializer();
+            MigrationDataInitializer initializer = new MigrationDataInitializer(utilities);
             Refset refset = initializer.createTestingFeedback();
 
             logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());

@@ -22,7 +22,6 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,12 +32,8 @@ public class HistoricDataMigrator {
 
     private static final String SIMPLE_TYPE_REFSET_SCTID = "446609009";
 
-    private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
-
     /** The formatter. */
     private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
-
-    private final MigrationMetadata defaultMeta = new MigrationMetadata(new Date(), "System initialization");
 
     /**
      * The Enum FileProcessType.
@@ -56,7 +51,7 @@ public class HistoricDataMigrator {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(HistoricDataMigrator.class);
 
-    MigrationUtilities utilities = new MigrationUtilities();
+    MigrationUtilities utilities;
 
     /** The max number of record elasticsearch will return without erroring. */
     private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
@@ -87,8 +82,6 @@ public class HistoricDataMigrator {
 
     private Set<String> rttRefsetIds = new HashSet<>();
 
-    private boolean supportRtt = false;
-
     /** Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. */
     private boolean runShortMigration = false;
 
@@ -103,64 +96,9 @@ public class HistoricDataMigrator {
 
     private final Map<String, Organization> organizationsAdded = new HashMap<>();
 
-    private final Set<String> debugRttOrgTranslations = new HashSet<>();
-
     private Organization wciOrganization = null;
 
     private Map<String, List<Date>> refsetToPublishedVersionMap = new HashMap<>();
-
-    /**
-     * Gets the list of branch versions.
-     *
-     * @param runShortMigration Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default
-     *            is false
-     * @throws Exception the exception
-     */
-    public void migrate(final boolean runShortMigration, final boolean forProduction) throws Exception {
-
-        this.runShortMigration = runShortMigration;
-        this.forProduction = forProduction;
-
-        Set<String> internationalModules = createEditionsFromSnowstorm();
-        Map<String, SortedMap<Date, String>> branches = identifyBranches();
-
-        createRefsetsFromSnowstorm(branches, internationalModules);
-
-        // Read refset metadata and associated information (projects & ECLs)
-        rttRefsetIds = utilities.getPropertyReader().parseRttData(supportRtt);
-
-        if (supportRtt) {
-
-            processRttRefsets();
-        }
-
-        // With metadata from RTT project (defined in parseRTTMetadata())
-        updateRefsetsWithRttMetadata();
-
-        // Create supporting projects and finalize refsets
-        persistRefsetObjects();
-    }
-
-    private void processRttRefsets() {
-
-        // Ignore those refsets that while on SnowS, are not yet in RTT DB dmp.
-        // file that we are using
-        for (Refset refset : snowstormRefsets) {
-
-            if (!utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().keySet().contains(refset.getRefsetId())) {
-
-                if (internationalRefsets.contains(refset.getRefsetId())) {
-
-                    refsetsToIgnore.add(refset.getRefsetId());
-
-                    logger.debug("Going to ignore Int'l refsets supported in " + refset.getEditionName() + " - " + refset.getRefsetId() + " - " + refset.getName());
-                }
-
-            }
-
-        }
-
-    }
 
     /**
      * Identify branches.
@@ -780,329 +718,6 @@ public class HistoricDataMigrator {
     }
 
     /**
-     * Populate editions.
-     * 
-     * @param codeSystemsNode
-     *
-     * @return the sets the
-     * @throws Exception the exception
-     */
-    /**
-     * @return
-     * @throws Exception
-     */
-    private Set<String> createEditionsFromSnowstorm() throws Exception {
-
-        Set<String> internationalModules = null;
-        final String url = SnowstormConnection.BASE_URL + "codesystems";
-        logger.debug("createEditionsFromSnowstorm url: " + url);
-
-        List<String> ignoredCodeSystemNames = utilities.getPropertyReader().readCodeSystemsToIgnore();
-        Map<String, Set<String>> undefinedDefaultLanguageRefsets = utilities.getPropertyReader().readUndefinedDefaultLanguageRefsets();
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            final String resultString = response.readEntity(String.class);
-            // logger.debug("createEditionsFromSnowstorm resultString: " + resultString);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
-
-            internationalModules = identifyInternationalModules(root);
-
-            try (final TerminologyService service = new TerminologyService()) {
-
-                initializeService(service);
-
-                final Iterator<JsonNode> responseIterator = root.iterator();
-
-                while (responseIterator.hasNext()) {
-
-                    final Iterator<JsonNode> codeSystems = responseIterator.next().iterator();
-
-                    while (codeSystems.hasNext()) {
-
-                        JsonNode codeSystem = codeSystems.next();
-
-                        // Check for invalid or ignored code systems
-                        if (!codeSystem.has("name")) {
-
-                            logger.info("Skipping odd code system without a name'" + codeSystem.asText());
-                            continue;
-                        } else if (ignoredCodeSystemNames.contains(codeSystem.get("name").asText().toLowerCase())) {
-
-                            logger.info("Code System '" + codeSystem.get("name") + "' is defined as to-be-ignored");
-                            continue;
-                        }
-
-                        // Testing
-                        if (testing && !codeSystem.get("name").asText().contains(testingEdition) && !codeSystem.get("name").asText().toLowerCase().contains(WCI_ORG_NAME)
-                            && !codeSystem.get("name").asText().contains("Inter")) {
-
-                            continue;
-                        }
-
-                        // Process Edition
-                        Edition edition = new Edition();
-
-                        edition.setName(codeSystem.get("name").asText());
-                        edition.setShortName(codeSystem.get("shortName").asText());
-                        edition.setBranch(codeSystem.get("branchPath").asText());
-
-                        // Identify Edition's Default Language Refsets
-                        if (codeSystem.has("defaultLanguageReferenceSets")) {
-
-                            final JsonNode defaultLanguageReferenceSets = codeSystem.get("defaultLanguageReferenceSets");
-                            final Iterator<JsonNode> defaultLanguageReferencesSetIterator = defaultLanguageReferenceSets.iterator();
-
-                            while (defaultLanguageReferencesSetIterator.hasNext()) {
-
-                                edition.getDefaultLanguageRefsets().add(defaultLanguageReferencesSetIterator.next().asText());
-                            }
-
-                        } else if (undefinedDefaultLanguageRefsets.containsKey(edition.getName())) {
-
-                            edition.getDefaultLanguageRefsets().addAll(undefinedDefaultLanguageRefsets.get(edition.getName()));
-                            logger.debug("No defined Default Language Refsets for " + edition.getName() + ", so adding from txt file: " + undefinedDefaultLanguageRefsets.get(edition.getName()));
-                        }
-
-                        // Ensure that DEFAULT_LANG_REFSET is always listed even if not explicitely listed
-                        edition.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET);
-
-                        // Identify Edition's defaultLanguageCode - Per Kai, transform first language in set as defaultLangCode
-                        if (!codeSystem.has("languages")) {
-
-                            throw new Exception("All Code Systems must have lanaguages set filled in. " + edition.toString() + " does not");
-                        }
-
-                        Iterator<String> languages = codeSystem.get("languages").fieldNames();
-                        String defaultLanguage = languages.next();
-                        edition.setDefaultLanguageCode(defaultLanguage);
-
-                        // Identify Code System Owner
-                        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
-
-                            editionOwnerMap.put(edition.getShortName(), codeSystem.get("owner").asText());
-                            editionOwnerMap.put(edition.getName(), codeSystem.get("owner").asText());
-                        } else {
-
-                            editionOwnerMap.put(edition.getShortName(), edition.getName());
-                            editionOwnerMap.put(edition.getName(), edition.getName());
-                        }
-
-                        // Identify Top Level Module
-                        identifyTopLevelModule(edition, codeSystem, internationalModules);
-
-                        utilities.setMetadata(edition, defaultMeta);
-                        service.add(edition);
-
-                        // TODO: Add a description default value or update
-                        // snowstorm with value per codesystem
-                        final String orgDesc = "";
-                        final String orgName = editionOwnerMap.get(edition.getName());
-
-                        Organization org = utilities.addOrganziation(orgName, orgDesc, edition, defaultMeta);
-                        organizationsAdded.put(orgName, org);
-
-                        if (org.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
-
-                            if (forProduction) {
-
-                                throw new Exception("Have a forProd instance running, yet found an unexpected WCI Org");
-                            }
-
-                            wciOrganization = org;
-                        } else {
-
-                            // Finally, create a Default Project for the edition
-                            if (!defaultOrganizationProjects.containsKey(org.getId())) {
-
-                                // Create default project
-                                final String projectName = orgName + " Default Project";
-                                final String projectDescription =
-                                    "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + orgName + ".";
-
-                                final Project project = utilities.addProject(org, projectName, projectDescription, defaultMeta);
-
-                                defaultOrganizationProjects.put(org.getId(), project);
-                            }
-
-                        }
-
-                    }
-
-                }
-
-                if (wciOrganization == null && !forProduction) {
-
-                    throw new Exception("Have a non-Prod instance running, yet didn't find the expected WCI Org");
-                }
-
-            }
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-        }
-
-        return internationalModules;
-    }
-
-    private void identifyTopLevelModule(Edition edition, JsonNode codeSystem, Set<String> internationalModules) throws Exception {
-
-        if ("international edition".equals(edition.getName().toLowerCase())) {
-
-            edition.setTopLevelModule(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
-        } else {
-
-            Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
-
-            // Ignore CORE Modules
-            Set<String> editionModules = new HashSet<>();
-
-            while (moduleIterator.hasNext()) {
-
-                JsonNode module = moduleIterator.next();
-
-                if (!internationalModules.contains(module.get("conceptId").asText()) && !module.get("moduleId").asText().equals("900000000000012004")) {
-
-                    editionModules.add(module.get("conceptId").asText());
-                }
-
-            }
-
-            if (editionModules.size() == 0) {
-
-                // If no non-CORE modules found, use the default Module
-                edition.setTopLevelModule(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
-                logger.info("Didn't identify dedicated module for " + edition.getName() + ": " + editionModules.toString() + ", so using default: " + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
-            } else if (editionModules.size() == 1) {
-
-                // If only one non-CORE modules found, use it
-                edition.setTopLevelModule(editionModules.iterator().next());
-            } else {
-
-                logger.info("Have multiple modules identified for " + edition.getName() + ": " + editionModules.toString());
-
-                // If multiple non-CORE modules found, TODO: Fill in
-                Set<String> childrenModules = new HashSet<>();
-
-                Set<String> children = getModuleChildren(edition);
-
-                for (String moduleId : editionModules) {
-
-                    if (children.contains(moduleId)) {
-
-                        childrenModules.add(moduleId);
-                    }
-
-                }
-
-                // TODO: Remove Hard coded solution for Netherlands and
-                // Australia -> These are from previous test data and are deprecated
-                if (edition.getShortName().equals("SNOMEDCT-NL")) {
-
-                    childrenModules.remove("15561000146104"); // 15561000146104
-                                                              // - Represents
-                                                              // Patient
-                                                              // Friendly Terms
-                } else if (edition.getShortName().equals("SNOMEDCT-AU")) {
-
-                    childrenModules.add("32570231000036109");
-                }
-
-                // TODO: Handle hard coded solution for Norway & US
-                if (edition.getShortName().equals("SNOMEDCT-NO")) {
-
-                    childrenModules.remove("57091000202101");
-                    childrenModules.remove("57101000202106");
-                } else if (edition.getShortName().equals("SNOMEDCT-US")) {
-
-                    childrenModules.remove("5991000124107");
-                }
-
-                if (childrenModules.size() == 0 || childrenModules.size() > 1) {
-
-                    logger.info("Seeing odd number of modules during secondary analysis for " + edition.getName() + ": " + childrenModules.toString());
-                } else {
-
-                    edition.setTopLevelModule(childrenModules.iterator().next());
-                }
-
-            }
-
-        }
-
-    }
-
-    private Set<String> getModuleChildren(Edition edition) throws Exception {
-
-        String url = SnowstormConnection.BASE_URL + "browser/" + edition.getBranch() + "/concepts/" + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
-        Set<String> childrenSctIds = new HashSet<>();
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(resultString.toString());
-
-            Iterator<JsonNode> conceptIterator = root.iterator();
-
-            while (conceptIterator.hasNext()) {
-
-                JsonNode node = conceptIterator.next();
-                childrenSctIds.add(node.get("conceptId").asText());
-            }
-
-        } catch (Exception e) {
-
-            throw new Exception("Failed in getting code systems (first call to Snowstorm) with: " + e.getMessage(), e);
-        }
-
-        return childrenSctIds;
-    }
-
-    private Set<String> identifyInternationalModules(JsonNode root) throws Exception {
-
-        Set<String> retSet = new HashSet<>();
-
-        final Iterator<JsonNode> responseIterator = root.iterator();
-
-        while (responseIterator.hasNext()) {
-
-            final Iterator<JsonNode> codeSystems = responseIterator.next().iterator();
-
-            while (codeSystems.hasNext()) {
-
-                JsonNode codeSystem = codeSystems.next();
-
-                if (!codeSystem.has("name")) {
-
-                    continue;
-                }
-
-                if ("international edition".equals(codeSystem.get("name").asText().toLowerCase())) {
-
-                    // At international Edition
-                    Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
-
-                    while (moduleIterator.hasNext()) {
-
-                        JsonNode module = moduleIterator.next();
-                        retSet.add(module.get("conceptId").asText());
-                    }
-
-                    return retSet;
-                }
-
-            }
-
-        }
-
-        throw new Exception("Didn't find the international modules as anticipated");
-    }
-
-    /**
      * Create supporting projects and finalize refsets.
      *
      * @param allRefsets the all refsets
@@ -1137,52 +752,12 @@ public class HistoricDataMigrator {
                 }
 
                 // Final Persistance of refset object
-                utilities.setMetadata(snowRefset, defaultMeta);
+                utilities.setMetadata(snowRefset);
                 snowRefset = service.update(snowRefset);
 
                 if (++count % 250 == 0) {
 
                     logger.info("Imported + " + count + " refsets thus far");
-                }
-
-            }
-
-            if (supportRtt) {
-
-                // Adding refsets from RTT
-                for (String refsetId : rttRefsetIds) {
-
-                    if (testing && testingRefset != null && !testingRefset.equals(refsetId)) {
-
-                        continue;
-                    }
-
-                    final Edition edition = refsetEditions.get(refsetId);
-
-                    final Set<String> rttIds = utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().get(refsetId);
-
-                    for (String rttId : rttIds) {
-
-                        final String refsetJsonString = utilities.getPropertyReader().getRttIdToRefsetJsonMap().get(rttId);
-                        final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
-
-                        final Refset rttRefset = ModelUtility.fromJson(refsetJsonString, Refset.class);
-                        final Date versionDate = utilities.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId));
-
-                        // TODO: only process those refsets that aren't in Snowstorm
-
-                        // TODO Temp fix so there are no refsets or orgs without editions
-                        if (edition == null || edition.getId() == null || edition.getId().equals("")) {
-
-                            // Skipping refset with no Edition
-                            continue;
-                        }
-
-                        final Map<String, Project> refsetToProjectMap = new HashMap<>();
-
-                        processRefsetInRTT(rttId, projectId, rttRefset, edition, refsetToProjectMap, projectCount);
-                    }
-
                 }
 
             }
@@ -1211,8 +786,8 @@ public class HistoricDataMigrator {
 
         logger.info(" step - Populating initial data");
 
-        MigrationDataInitializer initializer = new MigrationDataInitializer();
-        initializer.initialize(wciOrganization, organizationsAdded, defaultOrganizationProjects, defaultMeta);
+        MigrationDataInitializer initializer = new MigrationDataInitializer(utilities);
+        initializer.initialize(wciOrganization, organizationsAdded, defaultOrganizationProjects);
         initializer.printResults();
 
         logger.info(" step complete - Adding special content");
@@ -1228,81 +803,6 @@ public class HistoricDataMigrator {
             refset.getDefinitionClauses().addAll(clauses);
         }
 
-    }
-
-    /*
-     * Called when reading in refsets from RTT. Right now, no need to support this
-     */
-    private void processRefsetInRTT(String rttId, String rttProjectId, Refset rttRefset, Edition edition, Map<String, Project> refsetToProjectMap, int projectCount) throws Exception {
-
-        /*-
-        
-        try (final TerminologyService service = new TerminologyService()) {
-        
-           initializeService(service);
-        
-           final String projectId = utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(rttId);
-        
-           if (projectId == null) {
-        
-               throw new Exception("Failing to match projectId on rttId: " + rttId);
-           }
-        
-           final Project rttProject = ModelUtility.fromJson(utilities.getPropertyReader().getRttIdToProjectsJsonMap().get(projectId), Project.class);
-        
-           final Organization rttOrg = rttProject.getOrganization();
-        
-           final MigrationMetadata projectMeta = new MigrationMetadata(rttProject.getModified(), rttProject.getModifiedBy());
-        
-           final String translatedOrgName = translateRttOrg(rttOrg.getName());
-        
-           if (translatedOrgName == null) {
-        
-               // Only supporting those a) whose org name is defined in RTT, b) Is not a training project in RTT, and c) has a corresponding Snowstorm Code System (and
-               // ignoring those not)
-               return;
-           }
-        
-           Organization org = null;
-        
-           if (!organizationsAdded.containsKey(translatedOrgName)) {
-        
-               org = utilities.addOrganziation(translatedOrgName, null, edition, defaultMeta);
-               organizationsAdded.put(translatedOrgName, org);
-               counts.incrementOrgsImportedCount();
-        
-           } else {
-        
-               org = organizationsAdded.get(translatedOrgName);
-           }
-        “““
-           if (!refsetToProjectMap.containsKey(rttProject.getName())) {
-        
-               final Project project = utilities.addProject(org, rttProject.getName(), rttProject.getDescription(), projectMeta);
-               projectCount++;
-        
-               refsetToProjectMap.put(rttProject.getName(), project);
-           }
-        
-           if (!refsetToProjectMap.keySet().contains(rttRefset.getRefsetId())) {
-        
-               counts.incrementUniqueRttMetadataCount();
-        
-           }
-        
-           counts.incrementRttMetadataCount();
-           rttRefset.setProject(refsetToProjectMap.get(rttProject.getName()));
-           utilities.setMetadata(rttRefset, utilities.getPropertyReader().getMetadataMap().get("refset-" + rttId));
-        
-           rttRefset.setVersionStatus("PUBLISHED");
-           rttRefset.setWorkflowStatus("PUBLISHED");
-           rttRefset.setVersionDate(MigrationMetadata.getSdf().parse(utilities.getPropertyReader().getRttRefsetToEffectiveDateMap().get(rttId)));
-        
-           service.add(rttRefset);
-           associateRefsetClauses(rttId, rttRefset);
-        }
-        
-        */
     }
 
     /*
@@ -1338,7 +838,7 @@ public class HistoricDataMigrator {
             }
 
             logger.info("    Creating new project based on project in RTT for " + projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
-            return utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1], defaultMeta);
+            return utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
         } else {
 
             logger.debug("    Refset doesn't have an associated project in RTT, so use Org's RT2-default");
@@ -1362,60 +862,8 @@ public class HistoricDataMigrator {
         String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
         final Organization org = organizationsAdded.get(orgName);
 
+        
         return org;
-    }
-
-    private String translateRttOrg(String name) {
-
-        if (name == null || name.isEmpty()) {
-
-        }
-
-        if (!debugRttOrgTranslations.contains(name)) {
-
-            debugRttOrgTranslations.add(name);
-        }
-
-        String shortName = null;
-
-        if (name.equals("Swedish NRC")) {
-
-            shortName = "SNOMEDCT-SE";
-        } else if (name.equals("New Zealand Ministry of Health")) {
-
-            shortName = "SNOMEDCT-NZ";
-        } else if (name.equals("BE NRC")) {
-
-            shortName = "SNOMEDCT-BE";
-        } else if (name.equals("IHTSDO")) {
-
-            shortName = "SNOMEDCT";
-        } else if (name.equals("TEHIK")) {
-
-            shortName = "SNOMEDCT-EE";
-        } else if (name.equals("NLM")) {
-
-            shortName = "SNOMEDCT-US";
-        } else if (name.equals("Norway") || name.equals("Direktoratet for e-helse") || name.equals("Helsedirektoratet")) {
-
-            shortName = "SNOMEDCT-NO";
-        } else if (name.equals("HSE")) {
-
-            shortName = "SNOMEDCT-IE";
-        }
-
-        if (shortName != null) {
-
-            return editionOwnerMap.get(shortName);
-
-        } else if (name.toLowerCase().contains("india") || name.toLowerCase().contains("canad") || name.toLowerCase().contains("conteir")) {
-
-            return null;
-        } else {
-
-            return name;
-        }
-
     }
 
     private void initializeService(TerminologyService service) {
@@ -1430,18 +878,65 @@ public class HistoricDataMigrator {
         return testingRefset;
     }
 
+    /**
+     * Gets the list of branch versions.
+     *
+     * @param runShortMigration Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default
+     *            is false
+     * @throws Exception the exception
+     */
+    public void migrate(final boolean runShortMigration, final boolean forProduction) throws Exception {
+
+        this.runShortMigration = runShortMigration;
+        utilities = new MigrationUtilities(new SyncMetadata(new Date(), MigrationUtilities.MIGRATION_USER_NAME));
+
+        final SyncAgent agent = new SyncAgent(utilities, forProduction);
+
+        logger.debug(" 222-a");
+        final JsonNode organizationJsonRootNode = agent.getSnowstormCodeSystems();
+        // logger.debug(" 222-b All CodeSystems Json: " + organizationJsonRootNode);
+
+        Set<JsonNode> codeSystems = agent.filterCodeSystems(organizationJsonRootNode);
+        logger.debug(" 222-c filtered codeSystems: " + codeSystems);
+        agent.migrateEditions(codeSystems);
+        logger.debug(" 222-d Finished migrating Orgs & Editions");
+
+        /* Sync Point */
+
+        Map<String, SortedMap<Date, String>> branches = identifyBranches();
+        createRefsetsFromSnowstorm(branches, utilities.getInternationalModules());
+
+        // Read refset metadata and associated information (projects & ECLs)
+        final boolean supportRtt = false;
+        rttRefsetIds = utilities.getPropertyReader().parseRttData(supportRtt);
+
+        // With metadata from RTT project (defined in parseRTTMetadata())
+        updateRefsetsWithRttMetadata();
+
+        // Create supporting projects and finalize refsets
+        persistRefsetObjects();
+
+        logger.debug(" 222-return + ");
+    }
+
     public void syncWithSnowstorm(boolean runForProduction) throws Exception {
 
-        final SyncAgent agent = new SyncAgent(runForProduction);
+        utilities = new MigrationUtilities(new SyncMetadata(new Date(), MigrationUtilities.SYNC_USER_NAME));
+
+        final SyncAgent agent = new SyncAgent(utilities, runForProduction);
 
         logger.debug(" 111-a");
         final JsonNode organizationJsonRootNode = agent.getSnowstormCodeSystems();
+        // logger.debug(" 111-b All CodeSystems Json: " + organizationJsonRootNode);
 
-        logger.debug(" 111-b codeSystems json: " + organizationJsonRootNode);
-        agent.processCodeSystems(organizationJsonRootNode);
+        Set<JsonNode> codeSystems = agent.filterCodeSystems(organizationJsonRootNode);
+        logger.debug(" 111-c filtered codeSystems: " + codeSystems);
 
-        // TODO: This is next
-        // Map<String, SortedMap<Date, String>> branches = identifyBranches();
+        agent.processCodeSystems(codeSystems);
+        logger.debug(" 111-d Finished syncing Orgs & Editions");
+
+        // TODO: Next is to identify Versions & refsets
+        // Map<String, SortedMap<Date, String>> versions = identifyBranches();
 
         logger.debug(" 111-return + ");
 

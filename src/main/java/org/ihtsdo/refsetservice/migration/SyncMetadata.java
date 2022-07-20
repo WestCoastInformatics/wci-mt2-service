@@ -1,5 +1,6 @@
 package org.ihtsdo.refsetservice.migration;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.slf4j.Logger;
@@ -8,7 +9,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The Class Metadata.
  */
-public class MigrationMetadata {
+public class SyncMetadata {
 
     /** The modified. */
     private Date modified;
@@ -17,9 +18,10 @@ public class MigrationMetadata {
     private String modifiedBy;
 
     /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(MigrationMetadata.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncMetadata.class);
 
-    MigrationUtilities utilities = new MigrationUtilities();
+    /** The sdf. */
+    private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
      * Instantiates a new metadata.
@@ -27,9 +29,9 @@ public class MigrationMetadata {
      * @param modified the modified
      * @param modifiedBy the modified by
      */
-    public MigrationMetadata(final String modified, final String modifiedBy) {
+    public SyncMetadata(final String modified, final String modifiedBy) {
 
-        String updatedModified = utilities.getSdf().format(modified);
+        String updatedModified = sdf.format(modified);
 
         try {
 
@@ -41,7 +43,7 @@ public class MigrationMetadata {
 
             } else {
 
-                this.modified = utilities.getSdf().parse(modified.replaceAll("\"", ""));
+                this.modified = sdf.parse(modified.replaceAll("\"", ""));
             }
 
         } catch (Exception e) {
@@ -58,7 +60,7 @@ public class MigrationMetadata {
      * @param modified the modified
      * @param modifiedBy the modified by
      */
-    public MigrationMetadata(final Date modified, final String modifiedBy) {
+    public SyncMetadata(final Date modified, final String modifiedBy) {
 
         try {
 
@@ -90,5 +92,10 @@ public class MigrationMetadata {
     public String getModifiedBy() {
 
         return modifiedBy;
+    }
+
+    public SimpleDateFormat getSdf() {
+
+        return sdf;
     }
 }

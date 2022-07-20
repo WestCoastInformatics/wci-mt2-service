@@ -85,7 +85,7 @@ public class MigrationPropertyFileReader {
     private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
 
     /** The metadata map. */
-    private final Map<String, MigrationMetadata> metadataMap = new HashMap<>();
+    private final Map<String, SyncMetadata> metadataMap = new HashMap<>();
 
     /**
      * Pre-processing supporting files.
@@ -680,7 +680,7 @@ public class MigrationPropertyFileReader {
             // Store effective Time to avoid handling it within Json
             rttRefsetToEffectiveDateMap.put(rttRefsetId, values[2]);
 
-            MigrationMetadata meta = new MigrationMetadata(values[3], values[4]);
+            SyncMetadata meta = new SyncMetadata(values[3], values[4]);
             metadataMap.put("refset-" + rttRefsetId, meta);
 
             return buf.toString();
@@ -753,7 +753,7 @@ public class MigrationPropertyFileReader {
             buf.append("}");
 
             jsonProjectOrganziationMap.put("project-" + line.split(SPLIT_CHARACTER)[0], organizationName);
-            metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new MigrationMetadata(modified, modifiedBy));
+            metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncMetadata(modified, modifiedBy));
         } catch (Exception e) {
 
             logger.debug("failed to process line #" + lineNumber + " of project json: " + line);
@@ -805,7 +805,7 @@ public class MigrationPropertyFileReader {
         return rttRefsetToEffectiveDateMap;
     }
 
-    public Map<String, MigrationMetadata> getMetadataMap() {
+    public Map<String, SyncMetadata> getMetadataMap() {
 
         return metadataMap;
     }

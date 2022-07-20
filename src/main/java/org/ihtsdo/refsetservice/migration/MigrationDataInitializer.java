@@ -27,7 +27,7 @@ public class MigrationDataInitializer {
 
     private final Logger logger = LoggerFactory.getLogger(MigrationDataInitializer.class);
 
-    private MigrationUtilities utilities = new MigrationUtilities();
+    private MigrationUtilities utilities;
 
     private static User migrationUser = null;
 
@@ -61,12 +61,14 @@ public class MigrationDataInitializer {
 
     private static final String WCI_TESTING_PROJECT_DESCRIPTION = "The single project for all WCI testing refsets";
 
-    public MigrationDataInitializer() {
+    public MigrationDataInitializer(MigrationUtilities utilities) {
 
         // Grab wci users or create during first migration. Two types:
         // a) 5 WCI common users to be added to all orgs (1-per role and a super-user)
         // b) 2 WCI users specifically for generating a new feedback refset for testing
         try {
+
+            this.utilities = utilities;
 
             wciAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
@@ -85,17 +87,16 @@ public class MigrationDataInitializer {
 
     }
 
-    public void initialize(Organization wciOrganization, Map<String, Organization> organizationsAdded, Map<String, Project> defaultOrganizationProjects, MigrationMetadata defaultMeta)
-        throws Exception {
+    public void initialize(Organization wciOrganization, Map<String, Organization> organizationsAdded, Map<String, Project> defaultOrganizationProjects) throws Exception {
 
         // Create a dedicated UAT Training Project for each organization
-        createUATProjects(wciOrganization, organizationsAdded, defaultMeta);
+        createUATProjects(wciOrganization, organizationsAdded);
 
         // wciOrg only exists in DEV & UAT, so is a useful way to determine environments
         if (wciOrganization != null) {
 
             // Create wci-project (for DEV only)
-            createWCITestingContent(wciOrganization, defaultMeta);
+            createWCITestingContent(wciOrganization);
 
             // Create wci-feedback-testing refset(for DEV only)
             createTestingFeedback(wciOrganization);
@@ -158,7 +159,7 @@ public class MigrationDataInitializer {
 
     }
 
-    private Map<String, Project> createUATProjects(Organization wciOrganization, Map<String, Organization> organizationsAdded, MigrationMetadata defaultMeta) throws Exception {
+    private Map<String, Project> createUATProjects(Organization wciOrganization, Map<String, Organization> organizationsAdded) throws Exception {
 
         logger.info(" Create a dedicated UAT Training Project for each organization");
         Map<String, Project> uatProjects = new HashMap<>();
@@ -173,8 +174,7 @@ public class MigrationDataInitializer {
             }
 
             Project uatProject = utilities.addProject(org, org.getName() + " UAT Training Project",
-                "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project",
-                defaultMeta);
+                "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project");
 
             uatProjects.put(orgName, uatProject);
         }
@@ -182,7 +182,7 @@ public class MigrationDataInitializer {
         return uatProjects;
     }
 
-    private void createWCITestingContent(Organization wciOrganization, MigrationMetadata defaultMeta) throws Exception {
+    private void createWCITestingContent(Organization wciOrganization) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -190,7 +190,7 @@ public class MigrationDataInitializer {
 
             logger.info("Adding WCI Testing Org's single project");
 
-            testingProject = utilities.addProject(wciOrganization, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, defaultMeta);
+            testingProject = utilities.addProject(wciOrganization, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION);
 
             utilities.addWCIRefset(getMigrationUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, wciOrganization.getEdition().getTopLevelModule(),
                 utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);

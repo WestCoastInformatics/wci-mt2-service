@@ -1,5 +1,8 @@
 package org.ihtsdo.refsetservice.migration;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -11,6 +14,7 @@ import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
@@ -24,18 +28,13 @@ public class SyncAgent {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(SyncAgent.class);
 
-    private static final MigrationUtilities utilities = new MigrationUtilities();
-
-    /** The testing. */
-    private boolean testing = true;
-
-    private final String testingEdition = "elgia";
-
     private boolean forProduction;
+
+    private static MigrationUtilities utilities;
 
     private Organization wciOrganization = null;
 
-    private Set<Organization> organizationsAdded = new HashSet<>();
+    private Map<String, Organization> organizationsAdded = new HashMap<>();
 
     private Set<Organization> organizationsUnchanged = new HashSet<>();
 
@@ -53,19 +52,24 @@ public class SyncAgent {
 
     private List<Organization> allOrganizations;
 
-    private static final String testingRefset = "741000172102";
+    private final Map<String, String> editionOwnerMap = new HashMap<>();
 
-    private static final Set<String> internationalModules = new HashSet<>();
+    private final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
 
     private static final String WCI_ORG_NAME = "wci";
 
-    private static final List<String> ignoredCodeSystemNames = utilities.getPropertyReader().readCodeSystemsToIgnore();
+    private static final List<String> ignoredCodeSystemNames = new ArrayList<>();
 
-    private static final Map<String, Set<String>> undefinedDefaultLanguageRefsets = utilities.getPropertyReader().readUndefinedDefaultLanguageRefsets();
+    /** The testing. */
+    private boolean testing = true;
 
-    private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
+    private final String testingEdition = "elgia";
 
-    public SyncAgent(boolean runForProduction) {
+    public SyncAgent(MigrationUtilities utilities, boolean runForProduction) {
+
+        SyncAgent.utilities = utilities;
+
+        ignoredCodeSystemNames.addAll(utilities.getPropertyReader().readCodeSystemsToIgnore());
 
         this.forProduction = runForProduction;
 
@@ -110,7 +114,7 @@ public class SyncAgent {
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = response.readEntity(String.class);
-            logger.debug("createEditionsFromSnowstorm resultString: " + resultString);
+            // logger.debug("Code Systems from Snowstorm: " + resultString);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
@@ -122,7 +126,7 @@ public class SyncAgent {
 
     }
 
-    private void identifyInternationalModules(JsonNode root) throws Exception {
+    void identifyInternationalModules(JsonNode root) throws Exception {
 
         final Iterator<JsonNode> responseIterator = root.iterator();
 
@@ -147,7 +151,7 @@ public class SyncAgent {
                     while (moduleIterator.hasNext()) {
 
                         JsonNode module = moduleIterator.next();
-                        internationalModules.add(module.get("conceptId").asText());
+                        utilities.getInternationalModules().add(module.get("conceptId").asText());
                     }
 
                 }
@@ -156,9 +160,9 @@ public class SyncAgent {
 
         }
 
-        logger.info("Identified " + internationalModules.size() + " international modules");
+        logger.info("Identified " + utilities.getInternationalModules().size() + " international modules");
 
-        if (internationalModules.isEmpty()) {
+        if (utilities.getInternationalModules().isEmpty()) {
 
             throw new Exception("Didn't find the international modules as anticipated");
 
@@ -166,12 +170,9 @@ public class SyncAgent {
 
     }
 
-    public Set<String> getInternationalModules() {
+    public Set<JsonNode> filterCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
 
-        return internationalModules;
-    }
-
-    public void processCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
+        final Set<JsonNode> filteredCodeSystems = new HashSet<>();
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
 
@@ -202,48 +203,138 @@ public class SyncAgent {
                     continue;
                 }
 
-                // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
-                Set<Edition> syncedEditions = syncEdition(codeSystem);
+                filteredCodeSystems.add(codeSystem);
+            }
 
-                if (!syncedEditions.isEmpty()) {
+        }
 
-                    // Process only one edition.
-                    Organization syncedOrg = syncOrganization(codeSystem, syncedEditions.iterator().next().getId());
+        return filteredCodeSystems;
+    }
 
-                    logger.debug("*********    Results    *************");
-                    logger.debug("Editions Added/Unchanged/Synced: " + editionsAdded.size() + " / " + editionsUnchanged.size() + " / " + editionsSynced.size());
-                    logger.debug("Organizations Added/Unchanged/Synced: " + organizationsAdded.size() + " / " + organizationsUnchanged.size() + " / " + organizationsSynced.size());
+    public void processCodeSystems(Set<JsonNode> codeSystems) throws Exception {
 
-                    /* Organization is done at this point. Check if WCI Organization */
-                    if (syncedOrg.getEdition().getShortName().equals("SNOMEDCT-WCI"))
+        for (JsonNode codeSystem : codeSystems) {
 
-                    {
+            // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
+            Set<Edition> syncedEditions = syncEdition(codeSystem);
 
-                        if (forProduction) {
+            if (!syncedEditions.isEmpty()) {
 
-                            throw new Exception("Have a forProd instance running, yet found an unexpected WCI Org");
-                        }
+                // Process only one edition.
+                Organization syncedOrg = syncOrganization(codeSystem, syncedEditions.iterator().next().getId());
 
-                        if (wciOrganization != null) {
+                /* Organization is done at this point. Check if WCI Organization */
+                if (syncedOrg.getEdition().getShortName().equals("SNOMEDCT-WCI"))
 
-                            throw new Exception("Can't have two WCI Orgs");
-                        }
+                {
 
-                        // identified WCI Org
-                        wciOrganization = syncedOrg;
+                    if (wciOrganization != null) {
+
+                        throw new Exception("Can't have two WCI Orgs");
+                    }
+
+                    // identified WCI Org
+                    wciOrganization = syncedOrg;
+                }
+
+            }
+
+            logger.debug("*********    Results    *************");
+            logger.debug("Editions Added/Unchanged/Synced: " + editionsAdded.size() + " / " + editionsUnchanged.size() + " / " + editionsSynced.size());
+            logger.debug("Organizations Added/Unchanged/Synced: " + organizationsAdded.size() + " / " + organizationsUnchanged.size() + " / " + organizationsSynced.size());
+        }
+
+        if (wciOrganization != null && forProduction) {
+
+            throw new Exception("May not have a WCI Organization on a forProd instance");
+        } else if (wciOrganization == null && !forProduction) {
+
+            throw new Exception("Must have a WCI Organization on a non-Prod instance");
+        }
+
+    }
+
+    void migrateEditions(Set<JsonNode> codeSystems) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            for (JsonNode codeSystem : codeSystems) {
+
+                final String editionName = codeSystem.get("name").asText();
+                final String shortName = codeSystem.get("shortName").asText();
+                final String branch = codeSystem.get("branchPath").asText();
+                final String owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
+
+                logger.info("Processing CodeSystem: " + editionName);
+
+                // Process Edition
+                final Edition edition = utilities.addEdition(codeSystem, shortName, editionName, branch);
+
+                // Identify Code System Owner
+                if (!owner.trim().isBlank()) {
+
+                    editionOwnerMap.put(edition.getShortName(), owner);
+                    editionOwnerMap.put(edition.getName(), owner);
+                } else {
+
+                    editionOwnerMap.put(edition.getShortName(), edition.getName());
+                    editionOwnerMap.put(edition.getName(), edition.getName());
+                }
+
+                // TODO: Add a description default value or update snowstorm with value per codesystem
+                final String orgDesc = "";
+                final String orgName = editionOwnerMap.get(edition.getName());
+
+                Organization org = utilities.addOrganziation(orgName, orgDesc, edition);
+                organizationsAdded.put(org.getName(), org);
+
+                if (org.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
+
+                    if (forProduction) {
+
+                        throw new Exception("Have a forProd instance running, yet found an unexpected WCI Org");
+                    }
+
+                    wciOrganization = org;
+                } else {
+
+                    // Finally, create a Default Project for the edition
+                    if (!defaultOrganizationProjects.containsKey(org.getId())) {
+
+                        // Create default project
+                        final String projectName = orgName + " Default Project";
+                        final String projectDescription = "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + orgName + ".";
+
+                        final Project project = utilities.addProject(org, projectName, projectDescription);
+
+                        defaultOrganizationProjects.put(org.getId(), project);
                     }
 
                 }
 
             }
 
-            if (wciOrganization == null && !forProduction) {
+            if (wciOrganization == null && !forProduction)
+
+            {
 
                 throw new Exception("Have a non-Prod instance running, yet didn't find the expected WCI Org");
             }
 
+        } catch (
+
+        Exception e) {
+
+            e.printStackTrace();
         }
 
+    }
+
+    Map<String, Organization> getOrganizationsAdded() {
+
+        return organizationsAdded;
     }
 
     /*-
@@ -265,115 +356,123 @@ public class SyncAgent {
         Organization organization = null;
 
         /* See if have organization with corresponding editionId */
-        try (final TerminologyService service = new TerminologyService()) {
+        // If existingEdition is null, this is the first time we have observed this edition, so create it.
+        final List<Organization> matchingOrganizations = allOrganizations.stream().filter(o -> editionId.equals(o.getEdition().getId())).collect(Collectors.toList());
 
-            List<Organization> allOrganizations = service.getAll(Organization.class);
+        if (matchingOrganizations.size() > 1) {
 
-            // If existingEdition is null, this is the first time we have observed this edition, so create it.
-            final List<Organization> matchingOrganizations = allOrganizations.stream().filter(o -> editionId.equals(o.getEdition().getId())).collect(Collectors.toList());
+            throw new Exception("Have more than one organization associated with edition. This isn't supported in RT2 at the time being");
+        }
 
-            if (matchingOrganizations.size() > 1) {
+        /* identify comparison attributes */
+        boolean isActiveSnowstormOrganization = true;
 
-                throw new Exception("Have more than one organization associated with edition. This isn't supported in RT2 at the time being");
-            }
+        if (codeSystem.has("active")) {
 
-            /* identify comparison attributes */
-            boolean isActiveSnowstormOrganization = true;
+            isActiveSnowstormOrganization = codeSystem.get("active").asBoolean();
+        }
 
-            if (codeSystem.has("active")) {
+        // owner generally not populated at this time, so provide backup plan
+        String snowstormOrganizationName;
 
-                isActiveSnowstormOrganization = codeSystem.get("active").asBoolean();
-            }
+        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
 
-            // owner generally not populated at this time, so provide backup plan
-            String snowstormOrganizationName;
+            snowstormOrganizationName = codeSystem.get("owner").asText();
+        } else {
 
-            if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
-
-                snowstormOrganizationName = codeSystem.get("owner").asText();
-            } else {
+            try (final TerminologyService service = new TerminologyService()) {
 
                 Edition edition = service.get(editionId, Edition.class);
                 snowstormOrganizationName = edition.getName();
             }
 
-            if (matchingOrganizations == null || matchingOrganizations.isEmpty()) {
+        }
 
-                // Handle new versus existing Organization
-                if (isActiveSnowstormOrganization) {
+        /* Based on matching attributes: add new, ignore new but inactive, check for changes and modify if needed and ignore otherwise */
+        if (matchingOrganizations == null || matchingOrganizations.isEmpty()) {
 
-                    // Only create if it is active
-                    final Organization newOrganization = createOrganization(snowstormOrganizationName);
-                    organizationsAdded.add(newOrganization);
+            // Handle new versus existing Organization
+            if (isActiveSnowstormOrganization) {
 
-                    organization = newOrganization;
-                } else {
+                // Only create if it is active
+                final Edition edition = allEditions.stream().filter(e -> editionId.equals(e.getId())).collect(Collectors.toList()).iterator().next();
+                final Organization newOrganization = utilities.addOrganziation(snowstormOrganizationName, "", edition);
 
-                    // New Code System created as inactive. Given this is being run nightly and a new org/edition that is inactive at first pass was likely made erroneously.
-                    // Once
-                    // fixed and becomes active, we will get it at the following sync.
-                    organization = null;
-                }
+                // TODO: Add a description default value or update Organization org = utilities.addOrganziation(orgName, orgDesc, edition, defaultMeta);
+                organizationsAdded.put(newOrganization.getName(), newOrganization);
+                organization = newOrganization;
+            } else {
+
+                // New Code System created as inactive. Given this is being run nightly and a new org/edition that is inactive at first pass was likely made erroneously.
+                // Once
+                // fixed and becomes active, we will get it at the following sync.
+                organization = null;
+            }
+
+        } else {
+
+            final Organization currentOrganization = matchingOrganizations.iterator().next();
+            final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(currentOrganization, snowstormOrganizationName, isActiveSnowstormOrganization);
+
+            if (syncedOrganization != null) {
+
+                // A modification was made, so updated edition
+                organizationsSynced.add(syncedOrganization);
+                organization = syncedOrganization;
 
             } else {
 
-                final Organization existingOrganization = matchingOrganizations.iterator().next();
-
-                /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
-                boolean modificationMade = false;
-
-                if (!existingOrganization.getName().equals(snowstormOrganizationName)) {
-
-                    logger.debug(" inconsistent name with '" + existingOrganization.getName() + "' and '" + snowstormOrganizationName + "'");
-
-                    existingOrganization.setName(snowstormOrganizationName);
-                    modificationMade = true;
-                }
-
-                if (existingOrganization.isActive() != isActiveSnowstormOrganization) {
-
-                    logger.debug(" inconsistent active with '" + existingOrganization.isActive() + "' and '" + isActiveSnowstormOrganization + "'");
-
-                    existingOrganization.setActive(isActiveSnowstormOrganization);
-                    modificationMade = true;
-                }
-
-                if (modificationMade) {
-
-                    // A modification was made, so updated edition
-                    initializeService(service);
-
-                    final Organization syncedOrganization = service.update(existingOrganization);
-                    organizationsSynced.add(syncedOrganization);
-
-                    organization = syncedOrganization;
-
-                } else {
-
-                    // No changes, return existing
-                    organizationsUnchanged.add(existingOrganization);
-
-                    organization = existingOrganization;
-                }
-
+                // No changes, return existing
+                organizationsUnchanged.add(currentOrganization);
+                organization = currentOrganization;
             }
 
         }
 
-        if (organization == null) {
+        return organization;
+    }
 
-            return organization;
+    private Organization compareAndUpdateOrganizationDifferences(Organization existingOrganization, String snowstormOrganizationName, boolean isActiveSnowstormOrganization) throws Exception {
+
+        /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
+        boolean modificationMade = false;
+
+        if (!existingOrganization.getName().equals(snowstormOrganizationName)) {
+
+            logger.debug(" inconsistent name with '" + existingOrganization.getName() + "' and '" + snowstormOrganizationName + "'");
+
+            existingOrganization.setName(snowstormOrganizationName);
+            modificationMade = true;
         }
 
-        // TODO: Add a description default value or update Organization org = utilities.addOrganziation(orgName, orgDesc, edition, defaultMeta);
+        if (existingOrganization.isActive() != isActiveSnowstormOrganization) {
 
-        return organization;
+            logger.debug(" inconsistent active with '" + existingOrganization.isActive() + "' and '" + isActiveSnowstormOrganization + "'");
+
+            existingOrganization.setActive(isActiveSnowstormOrganization);
+            modificationMade = true;
+        }
+
+        if (modificationMade) {
+
+            try (final TerminologyService service = new TerminologyService()) {
+
+                initializeService(service);
+
+                return service.update(existingOrganization);
+            }
+
+        } else {
+
+            return null;
+        }
+
     }
 
     /*-
      * Match by Organization::Edition::id to match against all Orgs in the DB. If not successful, try name, and finally try branch. If nothing found, is new Edition.
      * 
-     * For now, only must identify if there are changes to any of the following object values during sync: 
+     * For now, only must identify if there) are changes to any of the following object values during sync: 
      * 1) ShortName
      * 2) Name 
      * 3) Branch
@@ -390,26 +489,20 @@ public class SyncAgent {
         final String snowstormEditionShortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
         final String snowstormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
         final String snowstormEditionBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
-
         final boolean isActiveSnowstormEdition = codeSystem.has("active") ? codeSystem.get("active").asBoolean() : true;
-
-        final String snowstormEditionDefaultLanguageCode = identifyDefaultLanguageCode(codeSystem, snowstormEditionName);
-        final String snowstormEditionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, codeSystem) : "";
-        final Set<String> snowstormEditionDefaultLanguageRefsets = codeSystem.has("defaultLanguageReferenceSets") ? identifyDefaultLanguageRefsets(codeSystem, snowstormEditionName) : new HashSet<>();
 
         /* See if exists. If not return created. */
 
         // If existingEdition is null, this is the first time we have observed this edition, so create it.
-        final List<Edition> existingEditions = identifyMatchingEdition(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch);
+        final List<Edition> matchingSnowstormEditions = identifyMatchingEdition(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch);
 
-        if (existingEditions == null) {
+        if (matchingSnowstormEditions == null || matchingSnowstormEditions.isEmpty()) {
 
             // New Code System identified on Snowstorm
             if (isActiveSnowstormEdition) {
 
                 // Only create if it is active
-                Edition newEdition = createNewEdition(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, snowstormEditionDefaultLanguageRefsets, snowstormEditionTopLevelModule,
-                    snowstormEditionDefaultLanguageCode);
+                Edition newEdition = utilities.addEdition(codeSystem, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch);
 
                 editionsAdded.add(newEdition);
 
@@ -427,7 +520,7 @@ public class SyncAgent {
 
             Set<Edition> editions = new HashSet<>();
 
-            for (Edition existingEdition : existingEditions) {
+            for (Edition existingEdition : matchingSnowstormEditions) {
 
                 /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
                 boolean modificationMade = false;
@@ -464,6 +557,8 @@ public class SyncAgent {
                     modificationMade = true;
                 }
 
+                final String snowstormEditionTopLevelModule = utilities.identifyTopLevelModule(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, codeSystem);
+
                 if (!existingEdition.getTopLevelModule().equals(snowstormEditionTopLevelModule)) {
 
                     logger.debug(" inconsistent topLevelModule with '" + existingEdition.getTopLevelModule() + "' and '" + snowstormEditionTopLevelModule + "'");
@@ -472,6 +567,8 @@ public class SyncAgent {
                     modificationMade = true;
                 }
 
+                final String snowstormEditionDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, snowstormEditionName);
+
                 if (!existingEdition.getDefaultLanguageCode().equals(snowstormEditionDefaultLanguageCode)) {
 
                     logger.debug(" inconsistent defaultLanguageCode with '" + existingEdition.getDefaultLanguageCode() + "' and '" + snowstormEditionDefaultLanguageCode + "'");
@@ -479,6 +576,8 @@ public class SyncAgent {
                     existingEdition.setDefaultLanguageCode(snowstormEditionDefaultLanguageCode);
                     modificationMade = true;
                 }
+
+                final Set<String> snowstormEditionDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, snowstormEditionName);
 
                 if (!existingEdition.getDefaultLanguageRefsets().equals(snowstormEditionDefaultLanguageRefsets)) {
 
@@ -526,52 +625,6 @@ public class SyncAgent {
         return retSet;
     }
 
-    private Edition createNewEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, String topLevelModule, String defaultLanguageCode) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            Edition edition = new Edition();
-
-            edition.setShortName(shortName);
-            edition.setName(name);
-            edition.setBranch(branch);
-            edition.setDefaultLanguageRefsets(defaultLanguageRefsets);
-            edition.setTopLevelModule(topLevelModule);
-            edition.setDefaultLanguageCode(defaultLanguageCode);
-
-            // New ones only created as new
-            edition.setActive(true);
-
-            Edition createdEdition = service.add(edition);
-
-            logger.debug("Created New Edition: " + createdEdition);
-
-            return createdEdition;
-        }
-
-    }
-
-    private Organization createOrganization(String name) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            Organization organization = new Organization();
-
-            organization.setName(name);
-
-            // New ones only created as new
-            organization.setActive(true);
-
-            Organization createdOrganization = service.add(organization);
-            logger.debug("Created New Organization: " + createdOrganization);
-
-            return createdOrganization;
-        }
-
-    }
-
     private List<Edition> identifyMatchingEdition(String shortName, String editionName, String branch) throws Exception {
 
         List<Edition> existingEditions = null;
@@ -617,135 +670,6 @@ public class SyncAgent {
      * 2) Active/inactive status
      * 
      */
-    private String identifyDefaultLanguageCode(JsonNode codeSystem, String snowstormEditionName) throws Exception {
-
-        // Identify Edition's defaultLanguageCode - Per Kai, transform first language in set as defaultLangCode
-        if (!codeSystem.has("languages")) {
-
-            throw new Exception("All Code Systems must have lanaguages set filled in. " + snowstormEditionName + " does not");
-        }
-
-        Iterator<String> languages = codeSystem.get("languages").fieldNames();
-
-        return languages.next();
-    }
-
-    private Set<String> identifyDefaultLanguageRefsets(JsonNode codeSystem, String snowstormEditionName) {
-
-        Set<String> retSet = new HashSet<>();
-
-        // Identify Edition's Default Language Refsets
-        if (codeSystem.has("defaultLanguageReferenceSets")) {
-
-            final JsonNode defaultLanguageReferenceSets = codeSystem.get("defaultLanguageReferenceSets");
-            final Iterator<JsonNode> defaultLanguageReferencesSetIterator = defaultLanguageReferenceSets.iterator();
-
-            while (defaultLanguageReferencesSetIterator.hasNext()) {
-
-                retSet.add(defaultLanguageReferencesSetIterator.next().asText());
-            }
-
-        } else if (undefinedDefaultLanguageRefsets.containsKey(snowstormEditionName)) {
-
-            retSet.addAll(undefinedDefaultLanguageRefsets.get(snowstormEditionName));
-            logger.debug("No defined Default Language Refsets for " + snowstormEditionName + ", so adding from txt file: " + undefinedDefaultLanguageRefsets.get(snowstormEditionName));
-        }
-
-        // Ensure that DEFAULT_LANG_REFSET is always listed even if not explicitely listed
-        retSet.add(DEFAULT_LANGUAGE_REFSET);
-
-        return retSet;
-    }
-
-    private String identifyTopLevelModule(String editionName, String shortName, String editionBranch, JsonNode codeSystem) throws Exception {
-
-        if ("international edition".equals(editionName.toLowerCase())) {
-
-            return MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
-        } else {
-
-            Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
-
-            // Ignore CORE Modules
-            Set<String> editionModules = new HashSet<>();
-
-            while (moduleIterator.hasNext()) {
-
-                JsonNode module = moduleIterator.next();
-
-                if (!internationalModules.contains(module.get("conceptId").asText()) && !module.get("moduleId").asText().equals("900000000000012004")) {
-
-                    editionModules.add(module.get("conceptId").asText());
-                }
-
-            }
-
-            if (editionModules.size() == 0) {
-
-                // If no non-CORE modules found, use the default Module
-                logger.info("Didn't identify dedicated module for " + editionName + ": " + editionModules.toString() + ", so using default: " + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
-                return MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
-            } else if (editionModules.size() == 1) {
-
-                // If only one non-CORE modules found, use it
-                return editionModules.iterator().next();
-            } else {
-
-                logger.info("Have multiple modules identified for " + editionName + ": " + editionModules.toString());
-
-                // If multiple non-CORE modules found, TODO: Fill in
-                Set<String> childrenModules = new HashSet<>();
-
-                Set<String> children = getModuleChildren(editionBranch);
-
-                for (String moduleId : editionModules) {
-
-                    if (children.contains(moduleId)) {
-
-                        childrenModules.add(moduleId);
-                    }
-
-                }
-
-                // TODO: Remove Hard coded solution for Netherlands and
-                // Australia -> These are from previous test data and are deprecated
-                if (shortName.equals("SNOMEDCT-NL")) {
-
-                    childrenModules.remove("15561000146104"); // 15561000146104
-                                                              // - Represents
-                                                              // Patient
-                                                              // Friendly Terms
-                } else if (shortName.equals("SNOMEDCT-AU")) {
-
-                    childrenModules.add("32570231000036109");
-                }
-
-                // TODO: Handle hard coded solution for Norway & US
-                if (shortName.equals("SNOMEDCT-NO")) {
-
-                    childrenModules.remove("57091000202101");
-                    childrenModules.remove("57101000202106");
-                } else if (shortName.equals("SNOMEDCT-US")) {
-
-                    childrenModules.remove("5991000124107");
-                }
-
-                if (childrenModules.size() == 0 || childrenModules.size() > 1) {
-
-                    String msg = "Seeing odd number of modules during secondary analysis for " + editionName + ": " + childrenModules.toString();
-
-                    logger.info(msg);
-                    throw new Exception("This situation shouldn't happen during sync: " + msg);
-                } else {
-
-                    return childrenModules.iterator().next();
-                }
-
-            }
-
-        }
-
-    }
 
     private void processProjects(Organization organization) {
 
@@ -766,33 +690,6 @@ public class SyncAgent {
         
         }
         */
-    }
-
-    private Set<String> getModuleChildren(String branch) throws Exception {
-
-        String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/concepts/" + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
-        Set<String> childrenSctIds = new HashSet<>();
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(resultString.toString());
-
-            Iterator<JsonNode> conceptIterator = root.iterator();
-
-            while (conceptIterator.hasNext()) {
-
-                JsonNode node = conceptIterator.next();
-                childrenSctIds.add(node.get("conceptId").asText());
-            }
-
-        } catch (Exception e) {
-
-            throw new Exception("Failed in getting code systems (first call to Snowstorm) with: " + e.getMessage(), e);
-        }
-
-        return childrenSctIds;
     }
 
     private void initializeService(TerminologyService service) {
