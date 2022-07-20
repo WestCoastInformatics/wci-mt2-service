@@ -37,6 +37,7 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * The Class OrganizationService.
@@ -71,7 +72,7 @@ public class OrganizationService extends BaseService {
             
             final String errorMessage = "There is already an organization tied to that edition.";
             logger.error(errorMessage);
-            throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", "Error creating organization.");
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
         }
         
         organizationsParameters.setQuery("name:" + organization.getName());
