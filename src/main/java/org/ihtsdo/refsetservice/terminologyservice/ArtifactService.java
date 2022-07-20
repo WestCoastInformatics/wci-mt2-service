@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Service class to handle creating and getting artifact entries.
  */
-public class ArtifactService {
+public class ArtifactService extends BaseService {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(ArtifactService.class);
@@ -64,8 +64,10 @@ public class ArtifactService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final PfsParameter pfs = new PfsParameter();
+            final long start = System.currentTimeMillis();
 
+            final PfsParameter pfs = new PfsParameter();
+            final String query = getQueryForActiveOnly(searchParameters);
             if (searchParameters.getOffset() != null) {
                 pfs.setOffset(searchParameters.getOffset());
             }
@@ -84,7 +86,9 @@ public class ArtifactService {
                 pfs.setSort(searchParameters.getSort());
             }
 
-            final ResultList<Artifact> results = service.find(searchParameters.getQuery(), pfs, Artifact.class, null);
+            final ResultList<Artifact> results = service.find(query, pfs, Artifact.class, null);
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
 
             return results;
 
@@ -118,6 +122,33 @@ public class ArtifactService {
 
         } catch (final Exception e) {
             logger.error("Error adding artifact.  Artifact: {}", artifact.toString(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Adds the artifact.
+     *
+     * @param user the user
+     * @param artifact the artifact
+     * @return the artifact
+     * @throws Exception the exception
+     */
+    public static Artifact updateArtifact(final User user, final Artifact artifact) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            service.update(artifact);
+            service.commit();
+
+            return artifact;
+
+        } catch (final Exception e) {
+            logger.error("Error updateing artifact.  Artifact: {}", artifact.toString(), e);
             throw e;
         }
     }
