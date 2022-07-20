@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -80,6 +81,22 @@ public class SecurityService implements AutoCloseable {
     public SecurityService() throws Exception {
 
         super();
+    }
+    
+    /**
+     * Get a user for application level changes that has full permissions.
+     *
+     * @return the user from the session or null
+     * @throws Exception the exception
+     */
+    public static User getApplicationAdminUser() throws Exception {
+        
+        final User user = new User();
+        user.setName("RT2 Internal Application Admin");
+        user.setUserName("RT2_Internal_Application_Admin");
+        user.getRoles().add("all-all-all");
+        
+        return user;
     }
 
     /**
@@ -426,12 +443,12 @@ public class SecurityService implements AutoCloseable {
         logger.debug("User = " + authUser.getUserName() + ", " + authUser);
 
         // Reload the user to populate UserPreferences
-        final User result = getUser(userId);
-        result.setAuthToken(token);
+        final User finalUser = getUser(userId);
+        finalUser.setAuthToken(token);
 
-        checkAndAddUserToOrganization(authUser);
+        //checkAndAddUserToOrganization(finalUser);
 
-        return result;
+        return finalUser;
     }
 
     /**
@@ -449,31 +466,59 @@ public class SecurityService implements AutoCloseable {
         
         try (final TerminologyService service = new TerminologyService()) {
             
-            service.setModifiedBy(user.getUserName());
+            final User appAdminUser = getApplicationAdminUser();
+            
+            service.setModifiedBy(appAdminUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            final Set<String> memberships = new HashSet<>();
+            final Set<String> permissionEditionAbbreviations = new HashSet<>();
             
             for (final String groupName : user.getRoles()) {
                 
                 final UserProjectRole userProjectRole = new UserProjectRole(groupName);
-                memberships.add(userProjectRole.getOrganization());
+                permissionEditionAbbreviations.add(userProjectRole.getOrganization());
             }
     
             final ResultList<Organization> organizations = OrganizationService.searchOrganizations(service, user, new SearchParameters(), true);
-            final Map<String, Organization> organizationAndUsers = new HashMap<>();
+            final Map<String, Organization> organizationMap = new HashMap<>();
             
-            for (final Organization org : organizations.getItems()) {
-                organizationAndUsers.put(CrowdGroupNameAlgorithm.getOrganizationString(org.getEdition().getShortName()), org);
+            for (final Organization organization : organizations.getItems()) {
+                organizationMap.put(organization.getEdition().getAbbreviation(), organization);
             }
     
-            for (final String org : memberships) {
+            for (final String permissionEditionAbbreviation : permissionEditionAbbreviations) {
                 
-                if (organizationAndUsers.get(org) != null && !organizationAndUsers.get(org).getMembers().contains(user)) {
+                for (final Organization possibleOrganization : new ArrayList<Organization>(organizations.getItems())) {
                     
-                    logger.debug("Add user " + user.getUserName() + " to org " + org);
-                    OrganizationService.addUserToOrganization(service, user, organizationAndUsers.get(org).getId(), user.getEmail());
+                    Organization organization = null;
+                    boolean isMember = false;
+                    
+                    if (possibleOrganization.getEdition().getAbbreviation().equals(permissionEditionAbbreviation)) {
+                        
+                        organization = possibleOrganization;
+                        organizations.getItems().remove(possibleOrganization);
+                    
+                    } else {
+                        continue;
+                    } 
+                    
+                    OrganizationService.setRoles(appAdminUser, organization, organization.getRoles());
+                    
+                    for (final User member : organization.getMembers()) {
+                        
+                        if (member.getId().equals(user.getId())) {
+                            
+                            isMember = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!isMember) {
+                        
+                        logger.debug("Add user " + user.getUserName() + " to organization " + organization.getName());
+                        OrganizationService.addUserToOrganization(service, appAdminUser, organization.getId(), user.getEmail());
+                    }
                 }
             }
             

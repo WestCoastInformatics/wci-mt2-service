@@ -32,6 +32,8 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+
 /**
  * Represents the edition information for a refset.
  */
@@ -213,6 +215,32 @@ public class Edition extends AbstractHasModified {
     public String getTopLevelModule() {
 
         return topLevelModule;
+    }
+    
+    /**
+     * Gets the abbreviation version of the name.
+     *
+     * @return the abbreviation version of the name
+     */
+    @JsonGetter()
+    public String getAbbreviation() {
+        
+        String abbreviation = "main";
+        
+        if (!shortName.equals("SNOMEDCT")) {
+            abbreviation = shortName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
+        }
+        
+        return abbreviation;
+    }
+    
+    /**
+     * Sets the abbreviation version of the name.
+     *
+     * @param abbreviation the abbreviation version of the name to set
+     */
+    public void setAbbreviation(final String abbreviation) {
+        // N/A
     }
 
     /**
