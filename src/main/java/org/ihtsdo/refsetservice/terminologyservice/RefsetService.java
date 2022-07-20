@@ -53,6 +53,7 @@ import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -1092,7 +1093,9 @@ public class RefsetService {
 
             logger.debug("getRefsetConcepts existingRefsetIds: " + existingRefsetIds);
         }
-
+        
+        final Set<String> excludeList = conceptsToRemove(!areParentConcepts);   
+        
         // update the concept with the new data
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -1101,7 +1104,7 @@ public class RefsetService {
 
                 throw new Exception("Unable to get refset concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
             }
-
+            
             final ObjectMapper mapper = new ObjectMapper();
             final String resultString = response.readEntity(String.class);
             final JsonNode root = mapper.readTree(resultString.toString());
@@ -1115,7 +1118,7 @@ public class RefsetService {
                 final String conceptId = conceptNode.get("conceptId").asText();
 
                 // if this isn't for a parent concept and the refset already exists then skip it
-                if (!areParentConcepts && existingRefsetIds.contains(conceptId)) {
+                if ((!areParentConcepts && existingRefsetIds.contains(conceptId)) || excludeList.contains(conceptId)) {
 
                     continue;
                 }
@@ -1126,7 +1129,7 @@ public class RefsetService {
 
                 results.getItems().add(concept);
             }
-
+            
             // sort the results
             Collections.sort(results.getItems(), (o1, o2) -> (o1.getName().compareTo(o2.getName())));
         }
@@ -2084,5 +2087,33 @@ public class RefsetService {
             + "Refset: " + refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" + "User: " + user.getName() + " (" + user.getEmail() + ")" + "\n\n" + "Comments: " + comments;
 
         EmailUtility.sendEmail(subject, user.getEmail(), projectAdminEmail, body);
+    }
+    
+    
+    /**
+     * Concepts to remove.
+     *
+     * @return the sets the
+     */
+    private static Set<String> conceptsToRemove(boolean excludeCurrentSiRefsets) {
+
+        final Set<String> conceptCodes = new HashSet<>();
+        final String[] refsetExclue = PropertyUtility.getProperty("refset-copy-concept-exclude").split("\\|");
+
+        for (int i = 0; i < refsetExclue.length; i++) {
+            conceptCodes.add(refsetExclue[i]);
+            i++;
+        }
+
+        if (excludeCurrentSiRefsets) {
+            final String[] currentSiRefsets = PropertyUtility.getProperty("current_si_refsets").split("\\|");
+
+            for (int i = 0; i < currentSiRefsets.length; i++) {
+                conceptCodes.add(currentSiRefsets[i]);
+                i++;
+            }
+        }
+
+        return conceptCodes;
     }
 }

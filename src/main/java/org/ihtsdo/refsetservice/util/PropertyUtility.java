@@ -3,10 +3,7 @@ package org.ihtsdo.refsetservice.util;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Properties;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.stream.StreamSupport;
 
 import javax.annotation.PostConstruct;
@@ -21,11 +18,13 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.stereotype.Component;
 
+
 /**
  * Set up config properties cache.
  */
 @Component
-//@PropertySource("classpath:application_default.properties")
+@PropertySource("classpath:current_si_refsets.properties")
+@PropertySource("classpath:exclude_refsets_from_options.properties")
 public class PropertyUtility {
 
     /** The logger. */
@@ -50,7 +49,9 @@ public class PropertyUtility {
     private void init() throws Exception{
 
         final MutablePropertySources sources = ((AbstractEnvironment) env).getPropertySources();
+      
         logger.info("Property Sources: " + sources.toString());
+        
         StreamSupport.stream(sources.spliterator(), false)
                 .filter(ps -> ps instanceof EnumerablePropertySource)
                 .map(ps -> ((EnumerablePropertySource) ps).getPropertyNames())
@@ -60,14 +61,14 @@ public class PropertyUtility {
         
         properties.setProperty("springProfiles", Arrays.toString(env.getActiveProfiles()));
         
-        /* // only uncomment for testing - do not print out properties in Production environments
-        TreeSet<Object> sortedPropertyNames = new TreeSet<>(properties.keySet());
-        for (Object propertyName : sortedPropertyNames) {
-            logger.info("Property: " + propertyName  + " = " + properties.get(propertyName));
-        } */
+        // only uncomment for testing - do not print out properties in Production environments
+        //TreeSet<Object> sortedPropertyNames = new TreeSet<>(properties.keySet());
+        //for (Object propertyName : sortedPropertyNames) {
+        //    logger.info("Property: " + propertyName  + " = " + properties.get(propertyName));
+        //} 
         
     }
-
+    
     /**
      * get all properties.
      *
