@@ -215,27 +215,12 @@ public class SyncAgent {
         for (JsonNode codeSystem : codeSystems) {
 
             // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
-            Set<Edition> syncedEditions = syncEdition(codeSystem);
+            Edition syncedEdition = syncEdition(codeSystem);
 
-            if (syncedEditions != null && !syncedEditions.isEmpty()) {
+            if (syncedEdition != null) {
 
                 // Process only one edition.
-                Organization syncedOrg = syncOrganization(codeSystem, syncedEditions.iterator().next().getId());
-
-                /* Organization is done at this point. Check if WCI Organization */
-                if (syncedOrg != null && syncedOrg.getEdition().getShortName().equals("SNOMEDCT-WCI"))
-
-                {
-
-                    if (wciOrganization != null) {
-
-                        throw new Exception("Can't have two WCI Orgs");
-                    }
-
-                    // identified WCI Org
-                    wciOrganization = syncedOrg;
-                }
-
+                Organization syncedOrg = syncOrganization(codeSystem, syncedEdition);
             }
 
             logger.debug("*********    Results    *************");
@@ -347,20 +332,15 @@ public class SyncAgent {
      * 6) topLevelModule
      * 7) defaultLanguageRefsets
      */
-    private Organization syncOrganization(JsonNode codeSystem, String editionId) throws Exception {
+    private Organization syncOrganization(JsonNode codeSystem, Edition edition) throws Exception {
 
-        logger.debug(" Migrate/Sync Organization(s) for codeSystem: " + codeSystem.get("name").asText() + " using editionId: " + editionId);
+        logger.debug(" Migrate/Sync Organization(s) for codeSystem: " + codeSystem.get("name").asText() + " using edition: " + edition);
 
         Organization organization = null;
 
         /* See if have organization with corresponding editionId */
         // If existingEdition is null, this is the first time we have observed this edition, so create it.
-        final List<Organization> matchingOrganizations = allOrganizations.stream().filter(o -> editionId.equals(o.getEdition().getId())).collect(Collectors.toList());
-
-        if (matchingOrganizations.size() > 1) {
-
-            throw new Exception("Have more than one organization associated with edition. This isn't supported in RT2 at the time being");
-        }
+        final Organization matchingOrganization = allOrganizations.stream().filter(o -> edition.getId().equals(o.getEdition().getId())).collect(Collectors.toList()).iterator().next();
 
         /* identify comparison attributes */
         boolean isActiveSnowstormOrganization = true;
@@ -378,22 +358,16 @@ public class SyncAgent {
             snowstormOrganizationName = codeSystem.get("owner").asText();
         } else {
 
-            try (final TerminologyService service = new TerminologyService()) {
-
-                Edition edition = service.get(editionId, Edition.class);
-                snowstormOrganizationName = edition.getName();
-            }
-
+            snowstormOrganizationName = edition.getName();
         }
 
         /* Based on matching attributes: add new, ignore new but inactive, check for changes and modify if needed and ignore otherwise */
-        if (matchingOrganizations == null || matchingOrganizations.isEmpty()) {
+        if (matchingOrganization == null) {
 
             // Handle new versus existing Organization
             if (isActiveSnowstormOrganization) {
 
                 // Only create if it is active
-                final Edition edition = allEditions.stream().filter(e -> editionId.equals(e.getId())).collect(Collectors.toList()).iterator().next();
                 final Organization newOrganization = utilities.addOrganziation(snowstormOrganizationName, "", edition);
 
                 // TODO: Add a description default value or update Organization org = utilities.addOrganziation(orgName, orgDesc, edition, defaultMeta);
@@ -409,8 +383,7 @@ public class SyncAgent {
 
         } else {
 
-            final Organization currentOrganization = matchingOrganizations.iterator().next();
-            final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(currentOrganization, snowstormOrganizationName, isActiveSnowstormOrganization);
+            final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(matchingOrganization, snowstormOrganizationName, isActiveSnowstormOrganization);
 
             if (syncedOrganization != null) {
 
@@ -421,8 +394,24 @@ public class SyncAgent {
             } else {
 
                 // No changes, return existing
-                organizationsUnchanged.add(currentOrganization);
-                organization = currentOrganization;
+                organizationsUnchanged.add(matchingOrganization);
+                organization = matchingOrganization;
+            }
+
+        }
+
+        logger.info("Synced " + organization.getName() + " Organization");
+
+        /* Organization is done at this point. Check if WCI Organization */
+        if (organization != null && organization.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
+
+            if (wciOrganization != null) {
+
+                throw new Exception("Can't have two WCI Orgs with new one having shortName: " + organization.getEdition().getShortName());
+            } else {
+
+                // identified WCI Org
+                wciOrganization = organization;
             }
 
         }
@@ -479,7 +468,7 @@ public class SyncAgent {
      * 6) topLevelModule
      * 7) defaultLanguageRefsets
      */
-    private Set<Edition> syncEdition(JsonNode codeSystem) throws Exception {
+    private Edition syncEdition(JsonNode codeSystem) throws Exception {
 
         logger.debug(" Migrate/Sync Edition(s) for codeSystem: " + codeSystem.get("name").asText());
 
@@ -489,12 +478,14 @@ public class SyncAgent {
         final String snowstormEditionBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
         final boolean isActiveSnowstormEdition = codeSystem.has("active") ? codeSystem.get("active").asBoolean() : true;
 
+        Edition returnedEdition = null;
+
         /* See if exists. If not return created. */
 
         // If existingEdition is null, this is the first time we have observed this edition, so create it.
-        final List<Edition> matchingSnowstormEditions = identifyMatchingEdition(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch);
+        final Edition matchingSnowstormEdition = identifyMatchingEdition(snowstormEditionShortName);
 
-        if (matchingSnowstormEditions == null || matchingSnowstormEditions.isEmpty()) {
+        if (matchingSnowstormEdition == null) {
 
             // New Code System identified on Snowstorm
             if (isActiveSnowstormEdition) {
@@ -504,159 +495,130 @@ public class SyncAgent {
 
                 editionsAdded.add(newEdition);
 
-                return editionsAdded;
+                returnedEdition = newEdition;
+
             } else {
 
                 editionsNewAndInactive.add(snowstormEditionShortName + " / " + snowstormEditionName + " / " + snowstormEditionBranch);
 
                 // New Code System created as inactive. Given this is being run nightly and a new org/edition that is inactive at first pass was likely made erroneously.
                 // Once fixed and becomes active, we will get it at the following sync. For now, don't add to retSet
-                return new HashSet<Edition>();
             }
 
         } else {
 
-            Set<Edition> editions = new HashSet<>();
+            /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
+            boolean modificationMade = false;
 
-            for (Edition existingEdition : matchingSnowstormEditions) {
+            if (!matchingSnowstormEdition.getShortName().equals(snowstormEditionShortName)) {
 
-                /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
-                boolean modificationMade = false;
+                logger.debug(" inconsistent ShortName with '" + matchingSnowstormEdition.getShortName() + "' and '" + snowstormEditionShortName + "'");
 
-                if (!existingEdition.getShortName().equals(snowstormEditionShortName)) {
+                matchingSnowstormEdition.setShortName(snowstormEditionShortName);
+                modificationMade = true;
+            }
 
-                    logger.debug(" inconsistent ShortName with '" + existingEdition.getShortName() + "' and '" + snowstormEditionShortName + "'");
+            if (!matchingSnowstormEdition.getName().equals(snowstormEditionName)) {
 
-                    existingEdition.setShortName(snowstormEditionShortName);
-                    modificationMade = true;
-                }
+                logger.debug(" inconsistent name with '" + matchingSnowstormEdition.getName() + "' and '" + snowstormEditionName + "'");
 
-                if (!existingEdition.getName().equals(snowstormEditionName)) {
+                matchingSnowstormEdition.setName(snowstormEditionName);
+                modificationMade = true;
+            }
 
-                    logger.debug(" inconsistent name with '" + existingEdition.getName() + "' and '" + snowstormEditionName + "'");
+            if (!matchingSnowstormEdition.getBranch().equals(snowstormEditionBranch)) {
 
-                    existingEdition.setName(snowstormEditionName);
-                    modificationMade = true;
-                }
+                logger.debug(" inconsistent branch with '" + matchingSnowstormEdition.getBranch() + "' and '" + snowstormEditionBranch + "'");
 
-                if (!existingEdition.getBranch().equals(snowstormEditionBranch)) {
+                matchingSnowstormEdition.setBranch(snowstormEditionBranch);
+                modificationMade = true;
+            }
 
-                    logger.debug(" inconsistent branch with '" + existingEdition.getBranch() + "' and '" + snowstormEditionBranch + "'");
+            if (matchingSnowstormEdition.isActive() != isActiveSnowstormEdition) {
 
-                    existingEdition.setBranch(snowstormEditionBranch);
-                    modificationMade = true;
-                }
+                logger.debug(" inconsistent active with '" + matchingSnowstormEdition.isActive() + "' and '" + isActiveSnowstormEdition + "'");
 
-                if (existingEdition.isActive() != isActiveSnowstormEdition) {
+                matchingSnowstormEdition.setActive(isActiveSnowstormEdition);
+                modificationMade = true;
+            }
 
-                    logger.debug(" inconsistent active with '" + existingEdition.isActive() + "' and '" + isActiveSnowstormEdition + "'");
+            final String snowstormEditionTopLevelModule = utilities.identifyTopLevelModule(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, codeSystem);
 
-                    existingEdition.setActive(isActiveSnowstormEdition);
-                    modificationMade = true;
-                }
+            if (!matchingSnowstormEdition.getTopLevelModule().equals(snowstormEditionTopLevelModule)) {
 
-                final String snowstormEditionTopLevelModule = utilities.identifyTopLevelModule(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, codeSystem);
+                logger.debug(" inconsistent topLevelModule with '" + matchingSnowstormEdition.getTopLevelModule() + "' and '" + snowstormEditionTopLevelModule + "'");
 
-                if (!existingEdition.getTopLevelModule().equals(snowstormEditionTopLevelModule)) {
+                matchingSnowstormEdition.setTopLevelModule(snowstormEditionTopLevelModule);
+                modificationMade = true;
+            }
 
-                    logger.debug(" inconsistent topLevelModule with '" + existingEdition.getTopLevelModule() + "' and '" + snowstormEditionTopLevelModule + "'");
+            final String snowstormEditionDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, snowstormEditionName);
 
-                    existingEdition.setTopLevelModule(snowstormEditionTopLevelModule);
-                    modificationMade = true;
-                }
+            if (!matchingSnowstormEdition.getDefaultLanguageCode().equals(snowstormEditionDefaultLanguageCode)) {
 
-                final String snowstormEditionDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, snowstormEditionName);
+                logger.debug(" inconsistent defaultLanguageCode with '" + matchingSnowstormEdition.getDefaultLanguageCode() + "' and '" + snowstormEditionDefaultLanguageCode + "'");
 
-                if (!existingEdition.getDefaultLanguageCode().equals(snowstormEditionDefaultLanguageCode)) {
+                matchingSnowstormEdition.setDefaultLanguageCode(snowstormEditionDefaultLanguageCode);
+                modificationMade = true;
+            }
 
-                    logger.debug(" inconsistent defaultLanguageCode with '" + existingEdition.getDefaultLanguageCode() + "' and '" + snowstormEditionDefaultLanguageCode + "'");
+            final Set<String> snowstormEditionDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, snowstormEditionName);
 
-                    existingEdition.setDefaultLanguageCode(snowstormEditionDefaultLanguageCode);
-                    modificationMade = true;
-                }
+            if (!matchingSnowstormEdition.getDefaultLanguageRefsets().equals(snowstormEditionDefaultLanguageRefsets)) {
 
-                final Set<String> snowstormEditionDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, snowstormEditionName);
+                if (!matchingSnowstormEdition.getDefaultLanguageRefsets().isEmpty() && snowstormEditionDefaultLanguageRefsets.isEmpty()) {
 
-                if (!existingEdition.getDefaultLanguageRefsets().equals(snowstormEditionDefaultLanguageRefsets)) {
-
-                    if (!existingEdition.getDefaultLanguageRefsets().isEmpty() && snowstormEditionDefaultLanguageRefsets.isEmpty()) {
-
-                        logger.debug(
-                            " False-Positive inconsistent defaultLanguageRefsets with '" + existingEdition.getDefaultLanguageRefsets() + "' and '" + snowstormEditionDefaultLanguageRefsets + "'");
-                    } else {
-
-                        logger.debug(" inconsistent defaultLanguageRefsets with '" + existingEdition.getDefaultLanguageRefsets() + "' and '" + snowstormEditionDefaultLanguageRefsets + "'");
-
-                        existingEdition.setDefaultLanguageRefsets(snowstormEditionDefaultLanguageRefsets);
-                        modificationMade = true;
-                    }
-
-                }
-
-                if (!modificationMade) {
-
-                    editionsUnchanged.add(existingEdition);
-                    editions.add(existingEdition);
-
+                    logger.debug(
+                        " False-Positive inconsistent defaultLanguageRefsets with '" + matchingSnowstormEdition.getDefaultLanguageRefsets() + "' and '" + snowstormEditionDefaultLanguageRefsets + "'");
                 } else {
 
-                    // A modification was made, so updated edition
-                    try (TerminologyService service = new TerminologyService()) {
+                    logger.debug(" inconsistent defaultLanguageRefsets with '" + matchingSnowstormEdition.getDefaultLanguageRefsets() + "' and '" + snowstormEditionDefaultLanguageRefsets + "'");
 
-                        initializeService(service);
-
-                        Edition syncedEdition = service.update(existingEdition);
-                        editionsSynced.add(syncedEdition);
-                        editions.add(syncedEdition);
-                    }
-
+                    matchingSnowstormEdition.setDefaultLanguageRefsets(snowstormEditionDefaultLanguageRefsets);
+                    modificationMade = true;
                 }
 
             }
 
-        }
+            if (!modificationMade) {
 
-        Set<Edition> retSet = new HashSet<>();
-        retSet.addAll(editionsSynced);
-        retSet.addAll(editionsUnchanged);
+                editionsUnchanged.add(matchingSnowstormEdition);
+                returnedEdition = matchingSnowstormEdition;
 
-        return retSet;
-    }
-
-    private List<Edition> identifyMatchingEdition(String shortName, String editionName, String branch) throws Exception {
-
-        List<Edition> existingEditions = null;
-
-        existingEditions = allEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
-
-        if (existingEditions != null && !existingEditions.isEmpty()) {
-
-            logger.info(" Matched Edition(s) on shortName: " + shortName);
-        } else {
-
-            existingEditions = allEditions.stream().filter(e -> e.getName().equals(editionName)).collect(Collectors.toList());
-
-            if (existingEditions != null && !existingEditions.isEmpty()) {
-
-                logger.info(" Matched Edition(s) on editionName: " + editionName);
             } else {
 
-                existingEditions = allEditions.stream().filter(e -> e.getBranch().equals(branch)).collect(Collectors.toList());
+                // A modification was made, so updated edition
+                try (TerminologyService service = new TerminologyService()) {
 
-                if (existingEditions != null && !existingEditions.isEmpty()) {
+                    initializeService(service);
 
-                    logger.info(" Matched Edition(s) on branch: " + branch);
-                } else {
-
-                    // No matching edition found
-                    logger.info(" No matching Edition found");
+                    Edition syncedEdition = service.update(matchingSnowstormEdition);
+                    editionsSynced.add(syncedEdition);
+                    returnedEdition = syncedEdition;
                 }
 
             }
 
         }
 
-        return existingEditions;
+        logger.info("Synced following Edition: " + returnedEdition.getName());
+
+        return returnedEdition;
+
+    }
+
+    private Edition identifyMatchingEdition(String shortName) throws Exception {
+
+        Edition existingEdition = null;
+
+        existingEdition = allEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList()).iterator().next();
+
+        if (existingEdition != null) {
+
+            logger.info(" Matched Edition(s) on shortName: " + shortName);
+        }
+
+        return existingEdition;
 
     }
 
