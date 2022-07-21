@@ -182,6 +182,7 @@ public class ArtifactController extends BaseController {
         final User authUser = SecurityService.getUserFromSession();
         if (authUser == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
+
         }
 
         try {
@@ -238,7 +239,7 @@ public class ArtifactController extends BaseController {
             existingArtifact.populateFrom(artifactEntry);
             final Artifact returnArtifact = ArtifactService.updateArtifact(authUser, existingArtifact);
 
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(returnArtifact);
+            return ResponseEntity.status(HttpStatus.OK).body(returnArtifact);
 
         } catch (final Exception e) {
 
@@ -270,7 +271,7 @@ public class ArtifactController extends BaseController {
             final Artifact artifact = ArtifactService.getArtifact(id);
             artifact.setActive(false);
             ArtifactService.updateArtifact(authUser, artifact);
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body("");
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
         } catch (final Exception e) {
 
