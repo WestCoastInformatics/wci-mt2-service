@@ -2186,6 +2186,10 @@ public class RefsetMemberService {
                         if (conceptNode.get("pt") != null) {
                             concept.setName(conceptNode.get("pt").get("term").asText());
                         }
+                        
+                        if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
+                            concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                        }
     
                         if (conceptNode.has("isLeafInferred")) {
                             concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
