@@ -270,7 +270,7 @@ public class ArtifactController extends BaseController {
             final Artifact artifact = ArtifactService.getArtifact(id);
             artifact.setActive(false);
             ArtifactService.updateArtifact(authUser, artifact);
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body("Artifact Inactivated");
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body("");
 
         } catch (final Exception e) {
 
