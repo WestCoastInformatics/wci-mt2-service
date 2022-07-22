@@ -2,6 +2,7 @@ package org.ihtsdo.refsetservice.migration;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -118,25 +119,33 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         try {
 
-            logger.debug(" Migrate/Sync Edition(s) for codeSystem: " + codeSystem.get("name").asText());
-
             /* identify comparison attributes */
             final String snowstormEditionShortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
             final String snowstormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
             final String snowstormEditionBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
             final boolean isActiveSnowstormEdition = codeSystem.has("active") ? codeSystem.get("active").asBoolean() : true;
 
+            logger.debug(" Sync Code System: " + generateCodeSystemCoordinates(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch));
+
             /* See if corresponding Edition exists in RT2 DB. If not, create it. */
+            List<Edition> editions = allEditions.stream().filter(e -> e.getShortName().equals(snowstormEditionShortName)).collect(Collectors.toList());
 
-            // If existingEdition is null, this is the first time we have observed this edition, so create it.
-            final Edition correspondingRt2Edition = allEditions.stream().filter(e -> e.getShortName().equals(snowstormEditionShortName)).collect(Collectors.toList()).iterator().next();
+            if (editions != null && !editions.isEmpty()) {
 
-            if (correspondingRt2Edition != null) {
+                if (editions.size() != 1) {
 
+                    throw new Exception("Have encounted two editions with the same shortName on Snowstorm: " + editions);
+                }
+
+                final Edition correspondingRt2Edition = editions.iterator().next();
+
+                // If correspondingRt2Edition is null, this is the first time we have observed this edition, so create it.
                 syncedEdition = syncExistingCodeSystem(correspondingRt2Edition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
+                logger.debug("222-d");
 
             } else {
 
+                // If correspondingRt2Edition is not null, we are updating an existing supported edition
                 syncedEdition = syncNewCodeSystem(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
 
             }
@@ -168,13 +177,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 syncedOrganization = syncExistingOrganization(syncedEdition, isActiveSsnowstormEdition, codeSystem);
             }
 
-            postCodeSystemProcessing(syncedOrganization, codeSystem);
+            postCodeSystemProcessing(syncedOrganization);
 
             return syncedEdition;
         } catch (Exception e) {
 
             logger.error("Failed in syncing Existing Snowstorm Code System: " + codeSystem);
             e.printStackTrace();
+            logger.debug("222-c");
 
             return null;
         }
@@ -357,14 +367,20 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             // Create new Organization
             // TODO: 1 - Add a description default value or update snowstorm with value per codesystem
-            // TODO: 2 - Once support 1 Org : N Editions, update entire syncOrg routine to first see if already have defined Organization rather than assume 1:1 relationship b/w  & Editions.
+            // TODO: 2 - Once support 1 Org : N Editions, update entire syncOrg routine to first see if already have defined Organization rather than assume 1:1 relationship
+            // b/w & Editions.
+
+            setSnowstormEditionOwner(newEdition.getShortName(), newEdition.getName(), codeSystem);
             final String organizationDescription = "";
 
             final Organization newOrganization = utilities.addOrganziation(editionOwnerMap.get(newEditionName), organizationDescription, newEdition);
+            logger.debug("222-a");
             organizationsAdded.put(newOrganization.getName(), newOrganization);
+            logger.debug("222-b");
 
             // Final steps whether initial or updating sync
-            postCodeSystemProcessing(newOrganization, codeSystem);
+            postCodeSystemProcessing(newOrganization);
+            logger.debug("222-c");
 
             return newEdition;
         } catch (Exception e) {
@@ -377,14 +393,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private static void postCodeSystemProcessing(Organization syncedOrganization, JsonNode codeSystem) throws Exception {
+    private static void postCodeSystemProcessing(Organization syncedOrganization) throws Exception {
 
         /* Organization is done at this point. Check if WCI Organization */
         if (syncedOrganization != null && syncedOrganization.getEdition() != null && syncedOrganization.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
 
-            if (!forProduction) {
+            if (forProduction) {
 
-                throw new Exception("Must have a WCI Organization on a non-Prod instance");
+                throw new Exception("Can't have a WCI Organization on a Prod instance");
             }
 
             if (develeperTestingOranization != null) {
@@ -396,8 +412,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 develeperTestingOranization = syncedOrganization;
             }
 
-            setSnowstormEditionOwner(syncedOrganization.getEdition().getShortName(), syncedOrganization.getEdition().getName(), codeSystem);
-
         }
 
     }
@@ -406,21 +420,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         // TODO Auto-generated method stub
         return snowstormEditionShortName + " / " + snowstormEditionName + " / " + snowstormEditionBranch;
-    }
-
-    private static Edition getCorrespondingRt2Edition(String shortName) throws Exception {
-
-        Edition existingEdition = null;
-
-        existingEdition = allEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList()).iterator().next();
-
-        if (existingEdition != null) {
-
-            logger.info(" Matched Edition(s) on shortName: " + shortName);
-        }
-
-        return existingEdition;
-
     }
 
     private static void setSnowstormEditionOwner(String editionShortName, String editionName, JsonNode codeSystem) {

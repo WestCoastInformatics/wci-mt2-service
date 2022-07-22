@@ -86,6 +86,7 @@ public class SyncAgent {
             try {
 
                 getDBContent();
+
             } catch (Exception e) {
 
                 e.printStackTrace();
@@ -104,49 +105,25 @@ public class SyncAgent {
 
     }
 
-    private void getDBContent() throws Exception {
+    public void sync() {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try {
 
-            if (allEditions != null) {
+            logger.debug(" 111-a");
 
-                allEditions = service.getAll(Edition.class);
-                allOrganizations = service.getAll(Organization.class);
+            Set<JsonNode> codeSystemsToProcess = filterCodeSystems();
+            logger.debug(" 111-b defined " + codeSystemsToProcess.size() + " filtered codeSystems.");
+            // logger.debug(" 111-b-plus JsonNode list of code systems are: " + codeSystemsToProcess);
 
-            }
+            SyncCodeSystemAgent.syncSnowstormCodeSystems(codeSystemsToProcess);
+            logger.debug(" 111-c Finished syncing Orgs & Editions");
 
-        }
+            Map<String, SortedMap<Date, String>> branches = identifyAllEditionBranches(codeSystemsToProcess);
+            logger.debug(" 111-d Mapped each CodeSystem's branches");
+        } catch (Exception e) {
 
-    }
-
-    /**
-     * Populate editions.
-     * 
-     * @param codeSystemsNode
-     *
-     * @return the sets the
-     * @throws Exception the exception
-     */
-    /**
-     * @return
-     * @throws Exception
-     */
-    private JsonNode getSnowstormCodeSystems() throws Exception {
-
-        final String url = SnowstormConnection.BASE_URL + "codesystems";
-        logger.debug("getSnowstormCodeSystems url: " + url);
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            final String resultString = response.readEntity(String.class);
-            // logger.debug("Code Systems from Snowstorm: " + resultString);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
-
-            identifyInternationalModules(organizationJsonRootNode);
-
-            return organizationJsonRootNode;
+            logger.error("Failed during sync");
+            e.printStackTrace();
         }
 
     }
@@ -195,6 +172,56 @@ public class SyncAgent {
 
     }
 
+    private void getDBContent() throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            if (allEditions == null) {
+
+                allEditions = service.getAll(Edition.class);
+                logger.debug("  All Editions: " + allEditions);
+
+                allOrganizations = service.getAll(Organization.class);
+                logger.debug("  All Organizations: " + allOrganizations);
+
+            }
+
+        }
+
+    }
+
+    /**
+     * Populate editions.
+     * 
+     * @param codeSystemsNode
+     *
+     * @return the sets the
+     * @throws Exception the exception
+     */
+    /**
+     * @return
+     * @throws Exception
+     */
+    private JsonNode getSnowstormCodeSystems() throws Exception {
+
+        final String url = SnowstormConnection.BASE_URL + "codesystems";
+        logger.debug("getSnowstormCodeSystems url: " + url);
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            final String resultString = response.readEntity(String.class);
+            // logger.debug("Code Systems from Snowstorm: " + resultString);
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
+
+            identifyInternationalModules(organizationJsonRootNode);
+
+            return organizationJsonRootNode;
+        }
+
+    }
+
     private Set<JsonNode> filterCodeSystems() throws Exception {
 
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
@@ -210,7 +237,7 @@ public class SyncAgent {
             while (codeSystems.hasNext()) {
 
                 JsonNode codeSystem = codeSystems.next();
-                logger.debug(" Migrate/Sync codeSystem: " + codeSystem.get("name").asText());
+                logger.debug(" Sync codeSystem: " + codeSystem.get("name").asText());
 
                 // Check for invalid or ignored code systems
                 if (!codeSystem.has("name")) {
@@ -1037,49 +1064,12 @@ public class SyncAgent {
 
     }
 
-    public void migrateRefsets(Map<String, SortedMap<Date, String>> branches, boolean runShortMigration) throws Exception {
-
-        // Read refset metadata and associated information (projects & ECLs)
-        Set<String> rttRefsetIds = utilities.getPropertyReader().parseRttData();
-
-        populateRefsets(branches, runShortMigration);
-
-        // With metadata from RTT project (defined in parseRTTMetadata())
-        updateRefsetsWithRttMetadata(rttRefsetIds);
-
-        // Create supporting projects and finalize refsets
-        persistRefsetObjects();
-
-    }
-
     public void syncRefsets(Map<String, SortedMap<Date, String>> branches) throws Exception {
 
         // Read refset metadata and associated information (projects & ECLs)
         Set<String> rttRefsetIds = utilities.getPropertyReader().parseRttData();
 
         syncRefsets(rttRefsetIds, branches);
-
-    }
-
-    public void sync() {
-
-        try {
-
-            logger.debug(" 111-a");
-
-            Set<JsonNode> codeSystemsToProcess = filterCodeSystems();
-            logger.debug(" 111-b filtered codeSystems: " + codeSystemsToProcess);
-
-            SyncCodeSystemAgent.syncSnowstormCodeSystems(codeSystemsToProcess);
-            logger.debug(" 111-c Finished syncing Orgs & Editions");
-
-            Map<String, SortedMap<Date, String>> branches = identifyAllEditionBranches(codeSystemsToProcess);
-            logger.debug(" 111-d Mapped each CodeSystem's branches");
-        } catch (Exception e) {
-
-            logger.error("Failed during sync");
-            e.printStackTrace();
-        }
 
     }
 }
