@@ -1,19 +1,26 @@
 package org.ihtsdo.refsetservice.migration;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
 
+import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
@@ -27,35 +34,19 @@ public class SyncAgent {
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(SyncAgent.class);
 
-    private boolean forProduction;
+    protected static boolean forProduction;
 
-    private static MigrationUtilities utilities;
+    protected static MigrationUtilities utilities = null;
 
-    private Organization wciOrganization = null;
+    protected static List<Edition> allEditions = null;
 
-    private Map<String, Organization> organizationsAdded = new HashMap<>();
+    protected static List<Organization> allOrganizations = null;
 
-    private Set<Organization> organizationsUnchanged = new HashSet<>();
+    private final Set<String> uniqueRefsetIds = new HashSet<>();
 
-    private Set<Organization> organizationsSynced = new HashSet<>();
+    private Map<String, List<Date>> refsetToPublishedVersionMap = new HashMap<>();
 
-    private Set<Edition> editionsAdded = new HashSet<>();
-
-    private Set<Edition> editionsUnchanged = new HashSet<>();
-
-    private Set<Edition> editionsSynced = new HashSet<>();
-
-    private Set<String> editionsNewAndInactive = new HashSet<>();
-
-    private List<Edition> allEditions;
-
-    private List<Organization> allOrganizations;
-
-    private final Map<String, String> editionOwnerMap = new HashMap<>();
-
-    private final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
-
-    private static final String WCI_ORG_NAME = "wci";
+    private final Set<String> refsetsToIgnore = new HashSet<>();
 
     private static final List<String> ignoredCodeSystemNames = new ArrayList<>();
 
@@ -64,20 +55,51 @@ public class SyncAgent {
 
     private final String testingEdition = "elgia";
 
-    public SyncAgent(MigrationUtilities utilities, boolean runForProduction) {
+    private static final String testingRefset = "741000172102";
 
-        SyncAgent.utilities = utilities;
+    private static final String WCI_ORG_NAME = "wci";
 
-        ignoredCodeSystemNames.addAll(utilities.getPropertyReader().readCodeSystemsToIgnore());
+    // The max number of record elasticsearch will return without erroring.
+    private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
 
-        this.forProduction = runForProduction;
+    /* Constants */
+    private final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
-        try {
+    protected static Map<String, Edition> refsetEditions = new HashMap<>();
 
-            getDBContent();
-        } catch (Exception e) {
+    private final Set<Refset> snowstormRefsets = new HashSet<>();
 
-            e.printStackTrace();
+    private static final String SIMPLE_TYPE_REFSET_SCTID = "446609009";
+
+    public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
+
+    public SyncAgent(boolean runShortMigration, boolean runForProduction) {
+
+        if (utilities == null) {
+
+            SyncAgent.utilities = new MigrationUtilities();
+
+            ignoredCodeSystemNames.addAll(SyncAgent.utilities.getPropertyReader().readCodeSystemsToIgnore());
+
+            SyncAgent.forProduction = runForProduction;
+
+            try {
+
+                getDBContent();
+            } catch (Exception e) {
+
+                e.printStackTrace();
+            }
+
+        }
+
+    }
+
+    protected SyncAgent() throws Exception {
+
+        if (SyncAgent.utilities == null) {
+
+            throw new Exception("How create a supporting agent without creating SyncAgent?");
         }
 
     }
@@ -86,8 +108,12 @@ public class SyncAgent {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            allEditions = service.getAll(Edition.class);
-            allOrganizations = service.getAll(Organization.class);
+            if (allEditions != null) {
+
+                allEditions = service.getAll(Edition.class);
+                allOrganizations = service.getAll(Organization.class);
+
+            }
 
         }
 
@@ -105,7 +131,7 @@ public class SyncAgent {
      * @return
      * @throws Exception
      */
-    public JsonNode getSnowstormCodeSystems() throws Exception {
+    private JsonNode getSnowstormCodeSystems() throws Exception {
 
         final String url = SnowstormConnection.BASE_URL + "codesystems";
         logger.debug("getSnowstormCodeSystems url: " + url);
@@ -169,7 +195,9 @@ public class SyncAgent {
 
     }
 
-    public Set<JsonNode> filterCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
+    private Set<JsonNode> filterCodeSystems() throws Exception {
+
+        final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
 
         final Set<JsonNode> filteredCodeSystems = new HashSet<>();
 
@@ -210,415 +238,765 @@ public class SyncAgent {
         return filteredCodeSystems;
     }
 
-    public void processCodeSystems(Set<JsonNode> codeSystems) throws Exception {
+    /**
+     * Identify branches.
+     *
+     * @return the map
+     * @throws Exception the exception
+     */
+    private Map<String, SortedMap<Date, String>> identifyAllEditionBranches(Set<JsonNode> codeSystems) throws Exception {
+
+        Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
 
         for (JsonNode codeSystem : codeSystems) {
 
-            // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
-            Edition syncedEdition = syncEdition(codeSystem);
+            final String editionName = codeSystem.get("name").asText();
+            final String shortName = codeSystem.get("shortName").asText();
 
-            if (syncedEdition != null) {
+            logger.info("Processing CodeSystem: " + editionName);
 
-                // Process only one edition.
-                Organization syncedOrg = syncOrganization(codeSystem, syncedEdition);
+            if (testing && !editionName.contains(testingEdition) && !editionName.toLowerCase().contains(WCI_ORG_NAME) && !editionName.contains("International")) {
+
+                continue;
             }
 
-            logger.debug("*********    Results    *************");
-            logger.debug("Editions Added/Unchanged/Synced: " + editionsAdded.size() + " / " + editionsUnchanged.size() + " / " + editionsSynced.size());
-            logger.debug("Organizations Added/Unchanged/Synced: " + organizationsAdded.size() + " / " + organizationsUnchanged.size() + " / " + organizationsSynced.size());
+            Edition edition = allEditions.stream().filter(e -> shortName.equals(e.getShortName())).collect(Collectors.toList()).iterator().next();
+
+            final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
+
+            SortedMap<Date, String> children = new TreeMap<>();
+
+            try (final Response response = SnowstormConnection.getResponse(genericUrl.replace("{branch}", edition.getBranch()))) {
+
+                final String resultString = response.readEntity(String.class);
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString.toString());
+
+                // get RefSets from edition as long as a) active & b) within
+                // edition's module
+                final Iterator<JsonNode> branchIterator = root.iterator();
+
+                while (branchIterator.hasNext()) {
+
+                    JsonNode child = branchIterator.next();
+                    final String childBranch = child.get("path").asText();
+                    String childDate = childBranch.replace(edition.getBranch(), "");
+
+                    if (childDate.startsWith("/")) {
+
+                        childDate = childDate.substring(1);
+                    }
+
+                    // logger.debug(" Found Snowstorm Child Branch: " + childBranch);
+
+                    // Since grabbing all children branches, avoid
+                    // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
+                    boolean childAdded = false;
+
+                    if (childDate.matches(".*\\d{4}-\\d{2}-\\d{2}$")) {
+
+                        Date branchDate = branchDateFormatter.parse(childDate);
+
+                        if (branchDate.before(new Date())) {
+
+                            children.put(branchDate, childBranch);
+                            childAdded = true;
+                        }
+
+                    }
+
+                    if (!childAdded) {
+
+                        // logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official release
+                        // branch");
+                    }
+
+                }
+
+                logger.debug("Branch Dates for edition: " + edition.getName());
+
+                for (Date child : children.keySet()) {
+
+                    logger.debug("Child: " + child.toString() + " with branch: " + children.get(child));
+                }
+
+            }
+
+            retMap.put(edition.getId(), children);
         }
 
-        if (wciOrganization != null && forProduction) {
-
-            throw new Exception("May not have a WCI Organization on a forProd instance");
-        } else if (wciOrganization == null && !forProduction) {
-
-            throw new Exception("Must have a WCI Organization on a non-Prod instance");
-        }
-
+        return retMap;
     }
 
-    void migrateEditions(Set<JsonNode> codeSystems) throws Exception {
+    /**
+     * Populate editions.
+     *
+     * @param branchChildrenByEdition the branch children
+     * @param internationalModules the international modules
+     * @return the sets the
+     * @throws Exception the exception
+     */
+    Set<Refset> populateRefsets(Map<String, SortedMap<Date, String>> branchChildrenByEdition, boolean processSingleVersion) throws Exception {
+
+        int nonInternationalRefsetCount = 0;
+
+        logger.debug("Num internationalModules: " + utilities.getInternationalModules().size());
+        logger.debug("Num branches: " + branchChildrenByEdition.size());
 
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
 
-            for (JsonNode codeSystem : codeSystems) {
+            List<String> ignoredRefsets = utilities.getPropertyReader().readRefsetsToIgnore();
 
-                final String editionName = codeSystem.get("name").asText();
-                final String shortName = codeSystem.get("shortName").asText();
-                final String branch = codeSystem.get("branchPath").asText();
-                final String owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
+            logger.info("---> Starting to identify Refsets on Snowstorm by edition/version pair");
 
-                logger.info("Processing CodeSystem: " + editionName);
+            for (String editionId : branchChildrenByEdition.keySet()) {
 
-                // Process Edition
-                final Edition edition = utilities.addEdition(codeSystem, shortName, editionName, branch);
+                final Edition edition = service.get(editionId, Edition.class);
 
-                // Identify Code System Owner
-                if (!owner.trim().isBlank()) {
+                String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + SIMPLE_TYPE_REFSET_SCTID + "&module=%3C%3C" + edition.getTopLevelModule();
 
-                    editionOwnerMap.put(edition.getShortName(), owner);
-                    editionOwnerMap.put(edition.getName(), owner);
-                } else {
+                if (editionId.equals(branchChildrenByEdition.keySet().iterator().next())) {
 
-                    editionOwnerMap.put(edition.getShortName(), edition.getName());
-                    editionOwnerMap.put(edition.getName(), edition.getName());
+                    logger.debug("   URL to identify refsets and the way updated per branch: " + url + " with following code: <<url.replace(\"{branch}\", childBranch)>>\n");
                 }
 
-                // TODO: Add a description default value or update snowstorm with value per codesystem
-                String organizationDescription = "";
-                Organization org = utilities.addOrganziation(editionOwnerMap.get(edition.getName()), organizationDescription, edition);
+                logger.info("Processing Edition: " + edition.getName());
 
-                organizationsAdded.put(org.getName(), org);
+                boolean isInternationalEdition = ("international edition".equals(edition.getName().toLowerCase())) ? true : false;
 
-                if (org.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
+                for (Date branchDate : branchChildrenByEdition.get(editionId).keySet()) {
 
-                    if (forProduction) {
+                    final String childBranch = branchChildrenByEdition.get(editionId).get(branchDate);
 
-                        throw new Exception("Have a forProd instance running, yet found an unexpected WCI Org");
-                    }
+                    try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", childBranch))) {
 
-                    wciOrganization = org;
-                } else {
+                        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                    // Finally, create a Default Project for the edition
-                    if (!defaultOrganizationProjects.containsKey(org.getId())) {
+                            if (edition.getBranch().startsWith("MAIN")) {
 
-                        // Create default project
-                        final String projectName = org.getName() + " Default Project";
-                        final String projectDescription = "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + org.getName() + ".";
+                                throw new Exception("Unable to process edition called with: " + url.replace("{branch}", childBranch));
+                            } else {
 
-                        final Project project = utilities.addProject(org, projectName, projectDescription);
+                                logger.debug("Found that '" + edition.getName() + "' has odd branch: " + edition.getBranch());
+                                continue;
+                            }
 
-                        defaultOrganizationProjects.put(org.getId(), project);
+                        }
+
+                        final String resultString = response.readEntity(String.class);
+                        final ObjectMapper mapper = new ObjectMapper();
+                        final JsonNode root = mapper.readTree(resultString.toString());
+
+                        // get RefSets from edition as long as a) active & b)
+                        // within edition's moduleˇ
+                        final Iterator<JsonNode> refsetIterator = root.get("referenceSets").iterator();
+
+                        while (refsetIterator.hasNext()) {
+
+                            String refsetName = null;
+                            Date versionDate = null;
+
+                            final JsonNode refsetNode = refsetIterator.next();
+
+                            if (!refsetNode.has("moduleId") || !refsetNode.has("conceptId") || !refsetNode.has("active")) {
+
+                                throw new Exception("Getting unexpected Refset info from node: " + refsetNode.toString());
+                            }
+
+                            final String moduleId = refsetNode.get("moduleId").asText();
+                            final String refsetId = refsetNode.get("conceptId").asText();
+
+                            if (ignoredRefsets.contains(refsetId)) {
+
+                                continue;
+                            }
+
+                            /*-
+                             *  Only process refset are either
+                             *  a) Listed in international edition or 
+                             *  b) In a non-international module
+                            
+                             */
+                            if (isInternationalEdition || !utilities.getInternationalModules().contains(moduleId)) {
+
+                                try {
+
+                                    if (testing && (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
+
+                                        logger.debug("Testing refset " + testingRefset + " with childBranch" + childBranch);
+                                    }
+
+                                    if (processSingleVersion) {
+
+                                        versionDate = branchDate;
+                                    } else {
+
+                                        /*-
+                                         * Check new version refset version date. If none returned (null), then:
+                                         * a) no changes to refset itself and 
+                                         * b) thus no need to create  new version.
+                                         * c) Move onto nex refset
+                                         */
+                                        Date refsetVersionDate = null;
+
+                                        if (!testing || (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
+
+                                            refsetVersionDate = createRefsetVersion(childBranch, refsetId);
+                                        }
+
+                                        if (refsetVersionDate == null) {
+
+                                            logger.debug("No changes to refset so don't create a new version");
+                                            continue;
+                                        }
+
+                                        Set<Date> editionVersions = branchChildrenByEdition.get(edition.getId()).keySet();
+                                        Date earliestPublishedVersionDate = null;
+
+                                        if (!editionVersions.contains(refsetVersionDate)) {
+
+                                            for (Date editionDate : editionVersions) {
+
+                                                if (refsetVersionDate.after(editionDate)) {
+
+                                                    throw new Exception("Don't expect to be here at createRefsetsFromSnowstorm()");
+                                                }
+
+                                                if (earliestPublishedVersionDate == null || editionDate.before(earliestPublishedVersionDate)) {
+
+                                                    earliestPublishedVersionDate = editionDate;
+                                                }
+
+                                            }
+
+                                            if (earliestPublishedVersionDate == null) {
+
+                                                throw new Exception("Shouldn't be here at createRefsetsFromSnowstorm()");
+                                            }
+
+                                            refsetVersionDate = earliestPublishedVersionDate;
+                                        }
+
+                                        versionDate = refsetVersionDate;
+
+                                        if (!editionVersions.contains(versionDate)) {
+
+                                            logger.debug(" Don't add refset versions that don't have corresponding snowstorm -based edition versions with Refset / and VersionDate pair: " + refsetId
+                                                + " / " + versionDate);
+                                            continue;
+                                        }
+
+                                    }
+
+                                    // add the edition to a map with the refset ID to retrieve it later
+                                    refsetEditions.put(refsetId, edition);
+
+                                    if (refsetNode.get("pt").has("term")) {
+
+                                        refsetName = refsetNode.get("pt").get("term").asText();
+                                    } else {
+
+                                        refsetName = lookupRefsetName(refsetId, edition, childBranch);
+                                    }
+
+                                    /* Add refset/version for later persisting */
+                                    Refset refset = utilities.addRefset(refsetName, refsetId, moduleId, versionDate, Refset.EXTENSIONAL, "", null);
+                                    snowstormRefsets.add(refset);
+
+                                    if (!uniqueRefsetIds.contains(refsetId)) {
+
+                                        /*
+                                         * logger.debug("Identifying refset (" + refsetId + ") for first time in this version - " + branchDateFormatter
+                                         * .format(refset.getVersionDate()));
+                                         */
+                                        uniqueRefsetIds.add(refsetId);
+                                    } else {
+
+                                        // logger.debug("Again seeing: " +
+                                        // refsetId);
+                                    }
+
+                                } catch (Exception e) {
+
+                                    logger.error("Failed with message: " + e.getMessage() + " for refsetNode: " + refsetNode);
+                                }
+
+                            }
+
+                            if (isInternationalEdition) {
+
+                                logger.debug("Identified international refsetId " + refsetId + " " + refsetName + " for " + versionDate);
+
+                                utilities.getInternationalModules().add(refsetId);
+                            } else {
+
+                                nonInternationalRefsetCount++;
+                            }
+
+                        }
+
                     }
 
                 }
 
             }
 
-            if (wciOrganization == null && !forProduction)
+        }
 
-            {
+        logger.info("Finished migrating with Snowstorm having created " + utilities.getInternationalModules().size() + " international Refsets and " + nonInternationalRefsetCount
+            + " non-International refsets.");
 
-                throw new Exception("Have a non-Prod instance running, yet didn't find the expected WCI Org");
+        return snowstormRefsets;
+    }
+
+    /**
+     * Update refsets with values from json and with identifying latestVersion, but do not persist at this point.
+     * @param rttRefsetIds
+     *
+     * @param allRefsets the all refsets
+     * @throws Exception
+     */
+    private void updateRefsetsWithRttMetadata(Set<String> rttRefsetIds) throws Exception {
+
+        Map<String, Date> latestRefsetCache = new HashMap<>();
+        Map<String, Project> rttProjects = new HashMap<>();
+
+        for (Refset refset : snowstormRefsets) {
+
+            if (testing && (testingRefset != null && !testingRefset.isEmpty() && refset.getRefsetId().equals(testingRefset))) {
+
+                continue;
             }
 
-        } catch (
+            // No need to update refsets to be ignored
+            if (refsetsToIgnore.contains(refset.getRefsetId())) {
 
-        Exception e) {
+                continue;
+            }
 
+            if (utilities.getPropertyReader().getRefsetToClausesInfoMap().containsKey(refset.getRefsetId())) {
+
+                logger.info("Have clause on refset: " + refset.getRefsetId());
+            }
+
+            associateRefsetProject(refset, rttProjects);
+
+            // For now, default all refsets to PUBLIC
+            refset.setPrivateRefset(false);
+
+            // Update refset from JSON for Narrative, Type, tags, and ecl clauses. Project too.
+            if (rttRefsetIds.contains(refset.getRefsetId())) {
+
+                /* Refset lived in RTT as well */
+                final Set<String> rttIds = utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().get(refset.getRefsetId());
+
+                // Add Refset. Keep track of which are added this way as to not add them from RTT as well
+
+                for (String rttId : rttIds) {
+
+                    final String refsetJsonString = utilities.getPropertyReader().getRttIdToRefsetJsonMap().get(rttId);
+
+                    final ObjectMapper mapper = new ObjectMapper();
+                    final JsonNode refsetJson = mapper.readTree(refsetJsonString);
+
+                    refset.setType(refsetJson.get("type").asText());
+                    refset.setNarrative(refsetJson.get("narrative").asText());
+
+                    // Tags
+                    if (refsetJson.has("tags")) {
+
+                        Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
+
+                        while (tagsIterator.hasNext()) {
+
+                            refset.getTags().add(tagsIterator.next().asText());
+                        }
+
+                    }
+
+                    // If has ECL clauses, create and associate with refset
+                    associateRefsetClauses(rttId, refset);
+                }
+
+            } else {
+                // If JSON not available to the refset, it means it resides exclusively on Snowstorm.
+
+                // Set defaults for type & narrative
+                refset.setType("EXTENSIONAL");
+                refset.setNarrative("No corresponding refset information found on RTT for " + refset.getRefsetId());
+            }
+
+            // Keep track of the latest version per refsetId
+            if (!latestRefsetCache.containsKey(refset.getRefsetId()) || latestRefsetCache.get(refset.getRefsetId()).before(refset.getVersionDate())) {
+
+                latestRefsetCache.put(refset.getRefsetId(), refset.getVersionDate());
+            }
+
+        }
+
+        // Have latest version per refset. Set the latestVersion flag to true
+        // for them
+        for (Refset refset : snowstormRefsets) {
+
+            if (latestRefsetCache.containsKey(refset.getRefsetId())) {
+
+                for (String refsetId : latestRefsetCache.keySet()) {
+
+                    if (refset.getRefsetId().equals(refsetId) && refset.getVersionDate().equals(latestRefsetCache.get(refsetId))) {
+
+                        refset.setLatestPublishedVersion(true);
+                        break;
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+    private void associateRefsetProject(Refset refset, Map<String, Project> rttProjects) throws Exception {
+
+        Project project = null;
+
+        // Set refset Project making sure to cache it based on refsetId
+        if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refset.getRefsetId())) {
+
+            final String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
+            final String rttProjectId = projectInfo.split("\t")[0];
+
+            if (!rttProjects.containsKey(rttProjectId)) {
+
+                logger.debug("Creating new project for refset: " + refset.getRefsetId());
+                project = createRefsetProject(refset.getRefsetId());
+
+                rttProjects.put(rttProjectId, project);
+            }
+
+            project = rttProjects.get(rttProjectId);
+        } else {
+
+            // User Org's default project
+            Organization org = SyncCodeSystemAgent.getOrgFromRefset(refset.getRefsetId());
+
+            project = SyncCodeSystemAgent.getOrganizationToDefaultProjectMap().get(org.getId());
+        }
+
+        if (project == null) {
+
+            throw new Exception("Must have created from RTT, already crearted from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
+        }
+
+        logger.debug("Associating project with refset: " + refset.getRefsetId());
+        refset.setProject(project);
+    }
+
+    /*
+     * First checks if the refset is associated with an RTT project. If so return. If not, return the default Edition's project (creating it if not already existing)
+     */
+    private Project createRefsetProject(String refsetId) throws Exception {
+
+        Organization org = SyncCodeSystemAgent.getOrgFromRefset(refsetId);
+
+        logger.debug(".... Creating project for refsetId " + refsetId);
+
+        if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refsetId)) {
+
+            // identify project name and description from Rtt Json
+            String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refsetId);
+            String[] projectDetails = projectInfo.split(",");
+
+            logger.debug("    Refset has an associated project is defined in RTT with the following: " + projectInfo);
+
+            // Clean out project Details
+            for (int i = 0; i < 2; i++) {
+
+                if (projectDetails[i].startsWith("\"")) {
+
+                    projectDetails[i] = projectDetails[i].substring(1);
+                }
+
+                if (projectDetails[i].endsWith("\"")) {
+
+                    projectDetails[i] = projectDetails[i].substring(0, projectDetails[i].length() - 1);
+                }
+
+            }
+
+            logger.info("    Creating new project based on project in RTT for " + projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
+            return utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
+        } else {
+
+            logger.debug("    Refset doesn't have an associated project in RTT, so use Org's RT2-default");
+
+            // No project associated with refset, so use default Edition Project
+            if (!SyncCodeSystemAgent.getOrganizationToDefaultProjectMap().containsKey(org.getId())) {
+
+                throw new Exception("Default project should have already been created of Org: " + org.getName());
+            }
+
+            return SyncCodeSystemAgent.getOrganizationToDefaultProjectMap().get(org.getId());
+        }
+
+    }
+
+    /**
+     * Create supporting projects and finalize refsets.
+     *
+     * @param allRefsets the all refsets
+     * @throws Exception the exception
+     */
+    private void persistRefsetObjects() throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            // Persist Projects and Organizations from Snowstorm
+            int projectCount = 0;
+            int count = 0;
+            int ignoreCounter = 0;
+
+            logger.info(" step - Start persisting gathered Snowstorm & RTT Supporting Objects");
+
+            // Adding refsets identified on snowstorm
+            for (Refset snowRefset : snowstormRefsets) {
+
+                if (testing && (testingRefset != null && !testingRefset.isEmpty() && snowRefset.getRefsetId().equals(testingRefset))) {
+
+                    continue;
+                }
+
+                if (refsetsToIgnore.contains(snowRefset.getRefsetId())) {
+
+                    ignoreCounter++;
+                    continue;
+
+                }
+
+                // Final Persistance of refset object
+                utilities.setMetadata(snowRefset);
+                snowRefset = service.update(snowRefset);
+
+                if (++count % 250 == 0) {
+
+                    logger.info("Imported + " + count + " refsets thus far");
+                }
+
+            }
+
+            logger.info(" step complete - Finish persisting gathered Snowstorm & RTT Supporting Objects");
+
+            if (!forProduction) {
+
+                populateInitialDate(service);
+            }
+
+            logger.info("Have imported from Snowstorm " + projectCount + " projects and " + SyncCodeSystemAgent.getOrganizationsAdded().size() + " organizations");
+
+            logger.info("Have NOT imported anything from RTT that isn't in Snowstorm");
+
+            logger.info("Total of " + ignoreCounter + " refsets ignored");
+        } catch (Exception e) {
+
+            logger.error("Have issue with: " + e.getMessage());
             e.printStackTrace();
         }
 
     }
 
-    Map<String, Organization> getOrganizationsAdded() {
+    private void populateInitialDate(TerminologyService service) throws Exception {
 
-        return organizationsAdded;
+        logger.info(" step - Populating initial data");
+
+        MigrationDataInitializer initializer = new MigrationDataInitializer(utilities);
+        initializer.initialize(SyncCodeSystemAgent.getDeveloperTestingOrganization(), SyncCodeSystemAgent.getOrganizationsAdded(), SyncCodeSystemAgent.getOrganizationToDefaultProjectMap());
+        initializer.printResults();
+
+        logger.info(" step complete - Adding special content");
     }
 
-    /*-
-     * Match by Organization::Edition::id to match against all Orgs in the DB. If not successful, try name, and finally try branch. If nothing found, is new Edition.
-     * 
-     * For now, only must identify if there are changes to any of the following object values during sync: 
-     * 1) Name
-     * 2) Became Inactive 
-     * 3) Branch
-     * 4) Active/inactive status
-     * 5) defaultLanguageCode
-     * 6) topLevelModule
-     * 7) defaultLanguageRefsets
+    // Do not persist as will be done later
+    private void associateRefsetClauses(final String rttId, final Refset refset) throws Exception {
+
+        // If has ECL clauses, associate them with refset
+        if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
+
+            Set<DefinitionClause> clauses = utilities.getRefsetClauses(rttId);
+            refset.getDefinitionClauses().addAll(clauses);
+        }
+
+    }
+
+    /**
+     * Lookup refset name.
+     *
+     * @param refsetId the refset id
+     * @param edition the edition
+     * @param childBranch the child branch
+     * @return the string
+     * @throws Exception the exception
      */
-    private Organization syncOrganization(JsonNode codeSystem, Edition edition) throws Exception {
+    private String lookupRefsetName(String refsetId, Edition edition, String childBranch) throws Exception {
 
-        logger.debug(" Migrate/Sync Organization(s) for codeSystem: " + codeSystem.get("name").asText() + " using edition: " + edition);
+        String url = SnowstormConnection.BASE_URL + "browser/" + childBranch + "/concepts/" + refsetId;
 
-        Organization organization = null;
+        try (final Response response = SnowstormConnection.getResponse(url)) {
 
-        /* See if have organization with corresponding editionId */
-        // If existingEdition is null, this is the first time we have observed this edition, so create it.
-        final Organization matchingOrganization = allOrganizations.stream().filter(o -> edition.getId().equals(o.getEdition().getId())).collect(Collectors.toList()).iterator().next();
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode conceptNode = mapper.readTree(resultString.toString());
 
-        /* identify comparison attributes */
-        boolean isActiveSnowstormOrganization = true;
+            Iterator<JsonNode> descriptionIterator = conceptNode.get("descriptions").iterator();
 
-        if (codeSystem.has("active")) {
+            while (descriptionIterator.hasNext()) {
 
-            isActiveSnowstormOrganization = codeSystem.get("active").asBoolean();
-        }
+                JsonNode descriptionNode = descriptionIterator.next();
+                String acceptability = null;
 
-        // owner generally not populated at this time, so provide backup plan
-        String snowstormOrganizationName;
+                if (descriptionNode.get("type").asText().equals("SYNONYM") && descriptionNode.get("lang").asText().equals(edition.getDefaultLanguageCode())) {
 
-        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
+                    final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
 
-            snowstormOrganizationName = codeSystem.get("owner").asText();
-        } else {
+                    for (String langRefsetId : edition.getDefaultLanguageRefsets()) {
 
-            snowstormOrganizationName = edition.getName();
-        }
+                        if (acceptabilityMap.has(langRefsetId)) {
 
-        /* Based on matching attributes: add new, ignore new but inactive, check for changes and modify if needed and ignore otherwise */
-        if (matchingOrganization == null) {
+                            acceptability = acceptabilityMap.get(langRefsetId).asText();
+                            break;
+                        }
 
-            // Handle new versus existing Organization
-            if (isActiveSnowstormOrganization) {
+                    }
 
-                // Only create if it is active
-                final Organization newOrganization = utilities.addOrganziation(snowstormOrganizationName, "", edition);
+                    if (acceptability == null) {
 
-                // TODO: Add a description default value or update Organization org = utilities.addOrganziation(orgName, orgDesc, edition, defaultMeta);
-                organizationsAdded.put(newOrganization.getName(), newOrganization);
-                organization = newOrganization;
-            } else {
+                        throw new Exception("Not able to properly identify refset name for description: " + descriptionNode);
+                    }
 
-                // New Code System created as inactive. Given this is being run nightly and a new org/edition that is inactive at first pass was likely made erroneously.
-                // Once
-                // fixed and becomes active, we will get it at the following sync.
-                organization = null;
+                    if (acceptability.equals("PREFERRED")) {
+
+                        return descriptionNode.get("term").asText();
+                    }
+
+                }
+
             }
 
-        } else {
-
-            final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(matchingOrganization, snowstormOrganizationName, isActiveSnowstormOrganization);
-
-            if (syncedOrganization != null) {
-
-                // A modification was made, so updated edition
-                organizationsSynced.add(syncedOrganization);
-                organization = syncedOrganization;
-
-            } else {
-
-                // No changes, return existing
-                organizationsUnchanged.add(matchingOrganization);
-                organization = matchingOrganization;
-            }
-
+            throw new Exception("Unable to find PrefTerm for refset concept: " + conceptNode);
         }
 
-        logger.info("Synced " + organization.getName() + " Organization");
-
-        /* Organization is done at this point. Check if WCI Organization */
-        if (organization != null && organization.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
-
-            if (wciOrganization != null) {
-
-                throw new Exception("Can't have two WCI Orgs with new one having shortName: " + organization.getEdition().getShortName());
-            } else {
-
-                // identified WCI Org
-                wciOrganization = organization;
-            }
-
-        }
-
-        return organization;
     }
 
-    private Organization compareAndUpdateOrganizationDifferences(Organization existingOrganization, String snowstormOrganizationName, boolean isActiveSnowstormOrganization) throws Exception {
+    private Date createRefsetVersion(String branch, String refsetId) throws Exception {
 
-        /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
-        boolean modificationMade = false;
+        // Get all members
+        // EG: https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/SNOMEDCT-BE/members?referenceSet=1235&offset=0&limit=10
+        // EG: https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/SNOMEDCT-BE/members?referenceSet=1235&offset=0&limit=10
 
-        if (!existingOrganization.getName().equals(snowstormOrganizationName)) {
+        int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
+        String searchAfter = "";
 
-            logger.debug(" inconsistent name with '" + existingOrganization.getName() + "' and '" + snowstormOrganizationName + "'");
+        Date refsetLatestDate = null;
+        final long start = System.currentTimeMillis();
+        boolean hasMorePages = true;
+        final String acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
+        int iteration = 0;
 
-            existingOrganization.setName(snowstormOrganizationName);
-            modificationMade = true;
-        }
+        while (hasMorePages) {
 
-        if (existingOrganization.isActive() != isActiveSnowstormOrganization) {
+            logger.debug("Here on iteration #" + iteration + " for " + refsetId + " --- " + branch);
 
-            logger.debug(" inconsistent active with '" + existingOrganization.isActive() + "' and '" + isActiveSnowstormOrganization + "'");
+            String url = SnowstormConnection.BASE_URL + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
 
-            existingOrganization.setActive(isActiveSnowstormOrganization);
-            modificationMade = true;
-        }
+            try (final Response response = SnowstormConnection.getResponse(url, acceptLanguage)) {
 
-        if (modificationMade) {
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-            try (final TerminologyService service = new TerminologyService()) {
+                    hasMorePages = false;
+                    throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                }
 
-                initializeService(service);
+                final String resultString = response.readEntity(String.class);
 
-                return service.update(existingOrganization);
+                // Only process payload if Rest call is successful
+                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+
+                    throw new Exception(Integer.toString(response.getStatus()));
+                }
+
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString.toString());
+                JsonNode conceptNodeBatch = root.get("items");
+
+                searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asText() : "");
+
+                if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() < limit) {
+
+                    logger.debug("Done at iteration #" + iteration);
+                    hasMorePages = false;
+                }
+
+                if (System.currentTimeMillis() - start > TIMEOUT_MILLISECOND_THRESHOLD) {
+
+                    hasMorePages = false;
+                }
+
+                Iterator<JsonNode> iterator = conceptNodeBatch.iterator();
+
+                JsonNode memberNode = null;
+
+                Date versionLatestDate = null;
+
+                while (iterator.hasNext()) {
+
+                    memberNode = iterator.next();
+
+                    Date memberEffectiveTime = branchDateFormatter.parse(memberNode.get("releasedEffectiveTime").asText());
+
+                    if (versionLatestDate == null || versionLatestDate.before(memberEffectiveTime)) {
+
+                        versionLatestDate = memberEffectiveTime;
+                    }
+
+                }
+
+                if (versionLatestDate != null || refsetLatestDate.before(versionLatestDate)) {
+
+                    refsetLatestDate = versionLatestDate;
+                }
+
+                iteration++;
+
+            } catch (Exception e) {
+
+                throw new Exception("Caught during defining refset version on: " + refsetId + " --- " + branch + "\n" + e.getStackTrace().toString());
             }
 
-        } else {
+        }
+
+        // See if version already exists.
+        if (!refsetToPublishedVersionMap.containsKey(refsetId)) {
+
+            refsetToPublishedVersionMap.put(refsetId, new ArrayList<Date>());
+        }
+
+        if (refsetToPublishedVersionMap.get(refsetId).contains(refsetLatestDate)) {
 
             return null;
-        }
-
-    }
-
-    /*-
-     * Match by Organization::Edition::id to match against all Orgs in the DB. If not successful, try name, and finally try branch. If nothing found, is new Edition.
-     * 
-     * For now, only must identify if there) are changes to any of the following object values during sync: 
-     * 1) ShortName
-     * 2) Name 
-     * 3) Branch
-     * 4) Active/inactive status
-     * 5) defaultLanguageCode
-     * 6) topLevelModule
-     * 7) defaultLanguageRefsets
-     */
-    private Edition syncEdition(JsonNode codeSystem) throws Exception {
-
-        logger.debug(" Migrate/Sync Edition(s) for codeSystem: " + codeSystem.get("name").asText());
-
-        /* identify comparison attributes */
-        final String snowstormEditionShortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
-        final String snowstormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-        final String snowstormEditionBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
-        final boolean isActiveSnowstormEdition = codeSystem.has("active") ? codeSystem.get("active").asBoolean() : true;
-
-        Edition returnedEdition = null;
-
-        /* See if exists. If not return created. */
-
-        // If existingEdition is null, this is the first time we have observed this edition, so create it.
-        final Edition matchingSnowstormEdition = identifyMatchingEdition(snowstormEditionShortName);
-
-        if (matchingSnowstormEdition == null) {
-
-            // New Code System identified on Snowstorm
-            if (isActiveSnowstormEdition) {
-
-                // Only create if it is active
-                Edition newEdition = utilities.addEdition(codeSystem, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch);
-
-                editionsAdded.add(newEdition);
-
-                returnedEdition = newEdition;
-
-            } else {
-
-                editionsNewAndInactive.add(snowstormEditionShortName + " / " + snowstormEditionName + " / " + snowstormEditionBranch);
-
-                // New Code System created as inactive. Given this is being run nightly and a new org/edition that is inactive at first pass was likely made erroneously.
-                // Once fixed and becomes active, we will get it at the following sync. For now, don't add to retSet
-            }
-
         } else {
 
-            /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
-            boolean modificationMade = false;
-
-            if (!matchingSnowstormEdition.getShortName().equals(snowstormEditionShortName)) {
-
-                logger.debug(" inconsistent ShortName with '" + matchingSnowstormEdition.getShortName() + "' and '" + snowstormEditionShortName + "'");
-
-                matchingSnowstormEdition.setShortName(snowstormEditionShortName);
-                modificationMade = true;
-            }
-
-            if (!matchingSnowstormEdition.getName().equals(snowstormEditionName)) {
-
-                logger.debug(" inconsistent name with '" + matchingSnowstormEdition.getName() + "' and '" + snowstormEditionName + "'");
-
-                matchingSnowstormEdition.setName(snowstormEditionName);
-                modificationMade = true;
-            }
-
-            if (!matchingSnowstormEdition.getBranch().equals(snowstormEditionBranch)) {
-
-                logger.debug(" inconsistent branch with '" + matchingSnowstormEdition.getBranch() + "' and '" + snowstormEditionBranch + "'");
-
-                matchingSnowstormEdition.setBranch(snowstormEditionBranch);
-                modificationMade = true;
-            }
-
-            if (matchingSnowstormEdition.isActive() != isActiveSnowstormEdition) {
-
-                logger.debug(" inconsistent active with '" + matchingSnowstormEdition.isActive() + "' and '" + isActiveSnowstormEdition + "'");
-
-                matchingSnowstormEdition.setActive(isActiveSnowstormEdition);
-                modificationMade = true;
-            }
-
-            final String snowstormEditionTopLevelModule = utilities.identifyTopLevelModule(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, codeSystem);
-
-            if (!matchingSnowstormEdition.getTopLevelModule().equals(snowstormEditionTopLevelModule)) {
-
-                logger.debug(" inconsistent topLevelModule with '" + matchingSnowstormEdition.getTopLevelModule() + "' and '" + snowstormEditionTopLevelModule + "'");
-
-                matchingSnowstormEdition.setTopLevelModule(snowstormEditionTopLevelModule);
-                modificationMade = true;
-            }
-
-            final String snowstormEditionDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, snowstormEditionName);
-
-            if (!matchingSnowstormEdition.getDefaultLanguageCode().equals(snowstormEditionDefaultLanguageCode)) {
-
-                logger.debug(" inconsistent defaultLanguageCode with '" + matchingSnowstormEdition.getDefaultLanguageCode() + "' and '" + snowstormEditionDefaultLanguageCode + "'");
-
-                matchingSnowstormEdition.setDefaultLanguageCode(snowstormEditionDefaultLanguageCode);
-                modificationMade = true;
-            }
-
-            final Set<String> snowstormEditionDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, snowstormEditionName);
-
-            if (!matchingSnowstormEdition.getDefaultLanguageRefsets().equals(snowstormEditionDefaultLanguageRefsets)) {
-
-                if (!matchingSnowstormEdition.getDefaultLanguageRefsets().isEmpty() && snowstormEditionDefaultLanguageRefsets.isEmpty()) {
-
-                    logger.debug(
-                        " False-Positive inconsistent defaultLanguageRefsets with '" + matchingSnowstormEdition.getDefaultLanguageRefsets() + "' and '" + snowstormEditionDefaultLanguageRefsets + "'");
-                } else {
-
-                    logger.debug(" inconsistent defaultLanguageRefsets with '" + matchingSnowstormEdition.getDefaultLanguageRefsets() + "' and '" + snowstormEditionDefaultLanguageRefsets + "'");
-
-                    matchingSnowstormEdition.setDefaultLanguageRefsets(snowstormEditionDefaultLanguageRefsets);
-                    modificationMade = true;
-                }
-
-            }
-
-            if (!modificationMade) {
-
-                editionsUnchanged.add(matchingSnowstormEdition);
-                returnedEdition = matchingSnowstormEdition;
-
-            } else {
-
-                // A modification was made, so updated edition
-                try (TerminologyService service = new TerminologyService()) {
-
-                    initializeService(service);
-
-                    Edition syncedEdition = service.update(matchingSnowstormEdition);
-                    editionsSynced.add(syncedEdition);
-                    returnedEdition = syncedEdition;
-                }
-
-            }
-
+            refsetToPublishedVersionMap.get(refsetId).add(refsetLatestDate);
+            return refsetLatestDate;
         }
-
-        logger.info("Synced following Edition: " + returnedEdition.getName());
-
-        return returnedEdition;
 
     }
 
-    private Edition identifyMatchingEdition(String shortName) throws Exception {
+    private void syncRefsets(Set<String> rttRefsetIds, Map<String, SortedMap<Date, String>> branches) {
 
-        Edition existingEdition = null;
-
-        existingEdition = allEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList()).iterator().next();
-
-        if (existingEdition != null) {
-
-            logger.info(" Matched Edition(s) on shortName: " + shortName);
-        }
-
-        return existingEdition;
+        // TODO Auto-generated method stub
 
     }
 
@@ -652,10 +1030,56 @@ public class SyncAgent {
         */
     }
 
-    private void initializeService(TerminologyService service) {
+    protected static void initializeService(TerminologyService service) {
 
         service.setModifiedBy("Migration");
         service.setModifiedFlag(true);
+
+    }
+
+    public void migrateRefsets(Map<String, SortedMap<Date, String>> branches, boolean runShortMigration) throws Exception {
+
+        // Read refset metadata and associated information (projects & ECLs)
+        Set<String> rttRefsetIds = utilities.getPropertyReader().parseRttData();
+
+        populateRefsets(branches, runShortMigration);
+
+        // With metadata from RTT project (defined in parseRTTMetadata())
+        updateRefsetsWithRttMetadata(rttRefsetIds);
+
+        // Create supporting projects and finalize refsets
+        persistRefsetObjects();
+
+    }
+
+    public void syncRefsets(Map<String, SortedMap<Date, String>> branches) throws Exception {
+
+        // Read refset metadata and associated information (projects & ECLs)
+        Set<String> rttRefsetIds = utilities.getPropertyReader().parseRttData();
+
+        syncRefsets(rttRefsetIds, branches);
+
+    }
+
+    public void sync() {
+
+        try {
+
+            logger.debug(" 111-a");
+
+            Set<JsonNode> codeSystemsToProcess = filterCodeSystems();
+            logger.debug(" 111-b filtered codeSystems: " + codeSystemsToProcess);
+
+            SyncCodeSystemAgent.syncSnowstormCodeSystems(codeSystemsToProcess);
+            logger.debug(" 111-c Finished syncing Orgs & Editions");
+
+            Map<String, SortedMap<Date, String>> branches = identifyAllEditionBranches(codeSystemsToProcess);
+            logger.debug(" 111-d Mapped each CodeSystem's branches");
+        } catch (Exception e) {
+
+            logger.error("Failed during sync");
+            e.printStackTrace();
+        }
 
     }
 }

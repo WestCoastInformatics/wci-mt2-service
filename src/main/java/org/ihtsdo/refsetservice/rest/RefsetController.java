@@ -17,7 +17,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,10 +28,8 @@ import javax.ws.rs.QueryParam;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
-import org.ihtsdo.refsetservice.migration.HistoricDataMigrator;
 import org.ihtsdo.refsetservice.migration.MigrationDataInitializer;
-import org.ihtsdo.refsetservice.migration.MigrationUtilities;
-import org.ihtsdo.refsetservice.migration.SyncMetadata;
+import org.ihtsdo.refsetservice.migration.SyncAgent;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
@@ -1560,8 +1557,8 @@ public class RefsetController extends BaseController {
 
                 logger.info("migrateRttData Starting RTT data migration");
 
-                HistoricDataMigrator migrator = new HistoricDataMigrator();
-                migrator.migrate(runShortMigration, runForProduction);
+                SyncAgent agent = new SyncAgent(runShortMigration, runForProduction);
+                agent.sync();
 
                 logger.info("migrateRttData Finished RTT data migration");
 
@@ -1587,11 +1584,18 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
-    public @ResponseBody String syncSnowstorm(@RequestParam(required = false) final Boolean forProduction) throws Exception {
+    public @ResponseBody String syncSnowstorm(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
         try {
 
             boolean runForProduction = false;
+            boolean runShortMigration = false;
+
+            if (quickMigration != null && quickMigration.booleanValue()) {
+
+                logger.info("!!!!! migrateRttData RUNNING QUICK MIGRATION - WILL HAVE MORE THAN ONLY PUBLISHED REFSET VERSIONS");
+                runShortMigration = true;
+            }
 
             if (forProduction != null && forProduction.booleanValue()) {
 
@@ -1601,14 +1605,22 @@ public class RefsetController extends BaseController {
 
             try (TerminologyService service = new TerminologyService()) {
 
-                logger.info("syncSnowstorm Starting Syncing with Snowstorm");
+                final ResultList<String> editions = service.findIds("", null, Edition.class, null);
+                String message = "";
 
-                HistoricDataMigrator migrator = new HistoricDataMigrator();
-                migrator.syncWithSnowstorm(runForProduction);
+                if (editions.size() > 2) {
 
-                logger.info("syncSnowstorm Finished Syncing with Snowstorm");
+                    return "Database not empty, migration cancelled";
+                }
 
-                return "Syncing with Snowstorm completed successfully";
+                logger.info("migrateRttData Starting RTT data migration");
+
+                SyncAgent agent = new SyncAgent(runShortMigration, runForProduction);
+                agent.sync();
+
+                logger.info("migrateRttData Finished RTT data migration");
+
+                return message + "RTT data migration completed successfully";
             }
 
         } catch (final Exception e) {
@@ -1635,10 +1647,9 @@ public class RefsetController extends BaseController {
         String status = "Feedback testing refset created succesffully";
 
         try {
-            MigrationUtilities utilities = new MigrationUtilities(new SyncMetadata(new Date(), MigrationUtilities.FEEDBACK_TESTING_USER_NAME));
-            
+
             logger.info("Create new refset, initialized with feedback, for testing purposes");
-            MigrationDataInitializer initializer = new MigrationDataInitializer(utilities);
+            MigrationDataInitializer initializer = new MigrationDataInitializer();
             Refset refset = initializer.createTestingFeedback();
 
             logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
@@ -1789,8 +1800,9 @@ public class RefsetController extends BaseController {
                 final PfsParameter pfs = new PfsParameter();
                 final QueryParameter query = new QueryParameter();
                 List<Organization> organizationList = new ArrayList<>();
-                
+
                 if (onlyEditionsWithoutOrganizations) {
+
                     organizationList = OrganizationService.searchOrganizations(service, user, new SearchParameters(), false).getItems();
                 }
 
@@ -1816,21 +1828,25 @@ public class RefsetController extends BaseController {
 
                     // if this flag is set skip any edition already tied to an organization
                     if (onlyEditionsWithoutOrganizations) {
-                        
+
                         boolean hasOrganization = false;
-                        
+
                         for (Organization organization : organizationList) {
-                            
+
                             if (organization.getEdition().getId().equals(edition.getId())) {
+
                                 hasOrganization = true;
                             }
+
                         }
-                        
+
                         if (hasOrganization) {
+
                             continue;
                         }
+
                     }
-                    
+
                     TypeKeyValue tkv = new TypeKeyValue("edition", edition.getName(), edition.getName());
                     tkv.setId(edition.getId());
                     entryList.add(tkv);

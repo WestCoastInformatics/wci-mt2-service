@@ -61,14 +61,25 @@ public class MigrationDataInitializer {
 
     private static final String WCI_TESTING_PROJECT_DESCRIPTION = "The single project for all WCI testing refsets";
 
-    public MigrationDataInitializer(MigrationUtilities utilities) {
+    public MigrationDataInitializer() {
 
         // Grab wci users or create during first migration. Two types:
         // a) 5 WCI common users to be added to all orgs (1-per role and a super-user)
         // b) 2 WCI users specifically for generating a new feedback refset for testing
+
+        commonConstructorInitialization(new MigrationUtilities());
+    }
+
+    public MigrationDataInitializer(MigrationUtilities utilities) {
+
+        commonConstructorInitialization(utilities);
+    }
+
+    private void commonConstructorInitialization(MigrationUtilities utils) {
+
         try {
 
-            this.utilities = utilities;
+            this.utilities = utils;
 
             wciAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
@@ -79,7 +90,6 @@ public class MigrationDataInitializer {
             // For Feedback Refset
             feedbackInitiatiorUser = utilities.getUser("feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
             userResponderUser = utilities.getUser("feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-
         } catch (Exception e) {
 
             e.printStackTrace();

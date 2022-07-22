@@ -48,25 +48,13 @@ public class MigrationUtilities {
 
     static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
-    public final static String MIGRATION_USER_NAME = "Migration";
-
     public final static String FEEDBACK_TESTING_USER_NAME = "FeedbackTesting";
 
-    public static final String SYNC_USER_NAME = "Sync";
+    public static final String SYNC_USER_NAME = "Snowstorm Sync";
 
     private static final String UNDEFINED_USER_NAME = "Undefined";
 
-    private static SyncMetadata metadata;
-
-    public MigrationUtilities() {
-
-        MigrationUtilities.metadata = new SyncMetadata(new Date(), MigrationUtilities.UNDEFINED_USER_NAME);
-    }
-
-    public MigrationUtilities(SyncMetadata metadata) {
-
-        MigrationUtilities.metadata = metadata;
-    }
+    private static SyncMetadata metadata = new SyncMetadata(new Date(), MigrationUtilities.UNDEFINED_USER_NAME);
 
     Organization addOrganziation(final String orgName, String orgDesc, final Edition edition) throws Exception {
 
@@ -116,7 +104,7 @@ public class MigrationUtilities {
 
     }
 
-    Edition addEdition(JsonNode codeSystem, String shortName, String editionName, String editionBranch) throws Exception {
+    Edition addEdition(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
 
         final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
         final String editionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(shortName, editionName, editionBranch, codeSystem) : "";

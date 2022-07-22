@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.ihtsdo.refsetservice.migration.HistoricDataMigrator.FileProcessType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -88,17 +87,25 @@ public class MigrationPropertyFileReader {
     private final Map<String, SyncMetadata> metadataMap = new HashMap<>();
 
     /**
+     * The Enum FileProcessType.
+     */
+    private enum FileProcessType {
+
+        /** The refset. */
+        REFSET,
+        /** The clause. */
+        CLAUSE,
+        /** The project. */
+        PROJECT;
+    }
+
+    /**
      * Pre-processing supporting files.
      * @return
      *
      * @throws Exception the exception
      */
-    Set<String> parseRttData(boolean supportRtt) throws Exception {
-
-        if (!supportRtt) {
-
-            return new HashSet<String>();
-        }
+    Set<String> parseRttData() throws Exception {
 
         populateFromFile(clausesResource, FileProcessType.CLAUSE);
         populateFromFile(projectsResource, FileProcessType.PROJECT);
