@@ -85,7 +85,7 @@ public class SyncAgent {
 
             try {
 
-                getDBContent();
+                updateRt2DatabaseCache();
 
             } catch (Exception e) {
 
@@ -117,7 +117,9 @@ public class SyncAgent {
 
             SyncCodeSystemAgent.syncSnowstormCodeSystems(codeSystemsToProcess);
             logger.debug(" 111-c Finished syncing Orgs & Editions");
-
+            
+            updateRt2DatabaseCache();
+            
             Map<String, SortedMap<Date, String>> branches = identifyAllEditionBranches(codeSystemsToProcess);
             logger.debug(" 111-d Mapped each CodeSystem's branches");
         } catch (Exception e) {
@@ -172,19 +174,15 @@ public class SyncAgent {
 
     }
 
-    private void getDBContent() throws Exception {
+    private void updateRt2DatabaseCache() throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            if (allEditions == null) {
+            allEditions = service.getAll(Edition.class);
+            logger.debug("  All Editions: " + allEditions);
 
-                allEditions = service.getAll(Edition.class);
-                logger.debug("  All Editions: " + allEditions);
-
-                allOrganizations = service.getAll(Organization.class);
-                logger.debug("  All Organizations: " + allOrganizations);
-
-            }
+            allOrganizations = service.getAll(Organization.class);
+            logger.debug("  All Organizations: " + allOrganizations);
 
         }
 
@@ -1059,7 +1057,7 @@ public class SyncAgent {
 
     protected static void initializeService(TerminologyService service) {
 
-        service.setModifiedBy("Migration");
+        service.setModifiedBy("Sync");
         service.setModifiedFlag(true);
 
     }

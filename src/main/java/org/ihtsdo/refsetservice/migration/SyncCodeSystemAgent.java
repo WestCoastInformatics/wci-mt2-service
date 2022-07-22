@@ -141,7 +141,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 // If correspondingRt2Edition is null, this is the first time we have observed this edition, so create it.
                 syncedEdition = syncExistingCodeSystem(correspondingRt2Edition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
-                logger.debug("222-d");
 
             } else {
 
@@ -174,6 +173,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             if (syncedEdition != null) {
 
+                setSnowstormEditionOwner(syncedEdition.getShortName(), syncedEdition.getName(), codeSystem);
+
                 syncedOrganization = syncExistingOrganization(syncedEdition, isActiveSsnowstormEdition, codeSystem);
             }
 
@@ -184,7 +185,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             logger.error("Failed in syncing Existing Snowstorm Code System: " + codeSystem);
             e.printStackTrace();
-            logger.debug("222-c");
 
             return null;
         }
@@ -374,13 +374,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
             final String organizationDescription = "";
 
             final Organization newOrganization = utilities.addOrganziation(editionOwnerMap.get(newEditionName), organizationDescription, newEdition);
-            logger.debug("222-a");
+
             organizationsAdded.put(newOrganization.getName(), newOrganization);
-            logger.debug("222-b");
 
             // Final steps whether initial or updating sync
             postCodeSystemProcessing(newOrganization);
-            logger.debug("222-c");
 
             return newEdition;
         } catch (Exception e) {

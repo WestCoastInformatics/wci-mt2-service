@@ -1528,49 +1528,7 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/rtt", produces = "application/json")
     public @ResponseBody String migrateRttData(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
-        try {
-
-            boolean runShortMigration = false;
-            boolean runForProduction = false;
-
-            if (quickMigration != null && quickMigration.booleanValue()) {
-
-                logger.info("!!!!! migrateRttData RUNNING QUICK MIGRATION - WILL HAVE MORE THAN ONLY PUBLISHED REFSET VERSIONS");
-                runShortMigration = true;
-            }
-
-            if (forProduction != null && forProduction.booleanValue()) {
-
-                logger.info("!!!!! migrateRttData RUNNING MIGRATION ON PRODUCTION - SHOULDN'T CONTAIN TESTING PROJECTS, TEAMS, AND REFSETS");
-                runForProduction = true;
-            }
-
-            try (TerminologyService service = new TerminologyService()) {
-
-                final ResultList<String> editions = service.findIds("", null, Edition.class, null);
-                String message = "";
-
-                if (editions.size() > 2) {
-
-                    return "Database not empty, migration cancelled";
-                }
-
-                logger.info("migrateRttData Starting RTT data migration");
-
-                SyncAgent agent = new SyncAgent(runShortMigration, runForProduction);
-                agent.sync();
-
-                logger.info("migrateRttData Finished RTT data migration");
-
-                return message + "RTT data migration completed successfully";
-            }
-
-        } catch (final Exception e) {
-
-            handleException(e);
-            return "Errors occurred, check with the system administrator";
-        }
-
+        return syncSnowstorm(quickMigration, forProduction);
     }
 
     /**
@@ -1605,14 +1563,6 @@ public class RefsetController extends BaseController {
 
             try (TerminologyService service = new TerminologyService()) {
 
-                final ResultList<String> editions = service.findIds("", null, Edition.class, null);
-                String message = "";
-
-                if (editions.size() > 2) {
-
-                    return "Database not empty, migration cancelled";
-                }
-
                 logger.info("migrateRttData Starting RTT data migration");
 
                 SyncAgent agent = new SyncAgent(runShortMigration, runForProduction);
@@ -1620,13 +1570,13 @@ public class RefsetController extends BaseController {
 
                 logger.info("migrateRttData Finished RTT data migration");
 
-                return message + "RTT data migration completed successfully";
+                return "RT2 synced with Snowstorm successfully";
             }
 
         } catch (final Exception e) {
 
             handleException(e);
-            return "Errors occurred, check with the system administrator";
+            return "Errors occurred during RT2 sync, check with the system administrator";
         }
 
     }
