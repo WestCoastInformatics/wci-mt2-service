@@ -513,10 +513,11 @@ public class MigrationUtilities {
 
     }
 
-    private void initializeService(TerminologyService service) {
+    void initializeService(TerminologyService service) {
 
-        service.setModifiedBy(metadata.getModifiedBy());
+        service.setModifiedBy("Sync");
         service.setModifiedFlag(true);
+
     }
 
     SimpleDateFormat getSdf() {

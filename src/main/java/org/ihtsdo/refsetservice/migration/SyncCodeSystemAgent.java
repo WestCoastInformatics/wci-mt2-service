@@ -78,7 +78,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
     }
 
     protected static void syncSnowstormCodeSystems(Set<JsonNode> codeSystems) throws Exception {
-
+        // Clear this out to validate the developer code system
+        develeperTestingOranization = null;
+        
         for (JsonNode codeSystem : codeSystems) {
 
             // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
@@ -333,7 +335,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // A modification was made, so updated edition
             try (TerminologyService service = new TerminologyService()) {
 
-                initializeService(service);
+                utilities.initializeService(service);
 
                 Edition syncedEdition = service.update(existingEdition);
 
@@ -462,7 +464,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             try (final TerminologyService service = new TerminologyService()) {
 
-                initializeService(service);
+                utilities.initializeService(service);
 
                 return service.update(existingOrganization);
             }

@@ -122,7 +122,7 @@ public class MigrationDataInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            initializeService(service);
+            utilities.initializeService(service);
 
             for (String orgName : organizationsAdded.keySet()) {
 
@@ -196,7 +196,7 @@ public class MigrationDataInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            initializeService(service);
+            utilities.initializeService(service);
 
             logger.info("Adding WCI Testing Org's single project");
 
@@ -221,7 +221,7 @@ public class MigrationDataInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            initializeService(service);
+            utilities.initializeService(service);
 
             // Create users and teams, then add to org/project
             Set<String> userRole = new HashSet<>();
@@ -258,7 +258,7 @@ public class MigrationDataInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            initializeService(service);
+            utilities.initializeService(service);
             final List<Refset> projectRefsets = service.find("projectId:" + wciProject.getId() + " AND active:true", null, Refset.class, null).getItems();
 
             int latestVersion = 0;
@@ -308,7 +308,7 @@ public class MigrationDataInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            initializeService(service);
+            utilities.initializeService(service);
 
             // add feedback
             DiscussionThread thread = new DiscussionThread();
@@ -439,12 +439,6 @@ public class MigrationDataInitializer {
         }
 
         return testingOrganization;
-    }
-
-    private void initializeService(TerminologyService service) {
-
-        service.setModifiedBy("Migration");
-        service.setModifiedFlag(true);
     }
 
     static User getMigrationUser() {

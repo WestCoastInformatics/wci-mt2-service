@@ -370,7 +370,7 @@ public class SyncAgent {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            initializeService(service);
+            utilities.initializeService(service);
 
             List<String> ignoredRefsets = utilities.getPropertyReader().readRefsetsToIgnore();
 
@@ -778,7 +778,7 @@ public class SyncAgent {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            initializeService(service);
+            utilities.initializeService(service);
 
             // Persist Projects and Organizations from Snowstorm
             int projectCount = 0;
@@ -1053,13 +1053,6 @@ public class SyncAgent {
         
         }
         */
-    }
-
-    protected static void initializeService(TerminologyService service) {
-
-        service.setModifiedBy("Sync");
-        service.setModifiedFlag(true);
-
     }
 
     public void syncRefsets(Map<String, SortedMap<Date, String>> branches) throws Exception {
