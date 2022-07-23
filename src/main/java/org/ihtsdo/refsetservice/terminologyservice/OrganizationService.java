@@ -68,7 +68,7 @@ public class OrganizationService extends BaseService {
         
         List<Organization> organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
         
-        if (false && organizationList.size() > 0) {
+        if (organizationList.size() > 0) {
             
             final String errorMessage = "There is already an organization tied to that edition.";
             logger.error(errorMessage);
