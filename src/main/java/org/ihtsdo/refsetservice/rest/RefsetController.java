@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -104,7 +105,6 @@ public class RefsetController extends BaseController {
 
     /** Static initialization. */
     static {
-
         EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + "/";
     }
 
@@ -127,7 +127,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = "application/json")
-    public @ResponseBody Refset getRefset(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate) throws Exception {
+    public @ResponseBody ResponseEntity<Refset> getRefset(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -153,14 +153,11 @@ public class RefsetController extends BaseController {
 
             logger.debug("getRefset: refset: " + ModelUtility.toJson(refset));
 
-            return refset;
+            return new ResponseEntity<>(refset, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -181,7 +178,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/isLocked", produces = "application/json")
-    public @ResponseBody String isRefsetLocked(@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request) throws Exception {
+    public @ResponseBody ResponseEntity<String> isRefsetLocked(@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request) throws Exception {
 
         try {
 
@@ -198,14 +195,11 @@ public class RefsetController extends BaseController {
                 RefsetMemberService.refsetsUpdatedMembers.remove(refsetInternalId);
             }
 
-            return returnString;
+            return new ResponseEntity<>(returnString, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return false + "";
+            return handleException(e);
         }
-
     }
 
     /**
@@ -217,31 +211,24 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetInternalId}/changeStatus")
-    public Refset updateActive(final @RequestBody boolean active, final @PathVariable String refsetInternalId) throws Exception {
+    public ResponseEntity<Refset> updateActive(final @RequestBody boolean active, final @PathVariable String refsetInternalId) throws Exception {
 
-        try {
+        try (TerminologyService service = new TerminologyService()) {
 
             // logger.debug("updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
+            final Refset refset = service.findSingle("refsetId:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+            refset.setActive(active);
+            service.setModifiedBy("restApi");
+            service.update(refset);
 
-            try (TerminologyService service = new TerminologyService()) {
+            // logger.debug("updateActive: refset: " + ModelUtility.toJson(refset));
 
-                final Refset refset = service.findSingle("refsetId:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
-                refset.setActive(active);
-                service.setModifiedBy("restApi");
-                service.update(refset);
-
-                // logger.debug("updateActive: refset: " + ModelUtility.toJson(refset));
-
-                return refset;
-            }
+            return new ResponseEntity<>(refset, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -257,7 +244,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/members")
-    public @ResponseBody String addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
+    public @ResponseBody ResponseEntity<String> addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
         @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -312,23 +299,19 @@ public class RefsetController extends BaseController {
 
             if (error.equals("")) {
 
-                return "{\"status\": \"All concepts added.\"}";
+                return new ResponseEntity<>("{\"status\": \"All concepts added.\"}", HttpStatus.OK);
             } else {
 
-                return "{\"error\": \"" + error + "\"}";
+                return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         finally {
-
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
-
     }
 
     /**
@@ -343,7 +326,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/removeMembers")
-    public @ResponseBody String removeRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
+    public @ResponseBody ResponseEntity<String> removeRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
         @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -395,24 +378,18 @@ public class RefsetController extends BaseController {
             }
 
             if (error.equals("")) {
-
-                return "{\"status\": \"All concepts removed.\"}";
+                return new ResponseEntity<>("{\"status\": \"All concepts removed.\"}", HttpStatus.OK);
             } else {
-
-                return "{\"error\": \"" + error + "\"}";
+                return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         finally {
-
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
-
     }
 
     /**
@@ -428,7 +405,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/definitionExceptions")
-    public @ResponseBody String addRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
+    public @ResponseBody ResponseEntity<String> addRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
         @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType,
         @RequestParam(required = false) final String definitionExceptionType) throws Exception {
 
@@ -467,24 +444,18 @@ public class RefsetController extends BaseController {
             //service.commit();
 
             if (!status.startsWith("Error")) {
-
-                return "{\"status\": \"Definition exception added.\"}";
+                return new ResponseEntity<>("{\"status\": \"Definition exception added.\"}", HttpStatus.OK);
             } else {
-
-                return "{\"error\": \"" + status + "\"}";
+                return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         finally {
-
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
-
     }
 
     /**
@@ -496,7 +467,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/removeDefinitionException/{definitionExceptionId}")
-    public @ResponseBody String removeRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+    public @ResponseBody ResponseEntity<String> removeRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         @PathVariable(value = "definitionExceptionId") final String definitionExceptionId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -514,24 +485,18 @@ public class RefsetController extends BaseController {
             //service.commit();
 
             if (!status.startsWith("Error")) {
-
-                return "{\"status\": \"Definition exception removed.\"}";
+                return new ResponseEntity<>("{\"status\": \"Definition exception removed.\"}", HttpStatus.OK);
             } else {
-
-                return "{\"error\": \"" + status + "\"}";
+                return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         finally {
-
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
-
     }
 
     /**
@@ -542,7 +507,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset")
-    public @ResponseBody String createRefset(final @RequestBody Refset refsetParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<String> createRefset(final @RequestBody Refset refsetParameters, final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -575,23 +540,18 @@ public class RefsetController extends BaseController {
             //service.commit();
 
             if (status.startsWith("Error")) {
-
-                return "{\"error\": \"" + status + "\"}";
+                return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
-            return "{\"refsetId\": \"" + status + "\"}";
+            return new ResponseEntity<>("{\"refsetId\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         finally {
-
             RefsetMemberService.refsetsBeingUpdated.remove(newRefsetInternalId);
         }
-
     }
 
     /**
@@ -602,7 +562,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetInternalId}")
-    public @ResponseBody String modifyRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final @RequestBody Refset refsetParameters, final BindingResult bindingResult)
+    public @ResponseBody ResponseEntity<String> modifyRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final @RequestBody Refset refsetParameters, final BindingResult bindingResult)
         throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -623,24 +583,18 @@ public class RefsetController extends BaseController {
             //service.commit();
 
             if (!status.startsWith("Error")) {
-
-                return "{\"refsetInternalId\": \"" + refsetInternalId + "\"}";
+                return new ResponseEntity<>("{\"refsetInternalId\": \"" + refsetInternalId + "\"}", HttpStatus.OK);
             } else {
-
-                return "{\"error\": \"" + status + "\"}";
+                return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         finally {
-
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
-
     }
 
     /**
@@ -665,7 +619,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/workflowHistory", produces = "application/json")
-    public @ResponseBody ResultList<WorkflowHistory> getWorkflowHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters,
+    public @ResponseBody ResponseEntity<ResultList<WorkflowHistory>> getWorkflowHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters,
         final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -679,18 +633,11 @@ public class RefsetController extends BaseController {
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(service, refset, searchParameters);
 
-            return results;
-
-        } catch (final ResponseStatusException rse) {
-
-            throw rse;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -701,7 +648,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/workflowStatus")
-    public @ResponseBody Refset setWorkflowStatus(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam final String action,
+    public @ResponseBody ResponseEntity<Refset> setWorkflowStatus(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam final String action,
         @RequestParam(required = false) final String notes) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -731,7 +678,7 @@ public class RefsetController extends BaseController {
                     refset.setUpgradeWarning(true);
                 }
 
-                return refset;
+                return new ResponseEntity<>(refset, HttpStatus.OK);
             }
 
             refset = WorkflowService.setWorkflowStatusByAction(service, user, action, refset, notes);
@@ -741,7 +688,7 @@ public class RefsetController extends BaseController {
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
 
                 logger.debug("setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
-                return refset;
+                return new ResponseEntity<>(refset, HttpStatus.OK);
             } else {
 
                 logger.debug("setWorkflowStatus: did not update workflow status.");
@@ -749,11 +696,8 @@ public class RefsetController extends BaseController {
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -765,7 +709,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetInternalId}/workflowNote")
-    public @ResponseBody ResultList<WorkflowHistory> updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = true) final String notes)
+    public @ResponseBody ResponseEntity<ResultList<WorkflowHistory>> updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = true) final String notes)
         throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -782,15 +726,14 @@ public class RefsetController extends BaseController {
 
             WorkflowService.updateWorkflowNote(service,user, refset, notes);
             //service.commit();
+            
+            final ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(service, refset, new SearchParameters());
 
-            return WorkflowService.getWorkflowHistory(service, refset, new SearchParameters());
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -802,7 +745,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/admin/completeAllRefsetPublications")
-    public @ResponseBody String completeAllRefsetPublications(@RequestParam(required = true) final String versionDate, @RequestParam(required = true) final String codeSystem) throws Exception {
+    public @ResponseBody ResponseEntity<String> completeAllRefsetPublications(@RequestParam(required = true) final String versionDate, @RequestParam(required = true) final String codeSystem) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
 
@@ -837,20 +780,15 @@ public class RefsetController extends BaseController {
             if (error.equals("")) {
 
                 String message = "All refset publications completed in code system " + codeSystem;
-
-                return "{\"status\": \"" + message + ".\"}";
+                return new ResponseEntity<>("{\"status\": \"" + message + ".\"}", HttpStatus.OK);
 
             } else {
-
-                return "{\"error\": \"" + error + "\"}";
+                return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -862,7 +800,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/admin/failRefsetPublications")
-    public @ResponseBody String failRefsetPublications(@RequestParam(required = true) final String refsetIds, @RequestParam(required = true) final String notes) throws Exception {
+    public @ResponseBody ResponseEntity<String> failRefsetPublications(@RequestParam(required = true) final String refsetIds, @RequestParam(required = true) final String notes) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
 
@@ -890,19 +828,14 @@ public class RefsetController extends BaseController {
             }
 
             if (error.equals("")) {
-
-                return "{\"status\": \"All refsets updated.\"}";
+                return new ResponseEntity<>("{\"status\": \"All refsets updated.\"}", HttpStatus.OK);
             } else {
-
-                return "{\"error\": \"" + error + "\"}";
+                return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -913,7 +846,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/newVersion")
-    public @ResponseBody String createNewRefsetVersion(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+    public @ResponseBody ResponseEntity<String> createNewRefsetVersion(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         // checkBinding(bindingResult);
@@ -931,18 +864,14 @@ public class RefsetController extends BaseController {
             //service.commit();
 
             if (newRefsetInternalId.startsWith("Error")) {
-
-                return "{\"error\": \"" + newRefsetInternalId + "\"}";
+                return new ResponseEntity<>("{\"error\": \"" + newRefsetInternalId + "\"}", HttpStatus.OK);
             }
 
-            return "{\"refsetInternalId\": \"" + newRefsetInternalId + "\"}";
+            return new ResponseEntity<>("{\"refsetInternalId\": \"" + newRefsetInternalId + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -953,7 +882,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @DeleteMapping("/refset/{refsetInternalId}")
-    public @ResponseBody String inactiveRefset(final @PathVariable String refsetInternalId) throws Exception {
+    public @ResponseBody ResponseEntity<String> inactiveRefset(final @PathVariable String refsetInternalId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -967,14 +896,11 @@ public class RefsetController extends BaseController {
             final String status = RefsetService.inactivateRefset(service, user, refsetInternalId);
             //service.commit();
 
-            return "{\"status\": \"" + status + "\"}";
+            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -985,7 +911,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @DeleteMapping("/refset/{refsetInternalId}/editVersion")
-    public @ResponseBody String deleteRefsetEditVersion(final @PathVariable String refsetInternalId) throws Exception {
+    public @ResponseBody ResponseEntity<String> deleteRefsetEditVersion(final @PathVariable String refsetInternalId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -998,15 +924,12 @@ public class RefsetController extends BaseController {
 
             final String status = RefsetService.deleteInDevelopmentVersion(service, user, refsetInternalId, true);
             //service.commit();
-
-            return "{\"status\": \"" + status + "\"}";
+            
+            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1032,7 +955,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = "application/json")
-    public @ResponseBody ResultList<Refset> searchRefsets(final SearchParameters searchParameters, final boolean searchConcepts, final boolean showInDevelopment,
+    public @ResponseBody ResponseEntity<ResultList<Refset>> searchRefsets(final SearchParameters searchParameters, final boolean searchConcepts, final boolean showInDevelopment,
         @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -1053,18 +976,11 @@ public class RefsetController extends BaseController {
                 DiscussionService.attachRefsetDiscussionCounts(service, user, results.getItems());
             }
 
-            return results;
-
-        } catch (final ResponseStatusException rse) {
-
-            throw rse;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1092,7 +1008,7 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = {
         "/refset/{refsetInternalId}/taxonomySearch", "/refset/{refsetInternalId}/conceptSearch"
     }, produces = "application/json")
-    public @ResponseBody ConceptResultList searchConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters,
+    public @ResponseBody ResponseEntity<ConceptResultList> searchConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters,
         final BindingResult bindingResult, HttpServletRequest request) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -1103,7 +1019,6 @@ public class RefsetController extends BaseController {
         final String uri = request.getRequestURI();
 
         if (uri.contains("taxonomySearch")) {
-
             searchRefsetMembers = true;
         }
 
@@ -1119,14 +1034,11 @@ public class RefsetController extends BaseController {
                 results = RefsetMemberService.prepareConceptSearch(service, user, refsetInternalId, searchParameters, searchRefsetMembers);
             }
 
-            return results;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1161,7 +1073,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members", produces = "application/json")
-    public @ResponseBody ConceptResultList getMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters, final String displayType,
+    public @ResponseBody ResponseEntity<ConceptResultList> getMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters, final String displayType,
         final TaxonomyParameters taxonomyParameters, @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception {
 
         checkBinding(bindingResult);
@@ -1186,14 +1098,11 @@ public class RefsetController extends BaseController {
             }
 
             results.setTimeTaken(System.currentTimeMillis() - start);
-            return results;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1214,7 +1123,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetId}/versionDate/{versionDate}", produces = "application/json")
-    public @ResponseBody String cacheMemberAncestors(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate) throws Exception {
+    public @ResponseBody ResponseEntity<String> cacheMemberAncestors(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1226,23 +1135,18 @@ public class RefsetController extends BaseController {
             final boolean success = RefsetMemberService.cacheMemberAncestors(service, user, refsetId, versionDate);
 
             if (success) {
-
                 returnJson = returnJson.replace("<RESULT>", "true");
             } else {
-
                 returnJson = returnJson.replace("<RESULT>", "false");
             }
 
             // logger.debug("cacheMemberAncestors results: " + returnJson);
 
-            return returnJson;
+            return new ResponseEntity<>(returnJson, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1278,66 +1182,51 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}", produces = "application/json")
-    public @ResponseBody String exportRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String format, final String exportType, final String languageId,
+    public @ResponseBody ResponseEntity<String> exportRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String format, final String exportType, final String languageId,
         final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
 
-        try {
+        try (TerminologyService service = new TerminologyService()) {
 
             User user = SecurityService.getUserFromSession();
             logger.debug("exportRefset: refsetInternalId: " + refsetInternalId + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: " + fileNameDate + " ; startEffectiveTime: "
                 + startEffectiveTime + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: " + exportMetadata);
 
-            try (TerminologyService service = new TerminologyService()) {
+            String url = null;
 
-                try {
+            if (format.equals("rf2") || format.equals("rf2_with_names")) {
 
-                    String url = null;
+                boolean withNames = false;
 
-                    if (format.equals("rf2") || format.equals("rf2_with_names")) {
+                if (format.equals("rf2_with_names")) {
 
-                        boolean withNames = false;
-
-                        if (format.equals("rf2_with_names")) {
-
-                            withNames = true;
-                        }
-
-                        String uri = "";
-
-                        if (exportType.contentEquals("SNAPSHOT")) {
-
-                            uri = RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
-                        } else {
-
-                            uri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
-                                withNames);
-                        }
-
-                        logger.debug("results: " + uri);
-                        url = "{\"url\": \"" + uri + "\"}";
-
-                    } else if (format.equals("sctids")) {
-
-                        String uri = RefsetMemberService.exportRefsetSctidList(service, refsetInternalId, exportMetadata);
-                        url = "{\"url\": \"" + uri + "\"}";
-                    }
-
-                    return url;
-
-                } catch (final Exception e) {
-
-                    handleException(e);
-                    return null;
+                    withNames = true;
                 }
 
+                String uri = "";
+
+                if (exportType.contentEquals("SNAPSHOT")) {
+
+                    uri = RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+                } else {
+
+                    uri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
+                        withNames);
+                }
+
+                logger.debug("results: " + uri);
+                url = "{\"url\": \"" + uri + "\"}";
+
+            } else if (format.equals("sctids")) {
+
+                String uri = RefsetMemberService.exportRefsetSctidList(service, refsetInternalId, exportMetadata);
+                url = "{\"url\": \"" + uri + "\"}";
             }
 
+            return new ResponseEntity<>(url, HttpStatus.OK);
+
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1368,44 +1257,15 @@ public class RefsetController extends BaseController {
             Resource file = new UrlResource(filePath.toUri());
 
             if (!file.exists() || !file.isReadable()) {
-
                 throw new RuntimeException("Could not read the file!");
             }
 
             return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION).header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"").contentLength(file.contentLength()).body(file);
 
-            // ContentDisposition contentDisposition =
-            // ContentDisposition.builder("inline").filename(fileName).build();
-            //
-            // File file = new File(EXPORT_FILE_DIR + fileName);
-            // HttpHeaders headers = new HttpHeaders();
-            // headers.add("Cache-Control", "no-cache, no-store,
-            // must-revalidate");
-            // headers.add("Pragma", "no-cache");
-            // headers.add("Expires", "0");
-            // headers.add("Content-Length", file.length() + "");
-            // headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
-            // HttpHeaders.CONTENT_DISPOSITION);
-            // headers.add("Content-disposition", "attachment; filename=\"" +
-            // fileName + "\"");
-            // headers.add("Content-Type", "application/octet-stream");
-            // //headers.setContentDisposition(contentDisposition);
-            // Path path = Paths.get(file.getAbsolutePath());
-            // ByteArrayResource resource = new
-            // ByteArrayResource(Files.readAllBytes(path));
-            //
-            // return
-            // ResponseEntity.ok().headers(headers).contentLength(file.length())
-            // .contentType(MediaType.parseMediaType("application/octet-stream"))
-            // .body(resource);
-
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1427,7 +1287,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}", produces = "application/json")
-    public @ResponseBody ResultList<Map<String, String>> getMemberHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+    public @ResponseBody ResponseEntity<ResultList<Map<String, String>>> getMemberHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         @PathVariable(value = "conceptId") final String conceptId) throws Exception {
 
         try {
@@ -1454,15 +1314,12 @@ public class RefsetController extends BaseController {
                 ResultList<Map<String, String>> results = new ResultList<>(memberHistory);
                 results.setTotalKnown(true);
 
-                return results;
+                return new ResponseEntity<>(results, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1484,7 +1341,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{conceptId}", produces = "application/json")
-    public @ResponseBody Concept getConceptDetails(@PathVariable(value = "conceptId") final String conceptId, final String refsetInternalId) throws Exception {
+    public @ResponseBody ResponseEntity<Concept> getConceptDetails(@PathVariable(value = "conceptId") final String conceptId, final String refsetInternalId) throws Exception {
 
         try {
 
@@ -1504,15 +1361,12 @@ public class RefsetController extends BaseController {
 
                 // logger.debug("getConceptDetails: concept: " + ModelUtility.toJson(concept));
 
-                return concept;
+                return new ResponseEntity<>(concept, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1525,7 +1379,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/rtt", produces = "application/json")
-    public @ResponseBody String migrateRttData(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction) throws Exception {
+    public @ResponseBody ResponseEntity<String> migrateRttData(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
         try {
 
@@ -1551,7 +1405,7 @@ public class RefsetController extends BaseController {
 
                 if (editions.size() > 2) {
 
-                    return "Database not empty, migration cancelled";
+                    return new ResponseEntity<>("Database not empty, migration cancelled", HttpStatus.OK);
                 }
 
                 logger.info("migrateRttData Starting RTT data migration");
@@ -1561,15 +1415,12 @@ public class RefsetController extends BaseController {
 
                 logger.info("migrateRttData Finished RTT data migration");
 
-                return message + "RTT data migration completed successfully";
+                return new ResponseEntity<>(message + "RTT data migration completed successfully", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return "Errors occurred, check with the system administrator";
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1583,26 +1434,23 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/feedback", produces = "application/json")
-    public @ResponseBody String createNewFeedbackRefset() throws Exception {
-
-        String status = "Feedback testing refset created succesffully";
+    public @ResponseBody ResponseEntity<String> createNewFeedbackRefset() throws Exception {
 
         try {
 
+            String status = "Feedback testing refset created succesffully";
             logger.info("Create new refset, initialized with feedback, for testing purposes");
 
             MigrationDataInitializer initializer = new MigrationDataInitializer();
             Refset refset = initializer.createTestingFeedback();
 
             logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
+            
+            return new ResponseEntity<>(status, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return "Errors occurred, check with the system administrator";
+            return handleException(e);
         }
-
-        return status;
     }
 
     /**
@@ -1618,7 +1466,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/versionStatuses", produces = "application/json")
-    public @ResponseBody ResultList<TypeKeyValue> getVersionStatuses() throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getVersionStatuses() throws Exception {
 
         try {
 
@@ -1637,15 +1485,12 @@ public class RefsetController extends BaseController {
                 ResultList<TypeKeyValue> results = new ResultList<>(versionStatuses);
                 results.setTotalKnown(true);
 
-                return results;
+                return new ResponseEntity<>(results, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1661,7 +1506,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/versions", produces = "application/json")
-    public @ResponseBody ResultList<TypeKeyValue> getVersions() throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getVersions() throws Exception {
 
         try {
 
@@ -1704,15 +1549,12 @@ public class RefsetController extends BaseController {
                 results.setItems(resultItems);
                 results.setTotal(resultItems.size());
 
-                return results;
+                return new ResponseEntity<>(results, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1729,7 +1571,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/editions", produces = "application/json")
-    public @ResponseBody ResultList<TypeKeyValue> getEditions(@QueryParam(value = "onlyUsersTeams") final boolean onlyEditionsWithoutOrganizations) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getEditions(@QueryParam(value = "onlyUsersTeams") final boolean onlyEditionsWithoutOrganizations) throws Exception {
 
         try {
 
@@ -1792,15 +1634,12 @@ public class RefsetController extends BaseController {
                 entryResults.setItems(entryList);
                 entryResults.setTotalKnown(true);
 
-                return entryResults;
+                return new ResponseEntity<>(entryResults, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1818,7 +1657,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/general/refsetConcepts", produces = "application/json")
-    public @ResponseBody ConceptResultList getRefsetConcepts(final String branch, final boolean areParentConcepts) throws Exception {
+    public @ResponseBody ResponseEntity<ConceptResultList> getRefsetConcepts(final String branch, final boolean areParentConcepts) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -1829,14 +1668,11 @@ public class RefsetController extends BaseController {
 
             // logger.debug("getRefsetConcepts: results: " + ModelUtility.toJson(results));
 
-            return results;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1853,7 +1689,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/general/branchVersions", produces = "application/json")
-    public @ResponseBody ResultList<String> getBranchVersions(final String branch) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<String>> getBranchVersions(final String branch) throws Exception {
 
         try {
 
@@ -1866,14 +1702,11 @@ public class RefsetController extends BaseController {
 
             // logger.debug("getBranchVersions - results: " + results);
 
-            return results;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1889,7 +1722,7 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/organizations", produces = "application/json")
-    public @ResponseBody ResultList<TypeKeyValue> getOrganizations() throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getOrganizations() throws Exception {
 
         try {
 
@@ -1931,15 +1764,12 @@ public class RefsetController extends BaseController {
                 entryResults.setItems(entryList);
                 entryResults.setTotalKnown(true);
 
-                return entryResults;
+                return new ResponseEntity<>(entryResults, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1950,7 +1780,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/ancestorCache", produces = "application/json")
-    public @ResponseBody String getRefsetAncestorCache(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+    public @ResponseBody ResponseEntity<String> getRefsetAncestorCache(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1960,19 +1790,14 @@ public class RefsetController extends BaseController {
             final Map<String, Set<String>> ancestorsCache = RefsetMemberService.getCacheForMemberAncestors(RefsetMemberService.getBranchPath(refset));
 
             if (ancestorsCache.containsKey(refsetInternalId)) {
-
-                return ModelUtility.toJson(ancestorsCache.get(refsetInternalId));
+                return new ResponseEntity<>(ModelUtility.toJson(ancestorsCache.get(refsetInternalId)), HttpStatus.OK);
             } else {
-
-                return "Not Cached";
+                return new ResponseEntity<>("Not Cached", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -1984,7 +1809,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}/ancestorConcepts", produces = "application/json")
-    public @ResponseBody Concept getMemberAncestorConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId)
+    public @ResponseBody ResponseEntity<Concept> getMemberAncestorConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId)
         throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -1997,14 +1822,11 @@ public class RefsetController extends BaseController {
 
             RefsetMemberService.getConceptAncestors(refset, Arrays.asList(concept));
 
-            return concept;
+            return new ResponseEntity<>(concept, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -2016,7 +1838,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/compileUpgradeData", produces = "application/json")
-    public @ResponseBody String compileUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = false) final String upgradeBranch)
+    public @ResponseBody ResponseEntity<String> compileUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = false) final String upgradeBranch)
         throws Exception {
 
         final User user = SecurityService.getUserFromSession();
@@ -2036,19 +1858,15 @@ public class RefsetController extends BaseController {
 
             logger.debug("compileUpgradeData: Finished with status " + status);
 
-            return "{\"status\": \"" + status + "\"}";
+            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         finally {
-
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
-
     }
 
     /**
@@ -2060,7 +1878,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/upgradeData", produces = "application/json")
-    public @ResponseBody ResultList<UpgradeInactiveConcept> getUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<UpgradeInactiveConcept>> getUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
 
@@ -2073,14 +1891,11 @@ public class RefsetController extends BaseController {
 
             logger.debug("getUpgradeData: results " + results);
 
-            return results;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -2096,7 +1911,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/modifyUpgradeConcept")
-    public @ResponseBody String modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = true) final String inactiveConceptId,
+    public @ResponseBody ResponseEntity<String> modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = true) final String inactiveConceptId,
         @RequestParam(required = false) final String replacementConceptId, @RequestParam(required = true) final String changed,
         @RequestBody(required = false) final UpgradeReplacementConcept manualReplacementConcept) throws Exception {
 
@@ -2115,14 +1930,11 @@ public class RefsetController extends BaseController {
 
             logger.debug("modifyUpgradeConcept: Finished with status: " + status);
 
-            return "{\"status\": \"" + status + "\"}";
+            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -2134,7 +1946,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/removeAllUpgradeInactiveConcepts")
-    public @ResponseBody String removeAllUpgradeInactiveConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+    public @ResponseBody ResponseEntity<String> removeAllUpgradeInactiveConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
 
@@ -2150,14 +1962,11 @@ public class RefsetController extends BaseController {
 
             logger.debug("removeAllUpgradeInactiveConcepts: Finished with status: " + status);
 
-            return "{\"status\": \"" + status + "\"}";
+            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -2169,7 +1978,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/addAllUpgradeReplacementConcepts")
-    public @ResponseBody String addAllUpgradeReplacementConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+    public @ResponseBody ResponseEntity<String> addAllUpgradeReplacementConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
 
@@ -2185,14 +1994,11 @@ public class RefsetController extends BaseController {
 
             logger.debug("addAllUpgradeReplacementConcepts: Finished with status: " + status);
 
-            return "{\"status\": \"" + status + "\"}";
+            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -2220,7 +2026,7 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = {
         "/refset/{refsetInternalId}/replacementConceptSearch"
     }, produces = "application/json")
-    public @ResponseBody ResultList<UpgradeReplacementConcept> replacementConceptSearch(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+    public @ResponseBody ResponseEntity<ResultList<UpgradeReplacementConcept>> replacementConceptSearch(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         final SearchParameters searchParameters, final BindingResult bindingResult, HttpServletRequest request) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -2241,14 +2047,11 @@ public class RefsetController extends BaseController {
                 results = RefsetMemberService.replacementConceptSearch(user, service, refset, searchParameters);
             }
 
-            return results;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -2276,7 +2079,7 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = {
         "/refset/dropdownSearch"
     }, produces = "application/json")
-    public @ResponseBody ResultList<Refset> searchRefsetsForDropdowns(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<Refset>> searchRefsetsForDropdowns(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -2295,14 +2098,11 @@ public class RefsetController extends BaseController {
                 results = RefsetService.refsetDropdownSearch(user, service, searchParameters, true, true);
             }
 
-            return results;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -2314,7 +2114,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/compileComparisonData", produces = "application/json")
-    public @ResponseBody String compileComparisonData(@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
+    public @ResponseBody ResponseEntity<String> compileComparisonData(@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
         @RequestParam(required = true) final String comparisonRefsetInternalId) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
@@ -2331,19 +2131,15 @@ public class RefsetController extends BaseController {
 
             logger.debug("compileComparisonData: Finished with status " + status);
 
-            return "{\"status\": \"" + status + "\"}";
+            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         finally {
-
             RefsetMemberService.refsetsBeingUpdated.remove(activeRefsetInternalId);
         }
-
     }
 
     /**
@@ -2354,7 +2150,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/comparisonData", produces = "application/json")
-    public @ResponseBody RefsetMemberComparison getComparisonData(@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId, final HttpServletRequest request)
+    public @ResponseBody ResponseEntity<RefsetMemberComparison> getComparisonData(@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId, final HttpServletRequest request)
         throws Exception {
 
         final User user = SecurityService.getUserFromSession();
@@ -2376,14 +2172,11 @@ public class RefsetController extends BaseController {
 
             logger.debug("getComparisonData: results " + results);
 
-            return results;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return null;
+            return handleException(e);
         }
-
     }
 
     /**
@@ -2406,34 +2199,18 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/requestAccess", produces = "application/json")
-    public @ResponseBody boolean requestRefsetAccess(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String comments) throws Exception {
+    public @ResponseBody ResponseEntity<Boolean> requestRefsetAccess(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String comments) throws Exception {
 
-        try {
+        try (TerminologyService service = new TerminologyService()) {
 
             User user = SecurityService.getUserFromSession();
             logger.debug("requestRefsetAccess: refsetInternalId: " + refsetInternalId + " ; comments: " + comments);
+            String url = null;
 
-            try (TerminologyService service = new TerminologyService()) {
-
-                try {
-
-                    String url = null;
-
-                    return true;
-
-                } catch (final Exception e) {
-
-                    handleException(e);
-                    return false;
-                }
-
-            }
+            return new ResponseEntity<>(true, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            handleException(e);
-            return false;
+            return handleException(e);
         }
-
     }
 }

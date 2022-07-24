@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -80,7 +81,7 @@ public class ConceptController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{code}",
             produces = "application/json")
-    public @ResponseBody Concept getConcept(@PathVariable(value = "terminology")
+    public @ResponseBody ResponseEntity<Concept> getConcept(@PathVariable(value = "terminology")
     final String terminology, @PathVariable(value = "code")
     final String code) throws Exception {
         try {
@@ -95,13 +96,12 @@ public class ConceptController extends BaseController {
                 logger.info(
                         "getConcept: serviceConcept: " + ModelUtility.toJson(concept));
 
-                return concept;
+                return new ResponseEntity<>(concept, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -114,7 +114,7 @@ public class ConceptController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/concept/{code}")
-    Concept updateActive(final @RequestBody boolean active, final @PathVariable String code)
+    ResponseEntity<Concept> updateActive(final @RequestBody boolean active, final @PathVariable String code)
         throws Exception {
 
         try {
@@ -132,13 +132,12 @@ public class ConceptController extends BaseController {
                 logger.info(
                         "getConcept: serviceConcept: " + ModelUtility.toJson(concept));
 
-                return concept;
+                return new ResponseEntity<>(concept, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -178,7 +177,7 @@ public class ConceptController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/concept/search",
             produces = "application/json")
-    public @ResponseBody ConceptResultList search(@ModelAttribute
+    public @ResponseBody ResponseEntity<ConceptResultList> search(@ModelAttribute
     final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         // Check whether or not parameter binding was successful
@@ -201,12 +200,10 @@ public class ConceptController extends BaseController {
 
             // TBD
             results.setTimeTaken(System.currentTimeMillis() - start);
-            return results;
-        } catch (final ResponseStatusException rse) {
-            throw rse;
+            return new ResponseEntity<>(results, HttpStatus.OK);
+
         } catch (final Exception e) {
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         /**

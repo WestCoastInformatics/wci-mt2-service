@@ -116,8 +116,7 @@ public class ProjectController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error fetching project.  Id: {}", projectId, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -142,7 +141,7 @@ public class ProjectController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResultList<Project> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult, @QueryParam(value = "includeMembers") final boolean includeMembers)
+    public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult, @QueryParam(value = "includeMembers") final boolean includeMembers)
         throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -166,15 +165,11 @@ public class ProjectController extends BaseController {
                 }
             }
 
-            return results;
-
-        } catch (final ResponseStatusException rse) {
-            throw rse;
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -246,8 +241,7 @@ public class ProjectController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error adding project. {}", project.toString(), e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -297,8 +291,7 @@ public class ProjectController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error updating project.  Id: {}", id, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -336,8 +329,7 @@ public class ProjectController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error inactivating project.  Id: {}", id, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 }

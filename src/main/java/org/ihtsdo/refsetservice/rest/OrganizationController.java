@@ -108,22 +108,12 @@ public class OrganizationController extends BaseController {
             // TODO check permissions, fail if not authorized.
             final User user = SecurityService.getUserFromSession();
 
-            if (user == null) {
-                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-            }
-
             final Organization organization = OrganizationService.getOrganization(service, user, id, includeMembers);
             return new ResponseEntity<>(organization, HttpStatus.OK);
 
-        } catch (final NotFoundException nfe) {
-
-            logger.error("Error getting organization. Id {} not found", id);
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -155,10 +145,6 @@ public class OrganizationController extends BaseController {
         // TODO check permissions, fail if not authorized.
         final User user = SecurityService.getUserFromSession();
 
-        if (user == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
@@ -167,14 +153,10 @@ public class OrganizationController extends BaseController {
             final ResultList<Organization> results = OrganizationService.searchOrganizations(service, user, searchParameters, includeMembers);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
-        } catch (final ResponseStatusException rse) {
-            throw rse;
-
         } catch (final Exception e) {
 
             logger.error("Error searching organizations.  Search criteria: {} ", searchParameters.toString());
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -202,12 +184,8 @@ public class OrganizationController extends BaseController {
             // TODO check permissions, fail if not authorized.
             final User user = SecurityService.getUserFromSession();
 
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
-            }
-
             if (organization == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing organization");
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "Missing organization");
             }
 
             service.setModifiedBy(user.getUserName());
@@ -215,20 +193,16 @@ public class OrganizationController extends BaseController {
             try {
                 organization.validateAdd();
             } catch (final Exception e) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
             }
 
             final Organization org = OrganizationService.createOrganization(service, user, organization);
 
             return new ResponseEntity<>(org, HttpStatus.CREATED);
 
-        } catch (final ResponseStatusException rse) {
-            return ResponseEntity.status(rse.getRawStatusCode()).body(rse.getMessage());
-
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -289,8 +263,7 @@ public class OrganizationController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Error updating organization. Organization: {}", organization);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -334,8 +307,7 @@ public class OrganizationController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Error inactivating organization.  Id: {}", id);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -379,8 +351,7 @@ public class OrganizationController extends BaseController {
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -418,8 +389,7 @@ public class OrganizationController extends BaseController {
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -457,8 +427,7 @@ public class OrganizationController extends BaseController {
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -507,8 +476,7 @@ public class OrganizationController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Error adding user: {} to organization: {}.", email, organizationId, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -558,8 +526,7 @@ public class OrganizationController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Error adding user: {} to organization: {}.", userId, organizationId, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -584,8 +551,7 @@ public class OrganizationController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to get organization icon file " + fileName, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -639,8 +605,7 @@ public class OrganizationController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to edit user icon for organization " + organizationId, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 

@@ -137,8 +137,7 @@ public class SecurityController extends BaseController {
           return new ResponseEntity<>(null, HttpStatus.OK);
             
     	} catch (Exception e) {
-    		handleException(e);
-    		return null;
+    		return handleException(e);
     	}
     }
 }

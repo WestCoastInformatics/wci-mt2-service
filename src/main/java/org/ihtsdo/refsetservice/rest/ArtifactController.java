@@ -90,14 +90,9 @@ public class ArtifactController extends BaseController {
 
             return new ResponseEntity<>(artifact, HttpStatus.OK);
 
-        } catch (final ResponseStatusException rse) {
-            logger.error("Error getting artifactd  {}.", id);
-            throw rse;
-
         } catch (final Exception e) {
             logger.error("Error getting artifactd  {}.", id);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
     }
@@ -149,13 +144,9 @@ public class ArtifactController extends BaseController {
 
             return new ResponseEntity<>(results, HttpStatus.OK);
 
-        } catch (final ResponseStatusException rse) {
-            throw rse;
-
         } catch (final Exception e) {
             logger.error("Error searching artifacts.  Search criteria: {} ", searchParameters.toString());
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -208,8 +199,7 @@ public class ArtifactController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to add artifact " + artifact, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -244,8 +234,7 @@ public class ArtifactController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to add artifact " + artifact, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -276,8 +265,7 @@ public class ArtifactController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to Inactivate artifact " + id, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -326,8 +314,7 @@ public class ArtifactController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to download artifact for id:" + id + ".", e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 

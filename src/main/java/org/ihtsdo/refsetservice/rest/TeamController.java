@@ -107,8 +107,7 @@ public class TeamController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error getting team.  Id: {}", id);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -152,13 +151,9 @@ public class TeamController extends BaseController {
             final ResultList<Team> results = TeamService.searchTeams(authUser, searchParameters, includeMembers, onlyUsersTeams);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
-        } catch (final ResponseStatusException rse) {
-            throw rse;
-
         } catch (final Exception e) {
             logger.error("Error searching teams.  Search criteria: {} ", searchParameters.toString());
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -204,8 +199,7 @@ public class TeamController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error adding team.  Team: {}", team.toString());
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -259,8 +253,7 @@ public class TeamController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error updating team. Team: {}", team);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -295,8 +288,7 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(users, HttpStatus.OK);
 
         } catch (final Exception e) {
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -355,8 +347,7 @@ public class TeamController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Error adding user: {} to team: {}", email, teamId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -413,8 +404,7 @@ public class TeamController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error removing user: {} from team: {}", userId, teamId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -443,8 +433,7 @@ public class TeamController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error adding role: {} to team: {}", role, teamId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -473,8 +462,7 @@ public class TeamController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error removing role: {} from team: {}", role, teamId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -513,8 +501,7 @@ public class TeamController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error inactivating team.  Id: {}", id);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 }

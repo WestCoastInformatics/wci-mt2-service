@@ -75,8 +75,7 @@ public class EditionController extends BaseController {
             return new ResponseEntity<>(edition, HttpStatus.OK);
 
         } catch (final Exception e) {
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -104,8 +103,7 @@ public class EditionController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -142,13 +140,9 @@ public class EditionController extends BaseController {
             final ResultList<Edition> results = EditionService.searchEditions(searchParameters);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
-        } catch (final ResponseStatusException rse) {
-            throw rse;
-
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
