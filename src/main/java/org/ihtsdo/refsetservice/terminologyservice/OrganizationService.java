@@ -83,7 +83,7 @@ public class OrganizationService extends BaseService {
             
             final String errorMessage = "There is already an organization with that name.";
             logger.error(errorMessage);
-            throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", "Error creating organization.");
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
         }
         
         final User userToAdd = service.findSingle("id:" + user.getId(), User.class, null);
@@ -119,7 +119,7 @@ public class OrganizationService extends BaseService {
 
                 final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
                 logger.error(errorMessage, e);
-                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, e.getMessage(), "Error creating organization.");
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
             }
 
         } else {
@@ -402,7 +402,7 @@ public class OrganizationService extends BaseService {
             
             final String message = "Unable to find user for email " + email + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
         final Organization organization = service.get(organizationId, Organization.class);
@@ -411,7 +411,7 @@ public class OrganizationService extends BaseService {
             
             final String message = "Unable to find organization for " + organizationId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, organization);
@@ -441,14 +441,14 @@ public class OrganizationService extends BaseService {
             
             final String message = "Unable to find user for id " + userId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
         if (organization == null) {
             
             final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, organization);
@@ -479,7 +479,7 @@ public class OrganizationService extends BaseService {
             
             final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, organization);
@@ -549,7 +549,7 @@ public class OrganizationService extends BaseService {
             
             final String message = "User does not have permission to perform this Organization action.";
             logger.error(message);
-            throw new RestException(false, HttpStatus.UNAUTHORIZED, "Not Authorized", message);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, message);
         }
     }
     
