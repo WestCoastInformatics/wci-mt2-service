@@ -134,13 +134,16 @@ public class TeamController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/team/search", produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<ResultList<Team>> getTeams(final SearchParameters searchParameters, final BindingResult bindingResult,
-        @QueryParam(value = "includeMembers") final boolean includeMembers, @QueryParam(value = "onlyUsersTeams") final boolean onlyUsersTeams) throws Exception {
+        @QueryParam(value = "includeMembers") final boolean includeMembers, @QueryParam(value = "onlyUsersTeams") final boolean onlyUsersTeams,
+        @QueryParam(value = "hideOrganizationTeams") final Boolean hideOrganizationTeams) throws Exception {
 
         logger.info("Search teams includeMembers: {} ; searchParameters: {}", includeMembers, ModelUtility.toJson(searchParameters));
-        // TODO check permissions, fail if not authorized.
+        
         final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        boolean noOrganizationTeams = false;
+        
+        if (hideOrganizationTeams != null && hideOrganizationTeams) {
+            noOrganizationTeams = true;
         }
 
         // Check to make sure parameters were properly bound to variables.
@@ -148,7 +151,7 @@ public class TeamController extends BaseController {
 
         try {
 
-            final ResultList<Team> results = TeamService.searchTeams(authUser, searchParameters, includeMembers, onlyUsersTeams);
+            final ResultList<Team> results = TeamService.searchTeams(authUser, searchParameters, includeMembers, onlyUsersTeams, noOrganizationTeams);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {

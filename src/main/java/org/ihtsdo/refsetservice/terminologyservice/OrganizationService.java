@@ -145,8 +145,9 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
             
-            logger.info("Unable to find organization for id {}.", id);
-            throw new NotFoundException();
+            final String message = "Unable to find organization for id " + id + ".";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
         if (includeMembers) {
@@ -177,7 +178,10 @@ public class OrganizationService extends BaseService {
         final Organization originalOrganization = getOrganization(service, user, organization.getId(), false);
         
         if (originalOrganization == null) {
-            throw new NotFoundException();
+            
+            final String message = "Unable to find organization for id " + organization.getId() + ".";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, originalOrganization);
@@ -205,7 +209,10 @@ public class OrganizationService extends BaseService {
         final Organization organization = getOrganization(service, user, organizationId, false);
 
         if (organization == null) {
-            throw new NotFoundException();
+            
+            final String message = "Unable to find organization for id " + organizationId + ".";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, organization);
@@ -324,9 +331,9 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
             
-            final String message = "Unable to find organization for " + organizationId + ".";
+            final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
         final ResultListUser usersResultList = new ResultListUser();

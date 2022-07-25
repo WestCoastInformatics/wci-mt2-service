@@ -255,11 +255,6 @@ public class OrganizationController extends BaseController {
 
             return new ResponseEntity<>(org, HttpStatus.OK);
 
-        } catch (final NotFoundException nfe) {
-
-            logger.error("Error updating organization. Id {} not found", id);
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-
         } catch (final Exception e) {
 
             logger.error("Error updating organization. Organization: {}", organization);
@@ -299,14 +294,7 @@ public class OrganizationController extends BaseController {
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
-        } catch (final NotFoundException nfe) {
-
-            logger.error("Error inactivating organization. Id {} not found", id);
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-
         } catch (final Exception e) {
-
-            logger.error("Error inactivating organization.  Id: {}", id);
             return handleException(e);
         }
     }
@@ -344,13 +332,7 @@ public class OrganizationController extends BaseController {
             final ResultListUser usersResultList = OrganizationService.getOrganizationUsers(service, id, includeTeams);
             return new ResponseEntity<>(usersResultList, HttpStatus.OK);
 
-        } catch (final NotFoundException nfe) {
-
-            logger.error("Error getting users for organization. {}", nfe.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-
         } catch (final Exception e) {
-
             return handleException(e);
         }
     }
@@ -388,7 +370,6 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(new ResultListTeam(orgTeams), HttpStatus.OK);
 
         } catch (final Exception e) {
-
             return handleException(e);
         }
     }
@@ -426,7 +407,6 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(new ResultListProject(orgProjects), HttpStatus.OK);
 
         } catch (final Exception e) {
-
             return handleException(e);
         }
     }
@@ -468,14 +448,7 @@ public class OrganizationController extends BaseController {
 
             return new ResponseEntity<>(HttpStatus.CREATED);
 
-        } catch (final NotFoundException nfe) {
-
-            logger.error("Error adding user to organization. {}", nfe.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-
         } catch (final Exception e) {
-
-            logger.error("Error adding user: {} to organization: {}.", email, organizationId, e);
             return handleException(e);
         }
     }
@@ -518,14 +491,7 @@ public class OrganizationController extends BaseController {
 
             return new ResponseEntity<>(org, HttpStatus.ACCEPTED);
 
-        } catch (final NotFoundException nfe) {
-
-            logger.error("Error adding user to organization. {}", nfe.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-
         } catch (final Exception e) {
-
-            logger.error("Error adding user: {} to organization: {}.", userId, organizationId, e);
             return handleException(e);
         }
     }
