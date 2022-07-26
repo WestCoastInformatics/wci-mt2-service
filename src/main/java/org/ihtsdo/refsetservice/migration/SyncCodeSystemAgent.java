@@ -18,26 +18,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class SyncCodeSystemAgent extends SyncAgent {
 
-    protected SyncCodeSystemAgent() throws Exception {
-
-        super();
-    }
-
     private static Logger logger = LoggerFactory.getLogger(SyncCodeSystemAgent.class);
-
-    private static final String SIMPLE_TYPE_REFSET_SCTID = "446609009";
-
-    private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
-
-    private static Organization develeperTestingOranization = null;
-
-    private static Map<String, Organization> oranizationsAdded = new HashMap<>();
 
     private static Map<String, Project> organizationToDefaultProjects = new HashMap<>();
 
     private static Map<String, Organization> organizationsAdded = new HashMap<>();
 
     private static Set<Organization> organizationsUnchanged = new HashSet<>();
+
+    private static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
 
     private static Set<Organization> organizationsSynced = new HashSet<>();
 
@@ -49,27 +38,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private static Set<String> editionsNewAndInactive = new HashSet<>();
 
-    private final static Map<String, String> editionOwnerMap = new HashMap<>();
+    protected SyncCodeSystemAgent() throws Exception {
 
-    protected static Organization getOrgFromRefset(String refsetId) {
-
-        final String editionName = refsetEditions.get(refsetId).getName();
-        final String editionShortName = refsetEditions.get(refsetId).getShortName();
-
-        String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
-        final Organization org = organizationsAdded.get(orgName);
-
-        return org;
+        super();
     }
 
     protected static Organization getDeveloperTestingOrganization() {
 
         return develeperTestingOranization;
-    }
-
-    protected static Map<String, Organization> getOrganizationsAdded() {
-
-        return oranizationsAdded;
     }
 
     protected static Map<String, Project> getOrganizationToDefaultProjectMap() {
@@ -78,14 +54,15 @@ public class SyncCodeSystemAgent extends SyncAgent {
     }
 
     protected static void syncSnowstormCodeSystems(Set<JsonNode> codeSystems) throws Exception {
+
         // Clear this out to validate the developer code system
         develeperTestingOranization = null;
-        
+
         for (JsonNode codeSystem : codeSystems) {
 
             // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
 
-            Edition syncedEdition = syncCodeSystem(codeSystem);
+            syncCodeSystem(codeSystem);
 
         }
 
@@ -115,9 +92,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * 6) topLevelModule
      * 7) defaultLanguageRefsets
      */
-    private static Edition syncCodeSystem(JsonNode codeSystem) {
+    private static void syncCodeSystem(JsonNode codeSystem) {
 
-        Edition syncedEdition = null;
+        Organization syncedOrganization = null;
 
         try {
 
@@ -130,38 +107,42 @@ public class SyncCodeSystemAgent extends SyncAgent {
             logger.debug(" Sync Code System: " + generateCodeSystemCoordinates(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch));
 
             /* See if corresponding Edition exists in RT2 DB. If not, create it. */
-            List<Edition> editions = allEditions.stream().filter(e -> e.getShortName().equals(snowstormEditionShortName)).collect(Collectors.toList());
+            List<Edition> dbEditions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(snowstormEditionShortName)).collect(Collectors.toList());
 
-            if (editions != null && !editions.isEmpty()) {
+            if (dbEditions == null || dbEditions.isEmpty()) {
 
-                if (editions.size() != 1) {
-
-                    throw new Exception("Have encounted two editions with the same shortName on Snowstorm: " + editions);
-                }
-
-                final Edition correspondingRt2Edition = editions.iterator().next();
-
-                // If correspondingRt2Edition is null, this is the first time we have observed this edition, so create it.
-                syncedEdition = syncExistingCodeSystem(correspondingRt2Edition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
+                // If correspondingDbEdition is not null, we are updating an existing supported edition
+                syncedOrganization = syncNewCodeSystem(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
 
             } else {
 
-                // If correspondingRt2Edition is not null, we are updating an existing supported edition
-                syncedEdition = syncNewCodeSystem(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
+                if (dbEditions.size() != 1) {
+
+                    throw new Exception("Have encounted two editions with the same shortName on Snowstorm: " + dbEditions);
+                }
+
+                final Edition correspondingDbEdition = dbEditions.iterator().next();
+
+                // If correspondingDbEdition is null, this is the first time we have observed this edition, so create it.
+                syncedOrganization = syncExistingCodeSystem(correspondingDbEdition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
 
             }
+            
+            // TODO: See if any persisted Editions or Orgs are not even in Snowstorm. If so, inactivate
 
-            logger.info("Synced following Edition: " + syncedEdition.getName());
+            // Final steps whether initial or updating sync
+            postCodeSystemProcessing(syncedOrganization);
+
+            logger.info("Synced following Edition: " + syncedOrganization.getName());
         } catch (Exception e) {
 
             logger.error("Failed in syncing Snowstorm Code System: " + codeSystem);
             e.printStackTrace();
         }
 
-        return syncedEdition;
     }
 
-    private static Edition syncExistingCodeSystem(Edition edition, String snowstormEditionShortName, String snowstormEditionName, String snowstormEditionBranch, boolean isActiveSsnowstormEdition,
+    private static Organization syncExistingCodeSystem(Edition edition, String snowstormEditionShortName, String snowstormEditionName, String snowstormEditionBranch, boolean isActiveSsnowstormEdition,
         JsonNode codeSystem) {
 
         logger.info(" Sync existing Edition with shortName: " + snowstormEditionShortName);
@@ -180,9 +161,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 syncedOrganization = syncExistingOrganization(syncedEdition, isActiveSsnowstormEdition, codeSystem);
             }
 
-            postCodeSystemProcessing(syncedOrganization);
-
-            return syncedEdition;
+            return syncedOrganization;
         } catch (Exception e) {
 
             logger.error("Failed in syncing Existing Snowstorm Code System: " + codeSystem);
@@ -201,16 +180,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         /* See if have organization with corresponding editionId */
         // If existingEdition is null, this is the first time we have observed this edition, so create it.
-        final Organization correspondingRt2Organization = allOrganizations.stream().filter(o -> syncedEdition.getId().equals(o.getEdition().getId())).collect(Collectors.toList()).iterator().next();
+        final Organization correspondingDbOrganization =
+            allDatabaseOrganizations.stream().filter(o -> syncedEdition.getId().equals(o.getEdition().getId())).collect(Collectors.toList()).iterator().next();
 
         /* Based on matching attributes: add new, ignore new but inactive, check for changes and modify if needed and ignore otherwise */
-        if (correspondingRt2Organization == null) {
+        if (correspondingDbOrganization == null) {
 
             // TODO: Once have support for 1:N Orgs:Eds, this will no longer case long term
             throw new Exception("Must be able to find an existing's Edition's corresponding Organization");
         }
 
-        final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(correspondingRt2Organization, editionOwnerMap.get(syncedEdition.getName()), isActiveSnowstormEdition);
+        final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(correspondingDbOrganization, editionOwnerMap.get(syncedEdition.getName()), isActiveSnowstormEdition);
 
         if (syncedOrganization != null) {
 
@@ -221,8 +201,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
         } else {
 
             // No changes, return existing
-            organizationsUnchanged.add(correspondingRt2Organization);
-            organization = correspondingRt2Organization;
+            organizationsUnchanged.add(correspondingDbOrganization);
+            organization = correspondingDbOrganization;
         }
 
         logger.info("Synced " + organization.getName() + " Organization");
@@ -346,7 +326,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private static Edition syncNewCodeSystem(String newEditionShortName, String newEditionName, String newEditionBranch, boolean isNewActiveEdition, JsonNode codeSystem) throws Exception {
+    private static Organization syncNewCodeSystem(String newEditionShortName, String newEditionName, String newEditionBranch, boolean isNewActiveEdition, JsonNode codeSystem) throws Exception {
 
         try {
 
@@ -379,10 +359,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             organizationsAdded.put(newOrganization.getName(), newOrganization);
 
-            // Final steps whether initial or updating sync
-            postCodeSystemProcessing(newOrganization);
-
-            return newEdition;
+            return newOrganization;
         } catch (Exception e) {
 
             logger.error("Failed in syncing New Snowstorm Code System: " + codeSystem);
@@ -392,12 +369,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
 
     }
+    // Organization is done at this point. Check if Developer Organization. If not, create a default UAT project
 
     private static void postCodeSystemProcessing(Organization syncedOrganization) throws Exception {
 
-        /* Organization is done at this point. Check if WCI Organization */
         if (syncedOrganization != null && syncedOrganization.getEdition() != null && syncedOrganization.getEdition().getShortName().equals("SNOMEDCT-WCI")) {
 
+            // Support Developer Organization
             if (forProduction) {
 
                 throw new Exception("Can't have a WCI Organization on a Prod instance");
@@ -410,6 +388,21 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 // identified WCI Org
                 develeperTestingOranization = syncedOrganization;
+            }
+
+        } else {
+
+            // Create a Default Project for the edition
+            if (!defaultOrganizationProjects.containsKey(syncedOrganization.getId())) {
+
+                // Create default project
+                final String projectName = syncedOrganization.getName() + " Default Project";
+                final String projectDescription =
+                    "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedOrganization.getName() + ".";
+
+                final Project project = utilities.addProject(syncedOrganization, projectName, projectDescription);
+
+                defaultOrganizationProjects.put(syncedOrganization.getId(), project);
             }
 
         }

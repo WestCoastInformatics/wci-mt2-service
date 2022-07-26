@@ -31,8 +31,6 @@ public class SyncMetadata {
      */
     public SyncMetadata(final String modified, final String modifiedBy) {
 
-        String updatedModified = sdf.format(modified);
-
         try {
 
             this.modifiedBy = modifiedBy;
@@ -48,7 +46,7 @@ public class SyncMetadata {
 
         } catch (Exception e) {
 
-            logger.error("Failed with mod/modBy: " + updatedModified.replaceAll("\"", "") + " / " + modifiedBy);
+            logger.error("Failed with mod/modBy: " + modified + " / " + modifiedBy);
             e.printStackTrace();
         }
 

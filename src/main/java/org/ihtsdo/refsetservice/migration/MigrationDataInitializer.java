@@ -61,6 +61,8 @@ public class MigrationDataInitializer {
 
     private static final String WCI_TESTING_PROJECT_DESCRIPTION = "The single project for all WCI testing refsets";
 
+    private static final String INITIAL_FEEDBACK_REFSET_ID = "999999901";
+
     public MigrationDataInitializer() {
 
         // Grab wci users or create during first migration. Two types:
@@ -97,36 +99,40 @@ public class MigrationDataInitializer {
 
     }
 
-    public void initialize(Organization wciOrganization, Map<String, Organization> organizationsAdded, Map<String, Project> defaultOrganizationProjects) throws Exception {
-
-        // Create a dedicated UAT Training Project for each organization
-        createUATProjects(wciOrganization, organizationsAdded);
+    public void initialize(Organization developerTestingOrganization, List<Organization> allDatabaseOrganizations, List<Refset> allDatabaseRefsets, Map<String, Project> defaultOrganizationProjects)
+        throws Exception {
+        // Only run this once on DEV and UAT (but never prod).
 
         // wciOrg only exists in DEV & UAT, so is a useful way to determine environments
-        if (wciOrganization != null) {
+        if (developerTestingOrganization != null) {
 
-            // Create wci-project (for DEV only)
-            createWCITestingContent(wciOrganization);
+            if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(INITIAL_FEEDBACK_REFSET_ID))) {
 
-            // Create wci-feedback-testing refset(for DEV only)
-            createTestingFeedback(wciOrganization);
+                // Create a dedicated UAT Training Project for each organization
+                createUATProjects(developerTestingOrganization, allDatabaseOrganizations);
 
-            // Create a single Admin team per Org
-            createAdminOrganizationTeams(organizationsAdded);
+                // Create wci-project (for DEV only)
+                createWCITestingContent(developerTestingOrganization);
+
+                // Create wci-feedback-testing refset(for DEV only)
+                createTestingFeedback(developerTestingOrganization);
+
+                // Create a single Admin team per Org
+                createAdminOrganizationTeams(allDatabaseOrganizations);
+
+            }
 
         }
 
     }
 
-    private void createAdminOrganizationTeams(Map<String, Organization> organizationsAdded) throws Exception {
+    private void createAdminOrganizationTeams(List<Organization> allDatabaseOrganizations) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
 
-            for (String orgName : organizationsAdded.keySet()) {
-
-                final Organization organization = organizationsAdded.get(orgName);
+            for (Organization organization : allDatabaseOrganizations) {
 
                 Set<String> memberIds = new HashSet<>();
                 memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
@@ -169,24 +175,22 @@ public class MigrationDataInitializer {
 
     }
 
-    private Map<String, Project> createUATProjects(Organization wciOrganization, Map<String, Organization> organizationsAdded) throws Exception {
+    private Map<String, Project> createUATProjects(Organization wciOrganization, List<Organization> allDatabaseOrganizations) throws Exception {
 
         logger.info(" Create a dedicated UAT Training Project for each organization");
         Map<String, Project> uatProjects = new HashMap<>();
 
-        for (String orgName : organizationsAdded.keySet()) {
+        for (Organization organization : allDatabaseOrganizations) {
 
-            Organization org = organizationsAdded.get(orgName);
-
-            if (wciOrganization != null && wciOrganization.equals(org)) {
+            if (wciOrganization != null && wciOrganization.equals(organization)) {
 
                 continue;
             }
 
-            Project uatProject = utilities.addProject(org, org.getName() + " UAT Training Project",
+            Project uatProject = utilities.addProject(organization, organization.getName() + " UAT Training Project",
                 "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project");
 
-            uatProjects.put(orgName, uatProject);
+            uatProjects.put(organization.getName(), uatProject);
         }
 
         return uatProjects;
@@ -216,7 +220,7 @@ public class MigrationDataInitializer {
         logger.info(" Create Feedback for testing (for DEV only)");
 
         // create new refset with name = FeedbackTestingVersion1 with July 31 2022 version off International Edition
-        Refset refset = utilities.addWCIRefset(getMigrationUser(), "WCI Testing Feedback Refset 1", "999999901", wciOrganization.getEdition().getTopLevelModule(),
+        Refset refset = utilities.addWCIRefset(getMigrationUser(), "WCI Testing Feedback Refset 1", INITIAL_FEEDBACK_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
             utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);
 
         try (TerminologyService service = new TerminologyService()) {
@@ -236,7 +240,6 @@ public class MigrationDataInitializer {
             testingProject.getTeams().add(singleFeedbackTeam.getId());
             testingProject = service.update(testingProject);
 
-            wciOrganization.getMembers().addAll(adminUsers);
             wciOrganization.getMembers().add(feedbackInitiatiorUser);
             wciOrganization.getMembers().add(userResponderUser);
             wciOrganization = service.update(wciOrganization);

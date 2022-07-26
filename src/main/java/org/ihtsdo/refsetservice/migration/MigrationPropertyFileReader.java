@@ -86,6 +86,8 @@ public class MigrationPropertyFileReader {
     /** The metadata map. */
     private final Map<String, SyncMetadata> metadataMap = new HashMap<>();
 
+    private static List<String> refsetsToIgnore = null;
+    
     /**
      * The Enum FileProcessType.
      */
@@ -105,14 +107,12 @@ public class MigrationPropertyFileReader {
      *
      * @throws Exception the exception
      */
-    Set<String> parseRttData() throws Exception {
+    void parseRttData() throws Exception {
 
+        // Based on findings, define the list of refsets in RTT
         populateFromFile(clausesResource, FileProcessType.CLAUSE);
         populateFromFile(projectsResource, FileProcessType.PROJECT);
         populateFromFile(refsetsResource, FileProcessType.REFSET);
-
-        // Based on findings, define the list of refsets in RTT
-        return rttRefsetSctIdToRttIdMap.keySet();
     }
 
     List<String> readCodeSystemsToIgnore() {
@@ -142,28 +142,32 @@ public class MigrationPropertyFileReader {
         return codeSystemNames;
     }
 
-    List<String> readRefsetsToIgnore() {
+    List<String> getRefsetsToIgnore() {
 
-        BufferedReader reader;
-        List<String> refsetsToIgnore = new ArrayList<>();
+        if (refsetsToIgnore == null) {
 
-        try {
+            BufferedReader reader;
+            refsetsToIgnore = new ArrayList<>();
 
-            reader = new BufferedReader(new InputStreamReader(ignoredRefsetsResource.getInputStream()));
+            try {
 
-            String line = reader.readLine();
+                reader = new BufferedReader(new InputStreamReader(ignoredRefsetsResource.getInputStream()));
 
-            while (line != null) {
+                String line = reader.readLine();
 
-                refsetsToIgnore.add(line);
+                while (line != null) {
 
-                line = reader.readLine();
+                    refsetsToIgnore.add(line);
+
+                    line = reader.readLine();
+                }
+
+                reader.close();
+            } catch (IOException e) {
+
+                e.printStackTrace();
             }
 
-            reader.close();
-        } catch (IOException e) {
-
-            e.printStackTrace();
         }
 
         return refsetsToIgnore;

@@ -265,7 +265,6 @@ public class MigrationUtilities {
     Set<DefinitionClause> getRefsetClauses(String rttId) throws Exception {
 
         Set<DefinitionClause> refsetClauses = new HashSet<>();
-        MigrationPropertyFileReader propertyReader = new MigrationPropertyFileReader();
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -276,7 +275,9 @@ public class MigrationUtilities {
                 final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
 
                 setMetadata(clause, propertyReader.getMetadataMap().get("refset-" + rttId));
+
                 DefinitionClause persistedClause = service.add(clause);
+
                 refsetClauses.add(persistedClause);
             }
 
