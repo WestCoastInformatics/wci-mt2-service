@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class SyncAgent {
 
     /** The logger. */
-    private  static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
+    private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
 
     protected static boolean runShortMigration;
 
@@ -51,6 +51,22 @@ public class SyncAgent {
     protected static Organization develeperTestingOranization = null;
 
     protected static Map<String, Organization> organizationsAdded = new HashMap<>();
+
+    protected static Set<Organization> organizationsUnchanged = new HashSet<>();
+
+    protected static Set<Organization> organizationsSynced = new HashSet<>();
+
+    protected static Set<Edition> editionsAdded = new HashSet<>();
+
+    protected static Set<Edition> editionsUnchanged = new HashSet<>();
+
+    protected static Set<Edition> editionsSynced = new HashSet<>();
+
+    protected static Set<Refset> refsetVersionsAdded = new HashSet<>();
+
+    protected static Set<Refset> refsetVersionsUnchanged = new HashSet<>();
+
+    protected static Set<Refset> refsetVersionsSynced = new HashSet<>();
 
     protected final static Set<String> uniqueRefsetIds = new HashSet<>();
 
@@ -119,46 +135,33 @@ public class SyncAgent {
 
         try {
 
-            logger.debug(" 111-a");
-
             Set<JsonNode> codeSystemsToProcess = filterCodeSystems();
-            logger.debug(" 111-b defined " + codeSystemsToProcess.size() + " filtered codeSystems.");
-            // logger.debug(" 111-b-plus JsonNode list of code systems are: " + codeSystemsToProcess);
 
             SyncCodeSystemAgent.syncSnowstormCodeSystems(codeSystemsToProcess);
-            logger.debug(" 111-c Finished syncing Orgs & Editions");
-
-            updateDatabaseCache();
-            logger.debug(" 111-d");
 
             // Only identify branches on filtered code systems and on runShortMigration value
             Map<String, SortedMap<Date, String>> branchesToProcess = identifyEditionBranches(codeSystemsToProcess);
-            logger.debug(" 111-e Mapped " + branchesToProcess.size() + " CodeSystem's branches: " + branchesToProcess);
 
             // Identify all refset metadata, any refsets' ECL definitions, and project metadata from RTT files manually migrated over
             // TODO: Add a automated pull of the data off of RTT?
             utilities.getPropertyReader().parseRttData();
-            logger.debug(" 111-f");
 
             // Find all refsets from filtered branches
             SyncRefsetAgent.syncSnowstormRefsets(branchesToProcess);
-            logger.debug(" 111-g");
 
             // Update imported refsets with RTT-based metadata (as defined in parseRttData())
-            updateRefsetsWithRttMetadata();
-            logger.debug(" 111-h");
-
             if (!forProduction) {
 
                 SyncRefsetAgent.populateInitialData();
             }
 
-            logger.debug(" 222-return + ");
-
         } catch (Exception e) {
 
             logger.error("Failed during sync");
             e.printStackTrace();
+        } finally {
+
+            printSyncResults();
         }
 
     }
@@ -207,22 +210,6 @@ public class SyncAgent {
 
     }
 
-    private void updateDatabaseCache() throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            allDatabaseEditions = service.getAll(Edition.class);
-            logger.debug("  All Editions: " + allDatabaseEditions);
-
-            allDatabaseOrganizations = service.getAll(Organization.class);
-            logger.debug("  All Organizations: " + allDatabaseOrganizations);
-
-            allDatabaseRefsets = service.getAll(Refset.class);
-            logger.debug("  All Refsets: " + allDatabaseRefsets);
-        }
-
-    }
-
     /**
      * Populate editions.
      * 
@@ -243,7 +230,6 @@ public class SyncAgent {
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = response.readEntity(String.class);
-            logger.debug("Code Systems from Snowstorm: " + resultString);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
@@ -256,6 +242,17 @@ public class SyncAgent {
     }
 
     private Set<JsonNode> filterCodeSystems() throws Exception {
+
+        organizationsAdded.clear();
+        organizationsUnchanged.clear();
+        organizationsSynced.clear();
+        editionsAdded.clear();
+        editionsUnchanged.clear();
+        editionsSynced.clear();
+
+        refsetVersionsAdded.clear();
+        refsetVersionsSynced.clear();
+        refsetVersionsUnchanged.clear();
 
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
 
@@ -270,16 +267,15 @@ public class SyncAgent {
             while (codeSystems.hasNext()) {
 
                 JsonNode codeSystem = codeSystems.next();
-                logger.debug(" Sync codeSystem: " + codeSystem.get("name").asText());
 
                 // Check for invalid or ignored code systems
                 if (!codeSystem.has("name")) {
 
-                    logger.info("Skipping odd code system without a name'" + codeSystem.asText());
+                    // Skipping odd code system without a name
                     continue;
                 } else if (ignoredCodeSystemNames.contains(codeSystem.get("name").asText().toLowerCase())) {
 
-                    logger.info("Code System '" + codeSystem.get("name") + "' is defined as to-be-ignored");
+                    // Code System is defined as to-be-ignored
                     continue;
                 }
 
@@ -385,12 +381,6 @@ public class SyncAgent {
 
             retMap.put(edition.getId(), children);
         }
-        //
-        // for (String codeSystem : retMap.keySet()) {
-        // for (Date version : retMap.get(codeSystem).keySet()) {
-        // logger.debug(" Code System: " + codeSystem + " for: " + version + " returns " + retMap.get(codeSystem).get(version));
-        // }
-        // }
 
         return retMap;
     }
@@ -630,7 +620,6 @@ public class SyncAgent {
 
             if (!rttProjects.containsKey(rttProjectId)) {
 
-                logger.debug("Creating new project for refset: " + refset.getRefsetId());
                 project = createRefsetProject(refset.getRefsetId());
 
                 rttProjects.put(rttProjectId, project);
@@ -650,7 +639,6 @@ public class SyncAgent {
             throw new Exception("Must have created from RTT, already crearted from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
         }
 
-        logger.debug("Associating project with refset: " + refset.getRefsetId());
         refset.setProject(project);
     }
 
@@ -659,17 +647,15 @@ public class SyncAgent {
      */
     private Project createRefsetProject(String refsetId) throws Exception {
 
-        Organization org = getOrgFromRefset(refsetId);
+        logger.info("Creating new project for refset: " + refsetId);
 
-        logger.debug(".... Creating project for refsetId " + refsetId);
+        Organization org = getOrgFromRefset(refsetId);
 
         if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refsetId)) {
 
             // identify project name and description from Rtt Json
             String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refsetId);
             String[] projectDetails = projectInfo.split(",");
-
-            logger.debug("    Refset has an associated project is defined in RTT with the following: " + projectInfo);
 
             // Clean out project Details
             for (int i = 0; i < 2; i++) {
@@ -689,8 +675,6 @@ public class SyncAgent {
             logger.info("    Creating new project based on project in RTT for " + projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
             return utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
         } else {
-
-            logger.debug("    Refset doesn't have an associated project in RTT, so use Org's RT2-default");
 
             // No project associated with refset, so use default Edition Project
             if (!SyncCodeSystemAgent.getOrganizationToDefaultProjectMap().containsKey(org.getId())) {
@@ -953,17 +937,38 @@ public class SyncAgent {
     }
 
     protected static Organization getOrgFromRefset(String refsetId) {
-        logger.debug(" 666-a - refsetId: " + refsetId);
-        logger.debug(" 666-b - refsetEditions: " + refsetEditions);
+
         final String editionName = refsetEditions.get(refsetId).getName();
         final String editionShortName = refsetEditions.get(refsetId).getShortName();
 
         String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
-        logger.debug(" 666-c - orgName: " + orgName);
-        logger.debug(" 666-d - organizationsAdded: " + organizationsAdded);
         final Organization org = organizationsAdded.get(orgName);
 
         return org;
     }
 
+    protected static void updateDatabaseCache() throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            allDatabaseEditions = service.getAll(Edition.class);
+            logger.debug("  All Editions: " + allDatabaseEditions);
+
+            allDatabaseOrganizations = service.getAll(Organization.class);
+            logger.debug("  All Organizations: " + allDatabaseOrganizations);
+
+            allDatabaseRefsets = service.getAll(Refset.class);
+            logger.debug("  All Refsets: " + allDatabaseRefsets);
+        }
+
+    }
+
+    private void printSyncResults() {
+
+        logger.info("*********    Syncing Results (Added/Unchanged/Synced)    *************");
+        logger.info("Editions: " + editionsAdded.size() + " / " + editionsUnchanged.size() + " / " + editionsSynced.size());
+        logger.info("Organizations: " + organizationsAdded.size() + " / " + organizationsUnchanged.size() + " / " + organizationsSynced.size());
+        logger.info("Refsets: " + refsetVersionsAdded.size() + " / " + refsetVersionsUnchanged.size() + " / " + refsetVersionsSynced.size());
+
+    }
 }

@@ -661,7 +661,7 @@ public class MigrationPropertyFileReader {
 
             if (narrative.equals(values[17])) {
 
-                logger.debug("Name and narrative the same, so clearing narrative for: " + values[17]);
+                // Name and narrative the same, so clearing narrative
                 narrative = "";
             }
 

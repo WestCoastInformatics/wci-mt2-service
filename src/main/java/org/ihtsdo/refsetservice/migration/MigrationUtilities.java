@@ -125,7 +125,7 @@ public class MigrationUtilities {
 
             refset.setName(name);
             refset.setRefsetId(refsetId);
-            refset.setModuleId("");
+            refset.setModuleId(moduleId);
             refset.setVersionStatus("PUBLISHED");
             refset.setWorkflowStatus("PUBLISHED");
             refset.setActive(true);
@@ -422,6 +422,7 @@ public class MigrationUtilities {
 
     Set<String> identifyDefaultLanguageRefsets(JsonNode codeSystem, String editionName) {
 
+        logger.debug("999-b identifying editionName: " + editionName + " while processing: " + codeSystem);
         Set<String> retSet = new HashSet<>();
 
         // Identify Edition's Default Language Refsets
