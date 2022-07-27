@@ -22,11 +22,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private static Map<String, Project> organizationToDefaultProjects = new HashMap<>();
 
-    private static Map<String, Organization> organizationsAdded = new HashMap<>();
-
     private static Set<Organization> organizationsUnchanged = new HashSet<>();
-
-    private static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
 
     private static Set<Organization> organizationsSynced = new HashSet<>();
 
@@ -37,6 +33,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
     private static Set<Edition> editionsSynced = new HashSet<>();
 
     private static Set<String> editionsNewAndInactive = new HashSet<>();
+ 
+    private static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
 
     protected SyncCodeSystemAgent() throws Exception {
 
@@ -127,7 +125,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 syncedOrganization = syncExistingCodeSystem(correspondingDbEdition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
 
             }
-            
+
             // TODO: See if any persisted Editions or Orgs are not even in Snowstorm. If so, inactivate
 
             // Final steps whether initial or updating sync

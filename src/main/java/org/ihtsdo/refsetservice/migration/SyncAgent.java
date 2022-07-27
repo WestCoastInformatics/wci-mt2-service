@@ -953,11 +953,14 @@ public class SyncAgent {
     }
 
     protected static Organization getOrgFromRefset(String refsetId) {
-        logger.debug(" jesse - refsetEditions: " + refsetEditions);
+        logger.debug(" 666-a - refsetId: " + refsetId);
+        logger.debug(" 666-b - refsetEditions: " + refsetEditions);
         final String editionName = refsetEditions.get(refsetId).getName();
         final String editionShortName = refsetEditions.get(refsetId).getShortName();
 
         String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
+        logger.debug(" 666-c - orgName: " + orgName);
+        logger.debug(" 666-d - organizationsAdded: " + organizationsAdded);
         final Organization org = organizationsAdded.get(orgName);
 
         return org;

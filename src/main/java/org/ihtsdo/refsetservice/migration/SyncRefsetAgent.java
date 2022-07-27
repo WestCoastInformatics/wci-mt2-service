@@ -53,37 +53,23 @@ public class SyncRefsetAgent extends SyncAgent {
 
     public static void syncSnowstormRefsets(Map<String, SortedMap<Date, String>> branchesToProcess) throws Exception {
 
-        Set<Refset> refsetsUpdated = new HashSet<>();
-
-        logger.debug(" 333-a - syncSnowstormRefsets: Identifying Refsets to process on Snowstorm per edition/version pair");
+        logger.info(" syncSnowstormRefsets: Identifying Refsets to process on Snowstorm per edition/version pair");
         Set<SyncRefsetMetadata> refsetsToProcess = filterRefsetsToProcess(branchesToProcess);
-
-        logger.debug(" 333-b - Going to process " + refsetsToProcess.size() + " Refset/Version Pairs");
 
         // Map each refsetId/version pair's SyncRefsetMetadata
         Map<String, Map<Date, SyncRefsetMetadata>> allSnowstormRefsetVersionPairs = parseSnowstormRefsetVersionPairs(refsetsToProcess);
-        logger.debug(" 333-c - snowstormRefsetVersionPairs within " + allSnowstormRefsetVersionPairs.keySet().size() + " refsets");
 
         Map<String, Map<Date, Refset>> allDatabaseRefsetVersionPairs = parseDatabaseRefsetVersionPairs();
-        logger.debug(" 333-d - databaseRefsetVersionPairs within " + allDatabaseRefsetVersionPairs.keySet().size() + " refsets (incl DEV Refsets)");
 
         for (String refsetId : allSnowstormRefsetVersionPairs.keySet()) {
 
-            logger.debug(" 333-e - refsetId " + refsetId);
-
-            refsetsUpdated.add(syncRefset(allSnowstormRefsetVersionPairs.get(refsetId), allDatabaseRefsetVersionPairs.get(refsetId)));
-
+            syncRefset(allSnowstormRefsetVersionPairs.get(refsetId), allDatabaseRefsetVersionPairs.get(refsetId));
         }
 
-        logger.debug(" 333-f");
+        finalizeRefsets();
 
-        // TODO: See if any persisted Refsets are not even in Snowstorm. If so, inactivate them
-        updateRefsetsWithRttMetadata(refsetsUpdated);
-
-        persistRefsets();
-
-        logger.debug("*********    Syncing Refset Results    *************");
-        logger.debug("Refsets Added/Unchanged/Synced: " + refsetVersionsAdded.size() + " / " + refsetVersionsUnchanged.size() + " / " + refsetVersionsSynced.size());
+        logger.info("*********    Syncing Refset Results    *************");
+        logger.info("Refsets Added/Unchanged/Synced: " + refsetVersionsAdded.size() + " / " + refsetVersionsUnchanged.size() + " / " + refsetVersionsSynced.size());
 
     }
 
@@ -129,10 +115,9 @@ public class SyncRefsetAgent extends SyncAgent {
         } else {
 
             refsetVersionsSynced.add(syncedRefset);
-            
+
             postRefsetProcessing(syncedRefset, snowstormRefsetData.getEdition());
         }
-
 
         logger.info("Synced Refset: " + syncedRefset);
 
@@ -193,9 +178,16 @@ public class SyncRefsetAgent extends SyncAgent {
         return retMap;
     }
 
-    private static void persistRefsets() throws Exception {
+    private static void finalizeRefsets() throws Exception {
+
+        Set<Refset> refsetsUpdated = new HashSet<>();
+        refsetsUpdated.addAll(refsetVersionsAdded);
+        refsetsUpdated.addAll(refsetVersionsSynced);
 
         int count = 0;
+
+        // TODO: See if any persisted Refsets are not even in Snowstorm. If so, inactivate them
+        updateRefsetsWithRttMetadata(refsetsUpdated);
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -205,30 +197,25 @@ public class SyncRefsetAgent extends SyncAgent {
             logger.debug(" step - Start persisting gathered Snowstorm & RTT Supporting Objects");
 
             // Adding refsets identified on snowstorm
-            for (Refset snowRefset : refsetVersionsAdded) {
+            for (Refset addedRefset : refsetsUpdated) {
 
-                // Final Persistence of refset object
-                snowRefset = service.update(snowRefset);
-
-                if (++count % 250 == 0) {
-
-                    logger.info("Imported + " + count + " refsets thus far");
-                }
-
+                finailzeRefset(service, addedRefset, ++count);
             }
 
-            for (Refset snowRefset : refsetVersionsSynced) {
+        }
 
-                // Final Persistence of refset object
-                snowRefset = service.update(snowRefset);
+    }
 
-                if (++count % 250 == 0) {
+    private static void finailzeRefset(TerminologyService service, Refset refset, int count) throws Exception {
 
-                    logger.info("Imported + " + count + " refsets thus far");
-                }
+        // Final Persistence of refset object
+        Refset finalizedRefset = service.update(refset);
 
-            }
+        logger.debug("Updated refset: " + finalizedRefset);
 
+        if (count % 250 == 0) {
+
+            logger.info("Imported + " + count + " refsets thus far");
         }
 
     }
@@ -616,11 +603,14 @@ public class SyncRefsetAgent extends SyncAgent {
      */
     private static Project createRefsetProject(String refsetId) throws Exception {
 
-        Organization org = getOrgFromRefset(refsetId);
-
         logger.debug(".... Creating project for refsetId " + refsetId);
 
+        Organization org = getOrgFromRefset(refsetId);
+
+        logger.debug(" 555-a with org: " + org);
+
         if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refsetId)) {
+            logger.debug(" 555-b");
 
             // identify project name and description from Rtt Json
             String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refsetId);
@@ -642,10 +632,12 @@ public class SyncRefsetAgent extends SyncAgent {
                 }
 
             }
+            logger.debug(" 555-c with projectDetails: " + projectDetails);
 
             logger.info("    Creating new project based on project in RTT for " + projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
             return utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
         } else {
+            logger.debug(" 555-d");
 
             logger.debug("    Refset doesn't have an associated project in RTT, so use Org's RT2-default");
 
@@ -654,6 +646,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 throw new Exception("Default project should have already been created of Org: " + org.getName());
             }
+            logger.debug(" 555-e");
 
             return SyncCodeSystemAgent.getOrganizationToDefaultProjectMap().get(org.getId());
         }
@@ -663,29 +656,44 @@ public class SyncRefsetAgent extends SyncAgent {
     private static void associateRefsetProject(Refset refset, Map<String, Project> rttProjects) throws Exception {
 
         Project project = null;
+        logger.debug("444-a in associateRefsetProject with rttProjects:  " + rttProjects);
 
         // Set refset Project making sure to cache it based on refsetId
         if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refset.getRefsetId())) {
 
+            logger.debug("444-b");
+
             final String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
             final String rttProjectId = projectInfo.split("\t")[0];
+            logger.debug("444-c with projectInfo: " + projectInfo);
+            logger.debug("444-d with rttProjectId: " + rttProjectId);
 
             if (!rttProjects.containsKey(rttProjectId)) {
 
+                logger.debug("444-e with rttProjects: " + rttProjects);
+
                 logger.debug("Creating new project for refset: " + refset.getRefsetId());
                 project = createRefsetProject(refset.getRefsetId());
+                logger.debug("444-f with project: " + project);
 
                 rttProjects.put(rttProjectId, project);
             }
 
+            logger.debug("444-g");
+
             project = rttProjects.get(rttProjectId);
         } else {
 
+            logger.debug("444-h");
+
             // User Org's default project
             Organization org = getOrgFromRefset(refset.getRefsetId());
+            logger.debug("444-i with org: " + org);
 
             project = SyncCodeSystemAgent.getOrganizationToDefaultProjectMap().get(org.getId());
         }
+
+        logger.debug("444-j with project: " + project);
 
         if (project == null) {
 
@@ -694,6 +702,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
         logger.debug("Associating project with refset: " + refset.getRefsetId());
         refset.setProject(project);
+        logger.debug("444-z with refset.project: " + refset.getProject());
+
     }
 
     // Do not persist as will be done later
@@ -720,23 +730,22 @@ public class SyncRefsetAgent extends SyncAgent {
         Map<String, Date> latestRefsetCache = new HashMap<>();
         Map<String, Project> rttProjects = new HashMap<>();
 
-        logger.info("Updating refsets with Project and attribute data");
+        logger.info("Updating " + refsetsUpdated.size() + " refsets with Project and attribute data");
 
         for (Refset refset : refsetsUpdated) {
 
-            logger.info("444-a with refset: " + refset.getRefsetId() + " version: " + refset.getVersionDate());
+            logger.debug("333-a with refset: " + refset.getRefsetId() + " on version: " + refset.getVersionDate() + " with refset: " + refset);
 
             if (utilities.getPropertyReader().getRefsetToClausesInfoMap().containsKey(refset.getRefsetId())) {
 
                 logger.info("Have clause on refset: " + refset.getRefsetId());
             }
 
-            logger.info("444-b");
+            logger.debug("1 with refset's project: " + refset.getProject());
 
             // identify the corresponding project which also defines the edition
             associateRefsetProject(refset, rttProjects);
-
-            logger.info("444-c with refset-Project.getId: " + refset.getProjectId() + " & and refset-Edition.getId: " + refset.getEditionId());
+            logger.debug("333-b2 with refset's project: " + refset.getProject());
 
             // For now, default all refsets to PUBLIC
             refset.setPrivateRefset(false);
@@ -744,61 +753,73 @@ public class SyncRefsetAgent extends SyncAgent {
             // Update refset from JSON for Narrative, Type, tags, and ecl clauses. Project too.
             if (utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().keySet().contains(refset.getRefsetId())) {
 
-                logger.info("444-d");
+                logger.debug("333-c");
 
                 /* Refset lived in RTT as well */
                 final Set<String> rttIds = utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().get(refset.getRefsetId());
 
                 // Add Refset. Keep track of which are added this way as to not add them from RTT as well
-                logger.info("444-e");
+                logger.debug("333-d with rttIds: " + rttIds);
 
                 for (String rttId : rttIds) {
-
-                    logger.info("444-f with rttId: " + rttId);
 
                     final String refsetJsonString = utilities.getPropertyReader().getRttIdToRefsetJsonMap().get(rttId);
 
                     final ObjectMapper mapper = new ObjectMapper();
                     final JsonNode refsetJson = mapper.readTree(refsetJsonString);
+                    logger.debug("333-e with rttId " + rttId + " yielding refsetJson: " + refsetJson);
 
-                    refset.setType(refsetJson.get("type").asText());
-                    refset.setNarrative(refsetJson.get("narrative").asText());
+                    logger.debug(" have version date as: " + refsetJson.get("version").asText());
 
-                    logger.info("444-g");
+                    final Date rttDataRefsetVersion = utilities.getSdf().parse(refsetJson.get("version").asText());
 
-                    // Tags
-                    if (refsetJson.has("tags")) {
+                    if (rttDataRefsetVersion != null && rttDataRefsetVersion.equals(refset.getVersionDate())) {
 
-                        logger.info("444-h with tags: " + refsetJson.get("tags"));
+                        logger.debug("333-f with rttDataRefsetVersion: " + rttDataRefsetVersion);
 
-                        Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
+                        // Set type & narrative
+                        refset.setType(refsetJson.get("type").asText());
+                        refset.setNarrative(refsetJson.get("narrative").asText());
 
-                        while (tagsIterator.hasNext()) {
+                        // Tags
+                        if (refsetJson.has("tags")) {
 
-                            refset.getTags().add(tagsIterator.next().asText());
+                            Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
+
+                            while (tagsIterator.hasNext()) {
+
+                                refset.getTags().add(tagsIterator.next().asText());
+                            }
+
+                            logger.debug("333-g with tags: " + refset.getTags());
+
                         }
 
-                    }
+                        logger.debug("333-h1 with refset clauses: " + refset.getDefinitionClauses());
 
-                    // If has ECL clauses, create and associate with refset
-                    associateRefsetClauses(rttId, refset);
-                    logger.info("444-i");
+                        // If has ECL clauses, create and associate with refset
+                        associateRefsetClauses(rttId, refset);
+                        logger.debug("333-h2 with refset clauses: " + refset.getDefinitionClauses());
+
+                        // Only one will match, so no need to keep reading
+                        break;
+                    } else {
+
+                        logger.debug("333-f2 didn't match with rttDataRefsetVersion: " + rttDataRefsetVersion + " and refset.version: " + refset.getVersionDate());
+                    }
 
                 }
 
-                logger.info("444-j");
-
             } else {
+
                 // If JSON not available to the refset, it means it resides exclusively on Snowstorm.
+                logger.debug("333-i");
 
                 // Set defaults for type & narrative
                 refset.setType("EXTENSIONAL");
                 refset.setNarrative("No corresponding refset information found on RTT for " + refset.getRefsetId());
-                logger.info("444-k");
 
             }
-
-            logger.info("444-l");
 
             // Keep track of the latest version per refsetId
             if (!latestRefsetCache.containsKey(refset.getRefsetId()) || latestRefsetCache.get(refset.getRefsetId()).before(refset.getVersionDate())) {
@@ -806,31 +827,21 @@ public class SyncRefsetAgent extends SyncAgent {
                 latestRefsetCache.put(refset.getRefsetId(), refset.getVersionDate());
             }
 
-            logger.info("444-m");
-
         }
-
-        logger.info("444-n");
 
         // Have latest version per refset. Set the latestVersion flag to true
         // for them
         for (Refset refset : refsetsUpdated) {
 
-            logger.info("444-o with refset: " + refset);
-
             if (latestRefsetCache.containsKey(refset.getRefsetId())) {
-
-                logger.info("444-p");
 
                 for (String refsetId : latestRefsetCache.keySet()) {
 
-                    logger.info("444-q");
-
                     if (refset.getRefsetId().equals(refsetId) && refset.getVersionDate().equals(latestRefsetCache.get(refsetId))) {
 
-                        logger.info("444-r");
-
                         refset.setLatestPublishedVersion(true);
+                        logger.debug("333-j Setting refset to latest version: " + refset.isLatestPublishedVersion());
+
                         break;
                     }
 
@@ -838,9 +849,12 @@ public class SyncRefsetAgent extends SyncAgent {
 
             }
 
+            logger.debug("333-k: Final look pre-persisting of refset: " + refset);
+
         }
 
-        logger.info("444-zzz");
+        logger.debug("333-z");
 
     }
+
 }

@@ -672,6 +672,7 @@ public class MigrationPropertyFileReader {
             buf.append("\"refsetId\": \"" + values[8] + "\",");
             buf.append("\"moduleId\": \"" + values[5] + "\",");
             buf.append("\"type\": \"" + values[24] + "\",");
+            buf.append("\"version\": \"" + values[2] + "\","); // "2021-05-30 00:00:00"
             buf.append("\"narrative\": \"" + narrative + "\",");
             buf.append("\"privateRefset\": " + ((values[15].equals("0")) ? "true" : "false"));
 

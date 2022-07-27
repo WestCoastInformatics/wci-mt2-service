@@ -109,7 +109,8 @@ public class MigrationDataInitializer {
             if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(INITIAL_FEEDBACK_REFSET_ID))) {
 
                 // Create a dedicated UAT Training Project for each organization
-                createUATProjects(developerTestingOrganization, allDatabaseOrganizations);
+                // TODO: Determined unnecessary. If this lasts, remove altogether
+                // createUATProjects(developerTestingOrganization, allDatabaseOrganizations);
 
                 // Create wci-project (for DEV only)
                 createWCITestingContent(developerTestingOrganization);
