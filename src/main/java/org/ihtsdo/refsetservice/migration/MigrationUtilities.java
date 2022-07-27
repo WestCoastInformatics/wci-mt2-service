@@ -108,7 +108,10 @@ public class MigrationUtilities {
 
         final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
         final String editionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(shortName, editionName, editionBranch, codeSystem) : "";
+
+        logger.debug("888-a: calling identifyDefaultLanguageRefsets");
         final Set<String> defaultLanguageRefsets = codeSystem.has("defaultLanguageReferenceSets") ? identifyDefaultLanguageRefsets(codeSystem, editionName) : new HashSet<>();
+        logger.debug("888-z: returned from identifyDefaultLanguageRefsets with defaultLanguageRefsets: " + defaultLanguageRefsets);
 
         Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionTopLevelModule, defaultLanguageCode);
 
@@ -353,7 +356,8 @@ public class MigrationUtilities {
 
                 logger.info("Have multiple modules identified for " + editionName + ": " + editionModules.toString());
 
-                // If multiple non-CORE modules found, TODO: Fill in
+                // TODO: 1) Review this especially for the work arounds. In fact, hard coded solutions should be in prop file
+                // TODO: 2) If multiple non-CORE modules found... Possible??? how to handle?
                 Set<String> childrenModules = new HashSet<>();
 
                 Set<String> children = identifyModuleChildren(editionBranch);
@@ -367,8 +371,6 @@ public class MigrationUtilities {
 
                 }
 
-                // TODO: Remove Hard coded solution for Netherlands and
-                // Australia -> These are from previous test data and are deprecated
                 if (shortName.equals("SNOMEDCT-NL")) {
 
                     childrenModules.remove("15561000146104"); // 15561000146104
@@ -380,7 +382,6 @@ public class MigrationUtilities {
                     childrenModules.add("32570231000036109");
                 }
 
-                // TODO: Handle hard coded solution for Norway & US
                 if (shortName.equals("SNOMEDCT-NO")) {
 
                     childrenModules.remove("57091000202101");
@@ -422,13 +423,15 @@ public class MigrationUtilities {
 
     Set<String> identifyDefaultLanguageRefsets(JsonNode codeSystem, String editionName) {
 
-        logger.debug("999-b identifying editionName: " + editionName + " while processing: " + codeSystem);
+        logger.debug("999-a identifying editionName: " + editionName + " while processing: " + codeSystem);
         Set<String> retSet = new HashSet<>();
 
         // Identify Edition's Default Language Refsets
         if (codeSystem.has("defaultLanguageReferenceSets")) {
 
             final JsonNode defaultLanguageReferenceSets = codeSystem.get("defaultLanguageReferenceSets");
+            logger.debug("999-b with defaultLanguageReferenceSets: " + defaultLanguageReferenceSets);
+
             final Iterator<JsonNode> defaultLanguageReferencesSetIterator = defaultLanguageReferenceSets.iterator();
 
             while (defaultLanguageReferencesSetIterator.hasNext()) {
@@ -438,12 +441,15 @@ public class MigrationUtilities {
 
         } else if (undefinedDefaultLanguageRefsets.containsKey(editionName)) {
 
+            logger.debug("999-d");
+
             retSet.addAll(undefinedDefaultLanguageRefsets.get(editionName));
             logger.debug("No defined Default Language Refsets for " + editionName + ", so adding from txt file: " + undefinedDefaultLanguageRefsets.get(editionName));
         }
 
         // Ensure that DEFAULT_LANG_REFSET is always listed even if not explicitly listed
         retSet.add(DEFAULT_LANGUAGE_REFSET);
+        logger.debug("999-e out with retSet: " + retSet);
 
         return retSet;
     }

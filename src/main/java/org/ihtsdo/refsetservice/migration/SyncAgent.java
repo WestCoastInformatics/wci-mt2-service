@@ -952,13 +952,13 @@ public class SyncAgent {
         try (TerminologyService service = new TerminologyService()) {
 
             allDatabaseEditions = service.getAll(Edition.class);
-            logger.debug("  All Editions: " + allDatabaseEditions);
+            // logger.debug(" All Editions: " + allDatabaseEditions);
 
             allDatabaseOrganizations = service.getAll(Organization.class);
-            logger.debug("  All Organizations: " + allDatabaseOrganizations);
+            // logger.debug(" All Organizations: " + allDatabaseOrganizations);
 
             allDatabaseRefsets = service.getAll(Refset.class);
-            logger.debug("  All Refsets: " + allDatabaseRefsets);
+            // logger.debug(" All Refsets: " + allDatabaseRefsets);
         }
 
     }
@@ -971,4 +971,26 @@ public class SyncAgent {
         logger.info("Refsets: " + refsetVersionsAdded.size() + " / " + refsetVersionsUnchanged.size() + " / " + refsetVersionsSynced.size());
 
     }
+
+    protected static boolean updateAttribute(String attributeName, Object databaseAttribute, Object snowstormAttribute) {
+
+        if (databaseAttribute.equals(snowstormAttribute)) {
+
+            return false;
+        } else {
+
+            if (databaseAttribute instanceof Long) {
+
+                logger.info(" inconsistent " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute + ") and Snow value '"
+                    + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
+            } else {
+
+                logger.info(" inconsistent " + attributeName + " with DB value '" + databaseAttribute + "' and Snow value '" + snowstormAttribute + "'");
+            }
+
+            return true;
+        }
+
+    }
+
 }

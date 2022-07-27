@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
-import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +22,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private static Map<String, Project> organizationToDefaultProjects = new HashMap<>();
 
-    private static Set<String> editionsNewAndInactive = new HashSet<>();
+    private static Set<String> codeSystemsNewAndInactive = new HashSet<>();
 
     private static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
 
@@ -59,9 +58,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         if (develeperTestingOranization == null && !forProduction) {
 
-            throw new Exception("Must have a WCI Organization on a non-Prod instance");
+            // TODO: For now, ignore this, but shuolldn't ever throw exception at this point
+            // throw new Exception("Must have a WCI Organization on a non-Prod instance");
         }
-
 
         updateDatabaseCache();
 
@@ -228,33 +227,25 @@ public class SyncCodeSystemAgent extends SyncAgent {
         /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
         boolean modificationMade = false;
 
-        if (!existingEdition.getShortName().equals(editionShortName)) {
-
-            logger.info(" inconsistent Edition shortName with '" + existingEdition.getShortName() + "' and '" + editionShortName + "'");
+        if (updateAttribute("Edition shortName ", existingEdition.getShortName(), editionShortName)) {
 
             existingEdition.setShortName(editionShortName);
             modificationMade = true;
         }
 
-        if (!existingEdition.getName().equals(editionName)) {
-
-            logger.info(" inconsistent Edition name with '" + existingEdition.getName() + "' and '" + editionName + "'");
+        if (updateAttribute("Edition name ", existingEdition.getName(), editionName)) {
 
             existingEdition.setName(editionName);
             modificationMade = true;
         }
 
-        if (!existingEdition.getBranch().equals(editionBranch)) {
-
-            logger.info(" inconsistent Edition branch with '" + existingEdition.getBranch() + "' and '" + editionBranch + "'");
+        if (updateAttribute("Edition branch ", existingEdition.getBranch(), editionBranch)) {
 
             existingEdition.setBranch(editionBranch);
             modificationMade = true;
         }
 
-        if (existingEdition.isActive() != isActiveEdition) {
-
-            logger.info(" inconsistent Edition active with '" + existingEdition.isActive() + "' and '" + isActiveEdition + "'");
+        if (updateAttribute("Edition active ", existingEdition.isActive(), isActiveEdition)) {
 
             existingEdition.setActive(isActiveEdition);
             modificationMade = true;
@@ -262,9 +253,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         final String editionTopLevelModule = utilities.identifyTopLevelModule(editionShortName, editionName, editionBranch, codeSystem);
 
-        if (!existingEdition.getTopLevelModule().equals(editionTopLevelModule)) {
-
-            logger.info(" inconsistent Edition topLevelModule with '" + existingEdition.getTopLevelModule() + "' and '" + editionTopLevelModule + "'");
+        if (updateAttribute("Edition topLevelModule ", existingEdition.getTopLevelModule(), editionTopLevelModule)) {
 
             existingEdition.setTopLevelModule(editionTopLevelModule);
             modificationMade = true;
@@ -272,9 +261,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         final String editionDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
 
-        if (!existingEdition.getDefaultLanguageCode().equals(editionDefaultLanguageCode)) {
-
-            logger.info(" inconsistent Edition defaultLanguageCode with '" + existingEdition.getDefaultLanguageCode() + "' and '" + editionDefaultLanguageCode + "'");
+        if (updateAttribute("Edition defaultLanguageCode ", existingEdition.getDefaultLanguageCode(), editionDefaultLanguageCode)) {
 
             existingEdition.setDefaultLanguageCode(editionDefaultLanguageCode);
             modificationMade = true;
@@ -283,6 +270,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
         final Set<String> editionDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, editionName);
 
         if (!existingEdition.getDefaultLanguageRefsets().equals(editionDefaultLanguageRefsets)) {
+
+            logger.debug("999-111 with existingEdition: " + existingEdition);
 
             if (!existingEdition.getDefaultLanguageRefsets().isEmpty() && editionDefaultLanguageRefsets.isEmpty()) {
 
@@ -321,15 +310,12 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         try {
 
-            final String codeSystemCoordinates = generateCodeSystemCoordinates(newEditionShortName, newEditionName, newEditionBranch);
-
-            logger.info("New Code System identified on Snowstorm: " + codeSystemCoordinates);
-
             if (!isNewActiveEdition) {
 
                 // New Code System created as inactive. Given this is being run nightly and a new org/edition that is inactive at first pass was likely made erroneously.
                 // Once fixed and becomes active, we will get it at the following sync. For now, don't add to retSet
-                editionsNewAndInactive.add(codeSystemCoordinates);
+                String codeSystemCoordinates = generateCodeSystemCoordinates(newEditionShortName, newEditionName, newEditionBranch);
+                codeSystemsNewAndInactive.add(codeSystemCoordinates);
 
                 return null;
             }
@@ -384,7 +370,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         } else {
 
             // Create a Default Project for the edition
-            if (!defaultOrganizationProjects.containsKey(syncedOrganization.getId())) {
+            if (syncedOrganization != null && !defaultOrganizationProjects.containsKey(syncedOrganization.getId())) {
 
                 // Create default project
                 final String projectName = syncedOrganization.getName() + " Default Project";
@@ -402,7 +388,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private static String generateCodeSystemCoordinates(String snowstormEditionShortName, String snowstormEditionName, String snowstormEditionBranch) {
 
-        // TODO Auto-generated method stub
         return snowstormEditionShortName + " / " + snowstormEditionName + " / " + snowstormEditionBranch;
     }
 
@@ -428,17 +413,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
         /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
         boolean modificationMade = false;
 
-        if (!existingOrganization.getName().equals(snowstormOrganizationName)) {
-
-            logger.info(" inconsistent Organization name with '" + existingOrganization.getName() + "' and '" + snowstormOrganizationName + "'");
+        if (updateAttribute("Organization name ", existingOrganization.getName(), snowstormOrganizationName)) {
 
             existingOrganization.setName(snowstormOrganizationName);
             modificationMade = true;
         }
 
-        if (existingOrganization.isActive() != isActiveSnowstormOrganization) {
-
-            logger.info(" inconsistent Organization active with '" + existingOrganization.isActive() + "' and '" + isActiveSnowstormOrganization + "'");
+        if (updateAttribute("Organization active ", existingOrganization.isActive(), isActiveSnowstormOrganization)) {
 
             existingOrganization.setActive(isActiveSnowstormOrganization);
             modificationMade = true;
