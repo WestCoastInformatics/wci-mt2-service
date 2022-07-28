@@ -70,7 +70,7 @@ public class MigrationUtilities {
             // Persist
             final Organization o = service.add(org);
 
-            logger.debug("Adding new Organziation: " + o.getId() + " (" + o.getName() + ") " + o);
+            logger.info("Adding new Organziation: " + o.getId() + " (" + o.getName() + ") " + o);
 
             return o;
         }
@@ -97,7 +97,7 @@ public class MigrationUtilities {
 
             Edition e = service.add(edition);
 
-            logger.debug("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
+            logger.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
 
             return e;
         }
@@ -109,9 +109,7 @@ public class MigrationUtilities {
         final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
         final String editionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(shortName, editionName, editionBranch, codeSystem) : "";
 
-        logger.debug("888-a: calling identifyDefaultLanguageRefsets");
-        final Set<String> defaultLanguageRefsets = codeSystem.has("defaultLanguageReferenceSets") ? identifyDefaultLanguageRefsets(codeSystem, editionName) : new HashSet<>();
-        logger.debug("888-z: returned from identifyDefaultLanguageRefsets with defaultLanguageRefsets: " + defaultLanguageRefsets);
+        final Set<String> defaultLanguageRefsets = identifyDefaultLanguageRefsets(codeSystem, shortName);
 
         Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionTopLevelModule, defaultLanguageCode);
 
@@ -141,7 +139,7 @@ public class MigrationUtilities {
             // Persist
             final Refset r = service.add(refset);
 
-            logger.debug("Adding new Refset: " + r.getId() + " (" + r.getName() + ") " + r);
+            logger.info("Adding new Refset: " + r.getId() + " (" + r.getName() + ") " + r);
 
             return r;
         }
@@ -164,7 +162,7 @@ public class MigrationUtilities {
             // Persist
             final Project p = service.add(project);
 
-            logger.debug("Adding new Project: " + p.getId() + " (" + p.getName() + ") " + p);
+            logger.info("Adding new Project: " + p.getId() + " (" + p.getName() + ") " + p);
 
             return p;
 
@@ -189,7 +187,7 @@ public class MigrationUtilities {
             // Persist
             final User u = service.add(user);
 
-            logger.debug("Adding new User: " + u.getId() + " (" + u.getName() + ") " + u);
+            logger.info("Adding new User: " + u.getId() + " (" + u.getName() + ") " + u);
 
             return u;
         }
@@ -258,7 +256,7 @@ public class MigrationUtilities {
             // Persist
             final Team t = service.add(team);
 
-            logger.debug("Adding new Team: " + t.getId() + " (" + t.getName() + ") " + t);
+            logger.info("Adding new Team: " + t.getId() + " (" + t.getName() + ") " + t);
 
             return t;
         }
@@ -421,16 +419,14 @@ public class MigrationUtilities {
         return languages.next();
     }
 
-    Set<String> identifyDefaultLanguageRefsets(JsonNode codeSystem, String editionName) {
+    Set<String> identifyDefaultLanguageRefsets(JsonNode codeSystem, String shortName) {
 
-        logger.debug("999-a identifying editionName: " + editionName + " while processing: " + codeSystem);
         Set<String> retSet = new HashSet<>();
 
         // Identify Edition's Default Language Refsets
         if (codeSystem.has("defaultLanguageReferenceSets")) {
 
             final JsonNode defaultLanguageReferenceSets = codeSystem.get("defaultLanguageReferenceSets");
-            logger.debug("999-b with defaultLanguageReferenceSets: " + defaultLanguageReferenceSets);
 
             final Iterator<JsonNode> defaultLanguageReferencesSetIterator = defaultLanguageReferenceSets.iterator();
 
@@ -439,17 +435,13 @@ public class MigrationUtilities {
                 retSet.add(defaultLanguageReferencesSetIterator.next().asText());
             }
 
-        } else if (undefinedDefaultLanguageRefsets.containsKey(editionName)) {
+        } else if (undefinedDefaultLanguageRefsets.containsKey(shortName)) {
 
-            logger.debug("999-d");
-
-            retSet.addAll(undefinedDefaultLanguageRefsets.get(editionName));
-            logger.debug("No defined Default Language Refsets for " + editionName + ", so adding from txt file: " + undefinedDefaultLanguageRefsets.get(editionName));
+            retSet.addAll(undefinedDefaultLanguageRefsets.get(shortName));
         }
 
         // Ensure that DEFAULT_LANG_REFSET is always listed even if not explicitly listed
         retSet.add(DEFAULT_LANGUAGE_REFSET);
-        logger.debug("999-e out with retSet: " + retSet);
 
         return retSet;
     }
@@ -541,11 +533,5 @@ public class MigrationUtilities {
     Set<String> getInternationalModules() {
 
         return internationalModules;
-    }
-
-    Map<String, Set<String>> getUndefinedDefaultLanguageRefsets() {
-
-        return undefinedDefaultLanguageRefsets;
-
     }
 }

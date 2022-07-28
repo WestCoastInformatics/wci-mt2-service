@@ -86,8 +86,10 @@ public class MigrationPropertyFileReader {
     /** The metadata map. */
     private final Map<String, SyncMetadata> metadataMap = new HashMap<>();
 
+    private static Map<String, Set<String>> defaultLanguageRefsetMap = null;
+
     private static List<String> refsetsToIgnore = null;
-    
+
     /**
      * The Enum FileProcessType.
      */
@@ -427,31 +429,36 @@ public class MigrationPropertyFileReader {
     Map<String, Set<String>> readUndefinedDefaultLanguageRefsets() {
 
         BufferedReader reader;
-        Map<String, Set<String>> defaultLanguageRefsetMap = new HashMap<>();
 
-        try {
+        if (defaultLanguageRefsetMap == null) {
 
-            reader = new BufferedReader(new InputStreamReader(undefinedDefaultLangRefsetsResource.getInputStream()));
+            defaultLanguageRefsetMap = new HashMap<>();
 
-            String line = reader.readLine();
+            try {
 
-            while (line != null) {
+                reader = new BufferedReader(new InputStreamReader(undefinedDefaultLangRefsetsResource.getInputStream()));
 
-                String[] columns = line.split("\t");
-                defaultLanguageRefsetMap.put(columns[0], new HashSet<String>());
+                String line = reader.readLine();
 
-                for (int i = 1; i < columns.length; i++) {
+                while (line != null) {
 
-                    defaultLanguageRefsetMap.get(columns[0]).add(columns[i]);
+                    String[] columns = line.split("\t");
+                    defaultLanguageRefsetMap.put(columns[0], new HashSet<String>());
+
+                    for (int i = 1; i < columns.length; i++) {
+
+                        defaultLanguageRefsetMap.get(columns[0]).add(columns[i]);
+                    }
+
+                    line = reader.readLine();
                 }
 
-                line = reader.readLine();
+                reader.close();
+            } catch (IOException e) {
+
+                e.printStackTrace();
             }
 
-            reader.close();
-        } catch (IOException e) {
-
-            e.printStackTrace();
         }
 
         return defaultLanguageRefsetMap;
@@ -723,9 +730,9 @@ public class MigrationPropertyFileReader {
         String modifiedBy;
         final StringBuffer buf = new StringBuffer();
 
-        if (line.toLowerCase().contains("wci")) {
+        if (line.toLowerCase().contains(SyncAgent.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
-            logger.debug("Ignoring project line that has the word 'WCI' in it: " + line);
+            logger.debug("Ignoring project line that has the word '" + SyncAgent.DEVELOPER_ORGANIZATION_NAME_KEYWORD + "' in it: " + line);
             return null;
         }
 
@@ -768,7 +775,7 @@ public class MigrationPropertyFileReader {
             metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncMetadata(modified, modifiedBy));
         } catch (Exception e) {
 
-            logger.debug("failed to process line #" + lineNumber + " of project json: " + line);
+            logger.error("failed to process line #" + lineNumber + " of project json: " + line);
             e.printStackTrace();
 
             throw e;

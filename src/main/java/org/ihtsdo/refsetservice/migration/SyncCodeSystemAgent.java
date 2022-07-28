@@ -267,11 +267,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
             modificationMade = true;
         }
 
-        final Set<String> editionDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, editionName);
+        final Set<String> editionDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, editionShortName);
 
         if (!existingEdition.getDefaultLanguageRefsets().equals(editionDefaultLanguageRefsets)) {
-
-            logger.debug("999-111 with existingEdition: " + existingEdition);
 
             if (!existingEdition.getDefaultLanguageRefsets().isEmpty() && editionDefaultLanguageRefsets.isEmpty()) {
 
