@@ -3824,10 +3824,12 @@ public class RefsetMemberService {
         
         logger.debug("addRefsetMembers about to add concept size: " + conceptIds.size());
         
+        final String moduleId = refset.getProject().getOrganization().getEdition().getTopLevelModule();
+        
         if (conceptIds.size() == 1) {
-            unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0)));
+            unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0), moduleId));
         } else {
-            unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds));
+            unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds, moduleId));
         }
 
         // update the member count and save the refset
@@ -3855,15 +3857,17 @@ public class RefsetMemberService {
      * @param refsetId the refset ID
      * @param url the URL to call
      * @param conceptId the concept ID to add as a member
+     * @param moduleId the moduleId ID of the refset
      * @return A list of concepts that were unable to be added
      * @throws Exception the exception
      */
-    private static List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId) throws Exception {
+    private static List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId, final String moduleId) throws Exception {
         
         final List<String> unaddedConcepts = new ArrayList<>();
         
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId)
+            .put("moduleId", conceptId)
             .put("referencedComponentId", conceptId);
 
         logger.debug("callAddMemberSingle URL: " + url);
@@ -3891,10 +3895,11 @@ public class RefsetMemberService {
      * @param refsetId the refset ID
      * @param url the base URL to call
      * @param conceptIds a list of concept IDs to make members
+     * @param moduleId the moduleId ID of the refset
      * @return A list of concepts that were unable to be added
      * @throws Exception the exception
      */
-    private static List<String> callAddMembersBulk(final String refsetId, final String url, List<String> conceptIds) throws Exception {
+    private static List<String> callAddMembersBulk(final String refsetId, final String url, List<String> conceptIds, final String moduleId) throws Exception {
         
         final List<String> unaddedConcepts = new ArrayList<>();
         final String bulkUrl = url + "/bulk";
@@ -3905,6 +3910,7 @@ public class RefsetMemberService {
             
             final ObjectNode memberBody = mapper.createObjectNode()
                 .put("refsetId", refsetId)
+                .put("moduleId", moduleId)
                 .put("referencedComponentId", conceptId);
             
             body.add(memberBody);
