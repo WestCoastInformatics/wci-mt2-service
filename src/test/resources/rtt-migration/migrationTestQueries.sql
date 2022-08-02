@@ -1,4 +1,9 @@
 
+-- *** All Refsets ***
+select name, refsetId, count(*) from refsets group by name, refsetId order by name;
+select refsetId, name, versionDate, project_id from refsets order by name, refsetId,  versionDate;
+
+
 -- ***** Org/Proj/Refset/Version Info
 select c.name as org_name, b.name as project_name, a.name as refset_name, a.refsetId, a.versionDate from refsets a, projects b, organizations c where a.project_id = b.id  and b.organization_id = c.id order by c.name, b.name, a.name, a.versionDate;
 -- select c.name as Org_Name, c.id as Org_Id, b.name as Project_Name, b.id as Project_id, a.name as Refset_Name, a.refsetId as Refse_Id, a.versionDate from refsets a, projects b, organizations c where a.project_id = b.id  and b.organization_id = c.id order by c.name, b.name, a.name, a.versionDate;
@@ -65,7 +70,5 @@ select a.roles, b.name from user_roles a, users b where b.id = a.user_id order b
 select id, name, refsetId, moduleId, narrative, privateRefset, type, project_id from refsets where project_id in (select distinct(project_id) from refsets where name like '%WCI%') order by name;
 select id, name, refsetId, latestPublishedVersion,hasVersionInDevelopment, editBranchId, assignedUser, versionDate, versionNotes, versionStatus, workflowStatus from refsets where project_id in (select distinct(project_id) from refsets where name like '%WCI%') order by name;
 select id, name, refsetId, created, modified, modifiedBy from refsets where project_id in (select distinct(project_id) from refsets where name like '%WCI%') order by name;
-
-
 
 

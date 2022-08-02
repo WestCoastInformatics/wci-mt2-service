@@ -21,7 +21,7 @@ public class SyncMetadata {
     private final Logger logger = LoggerFactory.getLogger(SyncMetadata.class);
 
     /** The sdf. */
-    private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
      * Instantiates a new metadata.

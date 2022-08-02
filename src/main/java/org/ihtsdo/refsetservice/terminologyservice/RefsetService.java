@@ -86,10 +86,10 @@ public class RefsetService {
     private static final String SIMPLE_TYPE_REFERENCE_SET_MODULE_ID = "900000000000012004";
 
     /** A cache of the sorted branch versions. */
-    private final static Map<String, List<String>> branchVersionCache = new HashMap<>();
+    private static final Map<String, List<String>> branchVersionCache = new HashMap<>();
 
     /** A list of refset actively being updated. */
-    public final static Set<String> refsetsToShowUpgradeWarning = new HashSet<>();
+    public static final Set<String> refsetsToShowUpgradeWarning = new HashSet<>();
 
     static {
 

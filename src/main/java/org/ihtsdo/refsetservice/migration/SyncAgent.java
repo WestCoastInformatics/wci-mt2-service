@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
@@ -35,8 +36,6 @@ public class SyncAgent {
 
     protected static boolean forProduction;
 
-    protected static Map<String, Edition> refsetEditions = new HashMap<>();
-
     protected static MigrationUtilities utilities = null;
 
     protected static List<Edition> allDatabaseEditions = null;
@@ -47,30 +46,34 @@ public class SyncAgent {
 
     protected static Organization develeperTestingOranization = null;
 
-    protected static Map<String, Organization> organizationsAdded = new HashMap<>();
+    protected static final Map<String, Organization> organizationsAdded = new HashMap<>();
 
-    protected static Set<Organization> organizationsUnchanged = new HashSet<>();
+    protected static final Set<Organization> organizationsUnchanged = new HashSet<>();
 
-    protected static Set<Organization> organizationsSynced = new HashSet<>();
+    protected static final Set<Organization> organizationsSynced = new HashSet<>();
 
-    protected static Set<Edition> editionsAdded = new HashSet<>();
+    protected static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
 
-    protected static Set<Edition> editionsUnchanged = new HashSet<>();
+    protected static final Set<Edition> editionsAdded = new HashSet<>();
 
-    protected static Set<Edition> editionsSynced = new HashSet<>();
+    protected static final Set<Edition> editionsUnchanged = new HashSet<>();
 
-    protected static Set<Refset> refsetVersionsAdded = new HashSet<>();
+    protected static final Set<Edition> editionsSynced = new HashSet<>();
 
-    protected static Set<Refset> refsetVersionsUnchanged = new HashSet<>();
+    protected static final Set<Refset> refsetVersionsAdded = new HashSet<>();
 
-    protected static Set<Refset> refsetVersionsSynced = new HashSet<>();
+    protected static final Set<Refset> refsetVersionsUnchanged = new HashSet<>();
 
-    protected final static Set<String> uniqueRefsetIds = new HashSet<>();
+    protected static final Set<Refset> refsetVersionsSynced = new HashSet<>();
+
+    protected static final Map<String, Edition> refsetEditions = new HashMap<>();
+
+    protected static final Set<String> uniqueRefsetIds = new HashSet<>();
 
     private static final List<String> ignoredCodeSystemNames = new ArrayList<>();
 
     /** The testing. */
-    protected static final boolean testing = true;
+    protected static final boolean testing = false;
 
     protected static final String testingEdition = "elgia";
 
@@ -129,6 +132,8 @@ public class SyncAgent {
     public void sync() {
 
         try {
+
+            clearPreviousRun();
 
             Set<JsonNode> codeSystemsToProcess = filterCodeSystems();
 
@@ -238,17 +243,6 @@ public class SyncAgent {
 
     private Set<JsonNode> filterCodeSystems() throws Exception {
 
-        organizationsAdded.clear();
-        organizationsUnchanged.clear();
-        organizationsSynced.clear();
-        editionsAdded.clear();
-        editionsUnchanged.clear();
-        editionsSynced.clear();
-
-        refsetVersionsAdded.clear();
-        refsetVersionsSynced.clear();
-        refsetVersionsUnchanged.clear();
-
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
 
         final Set<JsonNode> filteredCodeSystems = new HashSet<>();
@@ -287,6 +281,29 @@ public class SyncAgent {
         }
 
         return filteredCodeSystems;
+    }
+
+    private void clearPreviousRun() {
+
+        develeperTestingOranization = null;
+
+        organizationsAdded.clear();
+        organizationsUnchanged.clear();
+        organizationsSynced.clear();
+        defaultOrganizationProjects.clear();
+
+        editionsAdded.clear();
+        editionsUnchanged.clear();
+        editionsSynced.clear();
+
+        refsetVersionsAdded.clear();
+        refsetVersionsSynced.clear();
+        refsetVersionsUnchanged.clear();
+        refsetEditions.clear();
+
+        uniqueRefsetIds.clear();
+        ignoredCodeSystemNames.clear();
+
     }
 
     /**
@@ -379,7 +396,6 @@ public class SyncAgent {
 
         return retMap;
     }
-
 
     protected static boolean isRefsetToProcess(String refsetId) {
 

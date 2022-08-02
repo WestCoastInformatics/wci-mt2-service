@@ -20,27 +20,20 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private static Logger logger = LoggerFactory.getLogger(SyncCodeSystemAgent.class);
 
-    private static Map<String, Project> organizationToDefaultProjects = new HashMap<>();
-
-    private static Set<String> codeSystemsNewAndInactive = new HashSet<>();
-
-    private static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
-
     private static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
+
+    private static final Set<String> codeSystemsNewAndInactive = new HashSet<>();
 
     protected SyncCodeSystemAgent() throws Exception {
 
         super();
+
+        codeSystemsNewAndInactive.clear();
     }
 
     protected static Organization getDeveloperTestingOrganization() {
 
         return develeperTestingOranization;
-    }
-
-    protected static Map<String, Project> getOrganizationToDefaultProjectMap() {
-
-        return organizationToDefaultProjects;
     }
 
     protected static void syncSnowstormCodeSystems(Set<JsonNode> codeSystems) throws Exception {
@@ -366,7 +359,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
             }
 
         } else {
-
+            logger.debug("222-z with syncOrg = " + syncedOrganization);
+            logger.debug("222-zz with defaultOrganizationProjects.keySet.size = " + defaultOrganizationProjects.keySet().size());
             // Create a Default Project for the edition
             if (syncedOrganization != null && !defaultOrganizationProjects.containsKey(syncedOrganization.getId())) {
 

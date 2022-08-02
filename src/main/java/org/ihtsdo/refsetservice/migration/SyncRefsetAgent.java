@@ -30,13 +30,16 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private static Logger logger = LoggerFactory.getLogger(SyncRefsetAgent.class);
 
-    private final static Set<Refset> snowstormRefsets = new HashSet<>();
+    private static final Set<Refset> snowstormRefsets = new HashSet<>();
 
     final private static Set<SyncRefsetMetadata> refsetsToProcess = new HashSet<>();
 
     protected SyncRefsetAgent() throws Exception {
 
         super();
+
+        snowstormRefsets.clear();
+        refsetsToProcess.clear();
     }
 
     public static void syncSnowstormRefsets(Map<String, SortedMap<Date, String>> branchesToProcess) throws Exception {
@@ -487,18 +490,20 @@ public class SyncRefsetAgent extends SyncAgent {
             logger.info("    Refset " + refsetId + " doesn't have an associated project in RTT, so use Org's RT2-default");
 
             // No project associated with refset, so use default Edition Project
-            if (!SyncCodeSystemAgent.getOrganizationToDefaultProjectMap().containsKey(org.getId())) {
+            if (!defaultOrganizationProjects.containsKey(org.getId())) {
 
                 throw new Exception("Default project should have already been created of Org: " + org.getName());
             }
 
-            return SyncCodeSystemAgent.getOrganizationToDefaultProjectMap().get(org.getId());
+            return defaultOrganizationProjects.get(org.getId());
         }
 
     }
 
     private static void associateRefsetProject(Refset refset, Map<String, Project> rttProjects) throws Exception {
 
+        logger.debug("111-a - with refset: " + refset);
+        logger.debug("111-b - with rttProjects keys: " + rttProjects.keySet());
         Project project = null;
 
         // Set refset Project making sure to cache it based on refsetId
@@ -507,7 +512,11 @@ public class SyncRefsetAgent extends SyncAgent {
             final String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
             final String rttProjectId = projectInfo.split("\t")[0];
 
+            logger.debug("111-c - with rttProjectId: " + rttProjectId);
+
             if (!rttProjects.containsKey(rttProjectId)) {
+
+                logger.debug("111-d");
 
                 logger.info("Creating new project for refset: " + refset.getRefsetId());
                 project = createRefsetProject(refset.getRefsetId());
@@ -518,19 +527,30 @@ public class SyncRefsetAgent extends SyncAgent {
             project = rttProjects.get(rttProjectId);
         } else {
 
+            logger.debug("111-e");
+
             // User Org's default project
             Organization org = getOrgFromRefset(refset.getRefsetId());
+            logger.debug("111-f with org: " + org);
+            logger.debug("111-f2 with keyset: " + defaultOrganizationProjects.keySet().size());
 
-            project = SyncCodeSystemAgent.getOrganizationToDefaultProjectMap().get(org.getId());
+            project = defaultOrganizationProjects.get(org.getId());
+            logger.debug("111-g with project: " + project);
+
         }
+
+        logger.debug("111-h with project: " + project);
 
         if (project == null) {
 
             throw new Exception("Must have created from RTT, already crearted from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
         }
 
+        logger.debug("111-i with refset.project: " + refset.getProject());
+
         refset.setProject(project);
 
+        logger.debug("111-zzz with refset.project: " + refset.getProject());
     }
 
     // Do not persist as will be done later

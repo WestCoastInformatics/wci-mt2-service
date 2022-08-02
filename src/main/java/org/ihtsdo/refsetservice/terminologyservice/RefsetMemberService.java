@@ -146,25 +146,25 @@ public class RefsetMemberService {
     private static String EXPORT_DOWNLOAD_URL = "export/download/";
 
     /** A list of refset actively being updated. */
-    public final static Set<String> refsetsBeingUpdated = new HashSet<>();
+    public static final Set<String> refsetsBeingUpdated = new HashSet<>();
     
     /** A list of refset actively being updated. */
-    public final static Map<String, Map<String, Map<String, String>>> refsetsUpdatedMembers = new HashMap<>();
+    public static final Map<String, Map<String, Map<String, String>>> refsetsUpdatedMembers = new HashMap<>();
     
     /** A cache of the members returned for a specific URL. */
-    private final static Map<String, Map<String, ConceptResultList>> conceptsCallCache = new HashMap<>();
+    private static final Map<String, Map<String, ConceptResultList>> conceptsCallCache = new HashMap<>();
 
     /** A cache of the details for any concept. */
-    private final static Map<String, Map<String, Concept>> conceptDetailsCache = new HashMap<>();
+    private static final Map<String, Map<String, Concept>> conceptDetailsCache = new HashMap<>();
 
     /** A cache of the taxonomy ancestor path for concepts. */
-    private final static Map<String, Map<String, List<Concept>>> taxonomySearchAncestorsCache = new HashMap<>();
+    private static final Map<String, Map<String, List<Concept>>> taxonomySearchAncestorsCache = new HashMap<>();
 
     /** A cache of the children for each tree node. */
-    private final static Map<String, Map<String, ConceptResultList>> treeCache = new HashMap<>();
+    private static final Map<String, Map<String, ConceptResultList>> treeCache = new HashMap<>();
 
     /** A cache of the children for each tree node. */
-    public final static Map<String, Map<String, Set<String>>> ancestorsCache = new HashMap<>();
+    public static final Map<String, Map<String, Set<String>>> ancestorsCache = new HashMap<>();
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 386;

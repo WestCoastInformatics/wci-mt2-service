@@ -44,7 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AutoConfigureMockMvc
 abstract public class AbstractRefsetTests extends BaseTest {
 
-    protected final static SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+    protected static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
     /** The config properties. */
     protected final Properties properties = PropertyUtility.getProperties();

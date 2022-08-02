@@ -48,7 +48,7 @@ public class MigrationUtilities {
 
     static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
-    public final static String FEEDBACK_TESTING_USER_NAME = "FeedbackTesting";
+    public static final String FEEDBACK_TESTING_USER_NAME = "FeedbackTesting";
 
     public static final String SYNC_USER_NAME = "Snowstorm Sync";
 
