@@ -359,8 +359,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             }
 
         } else {
-            logger.debug("222-z with syncOrg = " + syncedOrganization);
-            logger.debug("222-zz with defaultOrganizationProjects.keySet.size = " + defaultOrganizationProjects.keySet().size());
+
             // Create a Default Project for the edition
             if (syncedOrganization != null && !defaultOrganizationProjects.containsKey(syncedOrganization.getId())) {
 

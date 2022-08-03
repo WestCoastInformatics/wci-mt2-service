@@ -86,19 +86,18 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private static Refset syncExistingRefsetVersionPairs(SyncRefsetMetadata snowstormRefsetData, Refset refset) throws Exception {
 
-        final Refset syncedRefset = compareAndUpdateRefsetDifferences(refset, snowstormRefsetData);
+        Refset syncedRefset = compareAndUpdateRefsetDifferences(refset, snowstormRefsetData);
 
         if (syncedRefset == null) {
 
             refsetVersionsUnchanged.add(refset);
+            syncedRefset = refset;
         } else {
 
             refsetVersionsSynced.add(syncedRefset);
 
             postRefsetProcessing(syncedRefset, snowstormRefsetData.getEdition());
         }
-
-        logger.info("Synced Refset: " + syncedRefset);
 
         return syncedRefset;
     }
@@ -502,8 +501,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private static void associateRefsetProject(Refset refset, Map<String, Project> rttProjects) throws Exception {
 
-        logger.debug("111-a - with refset: " + refset);
-        logger.debug("111-b - with rttProjects keys: " + rttProjects.keySet());
         Project project = null;
 
         // Set refset Project making sure to cache it based on refsetId
@@ -512,11 +509,7 @@ public class SyncRefsetAgent extends SyncAgent {
             final String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
             final String rttProjectId = projectInfo.split("\t")[0];
 
-            logger.debug("111-c - with rttProjectId: " + rttProjectId);
-
             if (!rttProjects.containsKey(rttProjectId)) {
-
-                logger.debug("111-d");
 
                 logger.info("Creating new project for refset: " + refset.getRefsetId());
                 project = createRefsetProject(refset.getRefsetId());
@@ -527,30 +520,20 @@ public class SyncRefsetAgent extends SyncAgent {
             project = rttProjects.get(rttProjectId);
         } else {
 
-            logger.debug("111-e");
-
             // User Org's default project
             Organization org = getOrgFromRefset(refset.getRefsetId());
-            logger.debug("111-f with org: " + org);
-            logger.debug("111-f2 with keyset: " + defaultOrganizationProjects.keySet().size());
 
             project = defaultOrganizationProjects.get(org.getId());
-            logger.debug("111-g with project: " + project);
 
         }
-
-        logger.debug("111-h with project: " + project);
 
         if (project == null) {
 
             throw new Exception("Must have created from RTT, already crearted from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
         }
 
-        logger.debug("111-i with refset.project: " + refset.getProject());
-
         refset.setProject(project);
 
-        logger.debug("111-zzz with refset.project: " + refset.getProject());
     }
 
     // Do not persist as will be done later
@@ -675,6 +658,22 @@ public class SyncRefsetAgent extends SyncAgent {
 
         }
 
+    }
+
+    protected static Organization getOrgFromRefset(String refsetId) {
+
+        final String editionName = refsetEditions.get(refsetId).getName();
+        final String editionShortName = refsetEditions.get(refsetId).getShortName();
+
+        String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
+        final Organization org = organizationsAdded.get(orgName);
+
+        return org;
+    }
+
+    protected static boolean isRefsetToProcess(String refsetId) {
+
+        return !testing || (testing && ((testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset)));
     }
 
 }

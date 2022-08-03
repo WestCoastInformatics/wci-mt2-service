@@ -79,7 +79,7 @@ public class SyncAgent {
 
     protected static final String testingRefset = "741000172102";
 
-    static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
+    protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
     // The max number of record elasticsearch will return without erroring.
 
@@ -166,7 +166,7 @@ public class SyncAgent {
 
     }
 
-    void identifyInternationalModules(JsonNode root) throws Exception {
+    private void identifyInternationalModules(JsonNode root) throws Exception {
 
         final Iterator<JsonNode> responseIterator = root.iterator();
 
@@ -395,22 +395,6 @@ public class SyncAgent {
         }
 
         return retMap;
-    }
-
-    protected static boolean isRefsetToProcess(String refsetId) {
-
-        return !testing || (testing && ((testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset)));
-    }
-
-    protected static Organization getOrgFromRefset(String refsetId) {
-
-        final String editionName = refsetEditions.get(refsetId).getName();
-        final String editionShortName = refsetEditions.get(refsetId).getShortName();
-
-        String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
-        final Organization org = organizationsAdded.get(orgName);
-
-        return org;
     }
 
     protected static void updateDatabaseCache() throws Exception {
