@@ -218,18 +218,21 @@ public class SyncCodeSystemAgent extends SyncAgent {
         /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
         boolean modificationMade = false;
 
+        // TODO: This is immutable, so nothing to check? 
         if (updateAttribute("Edition shortName ", existingEdition.getShortName(), editionShortName)) {
 
             existingEdition.setShortName(editionShortName);
             modificationMade = true;
         }
 
+        // TODO: This is immutable, so nothing to check? 
         if (updateAttribute("Edition name ", existingEdition.getName(), editionName)) {
 
             existingEdition.setName(editionName);
             modificationMade = true;
         }
 
+        // TODO: This is immutable, so nothing to check? 
         if (updateAttribute("Edition branch ", existingEdition.getBranch(), editionBranch)) {
 
             existingEdition.setBranch(editionBranch);
@@ -244,6 +247,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         final String editionTopLevelModule = utilities.identifyTopLevelModule(editionShortName, editionName, editionBranch, codeSystem);
 
+        // TODO: Can we remove topLevelModule? 
         if (updateAttribute("Edition topLevelModule ", existingEdition.getTopLevelModule(), editionTopLevelModule)) {
 
             existingEdition.setTopLevelModule(editionTopLevelModule);
@@ -408,6 +412,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             modificationMade = true;
         }
 
+        // TODO: This is associated with CodeSystem (and thus edition), so remove? 
         if (updateAttribute("Organization active ", existingOrganization.isActive(), isActiveSnowstormOrganization)) {
 
             existingOrganization.setActive(isActiveSnowstormOrganization);

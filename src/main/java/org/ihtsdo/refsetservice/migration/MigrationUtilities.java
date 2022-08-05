@@ -80,7 +80,21 @@ public class MigrationUtilities {
 
     }
 
-    Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, String topLevelModule, String defaultLanguageCode) throws Exception {
+    Edition addEdition(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
+
+        final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
+
+        final Set<String> defaultLanguageRefsets = identifyDefaultLanguageRefsets(codeSystem, shortName);
+
+        // Case of no modules handled downstream
+        final String editionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(shortName, editionName, editionBranch, codeSystem) : "";
+
+        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionTopLevelModule, defaultLanguageCode);
+
+        return newEdition;
+    }
+
+    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, String topLevelModule, String defaultLanguageCode) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -105,18 +119,6 @@ public class MigrationUtilities {
             return e;
         }
 
-    }
-
-    Edition addEdition(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
-
-        final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
-        final String editionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(shortName, editionName, editionBranch, codeSystem) : "";
-
-        final Set<String> defaultLanguageRefsets = identifyDefaultLanguageRefsets(codeSystem, shortName);
-
-        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionTopLevelModule, defaultLanguageCode);
-
-        return newEdition;
     }
 
     Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative, Project project) throws Exception {

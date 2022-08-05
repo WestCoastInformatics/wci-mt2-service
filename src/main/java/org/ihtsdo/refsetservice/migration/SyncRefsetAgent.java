@@ -215,12 +215,14 @@ public class SyncRefsetAgent extends SyncAgent {
         final boolean isActiveSnowstormRefset = refsetSnowstormData.getRefsetNode().get("active").asBoolean();
         final String snowstormRefsetNarrative = refsetSnowstormData.getRefsetNode().has("narrative") ? refsetSnowstormData.getRefsetNode().get("narrative").asText() : "";
 
+        // TODO: This is immutable, so nothing to check? 
         if (updateAttribute("Refset name", existingRefset.getName(), snowstormRefsetName)) {
 
             existingRefset.setName(snowstormRefsetName);
             modificationMade = true;
         }
 
+        // TODO: This is immutable, so nothing to check? 
         if (updateAttribute("Refset moduleId", existingRefset.getModuleId(), snowstormModuleId)) {
 
             existingRefset.setModuleId(snowstormModuleId);
@@ -233,12 +235,14 @@ public class SyncRefsetAgent extends SyncAgent {
             modificationMade = true;
         }
 
+        // TODO: This gets populated from branch, so nothing to check?
         if (updateAttribute("Refset version", existingRefset.getVersionDate().getTime(), refsetSnowstormData.getVersion().getTime())) {
 
             existingRefset.setVersionDate(refsetSnowstormData.getVersion());
             modificationMade = true;
         }
 
+        // TODO: This comes from RTT, so nothing to check? 
         // Value may come from project.txt file (Rtt), so don't overwrite if what is on Snowstorm is empty.
         if (!snowstormRefsetNarrative.isBlank() && updateAttribute("Refset narrative", existingRefset.getNarrative(), snowstormRefsetNarrative)) {
 
