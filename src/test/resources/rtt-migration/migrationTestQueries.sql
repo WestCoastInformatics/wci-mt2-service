@@ -5,7 +5,7 @@ select refsetId, name, versionDate, project_id from refsets order by name, refse
 
 
 -- ***** Org/Proj/Refset/Version Info
-select c.name as org_name, b.name as project_name, a.name as refset_name, a.refsetId, a.versionDate from refsets a, projects b, organizations c where a.project_id = b.id  and b.organization_id = c.id order by c.name, b.name, a.name, a.versionDate;
+select c.name as org_name, b.name as project_name, a.name as refset_name, a.versionDate, a.refsetId from refsets a, projects b, organizations c where a.project_id = b.id  and b.organization_id = c.id order by c.name, b.name, a.name, a.versionDate;
 -- select c.name as Org_Name, c.id as Org_Id, b.name as Project_Name, b.id as Project_id, a.name as Refset_Name, a.refsetId as Refse_Id, a.versionDate from refsets a, projects b, organizations c where a.project_id = b.id  and b.organization_id = c.id order by c.name, b.name, a.name, a.versionDate;
 -- These projects don't have refsets
 select b.name as Org_Name, a.name as Project_without_refsets from projects a, organizations b where a.id not in (select project_id from refsets) and b.id = a.organization_id order by b.name, a.name;
@@ -28,8 +28,8 @@ select organization_id, count(*) as Num_teams  from  teams group by organization
 -- ***** Projects (basic, stats & basic-join)
 -- select id, name, description  from projects order by name;
 -- select organization_id, count(*) as num_projects from  projects group by organization_id;
- select a.id as org_id, a.name as org, b.name as uat_or_default_project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and (b.name like '%UAT%' or  b.name like '%Default Project%') order by a.name, b.name;
-select a.id as org_id, a.name as org, b.name as non_uat_default_project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and b.name not like '%UAT%' and b.name not like '%Default Project%' order by a.name;
+ select a.id as org_id, a.name as org, b.name as uat_or_default_project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and b.name like '%Default Project%' order by a.name, b.name;
+select a.id as org_id, a.name as org, b.name as non_uat_default_project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and b.name not like '%Default Project%' order by a.name;
 -- select a.name as org, b.name as project from organizations a, projects b where a.id = b.organization_id;
 
 
