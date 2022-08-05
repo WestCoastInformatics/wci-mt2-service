@@ -2,6 +2,7 @@ package org.ihtsdo.refsetservice.migration;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -45,6 +46,8 @@ public class MigrationUtilities {
     private static final Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
 
     private static final Set<String> internationalModules = new HashSet<>();
+
+    private static final Map<String, Set<String>> editionModulesMap = new HashMap<>();
 
     static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
@@ -317,18 +320,22 @@ public class MigrationUtilities {
 
     }
 
-    String identifyTopLevelModule(String editionName, String shortName, String editionBranch, JsonNode codeSystem) throws Exception {
+    String identifyTopLevelModule(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
+
+        Set<String> editionModules = new HashSet<>();
+        String returnModule = null;
+
+        logger.debug("Searching for top-level & dedicated module(s) for " + shortName);
 
         if ("international edition".equals(editionName.toLowerCase())) {
 
-            return MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
+            editionModules.add(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
+            returnModule = editionModules.iterator().next();
         } else {
 
             Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
 
             // Ignore CORE Modules
-            Set<String> editionModules = new HashSet<>();
-
             while (moduleIterator.hasNext()) {
 
                 JsonNode module = moduleIterator.next();
@@ -343,16 +350,11 @@ public class MigrationUtilities {
             if (editionModules.size() == 0) {
 
                 // If no non-CORE modules found, use the default Module
-                logger.info("Didn't identify dedicated module for " + editionName + ": " + editionModules.toString() + ", so using default: " + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
 
-                return MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
-            } else if (editionModules.size() == 1) {
+                returnModule = MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
+                editionModules.add(returnModule);
 
-                // If only one non-CORE modules found, use it
-                return editionModules.iterator().next();
-            } else {
-
-                logger.info("Have multiple modules identified for " + editionName + ": " + editionModules.toString());
+            } else if (editionModules.size() > 1) {
 
                 // TODO: 1) Review this especially for the work arounds. In fact, hard coded solutions should be in prop file
                 // TODO: 2) If multiple non-CORE modules found... Possible??? how to handle?
@@ -395,15 +397,18 @@ public class MigrationUtilities {
 
                     logger.info(msg);
                     throw new Exception("This situation shouldn't happen during sync: " + msg);
-                } else {
-
-                    return childrenModules.iterator().next();
                 }
+
+                returnModule = childrenModules.iterator().next();
 
             }
 
         }
 
+        editionModulesMap.put(shortName, editionModules);
+        logger.info("Identified: " + editionModulesMap.get(shortName));
+
+        return returnModule;
     }
 
     String identifyDefaultLanguageCode(JsonNode codeSystem, String editionName) throws Exception {
@@ -533,5 +538,10 @@ public class MigrationUtilities {
     Set<String> getInternationalModules() {
 
         return internationalModules;
+    }
+
+    Map<String, Set<String>> getEditionModulesMap() {
+
+        return editionModulesMap;
     }
 }
