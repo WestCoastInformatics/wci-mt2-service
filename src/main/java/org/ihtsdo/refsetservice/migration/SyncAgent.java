@@ -424,6 +424,20 @@ public class SyncAgent {
 
     protected static boolean updateAttribute(String attributeName, Object databaseAttribute, Object snowstormAttribute) {
 
+        if (snowstormAttribute == null) {
+
+            // Nothing to update if snowstorm is null
+            return false;
+        } else if (databaseAttribute == null) {
+
+            // Handle inconsistent NULL
+            logger.info(" inconsistent " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
+
+            return true;
+
+        }
+
+        // Both have values, so compare
         if (databaseAttribute.equals(snowstormAttribute)) {
 
             return false;
@@ -431,11 +445,11 @@ public class SyncAgent {
 
             if (databaseAttribute instanceof Long) {
 
-                logger.info(" inconsistent " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute + ") and Snow value '"
+                logger.info(" inconsistent " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute + ") and Snowstorm value '"
                     + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
             } else {
 
-                logger.info(" inconsistent " + attributeName + " with DB value '" + databaseAttribute + "' and Snow value '" + snowstormAttribute + "'");
+                logger.info(" inconsistent " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
             }
 
             return true;

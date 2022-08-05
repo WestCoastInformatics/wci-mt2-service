@@ -307,7 +307,6 @@ public class SyncRefsetAgent extends SyncAgent {
             }
 
             final Edition edition = editions.iterator().next();
-            logger.info("Syncing refsets on Edition: " + edition.getShortName() + " with utilities.getEditionModulesMap(): " + utilities.getEditionModulesMap());
 
             for (String module : utilities.getEditionModulesMap().get(edition.getShortName())) {
 
@@ -461,8 +460,6 @@ public class SyncRefsetAgent extends SyncAgent {
      */
     private static Project createRefsetProject(String refsetId) throws Exception {
 
-        logger.info(" Creating project for refsetId " + refsetId);
-
         Organization org = getOrgFromRefset(refsetId);
 
         if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refsetId)) {
@@ -489,8 +486,6 @@ public class SyncRefsetAgent extends SyncAgent {
             return utilities.addProject(org, projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
         } else {
 
-            logger.info("    Refset " + refsetId + " doesn't have an associated project in RTT, so use Org's RT2-default");
-
             // No project associated with refset, so use default Edition Project
             if (!defaultOrganizationProjects.containsKey(org.getId())) {
 
@@ -514,7 +509,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
             if (!rttProjects.containsKey(rttProjectId)) {
 
-                logger.info("Creating new project for refset: " + refset.getRefsetId());
                 project = createRefsetProject(refset.getRefsetId());
 
                 rttProjects.put(rttProjectId, project);
@@ -563,14 +557,7 @@ public class SyncRefsetAgent extends SyncAgent {
         Map<String, Date> latestRefsetCache = new HashMap<>();
         Map<String, Project> rttProjects = new HashMap<>();
 
-        logger.info("Updating " + refsetsUpdated.size() + " refsets with Project and attribute data");
-
         for (Refset refset : refsetsUpdated) {
-
-            if (utilities.getPropertyReader().getRefsetToClausesInfoMap().containsKey(refset.getRefsetId())) {
-
-                logger.info("Have clause on refset: " + refset.getRefsetId());
-            }
 
             // identify the corresponding project which also defines the edition
             associateRefsetProject(refset, rttProjects);

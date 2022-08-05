@@ -300,8 +300,6 @@ public class MigrationUtilities {
             final QueryParameter query = new QueryParameter();
             query.setQuery("userName:" + userName + " AND active:true");
 
-            logger.debug("  userName search query: " + query);
-
             ResultList<User> results = service.find(query, pfs, User.class, null);
 
             if (results.getItems() != null && results.getItems().size() == 1) {
@@ -324,8 +322,6 @@ public class MigrationUtilities {
 
         Set<String> editionModules = new HashSet<>();
         String returnModule = null;
-
-        logger.debug("Searching for top-level & dedicated module(s) for " + shortName);
 
         if ("international edition".equals(editionName.toLowerCase())) {
 
@@ -406,7 +402,6 @@ public class MigrationUtilities {
         }
 
         editionModulesMap.put(shortName, editionModules);
-        logger.info("Identified: " + editionModulesMap.get(shortName));
 
         return returnModule;
     }
@@ -506,11 +501,9 @@ public class MigrationUtilities {
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
 
-                logger.debug("setWorkflowStatus: updated refset: " + ModelUtility.toJson(refset));
                 return refset;
             } else {
 
-                logger.debug("setWorkflowStatus: did not update workflow status.");
                 return null;
             }
 

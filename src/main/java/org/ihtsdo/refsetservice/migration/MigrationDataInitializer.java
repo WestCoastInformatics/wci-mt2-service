@@ -176,27 +176,6 @@ public class MigrationDataInitializer {
 
     }
 
-    private Map<String, Project> createUATProjects(Organization wciOrganization, List<Organization> allDatabaseOrganizations) throws Exception {
-
-        logger.info(" Create a dedicated UAT Training Project for each organization");
-        Map<String, Project> uatProjects = new HashMap<>();
-
-        for (Organization organization : allDatabaseOrganizations) {
-
-            if (wciOrganization != null && wciOrganization.equals(organization)) {
-
-                continue;
-            }
-
-            Project uatProject = utilities.addProject(organization, organization.getName() + " UAT Training Project",
-                "Project is dedicated to UAT Training. Any work done here will not be available for production usages. All training users will have the author role and reviewer role in this project");
-
-            uatProjects.put(organization.getName(), uatProject);
-        }
-
-        return uatProjects;
-    }
-
     private void createWCITestingContent(Organization wciOrganization) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
