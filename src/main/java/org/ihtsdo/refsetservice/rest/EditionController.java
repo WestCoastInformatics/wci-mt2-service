@@ -68,18 +68,14 @@ public class EditionController extends BaseController {
 
         logger.info("Get edition for id: {}", id);
         // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        final User user = SecurityService.getUserFromSession();
 
         try {
             final Edition edition = EditionService.getEdition(id);
             return new ResponseEntity<>(edition, HttpStatus.OK);
 
         } catch (final Exception e) {
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -99,10 +95,7 @@ public class EditionController extends BaseController {
     public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
 
         logger.info("Get all editions ");
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        final User user = SecurityService.getUserFromSession();
 
         try {
 
@@ -110,8 +103,7 @@ public class EditionController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -138,10 +130,7 @@ public class EditionController extends BaseController {
     public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         logger.debug("getEditions searchParameters: " + ModelUtility.toJson(searchParameters));
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        final User user = SecurityService.getUserFromSession();
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -151,13 +140,9 @@ public class EditionController extends BaseController {
             final ResultList<Edition> results = EditionService.searchEditions(searchParameters);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
-        } catch (final ResponseStatusException rse) {
-            throw rse;
-
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 

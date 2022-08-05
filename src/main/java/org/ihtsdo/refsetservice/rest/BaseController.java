@@ -11,6 +11,7 @@ import org.ihtsdo.refsetservice.model.RestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -31,18 +32,29 @@ public class BaseController {
     /**
      * Handle exception.
      *
-     * @param e the e
+     * @param exception the e
+     * @return the ResponseEntity
      * @throws Exception the exception
      */
-    public void handleException(final Exception e) throws Exception {
-        if (e instanceof ResponseStatusException || e instanceof RestException) {
-            throw e;
+    @SuppressWarnings("rawtypes")
+    public ResponseEntity handleException(final Exception exception) throws Exception {
+        
+        if (exception instanceof ResponseStatusException) {
+            
+            final ResponseStatusException responseStatusException = (ResponseStatusException)exception;
+            return ResponseEntity.status(responseStatusException.getRawStatusCode()).body(responseStatusException.getMessage());
+            
+        } else if (exception instanceof RestException) {
+            
+            final RestException restException = (RestException)exception;
+            return ResponseEntity.status(restException.getError().getStatus()).body(restException.getMessage());
+            
+        } else {
+            
+            logger.error("Unexpected error", exception);
+            final String errorMessage = "Unexpected error occurred in the system. Please contact info@snomed.org";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
         }
-
-        logger.error("Unexpected error", e);
-        final String errorMessage =
-                "Unexpected error occurred in the system. Please contact info@snomed.org";
-        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage);
     }
 
     /**

@@ -37,6 +37,7 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * The Class OrganizationService.
@@ -71,7 +72,7 @@ public class OrganizationService extends BaseService {
             
             final String errorMessage = "There is already an organization tied to that edition.";
             logger.error(errorMessage);
-            throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", "Error creating organization.");
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
         }
         
         organizationsParameters.setQuery("name:" + organization.getName());
@@ -82,7 +83,7 @@ public class OrganizationService extends BaseService {
             
             final String errorMessage = "There is already an organization with that name.";
             logger.error(errorMessage);
-            throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", "Error creating organization.");
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
         }
         
         final User userToAdd = service.findSingle("id:" + user.getId(), User.class, null);
@@ -118,7 +119,7 @@ public class OrganizationService extends BaseService {
 
                 final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
                 logger.error(errorMessage, e);
-                throw new RestException(false, HttpStatus.EXPECTATION_FAILED, e.getMessage(), "Error creating organization.");
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
             }
 
         } else {
@@ -144,8 +145,9 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
             
-            logger.info("Unable to find organization for id {}.", id);
-            throw new NotFoundException();
+            final String message = "Unable to find organization for id " + id + ".";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
         if (includeMembers) {
@@ -176,7 +178,10 @@ public class OrganizationService extends BaseService {
         final Organization originalOrganization = getOrganization(service, user, organization.getId(), false);
         
         if (originalOrganization == null) {
-            throw new NotFoundException();
+            
+            final String message = "Unable to find organization for id " + organization.getId() + ".";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, originalOrganization);
@@ -204,7 +209,10 @@ public class OrganizationService extends BaseService {
         final Organization organization = getOrganization(service, user, organizationId, false);
 
         if (organization == null) {
-            throw new NotFoundException();
+            
+            final String message = "Unable to find organization for id " + organizationId + ".";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, organization);
@@ -323,9 +331,9 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
             
-            final String message = "Unable to find organization for " + organizationId + ".";
+            final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
         final ResultListUser usersResultList = new ResultListUser();
@@ -401,7 +409,7 @@ public class OrganizationService extends BaseService {
             
             final String message = "Unable to find user for email " + email + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
         final Organization organization = service.get(organizationId, Organization.class);
@@ -410,7 +418,7 @@ public class OrganizationService extends BaseService {
             
             final String message = "Unable to find organization for " + organizationId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, organization);
@@ -440,14 +448,14 @@ public class OrganizationService extends BaseService {
             
             final String message = "Unable to find user for id " + userId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
         if (organization == null) {
             
             final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, organization);
@@ -478,7 +486,7 @@ public class OrganizationService extends BaseService {
             
             final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
-            throw new NotFoundException(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
         checkEditPermissions(user, organization);
@@ -548,7 +556,7 @@ public class OrganizationService extends BaseService {
             
             final String message = "User does not have permission to perform this Organization action.";
             logger.error(message);
-            throw new RestException(false, HttpStatus.UNAUTHORIZED, "Not Authorized", message);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, message);
         }
     }
     

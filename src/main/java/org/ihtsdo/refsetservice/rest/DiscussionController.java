@@ -87,7 +87,7 @@ public class DiscussionController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/discussion/{type}/{refsetInternalId}")
-    public @ResponseBody ResultList<DiscussionThread> getDiscussions(@PathVariable(value = "type") final DiscussionType type, @PathVariable(value = "refsetInternalId") final String refsetInternalId,
+    public @ResponseBody ResponseEntity<ResultList<DiscussionThread>> getDiscussions(@PathVariable(value = "type") final DiscussionType type, @PathVariable(value = "refsetInternalId") final String refsetInternalId,
         @RequestParam(required = false) final String conceptId) throws Exception {
 
         try {
@@ -104,16 +104,12 @@ public class DiscussionController extends BaseController {
 
                 logger.debug("getDiscussionThreads: results: " + ModelUtility.toJson(results));
 
-                return results;
+                return new ResponseEntity<>(results, HttpStatus.OK);
             }
-
-        } catch (final RestException re) {
-            throw re;
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -158,13 +154,9 @@ public class DiscussionController extends BaseController {
                 return new ResponseEntity<>(discussionThread, new HttpHeaders(), HttpStatus.OK);
             }
 
-        } catch (final RestException re) {
-            throw re;
-
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -219,8 +211,7 @@ public class DiscussionController extends BaseController {
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -285,16 +276,12 @@ public class DiscussionController extends BaseController {
             }
 
             return new ResponseEntity<>(post, new HttpHeaders(), HttpStatus.CREATED);
-
-        } catch (final RestException re) {
-            throw re;
         }
-
+        
         catch (final Exception e) {
 
             logger.error("Error adding post: {} to discussionThreadId: {}", post, threadId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -368,8 +355,7 @@ public class DiscussionController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("updateDiscussionThread Error updating thread for discussionThread: {}", thread.toString());
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -433,8 +419,7 @@ public class DiscussionController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("updateDiscussionThreadStatus Error updating thread for discussionThread: {}", threadId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -505,8 +490,7 @@ public class DiscussionController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("updateDiscussionThreadPrivacy Error updating thread for discussionThread: {}", threadId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -571,8 +555,7 @@ public class DiscussionController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("updateDiscussionThreadVisibility Error updating thread for discussionThread: {}", threadId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -655,8 +638,7 @@ public class DiscussionController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("updateDiscussionPostPrivacy: Error updating thread for discussionThread: {}", threadId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -750,8 +732,7 @@ public class DiscussionController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Error updating discussion post: {}; for thread: {}", postId, threadId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
     
@@ -796,8 +777,7 @@ public class DiscussionController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Error deleting discussion post: {}; for thread: {}", postId, threadId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -836,8 +816,7 @@ public class DiscussionController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("deleteDiscussionThread Error deleting thread for discussionThread: {}", threadId);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 }

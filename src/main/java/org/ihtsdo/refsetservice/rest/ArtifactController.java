@@ -34,10 +34,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -87,14 +90,9 @@ public class ArtifactController extends BaseController {
 
             return new ResponseEntity<>(artifact, HttpStatus.OK);
 
-        } catch (final ResponseStatusException rse) {
-            logger.error("Error getting artifactd  {}.", id);
-            throw rse;
-
         } catch (final Exception e) {
             logger.error("Error getting artifactd  {}.", id);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
     }
@@ -133,6 +131,9 @@ public class ArtifactController extends BaseController {
 
         try {
 
+            if (searchParameters != null) {
+                searchParameters.setActiveOnly(true);
+            }
             final ResultList<Artifact> results = ArtifactService.findArtifacts(searchParameters);
 
             if (results != null && results.getItems() != null && !results.getItems().isEmpty()) {
@@ -143,13 +144,9 @@ public class ArtifactController extends BaseController {
 
             return new ResponseEntity<>(results, HttpStatus.OK);
 
-        } catch (final ResponseStatusException rse) {
-            throw rse;
-
         } catch (final Exception e) {
             logger.error("Error searching artifacts.  Search criteria: {} ", searchParameters.toString());
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -163,7 +160,7 @@ public class ArtifactController extends BaseController {
      */
     @ApiOperation(value = "Add artifact")
     @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Saveed icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 202, message = "Added artifact"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
         @ApiResponse(code = 500, message = "Internal server error")
     })
@@ -176,11 +173,14 @@ public class ArtifactController extends BaseController {
         final User authUser = SecurityService.getUserFromSession();
         if (authUser == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
+
         }
 
         try {
 
             final Artifact artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+
+            // TODO: check required values.
 
             final File file = FileUtility.saveArtifactFile(inputFile, artifactEntry.getEntityType() + "-" + artifactEntry.getEntityId(), null);
 
@@ -199,8 +199,73 @@ public class ArtifactController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to add artifact " + artifact, e);
-            handleException(e);
-            return null;
+            return handleException(e);
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Update artifact")
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Updated artifact metadata"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @PutMapping(value = "/artifact/{id}")
+    public ResponseEntity updateArtifact(final @PathVariable String id, final @RequestBody String artifact) throws Exception {
+
+        logger.info("Update artifact: " + artifact);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
+        }
+
+        try {
+
+            final Artifact existingArtifact = ArtifactService.getArtifact(id);
+            final Artifact artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+
+            existingArtifact.populateFrom(artifactEntry);
+            final Artifact returnArtifact = ArtifactService.updateArtifact(authUser, existingArtifact);
+
+            return ResponseEntity.status(HttpStatus.OK).body(returnArtifact);
+
+        } catch (final Exception e) {
+
+            logger.error("Trying to add artifact " + artifact, e);
+            return handleException(e);
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Inactivate artifact")
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Inactivate artifact"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @DeleteMapping(value = "/artifact/{id}")
+    public ResponseEntity inactivateArtifact(final @PathVariable String id) throws Exception {
+
+        logger.info("Inactivate artifact: " + id);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
+        }
+
+        try {
+            final Artifact artifact = ArtifactService.getArtifact(id);
+            artifact.setActive(false);
+            ArtifactService.updateArtifact(authUser, artifact);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
+        } catch (final Exception e) {
+
+            logger.error("Trying to Inactivate artifact " + id, e);
+            return handleException(e);
         }
     }
 
@@ -249,8 +314,7 @@ public class ArtifactController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to download artifact for id:" + id + ".", e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 

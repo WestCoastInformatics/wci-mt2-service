@@ -2186,6 +2186,10 @@ public class RefsetMemberService {
                         if (conceptNode.get("pt") != null) {
                             concept.setName(conceptNode.get("pt").get("term").asText());
                         }
+                        
+                        if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
+                            concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                        }
     
                         if (conceptNode.has("isLeafInferred")) {
                             concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
@@ -3820,10 +3824,12 @@ public class RefsetMemberService {
         
         logger.debug("addRefsetMembers about to add concept size: " + conceptIds.size());
         
+        final String moduleId = refset.getProject().getOrganization().getEdition().getTopLevelModule();
+        
         if (conceptIds.size() == 1) {
-            unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0)));
+            unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0), moduleId));
         } else {
-            unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds));
+            unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds, moduleId));
         }
 
         // update the member count and save the refset
@@ -3851,15 +3857,17 @@ public class RefsetMemberService {
      * @param refsetId the refset ID
      * @param url the URL to call
      * @param conceptId the concept ID to add as a member
+     * @param moduleId the moduleId ID of the refset
      * @return A list of concepts that were unable to be added
      * @throws Exception the exception
      */
-    private static List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId) throws Exception {
+    private static List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId, final String moduleId) throws Exception {
         
         final List<String> unaddedConcepts = new ArrayList<>();
         
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId)
+            .put("moduleId", conceptId)
             .put("referencedComponentId", conceptId);
 
         logger.debug("callAddMemberSingle URL: " + url);
@@ -3887,10 +3895,11 @@ public class RefsetMemberService {
      * @param refsetId the refset ID
      * @param url the base URL to call
      * @param conceptIds a list of concept IDs to make members
+     * @param moduleId the moduleId ID of the refset
      * @return A list of concepts that were unable to be added
      * @throws Exception the exception
      */
-    private static List<String> callAddMembersBulk(final String refsetId, final String url, List<String> conceptIds) throws Exception {
+    private static List<String> callAddMembersBulk(final String refsetId, final String url, List<String> conceptIds, final String moduleId) throws Exception {
         
         final List<String> unaddedConcepts = new ArrayList<>();
         final String bulkUrl = url + "/bulk";
@@ -3901,6 +3910,7 @@ public class RefsetMemberService {
             
             final ObjectNode memberBody = mapper.createObjectNode()
                 .put("refsetId", refsetId)
+                .put("moduleId", moduleId)
                 .put("referencedComponentId", conceptId);
             
             body.add(memberBody);
@@ -4737,11 +4747,12 @@ public class RefsetMemberService {
             
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             
-            List<String> unchangedConcepts;
+            List<String> unchangedConcepts = new ArrayList<>();
             final List<String> replacementChangeStatuses = Arrays.asList(REPLACEMENT_REMOVED, REPLACEMENT_ADDED, REMOVED_MANUAL_REPLACEMENT);
             boolean add = true;
             String changeText = "added";
             boolean memberChange = true;
+            boolean removeInactiveAlso = false;
             final UpgradeInactiveConcept upgradeInactiveConcept = getUpgradeConcept(service, user, refsetInternalId, inactiveConceptId);
             UpgradeReplacementConcept upgradeReplacementConcept = null;
             String conceptIdToChange = inactiveConceptId;
@@ -4762,11 +4773,15 @@ public class RefsetMemberService {
                         upgradeReplacementConcept = replacementConcept;
                         conceptIdToChange = replacementConceptId;
                         
-                        if (changed.equals(REMOVED_MANUAL_REPLACEMENT) && !upgradeReplacementConcept.isAdded()) {
+                        if (upgradeInactiveConcept.isStillMember() && changed.equals(REPLACEMENT_ADDED)) {
+                            removeInactiveAlso = true;
+                            
+                        } else if (changed.equals(REMOVED_MANUAL_REPLACEMENT) && !upgradeReplacementConcept.isAdded()) {
                             memberChange = false;
                         }
                     }
                 }
+                
             } else if (changed.equals(NEW_MANUAL_REPLACEMENT)) {
                 
                 upgradeReplacementConcept = manualReplacementConcept;
@@ -4786,7 +4801,16 @@ public class RefsetMemberService {
                 RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
                 
                 if (add) {
+                    
                     unchangedConcepts = RefsetMemberService.addRefsetMembers(service, user, refsetInternalId, new ArrayList<>(Arrays.asList(conceptIdToChange)));
+                    
+                    if (removeInactiveAlso && !unchangedConcepts.isEmpty()) {
+                        removeInactiveAlso = false;
+                        
+                    } else if (removeInactiveAlso && unchangedConcepts.isEmpty()) {
+                        unchangedConcepts.addAll(RefsetMemberService.removeRefsetMembers(service, user, refsetInternalId, inactiveConceptId));
+                    }
+                    
                 } else {
                     unchangedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refsetInternalId, conceptIdToChange);
                 }
@@ -4807,8 +4831,13 @@ public class RefsetMemberService {
                 }
                 
                 if (memberChange) {
+                    
                     upgradeInactiveConcept.setReplaced(add);
                     logger.debug("modifyUpgradeConcept: inactive concept marked as replaced = " + add);
+                    
+                    if (removeInactiveAlso && !unchangedConcepts.contains(inactiveConceptId)) {
+                        upgradeInactiveConcept.setStillMember(false);
+                    }
                 }
                 
                 // save or remove the replacement concept

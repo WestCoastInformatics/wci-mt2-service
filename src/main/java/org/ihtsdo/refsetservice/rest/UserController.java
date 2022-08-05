@@ -117,8 +117,7 @@ public class UserController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -163,8 +162,7 @@ public class UserController extends BaseController {
 
         } catch (final Exception e) {
             logger.error("Error updating user.  Id: {}", id, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -221,13 +219,9 @@ public class UserController extends BaseController {
 
             return new ResponseEntity<>(results, HttpStatus.OK);
 
-        } catch (final ResponseStatusException rse) {
-            throw rse;
-
         } catch (final Exception e) {
             logger.error("Error searching organizations.  Search criteria: {} ", searchParameters.toString());
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -252,8 +246,7 @@ public class UserController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to get user icon file " + fileName, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -302,8 +295,7 @@ public class UserController extends BaseController {
         } catch (final Exception e) {
 
             logger.error("Trying to edit user icon for user " + userId, e);
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 

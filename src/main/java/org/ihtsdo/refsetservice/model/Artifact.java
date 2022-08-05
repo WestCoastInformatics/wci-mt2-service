@@ -9,8 +9,6 @@
  */
 package org.ihtsdo.refsetservice.model;
 
-import java.util.Date;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -65,8 +63,8 @@ public class Artifact extends AbstractHasModified {
     /** The fileType. */
     @Column(nullable = true, length = 4000)
     private String description;
-    
-    /**  URL for artifact download. */
+
+    /** URL for artifact download. */
     @Transient
     private String downloadUrl;
 
@@ -114,10 +112,6 @@ public class Artifact extends AbstractHasModified {
     public void populateFrom(final Artifact other) {
 
         super.populateFrom(other);
-        entityType = other.getEntityType();
-        entityId = other.getEntityId();
-        fileName = other.getFileName();
-        fileType = other.getFileType();
         this.description = other.getDescription();
 
     }
@@ -250,17 +244,17 @@ public class Artifact extends AbstractHasModified {
 
         this.description = description;
     }
-    
-    
+
     /**
      * Sets the download url.
      *
      * @param downloadUrl the download url
      */
     public void setDownloadUrl(final String downloadUrl) {
+
         this.downloadUrl = downloadUrl;
     }
-    
+
     /**
      * Returns the download url.
      *
@@ -268,10 +262,9 @@ public class Artifact extends AbstractHasModified {
      */
     @JsonGetter()
     public String getDownloadUrl() {
+
         return downloadUrl;
     }
-    
-    
 
     /* see superclass */
     @Override
