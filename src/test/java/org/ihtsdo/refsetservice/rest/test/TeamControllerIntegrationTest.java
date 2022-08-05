@@ -120,6 +120,15 @@ public class TeamControllerIntegrationTest extends BaseTest {
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
+        
+        final Organization tempOrganization = new Organization();
+        tempOrganization.setId(null);
+        tempOrganization.setName("Organization for Team Unit Tests");
+        tempOrganization.setActive(true);
+        tempOrganization.setDescription("Generated from unit test");
+        tempOrganization.setIconUri("/organization/icon/");
+        tempOrganization.setPrimaryContactEmail("org@test.com");
+
 
         final Edition tempEdition = new Edition();
         tempEdition.setId(null);
@@ -128,6 +137,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
         tempEdition.setNamespace("teamTestNamespace");
         tempEdition.setIconUri("teamTestIconUri");
         tempEdition.setBranch("/SNOMEDCT");
+        tempEdition.setOrganization(organization);
 
         try {
             edition = EditionService.createEdition(testUser, tempEdition);
@@ -138,15 +148,6 @@ public class TeamControllerIntegrationTest extends BaseTest {
 
         assertThat(edition).isNotNull();
         assertThat(edition.getId()).isNotNull();
-
-        final Organization tempOrganization = new Organization();
-        tempOrganization.setId(null);
-        tempOrganization.setName("Organization for Team Unit Tests");
-        tempOrganization.setActive(true);
-        tempOrganization.setDescription("Generated from unit test");
-        tempOrganization.setIconUri("/organization/icon/");
-        tempOrganization.setPrimaryContactEmail("org@test.com");
-        tempOrganization.setEdition(edition);
 
         try (final TerminologyService service = new TerminologyService()) {
             
@@ -174,7 +175,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
         tempProject.setDescription("Generated from unit test");
         tempProject.setPrivateProject(false);
         tempProject.setPrimaryContactEmail("project@test.com");
-        tempProject.setOrganization(organization);
+        tempProject.setEdition(edition);
         tempProject.getTeams().add(UUID.randomUUID().toString());
         tempProject.getTeams().add(UUID.randomUUID().toString());
         tempProject.getRoles().add("author");
@@ -547,7 +548,6 @@ public class TeamControllerIntegrationTest extends BaseTest {
         assertThat(newOrganization).isNotNull();
         assertThat(newOrganization.getName()).isEqualTo(originalOrganization.getName());
         assertThat(newOrganization.isActive()).isEqualTo(originalOrganization.isActive());
-        assertThat(newOrganization.getEdition()).isEqualTo(originalOrganization.getEdition());
         assertThat(newOrganization.getDescription()).isEqualTo(originalOrganization.getDescription());
         assertThat(newOrganization.getPrimaryContactEmail()).isEqualTo(originalOrganization.getPrimaryContactEmail());
         if (nonUpdatedAttributes) {

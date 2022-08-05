@@ -120,29 +120,13 @@ public class UserControllerIntegrationTest extends BaseTest {
         testUser.setCompany("The Company");
 
         try {
+
             testUser = addUser(testUser);
         } catch (Exception e) {
+
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
-
-        final Edition tempEdition = new Edition();
-        tempEdition.setId(null);
-        tempEdition.setName("User Unit Test Edition");
-        tempEdition.setShortName("userTestShortName");
-        tempEdition.setNamespace("userTestNamespace");
-        tempEdition.setIconUri("userTestIconUri");
-        tempEdition.setBranch("/SNOMEDCT");
-
-        try {
-            edition = EditionService.createEdition(testUser, tempEdition);
-        } catch (Exception e) {
-            logger.error("ERROR {}", e.getMessage(), e);
-            assertTrue(false);
-        }
-
-        assertThat(edition).isNotNull();
-        assertThat(edition.getId()).isNotNull();
 
         final Organization tempOrganization = new Organization();
         tempOrganization.setId(null);
@@ -151,20 +135,40 @@ public class UserControllerIntegrationTest extends BaseTest {
         tempOrganization.setDescription("Generated from unit test");
         tempOrganization.setIconUri("/organization/icon/");
         tempOrganization.setPrimaryContactEmail("org@test.com");
-        tempOrganization.setEdition(edition);
+
+        final Edition tempEdition = new Edition();
+        tempEdition.setId(null);
+        tempEdition.setName("User Unit Test Edition");
+        tempEdition.setShortName("userTestShortName");
+        tempEdition.setNamespace("userTestNamespace");
+        tempEdition.setIconUri("userTestIconUri");
+        tempEdition.setBranch("/SNOMEDCT");
+        tempEdition.setOrganization(organization);
+
+        try {
+
+            edition = EditionService.createEdition(testUser, tempEdition);
+        } catch (Exception e) {
+
+            logger.error("ERROR {}", e.getMessage(), e);
+            assertTrue(false);
+        }
+
+        assertThat(edition).isNotNull();
+        assertThat(edition.getId()).isNotNull();
 
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             service.setModifiedBy(testUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
-            
+
             organization = OrganizationService.createOrganization(service, testUser, tempOrganization);
-            
+
             service.commit();
-            
+
         } catch (Exception e) {
-            
+
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
@@ -182,13 +186,16 @@ public class UserControllerIntegrationTest extends BaseTest {
             user2.setCompany("The Company");
 
             try {
+
                 addUser(user2);
             } catch (Exception e) {
+
                 logger.error("Exception adding users : {}", e);
                 throw e;
             }
 
         } catch (Exception ex) {
+
             logger.error("Exception setting up date for tests", ex);
             assertThat(false).isEqualTo(true);
         }
@@ -326,8 +333,10 @@ public class UserControllerIntegrationTest extends BaseTest {
         assertThat(newUser.getTitle()).isEqualTo(originalUser.getTitle());
 
         if (nonUpdatedAttributes) {
+
             assertThat(newUser.getIconUri()).isEqualTo(originalUser.getIconUri());
         }
+
         pass = true;
         return pass;
 

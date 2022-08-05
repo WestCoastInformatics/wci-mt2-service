@@ -1606,7 +1606,7 @@ public class RefsetMemberService {
         fileLines.append("Edition Branch" + separator + refset.getEdition().getBranch() + "\n");
         fileLines.append("Organization" + separator + refset.getOrganizationName() + "\n");
         fileLines.append("Project" + separator + refset.getProject().getName() + "\n");
-        fileLines.append("Module ID" + separator + refset.getProject().getOrganization().getEdition().getTopLevelModule() + "\n");
+        fileLines.append("Module ID" + separator + refset.getProject().getEdition().getTopLevelModule() + "\n");
         fileLines.append("Refset Version Status" + separator + refset.getVersionStatus() + "\n");
 
         if (refset.getVersionDate() != null) {
@@ -3824,7 +3824,7 @@ public class RefsetMemberService {
         
         logger.debug("addRefsetMembers about to add concept size: " + conceptIds.size());
         
-        final String moduleId = refset.getProject().getOrganization().getEdition().getTopLevelModule();
+        final String moduleId = refset.getProject().getEdition().getTopLevelModule();
         
         if (conceptIds.size() == 1) {
             unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0), moduleId));

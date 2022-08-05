@@ -58,7 +58,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(Refset.class);
-    
+
     /** The refset ID. */
     @Column(nullable = false, length = 256)
     private String refsetId;
@@ -70,11 +70,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The refset type. */
     @Column(nullable = false, length = 256)
     private String type;
-    
+
     /** The version status. */
     @Column(nullable = false, length = 256)
     private String versionStatus;
-    
+
     /** The workflow status. */
     @Column(nullable = true, length = 256)
     private String workflowStatus;
@@ -105,7 +105,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The latest published version flag. */
     @Column(nullable = true)
     private boolean latestPublishedVersion;
-    
+
     /** Does this refset have a version in development (this is only true if this is the latest published version). */
     @Column(nullable = true)
     private boolean hasVersionInDevelopment;
@@ -113,11 +113,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The assigned user. */
     @Column(nullable = true)
     private String assignedUser;
-    
+
     /** The refset member count. */
     @Column(nullable = false)
     private int memberCount = -1;
-    
+
     /** The flag for if a user can download this refset. */
     @Transient
     private boolean downloadable;
@@ -125,31 +125,31 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
     private boolean feedbackVisible;
-    
+
     /** The list of user roles for this refset. */
     @Transient
     private List<String> roles;
-    
+
     /** The flag for if the refset is locked due to an edit. */
     @Transient
     private boolean locked = false;
-    
+
     /** The flag for if the refset was last published more than one edition version prior. */
     @Transient
     private boolean upgradeWarning = false;
-    
+
     /** The list of actions available for the user to perform on this refset. */
     @Transient
     private List<String> availableActions;
-    
+
     /** The ID of the parent of the underlying refset concept. */
     @Transient
     private String parentConceptId;
-    
+
     /** The complete branch path of the refset. */
     @Transient
     private String branchPath;
-    
+
     /** The descriptions. */
     @Transient
     private List<Map<String, String>> descriptions = new ArrayList<>();
@@ -161,7 +161,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The module ID. */
     @Column(nullable = false, length = 256)
     private String moduleId;
-    
+
     /** The edit branch ID. */
     @Column(nullable = true, length = 256)
     private String editBranchId;
@@ -169,7 +169,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The external URL. */
     @Column(nullable = true, length = 4000)
     private String externalUrl;
-    
+
     /** The count of discussions for this item. */
     @Transient
     private int discussionCount;
@@ -186,35 +186,34 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The definition clauses. */
     // @Fetch(FetchMode.JOIN)
-    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class,
-            orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("created ASC")
     private List<DefinitionClause> definitionClauses = new ArrayList<>();
-    
+
     /** The value to use for the 'published' version status. */
     @Transient
     public static final String PUBLISHED = "PUBLISHED";
-    
+
     /** The value to use for the 'beta' version status. */
     @Transient
     public static final String BETA = "BETA";
-    
+
     /** The value to use for the 'in development' version status. */
     @Transient
     public static final String IN_DEVELOPMENT = "IN DEVELOPMENT";
-    
+
     /** The value to use for the 'INTENSIONAL' refset type. */
     @Transient
     public static final String INTENSIONAL = "INTENSIONAL";
-    
+
     /** The value to use for the 'EXTENSIONAL' refset type. */
     @Transient
     public static final String EXTENSIONAL = "EXTENSIONAL";
-    
+
     /** The value to use for the 'INCLUSION' intensional definition exception type. */
     @Transient
     public static final String INCLUSION = "INCLUSION";
-    
+
     /** The value to use for the 'EXCLUSION' intensional definition exception type. */
     @Transient
     public static final String EXCLUSION = "EXCLUSION";
@@ -223,6 +222,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * Instantiates an empty {@link Refset}.
      */
     public Refset() {
+
         // n/a
     }
 
@@ -232,6 +232,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param code the code
      */
     public Refset(final String code) {
+
         this.refsetId = code;
     }
 
@@ -243,6 +244,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param name the name
      */
     public Refset(final String terminology, final String code, final String name) {
+
         this.type = terminology;
         this.refsetId = code;
         this.name = name;
@@ -254,6 +256,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param other the other
      */
     public Refset(final Refset other) {
+
         populateFrom(other);
     }
 
@@ -263,7 +266,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param other the other
      */
     public void populateFrom(final Refset other) {
-        
+
         super.populateFrom(other);
         refsetId = other.getRefsetId();
         name = other.getName();
@@ -302,9 +305,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the refset ID
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "refsetIdSort", searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @GenericField(name = "refsetIdSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getRefsetId() {
+
         return refsetId;
     }
 
@@ -314,6 +317,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param refsetId the refset ID
      */
     public void setRefsetId(final String refsetId) {
+
         this.refsetId = refsetId;
     }
 
@@ -323,9 +327,9 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the name
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
+
         return name;
     }
 
@@ -335,6 +339,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param name the name
      */
     public void setName(final String name) {
+
         this.name = name;
     }
 
@@ -345,6 +350,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @KeywordField(normalizer = "lowercase", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getType() {
+
         return type.toUpperCase();
     }
 
@@ -354,6 +360,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param type the type
      */
     public void setType(final String type) {
+
         this.type = type.toUpperCase();
     }
 
@@ -365,6 +372,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "versionStatusSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getVersionStatus() {
+
         return versionStatus;
     }
 
@@ -374,9 +382,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param versionStatus the version status
      */
     public void setVersionStatus(final String versionStatus) {
+
         this.versionStatus = versionStatus;
     }
-    
+
     /**
      * Returns the workflow status.
      *
@@ -385,15 +394,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "workflowStatusSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getWorkflowStatus() {
+
         return workflowStatus;
     }
-    
+
     /**
      * Sets the workflow status.
      *
      * @param workflowStatus the workflow status
      */
     public void setWorkflowStatus(final String workflowStatus) {
+
         this.workflowStatus = workflowStatus;
     }
 
@@ -402,11 +413,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the versionDate
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     // @DateBridge(resolution = Resolution.SECOND, encoding =
     // EncodingType.STRING)
     public Date getVersionDate() {
+
         return versionDate;
     }
 
@@ -416,6 +427,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param versionDate the versionDate to set
      */
     public void setVersionDate(final Date versionDate) {
+
         this.versionDate = versionDate;
     }
 
@@ -425,6 +437,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the narrative
      */
     public String getNarrative() {
+
         return narrative;
     }
 
@@ -434,6 +447,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param narrative the narrative to set
      */
     public void setNarrative(final String narrative) {
+
         this.narrative = narrative;
     }
 
@@ -443,6 +457,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the versionNotes
      */
     public String getVersionNotes() {
+
         return versionNotes;
     }
 
@@ -452,6 +467,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param versionNotes the versionNotes to set
      */
     public void setVersionNotes(final String versionNotes) {
+
         this.versionNotes = versionNotes;
     }
 
@@ -462,6 +478,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean isPrivateRefset() {
+
         return privateRefset;
     }
 
@@ -471,9 +488,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param privateRefset the isPrivateRefset to set
      */
     public void setPrivateRefset(final boolean privateRefset) {
+
         this.privateRefset = privateRefset;
     }
-    
+
     /**
      * Gets the descriptions.
      *
@@ -481,15 +499,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public List<Map<String, String>> getDescriptions() {
+
         return descriptions;
     }
-    
+
     /**
      * Sets the descriptions.
      *
      * @param descriptions the descriptions
      */
     public void setDescriptions(List<Map<String, String>> descriptions) {
+
         this.descriptions = descriptions;
     }
 
@@ -500,6 +520,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public List<Map<String, String>> getVersionList() {
 
         if (versionList == null) {
+
             versionList = new ArrayList<>();
         }
 
@@ -510,29 +531,32 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param versionList the versionList to set
      */
     public void setVersionList(List<Map<String, String>> versionList) {
+
         this.versionList = versionList;
     }
-    
+
     /**
      * @return the roles
      */
     @JsonGetter()
     public List<String> getRoles() {
-        
+
         if (roles == null) {
+
             roles = new ArrayList<>();
         }
-        
+
         return roles;
     }
-    
+
     /**
      * @param roles the roles
      */
     public void setRoles(List<String> roles) {
+
         this.roles = roles;
     }
-    
+
     /**
      * Gets the tags.
      *
@@ -543,6 +567,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public Set<String> getTags() {
 
         if (tags == null) {
+
             tags = new HashSet<>();
         }
 
@@ -555,6 +580,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param tags the tags to set
      */
     public void setTags(final Set<String> tags) {
+
         this.tags = tags;
     }
 
@@ -566,12 +592,15 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @JsonSerialize(contentAs = Edition.class)
     @JsonDeserialize(contentAs = Edition.class)
     public Edition getEdition() {
-        
-        if (project == null || project.getOrganization() == null  || project.getOrganization().getEdition() == null) {
+
+        if (project == null || project.getEdition() == null) {
+
             return null;
         } else {
-            return project.getOrganization().getEdition();
+
+            return project.getEdition();
         }
+
     }
 
     /**
@@ -580,24 +609,29 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param edition the edition to set
      */
     public void setEdition(final Edition edition) {
-        
-        if (project != null && project.getOrganization() != null) {
-            project.getOrganization().setEdition(edition);
+
+        if (project != null) {
+
+            project.setEdition(edition);
         }
+
     }
-    
+
     /**
      * Returns the edition ID.
      *
      * @return the edition ID
      */
     public String getEditionId() {
-        
+
         if (getEdition() != null) {
+
             return getEdition().getId();
         } else {
+
             return null;
         }
+
     }
 
     /**
@@ -608,25 +642,31 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setEditionId(final String editionId) {
 
         if (getEdition() != null) {
+
             getEdition().setId(editionId);
         }
+
     }
-    
+
     /**
      * Returns the edition branch.
      *
      * @return the edition branch
      */
-    @GenericField(searchable = Searchable.YES,
-            projectable = Projectable.NO, sortable = Sortable.NO)
-    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({@PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization"), @PropertyValue(propertyName = "edition")}))
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization"), @PropertyValue(propertyName = "edition")
+    }))
     public String getEditionBranch() {
-        
+
         if (getEdition() != null) {
+
             return getEdition().getBranch();
         } else {
+
             return null;
         }
+
     }
 
     /**
@@ -637,8 +677,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setEditionBranch(final String editionBranch) {
 
         if (getEdition() != null) {
+
             getEdition().setBranch(editionBranch);
         }
+
     }
 
     /**
@@ -647,16 +689,20 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the edition name
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "editionNameSort", searchable = Searchable.YES,
-            projectable = Projectable.NO, sortable = Sortable.YES)
-    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({@PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization"), @PropertyValue(propertyName = "edition")}))
+    @GenericField(name = "editionNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization"), @PropertyValue(propertyName = "edition")
+    }))
     public String getEditionName() {
-        
+
         if (getEdition() != null) {
+
             return getEdition().getName();
         } else {
+
             return null;
         }
+
     }
 
     /**
@@ -667,8 +713,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setEditionName(final String editionName) {
 
         if (getEdition() != null) {
+
             getEdition().setName(editionName);
         }
+
     }
 
     /**
@@ -677,14 +725,19 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the edition short name
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({@PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization"), @PropertyValue(propertyName = "edition")}))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization"), @PropertyValue(propertyName = "edition")
+    }))
     public String getEditionShortName() {
-        
+
         if (getEdition() != null) {
+
             return getEdition().getShortName();
         } else {
+
             return null;
         }
+
     }
 
     /**
@@ -695,8 +748,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setEditionShortName(final String editionShortName) {
 
         if (getEdition() != null) {
+
             getEdition().setShortName(editionShortName);
         }
+
     }
 
     /**
@@ -706,6 +761,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean isLocalSet() {
+
         return localSet;
     }
 
@@ -715,6 +771,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param localSet the localSet to set
      */
     public void setLocalSet(final boolean localSet) {
+
         this.localSet = localSet;
     }
 
@@ -725,6 +782,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getModuleId() {
+
         return moduleId;
     }
 
@@ -734,6 +792,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param moduleId the moduleId to set
      */
     public void setModuleId(final String moduleId) {
+
         this.moduleId = moduleId;
     }
 
@@ -743,6 +802,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the edit branch ID
      */
     public String getEditBranchId() {
+
         return editBranchId;
     }
 
@@ -752,24 +812,27 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param editBranchId the edit branch ID to set
      */
     public void setEditBranchId(final String editBranchId) {
+
         this.editBranchId = editBranchId;
     }
-    
+
     /**
      * Gets the external url.
      *
      * @return the externalUrl
      */
     public String getExternalUrl() {
+
         return externalUrl;
     }
-    
+
     /**
      * Sets the external url.
      *
      * @param externalUrl the externalUrl to set
      */
     public void setExternalUrl(final String externalUrl) {
+
         this.externalUrl = externalUrl;
     }
 
@@ -783,6 +846,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public List<DefinitionClause> getDefinitionClauses() {
 
         if (definitionClauses == null) {
+
             definitionClauses = new ArrayList<>();
         }
 
@@ -795,11 +859,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param definitionClauses the definitionClauses to set
      */
     public void setDefinitionClauses(final List<DefinitionClause> definitionClauses) {
-        
+
         if (definitionClauses != null) {
+
             Collections.sort(definitionClauses, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
         }
-        
+
         this.definitionClauses = definitionClauses;
     }
 
@@ -810,6 +875,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public boolean isDownloadable() {
+
         return downloadable;
     }
 
@@ -819,9 +885,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param downloadable the downloadable flag to set
      */
     public void setDownloadable(final boolean downloadable) {
+
         this.downloadable = downloadable;
     }
-    
+
     /**
      * Gets the flag that shows if the refset is locked due to edits.
      *
@@ -829,18 +896,20 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public boolean isLocked() {
+
         return locked;
     }
-    
+
     /**
      * Sets the flag that shows if the refset is locked due to edits.
      *
      * @param locked the locked flag
      */
     public void setLocked(final boolean locked) {
+
         this.locked = locked;
     }
-    
+
     /**
      * Gets the flag that shows if the refset was last published more than one edition version prior.
      *
@@ -848,18 +917,20 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public boolean getUpgradeWarning() {
+
         return upgradeWarning;
     }
-    
+
     /**
      * Sets the flag that shows if the refset was last published more than one edition version prior.
      *
      * @param upgradeWarning the upgrade warning flag
      */
     public void setUpgradeWarning(final boolean upgradeWarning) {
+
         this.upgradeWarning = upgradeWarning;
     }
-    
+
     /**
      * Gets the list of actions available for the user to perform on this refset.
      * 
@@ -867,20 +938,22 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public List<String> getAvailableActions() {
-        
+
         if (availableActions == null) {
+
             availableActions = new ArrayList<>();
         }
-        
+
         return availableActions;
     }
-    
+
     /**
      * Sets the list of actions available for the user to perform on this refset.
      * 
      * @param availableActions the available actions to set
      */
     public void setAvailableActions(List<String> availableActions) {
+
         this.availableActions = availableActions;
     }
 
@@ -891,6 +964,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public boolean isFeedbackVisible() {
+
         return feedbackVisible;
     }
 
@@ -900,9 +974,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param feedbackVisible the feedbackVisible flag to set
      */
     public void setFeedbackVisible(final boolean feedbackVisible) {
+
         this.feedbackVisible = feedbackVisible;
     }
-    
+
     /**
      * Returns the ID of the parent of the underlying refset concept.
      *
@@ -910,6 +985,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public String getParentConceptId() {
+
         return parentConceptId;
     }
 
@@ -919,9 +995,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param parentConceptId the parent concept ID to set
      */
     public void setParentConceptId(final String parentConceptId) {
+
         this.parentConceptId = parentConceptId;
     }
-    
+
     /**
      * Returns the complete branch path of the refset.
      *
@@ -929,54 +1006,59 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public String getBranchPath() {
+
         return branchPath;
     }
-    
+
     /**
      * Sets the complete branch path of the refset.
      *
      * @param branchPath the branch path to set
      */
     public void setBranchPath(final String branchPath) {
+
         this.branchPath = branchPath;
     }
-    
+
     /**
      * Returns the user assigned to work on the refset.
      *
      * @return the assigned user
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "assignedUserSort", searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @GenericField(name = "assignedUserSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getAssignedUser() {
+
         return assignedUser;
     }
-    
+
     /**
      * Sets the user assigned to work on the refset.
      *
      * @param assignedUser the assigned user to set
      */
     public void setAssignedUser(final String assignedUser) {
+
         this.assignedUser = assignedUser;
     }
-    
+
     /**
      * Returns the member count.
      *
      * @return the member count
      */
     public int getMemberCount() {
+
         return memberCount;
     }
-    
+
     /**
      * Sets the member count.
      *
      * @param memberCount the member count to set
      */
     public void setMemberCount(final int memberCount) {
+
         this.memberCount = memberCount;
     }
 
@@ -986,27 +1068,32 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the project
      */
     public Project getProject() {
+
         return project;
     }
-    
+
     /**
      * Sets the project.
      *
      * @param project the project to set
      */
     public void setProject(final Project project) {
+
         this.project = project;
     }
-    
+
     /**
      * Returns the project ID.
      *
      * @return the project ID
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    @IndexingDependency(derivedFrom = @ObjectPath({@PropertyValue(propertyName = "project")}))
+    @IndexingDependency(derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "project")
+    }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getProjectId() {
+
         return project == null ? null : project.getId();
     }
 
@@ -1018,12 +1105,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public void setProjectId(final String projectId) {
 
         if (project != null) {
+
             this.project.setId(projectId);
         } else {
-            
+
             this.project = new Project();
             this.project.setId(projectId);
         }
+
     }
 
     /**
@@ -1032,19 +1121,21 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @return the organization name
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "organizationNameSort", searchable = Searchable.YES,
-            projectable = Projectable.NO, sortable = Sortable.YES)
+    @GenericField(name = "organizationNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(derivedFrom = @ObjectPath({
-            @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization")
+        @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "organization")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationName() {
 
-        if (project == null || project.getOrganization() == null) {
+        if (project == null || project.getEdition() == null || project.getEdition().getOrganization() == null) {
+
             return null;
         } else {
-            return project.getOrganization().getName();
+
+            return project.getEdition().getOrganization().getName();
         }
+
     }
 
     /**
@@ -1054,17 +1145,19 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     public void setOrganizationName(final String organizationName) {
 
-        if (project != null && project.getOrganization() != null) {
-            this.project.getOrganization().setName(organizationName);
+        if (project != null && project.getEdition() != null && project.getEdition().getOrganization() != null) {
+
+            this.project.getEdition().getOrganization().setName(organizationName);
         }
 
     }
-    
+
     /**
      * @return the latestPublishedVersion
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean isLatestPublishedVersion() {
+
         return latestPublishedVersion;
     }
 
@@ -1072,24 +1165,27 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param latestPublishedVersion the latestPublishedVersion to set
      */
     public void setLatestPublishedVersion(boolean latestPublishedVersion) {
+
         this.latestPublishedVersion = latestPublishedVersion;
     }
-    
+
     /**
      * @return Does this refset have a version in development (this is only true if this is the latest published version)
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean getHasVersionInDevelopment() {
-        return hasVersionInDevelopment; 
+
+        return hasVersionInDevelopment;
     }
-    
+
     /**
      * @param hasVersionInDevelopment set if this refset has a version in development (this is only true if this is the latest published version)
      */
     public void setHasVersionInDevelopment(boolean hasVersionInDevelopment) {
+
         this.hasVersionInDevelopment = hasVersionInDevelopment;
     }
-    
+
     /**
      * Gets the discussion count.
      *
@@ -1097,17 +1193,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public int getDiscussionCount() {
-        
+
         return discussionCount;
     }
-    
+
     /**
      * Sets the discussion count.
      *
      * @param discussionCount the discussion count
      */
     public void setDiscussionCount(int discussionCount) {
-        
+
         this.discussionCount = discussionCount;
     }
 
@@ -1118,6 +1214,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((refsetId == null) ? 0 : refsetId.hashCode());
@@ -1150,7 +1247,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (localSet ? 1 : 0);
         return result;
     }
-    
+
     /**
      * Equals.
      *
@@ -1161,184 +1258,261 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     public boolean equals(final Object obj) {
 
         if (this == obj) {
+
             return true;
         }
 
         if (obj == null) {
+
             return false;
         }
 
         if (getClass() != obj.getClass()) {
+
             return false;
         }
 
         final Refset other = (Refset) obj;
 
         if (refsetId == null) {
+
             if (other.refsetId != null) {
+
                 return false;
             }
+
         } else if (!refsetId.equals(other.refsetId)) {
+
             return false;
         }
 
         if (name == null) {
+
             if (other.name != null) {
+
                 return false;
             }
+
         } else if (!name.equals(other.name)) {
+
             return false;
         }
 
         if (type == null) {
+
             if (other.type != null) {
+
                 return false;
             }
+
         } else if (!type.equals(other.type)) {
+
             return false;
         }
 
         if (versionStatus == null) {
+
             if (other.versionStatus != null) {
+
                 return false;
             }
+
         } else if (!versionStatus.equals(other.versionStatus)) {
+
             return false;
         }
-        
+
         if (assignedUser == null) {
+
             if (other.assignedUser != null) {
+
                 return false;
             }
+
         } else if (!assignedUser.equals(other.assignedUser)) {
+
             return false;
         }
-        
+
         if (parentConceptId == null) {
+
             if (other.parentConceptId != null) {
+
                 return false;
             }
+
         } else if (!parentConceptId.equals(other.parentConceptId)) {
+
             return false;
         }
-        
+
         if (branchPath == null) {
+
             if (other.branchPath != null) {
+
                 return false;
             }
+
         } else if (!branchPath.equals(other.branchPath)) {
+
             return false;
         }
-        
+
         if (descriptions == null) {
+
             if (other.descriptions != null) {
+
                 return false;
             }
+
         } else if (!descriptions.equals(other.descriptions)) {
+
             return false;
         }
-        
+
         if (workflowStatus == null) {
+
             if (other.workflowStatus != null) {
+
                 return false;
             }
+
         } else if (!workflowStatus.equals(other.workflowStatus)) {
+
             return false;
         }
 
         if (versionDate == null) {
+
             if (other.versionDate != null) {
+
                 return false;
             }
+
         } else if (!versionDate.equals(other.versionDate)) {
+
             return false;
         }
 
         if (narrative == null) {
+
             if (other.narrative != null) {
+
                 return false;
             }
+
         } else if (!narrative.equals(other.narrative)) {
+
             return false;
         }
 
         if (versionNotes == null) {
+
             if (other.versionNotes != null) {
+
                 return false;
             }
+
         } else if (!versionNotes.equals(other.versionNotes)) {
+
             return false;
         }
-        
+
         if (roles == null) {
+
             if (other.roles != null) {
+
                 return false;
             }
+
         } else if (!roles.equals(other.roles)) {
+
             return false;
         }
 
         if (moduleId == null) {
+
             if (other.moduleId != null) {
+
                 return false;
             }
+
         } else if (!moduleId.equals(other.moduleId)) {
+
             return false;
         }
-        
+
         if (editBranchId == null) {
+
             if (other.editBranchId != null) {
+
                 return false;
             }
+
         } else if (!editBranchId.equals(other.editBranchId)) {
+
             return false;
         }
 
         if (externalUrl == null) {
+
             if (other.externalUrl != null) {
+
                 return false;
             }
+
         } else if (!externalUrl.equals(other.externalUrl)) {
+
             return false;
         }
 
         if (memberCount != other.memberCount) {
+
             return false;
         }
-        
+
         if (privateRefset != other.privateRefset) {
+
             return false;
         }
 
         if (localSet != other.localSet) {
+
             return false;
         }
 
         if (latestPublishedVersion != other.latestPublishedVersion) {
+
             return false;
         }
-        
+
         if (hasVersionInDevelopment != other.hasVersionInDevelopment) {
+
             return false;
         }
-        
+
         if (downloadable != other.downloadable) {
+
             return false;
         }
-        
+
         if (feedbackVisible != other.feedbackVisible) {
+
             return false;
         }
-        
+
         if (locked != other.locked) {
+
             return false;
         }
-        
+
         if (upgradeWarning != other.upgradeWarning) {
+
             return false;
         }
-        
+
         if (other.discussionCount != discussionCount) {
+
             return false;
         }
 
@@ -1353,6 +1527,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @Override
     public int compareTo(final Refset o) {
+
         // Handle null
         return (name + refsetId).compareToIgnoreCase(o.getName() + o.getRefsetId());
     }

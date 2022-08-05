@@ -114,21 +114,10 @@ public class TestConfiguration {
                 service.setModifiedBy("TestConfiguration");
                 service.setModifiedFlag(true);
                 
-                for (String editionJson : editionsJson) {
-
-                    Edition edition = ModelUtility.fromJson(editionJson, Edition.class);
-
-                    // Add an object
-                    service.add(edition);
-                    editionList.add(edition);
-                    logger.info("Edition " + edition.getName() + " successfully added");
-                }
-
                 for (String organizationJson : organizationsJson) {
 
                     Organization organization =
                             ModelUtility.fromJson(organizationJson, Organization.class);
-                    organization.setEdition(editionList.get(0));
                     
                     // Add an object
                     service.add(organization);
@@ -136,10 +125,22 @@ public class TestConfiguration {
                     logger.info("Organization " + organization.getName() + " successfully added");
                 }
 
+
+                for (String editionJson : editionsJson) {
+
+                    Edition edition = ModelUtility.fromJson(editionJson, Edition.class);
+
+                    // Add an object
+                    service.add(edition);
+                    editionList.add(edition);
+                    edition.setOrganization(organizationList.get(0));
+                    logger.info("Edition " + edition.getName() + " successfully added");
+                }
+
                 for (String projectJson : projectsJson) {
 
                     Project project = ModelUtility.fromJson(projectJson, Project.class);
-                    project.setOrganization(organizationList.get(0));
+                    project.setEdition(editionList.get(0));
 
                     // Add an object
                     service.add(project);

@@ -67,11 +67,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @Column(nullable = true, length = 4000)
     private String description;
 
-    /** The owning organization. */
-    @ManyToOne(targetEntity = Organization.class)
+    /** The edition the project is based upon. */
+    @ManyToOne(targetEntity = Edition.class)
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
-    private Organization organization;
+    private Edition edition;
 
     /** The private flag. */
     @Column(nullable = false)
@@ -94,7 +94,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @Transient
     private List<String> roles;
 
-    /**  The member list. */
+    /** The member list. */
     @Transient
     private List<User> memberList;
 
@@ -120,12 +120,12 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      * Instantiates a {@link Project} from the specified parameters.
      *
      * @param name the name
-     * @param organization the organization
+     * @param edition the edition
      */
-    public Project(final String name, final Organization organization) {
+    public Project(final String name, final Edition edition) {
 
         this.name = name;
-        this.organization = organization;
+        this.edition = edition;
     }
 
     /**
@@ -137,7 +137,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
         super.populateFrom(other);
         name = other.getName();
-        organization = other.getOrganization();
+        edition = other.getEdition();
         description = other.getDescription();
         privateProject = other.isPrivateProject();
         roles = other.getRoles();
@@ -203,25 +203,25 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     }
 
     /**
-     * Gets the organization.
+     * Gets the edition.
      *
-     * @return the organization
+     * @return the edition
      */
-    @IndexedEmbedded(targetType = Organization.class)
+    @IndexedEmbedded(targetType = Edition.class)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
-    public Organization getOrganization() {
+    public Edition getEdition() {
 
-        return organization;
+        return edition;
     }
 
     /**
-     * Sets the organization.
+     * Sets the edition.
      *
-     * @param organization the organization to set
+     * @param edition the edition to set
      */
-    public void setOrganization(final Organization organization) {
+    public void setEdition(final Edition edition) {
 
-        this.organization = organization;
+        this.edition = edition;
     }
 
     /**
@@ -236,20 +236,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationId() {
 
-        return organization == null ? null : organization.getId();
-    }
-
-    /**
-     * Sets the organization ID.
-     *
-     * @param organizationId the organization ID to set
-     */
-    public void setOrganizationId(final String organizationId) {
-
-        if (organization == null) {
-            this.organization = new Organization();
-        }
-        this.organization.setId(organizationId);
+        return edition == null || edition.getOrganization() == null ? null : edition.getOrganization().getId();
     }
 
     /**
@@ -401,7 +388,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         result = prime * result + ((crowdProjectId == null) ? 0 : crowdProjectId.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + ((edition == null) ? 0 : edition.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + (privateProject ? 1231 : 1237);
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
@@ -462,18 +449,6 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
             }
 
         } else if (!name.equals(other.name)) {
-
-            return false;
-        }
-
-        if (organization == null) {
-
-            if (other.organization != null) {
-
-                return false;
-            }
-
-        } else if (!organization.equals(other.organization)) {
 
             return false;
         }
@@ -552,9 +527,9 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
             throw new Exception("Unexpected non-null id");
         }
 
-        if (getOrganization() == null) {
+        if (getEdition() == null) {
 
-            throw new Exception("Unexpected null/empty organization");
+            throw new Exception("Unexpected null/empty edition");
         }
 
         if (StringUtils.isBlank(getName())) {
@@ -573,9 +548,9 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
             throw new Exception("Unexpected null/empty id");
         }
 
-        if (getOrganization() == null) {
+        if (getEdition() == null) {
 
-            throw new Exception("Unexpected null/empty organization");
+            throw new Exception("Unexpected null/empty edition");
         }
 
         if (StringUtils.isBlank(getName())) {

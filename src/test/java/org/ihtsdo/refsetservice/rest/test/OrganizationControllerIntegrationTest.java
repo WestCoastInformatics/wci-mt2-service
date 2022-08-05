@@ -159,7 +159,6 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setDescription("Generated from unit test");
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
-        originalOrg.setEdition(edition);
 
         logger.info(" organization = {}", originalOrg.toString());
         // forbidden - unit test user is set so this does not happen
@@ -198,7 +197,6 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setDescription("Generated from unit test");
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
-        originalOrg.setEdition(edition);
 
         logger.info(" new organization = {}", originalOrg.toString());
 
@@ -257,7 +255,6 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setDescription("Generated from unit test");
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
-        originalOrg.setEdition(edition);
 
         logger.info(" organization = {}", originalOrg.toString());
 
@@ -300,7 +297,6 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setDescription("Generated from unit test");
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
-        originalOrg.setEdition(edition);
 
         logger.info(" organization = {}", originalOrg.toString());
 
@@ -361,7 +357,6 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setDescription("Generated from unit test");
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
-        originalOrg.setEdition(edition);
 
         logger.info(" organization = {}", originalOrg.toString());
 
@@ -423,7 +418,6 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         assertThat(newOrganization).isNotNull();
         assertThat(newOrganization.getName()).isEqualTo(originalOrganization.getName());
         assertThat(newOrganization.isActive()).isEqualTo(originalOrganization.isActive());
-        assertThat(newOrganization.getEdition()).isEqualTo(originalOrganization.getEdition());
         assertThat(newOrganization.getDescription()).isEqualTo(originalOrganization.getDescription());
         assertThat(newOrganization.getPrimaryContactEmail()).isEqualTo(originalOrganization.getPrimaryContactEmail());
         if (nonUpdatedAttributes) {

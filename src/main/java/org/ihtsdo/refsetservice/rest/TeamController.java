@@ -92,11 +92,14 @@ public class TeamController extends BaseController {
         logger.info("Get team: {}", id);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+
         if (authUser == null) {
+
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
         try {
+
             final Team team = TeamService.getTeam(id, includeMembers);
             return new ResponseEntity<>(team, HttpStatus.OK);
 
@@ -106,9 +109,11 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+
             logger.error("Error getting team.  Id: {}", id);
             return handleException(e);
         }
+
     }
 
     /**
@@ -138,11 +143,12 @@ public class TeamController extends BaseController {
         @QueryParam(value = "hideOrganizationTeams") final Boolean hideOrganizationTeams) throws Exception {
 
         logger.info("Search teams includeMembers: {} ; searchParameters: {}", includeMembers, ModelUtility.toJson(searchParameters));
-        
+
         final User authUser = SecurityService.getUserFromSession();
         boolean noOrganizationTeams = false;
-        
+
         if (hideOrganizationTeams != null && hideOrganizationTeams) {
+
             noOrganizationTeams = true;
         }
 
@@ -155,9 +161,11 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             logger.error("Error searching teams.  Search criteria: {} ", searchParameters.toString());
             return handleException(e);
         }
+
     }
 
     /**
@@ -181,19 +189,25 @@ public class TeamController extends BaseController {
         logger.info("Add team: {}", team);
 
         try {
+
             // TODO check permissions, fail if not authorized.
             final User authUser = SecurityService.getUserFromSession();
+
             if (authUser == null) {
+
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
             }
 
             if (team == null) {
+
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing team");
             }
 
             try {
+
                 team.validateAdd();
             } catch (Exception e) {
+
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
             }
 
@@ -201,9 +215,11 @@ public class TeamController extends BaseController {
             return ResponseEntity.status(HttpStatus.CREATED).body(t);
 
         } catch (final Exception e) {
+
             logger.error("Error adding team.  Team: {}", team.toString());
             return handleException(e);
         }
+
     }
 
     /**
@@ -226,23 +242,29 @@ public class TeamController extends BaseController {
     public @ResponseBody ResponseEntity updateTeam(@PathVariable(value = "id") final String id, @RequestBody final Team team) throws Exception {
 
         logger.info("Update team: {}", team);
+
         // TODO check permissions, fail if not authorized.
         try {
 
             final User authUser = SecurityService.getUserFromSession();
+
             if (authUser == null) {
+
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
             }
 
             if (team == null || !org.apache.commons.lang3.StringUtils.equals(id, team.getId())) {
+
                 final String errorMessage = "Team is null or team id does not match id in URL.";
                 logger.error(errorMessage);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
             }
 
             try {
+
                 team.validateUpdate(null);
             } catch (Exception e) {
+
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
             }
 
@@ -255,9 +277,11 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+
             logger.error("Error updating team. Team: {}", team);
             return handleException(e);
         }
+
     }
 
     /**
@@ -282,17 +306,22 @@ public class TeamController extends BaseController {
         logger.info("Get team users. Id: {}", id);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+
         if (authUser == null) {
+
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
         try {
+
             final ResultListUser users = TeamService.getTeamUsers(authUser, id);
             return new ResponseEntity<>(users, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -309,7 +338,9 @@ public class TeamController extends BaseController {
         logger.info("Add user {} to team: {}", email, teamId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+
         if (authUser == null) {
+
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
@@ -320,6 +351,7 @@ public class TeamController extends BaseController {
             // add user to crowd groups
             // crowd.unit.test.skip=true
             if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+
                 final Organization organization = team.getOrganization();
                 final User user = UserService.getUserByEmail(email);
 
@@ -330,14 +362,22 @@ public class TeamController extends BaseController {
                 final ResultList<Project> projectList = ProjectService.searchProjects(authUser, searchParameters);
 
                 if (projectList != null && projectList.getItems() != null) {
+
                     for (Project project : projectList.getItems()) {
+
                         for (String role : team.getRoles()) {
-                            final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                            CrowdAPIClient.addMembership(groupName, user.getUserName());
+
+                            // TODO: Tim Whalen for Permissions
+                            // final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                            // CrowdAPIClient.addMembership(groupName, user.getUserName());
                         }
+
                     }
+
                 }
+
             } else {
+
                 logger.info("SKIP CALLING CROWD API");
             }
 
@@ -352,6 +392,7 @@ public class TeamController extends BaseController {
             logger.error("Error adding user: {} to team: {}", email, teamId);
             return handleException(e);
         }
+
     }
 
     /**
@@ -368,7 +409,9 @@ public class TeamController extends BaseController {
         logger.info("Remove user {} from team: {}", userId, teamId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+
         if (authUser == null) {
+
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
@@ -380,6 +423,7 @@ public class TeamController extends BaseController {
             // remove user from crowd groups
             // crowd.unit.test.skip=true
             if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+
                 logger.info("CALLING CROWD API");
                 final Organization organization = team.getOrganization();
                 final String teamsQuery = "teams:" + teamId;
@@ -388,14 +432,21 @@ public class TeamController extends BaseController {
                 final ResultList<Project> projectList = ProjectService.searchProjects(authUser, searchParameters);
 
                 if (projectList != null && projectList.getItems() != null) {
+
                     for (Project project : projectList.getItems()) {
+
                         for (String role : team.getRoles()) {
-                            final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization.getEdition().getShortName(), project.getCrowdProjectId(), role);
+
+                            final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                             CrowdAPIClient.deleteMembership(groupName, user.getUserName());
                         }
+
                     }
+
                 }
+
             } else {
+
                 logger.info("SKIP CALLING CROWD API");
             }
 
@@ -406,9 +457,11 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+
             logger.error("Error removing user: {} from team: {}", userId, teamId);
             return handleException(e);
         }
+
     }
 
     /**
@@ -425,7 +478,9 @@ public class TeamController extends BaseController {
         logger.info("Add role {} to team {}", role, teamId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+
         if (authUser == null) {
+
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
@@ -435,9 +490,11 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(HttpStatus.CREATED);
 
         } catch (final Exception e) {
+
             logger.error("Error adding role: {} to team: {}", role, teamId);
             return handleException(e);
         }
+
     }
 
     /**
@@ -454,7 +511,9 @@ public class TeamController extends BaseController {
         logger.info("Remove role {} from team: {}", role, teamId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+
         if (authUser == null) {
+
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
@@ -464,9 +523,11 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
+
             logger.error("Error removing role: {} from team: {}", role, teamId);
             return handleException(e);
         }
+
     }
 
     /**
@@ -488,7 +549,9 @@ public class TeamController extends BaseController {
         logger.info("Inactivate team: {}", id);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+
         if (authUser == null) {
+
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
@@ -503,8 +566,10 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+
             logger.error("Error inactivating team.  Id: {}", id);
             return handleException(e);
         }
+
     }
 }

@@ -44,7 +44,7 @@ public class SyncAgent {
 
     protected static List<Refset> allDatabaseRefsets = null;
 
-    protected static Organization develeperTestingOranization = null;
+    protected static Edition develeperTestingEdition = null;
 
     protected static final Map<String, Organization> organizationsAdded = new HashMap<>();
 
@@ -52,7 +52,7 @@ public class SyncAgent {
 
     protected static final Set<Organization> organizationsSynced = new HashSet<>();
 
-    protected static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
+    protected static final Map<String, Project> defaultEditionProjects = new HashMap<>();
 
     protected static final Set<Edition> editionsAdded = new HashSet<>();
 
@@ -65,8 +65,6 @@ public class SyncAgent {
     protected static final Set<Refset> refsetVersionsUnchanged = new HashSet<>();
 
     protected static final Set<Refset> refsetVersionsSynced = new HashSet<>();
-
-    protected static final Map<String, Edition> refsetEditions = new HashMap<>();
 
     protected static final Set<String> uniqueRefsetIds = new HashSet<>();
 
@@ -285,12 +283,12 @@ public class SyncAgent {
 
     private void clearPreviousRun() {
 
-        develeperTestingOranization = null;
+        develeperTestingEdition = null;
 
         organizationsAdded.clear();
         organizationsUnchanged.clear();
         organizationsSynced.clear();
-        defaultOrganizationProjects.clear();
+        defaultEditionProjects.clear();
 
         editionsAdded.clear();
         editionsUnchanged.clear();
@@ -299,7 +297,6 @@ public class SyncAgent {
         refsetVersionsAdded.clear();
         refsetVersionsSynced.clear();
         refsetVersionsUnchanged.clear();
-        refsetEditions.clear();
 
         uniqueRefsetIds.clear();
         ignoredCodeSystemNames.clear();

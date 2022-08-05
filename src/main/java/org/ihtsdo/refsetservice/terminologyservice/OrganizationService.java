@@ -112,8 +112,9 @@ public class OrganizationService extends BaseService {
             logger.info("CALLING CROWD API");
 
             try {
-                final String crowdGroupName = CrowdAPIClient.addAdminGroup(newOrganization.getEdition().getShortName(), "Organization Administrator(s)");
-                CrowdAPIClient.addMembership(crowdGroupName, user.getUserName());
+                // TODO: Tim Whalen for Permissions
+                // final String crowdGroupName = CrowdAPIClient.addAdminGroup(newOrganization.getEdition().getShortName(), "Organization Administrator(s)");
+                // CrowdAPIClient.addMembership(crowdGroupName, user.getUserName());
 
             } catch (Exception e) {
 

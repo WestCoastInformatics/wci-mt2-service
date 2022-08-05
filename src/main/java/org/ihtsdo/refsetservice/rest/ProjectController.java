@@ -224,8 +224,7 @@ public class ProjectController extends BaseController {
                 logger.info("CALLING CROWD API");
 
                 try {
-                    final Organization organization = project.getOrganization();
-                    CrowdAPIClient.addGroup(organization.getEdition().getShortName(), localProject.getName(), localProject.getDescription());
+                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), localProject.getName(), localProject.getDescription());
 
                 } catch (Exception e) {
                     final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();

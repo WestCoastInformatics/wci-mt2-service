@@ -66,12 +66,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @Column(nullable = true, length = 4000)
     private String description;
 
-    /** The edition. */
-    @ManyToOne(targetEntity = Edition.class)
-    @JoinColumn(nullable = true)
-    @Fetch(FetchMode.JOIN)
-    private Edition edition;
-
     /** email for primary contact. */
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
@@ -134,7 +128,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         super.populateFrom(other);
         name = other.getName();
         description = other.getDescription();
-        edition = other.getEdition();
         primaryContactEmail = other.getPrimaryContactEmail();
         iconUri = other.iconUri;
         members = other.getMembers();
@@ -151,7 +144,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         // Only these field can be patched
         name = other.getName();
         description = other.getDescription();
-        edition = other.getEdition();
         primaryContactEmail = other.getPrimaryContactEmail();
         roles = other.getRoles();
     }
@@ -199,49 +191,37 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     }
 
     /**
-     * Gets the edition.
-     *
-     * @return the edition
-     */
-    @JsonSerialize(contentAs = Edition.class)
-    @JsonDeserialize(contentAs = Edition.class)
-    public Edition getEdition() {
-
-        return edition;
-    }
-
-    /**
-     * Sets the edition.
-     *
-     * @param edition the edition to set
-     */
-    public void setEdition(final Edition edition) {
-
-        this.edition = edition;
-    }
-
-    /**
      * Returns the edition ID.
      *
      * @return the edition ID
+     * @throws Exception 
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(derivedFrom = @ObjectPath({
         @PropertyValue(propertyName = "edition")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
-    public String getEditionId() {
+    public String getEditionId() throws Exception {
 
-        return edition == null ? null : edition.getId();
+        // TODO: Jesse
+        // Was: return edition == null ? null : edition.getId();
+        // Now throw exception
+        throw new Exception("Change all access to Organization.getEditionId() to not be org-based");
     }
 
     /**
      * Sets the edition ID.
      *
      * @param editionId the edition ID to set
+     * @throws Exception 
      */
-    public void getEditionId(final String editionId) {
+    public void setEditionId(final String editionId) throws Exception {
 
+        // TODO: Jesse
+        // Was: return edition == null ? null : edition.getId();
+        // Now throw exception
+        throw new Exception("Change all access to Organization.getEditionId() to not be org-based");
+/*
         if (edition != null) {
 
             this.edition.setId(editionId);
@@ -250,7 +230,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
             this.edition = new Edition();
             this.edition.setId(editionId);
         }
-
+*/
     }
 
     /**
@@ -355,7 +335,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         final int prime = 31;
         int result = super.hashCode();
         result = prime * result + ((description == null) ? 0 : description.hashCode());
-        result = prime * result + ((edition == null) ? 0 : edition.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         result = prime * result + ((members == null) ? 0 : members.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
@@ -388,18 +367,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
             }
 
         } else if (!description.equals(other.description)) {
-
-            return false;
-        }
-
-        if (edition == null) {
-
-            if (other.edition != null) {
-
-                return false;
-            }
-
-        } else if (!edition.equals(other.edition)) {
 
             return false;
         }
@@ -497,11 +464,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
             throw new Exception("Unexpected non-null id");
         }
 
-        if (getEdition() == null) {
-
-            throw new Exception("Unexpected null/empty edition");
-        }
-
         if (StringUtils.isBlank(getName())) {
 
             throw new Exception("Unexpected null/empty name");
@@ -521,11 +483,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         if (StringUtils.isBlank(getId())) {
 
             throw new Exception("Unexpected null/empty id");
-        }
-
-        if (getEdition() == null) {
-
-            throw new Exception("Unexpected null/empty edition");
         }
 
         if (StringUtils.isBlank(getName())) {

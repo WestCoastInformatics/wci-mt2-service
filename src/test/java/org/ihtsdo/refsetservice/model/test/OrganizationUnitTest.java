@@ -41,9 +41,6 @@ public class OrganizationUnitTest extends BaseTest {
     /** The model object to test. */
     private Organization object;
 
-    /** The edition object. */
-    private Edition edition;
-
     /** The members. */
     private Set<User> members;
 
@@ -57,13 +54,10 @@ public class OrganizationUnitTest extends BaseTest {
 
         object = new Organization();
 
-        final ProxyTester tester1 = new ProxyTester(new Edition());
-        edition = (Edition) tester1.createObject(1);
-
-        final ProxyTester tester2 = new ProxyTester(new User());
+        final ProxyTester tester1 = new ProxyTester(new User());
         members = new HashSet<>();
-        members.add((User) tester2.createObject(1));
-        members.add((User) tester2.createObject(2));
+        members.add((User) tester1.createObject(1));
+        members.add((User) tester1.createObject(2));
         object.getMembers().addAll(members);
 
     }
@@ -115,7 +109,6 @@ public class OrganizationUnitTest extends BaseTest {
 
         final Organization copyObject = new Organization();
         copyObject.setMembers(members);
-        copyObject.setEdition(edition);
 
         final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
         assertTrue(tester.testCopyConstructor(Organization.class));
@@ -147,17 +140,12 @@ public class OrganizationUnitTest extends BaseTest {
             final Organization object = (Organization) tester2.createObject(1);
             logger.info("************ object: " + object);
             object.setId(null);
-            object.setEdition(null);
             object.setMembers(null);
 
             service.setModifiedBy("test");
             service.setModifiedFlag(true);
 
             service.add(object);
-
-            edition.setId(null);
-            service.add(edition);
-            object.setEdition(edition);
 
             for (final User user : members) {
 
@@ -175,18 +163,12 @@ public class OrganizationUnitTest extends BaseTest {
                 throw new Exception("Original id unexpectedly does not match retrieved object id = " + object.getId() + ", " + retrievedObject.getId());
             }
 
-            // test that the edition was properly added.
-            if (retrievedObject.getEdition() == null || !retrievedObject.getEdition().getName().equals("1")) {
-                throw new Exception("Refset edition not properly saved = " + retrievedObject.getId());
-            }
-
             // test that the correct number of members are present.
             if (retrievedObject.getMembers().size() != 2) {
                 throw new Exception("Expected 2 members (users), found = " + retrievedObject.getMembers().size());
             }
 
             service.remove(object);
-            service.remove(edition);
 
             retrievedObject = service.get(object.getId(), object.getClass());
 

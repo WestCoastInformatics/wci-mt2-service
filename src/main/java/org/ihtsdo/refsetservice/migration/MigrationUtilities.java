@@ -37,7 +37,7 @@ public class MigrationUtilities {
 
     private final Logger logger = LoggerFactory.getLogger(MigrationUtilities.class);
 
-    static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
+    public static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
     private static final MigrationPropertyFileReader propertyReader = new MigrationPropertyFileReader();
 
@@ -59,7 +59,7 @@ public class MigrationUtilities {
 
     private static SyncMetadata metadata = new SyncMetadata(new Date(), MigrationUtilities.UNDEFINED_USER_NAME);
 
-    Organization addOrganziation(final String orgName, String orgDesc, final Edition edition) throws Exception {
+    Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -68,7 +68,6 @@ public class MigrationUtilities {
             final Organization org = new Organization();
             org.setName(orgName);
             org.setDescription(orgDesc);
-            org.setEdition(edition);
 
             // Persist
             final Organization o = service.add(org);
@@ -80,7 +79,7 @@ public class MigrationUtilities {
 
     }
 
-    Edition addEdition(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
+    Edition addEdition(String shortName, String editionName, String editionBranch, final Organization organization, JsonNode codeSystem) throws Exception {
 
         final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -89,12 +88,13 @@ public class MigrationUtilities {
         // Case of no modules handled downstream
         final String editionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(shortName, editionName, editionBranch, codeSystem) : "";
 
-        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionTopLevelModule, defaultLanguageCode);
+        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionTopLevelModule, defaultLanguageCode, organization);
 
         return newEdition;
     }
 
-    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, String topLevelModule, String defaultLanguageCode) throws Exception {
+    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, String topLevelModule, String defaultLanguageCode, Organization organization)
+        throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -108,6 +108,7 @@ public class MigrationUtilities {
             edition.setDefaultLanguageRefsets(defaultLanguageRefsets);
             edition.setTopLevelModule(topLevelModule);
             edition.setDefaultLanguageCode(defaultLanguageCode);
+            edition.setOrganization(organization);
 
             // New ones only created as new
             edition.setActive(true);
@@ -151,7 +152,7 @@ public class MigrationUtilities {
 
     }
 
-    Project addProject(Organization org, String projectName, String projectDescription) throws Exception {
+    Project addProject(Edition edition, String projectName, String projectDescription) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -160,7 +161,7 @@ public class MigrationUtilities {
             final Project project = new Project();
             project.setName(projectName);
             project.setDescription(projectDescription);
-            project.setOrganization(org);
+            project.setEdition(edition);
             project.setPrivateProject(false);
             project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
 

@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.refsetservice.model.DiscussionPost;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.DiscussionType;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -35,7 +36,7 @@ public class MigrationDataInitializer {
 
     private static User userResponderUser = null;
 
-    private static User wciAdmin = null;
+    private static User developerTestingAdmin = null;
 
     private static User superUser = null;
 
@@ -49,7 +50,7 @@ public class MigrationDataInitializer {
 
     private static final Set<User> adminUsers = new HashSet<>();
 
-    static private Organization testingOrganization = null;
+    static private Edition developerTestingEdition = null;
 
     static private Project testingProject = null;
 
@@ -65,10 +66,6 @@ public class MigrationDataInitializer {
 
     public MigrationDataInitializer() {
 
-        // Grab wci users or create during first migration. Two types:
-        // a) 5 WCI common users to be added to all orgs (1-per role and a super-user)
-        // b) 2 WCI users specifically for generating a new feedback refset for testing
-
         commonConstructorInitialization(new MigrationUtilities());
     }
 
@@ -83,10 +80,10 @@ public class MigrationDataInitializer {
 
             this.utilities = utils;
 
-            wciAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
+            developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
 
-            adminUsers.add(wciAdmin);
+            adminUsers.add(developerTestingAdmin);
             adminUsers.add(superUser);
 
             // For Feedback Refset
@@ -99,26 +96,25 @@ public class MigrationDataInitializer {
 
     }
 
-    public void initialize(Organization developerTestingOrganization, List<Organization> allDatabaseOrganizations, List<Refset> allDatabaseRefsets, Map<String, Project> defaultOrganizationProjects)
-        throws Exception {
+    public void initialize(Edition edition, List<Edition> allDatabaseEditions, List<Refset> allDatabaseRefsets, Map<String, Project> defaultEditionProjects) throws Exception {
 
-        // Only run this once on DEV and UAT (but never prod). If developerTestingOrganization is set, we know that this has already been run
-        if (developerTestingOrganization != null) {
+        // Only run this once on DEV and UAT (but never prod). If developerTestingEdition is set, we know that this has already been run
+        if (edition != null) {
 
             if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(INITIAL_FEEDBACK_REFSET_ID))) {
 
                 // Create a dedicated UAT Training Project for each organization
                 // TODO: Determined unnecessary. If this lasts, remove altogether
-                // createUATProjects(developerTestingOrganization, allDatabaseOrganizations);
+                // createUATProjects(developerTestingEdition, allDatabaseEditions);
 
-                // Create wci-project (for DEV only)
-                createWCITestingContent(developerTestingOrganization);
+                // Create develoepr-project (for DEV only)
+                createDeveloperTestingContent(edition);
 
-                // Create wci-feedback-testing refset(for DEV only)
-                createTestingFeedback(developerTestingOrganization);
+                // Create develoepr-feedback-testing refset(for DEV only)
+                createTestingFeedback(edition);
 
                 // Create a single Admin team per Org
-                createAdminOrganizationTeams(allDatabaseOrganizations);
+                createAdminOrganizationTeams(allDatabaseEditions);
 
             }
 
@@ -126,25 +122,26 @@ public class MigrationDataInitializer {
 
     }
 
-    private void createAdminOrganizationTeams(List<Organization> allDatabaseOrganizations) throws Exception {
+    private void createAdminOrganizationTeams(List<Edition> allDatabaseEditions) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
 
-            for (Organization organization : allDatabaseOrganizations) {
+            for (Edition edition : allDatabaseEditions) {
 
                 Set<String> memberIds = new HashSet<>();
+
                 memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
 
-                utilities.addTeam(TeamService.generateOrgTeamName(organization), TeamService.getOrgTeamDescription(organization), organization, new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)),
-                    memberIds);
+                utilities.addTeam(TeamService.generateOrgTeamName(edition.getOrganization()), TeamService.getOrgTeamDescription(edition.getOrganization()), edition.getOrganization(),
+                    new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
 
                 // Finally, add the users to the organizaiton
-                organization.getMembers().addAll(adminUsers);
-                Organization updatedOrganization = service.update(organization);
+                edition.getOrganization().getMembers().addAll(adminUsers);
+                Edition updatedEdition = service.update(edition);
 
-                printAllValues(updatedOrganization);
+                printAllValues(updatedEdition);
             }
 
         }
@@ -175,7 +172,7 @@ public class MigrationDataInitializer {
 
     }
 
-    private void createWCITestingContent(Organization wciOrganization) throws Exception {
+    private void createDeveloperTestingContent(Edition developerTestingEdition) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -183,9 +180,9 @@ public class MigrationDataInitializer {
 
             logger.info("Adding WCI Testing Org's single project");
 
-            testingProject = utilities.addProject(wciOrganization, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION);
+            testingProject = utilities.addProject(developerTestingEdition, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION);
 
-            utilities.addWCIRefset(getMigrationUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, wciOrganization.getEdition().getTopLevelModule(),
+            utilities.addWCIRefset(getMigrationUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerTestingEdition.getTopLevelModule(),
                 utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);
         }
 
@@ -194,12 +191,12 @@ public class MigrationDataInitializer {
     /*
      * Called when creating the first instance of testing-feedback refset
      */
-    public Refset createTestingFeedback(Organization wciOrganization) throws Exception {
+    public Refset createTestingFeedback(Edition developerTestingEdition) throws Exception {
 
         logger.info(" Create Feedback for testing (for DEV only)");
 
         // create new refset with name = FeedbackTestingVersion1 with July 31 2022 version off International Edition
-        Refset refset = utilities.addWCIRefset(getMigrationUser(), "WCI Testing Feedback Refset 1", INITIAL_FEEDBACK_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
+        Refset refset = utilities.addWCIRefset(getMigrationUser(), "WCI Testing Feedback Refset 1", INITIAL_FEEDBACK_REFSET_ID, developerTestingEdition.getTopLevelModule(),
             utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);
 
         try (TerminologyService service = new TerminologyService()) {
@@ -214,14 +211,15 @@ public class MigrationDataInitializer {
             memberIds.add(userResponderUser.getId());
             adminUsers.stream().forEach(user -> memberIds.add(user.getId()));
 
-            final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", wciOrganization, allRoles, memberIds);
+            final Team singleFeedbackTeam =
+                utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", developerTestingEdition.getOrganization(), allRoles, memberIds);
 
             testingProject.getTeams().add(singleFeedbackTeam.getId());
             testingProject = service.update(testingProject);
 
-            wciOrganization.getMembers().add(feedbackInitiatiorUser);
-            wciOrganization.getMembers().add(userResponderUser);
-            wciOrganization = service.update(wciOrganization);
+            developerTestingEdition.getOrganization().getMembers().add(feedbackInitiatiorUser);
+            developerTestingEdition.getOrganization().getMembers().add(userResponderUser);
+            developerTestingEdition = service.update(developerTestingEdition);
 
             addFeedbackContent(refset);
 
@@ -235,13 +233,13 @@ public class MigrationDataInitializer {
      */
     public Refset createTestingFeedback() throws Exception {
 
-        final Project wciProject = getTestingProject();
-        final Organization wciOrganization = getTestingOrganization();
+        final Project developerTestingProject = getDeveloperTestingProject();
+        final Edition developerTestingEdition = getDeveloperTestingEdition();
 
         try (TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
-            final List<Refset> projectRefsets = service.find("projectId:" + wciProject.getId() + " AND active:true", null, Refset.class, null).getItems();
+            final List<Refset> projectRefsets = service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
 
             int latestVersion = 0;
 
@@ -267,8 +265,8 @@ public class MigrationDataInitializer {
 
             if (latestVersion == 0) {
 
-                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_REFSET_ID_BASE + "01", wciOrganization.getEdition().getTopLevelModule(),
-                    new Date(), Refset.EXTENSIONAL, "", wciProject);
+                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_REFSET_ID_BASE + "01", developerTestingEdition.getTopLevelModule(), new Date(),
+                    Refset.EXTENSIONAL, "", developerTestingProject);
             } else {
 
                 latestVersion++;
@@ -276,7 +274,7 @@ public class MigrationDataInitializer {
                 String onesValue = Integer.toString(latestVersion % 10);
 
                 newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + latestVersion, FEEDBACK_REFSET_ID_BASE + tensValue + onesValue,
-                    wciOrganization.getEdition().getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", wciProject);
+                    developerTestingEdition.getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", developerTestingProject);
             }
 
             addFeedbackContent(newTestingRefset);
@@ -339,11 +337,11 @@ public class MigrationDataInitializer {
 
     }
 
-    private void printAllValues(Organization organization) throws Exception {
+    private void printAllValues(Edition edition) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            final List<Project> orgProjects = service.find("organization.id:" + organization.getId(), null, Project.class, null).getItems();
+            final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null).getItems();
             final List<Team> teams = service.getAll(Team.class);
 
             for (Project project : orgProjects) {
@@ -365,7 +363,7 @@ public class MigrationDataInitializer {
 
     }
 
-    private Project getTestingProject() throws Exception {
+    private Project getDeveloperTestingProject() throws Exception {
 
         if (testingProject == null) {
 
@@ -394,33 +392,33 @@ public class MigrationDataInitializer {
         return testingProject;
     }
 
-    private Organization getTestingOrganization() throws Exception {
+    private Edition getDeveloperTestingEdition() throws Exception {
 
-        if (testingOrganization == null) {
+        if (developerTestingEdition == null) {
 
             try (TerminologyService service = new TerminologyService()) {
 
-                List<Organization> orgs = service.getAll(Organization.class);
+                List<Edition> editions = service.getAll(Edition.class);
 
-                for (Organization o : orgs) {
+                for (Edition e : editions) {
 
-                    if (o.getName().toLowerCase().contains("wci")) {
+                    if (e.getName().toLowerCase().contains("wci")) {
 
-                        testingOrganization = o;
+                        developerTestingEdition = e;
                     }
 
                 }
 
             }
 
-            if (testingOrganization == null) {
+            if (developerTestingEdition == null) {
 
-                throw new Exception("Testing Organization doesn't exist. Shouldn't be running this on a non-Production instanace of RT2");
+                throw new Exception("Testing Organization doesn't exist. Shouldn't be running this on a non-Production instance of RT2");
             }
 
         }
 
-        return testingOrganization;
+        return developerTestingEdition;
     }
 
     static User getMigrationUser() {

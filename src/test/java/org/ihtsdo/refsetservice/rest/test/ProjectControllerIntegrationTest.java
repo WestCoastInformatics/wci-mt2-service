@@ -82,9 +82,6 @@ public class ProjectControllerIntegrationTest extends BaseTest {
     /** The edition. */
     private Edition edition = null;
 
-    /** The organization. */
-    private Organization organization = null;
-
     /** The url. */
     private String url = null;
 
@@ -108,29 +105,13 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         testUser.setCompany("The Company");
 
         try {
+
             testUser = addUser(testUser);
         } catch (Exception e) {
+
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
-
-        final Edition tempEdition = new Edition();
-        tempEdition.setId(null);
-        tempEdition.setName("Project Unit Test Edition");
-        tempEdition.setShortName("projectTestShortName");
-        tempEdition.setNamespace("projectTestNamespace");
-        tempEdition.setIconUri("projectTestIconUri");
-        tempEdition.setBranch("/SNOMEDCT");
-
-        try {
-            edition = EditionService.createEdition(testUser, tempEdition);
-        } catch (Exception e) {
-            logger.error("ERROR {}", e.getMessage(), e);
-            assertTrue(false);
-        }
-
-        assertThat(edition).isNotNull();
-        assertThat(edition.getId()).isNotNull();
 
         final Organization tempOrganization = new Organization();
         tempOrganization.setId(null);
@@ -139,26 +120,46 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         tempOrganization.setDescription("Generated from unit test");
         tempOrganization.setIconUri("/organization/icon/");
         tempOrganization.setPrimaryContactEmail("org@test.com");
-        tempOrganization.setEdition(edition);
 
-        try (final TerminologyService service = new TerminologyService()) {
-            
-            service.setModifiedBy(testUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-            
-            organization = OrganizationService.createOrganization(service, testUser, tempOrganization);
-            
-            service.commit();
-            
+        final Edition tempEdition = new Edition();
+        tempEdition.setId(null);
+        tempEdition.setName("Project Unit Test Edition");
+        tempEdition.setShortName("projectTestShortName");
+        tempEdition.setNamespace("projectTestNamespace");
+        tempEdition.setIconUri("projectTestIconUri");
+        tempEdition.setBranch("/SNOMEDCT");
+        tempEdition.setOrganization(tempOrganization);
+
+        try {
+
+            edition = EditionService.createEdition(testUser, tempEdition);
         } catch (Exception e) {
-            
+
             logger.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
-        assertThat(organization).isNotNull();
-        assertThat(organization.getId()).isNotNull();
+        assertThat(edition).isNotNull();
+        assertThat(edition.getId()).isNotNull();
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(testUser.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            edition = EditionService.createEdition(testUser, tempEdition);
+
+            service.commit();
+
+        } catch (Exception e) {
+
+            logger.error("ERROR {}", e.getMessage(), e);
+            assertTrue(false);
+        }
+
+        assertThat(edition).isNotNull();
+        assertThat(edition.getId()).isNotNull();
 
     }
 
@@ -196,7 +197,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.setDescription("Generated from unit test");
         originalProject.setPrivateProject(false);
         originalProject.setPrimaryContactEmail("project@test.com");
-        originalProject.setOrganization(organization);
+        originalProject.setEdition(edition);
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getRoles().add("author");
@@ -238,7 +239,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.setDescription("Generated for project update unit test");
         originalProject.setPrivateProject(false);
         originalProject.setPrimaryContactEmail("project@test.com");
-        originalProject.setOrganization(organization);
+        originalProject.setEdition(edition);
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getRoles().add("author");
@@ -307,7 +308,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.setDescription("Generated for project get unit test");
         originalProject.setPrivateProject(false);
         originalProject.setPrimaryContactEmail("project@test.com");
-        originalProject.setOrganization(organization);
+        originalProject.setEdition(edition);
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getRoles().add("author");
@@ -352,7 +353,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.setDescription("Generated for project get unit test");
         originalProject.setPrivateProject(false);
         originalProject.setPrimaryContactEmail("project@test.com");
-        originalProject.setOrganization(organization);
+        originalProject.setEdition(edition);
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getRoles().add("author");
@@ -417,7 +418,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.setDescription("Generated for project get unit test");
         originalProject.setPrivateProject(false);
         originalProject.setPrimaryContactEmail("project@test.com");
-        originalProject.setOrganization(organization);
+        originalProject.setEdition(edition);
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getTeams().add(UUID.randomUUID().toString());
         originalProject.getRoles().add("author");
@@ -483,7 +484,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         assertThat(newProject.getName()).isEqualTo(originalProject.getName());
         assertThat(newProject.isActive()).isEqualTo(originalProject.isActive());
         assertThat(newProject.getDescription()).isEqualTo(originalProject.getDescription());
-        assertThat(compareOrganizations(newProject.getOrganization(), originalProject.getOrganization(), true)).isTrue();
+        assertThat(compareEditions(newProject.getEdition(), originalProject.getEdition(), true)).isTrue();
         assertThat(newProject.isPrivateProject()).isEqualTo(originalProject.isPrivateProject());
         assertThat(newProject.getPrimaryContactEmail()).isEqualTo(originalProject.getPrimaryContactEmail());
         // not returned in json
@@ -500,24 +501,30 @@ public class ProjectControllerIntegrationTest extends BaseTest {
     /**
      * Compare organization.
      *
-     * @param newOrganization the new organization
-     * @param originalOrganization the original organization
+     * @param newEdition the new organization
+     * @param originalEdition the original organization
      * @param nonUpdatedAttributes the non updated attributes
      * @return true, if successful
      */
-    private boolean compareOrganizations(final Organization newOrganization, final Organization originalOrganization, final boolean nonUpdatedAttributes) {
+    private boolean compareEditions(final Edition newEdition, final Edition originalEdition, final boolean nonUpdatedAttributes) {
 
         boolean pass = false;
-        logger.info("new org record = {}", newOrganization);
-        assertThat(newOrganization).isNotNull();
-        assertThat(newOrganization.getName()).isEqualTo(originalOrganization.getName());
-        assertThat(newOrganization.isActive()).isEqualTo(originalOrganization.isActive());
-        assertThat(newOrganization.getEdition()).isEqualTo(originalOrganization.getEdition());
-        assertThat(newOrganization.getDescription()).isEqualTo(originalOrganization.getDescription());
-        assertThat(newOrganization.getPrimaryContactEmail()).isEqualTo(originalOrganization.getPrimaryContactEmail());
+        logger.info("new org record = {}", newEdition);
+        assertThat(newEdition).isNotNull();
+        assertThat(newEdition.getName()).isEqualTo(originalEdition.getName());
+        assertThat(newEdition.isActive()).isEqualTo(originalEdition.isActive());
+        assertThat(newEdition.getOrganization()).isEqualTo(originalEdition.getOrganization());
+        assertThat(newEdition.getNamespace()).isEqualTo(originalEdition.getNamespace());
+        assertThat(newEdition.getShortName()).isEqualTo(originalEdition.getShortName());
+        assertThat(newEdition.getBranch()).isEqualTo(originalEdition.getBranch());
+        assertThat(newEdition.getTopLevelModule()).isEqualTo(originalEdition.getTopLevelModule());
+        assertThat(newEdition.getDefaultLanguageCode()).isEqualTo(originalEdition.getDefaultLanguageCode());
+
         if (nonUpdatedAttributes) {
-            assertThat(newOrganization.getIconUri()).isEqualTo(originalOrganization.getIconUri());
+
+            assertThat(newEdition.getIconUri()).isEqualTo(originalEdition.getIconUri());
         }
+
         pass = true;
         return pass;
     }

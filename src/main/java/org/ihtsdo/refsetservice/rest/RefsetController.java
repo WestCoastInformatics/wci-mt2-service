@@ -1712,7 +1712,7 @@ public class RefsetController extends BaseController {
 
                         for (Organization organization : organizationList) {
 
-                            if (organization.getEdition().getId().equals(edition.getId())) {
+                            if (edition.getOrganization().getId().equals(organization.getId())) {
 
                                 hasOrganization = true;
                             }

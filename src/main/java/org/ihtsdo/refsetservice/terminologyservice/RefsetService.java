@@ -140,7 +140,7 @@ public class RefsetService {
             throw new Exception("Project Id: " + refsetEditParameters.getProjectId() + " does not exist in the RT2 database");
         }
 
-        edition = project.getOrganization().getEdition();
+        edition = project.getEdition();
 
         if (refsetEditParameters.getType().equals(Refset.INTENSIONAL)) {
 

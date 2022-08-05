@@ -24,9 +24,11 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserProjectRole;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
@@ -82,7 +84,7 @@ public class SecurityService implements AutoCloseable {
 
         super();
     }
-    
+
     /**
      * Get a user for application level changes that has full permissions.
      *
@@ -90,12 +92,12 @@ public class SecurityService implements AutoCloseable {
      * @throws Exception the exception
      */
     public static User getApplicationAdminUser() throws Exception {
-        
+
         final User user = new User();
         user.setName("RT2 Internal Application Admin");
         user.setUserName("RT2_Internal_Application_Admin");
         user.getRoles().add("all-all-all");
-        
+
         return user;
     }
 
@@ -161,7 +163,9 @@ public class SecurityService implements AutoCloseable {
                     response.addCookie(cookie);
                     break;
                 }
+
             }
+
         }
 
         return nonLoggedInUser;
@@ -197,9 +201,13 @@ public class SecurityService implements AutoCloseable {
                         response.addCookie(cookie);
                         break;
                     }
+
                 }
+
             }
+
         }
+
     }
 
     /**
@@ -299,8 +307,10 @@ public class SecurityService implements AutoCloseable {
             final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
 
             if (storageMap.containsKey(attributeName)) {
+
                 returnObject = storageMap.get(attributeName);
             }
+
         }
 
         return returnObject;
@@ -348,6 +358,7 @@ public class SecurityService implements AutoCloseable {
             final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
             storageMap.remove(attributeName);
         }
+
     }
 
     /**
@@ -446,7 +457,7 @@ public class SecurityService implements AutoCloseable {
         final User finalUser = getUser(userId);
         finalUser.setAuthToken(token);
 
-        //checkAndAddUserToOrganization(finalUser);
+        // checkAndAddUserToOrganization(finalUser);
 
         return finalUser;
     }
@@ -461,69 +472,76 @@ public class SecurityService implements AutoCloseable {
 
         // break down org-project-role
         if (user == null || user.getRoles() == null || user.getRoles().isEmpty()) {
+
             return;
         }
-        
+
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             final User appAdminUser = getApplicationAdminUser();
-            
+
             service.setModifiedBy(appAdminUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
             final Set<String> permissionEditionAbbreviations = new HashSet<>();
-            
+
             for (final String groupName : user.getRoles()) {
-                
+
                 final UserProjectRole userProjectRole = new UserProjectRole(groupName);
                 permissionEditionAbbreviations.add(userProjectRole.getOrganization());
             }
-    
-            final ResultList<Organization> organizations = OrganizationService.searchOrganizations(service, user, new SearchParameters(), true);
+
+            final ResultList<Edition> editions = EditionService.searchEditions(new SearchParameters());
             final Map<String, Organization> organizationMap = new HashMap<>();
-            
-            for (final Organization organization : organizations.getItems()) {
-                organizationMap.put(organization.getEdition().getAbbreviation(), organization);
+
+            for (final Edition edition : editions.getItems()) {
+
+                organizationMap.put(edition.getAbbreviation(), edition.getOrganization());
             }
-    
+
             for (final String permissionEditionAbbreviation : permissionEditionAbbreviations) {
-                
-                for (final Organization possibleOrganization : new ArrayList<Organization>(organizations.getItems())) {
-                    
-                    Organization organization = null;
+
+                for (final Edition possibleEdition : new ArrayList<Edition>(editions.getItems())) {
+
+                    Edition edition = null;
                     boolean isMember = false;
-                    
-                    if (possibleOrganization.getEdition().getAbbreviation().equals(permissionEditionAbbreviation)) {
-                        
-                        organization = possibleOrganization;
-                        organizations.getItems().remove(possibleOrganization);
-                    
+
+                    if (possibleEdition.getAbbreviation().equals(permissionEditionAbbreviation)) {
+
+                        edition = possibleEdition;
+                        editions.getItems().remove(possibleEdition);
+
                     } else {
+
                         continue;
-                    } 
-                    
-                    OrganizationService.setRoles(appAdminUser, organization, organization.getRoles());
-                    
-                    for (final User member : organization.getMembers()) {
-                        
+                    }
+
+                    OrganizationService.setRoles(appAdminUser, edition.getOrganization(), edition.getOrganization().getRoles());
+
+                    for (final User member : edition.getOrganization().getMembers()) {
+
                         if (member.getId().equals(user.getId())) {
-                            
+
                             isMember = true;
                             break;
                         }
+
                     }
-                    
+
                     if (!isMember) {
-                        
-                        logger.debug("Add user " + user.getUserName() + " to organization " + organization.getName());
-                        OrganizationService.addUserToOrganization(service, appAdminUser, organization.getId(), user.getEmail());
+
+                        logger.debug("Add user " + user.getUserName() + " to organization " + edition.getOrganization().getName());
+                        OrganizationService.addUserToOrganization(service, appAdminUser, edition.getOrganization().getId(), user.getEmail());
                     }
+
                 }
+
             }
-            
+
             service.commit();
         }
+
     }
 
     /* see superclass */

@@ -369,6 +369,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     public Set<Team> getTeams() {
 
         if (teams == null) {
+
             teams = new HashSet<>();
         }
 
@@ -394,7 +395,8 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      * @throws Exception the exception
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Project project) throws Exception {
-        return checkPermission(roleToCheck, project.getOrganization().getEdition(), project.getCrowdProjectId());
+
+        return checkPermission(roleToCheck, project.getEdition(), project.getCrowdProjectId());
     }
 
     /**
@@ -406,16 +408,18 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      * @throws Exception the exception
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Organization organization) throws Exception {
-        
+
         Edition edition = null;
-        
+
         if (organization != null) {
-            edition = organization.getEdition();
+
+            // TODO: Tim Whalen for Permissions
+            // edition = organization.getEdition();
         }
-        
+
         return checkPermission(roleToCheck, edition, null);
     }
-    
+
     /**
      * Check if the user has the specified role on the organization or project.
      *
@@ -430,23 +434,27 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
         try {
 
             String editionName = null;
-            
+
             if (edition == null && projectCrowdId == null) {
+
                 editionName = "all";
-            
+
             } else if (edition != null) {
-                
+
                 editionName = edition.getShortName();
 
                 // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
 
                 if (!edition.getShortName().equals("SNOMEDCT")) {
+
                     editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
                 } else {
+
                     editionName = "main";
                 }
+
             }
-            
+
             final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
 
             for (final String role : roles) {
@@ -473,11 +481,15 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                             // logger.debug("doesUserHavePermission = true");
                             return true;
                         }
+
                     }
+
                 }
+
             }
 
         } catch (Exception e) {
+
             return false;
         }
 
@@ -507,76 +519,125 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     public boolean equals(final Object obj) {
 
         if (this == obj) {
+
             return true;
         }
+
         if (getClass() != obj.getClass()) {
+
             return false;
         }
+
         final User other = (User) obj;
+
         if (authToken == null) {
+
             if (other.authToken != null) {
+
                 return false;
             }
+
         } else if (!authToken.equals(other.authToken)) {
+
             return false;
         }
+
         if (company == null) {
+
             if (other.company != null) {
+
                 return false;
             }
+
         } else if (!company.equals(other.company)) {
+
             return false;
         }
+
         if (email == null) {
+
             if (other.email != null) {
+
                 return false;
             }
+
         } else if (!email.equals(other.email)) {
+
             return false;
         }
+
         if (iconUri == null) {
+
             if (other.iconUri != null) {
+
                 return false;
             }
+
         } else if (!iconUri.equals(other.iconUri)) {
+
             return false;
         }
+
         if (name == null) {
+
             if (other.name != null) {
+
                 return false;
             }
+
         } else if (!name.equals(other.name)) {
+
             return false;
         }
 
         if (roles == null) {
+
             if (other.roles != null) {
+
                 return false;
             }
+
         } else if (!roles.equals(other.roles)) {
+
             return false;
         }
+
         if (teams == null) {
+
             if (other.teams != null) {
+
                 return false;
             }
+
         } else if (!teams.equals(other.teams)) {
+
             return false;
         }
+
         if (title == null) {
+
             if (other.title != null) {
+
                 return false;
             }
+
         } else if (!title.equals(other.title)) {
+
             return false;
         }
+
         if (userName == null) {
+
             if (other.userName != null) {
+
                 return false;
             }
+
         } else if (!userName.equals(other.userName)) {
+
             return false;
         }
+
         return true;
     }
 
@@ -585,10 +646,13 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     public String toString() {
 
         try {
+
             return ModelUtility.toJson(this);
         } catch (final Exception e) {
+
             return e.getMessage();
         }
+
     }
 
     /**
