@@ -227,7 +227,7 @@ public class Edition extends AbstractHasModified {
 
         return topLevelModule;
     }
-    
+
     /**
      * Gets the abbreviation version of the name.
      *
@@ -235,22 +235,24 @@ public class Edition extends AbstractHasModified {
      */
     @JsonGetter()
     public String getAbbreviation() {
-        
+
         String abbreviation = "main";
-        
+
         if (!shortName.equals("SNOMEDCT")) {
+
             abbreviation = shortName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
         }
-        
+
         return abbreviation;
     }
-    
+
     /**
      * Sets the abbreviation version of the name.
      *
      * @param abbreviation the abbreviation version of the name to set
      */
     public void setAbbreviation(final String abbreviation) {
+
         // N/A
     }
 
@@ -274,6 +276,7 @@ public class Edition extends AbstractHasModified {
     public Set<String> getDefaultLanguageRefsets() {
 
         if (defaultLanguageRefsets == null) {
+
             defaultLanguageRefsets = new HashSet<>();
         }
 
@@ -295,6 +298,7 @@ public class Edition extends AbstractHasModified {
             final String languageCode = refsetToLanguagesMap.get(languageRefsetCode);
 
             if (languageCode == null) {
+
                 continue;
             }
 
@@ -309,6 +313,7 @@ public class Edition extends AbstractHasModified {
             if (languageCode.equalsIgnoreCase(defaultLanguageCode) || languageCode.equalsIgnoreCase("en")) {
 
                 if (languageCode.equalsIgnoreCase(defaultLanguageCode)) {
+
                     languageDetails.put("default", "true");
                 }
 
@@ -319,11 +324,13 @@ public class Edition extends AbstractHasModified {
                     qualifiedLanguageList.add(1, Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset", languageRefsetCode + "FSN",
                         "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"));
                 }
+
             } else {
 
                 qualifiedLanguageList.add(languageDetails);
 
             }
+
         }
 
         return qualifiedLanguageList;
@@ -445,88 +452,127 @@ public class Edition extends AbstractHasModified {
     public boolean equals(final Object obj) {
 
         if (this == obj) {
+
             return true;
         }
 
         if (obj == null) {
+
             return false;
         }
 
         if (getClass() != obj.getClass()) {
+
             return false;
         }
 
         final Edition other = (Edition) obj;
 
         if (name == null) {
+
             if (other.name != null) {
+
                 return false;
             }
+
         } else if (!name.equals(other.name)) {
+
             return false;
         }
 
         if (namespace == null) {
+
             if (other.namespace != null) {
+
                 return false;
             }
+
         } else if (!namespace.equals(other.namespace)) {
+
             return false;
         }
 
         if (branch == null) {
+
             if (other.branch != null) {
+
                 return false;
             }
+
         } else if (!branch.equals(other.branch)) {
+
             return false;
         }
 
         if (topLevelModule == null) {
+
             if (other.topLevelModule != null) {
+
                 return false;
             }
+
         } else if (!topLevelModule.equals(other.topLevelModule)) {
+
             return false;
         }
 
         if (iconUri == null) {
+
             if (other.iconUri != null) {
+
                 return false;
             }
+
         } else if (!iconUri.equals(other.iconUri)) {
+
             return false;
         }
 
         if (defaultLanguageRefsets == null) {
+
             if (other.defaultLanguageRefsets != null) {
+
                 return false;
             }
+
         } else if (!defaultLanguageRefsets.equals(other.defaultLanguageRefsets)) {
+
             return false;
         }
 
         if (defaultLanguageCode == null) {
+
             if (other.defaultLanguageCode != null) {
+
                 return false;
             }
+
         } else if (!defaultLanguageCode.equals(other.defaultLanguageCode)) {
+
             return false;
         }
 
         if (shortName == null) {
+
             if (other.shortName != null) {
+
                 return false;
             }
+
         } else if (!shortName.equals(other.shortName)) {
+
             return false;
         }
-        
+
         if (organization == null) {
+
             if (other.organization != null) {
+
                 return false;
             }
+
         } else if (!organization.equals(other.organization)) {
+
             return false;
         }
 

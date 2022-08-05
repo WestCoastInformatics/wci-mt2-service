@@ -219,16 +219,19 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         this.edition = edition;
     }
-    
+
     /**
      * Returns the edition ID.
      *
      * @return the edition ID
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    @IndexingDependency(derivedFrom = @ObjectPath({@PropertyValue(propertyName = "edition")}))
+    @IndexingDependency(derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "edition")
+    }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getEditionId() {
+
         return edition == null ? null : edition.getId();
     }
 
@@ -240,12 +243,14 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public void getEditionId(final String editionId) {
 
         if (edition != null) {
+
             this.edition.setId(editionId);
         } else {
-            
+
             this.edition = new Edition();
             this.edition.setId(editionId);
         }
+
     }
 
     /**
@@ -280,6 +285,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public Set<User> getMembers() {
 
         if (members == null) {
+
             members = new HashSet<>();
         }
 
@@ -325,6 +331,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public List<String> getRoles() {
 
         if (roles == null) {
+
             roles = new ArrayList<>();
         }
 
@@ -362,62 +369,101 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public boolean equals(final Object obj) {
 
         if (this == obj) {
+
             return true;
         }
+
         if (getClass() != obj.getClass()) {
+
             return false;
         }
+
         final Organization other = (Organization) obj;
+
         if (description == null) {
+
             if (other.description != null) {
+
                 return false;
             }
+
         } else if (!description.equals(other.description)) {
+
             return false;
         }
+
         if (edition == null) {
+
             if (other.edition != null) {
+
                 return false;
             }
+
         } else if (!edition.equals(other.edition)) {
+
             return false;
         }
+
         if (iconUri == null) {
+
             if (other.iconUri != null) {
+
                 return false;
             }
+
         } else if (!iconUri.equals(other.iconUri)) {
+
             return false;
         }
+
         if (members == null) {
+
             if (other.members != null) {
+
                 return false;
             }
+
         } else if (!members.equals(other.members)) {
+
             return false;
         }
+
         if (name == null) {
+
             if (other.name != null) {
+
                 return false;
             }
+
         } else if (!name.equals(other.name)) {
+
             return false;
         }
+
         if (primaryContactEmail == null) {
+
             if (other.primaryContactEmail != null) {
+
                 return false;
             }
+
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
+
             return false;
         }
 
         if (roles == null) {
+
             if (other.roles != null) {
+
                 return false;
             }
+
         } else if (!roles.equals(other.roles)) {
+
             return false;
         }
+
         return true;
     }
 
@@ -426,10 +472,13 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public String toString() {
 
         try {
+
             return ModelUtility.toJson(this);
         } catch (final Exception e) {
+
             return e.getMessage();
         }
+
     }
 
     /* see superclass */
@@ -444,17 +493,25 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public void validateAdd() throws Exception {
 
         if (getId() != null) {
+
             throw new Exception("Unexpected non-null id");
         }
+
         if (getEdition() == null) {
+
             throw new Exception("Unexpected null/empty edition");
         }
+
         if (StringUtils.isBlank(getName())) {
+
             throw new Exception("Unexpected null/empty name");
         }
+
         if (StringUtils.isBlank(getPrimaryContactEmail())) {
+
             throw new Exception("Unexpected null/empty primary contact email");
         }
+
     }
 
     /* see superclass */
@@ -462,17 +519,25 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public void validateUpdate(Organization other) throws Exception {
 
         if (StringUtils.isBlank(getId())) {
+
             throw new Exception("Unexpected null/empty id");
         }
+
         if (getEdition() == null) {
+
             throw new Exception("Unexpected null/empty edition");
         }
+
         if (StringUtils.isBlank(getName())) {
+
             throw new Exception("Unexpected null/empty name");
         }
+
         if (StringUtils.isBlank(getPrimaryContactEmail())) {
+
             throw new Exception("Unexpected null/empty primary contact email");
         }
+
     }
 
     /* see superclass */
@@ -480,7 +545,9 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public void validateDelete() throws Exception {
 
         if (StringUtils.isBlank(getId())) {
+
             throw new Exception("Unexpected null/empty id");
         }
+
     }
 }
