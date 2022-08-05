@@ -20,6 +20,8 @@ import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.Fetch;
@@ -33,6 +35,8 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Represents the edition information for a refset.
@@ -74,6 +78,12 @@ public class Edition extends AbstractHasModified {
     @ElementCollection
     @Fetch(FetchMode.JOIN)
     private Set<String> defaultLanguageRefsets = new HashSet<String>();
+
+    /** The organization. */
+    @ManyToOne(targetEntity = Edition.class)
+    @JoinColumn(nullable = true)
+    @Fetch(FetchMode.JOIN)
+    private Organization organization;
 
     /**
      * Instantiates an empty {@link Edition}.
@@ -119,6 +129,7 @@ public class Edition extends AbstractHasModified {
         topLevelModule = other.getTopLevelModule();
         iconUri = other.getIconUri();
         shortName = other.getShortName();
+        organization = other.getOrganization();
     }
 
     /**
@@ -381,6 +392,28 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
+     * Gets the organization.
+     *
+     * @return the organization
+     */
+    @JsonSerialize(contentAs = Organization.class)
+    @JsonDeserialize(contentAs = Organization.class)
+    public Organization getOrganization() {
+
+        return organization;
+    }
+
+    /**
+     * Sets the organization.
+     *
+     * @param edition the organization to set
+     */
+    public void setOrganization(final Organization organization) {
+
+        this.organization = organization;
+    }
+
+    /**
      * Hash code.
      *
      * @return the int
@@ -398,6 +431,7 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
         result = prime * result + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
         result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
+        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
         return result;
     }
 
@@ -485,6 +519,14 @@ public class Edition extends AbstractHasModified {
                 return false;
             }
         } else if (!shortName.equals(other.shortName)) {
+            return false;
+        }
+        
+        if (organization == null) {
+            if (other.organization != null) {
+                return false;
+            }
+        } else if (!organization.equals(other.organization)) {
             return false;
         }
 
