@@ -44,19 +44,38 @@ public class SyncRefsetAgent extends SyncAgent {
 
     public static void syncSnowstormRefsets(Map<String, SortedMap<Date, String>> branchesToProcess) throws Exception {
 
-        logger.info(" syncSnowstormRefsets: Identifying Refsets to process on Snowstorm per edition/version pair");
-
         Set<SyncRefsetMetadata> refsetsToProcess = filterRefsetsToProcess(branchesToProcess);
 
         // Map each refsetId/version pair's SyncRefsetMetadata
         Map<String, Map<Date, SyncRefsetMetadata>> allSnowstormRefsetVersionPairs = parseSnowstormRefsetVersionPairs(refsetsToProcess);
         Map<String, Map<Date, Refset>> allDatabaseRefsetVersionPairs = parseDatabaseRefsetVersionPairs();
 
+        int counter = 0;
+
+        for (String refsetId : allSnowstormRefsetVersionPairs.keySet()) {
+
+            for (Date version : allSnowstormRefsetVersionPairs.get(refsetId).keySet()) {
+
+                counter++;
+            }
+
+        }
+
+        logger.info(" syncSnowstormRefsets: Examinging if there are any new or changes to the  " + counter + " refset/version pairs found on Snowstorm");
+
+        counter = 0;
+
         for (String refsetId : allSnowstormRefsetVersionPairs.keySet()) {
 
             for (Date version : allSnowstormRefsetVersionPairs.get(refsetId).keySet()) {
 
                 syncRefsetVersion(version, allSnowstormRefsetVersionPairs.get(refsetId).get(version), allDatabaseRefsetVersionPairs.get(refsetId));
+
+                if (++counter % 100 == 0) {
+
+                    logger.info("... processed " + counter);
+                }
+
             }
 
         }
@@ -215,14 +234,14 @@ public class SyncRefsetAgent extends SyncAgent {
         final boolean isActiveSnowstormRefset = refsetSnowstormData.getRefsetNode().get("active").asBoolean();
         final String snowstormRefsetNarrative = refsetSnowstormData.getRefsetNode().has("narrative") ? refsetSnowstormData.getRefsetNode().get("narrative").asText() : "";
 
-        // TODO: This is immutable, so nothing to check? 
+        // TODO: This is immutable, so nothing to check?
         if (updateAttribute("Refset name", existingRefset.getName(), snowstormRefsetName)) {
 
             existingRefset.setName(snowstormRefsetName);
             modificationMade = true;
         }
 
-        // TODO: This is immutable, so nothing to check? 
+        // TODO: This is immutable, so nothing to check?
         if (updateAttribute("Refset moduleId", existingRefset.getModuleId(), snowstormModuleId)) {
 
             existingRefset.setModuleId(snowstormModuleId);
@@ -242,7 +261,7 @@ public class SyncRefsetAgent extends SyncAgent {
             modificationMade = true;
         }
 
-        // TODO: This comes from RTT, so nothing to check? 
+        // TODO: This comes from RTT, so nothing to check?
         // Value may come from project.txt file (Rtt), so don't overwrite if what is on Snowstorm is empty.
         if (!snowstormRefsetNarrative.isBlank() && updateAttribute("Refset narrative", existingRefset.getNarrative(), snowstormRefsetNarrative)) {
 

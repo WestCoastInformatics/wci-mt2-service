@@ -101,9 +101,8 @@ public class MigrationDataInitializer {
 
     public void initialize(Organization developerTestingOrganization, List<Organization> allDatabaseOrganizations, List<Refset> allDatabaseRefsets, Map<String, Project> defaultOrganizationProjects)
         throws Exception {
-        // Only run this once on DEV and UAT (but never prod).
 
-        // wciOrg only exists in DEV & UAT, so is a useful way to determine environments
+        // Only run this once on DEV and UAT (but never prod). If developerTestingOrganization is set, we know that this has already been run
         if (developerTestingOrganization != null) {
 
             if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(INITIAL_FEEDBACK_REFSET_ID))) {

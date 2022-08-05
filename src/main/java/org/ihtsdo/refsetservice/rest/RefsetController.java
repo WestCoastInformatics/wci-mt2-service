@@ -77,7 +77,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -105,6 +104,7 @@ public class RefsetController extends BaseController {
 
     /** Static initialization. */
     static {
+
         EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + "/";
     }
 
@@ -156,8 +156,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(refset, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -198,8 +200,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(returnString, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -227,8 +231,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(refset, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -306,12 +312,15 @@ public class RefsetController extends BaseController {
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
 
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
 
     /**
@@ -378,18 +387,23 @@ public class RefsetController extends BaseController {
             }
 
             if (error.equals("")) {
+
                 return new ResponseEntity<>("{\"status\": \"All concepts removed.\"}", HttpStatus.OK);
             } else {
+
                 return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
 
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
 
     /**
@@ -405,9 +419,9 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/definitionExceptions")
-    public @ResponseBody ResponseEntity<String> addRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
-        @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType,
-        @RequestParam(required = false) final String definitionExceptionType) throws Exception {
+    public @ResponseBody ResponseEntity<String> addRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile,
+        @RequestParam(required = false) final String fileType, @RequestParam(required = false) final String definitionExceptionType) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -444,18 +458,23 @@ public class RefsetController extends BaseController {
             // service.commit();
 
             if (!status.startsWith("Error")) {
+
                 return new ResponseEntity<>("{\"status\": \"Definition exception added.\"}", HttpStatus.OK);
             } else {
+
                 return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
 
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
 
     /**
@@ -485,18 +504,23 @@ public class RefsetController extends BaseController {
             // service.commit();
 
             if (!status.startsWith("Error")) {
+
                 return new ResponseEntity<>("{\"status\": \"Definition exception removed.\"}", HttpStatus.OK);
             } else {
+
                 return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
 
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
 
     /**
@@ -540,18 +564,22 @@ public class RefsetController extends BaseController {
             // service.commit();
 
             if (status.startsWith("Error")) {
+
                 return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
             return new ResponseEntity<>("{\"refsetId\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
 
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(newRefsetInternalId);
         }
+
     }
 
     /**
@@ -562,8 +590,8 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetInternalId}")
-    public @ResponseBody ResponseEntity<String> modifyRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final @RequestBody Refset refsetParameters, final BindingResult bindingResult)
-        throws Exception {
+    public @ResponseBody ResponseEntity<String> modifyRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final @RequestBody Refset refsetParameters,
+        final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -583,18 +611,23 @@ public class RefsetController extends BaseController {
             // service.commit();
 
             if (!status.startsWith("Error")) {
+
                 return new ResponseEntity<>("{\"refsetInternalId\": \"" + refsetInternalId + "\"}", HttpStatus.OK);
             } else {
+
                 return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
 
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
 
     /**
@@ -619,8 +652,8 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/workflowHistory", produces = "application/json")
-    public @ResponseBody ResponseEntity<ResultList<WorkflowHistory>> getWorkflowHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters,
-        final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<WorkflowHistory>> getWorkflowHistory(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -636,8 +669,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -696,8 +731,10 @@ public class RefsetController extends BaseController {
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -709,8 +746,8 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/refset/{refsetInternalId}/workflowNote")
-    public @ResponseBody ResponseEntity<ResultList<WorkflowHistory>> updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = true) final String notes)
-        throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<WorkflowHistory>> updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestBody(required = true) final String notes) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -724,16 +761,18 @@ public class RefsetController extends BaseController {
             Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             // not used final String currentStatus = refset.getWorkflowStatus();
 
-            WorkflowService.updateWorkflowNote(service,user, refset, notes);
-            //service.commit();
-            
+            WorkflowService.updateWorkflowNote(service, user, refset, notes);
+            // service.commit();
+
             final ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(service, refset, new SearchParameters());
 
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -745,7 +784,8 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/admin/completeAllRefsetPublications")
-    public @ResponseBody ResponseEntity<String> completeAllRefsetPublications(@RequestParam(required = true) final String versionDate, @RequestParam(required = true) final String codeSystem) throws Exception {
+    public @ResponseBody ResponseEntity<String> completeAllRefsetPublications(@RequestParam(required = true) final String versionDate, @RequestParam(required = true) final String codeSystem)
+        throws Exception {
 
         final User user = SecurityService.getUserFromSession();
 
@@ -783,12 +823,15 @@ public class RefsetController extends BaseController {
                 return new ResponseEntity<>("{\"status\": \"" + message + ".\"}", HttpStatus.OK);
 
             } else {
+
                 return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -828,14 +871,18 @@ public class RefsetController extends BaseController {
             }
 
             if (error.equals("")) {
+
                 return new ResponseEntity<>("{\"status\": \"All refsets updated.\"}", HttpStatus.OK);
             } else {
+
                 return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -864,14 +911,17 @@ public class RefsetController extends BaseController {
             // service.commit();
 
             if (newRefsetInternalId.startsWith("Error")) {
+
                 return new ResponseEntity<>("{\"error\": \"" + newRefsetInternalId + "\"}", HttpStatus.OK);
             }
 
             return new ResponseEntity<>("{\"refsetInternalId\": \"" + newRefsetInternalId + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -899,8 +949,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -923,13 +975,15 @@ public class RefsetController extends BaseController {
             // service.beginTransaction();
 
             final String status = RefsetService.deleteInDevelopmentVersion(service, user, refsetInternalId, true);
-            //service.commit();
-            
+            // service.commit();
+
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -979,8 +1033,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1019,6 +1075,7 @@ public class RefsetController extends BaseController {
         final String uri = request.getRequestURI();
 
         if (uri.contains("taxonomySearch")) {
+
             searchRefsetMembers = true;
         }
 
@@ -1037,8 +1094,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1073,8 +1132,8 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members", produces = "application/json")
-    public @ResponseBody ResponseEntity<ConceptResultList> getMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters, final String displayType,
-        final TaxonomyParameters taxonomyParameters, @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<ConceptResultList> getMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final SearchParameters searchParameters,
+        final String displayType, final TaxonomyParameters taxonomyParameters, @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception {
 
         checkBinding(bindingResult);
 
@@ -1101,8 +1160,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1123,7 +1184,8 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetId}/versionDate/{versionDate}", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> cacheMemberAncestors(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate) throws Exception {
+    public @ResponseBody ResponseEntity<String> cacheMemberAncestors(@PathVariable(value = "refsetId") final String refsetId, @PathVariable(value = "versionDate") final String versionDate)
+        throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1135,8 +1197,10 @@ public class RefsetController extends BaseController {
             final boolean success = RefsetMemberService.cacheMemberAncestors(service, user, refsetId, versionDate);
 
             if (success) {
+
                 returnJson = returnJson.replace("<RESULT>", "true");
             } else {
+
                 returnJson = returnJson.replace("<RESULT>", "false");
             }
 
@@ -1145,8 +1209,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(returnJson, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1182,8 +1248,8 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> exportRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String format, final String exportType, final String languageId,
-        final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
+    public @ResponseBody ResponseEntity<String> exportRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String format, final String exportType,
+        final String languageId, final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1225,8 +1291,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(url, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1257,6 +1325,7 @@ public class RefsetController extends BaseController {
             Resource file = new UrlResource(filePath.toUri());
 
             if (!file.exists() || !file.isReadable()) {
+
                 throw new RuntimeException("Could not read the file!");
             }
 
@@ -1264,8 +1333,10 @@ public class RefsetController extends BaseController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"").contentLength(file.contentLength()).body(file);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1318,8 +1389,10 @@ public class RefsetController extends BaseController {
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1365,8 +1438,10 @@ public class RefsetController extends BaseController {
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1379,7 +1454,8 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/rtt", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> migrateRttData(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction) throws Exception {
+    public @ResponseBody ResponseEntity<String> migrateRttData(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction)
+        throws Exception {
 
         return syncSnowstorm(quickMigration, forProduction);
     }
@@ -1395,7 +1471,8 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction) throws Exception {
+    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction)
+        throws Exception {
 
         try {
 
@@ -1419,25 +1496,21 @@ public class RefsetController extends BaseController {
                 final ResultList<String> editions = service.findIds("", null, Edition.class, null);
                 String message = "";
 
-                if (editions.size() > 2) {
-
-                    return new ResponseEntity<>("Database not empty, migration cancelled", HttpStatus.OK);
-                }
-
-                logger.info("migrateRttData Starting RTT data migration");
+                logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
 
                 SyncAgent agent = new SyncAgent(runShortMigration, runForProduction);
                 agent.sync();
 
-                logger.info("migrateRttData Finished RTT data migration");
+                logger.info("Completed Syncing with Snowstorm");
 
-                // RT2 synced with Snowstorm successfully
-                return new ResponseEntity<>(message + "RTT data migration completed successfully", HttpStatus.OK);
+                return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1461,12 +1534,14 @@ public class RefsetController extends BaseController {
             Refset refset = initializer.createTestingFeedback();
 
             logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
-            
+
             return new ResponseEntity<>(status, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1505,8 +1580,10 @@ public class RefsetController extends BaseController {
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1569,8 +1646,10 @@ public class RefsetController extends BaseController {
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1659,8 +1738,10 @@ public class RefsetController extends BaseController {
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1692,8 +1773,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1726,8 +1809,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1789,8 +1874,10 @@ public class RefsetController extends BaseController {
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1811,14 +1898,18 @@ public class RefsetController extends BaseController {
             final Map<String, Set<String>> ancestorsCache = RefsetMemberService.getCacheForMemberAncestors(RefsetMemberService.getBranchPath(refset));
 
             if (ancestorsCache.containsKey(refsetInternalId)) {
+
                 return new ResponseEntity<>(ModelUtility.toJson(ancestorsCache.get(refsetInternalId)), HttpStatus.OK);
             } else {
+
                 return new ResponseEntity<>("Not Cached", HttpStatus.OK);
             }
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1830,8 +1921,8 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}/ancestorConcepts", produces = "application/json")
-    public @ResponseBody ResponseEntity<Concept> getMemberAncestorConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @PathVariable(value = "conceptId") final String conceptId)
-        throws Exception {
+    public @ResponseBody ResponseEntity<Concept> getMemberAncestorConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @PathVariable(value = "conceptId") final String conceptId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -1846,8 +1937,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(concept, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1882,12 +1975,15 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
 
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
+
     }
 
     /**
@@ -1915,8 +2011,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1932,8 +2030,8 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping("/refset/{refsetInternalId}/modifyUpgradeConcept")
-    public @ResponseBody ResponseEntity<String> modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = true) final String inactiveConceptId,
-        @RequestParam(required = false) final String replacementConceptId, @RequestParam(required = true) final String changed,
+    public @ResponseBody ResponseEntity<String> modifyUpgradeConcept(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+        @RequestParam(required = true) final String inactiveConceptId, @RequestParam(required = false) final String replacementConceptId, @RequestParam(required = true) final String changed,
         @RequestBody(required = false) final UpgradeReplacementConcept manualReplacementConcept) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
@@ -1954,8 +2052,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -1986,8 +2086,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -2018,8 +2120,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -2071,8 +2175,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -2122,8 +2228,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -2155,12 +2263,15 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
 
         finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(activeRefsetInternalId);
         }
+
     }
 
     /**
@@ -2196,8 +2307,10 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 
     /**
@@ -2231,7 +2344,9 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(true, HttpStatus.OK);
 
         } catch (final Exception e) {
+
             return handleException(e);
         }
+
     }
 }

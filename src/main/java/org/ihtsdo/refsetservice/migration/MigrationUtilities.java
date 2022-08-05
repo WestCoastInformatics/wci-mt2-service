@@ -144,7 +144,7 @@ public class MigrationUtilities {
             // Persist
             final Refset r = service.add(refset);
 
-            logger.info("Adding new Refset: " + r.getId() + " (" + r.getName() + ") " + r);
+            logger.info("Adding new Refset and/or Version for : " + r.getId() + " (" + r.getName() + ") on: " + r.getVersionDate());
 
             return r;
         }
