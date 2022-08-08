@@ -29,9 +29,13 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -80,7 +84,7 @@ public class Edition extends AbstractHasModified {
     private Set<String> defaultLanguageRefsets = new HashSet<String>();
 
     /** The organization. */
-    @ManyToOne(targetEntity = Edition.class)
+    @ManyToOne(targetEntity = Organization.class)
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Organization organization;
@@ -418,6 +422,40 @@ public class Edition extends AbstractHasModified {
     public void setOrganization(final Organization organization) {
 
         this.organization = organization;
+    }
+
+    /**
+     * Returns the organization ID.
+     *
+     * @return the organization ID
+     * @throws Exception
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @IndexingDependency(derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "organization")
+    }))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    public String getOrganizationId() throws Exception {
+
+        return organization == null ? null : organization.getId();
+    }
+
+    /**
+     * Sets the organization ID.
+     *
+     * @param organizationId the organization ID to set
+     */
+    public void getOrganizationId(final String organizationId) {
+
+        if (organization != null) {
+
+            this.organization.setId(organizationId);
+        } else {
+
+            this.organization = new Organization();
+            this.organization.setId(organizationId);
+        }
+
     }
 
     /**

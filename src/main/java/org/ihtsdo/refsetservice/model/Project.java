@@ -36,15 +36,10 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmb
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
-import org.ihtsdo.refsetservice.migration.MigrationDataInitializer;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import io.micrometer.core.instrument.util.StringUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -225,18 +220,33 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     }
 
     /**
-     * Returns the organization ID.
+     * Returns the edition ID.
      *
-     * @return the organization ID
+     * @return the edition ID
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "organization")
+        @PropertyValue(propertyName = "edition")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
-    public String getOrganizationId() {
+    public String getEditionId() {
 
-        return edition == null || edition.getOrganization() == null ? null : edition.getOrganization().getId();
+        return edition == null ? null : edition.getId();
+    }
+
+    /**
+     * Sets the edition ID.
+     *
+     * @param editionId the edition ID to set
+     */
+    public void setEditionId(final String editionId) {
+
+        if (edition == null) {
+
+            this.edition = new Edition();
+        }
+
+        this.edition.setId(editionId);
     }
 
     /**
@@ -449,6 +459,18 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
             }
 
         } else if (!name.equals(other.name)) {
+
+            return false;
+        }
+
+        if (edition == null) {
+
+            if (other.edition != null) {
+
+                return false;
+            }
+
+        } else if (!edition.equals(other.edition)) {
 
             return false;
         }

@@ -109,19 +109,19 @@ public class ProjectService extends BaseService {
     }
 
     /**
-     * Returns the project names for organization.
+     * Returns the project names for edition.
      *
-     * @param organizationId the organization id
-     * @return the project names for organization
+     * @param editionId the edition id
+     * @return the project names for edition
      * @throws Exception the exception
      */
-    public static Set<String> getProjectNamesForOrganization(final String organizationId) throws Exception {
+    public static Set<String> getProjectNamesForEdition(final String editionId) throws Exception {
 
         final Set<String> projectNames = new HashSet<>();
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultList<Project> projects = service.find("organization.id: " + organizationId + " AND active:true", null, Project.class, null);
+            final ResultList<Project> projects = service.find("edition.id: " + editionId + " AND active:true", null, Project.class, null);
 
             if (projects == null) {
                 return projectNames;

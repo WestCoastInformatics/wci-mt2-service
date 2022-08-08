@@ -64,7 +64,6 @@ public class OrganizationService extends BaseService {
         checkEditPermissions(user, null);
         
         SearchParameters organizationsParameters = new SearchParameters();
-        organizationsParameters.setQuery("editionId:" + organization.getEditionId());
         
         List<Organization> organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
         

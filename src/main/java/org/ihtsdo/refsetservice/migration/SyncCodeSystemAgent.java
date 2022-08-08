@@ -136,14 +136,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
             if (syncedEdition != null) {
 
                 // Differences found in edition
-                setSnowstormEditionOwner(syncedEdition.getShortName(), syncedEdition.getName(), codeSystem);
                 retEdition = syncedEdition;
             } else {
 
                 // No differences found in edition, but check Owner value as well
-                setSnowstormEditionOwner(edition.getShortName(), edition.getName(), codeSystem);
                 retEdition = edition;
             }
+
+            setSnowstormEditionOwner(retEdition.getShortName(), retEdition.getName(), codeSystem);
 
             handleExistingOrganization(retEdition, isActiveSsnowstormEdition, codeSystem);
 
@@ -158,38 +158,38 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private static void handleExistingOrganization(Edition syncedEdition, boolean isActiveSnowstormEdition, JsonNode codeSystem) throws Exception {
+    private static void handleExistingOrganization(Edition edition, boolean isActiveSnowstormEdition, JsonNode codeSystem) throws Exception {
 
         Organization organization = null;
 
-        /* See if have organization with corresponding editionId */
-        // If existingEdition is null, this is the first time we have observed this edition, so create it.
+        /* See if have organization with corresponding edition.getOrganization.getId() */
         final Organization correspondingDatabaseOrganization =
-            allDatabaseOrganizations.stream().filter(o -> syncedEdition.getOrganization().getId().equals(o.getId())).collect(Collectors.toList()).iterator().next();
+            allDatabaseOrganizations.stream().filter(o -> edition.getOrganization().getId().equals(o.getId())).collect(Collectors.toList()).iterator().next();
 
-        /* Based on matching attributes: add new, ignore new but inactive, check for changes and modify if needed and ignore otherwise */
         if (correspondingDatabaseOrganization == null) {
 
-            // TODO: Once have support for 1:N Orgs:Eds, this will no longer case long term
-            throw new Exception("Must be able to find an existing's Edition's corresponding Organization");
-        }
-
-        final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(correspondingDatabaseOrganization, editionOwnerMap.get(syncedEdition.getName()), isActiveSnowstormEdition);
-
-        if (syncedOrganization != null) {
-
-            // A modification was made, so updated edition
-            organizationsSynced.add(syncedOrganization);
-            organization = syncedOrganization;
-
+            // Previously synced code system now seeing new organization for first time
+            handleNewCodeSystem(edition.getShortName(), edition.getName(), edition.getBranch(), edition.isActive(), codeSystem);
         } else {
 
-            // No changes, return existing
-            organizationsUnchanged.add(correspondingDatabaseOrganization);
-            organization = correspondingDatabaseOrganization;
+            final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(correspondingDatabaseOrganization, editionOwnerMap.get(edition.getName()), isActiveSnowstormEdition);
+
+            if (syncedOrganization != null) {
+
+                // A modification was made, so updated edition
+                organizationsSynced.add(syncedOrganization);
+                organization = syncedOrganization;
+
+            } else {
+
+                // No changes, return existing
+                organizationsUnchanged.add(correspondingDatabaseOrganization);
+                organization = correspondingDatabaseOrganization;
+            }
+
+            logger.info("Synced " + organization.getName() + " Organization");
         }
 
-        logger.info("Synced " + organization.getName() + " Organization");
     }
 
     private static Edition handleExistingEdition(Edition edition, String editionShortName, String editionName, String editionBranch, boolean isActiveEdition, JsonNode codeSystem) throws Exception {
@@ -216,24 +216,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
         /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
         boolean modificationMade = false;
 
-        // TODO: This is immutable, so nothing to check?
-        if (updateAttribute("Edition shortName ", existingEdition.getShortName(), editionShortName)) {
-
-            existingEdition.setShortName(editionShortName);
-            modificationMade = true;
-        }
-
-        // TODO: This is immutable, so nothing to check?
+        // Branch and ShortName are both immutable, so don't bother checking them
         if (updateAttribute("Edition name ", existingEdition.getName(), editionName)) {
 
             existingEdition.setName(editionName);
-            modificationMade = true;
-        }
-
-        // TODO: This is immutable, so nothing to check?
-        if (updateAttribute("Edition branch ", existingEdition.getBranch(), editionBranch)) {
-
-            existingEdition.setBranch(editionBranch);
             modificationMade = true;
         }
 

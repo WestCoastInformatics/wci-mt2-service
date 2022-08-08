@@ -25,6 +25,20 @@ drop table ${pre_if_exists} audit_entries ${post_if_exists};
 drop table ${pre_if_exists} artifacts ${post_if_exists};
 
 
+CREATE TABLE `organizations` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `description` varchar(4000) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `primaryContactEmail` varchar(255) DEFAULT NULL,
+  `iconUri` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
+
+
 CREATE TABLE `editions` (
   `id` varchar(64) NOT NULL,
   `active` bit(1) NOT NULL,
@@ -38,8 +52,10 @@ CREATE TABLE `editions` (
   `namespace` varchar(256) DEFAULT NULL,
   `shortName` varchar(256) DEFAULT NULL,
   `topLevelModule` varchar(256) DEFAULT NULL,
+  `organization_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
+
 
 CREATE TABLE `edition_defaultlanguagerefsets` (
   `Edition_id` varchar(64) NOT NULL,
@@ -49,21 +65,18 @@ CREATE TABLE `edition_defaultlanguagerefsets` (
 ALTER TABLE `edition_defaultlanguagerefsets` ADD INDEX `FKsty54m8wa2yvysx49lsgdapq0` (`Edition_id`);
 ALTER TABLE `edition_defaultlanguagerefsets` ADD CONSTRAINT `FKsty54m8wa2yvysx49lsgdapq0` FOREIGN KEY (`Edition_id`) REFERENCES `editions` (`id`);
 
-CREATE TABLE `organizations` (
-  `id` varchar(64) NOT NULL,
-  `active` bit(1) NOT NULL,
-  `created` datetime(6) NOT NULL,
-  `modified` datetime(6) NOT NULL,
-  `modifiedBy` varchar(256) NOT NULL,
-  `description` varchar(4000) DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  `primaryContactEmail` varchar(255) DEFAULT NULL,
-  `edition_id` varchar(64) DEFAULT NULL,
-  `iconUri` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-);
-ALTER TABLE `organizations` ADD INDEX `FK9og41jo3e6xe033my21t6wscf` (`edition_id`);
-ALTER TABLE `organizations` ADD CONSTRAINT `FK9og41jo3e6xe033my21t6wscf` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`);
+
+
+
+
+
+ALTER TABLE `editions` ADD INDEX `FK9og41jo3e6xe033my21t6wscf` (`organization_id`);
+ALTER TABLE `editions` ADD CONSTRAINT `FK9og41jo3e6xe033my21t6wscf` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`);
+
+
+
+
+
 
 CREATE TABLE `projects` (
   `id` varchar(64) NOT NULL,
@@ -76,11 +89,11 @@ CREATE TABLE `projects` (
   `primaryContactEmail` varchar(255) DEFAULT NULL,
   `crowdProjectId` varchar(255) DEFAULT NULL,
   `privateProject` bit(1) NOT NULL,
-  `organization_id` varchar(64) DEFAULT NULL,
+  `edition_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
-ALTER TABLE `projects` ADD INDEX `FK3gwrleyyq6prcnqekmkobbimd` (`organization_id`);
-ALTER TABLE `projects` ADD CONSTRAINT `FK3gwrleyyq6prcnqekmkobbimd` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`);
+ALTER TABLE `projects` ADD INDEX `FK3gwrleyyq6prcnqekmkobbimd` (`edition_id`);
+ALTER TABLE `projects` ADD CONSTRAINT `FK3gwrleyyq6prcnqekmkobbimd` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`);
 
 CREATE TABLE `refsets` (
   `id` varchar(64) NOT NULL,

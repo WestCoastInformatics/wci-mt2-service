@@ -202,6 +202,8 @@ public class MigrationUtilities {
 
     Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String type, String narrative, Project project) throws Exception {
 
+        logger.debug("Adding WCI Testing Org's single project: " + project);
+
         final Refset refsetParameters = new Refset();
 
         refsetParameters.setName(name);

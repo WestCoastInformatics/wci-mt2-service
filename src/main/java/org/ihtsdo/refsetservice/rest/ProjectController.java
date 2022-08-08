@@ -101,7 +101,9 @@ public class ProjectController extends BaseController {
 
         logger.info("Project: projectId: " + projectId);
         final User authUser = SecurityService.getUserFromSession();
+
         if (authUser == null) {
+
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
         }
 
@@ -115,9 +117,11 @@ public class ProjectController extends BaseController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(npe.getMessage());
 
         } catch (final Exception e) {
+
             logger.error("Error fetching project.  Id: {}", projectId, e);
             return handleException(e);
         }
+
     }
 
     /**
@@ -141,8 +145,8 @@ public class ProjectController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult, @QueryParam(value = "includeMembers") final boolean includeMembers)
-        throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(final SearchParameters searchParameters, final BindingResult bindingResult,
+        @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -155,14 +159,20 @@ public class ProjectController extends BaseController {
             final ResultList<Project> results = ProjectService.searchProjects(user, searchParameters);
 
             if (includeMembers && results != null && results.getItems() != null) {
+
                 for (final Project project : results.getItems()) {
+
                     final Set<User> members = new HashSet<>();
+
                     for (final String teamId : project.getTeams()) {
+
                         final Team team = TeamService.getTeam(teamId, includeMembers);
                         members.addAll(team.getMemberList());
                     }
+
                     project.getMemberList().addAll(members);
                 }
+
             }
 
             return new ResponseEntity<>(results, HttpStatus.OK);
@@ -171,6 +181,7 @@ public class ProjectController extends BaseController {
 
             return handleException(e);
         }
+
     }
 
     /**
@@ -197,22 +208,29 @@ public class ProjectController extends BaseController {
 
             // TODO check permissions, fail if not authorized.
             final User authUser = SecurityService.getUserFromSession();
+
             if (authUser == null) {
+
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
             }
 
             if (project == null) {
+
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing project");
             }
 
-            final Set<String> projectNames = ProjectService.getProjectNamesForOrganization(project.getOrganizationId());
+            final Set<String> projectNames = ProjectService.getProjectNamesForEdition(project.getEdition().getOrganizationId());
+
             if (projectNames.contains(project.getName())) {
+
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("A project with the name " + project.getName() + " already exists for this organization.");
             }
 
             try {
+
                 project.validateAdd();
             } catch (final Exception e) {
+
                 final String errorMessage = "Project validation failed for add. Message: " + e.getMessage();
                 logger.error(errorMessage, e);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
@@ -221,17 +239,22 @@ public class ProjectController extends BaseController {
             final Project localProject = ProjectService.addProject(authUser, project);
 
             if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+
                 logger.info("CALLING CROWD API");
 
                 try {
+
                     CrowdAPIClient.addGroup(project.getEdition().getShortName(), localProject.getName(), localProject.getDescription());
 
                 } catch (Exception e) {
+
                     final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
                     logger.error(errorMessage, e);
                     return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("");
                 }
+
             } else {
+
                 logger.info("SKIP CALLING CROWD API");
             }
 
@@ -239,9 +262,11 @@ public class ProjectController extends BaseController {
             return ResponseEntity.status(HttpStatus.CREATED).body(localProject);
 
         } catch (final Exception e) {
+
             logger.error("Error adding project. {}", project.toString(), e);
             return handleException(e);
         }
+
     }
 
     /**
@@ -266,19 +291,24 @@ public class ProjectController extends BaseController {
         logger.info("Update project: {}", project);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
+
         if (authUser == null) {
+
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
         if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
+
             final String errorMessage = "Project is null or project id does not match id in URL.";
             logger.error(errorMessage);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
         }
 
         try {
+
             project.validateUpdate(null);
         } catch (final Exception e) {
+
             logger.error("Bad request for project update.", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
@@ -289,9 +319,11 @@ public class ProjectController extends BaseController {
             return ResponseEntity.status(HttpStatus.OK).body(proj);
 
         } catch (final Exception e) {
+
             logger.error("Error updating project.  Id: {}", id, e);
             return handleException(e);
         }
+
     }
 
     /**
@@ -315,7 +347,6 @@ public class ProjectController extends BaseController {
         // TODO check permissions, fail if not authorized.
         final User user = SecurityService.getUserFromSession();
         final Project project = ProjectService.getProject(id, false);
-        
 
         try {
 
@@ -323,12 +354,15 @@ public class ProjectController extends BaseController {
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
         } catch (final NotFoundException nfe) {
+
             logger.error("Error getting team. Id {} not found", id);
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
+
             logger.error("Error inactivating project.  Id: {}", id, e);
             return handleException(e);
         }
+
     }
 }

@@ -191,49 +191,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     }
 
     /**
-     * Returns the edition ID.
-     *
-     * @return the edition ID
-     * @throws Exception 
-     */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    @IndexingDependency(derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "edition")
-    }))
-    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
-    public String getEditionId() throws Exception {
-
-        // TODO: Jesse
-        // Was: return edition == null ? null : edition.getId();
-        // Now throw exception
-        throw new Exception("Change all access to Organization.getEditionId() to not be org-based");
-    }
-
-    /**
-     * Sets the edition ID.
-     *
-     * @param editionId the edition ID to set
-     * @throws Exception 
-     */
-    public void setEditionId(final String editionId) throws Exception {
-
-        // TODO: Jesse
-        // Was: return edition == null ? null : edition.getId();
-        // Now throw exception
-        throw new Exception("Change all access to Organization.getEditionId() to not be org-based");
-/*
-        if (edition != null) {
-
-            this.edition.setId(editionId);
-        } else {
-
-            this.edition = new Edition();
-            this.edition.setId(editionId);
-        }
-*/
-    }
-
-    /**
      * Returns the primary contact email.
      *
      * @return the primary contact email

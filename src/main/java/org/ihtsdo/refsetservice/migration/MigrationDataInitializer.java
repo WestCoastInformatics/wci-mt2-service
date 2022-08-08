@@ -2,7 +2,6 @@ package org.ihtsdo.refsetservice.migration;
 
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -103,10 +102,6 @@ public class MigrationDataInitializer {
 
             if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(INITIAL_FEEDBACK_REFSET_ID))) {
 
-                // Create a dedicated UAT Training Project for each organization
-                // TODO: Determined unnecessary. If this lasts, remove altogether
-                // createUATProjects(developerTestingEdition, allDatabaseEditions);
-
                 // Create develoepr-project (for DEV only)
                 createDeveloperTestingContent(edition);
 
@@ -177,8 +172,6 @@ public class MigrationDataInitializer {
         try (TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
-
-            logger.info("Adding WCI Testing Org's single project");
 
             testingProject = utilities.addProject(developerTestingEdition, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION);
 

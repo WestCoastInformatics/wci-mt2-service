@@ -38,11 +38,11 @@ public class SyncAgent {
 
     protected static MigrationUtilities utilities = null;
 
-    protected static List<Edition> allDatabaseEditions = null;
+    protected static List<Edition> allDatabaseEditions = new ArrayList<>();
 
-    protected static List<Organization> allDatabaseOrganizations = null;
+    protected static List<Organization> allDatabaseOrganizations = new ArrayList<>();
 
-    protected static List<Refset> allDatabaseRefsets = null;
+    protected static List<Refset> allDatabaseRefsets = new ArrayList<>();
 
     protected static Edition develeperTestingEdition = null;
 
