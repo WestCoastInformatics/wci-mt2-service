@@ -275,7 +275,7 @@ public class RefsetService {
         // Add a workflow history entry for READY_FOR_EDIT and then update the workflow to IN_EDIT
         WorkflowService.addWorkflowHistory(service, user, WorkflowService.CREATE, refset, "");
         refset = WorkflowService.setWorkflowStatus(service, user, WorkflowService.EDIT, refset, "", WorkflowService.IN_EDIT, user.getUserName());
-        
+
         // create an edit history entry based on the new refset version.
         createRefsetEditHistory(service, user, refset);
 
@@ -447,26 +447,26 @@ public class RefsetService {
         history.populateFrom(refset);
         history.setId(null);
         history.setEditBranchId(null);
-    
+
         // if this is an intensional refset save the definition
         if (refset.getType().equals(Refset.INTENSIONAL)) {
-    
+
             List<DefinitionClauseEditHistory> clauseHistoryList = new ArrayList<>();
-    
+
             for (DefinitionClause originalClause : refset.getDefinitionClauses()) {
-    
+
                 DefinitionClauseEditHistory clauseHistory = new DefinitionClauseEditHistory(originalClause);
                 clauseHistory.setId(null);
                 service.add(clauseHistory);
                 clauseHistoryList.add(clauseHistory);
             }
-    
+
             history.setDefinitionClauses(clauseHistoryList);
         }
-    
+
         // update an object
         service.add(history);
-    
+
         logger.info("Refset " + refset.getRefsetId() + " edit history saved");
         logger.debug("createRefsetEditHistory: Refset: " + ModelUtility.toJson(refset));
     }
@@ -512,27 +512,27 @@ public class RefsetService {
 
         // if this is an intensional refset save the definition
         if (refset.getType().equals(Refset.INTENSIONAL)) {
-            
-//            List<DefinitionClause> clauseList = new ArrayList<>();
-//
-//            for (DefinitionClauseEditHistory historyClause : history.getDefinitionClauses()) {
-//
-//                DefinitionClause clause = new DefinitionClause();
-//                clause.setValue(historyClause.getValue());
-//                clause.setNegated(historyClause.getNegated());
-//
-//                service.add(clause);
-//                clauseList.add(clause);
-//            }
-//            
-//            modifyRefsetDefinition(user, service, refset, clauseList);
+
+            // List<DefinitionClause> clauseList = new ArrayList<>();
+            //
+            // for (DefinitionClauseEditHistory historyClause : history.getDefinitionClauses()) {
+            //
+            // DefinitionClause clause = new DefinitionClause();
+            // clause.setValue(historyClause.getValue());
+            // clause.setNegated(historyClause.getNegated());
+            //
+            // service.add(clause);
+            // clauseList.add(clause);
+            // }
+            //
+            // modifyRefsetDefinition(user, service, refset, clauseList);
 
             for (DefinitionClause oldClause : new ArrayList<DefinitionClause>(refset.getDefinitionClauses())) {
 
                 refset.getDefinitionClauses().remove(oldClause);
                 service.remove(oldClause);
             }
-            
+
             service.update(refset);
 
             for (DefinitionClauseEditHistory historyClause : history.getDefinitionClauses()) {
@@ -566,6 +566,7 @@ public class RefsetService {
         RefsetEditHistory history = service.findSingle("refsetId:" + QueryParserBase.escape(refsetId) + "", RefsetEditHistory.class, null);
 
         if (history == null) {
+
             return;
         }
 
@@ -586,7 +587,8 @@ public class RefsetService {
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String addDefinitionException(final TerminologyService service, final User user, final String refsetInternalId, final String ecl, final String definitionExceptionType) throws Exception {
+    public static String addDefinitionException(final TerminologyService service, final User user, final String refsetInternalId, final String ecl, final String definitionExceptionType)
+        throws Exception {
 
         String statusMessage = "Success";
         Refset refset = getRefset(service, user, refsetInternalId);
@@ -1003,7 +1005,7 @@ public class RefsetService {
             service.update(mostRecentVersion);
             logger.info("Refset " + mostRecentVersion.getId() + " version marked as latest.");
         }
-        
+
         return status;
     }
 
@@ -1037,7 +1039,9 @@ public class RefsetService {
 
                 return true;
             }
+
         }
+
     }
 
     /**
@@ -1093,9 +1097,9 @@ public class RefsetService {
 
             logger.debug("getRefsetConcepts existingRefsetIds: " + existingRefsetIds);
         }
-        
-        final Set<String> excludeList = conceptsToRemove(!areParentConcepts);   
-        
+
+        final Set<String> excludeList = conceptsToRemove(!areParentConcepts);
+
         // update the concept with the new data
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -1104,7 +1108,7 @@ public class RefsetService {
 
                 throw new Exception("Unable to get refset concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
             }
-            
+
             final ObjectMapper mapper = new ObjectMapper();
             final String resultString = response.readEntity(String.class);
             final JsonNode root = mapper.readTree(resultString.toString());
@@ -1129,7 +1133,7 @@ public class RefsetService {
 
                 results.getItems().add(concept);
             }
-            
+
             // sort the results
             Collections.sort(results.getItems(), (o1, o2) -> (o1.getName().compareTo(o2.getName())));
         }
@@ -1272,6 +1276,7 @@ public class RefsetService {
 
             return userProjects;
         }
+
     }
 
     /**
@@ -1295,9 +1300,11 @@ public class RefsetService {
 
                 projectCache.put(project.getId(), project);
             }
+
         }
 
-        return ModelUtility.fromJson(ModelUtility.toJson(projectCache), new TypeReference<LinkedHashMap<String, Project>>() {/**/});
+        return ModelUtility.fromJson(ModelUtility.toJson(projectCache), new TypeReference<LinkedHashMap<String, Project>>() {
+            /**/});
     }
 
     /**
@@ -1904,7 +1911,9 @@ public class RefsetService {
 
                     continue;
                 }
+
             }
+
         }
 
         return conceptIds;
@@ -1974,6 +1983,7 @@ public class RefsetService {
 
             return new ArrayList<>();
         }
+
     }
 
     /**
@@ -1994,6 +2004,7 @@ public class RefsetService {
             logger.debug("clearAllRefsetCaches: Clearing caches for all branches");
             branchVersionCache.clear();
         }
+
     }
 
     /**
@@ -2049,6 +2060,7 @@ public class RefsetService {
 
                         branchCache.add(childDate);
                     }
+
                 }
 
                 // stop when branch does not start with a date
@@ -2056,6 +2068,7 @@ public class RefsetService {
 
                     break;
                 }
+
             }
 
             // sort the results in reverse order since that is the usual way they are consumed
@@ -2088,8 +2101,7 @@ public class RefsetService {
 
         EmailUtility.sendEmail(subject, user.getEmail(), projectAdminEmail, body);
     }
-    
-    
+
     /**
      * Concepts to remove.
      *
@@ -2101,19 +2113,76 @@ public class RefsetService {
         final String[] refsetExclue = PropertyUtility.getProperty("refset-copy-concept-exclude").split("\\|");
 
         for (int i = 0; i < refsetExclue.length; i++) {
+
             conceptCodes.add(refsetExclue[i]);
             i++;
         }
 
         if (excludeCurrentSiRefsets) {
+
             final String[] currentSiRefsets = PropertyUtility.getProperty("current_si_refsets").split("\\|");
 
             for (int i = 0; i < currentSiRefsets.length; i++) {
+
                 conceptCodes.add(currentSiRefsets[i]);
                 i++;
             }
+
         }
 
         return conceptCodes;
+    }
+
+    /**
+     * Convert the intensional refset to be extensional as new version of same refset i.e., without changing refsetId.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String convertToExtensional(TerminologyService service, User user, String refsetInternalId) throws Exception {
+
+        String status = "convert";
+        String refsetId = "";
+
+        final Refset refset = service.get(refsetInternalId, Refset.class);
+
+        if (refset == null) {
+
+            throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+
+        } else if (!refset.getType().equals(Refset.INTENSIONAL)) {
+
+            throw new Exception("Refset Internal Id: " + refsetInternalId + " is not 'Intensional' and can not be converted.");
+        } else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+
+            throw new Exception("Refset Internal Id: " + refsetInternalId + " is not 'In Development' and can not be converted.");
+        }
+
+        refsetId = refset.getRefsetId();
+
+        // Convert Metadata
+        refset.setType(Refset.EXTENSIONAL);
+        refset.getDefinitionClauses().clear();
+        service.update(refset);
+
+        // Identify members from ECL query results and populate them as refset members
+        String ecl = getEclFromDefinition(refset.getDefinitionClauses());
+
+        final List<String> conceptIdList = RefsetMemberService.getConceptIdsFromEcl(refset.getEditionBranch(), ecl);
+
+        logger.debug("Before conversion, have " + RefsetMemberService.getMemberCount(refset) + " refset members");
+        RefsetMemberService.addRefsetMembers(service, user, refsetInternalId, conceptIdList);
+        logger.debug("After conversion, have " + RefsetMemberService.getMemberCount(refset) + " refset members");
+
+        logger.info("Converted refset from database: " + refsetInternalId);
+        
+        Refset updatedRefset = service.get(refsetInternalId, Refset.class);
+
+        service.add(AuditEntryHelper.convertToExtensionRefset(updatedRefset));
+
+        return status;
     }
 }

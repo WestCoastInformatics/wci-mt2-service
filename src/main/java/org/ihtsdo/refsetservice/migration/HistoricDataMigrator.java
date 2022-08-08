@@ -1338,6 +1338,7 @@ public class HistoricDataMigrator {
 
             Set<DefinitionClause> clauses = utilities.getRefsetClauses(rttId);
             refset.getDefinitionClauses().addAll(clauses);
+            refset.setType(Refset.INTENSIONAL);
         }
 
     }
