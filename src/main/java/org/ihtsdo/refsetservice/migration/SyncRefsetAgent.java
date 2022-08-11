@@ -556,18 +556,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
     }
 
-    // Do not persist as will be done later
-    private static void associateRefsetClauses(final String rttId, final Refset refset) throws Exception {
-
-        // If has ECL clauses, associate them with refset
-        if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
-
-            Set<DefinitionClause> clauses = utilities.getRefsetClauses(rttId);
-            refset.getDefinitionClauses().addAll(clauses);
-        }
-
-    }
-
     /**
      * Update refsets with values from json and with identifying latestVersion, but do not persist at this point.
      * @param refsetsUpdated
@@ -607,24 +595,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
                     if (rttDataRefsetVersion != null && rttDataRefsetVersion.equals(refset.getVersionDate())) {
 
-                        // Set type & narrative
-                        refset.setType(refsetJson.get("type").asText());
-                        refset.setNarrative(refsetJson.get("narrative").asText());
-
-                        // Tags
-                        if (refsetJson.has("tags")) {
-
-                            Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
-
-                            while (tagsIterator.hasNext()) {
-
-                                refset.getTags().add(tagsIterator.next().asText());
-                            }
-
-                        }
-
-                        // If has ECL clauses, create and associate with refset
-                        associateRefsetClauses(rttId, refset);
+                        // Foundmatch, set attributes
+                        setRefsetRttAttributes(rttId, refset, refsetJson);
 
                         // Only one will match, so no need to keep reading
                         break;
@@ -671,6 +643,40 @@ public class SyncRefsetAgent extends SyncAgent {
 
         }
 
+    }
+
+    private static void setRefsetRttAttributes(String rttId, Refset refset, JsonNode refsetJson) throws Exception {
+        logger.debug("111z\t-\trttId: " + rttId);
+        logger.debug("111a - Setting RTT Atributes for refset: <<<" + refset + ">>> using rttId: <" + rttId + "> for which have refsetJson: " + refsetJson);
+        
+        // Set type & narrative
+        refset.setType(refsetJson.get("type").asText());
+        refset.setNarrative(refsetJson.get("narrative").asText());
+
+        // Tags
+        if (refsetJson.has("tags")) {
+
+            Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
+
+            while (tagsIterator.hasNext()) {
+                String tag = tagsIterator.next().asText();
+                logger.debug("111b - found tag: " + tag);
+
+                refset.getTags().add(tag);
+            }
+
+        }
+
+        // If has ECL clauses, create and associate with refset
+        if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
+
+            Set<DefinitionClause> clauses = utilities.getRefsetClauses(rttId);
+            logger.debug("111c - found " + clauses.size() + " ecl clauses: " + clauses);
+
+            refset.getDefinitionClauses().addAll(clauses);
+        }
+
+        // Do not persist as will be done later
     }
 
     protected static Organization getOrgFromRefset(String refsetId) {
