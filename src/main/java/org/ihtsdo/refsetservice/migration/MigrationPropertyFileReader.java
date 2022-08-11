@@ -17,31 +17,31 @@ import org.springframework.core.io.ClassPathResource;
 
 public class MigrationPropertyFileReader {
 
-    private ClassPathResource projectsResource = new ClassPathResource("rtt-migration/projects.txt");
+    private ClassPathResource projectsResource = new ClassPathResource("rtt-migration/sync/projects.txt");
 
-    private ClassPathResource clausesResource = new ClassPathResource("rtt-migration/clauses.txt");
+    private ClassPathResource clausesResource = new ClassPathResource("rtt-migration/sync/clauses.txt");
 
-    private ClassPathResource refsetsResource = new ClassPathResource("rtt-migration/refsets.txt");
+    private ClassPathResource refsetsResource = new ClassPathResource("rtt-migration/sync/refsets.txt");
 
-    private ClassPathResource refsetToTagsResource = new ClassPathResource("rtt-migration/refsetToTags.txt");
+    private ClassPathResource refsetToTagsResource = new ClassPathResource("rtt-migration/sync/refsetToTags.txt");
 
-    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("rtt-migration/ignoredCodeSystems.txt");
+    private ClassPathResource refsetToProjectsResource = new ClassPathResource("rtt-migration/sync/refsetToProjects.txt");
 
-    private ClassPathResource ignoredRefsetsResource = new ClassPathResource("rtt-migration/ignoredRefsets.txt");
+    private ClassPathResource refsetToClausesResource = new ClassPathResource("rtt-migration/sync/refsetToClauses.txt");
 
-    private ClassPathResource refsetToProjectsResource = new ClassPathResource("rtt-migration/refsetToProjects.txt");
+    private ClassPathResource refsetToDescriptionResource = new ClassPathResource("rtt-migration/sync/refsetToDescription.txt");
 
-    private ClassPathResource refsetToClausesResource = new ClassPathResource("rtt-migration/refsetToClauses.txt");
+    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("rtt-migration/exceptions/ignoredCodeSystems.txt");
 
-    private ClassPathResource refsetToDescriptionResource = new ClassPathResource("rtt-migration/refsetToDescription.txt");
+    private ClassPathResource ignoredRefsetsResource = new ClassPathResource("rtt-migration/exceptions/ignoredRefsets.txt");
 
-    private ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("rtt-migration/undefinedDefaultLangRefsets.txt");
+    private ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("rtt-migration/exceptions/undefinedDefaultLangRefsets.txt");
 
-    private ClassPathResource teamCreationResource = new ClassPathResource("rtt-migration/teams/teamCreation.txt");
+    private ClassPathResource teamCreationResource = new ClassPathResource("rtt-migration/initial-teams/teamCreation.txt");
 
-    private ClassPathResource teamToProjectAssignmentResource = new ClassPathResource("rtt-migration/teams/teamToProjectAssignment.txt");
+    private ClassPathResource teamToProjectAssignmentResource = new ClassPathResource("rtt-migration/initial-teams/teamToProjectAssignment.txt");
 
-    private ClassPathResource teamMembershipResource = new ClassPathResource("rtt-migration/teams/teamMembership.txt");
+    private ClassPathResource teamMembershipResource = new ClassPathResource("rtt-migration/initial-teams/teamMembership.txt");
 
     /** The Constant SPLIT_CHARACTER. */
     private final String SPLIT_CHARACTER = "\t";
