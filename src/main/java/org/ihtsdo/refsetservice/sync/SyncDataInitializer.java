@@ -59,15 +59,17 @@ public class SyncDataInitializer {
 
     private static final String FEEDBACK_REFSET_ID_BASE = "9999999";
 
+    private static final String FEEDBACK_INITIAL_REFSET_ID = "999999901";
+
     private static final String INTENSIONAL_REFSET_NAME_BASE = "WCI Testing Intensional Refset ";
 
     private static final String INTENSIONAL_REFSET_ID_BASE = "8888888";
 
+    private static final String INTENSIONAL_INITIAL_REFSET_ID = "888888801";
+
     private static final String WCI_TESTING_PROJECT_NAME = "WCI Testing Project";
 
     private static final String WCI_TESTING_PROJECT_DESCRIPTION = "The single project for all WCI testing refsets";
-
-    private static final String INITIAL_FEEDBACK_REFSET_ID = "999999901";
 
     public SyncDataInitializer() {
 
@@ -107,7 +109,7 @@ public class SyncDataInitializer {
         // Only run this once on DEV and UAT (but never prod). If developerTestingOrganization is set, we know that this has already been run
         if (developerTestingOrganization != null) {
 
-            if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(INITIAL_FEEDBACK_REFSET_ID))) {
+            if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(FEEDBACK_INITIAL_REFSET_ID))) {
 
                 // Create a dedicated UAT Training Project for each organization
                 // TODO: Determined unnecessary. If this lasts, remove altogether
@@ -116,7 +118,7 @@ public class SyncDataInitializer {
                 // Create wci-project (for DEV only)
                 createTestingContent();
 
-                // Create wci-feedback-testing refset(for DEV only)
+                // Create wci testing refsets(for DEV only)
                 createTestingRefsets();
 
                 // Create a single Admin team per Org
@@ -196,7 +198,7 @@ public class SyncDataInitializer {
     }
 
     /*
-     * Called when creating the first instance of testing-feedback refset
+     * Called when creating the first instance of testing refsets
      */
     public void createTestingRefsets() throws Exception {
 
@@ -204,12 +206,12 @@ public class SyncDataInitializer {
 
         logger.info(" Create Feedback & Intensinoal refsets for testing (for DEV only)");
 
-        Refset intensionalRefset = utilities.addWCIRefset(getSyncUser(), "WCI Testing Intensional Refset 1", INITIAL_FEEDBACK_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
-            utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);
+        // create new refset with name = Feedback/Intensional Testing Version 1 with July 31 2022 version off International Edition
+        Refset intensionalRefset = utilities.addWCIRefset(getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + " 1", INTENSIONAL_INITIAL_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
+            utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.INTENSIONAL, "", testingProject);
         addIntensionalContent(intensionalRefset);
 
-        // create new refset with name = Feedback/Intensional Testing Version 1 with July 31 2022 version off International Edition
-        Refset feedbackRefset = utilities.addWCIRefset(getSyncUser(), "WCI Testing Feedback Refset 1", INITIAL_FEEDBACK_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
+        Refset feedbackRefset = utilities.addWCIRefset(getSyncUser(), FEEDBACK_REFSET_NAME_BASE + " 1", FEEDBACK_INITIAL_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
             utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);
         addFeedbackContent(feedbackRefset);
 

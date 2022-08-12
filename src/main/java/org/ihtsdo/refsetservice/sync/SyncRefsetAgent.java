@@ -643,9 +643,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private static void setRefsetRttAttributes(String rttId, Refset refset, JsonNode refsetJson) throws Exception {
 
-        logger.debug("111z\t-\trttId: " + rttId);
-        logger.debug("111a - Setting RTT Atributes for refset: <<<" + refset + ">>> using rttId: <" + rttId + "> for which have refsetJson: " + refsetJson);
-
         // Set type & narrative
         refset.setType(refsetJson.get("type").asText());
         refset.setNarrative(refsetJson.get("narrative").asText());
@@ -658,7 +655,6 @@ public class SyncRefsetAgent extends SyncAgent {
             while (tagsIterator.hasNext()) {
 
                 String tag = tagsIterator.next().asText();
-                logger.debug("111b - found tag: " + tag);
 
                 refset.getTags().add(tag);
             }
@@ -669,7 +665,6 @@ public class SyncRefsetAgent extends SyncAgent {
         if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
 
             Set<DefinitionClause> clauses = utilities.getRefsetClauses(rttId);
-            logger.debug("111c - found " + clauses.size() + " ecl clauses: " + clauses);
 
             refset.getDefinitionClauses().addAll(clauses);
         }
