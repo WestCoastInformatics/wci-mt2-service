@@ -513,6 +513,20 @@ public class RefsetService {
         // if this is an intensional refset save the definition
         if (refset.getType().equals(Refset.INTENSIONAL)) {
             
+//            List<DefinitionClause> clauseList = new ArrayList<>();
+//
+//            for (DefinitionClauseEditHistory historyClause : history.getDefinitionClauses()) {
+//
+//                DefinitionClause clause = new DefinitionClause();
+//                clause.setValue(historyClause.getValue());
+//                clause.setNegated(historyClause.getNegated());
+//
+//                service.add(clause);
+//                clauseList.add(clause);
+//            }
+//            
+//            modifyRefsetDefinition(user, service, refset, clauseList);
+
             for (DefinitionClause oldClause : new ArrayList<DefinitionClause>(refset.getDefinitionClauses())) {
 
                 refset.getDefinitionClauses().remove(oldClause);

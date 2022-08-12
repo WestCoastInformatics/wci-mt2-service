@@ -199,7 +199,7 @@ public class SyncUtilities {
 
     }
 
-    Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String type, String narrative, Project project) throws Exception {
+    Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String narrative, Project project) throws Exception {
 
         final Refset refsetParameters = new Refset();
 
@@ -211,7 +211,7 @@ public class SyncUtilities {
         refsetParameters.setActive(true);
         refsetParameters.setVersionDate(versionDate);
         refsetParameters.setVersionNotes("");
-        refsetParameters.setType(type);
+        refsetParameters.setType(Refset.EXTENSIONAL);
         refsetParameters.setNarrative(narrative);
         refsetParameters.setParentConceptId(DEFAULT_WCI_REFSET_PARENT_CONCEPT);
         refsetParameters.setProject(project);
@@ -223,7 +223,7 @@ public class SyncUtilities {
 
             // Sets up completely different than normal addRefset routine
             final Object returned = RefsetService.createRefset(service, u, refsetParameters);
-
+            logger.debug(" 111a - returned object is: " + returned);
             if (returned instanceof String) {
 
                 throw new Exception((String) returned);
