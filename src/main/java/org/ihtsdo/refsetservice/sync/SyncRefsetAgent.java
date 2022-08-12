@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -54,11 +54,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         for (String refsetId : allSnowstormRefsetVersionPairs.keySet()) {
 
-            for (Date version : allSnowstormRefsetVersionPairs.get(refsetId).keySet()) {
-
-                counter++;
-            }
-
+            counter += allSnowstormRefsetVersionPairs.get(refsetId).size();
         }
 
         logger.info(" syncSnowstormRefsets: Examinging if there are any new or changes to the  " + counter + " refset/version pairs found on Snowstorm");
@@ -412,7 +408,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         logger.info(" step - Populating initial data");
 
-        MigrationDataInitializer initializer = new MigrationDataInitializer();
+        SyncDataInitializer initializer = new SyncDataInitializer();
         initializer.initialize(develeperTestingOranization, allDatabaseOrganizations, allDatabaseRefsets, null);
         // initializer.printResults();
 
@@ -646,9 +642,10 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     private static void setRefsetRttAttributes(String rttId, Refset refset, JsonNode refsetJson) throws Exception {
+
         logger.debug("111z\t-\trttId: " + rttId);
         logger.debug("111a - Setting RTT Atributes for refset: <<<" + refset + ">>> using rttId: <" + rttId + "> for which have refsetJson: " + refsetJson);
-        
+
         // Set type & narrative
         refset.setType(refsetJson.get("type").asText());
         refset.setNarrative(refsetJson.get("narrative").asText());
@@ -659,6 +656,7 @@ public class SyncRefsetAgent extends SyncAgent {
             Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
 
             while (tagsIterator.hasNext()) {
+
                 String tag = tagsIterator.next().asText();
                 logger.debug("111b - found tag: " + tag);
 

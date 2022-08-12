@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.util.HashSet;
 import java.util.List;

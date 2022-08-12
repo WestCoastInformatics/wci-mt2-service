@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -33,13 +33,13 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class MigrationUtilities {
+public class SyncUtilities {
 
-    private final Logger logger = LoggerFactory.getLogger(MigrationUtilities.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncUtilities.class);
 
     static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
-    private static final MigrationPropertyFileReader propertyReader = new MigrationPropertyFileReader();
+    private static final SyncPropertyFileReader propertyReader = new SyncPropertyFileReader();
 
     private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
 
@@ -57,7 +57,7 @@ public class MigrationUtilities {
 
     private static final String UNDEFINED_USER_NAME = "Undefined";
 
-    private static SyncMetadata metadata = new SyncMetadata(new Date(), MigrationUtilities.UNDEFINED_USER_NAME);
+    private static SyncMetadata metadata = new SyncMetadata(new Date(), SyncUtilities.UNDEFINED_USER_NAME);
 
     Organization addOrganziation(final String orgName, String orgDesc, final Edition edition) throws Exception {
 
@@ -327,7 +327,7 @@ public class MigrationUtilities {
 
         if ("international edition".equals(editionName.toLowerCase())) {
 
-            editionModules.add(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
+            editionModules.add(SyncUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
             returnModule = editionModules.iterator().next();
         } else {
 
@@ -349,7 +349,7 @@ public class MigrationUtilities {
 
                 // If no non-CORE modules found, use the default Module
 
-                returnModule = MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
+                returnModule = SyncUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
                 editionModules.add(returnModule);
 
             } else if (editionModules.size() > 1) {
@@ -464,7 +464,7 @@ public class MigrationUtilities {
 
     private Set<String> identifyModuleChildren(String branch) throws Exception {
 
-        String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/concepts/" + MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
+        String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/concepts/" + SyncUtilities.MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
         Set<String> childrenSctIds = new HashSet<>();
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -498,7 +498,7 @@ public class MigrationUtilities {
             initializeService(service);
 
             // if the status is Published then create a new version of the refset that is ready to be edited
-            refset = WorkflowService.setWorkflowStatusByAction(service, MigrationDataInitializer.getMigrationUser(), WorkflowService.FINISH_EDIT, refset, "");
+            refset = WorkflowService.setWorkflowStatusByAction(service, SyncDataInitializer.getSyncUser(), WorkflowService.FINISH_EDIT, refset, "");
 
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
@@ -525,7 +525,7 @@ public class MigrationUtilities {
         return metadata.getSdf();
     }
 
-    MigrationPropertyFileReader getPropertyReader() {
+    SyncPropertyFileReader getPropertyReader() {
 
         return propertyReader;
     }

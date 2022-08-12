@@ -127,9 +127,10 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void setUp(TestInfo info) throws Exception {
 
         if (info.getDisplayName().equals("testMigration()")) {
+
             return;
         }
-        
+
         if (getUtil == null) {
 
             getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
@@ -165,8 +166,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
             try {
 
-                earlierInactiveRefsetInternalId =
-                    getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION);
+                earlierInactiveRefsetInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION);
             } catch (Exception e) {
 
                 logger.info("Snowstorm instance we are running against doesn't have " + REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION + " of the refset "
@@ -174,7 +174,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
                 skipEarlierInactiveVersionTests = true;
             }
 
-            refsetWithInactiveConceptAsActiveMemberInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
+            refsetWithInactiveConceptAsActiveMemberInternalId =
+                getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
 
             firstConceptDescList.add("Venom (substance)");
             firstConceptDescList.add("Venom");
@@ -209,6 +210,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
             firstTimeSetup = false;
         }
+
     }
 
     /**
@@ -881,29 +883,35 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         return concept;
     }
-    
+
     /**
-     * Test the RTT Migration **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED.
+     * Test the Sync **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED.
      *
      * @throws Exception the exception
      */
     // **** DO NOT CHECK THIS IN WITH @Test UNCOMMENTED ****
-    //@Test
-    public void testMigration() throws Exception {
+    // @Test
+    public void testSync() throws Exception {
 
-        final String url = "/admin/migration/rtt";
+        final String url = "/admin/sync/snowstorm";
         logger.info("Testing url - " + url);
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
         logger.info(" content = " + content);
 
-        assertThat(content).isEqualTo("RTT data migration completed successfully");
-        
-        final String feedbackUrl = "/admin/migration/feedback";
+        assertThat(content).isEqualTo("RTT data sync completed successfully");
+
+        final String feedbackUrl = "/admin/sync/feedback";
         logger.info("Testing feedbackUrl - " + feedbackUrl);
         final MvcResult feedbackResult = mvc.perform(get(feedbackUrl)).andExpect(status().isOk()).andReturn();
         final String feedbackContent = feedbackResult.getResponse().getContentAsString();
         logger.info(" feedbackContent = " + feedbackContent);
+
+        final String intensionalUrl = "/admin/sync/intensional";
+        logger.info("Testing intensionalUrl - " + intensionalUrl);
+        final MvcResult intensionalResult = mvc.perform(get(intensionalUrl)).andExpect(status().isOk()).andReturn();
+        final String intensionalContent = intensionalResult.getResponse().getContentAsString();
+        logger.info(" intensionalContent = " + intensionalContent);
     }
 
 }

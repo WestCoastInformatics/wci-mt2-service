@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -32,11 +32,11 @@ public class SyncAgent {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
 
-    protected static boolean runShortMigration;
+    protected static boolean runShortSync;
 
     protected static boolean forProduction;
 
-    protected static MigrationUtilities utilities = null;
+    protected static SyncUtilities utilities = null;
 
     protected static List<Edition> allDatabaseEditions = null;
 
@@ -96,15 +96,15 @@ public class SyncAgent {
 
     protected static final Map<String, String> editionOwnerMap = new HashMap<>();
 
-    public SyncAgent(boolean runShortMigration, boolean runForProduction) {
+    public SyncAgent(boolean runShortSync, boolean runForProduction) {
 
         if (utilities == null) {
 
-            SyncAgent.utilities = new MigrationUtilities();
+            SyncAgent.utilities = new SyncUtilities();
 
             ignoredCodeSystemNames.addAll(SyncAgent.utilities.getPropertyReader().readCodeSystemsToIgnore());
 
-            SyncAgent.runShortMigration = runShortMigration;
+            SyncAgent.runShortSync = runShortSync;
             SyncAgent.forProduction = runForProduction;
 
             try {
@@ -139,10 +139,10 @@ public class SyncAgent {
 
             SyncCodeSystemAgent.syncSnowstormCodeSystems(codeSystemsToProcess);
 
-            // Only identify branches on filtered code systems and on runShortMigration value
+            // Only identify branches on filtered code systems and on runShortSync value
             Map<String, SortedMap<Date, String>> branchesToProcess = identifyEditionBranches(codeSystemsToProcess);
 
-            // Identify all refset metadata, any refsets' ECL definitions, and project metadata from RTT files manually migrated over
+            // Identify all refset metadata, any refsets' ECL definitions, and project metadata from RTT files manually sync'd over
             // TODO: Add a automated pull of the data off of RTT?
             utilities.getPropertyReader().parseRttData();
 

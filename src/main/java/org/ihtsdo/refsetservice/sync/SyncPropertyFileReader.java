@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,33 +14,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-public class MigrationPropertyFileReader {
+public class SyncPropertyFileReader {
 
-    private ClassPathResource projectsResource = new ClassPathResource("rtt-migration/sync/projects.txt");
+    private ClassPathResource projectsResource = new ClassPathResource("sync/rtt-migration/projects.txt");
 
-    private ClassPathResource clausesResource = new ClassPathResource("rtt-migration/sync/clauses.txt");
+    private ClassPathResource clausesResource = new ClassPathResource("sync/rtt-migration/clauses.txt");
 
-    private ClassPathResource refsetsResource = new ClassPathResource("rtt-migration/sync/refsets.txt");
+    private ClassPathResource refsetsResource = new ClassPathResource("sync/rtt-migration/refsets.txt");
 
-    private ClassPathResource refsetToTagsResource = new ClassPathResource("rtt-migration/sync/refsetToTags.txt");
+    private ClassPathResource refsetToTagsResource = new ClassPathResource("sync/rtt-migration/refsetToTags.txt");
 
-    private ClassPathResource refsetToProjectsResource = new ClassPathResource("rtt-migration/sync/refsetToProjects.txt");
+    private ClassPathResource refsetToProjectsResource = new ClassPathResource("sync/rtt-migration/refsetToProjects.txt");
 
-    private ClassPathResource refsetToClausesResource = new ClassPathResource("rtt-migration/sync/refsetToClauses.txt");
+    private ClassPathResource refsetToClausesResource = new ClassPathResource("sync/rtt-migration/refsetToClauses.txt");
 
-    private ClassPathResource refsetToDescriptionResource = new ClassPathResource("rtt-migration/sync/refsetToDescription.txt");
+    private ClassPathResource refsetToDescriptionResource = new ClassPathResource("sync/rtt-migration/refsetToDescription.txt");
 
-    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("rtt-migration/exceptions/ignoredCodeSystems.txt");
+    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("sync/exceptions/ignoredCodeSystems.txt");
 
-    private ClassPathResource ignoredRefsetsResource = new ClassPathResource("rtt-migration/exceptions/ignoredRefsets.txt");
+    private ClassPathResource ignoredRefsetsResource = new ClassPathResource("sync/exceptions/ignoredRefsets.txt");
 
-    private ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("rtt-migration/exceptions/undefinedDefaultLangRefsets.txt");
+    private ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("sync/exceptions/undefinedDefaultLangRefsets.txt");
 
-    private ClassPathResource teamCreationResource = new ClassPathResource("rtt-migration/initial-teams/teamCreation.txt");
+    private ClassPathResource teamCreationResource = new ClassPathResource("sync/initial-teams/teamCreation.txt");
 
-    private ClassPathResource teamToProjectAssignmentResource = new ClassPathResource("rtt-migration/initial-teams/teamToProjectAssignment.txt");
+    private ClassPathResource teamToProjectAssignmentResource = new ClassPathResource("sync/initial-teams/teamToProjectAssignment.txt");
 
-    private ClassPathResource teamMembershipResource = new ClassPathResource("rtt-migration/initial-teams/teamMembership.txt");
+    private ClassPathResource teamMembershipResource = new ClassPathResource("sync/initial-teams/teamMembership.txt");
 
     /** The Constant SPLIT_CHARACTER. */
     private final String SPLIT_CHARACTER = "\t";
@@ -74,7 +74,7 @@ public class MigrationPropertyFileReader {
     private final Map<String, String> jsonProjectOrganziationMap = new HashMap<>();
 
     /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(MigrationPropertyFileReader.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncPropertyFileReader.class);
 
     private Set<String> projectsToIgnore = new HashSet<>();
 
