@@ -207,11 +207,11 @@ public class SyncDataInitializer {
         logger.info(" Create Feedback & Intensinoal refsets for testing (for DEV only)");
 
         // create new refset with name = Feedback/Intensional Testing Version 1 with July 31 2022 version off International Edition
-        Refset intensionalRefset = utilities.addWCIRefset(getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + " 1", INTENSIONAL_INITIAL_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
+        Refset intensionalRefset = utilities.addWCIRefset(getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
             utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
         addIntensionalContent(intensionalRefset);
 
-        Refset feedbackRefset = utilities.addWCIRefset(getSyncUser(), FEEDBACK_REFSET_NAME_BASE + " 1", FEEDBACK_INITIAL_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
+        Refset feedbackRefset = utilities.addWCIRefset(getSyncUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID, wciOrganization.getEdition().getTopLevelModule(),
             utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
         addFeedbackContent(feedbackRefset);
 
@@ -301,7 +301,7 @@ public class SyncDataInitializer {
             utilities.initializeService(service);
 
             // Create ecl clause
-            final String testClause = "{<<716186003 |No known allergy (situation)|";
+            final String testClause = "<<716186003 |No known allergy (situation)|";
             final DefinitionClause clause = new DefinitionClause();
             clause.setNegated(false);
             clause.setValue(testClause);

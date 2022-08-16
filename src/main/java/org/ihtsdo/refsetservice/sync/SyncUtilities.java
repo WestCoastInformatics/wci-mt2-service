@@ -223,7 +223,7 @@ public class SyncUtilities {
 
             // Sets up completely different than normal addRefset routine
             final Object returned = RefsetService.createRefset(service, u, refsetParameters);
-            logger.debug(" 111a - returned object is: " + returned);
+
             if (returned instanceof String) {
 
                 throw new Exception((String) returned);

@@ -217,7 +217,7 @@ public class SyncRefsetAgent extends SyncAgent {
      *  - Version
      *  - Narrative
      *  
-     *  Note: Not supporting project updates as that should be managed in tool
+     *  Note: Not supporting project updates or changes in RTT (such as ECL clauses) as that should be managed in tool
      */
 
     private static Refset compareAndUpdateRefsetDifferences(Refset existingRefset, SyncRefsetMetadata refsetSnowstormData) throws Exception {

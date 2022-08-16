@@ -1595,36 +1595,6 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Creates a new testing refset containing initial intensional. The method will identify the last refset created for this purpose (based on numbering). It will create a
-     * new one, with the same initial intensional content, but with an incremented number appended to the name and refsetId
-     *
-     * @param quickSync Should the sync be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is false
-     * @param forDevOnly Should the sync add projects, teams, and other testing data, which it shouldn't do for Production. Default is true
-     * @return the status of the creation
-     * @throws Exception the exception
-     */
-    @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/intensional", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> createTestingIntensionalRefset() throws Exception {
-
-        try {
-
-            String status = "Intensional testing refset created succesffully";
-            logger.info("Create new refset, initialized with intensional, for testing purposes");
-            SyncDataInitializer initializer = new SyncDataInitializer();
-            Refset refset = initializer.createTestingIntensionalRefset();
-
-            logger.info("New Intensional testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
-
-            return new ResponseEntity<>(status, HttpStatus.OK);
-
-        } catch (final Exception e) {
-
-            return handleException(e);
-        }
-
-    }
-
-    /**
      * Gets the version statuses.
      *
      * @return the version statuses
