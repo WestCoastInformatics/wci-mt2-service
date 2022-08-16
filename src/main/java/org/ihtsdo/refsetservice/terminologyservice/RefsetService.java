@@ -2125,6 +2125,7 @@ public class RefsetService {
      * @param refsetInternalId the internal refset ID
      * @return the status of the operation
      * @throws Exception the exception
+     */
     public static String convertToExtensional(TerminologyService service, User user, String refsetInternalId) throws Exception {
 
         String status = "convert";
@@ -2171,6 +2172,5 @@ public class RefsetService {
 
         return status;
     }
-         */
 
 }

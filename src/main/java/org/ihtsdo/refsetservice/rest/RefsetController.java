@@ -956,6 +956,34 @@ public class RefsetController extends BaseController {
     }
 
     /**
+     * Convert intensional refset to extensional
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/convert", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> convertToExtensional(final @PathVariable String refsetInternalId) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            // logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
+            User user = SecurityService.getUserFromSession();
+
+            service.setModifiedBy(user.getUserName());
+
+            final String status = RefsetService.convertToExtensional(service, user, refsetInternalId);
+
+            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    /**
      * Delete the edit version of a refset.
      *
      * @param refsetInternalId the internal refset ID
@@ -1447,15 +1475,13 @@ public class RefsetController extends BaseController {
     /**
      * Syncs RTT data into the database but only if the database is empty.
      *
-     * @param quickSync Should the sync be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is
-     *            false
+     * @param quickSync Should the sync be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is false
      * @param forProduction Should the sync add projects, teams, and other testing data, which it should NOT do for Production. Default is true
      * @return the status of the sync
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/rtt", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> syncRttData(@RequestParam(required = false) final Boolean quickSync, @RequestParam(required = false) final Boolean forProduction)
-        throws Exception {
+    public @ResponseBody ResponseEntity<String> syncRttData(@RequestParam(required = false) final Boolean quickSync, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
         return syncSnowstorm(quickSync, forProduction);
     }
@@ -1464,15 +1490,14 @@ public class RefsetController extends BaseController {
      * Sync against snowstorm still relying upon latest RTT data files to sync. Compares against all of a given refets's versions on snowstorm, so no need for a quickSync
      * option
      * 
-     * TODO: Determine if can do a nightly update of datafiles programatically
+     * TODO: Determine if can do a nightly update of data files programmatically
      *
      * @param forProduction Should the sync add projects, teams, and other testing data, which it should NOT do for Production. Default is true
      * @return the status of the sync
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean quickSync, @RequestParam(required = false) final Boolean forProduction)
-        throws Exception {
+    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean quickSync, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
         try {
 
@@ -1517,18 +1542,15 @@ public class RefsetController extends BaseController {
      * Creates a new testing refset containing initial feedback. The method will identify the last refset created for this purpose (based on numbering). It will create a new
      * one, with the same initial feedback content, but with an incremented number appended to the name and refsetId
      *
-     * @param quickSync Should the sync be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is
-     *            false
-     * @param forDevOnly Should the sync add projects, teams, and other testing data, which it shouldn't do for Production. Default is true
      * @return the status of the creation
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/feedback", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> createNewFeedbackRefset() throws Exception {
+    public @ResponseBody ResponseEntity<String> createNewFeedbackTestingRefset() throws Exception {
 
         try {
 
-            String status = "Feedback testing refset created succesffully";
+            String status = "Feedback testing refset created successfully";
             logger.info("Create new refset, initialized with feedback, for testing purposes");
             SyncDataInitializer initializer = new SyncDataInitializer();
             Refset refset = initializer.createTestingFeedbackRefset();
@@ -1545,11 +1567,38 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Creates a new testing refset containing initial intensional. The method will identify the last refset created for this purpose (based on numbering). It will create a new
-     * one, with the same initial intensional content, but with an incremented number appended to the name and refsetId
+     * Creates a new testing refset for testing intensional functionality. The method will identify the last refset created for this purpose (based on numbering). It will
+     * create a new one, similarly as intensionsal, but with an incremented number appended to the name and refsetId
      *
-     * @param quickSync Should the sync be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is
-     *            false
+     * @return the status of the creation
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/intensional", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> createNewIntensionalTestingRefset() throws Exception {
+
+        try {
+
+            String status = "Intensional testing refset created successfully";
+            logger.info("Create new intensional refset for testing purposes");
+            SyncDataInitializer initializer = new SyncDataInitializer();
+            Refset refset = initializer.createTestingIntensionalRefset();
+
+            logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
+
+            return new ResponseEntity<>(status, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    /**
+     * Creates a new testing refset containing initial intensional. The method will identify the last refset created for this purpose (based on numbering). It will create a
+     * new one, with the same initial intensional content, but with an incremented number appended to the name and refsetId
+     *
+     * @param quickSync Should the sync be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is false
      * @param forDevOnly Should the sync add projects, teams, and other testing data, which it shouldn't do for Production. Default is true
      * @return the status of the creation
      * @throws Exception the exception
