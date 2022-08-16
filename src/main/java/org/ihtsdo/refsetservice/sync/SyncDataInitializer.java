@@ -29,7 +29,7 @@ public class SyncDataInitializer {
 
     private final Logger logger = LoggerFactory.getLogger(SyncDataInitializer.class);
 
-    private SyncUtilities utilities;
+    private SyncAgentUtilities utilities;
 
     private static User syncUser = null;
 
@@ -73,15 +73,15 @@ public class SyncDataInitializer {
 
     public SyncDataInitializer() {
 
-        commonConstructorInitialization(new SyncUtilities());
+        commonConstructorInitialization(new SyncAgentUtilities());
     }
 
-    public SyncDataInitializer(SyncUtilities utilities) {
+    public SyncDataInitializer(SyncAgentUtilities utilities) {
 
         commonConstructorInitialization(utilities);
     }
 
-    private void commonConstructorInitialization(SyncUtilities utils) {
+    private void commonConstructorInitialization(SyncAgentUtilities utils) {
 
         try {
 

@@ -36,7 +36,7 @@ public class SyncAgent {
 
     protected static boolean forProduction;
 
-    protected static SyncUtilities utilities = null;
+    protected static SyncAgentUtilities utilities = null;
 
     protected static List<Edition> allDatabaseEditions = null;
 
@@ -46,25 +46,7 @@ public class SyncAgent {
 
     protected static Organization develeperTestingOranization = null;
 
-    protected static final Map<String, Organization> organizationsAdded = new HashMap<>();
-
-    protected static final Set<Organization> organizationsUnchanged = new HashSet<>();
-
-    protected static final Set<Organization> organizationsSynced = new HashSet<>();
-
     protected static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
-
-    protected static final Set<Edition> editionsAdded = new HashSet<>();
-
-    protected static final Set<Edition> editionsUnchanged = new HashSet<>();
-
-    protected static final Set<Edition> editionsSynced = new HashSet<>();
-
-    protected static final Set<Refset> refsetVersionsAdded = new HashSet<>();
-
-    protected static final Set<Refset> refsetVersionsUnchanged = new HashSet<>();
-
-    protected static final Set<Refset> refsetVersionsSynced = new HashSet<>();
 
     protected static final Map<String, Edition> refsetEditions = new HashMap<>();
 
@@ -77,7 +59,7 @@ public class SyncAgent {
 
     protected static final String testingEdition = "elgia";
 
-    protected static final String testingRefset = "741000172102";
+    protected static final String testingRefset = "741000172102"; // Intensional in Belgium: 11000172109
 
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
@@ -90,6 +72,8 @@ public class SyncAgent {
 
     protected Set<String> internationalModuleRefsets = new HashSet<>();
 
+    protected static final SyncStatistics statistics = new SyncStatistics();
+
     protected static final String SIMPLE_TYPE_REFSET_SCTID = "446609009";
 
     public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
@@ -100,7 +84,7 @@ public class SyncAgent {
 
         if (utilities == null) {
 
-            SyncAgent.utilities = new SyncUtilities();
+            SyncAgent.utilities = new SyncAgentUtilities();
 
             ignoredCodeSystemNames.addAll(SyncAgent.utilities.getPropertyReader().readCodeSystemsToIgnore());
 
@@ -161,7 +145,7 @@ public class SyncAgent {
             e.printStackTrace();
         } finally {
 
-            printSyncResults();
+            logger.info(statistics.printStatistics());
         }
 
     }
@@ -287,23 +271,13 @@ public class SyncAgent {
 
         develeperTestingOranization = null;
 
-        organizationsAdded.clear();
-        organizationsUnchanged.clear();
-        organizationsSynced.clear();
         defaultOrganizationProjects.clear();
-
-        editionsAdded.clear();
-        editionsUnchanged.clear();
-        editionsSynced.clear();
-
-        refsetVersionsAdded.clear();
-        refsetVersionsSynced.clear();
-        refsetVersionsUnchanged.clear();
         refsetEditions.clear();
 
         uniqueRefsetIds.clear();
         ignoredCodeSystemNames.clear();
 
+        statistics.clearStatistics();
     }
 
     /**
@@ -410,15 +384,6 @@ public class SyncAgent {
             allDatabaseRefsets = service.getAll(Refset.class);
             // logger.debug(" All Refsets: " + allDatabaseRefsets);
         }
-
-    }
-
-    private void printSyncResults() {
-
-        logger.info("*********    Syncing Results (Added/Unchanged/Synced)    *************");
-        logger.info("Editions: " + editionsAdded.size() + " / " + editionsUnchanged.size() + " / " + editionsSynced.size());
-        logger.info("Organizations: " + organizationsAdded.size() + " / " + organizationsUnchanged.size() + " / " + organizationsSynced.size());
-        logger.info("Refsets: " + refsetVersionsAdded.size() + " / " + refsetVersionsUnchanged.size() + " / " + refsetVersionsSynced.size());
 
     }
 

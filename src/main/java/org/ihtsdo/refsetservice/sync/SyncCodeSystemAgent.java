@@ -179,13 +179,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
         if (syncedOrganization != null) {
 
             // A modification was made, so updated edition
-            organizationsSynced.add(syncedOrganization);
+            statistics.getOrganizationsSynced().add(syncedOrganization);
             organization = syncedOrganization;
 
         } else {
 
             // No changes, return existing
-            organizationsUnchanged.add(correspondingDbOrganization);
+            statistics.getOrganizationsUnchanged().add(correspondingDbOrganization);
             organization = correspondingDbOrganization;
         }
 
@@ -200,10 +200,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         if (syncedEdition == null) {
 
-            editionsUnchanged.add(edition);
+            statistics.getEditionsUnchanged().add(edition);
         } else {
 
-            editionsSynced.add(syncedEdition);
+            statistics.getEditionsSynced().add(syncedEdition);
         }
 
         logger.info("Synced " + edition.getShortName() + " Edition");
@@ -218,21 +218,21 @@ public class SyncCodeSystemAgent extends SyncAgent {
         /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
         boolean modificationMade = false;
 
-        // TODO: This is immutable, so nothing to check? 
+        // TODO: This is immutable, so nothing to check?
         if (updateAttribute("Edition shortName ", existingEdition.getShortName(), editionShortName)) {
 
             existingEdition.setShortName(editionShortName);
             modificationMade = true;
         }
 
-        // TODO: This is immutable, so nothing to check? 
+        // TODO: This is immutable, so nothing to check?
         if (updateAttribute("Edition name ", existingEdition.getName(), editionName)) {
 
             existingEdition.setName(editionName);
             modificationMade = true;
         }
 
-        // TODO: This is immutable, so nothing to check? 
+        // TODO: This is immutable, so nothing to check?
         if (updateAttribute("Edition branch ", existingEdition.getBranch(), editionBranch)) {
 
             existingEdition.setBranch(editionBranch);
@@ -247,7 +247,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         final String editionTopLevelModule = utilities.identifyTopLevelModule(editionShortName, editionName, editionBranch, codeSystem);
 
-        // TODO: Can we remove topLevelModule? 
+        // TODO: Can we remove topLevelModule?
         if (updateAttribute("Edition topLevelModule ", existingEdition.getTopLevelModule(), editionTopLevelModule)) {
 
             existingEdition.setTopLevelModule(editionTopLevelModule);
@@ -315,7 +315,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             // Create new Edition
             final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, codeSystem);
-            editionsAdded.add(newEdition);
+            statistics.getEditionsAdded().add(newEdition);
 
             // Create new Organization
             // TODO: 1 - Add a description default value or update snowstorm with value per codesystem
@@ -327,7 +327,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             final Organization newOrganization = utilities.addOrganziation(editionOwnerMap.get(newEditionName), organizationDescription, newEdition);
 
-            organizationsAdded.put(newOrganization.getName(), newOrganization);
+            statistics.getOrganizationsAdded().put(newOrganization.getName(), newOrganization);
 
             return newOrganization;
         } catch (Exception e) {
@@ -412,7 +412,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             modificationMade = true;
         }
 
-        // TODO: This is associated with CodeSystem (and thus edition), so remove? 
+        // TODO: This is associated with CodeSystem (and thus edition), so remove?
         if (updateAttribute("Organization active ", existingOrganization.isActive(), isActiveSnowstormOrganization)) {
 
             existingOrganization.setActive(isActiveSnowstormOrganization);

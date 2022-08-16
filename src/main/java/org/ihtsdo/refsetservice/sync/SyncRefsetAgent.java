@@ -105,11 +105,11 @@ public class SyncRefsetAgent extends SyncAgent {
 
         if (syncedRefset == null) {
 
-            refsetVersionsUnchanged.add(refset);
+            statistics.getRefsetVersionsUnchanged().add(refset);
             syncedRefset = refset;
         } else {
 
-            refsetVersionsSynced.add(syncedRefset);
+            statistics.getRefsetVersionsSynced().add(syncedRefset);
 
             postRefsetProcessing(syncedRefset, snowstormRefsetData.getEdition());
         }
@@ -127,7 +127,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         snowstormRefsets.add(newRefset);
 
-        refsetVersionsAdded.add(newRefset);
+        statistics.getRefsetVersionsAdded().add(newRefset);
 
         postRefsetProcessing(newRefset, refsetData.getEdition());
 
@@ -174,8 +174,8 @@ public class SyncRefsetAgent extends SyncAgent {
     private static void finalizeRefsets() throws Exception {
 
         Set<Refset> refsetsUpdated = new HashSet<>();
-        refsetsUpdated.addAll(refsetVersionsAdded);
-        refsetsUpdated.addAll(refsetVersionsSynced);
+        refsetsUpdated.addAll(statistics.getRefsetVersionsAdded());
+        refsetsUpdated.addAll(statistics.getRefsetVersionsSynced());
 
         int count = 0;
 
@@ -678,7 +678,7 @@ public class SyncRefsetAgent extends SyncAgent {
         final String editionShortName = refsetEditions.get(refsetId).getShortName();
 
         String orgName = editionOwnerMap.get(editionName) != null ? editionOwnerMap.get(editionName) : editionOwnerMap.get(editionShortName);
-        final Organization org = organizationsAdded.get(orgName);
+        final Organization org = statistics.getOrganizationsAdded().get(orgName);
 
         return org;
     }

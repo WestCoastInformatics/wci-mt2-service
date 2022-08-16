@@ -33,9 +33,9 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class SyncUtilities {
+public class SyncAgentUtilities {
 
-    private final Logger logger = LoggerFactory.getLogger(SyncUtilities.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncAgentUtilities.class);
 
     static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
 
@@ -57,7 +57,9 @@ public class SyncUtilities {
 
     private static final String UNDEFINED_USER_NAME = "Undefined";
 
-    private static SyncMetadata metadata = new SyncMetadata(new Date(), SyncUtilities.UNDEFINED_USER_NAME);
+    private static SyncPersistenceMetadata metadata = new SyncPersistenceMetadata(new Date(), SyncAgentUtilities.UNDEFINED_USER_NAME);
+
+    private static final SyncStatistics statistics = new SyncStatistics();
 
     Organization addOrganziation(final String orgName, String orgDesc, final Edition edition) throws Exception {
 
@@ -72,6 +74,8 @@ public class SyncUtilities {
 
             // Persist
             final Organization o = service.add(org);
+
+            statistics.getOrganizationsProcessed().add(o);
 
             logger.info("Adding new Organziation: " + o.getId() + " (" + o.getName() + ") " + o);
 
@@ -114,9 +118,37 @@ public class SyncUtilities {
 
             Edition e = service.add(edition);
 
+            statistics.getEditionsProcessed().add(e);
+
             logger.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
 
             return e;
+        }
+
+    }
+
+    Project addProject(Organization org, String projectName, String projectDescription) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            final Project project = new Project();
+            project.setName(projectName);
+            project.setDescription(projectDescription);
+            project.setOrganization(org);
+            project.setPrivateProject(false);
+            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
+
+            // Persist
+            final Project p = service.add(project);
+
+            statistics.getProjectsProcessed().add(p);
+
+            logger.info("Adding new Project: " + p.getId() + " (" + p.getName() + ") " + p);
+
+            return p;
+
         }
 
     }
@@ -144,57 +176,11 @@ public class SyncUtilities {
             // Persist
             final Refset r = service.add(refset);
 
+            statistics.getRefsetVersionsProcessed().add(r);
+
             logger.info("Adding new Refset and/or Version for : " + r.getId() + " (" + r.getName() + ") on: " + r.getVersionDate());
 
             return r;
-        }
-
-    }
-
-    Project addProject(Organization org, String projectName, String projectDescription) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            final Project project = new Project();
-            project.setName(projectName);
-            project.setDescription(projectDescription);
-            project.setOrganization(org);
-            project.setPrivateProject(false);
-            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
-
-            // Persist
-            final Project p = service.add(project);
-
-            logger.info("Adding new Project: " + p.getId() + " (" + p.getName() + ") " + p);
-
-            return p;
-
-        }
-
-    }
-
-    public User addUser(String name, String userName, String email, Set<String> roles) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            final User user = new User();
-
-            user.setName(name);
-            user.setUserName(userName);
-            user.setActive(true);
-            user.setEmail(email);
-            user.setRoles(roles);
-
-            // Persist
-            final User u = service.add(user);
-
-            logger.info("Adding new User: " + u.getId() + " (" + u.getName() + ") " + u);
-
-            return u;
         }
 
     }
@@ -235,6 +221,8 @@ public class SyncUtilities {
 
                 Refset updatedRefset = initializeWorkflowStatus(refset);
 
+                statistics.getRefsetVersionsProcessed().add(updatedRefset);
+
                 logger.info(" and then updated the new WCI refset's Workflow Status - " + updatedRefset);
 
                 return updatedRefset;
@@ -261,9 +249,35 @@ public class SyncUtilities {
             // Persist
             final Team t = service.add(team);
 
+            statistics.getTeamsProcessed().add(t);
+
             logger.info("Adding new Team: " + t.getId() + " (" + t.getName() + ") " + t);
 
             return t;
+        }
+
+    }
+
+    public User addUser(String name, String userName, String email, Set<String> roles) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            final User user = new User();
+
+            user.setName(name);
+            user.setUserName(userName);
+            user.setActive(true);
+            user.setEmail(email);
+            user.setRoles(roles);
+
+            // Persist
+            final User u = service.add(user);
+
+            logger.info("Adding new User: " + u.getId() + " (" + u.getName() + ") " + u);
+
+            return u;
         }
 
     }
@@ -327,7 +341,7 @@ public class SyncUtilities {
 
         if ("international edition".equals(editionName.toLowerCase())) {
 
-            editionModules.add(SyncUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
+            editionModules.add(SyncAgentUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
             returnModule = editionModules.iterator().next();
         } else {
 
@@ -349,7 +363,7 @@ public class SyncUtilities {
 
                 // If no non-CORE modules found, use the default Module
 
-                returnModule = SyncUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
+                returnModule = SyncAgentUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
                 editionModules.add(returnModule);
 
             } else if (editionModules.size() > 1) {
@@ -455,7 +469,7 @@ public class SyncUtilities {
         object.setModifiedBy(metadata.getModifiedBy());
     }
 
-    private void setMetadata(final HasModified object, final SyncMetadata metadata) {
+    private void setMetadata(final HasModified object, final SyncPersistenceMetadata metadata) {
 
         object.setModified(metadata.getModified());
         object.setCreated(metadata.getModified());
@@ -464,7 +478,7 @@ public class SyncUtilities {
 
     private Set<String> identifyModuleChildren(String branch) throws Exception {
 
-        String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/concepts/" + SyncUtilities.MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
+        String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/concepts/" + SyncAgentUtilities.MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
         Set<String> childrenSctIds = new HashSet<>();
 
         try (final Response response = SnowstormConnection.getResponse(url)) {

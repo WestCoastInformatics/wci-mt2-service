@@ -84,7 +84,7 @@ public class SyncPropertyFileReader {
     private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
 
     /** The metadata map. */
-    private final Map<String, SyncMetadata> metadataMap = new HashMap<>();
+    private final Map<String, SyncPersistenceMetadata> metadataMap = new HashMap<>();
 
     private static Map<String, Set<String>> defaultLanguageRefsetMap = null;
 
@@ -699,7 +699,7 @@ public class SyncPropertyFileReader {
             // Store effective Time to avoid handling it within Json
             rttRefsetToEffectiveDateMap.put(rttRefsetId, values[2]);
 
-            SyncMetadata meta = new SyncMetadata(values[3], values[4]);
+            SyncPersistenceMetadata meta = new SyncPersistenceMetadata(values[3], values[4]);
             metadataMap.put("refset-" + rttRefsetId, meta);
 
             return buf.toString();
@@ -772,7 +772,7 @@ public class SyncPropertyFileReader {
             buf.append("}");
 
             jsonProjectOrganziationMap.put("project-" + line.split(SPLIT_CHARACTER)[0], organizationName);
-            metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncMetadata(modified, modifiedBy));
+            metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncPersistenceMetadata(modified, modifiedBy));
         } catch (Exception e) {
 
             logger.error("failed to process line #" + lineNumber + " of project json: " + line);
@@ -824,7 +824,7 @@ public class SyncPropertyFileReader {
         return rttRefsetToEffectiveDateMap;
     }
 
-    public Map<String, SyncMetadata> getMetadataMap() {
+    public Map<String, SyncPersistenceMetadata> getMetadataMap() {
 
         return metadataMap;
     }
