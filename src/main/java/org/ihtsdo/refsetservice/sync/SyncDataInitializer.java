@@ -312,7 +312,6 @@ public class SyncDataInitializer {
             refset.getDefinitionClauses().add(persistedClause);
 
             final Refset updatedRefset = service.update(refset);
-            logger.debug("Add the intensinoal content:  " + updatedRefset);
         }
 
     }

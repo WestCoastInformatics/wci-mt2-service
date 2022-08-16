@@ -44,6 +44,8 @@ public class SyncAgent {
 
     protected static List<Refset> allDatabaseRefsets = null;
 
+    protected static List<Project> allDatabaseProjects = null;
+
     protected static Organization develeperTestingOranization = null;
 
     protected static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
@@ -383,6 +385,9 @@ public class SyncAgent {
 
             allDatabaseRefsets = service.getAll(Refset.class);
             // logger.debug(" All Refsets: " + allDatabaseRefsets);
+            
+            allDatabaseProjects = service.getAll(Project.class);
+            // logger.debug(" All Projects: " + allDatabaseProjects);
         }
 
     }

@@ -365,14 +365,31 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // Create a Default Project for the edition
             if (syncedOrganization != null && !defaultOrganizationProjects.containsKey(syncedOrganization.getId())) {
 
-                // Create default project
+                Project project = null;
                 final String projectName = syncedOrganization.getName() + " Default Project";
-                final String projectDescription =
-                    "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedOrganization.getName() + ".";
+                final List<Project> projects =
+                    allDatabaseProjects.stream().filter(p -> (p.getOrganization().getId().equals(syncedOrganization.getId()) && p.getName().equals(projectName))).collect(Collectors.toList());
 
-                final Project project = utilities.addProject(syncedOrganization, projectName, projectDescription);
+                if (projects != null && !projects.isEmpty()) {
+
+                    if (projects.size() > 1) {
+
+                        throw new Exception("This should not ever be the case for projects: " + projects);
+                    }
+
+                    project = projects.iterator().next();
+                } else {
+
+                    // Create default project
+                    final String projectDescription =
+                        "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedOrganization.getName() + ".";
+
+                    project = utilities.addProject(syncedOrganization, projectName, projectDescription);
+
+                }
 
                 defaultOrganizationProjects.put(syncedOrganization.getId(), project);
+
             }
 
         }
