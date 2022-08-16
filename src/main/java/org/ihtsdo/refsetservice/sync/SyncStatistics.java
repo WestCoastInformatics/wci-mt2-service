@@ -31,15 +31,6 @@ public class SyncStatistics {
 
     private static final Set<Edition> editionsProcessed = new HashSet<>();;
 
-    // Projects
-    private static final Set<Project> projectsAdded = new HashSet<>();
-
-    private static final Set<Project> projectsUnchanged = new HashSet<>();
-
-    private static final Set<Project> projectsSynced = new HashSet<>();
-
-    private static final Set<Project> projectsProcessed = new HashSet<>();;
-
     // Refsets
     private static final Set<Refset> refsetVersionsAdded = new HashSet<>();
 
@@ -49,12 +40,8 @@ public class SyncStatistics {
 
     private static final Set<Refset> refsetVersionsProcessed = new HashSet<>();;
 
-    // Teams
-    private static final Set<Team> teamsAdded = new HashSet<>();
-
-    private static final Set<Team> teamsUnchanged = new HashSet<>();
-
-    private static final Set<Team> teamsSynced = new HashSet<>();
+    // Processing Only as we don't sync these with Snowstorm
+    private static final Set<Project> projectsProcessed = new HashSet<>();;
 
     private static final Set<Team> teamsProcessed = new HashSet<>();;
 
@@ -65,13 +52,12 @@ public class SyncStatistics {
         buf.append("*********    Syncing Results (Added/Unchanged/Synced)    *************" + System.getProperty("line.separator"));
         buf.append("Out of Organizations " + organizationsProcessed.size() + " Processed: " + organizationsAdded.size() + " / " + organizationsUnchanged.size() + " / " + organizationsSynced.size()
             + System.getProperty("line.separator"));
-        buf.append(
-            "Out of Editions " + editionsProcessed.size() + " Processed: " + editionsAdded.size() + " / " + editionsUnchanged.size() + " / " + editionsSynced.size() + System.getProperty("line.separator"));
-        buf.append(
-            "Out of Projects " + projectsProcessed.size() + " Processed: " + projectsAdded.size() + " / " + projectsUnchanged.size() + " / " + projectsSynced.size() + System.getProperty("line.separator"));
+        buf.append("Out of Editions " + editionsProcessed.size() + " Processed: " + editionsAdded.size() + " / " + editionsUnchanged.size() + " / " + editionsSynced.size()
+            + System.getProperty("line.separator"));
         buf.append("Out of Refsets " + refsetVersionsProcessed.size() + " Processed: " + refsetVersionsAdded.size() + " / " + refsetVersionsUnchanged.size() + " / " + refsetVersionsSynced.size()
             + System.getProperty("line.separator"));
-        buf.append("Out of Teams " + teamsProcessed.size() + " Processed: " + teamsAdded.size() + " / " + teamsUnchanged.size() + " / " + teamsSynced.size() + System.getProperty("line.separator"));
+        buf.append("Out of Projects " + projectsProcessed.size() + " Processed " + System.getProperty("line.separator"));
+        buf.append("Out of Teams " + teamsProcessed.size() + " Processed");
 
         return buf.toString();
     }
@@ -88,19 +74,12 @@ public class SyncStatistics {
         editionsSynced.clear();
         editionsProcessed.clear();
 
-        projectsAdded.clear();
-        projectsUnchanged.clear();
-        projectsSynced.clear();
-        projectsProcessed.clear();
-
         refsetVersionsAdded.clear();
         refsetVersionsUnchanged.clear();
         refsetVersionsSynced.clear();
         refsetVersionsProcessed.clear();
 
-        teamsAdded.clear();
-        teamsUnchanged.clear();
-        teamsSynced.clear();
+        projectsProcessed.clear();
         teamsProcessed.clear();
 
     }
@@ -145,26 +124,6 @@ public class SyncStatistics {
         return editionsProcessed;
     }
 
-    public Set<Project> getProjectsAdded() {
-
-        return projectsAdded;
-    }
-
-    public Set<Project> getProjectsUnchanged() {
-
-        return projectsUnchanged;
-    }
-
-    public Set<Project> getProjectsSynced() {
-
-        return projectsSynced;
-    }
-
-    public Set<Project> getProjectsProcessed() {
-
-        return projectsProcessed;
-    }
-
     public Set<Refset> getRefsetVersionsAdded() {
 
         return refsetVersionsAdded;
@@ -185,19 +144,9 @@ public class SyncStatistics {
         return refsetVersionsProcessed;
     }
 
-    public Set<Team> getTeamsAdded() {
+    public Set<Project> getProjectsProcessed() {
 
-        return teamsAdded;
-    }
-
-    public Set<Team> getTeamsUnchanged() {
-
-        return teamsUnchanged;
-    }
-
-    public Set<Team> getTeamsSynced() {
-
-        return teamsSynced;
+        return projectsProcessed;
     }
 
     public Set<Team> getTeamsProcessed() {
