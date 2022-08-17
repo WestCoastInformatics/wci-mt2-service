@@ -31,9 +31,11 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private static Logger logger = LoggerFactory.getLogger(SyncRefsetAgent.class);
 
+    private static final Map<String, Date> refsetLatestVersionCache = new HashMap<>();
+
     private static final Set<Refset> snowstormRefsets = new HashSet<>();
 
-    final private static Set<SyncRefsetMetadata> refsetsToProcess = new HashSet<>();
+    private static final Set<SyncRefsetMetadata> refsetsToProcess = new HashSet<>();
 
     protected SyncRefsetAgent() throws Exception {
 
@@ -41,14 +43,16 @@ public class SyncRefsetAgent extends SyncAgent {
 
         snowstormRefsets.clear();
         refsetsToProcess.clear();
+        refsetLatestVersionCache.clear();
     }
 
     public static void syncSnowstormRefsets(Map<String, SortedMap<Date, String>> branchesToProcess) throws Exception {
 
-        Set<SyncRefsetMetadata> refsetsToProcess = filterRefsetsToProcess(branchesToProcess);
+        Set<SyncRefsetMetadata> filteredRefsets = filterRefsetsToProcess(branchesToProcess);
 
         // Map each refsetId/version pair's SyncRefsetMetadata
-        Map<String, Map<Date, SyncRefsetMetadata>> allSnowstormRefsetVersionPairs = parseSnowstormRefsetVersionPairs(refsetsToProcess);
+        Map<String, Map<Date, SyncRefsetMetadata>> allSnowstormRefsetVersionPairs = parseSnowstormRefsetVersionPairs(filteredRefsets);
+
         Map<String, Map<Date, Refset>> allDatabaseRefsetVersionPairs = parseDatabaseRefsetVersionPairs();
 
         int counter = 0;
@@ -357,6 +361,7 @@ public class SyncRefsetAgent extends SyncAgent {
                         // get RefSets from edition as long as a) active & b)
                         // within edition's moduleˇ
                         final Iterator<JsonNode> refsetIterator = root.get("referenceSets").iterator();
+                        logger.debug("Processing all refsets on " + edition.getName() + " on release date: " + branchVersion);
 
                         while (refsetIterator.hasNext()) {
 
@@ -369,7 +374,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
                             final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
-                            boolean isInternationalEdition = ("international edition".equals(edition.getName().toLowerCase())) ? true : false;
+                            final boolean isInternationalEdition = ("international edition".equals(edition.getName().toLowerCase())) ? true : false;
 
                             if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
 
@@ -426,12 +431,17 @@ public class SyncRefsetAgent extends SyncAgent {
 
         if (!testing || (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
 
-            refsetVersionDate = RefsetMemberService.getLatestChangedVersionDate(branchPath, refsetId);
+            if (!refsetLatestVersionCache.containsKey(refsetId)) {
+
+                refsetLatestVersionCache.put(refsetId, RefsetMemberService.getLatestChangedVersionDate(branchPath, refsetId));
+            }
+
+            refsetVersionDate = refsetLatestVersionCache.get(refsetId);
         }
 
         if (refsetVersionDate == null) {
 
-            logger.debug("No changes to refset so don't create a new version");
+            // No changes to refset so don't create a new version
             return false;
         }
 

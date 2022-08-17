@@ -84,7 +84,7 @@ public class RefsetService {
     private static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
 
     /** The module Id of the SIMPLE_TYPE_REFERENCE_SET. */
-    private static final String SIMPLE_TYPE_REFERENCE_SET_MODULE_ID = "900000000000012004";
+    private static final String SNOMED_CORE_MODULE_ID = "900000000000012004";
 
     /** A cache of the sorted branch versions. */
     private static final Map<String, List<String>> branchVersionCache = new HashMap<>();
@@ -1073,7 +1073,7 @@ public class RefsetService {
             modules = editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(",")) + ",";
         }
 
-        modules += SIMPLE_TYPE_REFERENCE_SET_MODULE_ID;
+        modules += SNOMED_CORE_MODULE_ID;
 
         final String url = SnowstormConnection.BASE_URL + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module=" + modules;
 

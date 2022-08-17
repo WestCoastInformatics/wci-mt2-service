@@ -59,17 +59,13 @@ public class SyncAgent {
     /** The testing. */
     protected static final boolean testing = false;
 
-//    protected static final String testingEdition = "elgia";
+    protected static final String testingEdition = "elgi";
 
-//    protected static final String testingRefset = "741000172102"; // If want the Intensional refset in Belgium, use 11000172109
-    
-    protected static final String testingEdition = "ealand";
-
-    protected static final String testingRefset = "121000210100"; // No changes across 5 versions
+    protected static final String testingRefset = "741000172102"; // Basic refset to test
+    // protected static final String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
+    // protected static final String testingRefset = "121000210100"; // No changes across 5 versions (NZ Edition)
 
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
-
-    // The max number of record elasticsearch will return without erroring.
 
     /* Constants */
     protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -389,7 +385,7 @@ public class SyncAgent {
 
             allDatabaseRefsets = service.getAll(Refset.class);
             // logger.debug(" All Refsets: " + allDatabaseRefsets);
-            
+
             allDatabaseProjects = service.getAll(Project.class);
             // logger.debug(" All Projects: " + allDatabaseProjects);
         }
