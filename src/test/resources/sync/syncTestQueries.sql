@@ -70,5 +70,7 @@ select a.roles, b.name from user_roles a, users b where b.id = a.user_id order b
 select id, name, refsetId, moduleId, narrative, privateRefset, type, project_id from refsets where project_id in (select distinct(project_id) from refsets where name like '%WCI%') order by name;
 select id, name, refsetId, latestPublishedVersion,hasVersionInDevelopment, editBranchId, assignedUser, versionDate, versionNotes, versionStatus, workflowStatus from refsets where project_id in (select distinct(project_id) from refsets where name like '%WCI%') order by name;
 select id, name, refsetId, created, modified, modifiedBy from refsets where project_id in (select distinct(project_id) from refsets where name like '%WCI%') order by name;
+select * from definition_clauses; select * from refsets_definition_clauses; select * from refsets where type like 'IN%' and name like 'WCI%';
+
 
 

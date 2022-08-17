@@ -28,8 +28,6 @@ import javax.ws.rs.QueryParam;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
-import org.ihtsdo.refsetservice.migration.MigrationDataInitializer;
-import org.ihtsdo.refsetservice.migration.SyncAgent;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
@@ -45,6 +43,8 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.SyncDataInitializer;
+import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
@@ -956,6 +956,34 @@ public class RefsetController extends BaseController {
     }
 
     /**
+     * Convert intensional refset to extensional
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/convert", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> convertToExtensional(final @PathVariable String refsetInternalId) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            // logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
+            User user = SecurityService.getUserFromSession();
+
+            service.setModifiedBy(user.getUserName());
+
+            final String status = RefsetService.convertToExtensional(service, user, refsetInternalId);
+
+            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    /**
      * Delete the edit version of a refset.
      *
      * @param refsetInternalId the internal refset ID
@@ -1445,49 +1473,46 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Migrates RTT data into the database but only if the database is empty.
+     * Syncs RTT data into the database but only if the database is empty.
      *
-     * @param quickMigration Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is
-     *            false
-     * @param forProduction Should the migration add projects, teams, and other testing data, which it should NOT do for Production. Default is true
-     * @return the status of the migration
+     * @param quickSync Should the sync be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is false
+     * @param forProduction Should the sync add projects, teams, and other testing data, which it should NOT do for Production. Default is true
+     * @return the status of the sync
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/rtt", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> migrateRttData(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction)
-        throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/rtt", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> syncRttData(@RequestParam(required = false) final Boolean quickSync, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
-        return syncSnowstorm(quickMigration, forProduction);
+        return syncSnowstorm(quickSync, forProduction);
     }
 
     /**
-     * Sync against snowstorm still relying upon latest RTT data files to sync. Compares against all of a given refets's versions on snowstorm, so no need for a quickMigration
+     * Sync against snowstorm still relying upon latest RTT data files to sync. Compares against all of a given refets's versions on snowstorm, so no need for a quickSync
      * option
      * 
-     * TODO: Determine if can do a nightly update of datafiles programatically
+     * TODO: Determine if can do a nightly update of data files programmatically
      *
-     * @param forProduction Should the migration add projects, teams, and other testing data, which it should NOT do for Production. Default is true
-     * @return the status of the migration
+     * @param forProduction Should the sync add projects, teams, and other testing data, which it should NOT do for Production. Default is true
+     * @return the status of the sync
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean quickMigration, @RequestParam(required = false) final Boolean forProduction)
-        throws Exception {
+    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean quickSync, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
         try {
 
             boolean runForProduction = false;
-            boolean runShortMigration = false;
+            boolean runShortSync = false;
 
-            if (quickMigration != null && quickMigration.booleanValue()) {
+            if (quickSync != null && quickSync.booleanValue()) {
 
-                logger.info("!!!!! migrateRttData RUNNING QUICK MIGRATION - WILL HAVE MORE THAN ONLY PUBLISHED REFSET VERSIONS");
-                runShortMigration = true;
+                logger.info("!!!!! syncSnowstorm RUNNING QUICK SYNC - WILL HAVE MORE THAN ONLY PUBLISHED REFSET VERSIONS");
+                runShortSync = true;
             }
 
             if (forProduction != null && forProduction.booleanValue()) {
 
-                logger.info("!!!!! migrateRttData RUNNING MIGRATION ON PRODUCTION - SHOULDN'T CONTAIN TESTING PROJECTS, TEAMS, AND REFSETS");
+                logger.info("!!!!! syncSnowstorm RUNNING SYNC ON PRODUCTION - SHOULDN'T CONTAIN TESTING PROJECTS, TEAMS, AND REFSETS");
                 runForProduction = true;
             }
 
@@ -1498,7 +1523,7 @@ public class RefsetController extends BaseController {
 
                 logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
 
-                SyncAgent agent = new SyncAgent(runShortMigration, runForProduction);
+                SyncAgent agent = new SyncAgent(runShortSync, runForProduction);
                 agent.sync();
 
                 logger.info("Completed Syncing with Snowstorm");
@@ -1514,24 +1539,49 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Creates a new testing refset containing initial feedback. The method will idenify the last refset created for this purpose (based on numbering). It will create a new
+     * Creates a new testing refset containing initial feedback. The method will identify the last refset created for this purpose (based on numbering). It will create a new
      * one, with the same initial feedback content, but with an incremented number appended to the name and refsetId
      *
-     * @param quickMigration Should the migration be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is
-     *            false
-     * @param forDevOnly Should the migration add projects, teams, and other testing data, which it shouldn't do for Production. Default is true
      * @return the status of the creation
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/admin/migration/feedback", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> createNewFeedbackRefset() throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/feedback", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> createNewFeedbackTestingRefset() throws Exception {
 
         try {
 
-            String status = "Feedback testing refset created succesffully";
+            String status = "Feedback testing refset created successfully";
             logger.info("Create new refset, initialized with feedback, for testing purposes");
-            MigrationDataInitializer initializer = new MigrationDataInitializer();
-            Refset refset = initializer.createTestingFeedback();
+            SyncDataInitializer initializer = new SyncDataInitializer();
+            Refset refset = initializer.createTestingFeedbackRefset();
+
+            logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
+
+            return new ResponseEntity<>(status, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    /**
+     * Creates a new testing refset for testing intensional functionality. The method will identify the last refset created for this purpose (based on numbering). It will
+     * create a new one, similarly as intensionsal, but with an incremented number appended to the name and refsetId
+     *
+     * @return the status of the creation
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/intensional", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> createNewIntensionalTestingRefset() throws Exception {
+
+        try {
+
+            String status = "Intensional testing refset created successfully";
+            logger.info("Create new intensional refset for testing purposes");
+            SyncDataInitializer initializer = new SyncDataInitializer();
+            Refset refset = initializer.createTestingIntensionalRefset();
 
             logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
 

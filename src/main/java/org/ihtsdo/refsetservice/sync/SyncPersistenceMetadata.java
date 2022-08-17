@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -7,9 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Class Metadata.
+ * Metadata used to persist during sync.
  */
-public class SyncMetadata {
+public class SyncPersistenceMetadata {
 
     /** The modified. */
     private Date modified;
@@ -18,7 +18,7 @@ public class SyncMetadata {
     private String modifiedBy;
 
     /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(SyncMetadata.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncPersistenceMetadata.class);
 
     /** The sdf. */
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -29,7 +29,7 @@ public class SyncMetadata {
      * @param modified the modified
      * @param modifiedBy the modified by
      */
-    public SyncMetadata(final String modified, final String modifiedBy) {
+    public SyncPersistenceMetadata(final String modified, final String modifiedBy) {
 
         try {
 
@@ -58,7 +58,7 @@ public class SyncMetadata {
      * @param modified the modified
      * @param modifiedBy the modified by
      */
-    public SyncMetadata(final Date modified, final String modifiedBy) {
+    public SyncPersistenceMetadata(final Date modified, final String modifiedBy) {
 
         try {
 

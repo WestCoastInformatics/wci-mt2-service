@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -32,11 +32,11 @@ public class SyncAgent {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
 
-    protected static boolean runShortMigration;
+    protected static boolean runShortSync;
 
     protected static boolean forProduction;
 
-    protected static MigrationUtilities utilities = null;
+    protected static SyncAgentUtilities utilities = null;
 
     protected static List<Edition> allDatabaseEditions = new ArrayList<>();
 
@@ -44,27 +44,13 @@ public class SyncAgent {
 
     protected static List<Refset> allDatabaseRefsets = new ArrayList<>();
 
-    protected static Edition develeperTestingEdition = null;
+    protected static List<Project> allDatabaseProjects = new ArrayList<>();
 
-    protected static final Map<String, Organization> organizationsAdded = new HashMap<>();
+    protected static Organization develeperTestingOranization = null;
 
-    protected static final Set<Organization> organizationsUnchanged = new HashSet<>();
+    protected static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
 
-    protected static final Set<Organization> organizationsSynced = new HashSet<>();
-
-    protected static final Map<String, Project> defaultEditionProjects = new HashMap<>();
-
-    protected static final Set<Edition> editionsAdded = new HashSet<>();
-
-    protected static final Set<Edition> editionsUnchanged = new HashSet<>();
-
-    protected static final Set<Edition> editionsSynced = new HashSet<>();
-
-    protected static final Set<Refset> refsetVersionsAdded = new HashSet<>();
-
-    protected static final Set<Refset> refsetVersionsUnchanged = new HashSet<>();
-
-    protected static final Set<Refset> refsetVersionsSynced = new HashSet<>();
+    protected static final Map<String, Edition> refsetEditions = new HashMap<>();
 
     protected static final Set<String> uniqueRefsetIds = new HashSet<>();
 
@@ -75,7 +61,7 @@ public class SyncAgent {
 
     protected static final String testingEdition = "elgia";
 
-    protected static final String testingRefset = "741000172102";
+    protected static final String testingRefset = "741000172102"; // Intensional in Belgium: 11000172109
 
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
@@ -88,21 +74,25 @@ public class SyncAgent {
 
     protected Set<String> internationalModuleRefsets = new HashSet<>();
 
+    protected static Edition develeperTestingEdition = null;
+
+    protected static final SyncStatistics statistics = new SyncStatistics();
+
     protected static final String SIMPLE_TYPE_REFSET_SCTID = "446609009";
 
     public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
 
     protected static final Map<String, String> editionOwnerMap = new HashMap<>();
 
-    public SyncAgent(boolean runShortMigration, boolean runForProduction) {
+    public SyncAgent(boolean runShortSync, boolean runForProduction) {
 
         if (utilities == null) {
 
-            SyncAgent.utilities = new MigrationUtilities();
+            SyncAgent.utilities = new SyncAgentUtilities();
 
             ignoredCodeSystemNames.addAll(SyncAgent.utilities.getPropertyReader().readCodeSystemsToIgnore());
 
-            SyncAgent.runShortMigration = runShortMigration;
+            SyncAgent.runShortSync = runShortSync;
             SyncAgent.forProduction = runForProduction;
 
             try {
@@ -137,10 +127,10 @@ public class SyncAgent {
 
             SyncCodeSystemAgent.syncSnowstormCodeSystems(codeSystemsToProcess);
 
-            // Only identify branches on filtered code systems and on runShortMigration value
+            // Only identify branches on filtered code systems and on runShortSync value
             Map<String, SortedMap<Date, String>> branchesToProcess = identifyEditionBranches(codeSystemsToProcess);
 
-            // Identify all refset metadata, any refsets' ECL definitions, and project metadata from RTT files manually migrated over
+            // Identify all refset metadata, any refsets' ECL definitions, and project metadata from RTT files manually sync'd over
             // TODO: Add a automated pull of the data off of RTT?
             utilities.getPropertyReader().parseRttData();
 
@@ -159,7 +149,7 @@ public class SyncAgent {
             e.printStackTrace();
         } finally {
 
-            printSyncResults();
+            logger.info(statistics.printStatistics());
         }
 
     }
@@ -285,22 +275,13 @@ public class SyncAgent {
 
         develeperTestingEdition = null;
 
-        organizationsAdded.clear();
-        organizationsUnchanged.clear();
-        organizationsSynced.clear();
-        defaultEditionProjects.clear();
-
-        editionsAdded.clear();
-        editionsUnchanged.clear();
-        editionsSynced.clear();
-
-        refsetVersionsAdded.clear();
-        refsetVersionsSynced.clear();
-        refsetVersionsUnchanged.clear();
+        defaultOrganizationProjects.clear();
+        refsetEditions.clear();
 
         uniqueRefsetIds.clear();
         ignoredCodeSystemNames.clear();
 
+        statistics.clearStatistics();
     }
 
     /**
@@ -406,16 +387,10 @@ public class SyncAgent {
 
             allDatabaseRefsets = service.getAll(Refset.class);
             // logger.debug(" All Refsets: " + allDatabaseRefsets);
+
+            allDatabaseProjects = service.getAll(Project.class);
+            // logger.debug(" All Projects: " + allDatabaseProjects);
         }
-
-    }
-
-    private void printSyncResults() {
-
-        logger.info("*********    Syncing Results (Added/Unchanged/Synced)    *************");
-        logger.info("Editions: " + editionsAdded.size() + " / " + editionsUnchanged.size() + " / " + editionsSynced.size());
-        logger.info("Organizations: " + organizationsAdded.size() + " / " + organizationsUnchanged.size() + " / " + organizationsSynced.size());
-        logger.info("Refsets: " + refsetVersionsAdded.size() + " / " + refsetVersionsUnchanged.size() + " / " + refsetVersionsSynced.size());
 
     }
 

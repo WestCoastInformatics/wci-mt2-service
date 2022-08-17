@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DiscussionPost;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.DiscussionType;
@@ -23,13 +24,13 @@ import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MigrationDataInitializer {
+public class SyncDataInitializer {
 
-    private final Logger logger = LoggerFactory.getLogger(MigrationDataInitializer.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncDataInitializer.class);
 
-    private MigrationUtilities utilities;
+    private SyncAgentUtilities utilities;
 
-    private static User migrationUser = null;
+    private static User syncUser = null;
 
     private static User feedbackInitiatiorUser = null;
 
@@ -57,23 +58,29 @@ public class MigrationDataInitializer {
 
     private static final String FEEDBACK_REFSET_ID_BASE = "9999999";
 
+    private static final String FEEDBACK_INITIAL_REFSET_ID = "999999901";
+
+    private static final String INTENSIONAL_REFSET_NAME_BASE = "WCI Testing Intensional Refset ";
+
+    private static final String INTENSIONAL_REFSET_ID_BASE = "8888888";
+
+    private static final String INTENSIONAL_INITIAL_REFSET_ID = "888888801";
+
     private static final String WCI_TESTING_PROJECT_NAME = "WCI Testing Project";
 
     private static final String WCI_TESTING_PROJECT_DESCRIPTION = "The single project for all WCI testing refsets";
 
-    private static final String INITIAL_FEEDBACK_REFSET_ID = "999999901";
+    public SyncDataInitializer() {
 
-    public MigrationDataInitializer() {
-
-        commonConstructorInitialization(new MigrationUtilities());
+        commonConstructorInitialization(new SyncAgentUtilities());
     }
 
-    public MigrationDataInitializer(MigrationUtilities utilities) {
+    public SyncDataInitializer(SyncAgentUtilities utilities) {
 
         commonConstructorInitialization(utilities);
     }
 
-    private void commonConstructorInitialization(MigrationUtilities utils) {
+    private void commonConstructorInitialization(SyncAgentUtilities utils) {
 
         try {
 
@@ -100,13 +107,10 @@ public class MigrationDataInitializer {
         // Only run this once on DEV and UAT (but never prod). If developerTestingEdition is set, we know that this has already been run
         if (edition != null) {
 
-            if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(INITIAL_FEEDBACK_REFSET_ID))) {
+            if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(FEEDBACK_INITIAL_REFSET_ID))) {
 
-                // Create develoepr-project (for DEV only)
-                createDeveloperTestingContent(edition);
-
-                // Create develoepr-feedback-testing refset(for DEV only)
-                createTestingFeedback(edition);
+                // Create developer project and refsets (for DEV only)
+                createTestingContent();
 
                 // Create a single Admin team per Org
                 createAdminOrganizationTeams(allDatabaseEditions);
@@ -167,7 +171,9 @@ public class MigrationDataInitializer {
 
     }
 
-    private void createDeveloperTestingContent(Edition developerTestingEdition) throws Exception {
+    private void createTestingContent() throws Exception {
+
+        final Edition developerEdition = getDeveloperTestingEdition();
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -175,56 +181,62 @@ public class MigrationDataInitializer {
 
             testingProject = utilities.addProject(developerTestingEdition, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION);
 
-            utilities.addWCIRefset(getMigrationUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerTestingEdition.getTopLevelModule(),
-                utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);
+            utilities.addWCIRefset(getSyncUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
+                "", testingProject);
+
+            // Create wci testing refsets(for DEV only)
+            createTestingRefsets();
         }
 
     }
 
     /*
-     * Called when creating the first instance of testing-feedback refset
+     * Called when creating the first instance of testing refsets
      */
-    public Refset createTestingFeedback(Edition developerTestingEdition) throws Exception {
 
-        logger.info(" Create Feedback for testing (for DEV only)");
+    public void createTestingRefsets() throws Exception {
 
-        // create new refset with name = FeedbackTestingVersion1 with July 31 2022 version off International Edition
-        Refset refset = utilities.addWCIRefset(getMigrationUser(), "WCI Testing Feedback Refset 1", INITIAL_FEEDBACK_REFSET_ID, developerTestingEdition.getTopLevelModule(),
-            utilities.getSdf().parse("2021-07-31 07:00:00.000000"), Refset.EXTENSIONAL, "", testingProject);
+        final Edition developerEdition = getDeveloperTestingEdition();
 
-        try (TerminologyService service = new TerminologyService()) {
+        logger.info(" Create Feedback & Intensional refsets for testing (for DEV only)");
 
-            utilities.initializeService(service);
+        // create new refset with name = Feedback/Intensional Testing Version 1 with July 31 2022 version off International Edition
+        Refset intensionalRefset = utilities.addWCIRefset(getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID, developerEdition.getTopLevelModule(),
+            utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
+        addIntensionalContent(intensionalRefset);
 
-            // Create users and teams, then add to org/project
-            Set<String> userRole = new HashSet<>();
-            userRole.add(User.ROLE_AUTHOR);
-            Set<String> memberIds = new HashSet<>();
-            memberIds.add(feedbackInitiatiorUser.getId());
-            memberIds.add(userResponderUser.getId());
-            adminUsers.stream().forEach(user -> memberIds.add(user.getId()));
+        Refset feedbackRefset = utilities.addWCIRefset(getSyncUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID, developerEdition.getTopLevelModule(),
+            utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
 
-            final Team singleFeedbackTeam =
-                utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", developerTestingEdition.getOrganization(), allRoles, memberIds);
-
-            testingProject.getTeams().add(singleFeedbackTeam.getId());
-            testingProject = service.update(testingProject);
-
-            developerTestingEdition.getOrganization().getMembers().add(feedbackInitiatiorUser);
-            developerTestingEdition.getOrganization().getMembers().add(userResponderUser);
-            developerTestingEdition = service.update(developerTestingEdition);
-
-            addFeedbackContent(refset);
-
-            return refset;
-        }
+        addFeedbackContent(feedbackRefset);
 
     }
 
     /*
      * Called when adding another instance of testing-feedback refset
      */
-    public Refset createTestingFeedback() throws Exception {
+    public Refset createTestingFeedbackRefset() throws Exception {
+
+        Refset newTestingRefset = createTestingRefset(FEEDBACK_REFSET_NAME_BASE, FEEDBACK_REFSET_ID_BASE);
+
+        addFeedbackContent(newTestingRefset);
+
+        return newTestingRefset;
+    }
+
+    /*
+     * Called when adding another instance of testing-intensional refset
+     */
+    public Refset createTestingIntensionalRefset() throws Exception {
+
+        Refset newTestingRefset = createTestingRefset(INTENSIONAL_REFSET_NAME_BASE, INTENSIONAL_REFSET_ID_BASE);
+
+        addIntensionalContent(newTestingRefset);
+
+        return newTestingRefset;
+    }
+
+    private Refset createTestingRefset(String testingRefsetName, String testingRefsetId) throws Exception {
 
         final Project developerTestingProject = getDeveloperTestingProject();
         final Edition developerTestingEdition = getDeveloperTestingEdition();
@@ -238,16 +250,16 @@ public class MigrationDataInitializer {
 
             for (Refset projectRefset : projectRefsets) {
 
-                if (projectRefset.getRefsetId().startsWith(FEEDBACK_REFSET_ID_BASE) && projectRefset.getName().startsWith(FEEDBACK_REFSET_NAME_BASE)) {
+                if (projectRefset.getRefsetId().startsWith(testingRefsetId) && projectRefset.getName().startsWith(testingRefsetName)) {
 
-                    final int refsetVersion = Integer.parseInt(projectRefset.getName().substring(FEEDBACK_REFSET_NAME_BASE.length()).trim());
+                    final int refsetVersion = Integer.parseInt(projectRefset.getName().substring(testingRefsetName.length()).trim());
 
                     if (refsetVersion > latestVersion) {
 
                         latestVersion = refsetVersion;
                     }
                     // Iterate through the refsets, look at the refset name, and find the integer list after the default name.
-                    // if keysize = 0, this is first one. So create with RefsetId: based on the FEEDBACK_REFSET_ID_BASE and iteration.
+                    // if keysize = 0, this is first one. So create with RefsetId: based on the testingRefsetId and iteration.
                     // else, if the refset integer is greater than the greatest one seen, make this the new refsetName & refsetId integer
 
                 }
@@ -258,21 +270,43 @@ public class MigrationDataInitializer {
 
             if (latestVersion == 0) {
 
-                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_REFSET_ID_BASE + "01", developerTestingEdition.getTopLevelModule(), new Date(),
-                    Refset.EXTENSIONAL, "", developerTestingProject);
+                newTestingRefset = utilities.addWCIRefset(getSyncUser(), testingRefsetName + "1", testingRefsetId + "01", getDeveloperTestingEdition().getTopLevelModule(), new Date(), "",
+                    getDeveloperTestingProject());
             } else {
 
                 latestVersion++;
                 String tensValue = Integer.toString(latestVersion / 10);
                 String onesValue = Integer.toString(latestVersion % 10);
 
-                newTestingRefset = utilities.addWCIRefset(getMigrationUser(), FEEDBACK_REFSET_NAME_BASE + latestVersion, FEEDBACK_REFSET_ID_BASE + tensValue + onesValue,
-                    developerTestingEdition.getTopLevelModule(), new Date(), Refset.EXTENSIONAL, "", developerTestingProject);
+                newTestingRefset = utilities.addWCIRefset(getSyncUser(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue, getDeveloperTestingEdition().getTopLevelModule(),
+                    new Date(), "", getDeveloperTestingProject());
             }
 
-            addFeedbackContent(newTestingRefset);
+            logger.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());
 
             return newTestingRefset;
+        }
+
+    }
+
+    private void addIntensionalContent(Refset refset) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            utilities.initializeService(service);
+
+            // Create ecl clause
+            final String testClause = "<<716186003 |No known allergy (situation)|";
+            final DefinitionClause clause = new DefinitionClause();
+            clause.setNegated(false);
+            clause.setValue(testClause);
+            final DefinitionClause persistedClause = service.add(clause);
+
+            // Set Intensional Refset Infromation
+            refset.setType(Refset.INTENSIONAL);
+            refset.getDefinitionClauses().add(persistedClause);
+
+            final Refset updatedRefset = service.update(refset);
         }
 
     }
@@ -326,6 +360,30 @@ public class MigrationDataInitializer {
             service.update(thread);
             service.commit();
             service.setTransactionPerOperation(true);
+        }
+
+        // Create users for testing initial feedback
+        try (TerminologyService service = new TerminologyService()) {
+
+            utilities.initializeService(service);
+
+            // Create users and teams, then add to org/project
+            Set<String> userRole = new HashSet<>();
+            userRole.add(User.ROLE_AUTHOR);
+            Set<String> memberIds = new HashSet<>();
+            memberIds.add(feedbackInitiatiorUser.getId());
+            memberIds.add(userResponderUser.getId());
+            adminUsers.stream().forEach(user -> memberIds.add(user.getId()));
+
+            final Team singleFeedbackTeam =
+                utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", getDeveloperTestingEdition().getOrganization(), allRoles, memberIds);
+
+            testingProject.getTeams().add(singleFeedbackTeam.getId());
+            testingProject = service.update(testingProject);
+
+            getDeveloperTestingEdition().getOrganization().getMembers().add(feedbackInitiatiorUser);
+            getDeveloperTestingEdition().getOrganization().getMembers().add(userResponderUser);
+            service.update(getDeveloperTestingEdition().getOrganization());
         }
 
     }
@@ -414,22 +472,22 @@ public class MigrationDataInitializer {
         return developerTestingEdition;
     }
 
-    static User getMigrationUser() {
+    static User getSyncUser() {
 
-        if (migrationUser == null) {
+        if (syncUser == null) {
 
-            migrationUser = new User();
-            migrationUser.setName("Migrator");
-            migrationUser.setUserName("Migrator");
-            migrationUser.setActive(true);
-            migrationUser.setEmail("test@wci.com");
+            syncUser = new User();
+            syncUser.setName("Migrator");
+            syncUser.setUserName("Migrator");
+            syncUser.setActive(true);
+            syncUser.setEmail("test@wci.com");
 
             Set<String> roles = new HashSet<>();
             roles.add("all-all-all");
-            migrationUser.setRoles(roles);
+            syncUser.setRoles(roles);
         }
 
-        return migrationUser;
+        return syncUser;
     }
 
     public static Set<User> getAdminUsers() {

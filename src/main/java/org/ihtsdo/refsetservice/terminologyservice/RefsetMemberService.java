@@ -4340,7 +4340,6 @@ public class RefsetMemberService {
                 
                 logger.debug("getConceptIdsFromEcl total: " + total);
                 logger.debug("getConceptIdsFromEcl totalReturned: " + totalReturned);
-                logger.debug("getConceptIdsFromEcl concepts.size(): " + concepts.size());
 
                 if (totalReturned == 0 || totalReturned >= total) {
                     keepSearching = false;
@@ -4362,6 +4361,8 @@ public class RefsetMemberService {
 
                     concepts.add(conceptId);
                 }
+
+                logger.debug("getConceptIdsFromEcl concepts.size(): " + concepts.size());
             }
         }
 

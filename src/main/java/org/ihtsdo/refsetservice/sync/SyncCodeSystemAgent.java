@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.util.HashSet;
 import java.util.List;
@@ -177,13 +177,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
             if (syncedOrganization != null) {
 
                 // A modification was made, so updated edition
-                organizationsSynced.add(syncedOrganization);
+                statistics.getOrganizationsSynced().add(syncedOrganization);
                 organization = syncedOrganization;
 
             } else {
 
                 // No changes, return existing
-                organizationsUnchanged.add(correspondingDatabaseOrganization);
+                statistics.getOrganizationsUnchanged().add(correspondingDatabaseOrganization);
                 organization = correspondingDatabaseOrganization;
             }
 
@@ -198,10 +198,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         if (syncedEdition == null) {
 
-            editionsUnchanged.add(edition);
+            statistics.getEditionsUnchanged().add(edition);
         } else {
 
-            editionsSynced.add(syncedEdition);
+            statistics.getEditionsSynced().add(syncedEdition);
         }
 
         logger.info("Synced " + edition.getShortName() + " Edition");
@@ -216,10 +216,25 @@ public class SyncCodeSystemAgent extends SyncAgent {
         /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
         boolean modificationMade = false;
 
-        // Branch and ShortName are both immutable, so don't bother checking them
+
+        // TODO: This is immutable, so nothing to check?
+        if (updateAttribute("Edition shortName ", existingEdition.getShortName(), editionShortName)) {
+
+            existingEdition.setShortName(editionShortName);
+            modificationMade = true;
+        }
+
+        // TODO: This is immutable, so nothing to check?
         if (updateAttribute("Edition name ", existingEdition.getName(), editionName)) {
 
             existingEdition.setName(editionName);
+            modificationMade = true;
+        }
+
+        // TODO: This is immutable, so nothing to check?
+        if (updateAttribute("Edition branch ", existingEdition.getBranch(), editionBranch)) {
+
+            existingEdition.setBranch(editionBranch);
             modificationMade = true;
         }
 
@@ -307,11 +322,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             final Organization newOrganization = utilities.addOrganziation(editionOwnerMap.get(newEditionName), organizationDescription);
 
-            organizationsAdded.put(newOrganization.getName(), newOrganization);
+            statistics.getOrganizationsAdded().put(newOrganization.getName(), newOrganization);
 
             // Create new Edition
             final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, newOrganization, codeSystem);
-            editionsAdded.add(newEdition);
+            statistics.getEditionsAdded().add(newEdition);
 
             return newEdition;
         } catch (Exception e) {
@@ -347,16 +362,32 @@ public class SyncCodeSystemAgent extends SyncAgent {
         } else {
 
             // Create a Default Project for the edition
-            if (syncedEdition != null && !defaultEditionProjects.containsKey(syncedEdition.getId())) {
+            if (syncedEdition != null && !defaultOrganizationProjects.containsKey(syncedEdition.getId())) {
 
-                // Create default project
+                Project project = null;
                 final String projectName = syncedEdition.getName() + " Default Project";
-                final String projectDescription =
-                    "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
+                final List<Project> projects =
+                    allDatabaseProjects.stream().filter(p -> (p.getEdition().getId().equals(syncedEdition.getId()) && p.getName().equals(projectName))).collect(Collectors.toList());
 
-                final Project project = utilities.addProject(syncedEdition, projectName, projectDescription);
+                if (projects != null && !projects.isEmpty()) {
 
-                defaultEditionProjects.put(syncedEdition.getId(), project);
+                    if (projects.size() > 1) {
+
+                        throw new Exception("This should not ever be the case for projects: " + projects);
+                    }
+
+                    project = projects.iterator().next();
+                } else {
+
+                    // Create default project
+                    final String projectDescription =
+                        "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
+
+                    project = utilities.addProject(syncedEdition, projectName, projectDescription);
+
+                }
+
+                defaultOrganizationProjects.put(syncedEdition.getId(), project);
             }
 
         }

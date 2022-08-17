@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.util;
 import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.HasModified;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -566,6 +567,17 @@ public class AuditEntryHelper {
         entry.setEntityId(discussionThread.getId());
         entry.setMessage("NEW Collaboration Thread");
         entry.setDetails(discussionThread.getSubject());
+        log(entry);
+        return entry;
+    }
+
+    public static HasModified convertToExtensionalRefset(Refset updatedRefset) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(updatedRefset.getId());
+        entry.setMessage("Convert Intensional to Extensional");
+        entry.setDetails("Note for converting intensional to extensional refset for refset " + updatedRefset.getRefsetId() + ".");
         log(entry);
         return entry;
     }

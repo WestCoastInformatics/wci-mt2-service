@@ -467,7 +467,8 @@ public class RefsetService {
         // update an object
         service.add(history);
 
-        logger.info("Refset " + refset.getRefsetId() + " edit history saved as: " + refset);
+        logger.info("Refset " + refset.getRefsetId() + " edit history saved");
+
         logger.debug("createRefsetEditHistory: Refset: " + ModelUtility.toJson(refset));
     }
 
@@ -2132,4 +2133,58 @@ public class RefsetService {
 
         return conceptCodes;
     }
+
+    /**
+     * Convert the intensional refset to be extensional as new version of same refset i.e., without changing refsetId.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String convertToExtensional(TerminologyService service, User user, String refsetInternalId) throws Exception {
+
+        String status = "convert";
+        String refsetId = "";
+
+        final Refset refset = service.get(refsetInternalId, Refset.class);
+        logger.debug("refset is: " + refset);
+
+        if (refset == null) {
+
+            throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+
+        } else if (!refset.getType().equals(Refset.INTENSIONAL)) {
+
+            throw new Exception("Refset Internal Id: " + refsetInternalId + " is not 'Intensional' and can not be converted.");
+            // } else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+            //
+            // throw new Exception("Refset Internal Id: " + refsetInternalId + " is not 'In Development' and can not be converted.");
+        }
+
+        // Identify members from ECL query results and populate them as refset members
+        List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
+
+        if (currentClauses != null) {
+
+            String currentEcl = getEclFromDefinition(currentClauses);
+
+            final List<String> conceptIdList = RefsetMemberService.getConceptIdsFromEcl(refset.getEditionBranch(), currentEcl);
+
+            RefsetMemberService.addRefsetMembers(service, user, refsetInternalId, conceptIdList);
+        }
+
+        // Convert Metadata
+        refset.setType(Refset.EXTENSIONAL);
+        refset.getDefinitionClauses().clear();
+
+        Refset updatedRefset = service.update(refset);
+
+        service.add(AuditEntryHelper.convertToExtensionalRefset(updatedRefset));
+        logger.info("Converted refset from database: " + updatedRefset);
+
+        return status;
+    }
+
 }

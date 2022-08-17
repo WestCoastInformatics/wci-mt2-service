@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.migration;
+package org.ihtsdo.refsetservice.sync;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,33 +14,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-public class MigrationPropertyFileReader {
+public class SyncPropertyFileReader {
 
-    private ClassPathResource projectsResource = new ClassPathResource("rtt-migration/projects.txt");
+    private ClassPathResource projectsResource = new ClassPathResource("sync/rtt-migration/projects.txt");
 
-    private ClassPathResource clausesResource = new ClassPathResource("rtt-migration/clauses.txt");
+    private ClassPathResource clausesResource = new ClassPathResource("sync/rtt-migration/clauses.txt");
 
-    private ClassPathResource refsetsResource = new ClassPathResource("rtt-migration/refsets.txt");
+    private ClassPathResource refsetsResource = new ClassPathResource("sync/rtt-migration/refsets.txt");
 
-    private ClassPathResource refsetToTagsResource = new ClassPathResource("rtt-migration/refsetToTags.txt");
+    private ClassPathResource refsetToTagsResource = new ClassPathResource("sync/rtt-migration/refsetToTags.txt");
 
-    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("rtt-migration/ignoredCodeSystems.txt");
+    private ClassPathResource refsetToProjectsResource = new ClassPathResource("sync/rtt-migration/refsetToProjects.txt");
 
-    private ClassPathResource ignoredRefsetsResource = new ClassPathResource("rtt-migration/ignoredRefsets.txt");
+    private ClassPathResource refsetToClausesResource = new ClassPathResource("sync/rtt-migration/refsetToClauses.txt");
 
-    private ClassPathResource refsetToProjectsResource = new ClassPathResource("rtt-migration/refsetToProjects.txt");
+    private ClassPathResource refsetToDescriptionResource = new ClassPathResource("sync/rtt-migration/refsetToDescription.txt");
 
-    private ClassPathResource refsetToClausesResource = new ClassPathResource("rtt-migration/refsetToClauses.txt");
+    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("sync/exceptions/ignoredCodeSystems.txt");
 
-    private ClassPathResource refsetToDescriptionResource = new ClassPathResource("rtt-migration/refsetToDescription.txt");
+    private ClassPathResource ignoredRefsetsResource = new ClassPathResource("sync/exceptions/ignoredRefsets.txt");
 
-    private ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("rtt-migration/undefinedDefaultLangRefsets.txt");
+    private ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("sync/exceptions/undefinedDefaultLangRefsets.txt");
 
-    private ClassPathResource teamCreationResource = new ClassPathResource("rtt-migration/teams/teamCreation.txt");
+    private ClassPathResource teamCreationResource = new ClassPathResource("sync/initial-teams/teamCreation.txt");
 
-    private ClassPathResource teamToProjectAssignmentResource = new ClassPathResource("rtt-migration/teams/teamToProjectAssignment.txt");
+    private ClassPathResource teamToProjectAssignmentResource = new ClassPathResource("sync/initial-teams/teamToProjectAssignment.txt");
 
-    private ClassPathResource teamMembershipResource = new ClassPathResource("rtt-migration/teams/teamMembership.txt");
+    private ClassPathResource teamMembershipResource = new ClassPathResource("sync/initial-teams/teamMembership.txt");
 
     /** The Constant SPLIT_CHARACTER. */
     private final String SPLIT_CHARACTER = "\t";
@@ -74,7 +74,7 @@ public class MigrationPropertyFileReader {
     private final Map<String, String> jsonProjectOrganziationMap = new HashMap<>();
 
     /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(MigrationPropertyFileReader.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncPropertyFileReader.class);
 
     private Set<String> projectsToIgnore = new HashSet<>();
 
@@ -84,7 +84,7 @@ public class MigrationPropertyFileReader {
     private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
 
     /** The metadata map. */
-    private final Map<String, SyncMetadata> metadataMap = new HashMap<>();
+    private final Map<String, SyncPersistenceMetadata> metadataMap = new HashMap<>();
 
     private static Map<String, Set<String>> defaultLanguageRefsetMap = null;
 
@@ -699,7 +699,7 @@ public class MigrationPropertyFileReader {
             // Store effective Time to avoid handling it within Json
             rttRefsetToEffectiveDateMap.put(rttRefsetId, values[2]);
 
-            SyncMetadata meta = new SyncMetadata(values[3], values[4]);
+            SyncPersistenceMetadata meta = new SyncPersistenceMetadata(values[3], values[4]);
             metadataMap.put("refset-" + rttRefsetId, meta);
 
             return buf.toString();
@@ -772,7 +772,7 @@ public class MigrationPropertyFileReader {
             buf.append("}");
 
             jsonProjectOrganziationMap.put("project-" + line.split(SPLIT_CHARACTER)[0], organizationName);
-            metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncMetadata(modified, modifiedBy));
+            metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncPersistenceMetadata(modified, modifiedBy));
         } catch (Exception e) {
 
             logger.error("failed to process line #" + lineNumber + " of project json: " + line);
@@ -824,7 +824,7 @@ public class MigrationPropertyFileReader {
         return rttRefsetToEffectiveDateMap;
     }
 
-    public Map<String, SyncMetadata> getMetadataMap() {
+    public Map<String, SyncPersistenceMetadata> getMetadataMap() {
 
         return metadataMap;
     }
