@@ -32,7 +32,7 @@ public class SyncAgent {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
 
-    protected static boolean runShortSync;
+    protected static boolean refsetPerVersionSync;
 
     protected static boolean forProduction;
 
@@ -59,9 +59,13 @@ public class SyncAgent {
     /** The testing. */
     protected static final boolean testing = false;
 
-    protected static final String testingEdition = "elgia";
+//    protected static final String testingEdition = "elgia";
 
-    protected static final String testingRefset = "741000172102"; // Intensional in Belgium: 11000172109
+//    protected static final String testingRefset = "741000172102"; // If want the Intensional refset in Belgium, use 11000172109
+    
+    protected static final String testingEdition = "ealand";
+
+    protected static final String testingRefset = "121000210100"; // No changes across 5 versions
 
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
@@ -82,7 +86,7 @@ public class SyncAgent {
 
     protected static final Map<String, String> editionOwnerMap = new HashMap<>();
 
-    public SyncAgent(boolean runShortSync, boolean runForProduction) {
+    public SyncAgent(boolean perVersionCreation, boolean runForProduction) {
 
         if (utilities == null) {
 
@@ -90,8 +94,8 @@ public class SyncAgent {
 
             ignoredCodeSystemNames.addAll(SyncAgent.utilities.getPropertyReader().readCodeSystemsToIgnore());
 
-            SyncAgent.runShortSync = runShortSync;
-            SyncAgent.forProduction = runForProduction;
+            refsetPerVersionSync = perVersionCreation;
+            forProduction = runForProduction;
 
             try {
 

@@ -183,6 +183,8 @@ public class RefsetMemberService {
 
     private static boolean returnEmptyCache = true;
 
+    private static final Map<String, List<Date>> refsetToPublishedVersionMap = new HashMap<>();
+
     static {
 
         EXPORT_FILE_DIR = PropertyUtility.getProperty("export.fileDir") + File.separator;
@@ -3349,7 +3351,106 @@ public class RefsetMemberService {
         
         return conceptExceptionType;
     }
+    public static Date getLatestChangedVersionDate(String branch, String refsetId) throws Exception {
 
+            // Get all members
+            // EG: https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/SNOMEDCT-BE/members?referenceSet=1235&offset=0&limit=10
+            // EG: https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/SNOMEDCT-BE/members?referenceSet=1235&offset=0&limit=10
+
+            int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
+            String searchAfter = "";
+
+            Date refsetLatestDate = null;
+            final long start = System.currentTimeMillis();
+            boolean hasMorePages = true;
+            final String acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
+            int iteration = 0;
+
+            while (hasMorePages) {
+
+                String url = SnowstormConnection.BASE_URL + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
+
+                try (final Response response = SnowstormConnection.getResponse(url, acceptLanguage)) {
+
+                    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
+                        hasMorePages = false;
+                        throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                    }
+
+                    final String resultString = response.readEntity(String.class);
+
+                    // Only process payload if Rest call is successful
+                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+
+                        throw new Exception(Integer.toString(response.getStatus()));
+                    }
+
+                    final ObjectMapper mapper = new ObjectMapper();
+                    final JsonNode root = mapper.readTree(resultString.toString());
+                    JsonNode conceptNodeBatch = root.get("items");
+
+                    searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asText() : "");
+
+                    if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() < limit) {
+
+                        hasMorePages = false;
+                    }
+
+                    if (System.currentTimeMillis() - start > TIMEOUT_MILLISECOND_THRESHOLD) {
+
+                        hasMorePages = false;
+                    }
+
+                    Iterator<JsonNode> iterator = conceptNodeBatch.iterator();
+
+                    JsonNode memberNode = null;
+
+                    Date versionLatestDate = null;
+
+                    while (iterator.hasNext()) {
+
+                        memberNode = iterator.next();
+
+                        Date memberEffectiveTime = SIMPLE_DATE_FORMAT.parse(memberNode.get("releasedEffectiveTime").asText());
+
+                        if (versionLatestDate == null || versionLatestDate.before(memberEffectiveTime)) {
+
+                            versionLatestDate = memberEffectiveTime;
+                        }
+
+                    }
+
+                    if (versionLatestDate != null || refsetLatestDate.before(versionLatestDate)) {
+
+                        refsetLatestDate = versionLatestDate;
+                    }
+
+                    iteration++;
+
+                } catch (Exception e) {
+
+                    throw new Exception("Caught during defining refset version on: " + refsetId + " --- " + branch + "\n" + e.getStackTrace().toString());
+                }
+
+            }
+
+            // See if version already exists.
+            if (!refsetToPublishedVersionMap.containsKey(refsetId)) {
+
+                refsetToPublishedVersionMap.put(refsetId, new ArrayList<Date>());
+            }
+
+            if (refsetToPublishedVersionMap.get(refsetId).contains(refsetLatestDate)) {
+
+                return null;
+            } else {
+
+                refsetToPublishedVersionMap.get(refsetId).add(refsetLatestDate);
+                return refsetLatestDate;
+            }
+
+    }
     /**
      * get the refset member history for a single refset.
      *

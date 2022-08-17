@@ -1476,14 +1476,14 @@ public class RefsetController extends BaseController {
      * Syncs RTT data into the database but only if the database is empty.
      *
      * @param quickSync Should the sync be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is false
-     * @param forProduction Should the sync add projects, teams, and other testing data, which it should NOT do for Production. Default is true
+     * @param perVersionCreation If true, create a refset for every version created. If false, only when changes are observed.
      * @return the status of the sync
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/rtt", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> syncRttData(@RequestParam(required = false) final Boolean quickSync, @RequestParam(required = false) final Boolean forProduction) throws Exception {
+    public @ResponseBody ResponseEntity<String> syncRttData(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
-        return syncSnowstorm(quickSync, forProduction);
+        return syncSnowstorm(perVersionCreation, forProduction);
     }
 
     /**
@@ -1493,21 +1493,22 @@ public class RefsetController extends BaseController {
      * TODO: Determine if can do a nightly update of data files programmatically
      *
      * @param forProduction Should the sync add projects, teams, and other testing data, which it should NOT do for Production. Default is true
+     * @param perVersionCreation If true, create a refset for every version created. If false, only when changes are observed.
      * @return the status of the sync
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean quickSync, @RequestParam(required = false) final Boolean forProduction) throws Exception {
+    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction) throws Exception {
 
         try {
 
             boolean runForProduction = false;
-            boolean runShortSync = false;
+            boolean refsetPerVersionSync = false;
 
-            if (quickSync != null && quickSync.booleanValue()) {
+            if (perVersionCreation != null && perVersionCreation.booleanValue()) {
 
                 logger.info("!!!!! syncSnowstorm RUNNING QUICK SYNC - WILL HAVE MORE THAN ONLY PUBLISHED REFSET VERSIONS");
-                runShortSync = true;
+                refsetPerVersionSync = true;
             }
 
             if (forProduction != null && forProduction.booleanValue()) {
@@ -1523,7 +1524,7 @@ public class RefsetController extends BaseController {
 
                 logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
 
-                SyncAgent agent = new SyncAgent(runShortSync, runForProduction);
+                SyncAgent agent = new SyncAgent(refsetPerVersionSync, runForProduction);
                 agent.sync();
 
                 logger.info("Completed Syncing with Snowstorm");

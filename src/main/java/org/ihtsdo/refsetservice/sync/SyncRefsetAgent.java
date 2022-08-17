@@ -19,6 +19,7 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -331,9 +332,9 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + SIMPLE_TYPE_REFSET_SCTID + "&module=%3C%3C" + module;
 
-                for (Date version : branchesToProcess.get(editionId).keySet()) {
+                for (Date branchVersion : branchesToProcess.get(editionId).keySet()) {
 
-                    final String branchPath = branchesToProcess.get(editionId).get(version);
+                    final String branchPath = branchesToProcess.get(editionId).get(branchVersion);
 
                     try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", branchPath))) {
 
@@ -384,9 +385,13 @@ public class SyncRefsetAgent extends SyncAgent {
 
                                 if (isRefsetToProcess(refsetId)) {
 
-                                    SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, branchesToProcess.get(edition.getId()).keySet(), version, branchPath);
+                                    if (persistVersion(refsetId, branchVersion, branchVersion, branchPath, branchesToProcess.get(edition.getId()).keySet())) {
 
-                                    refsetsToProcess.add(refsetMetadata);
+                                        SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, branchesToProcess.get(edition.getId()).keySet(), branchVersion, branchPath);
+
+                                        refsetsToProcess.add(refsetMetadata);
+                                    }
+
                                 }
 
                             }
@@ -402,6 +407,69 @@ public class SyncRefsetAgent extends SyncAgent {
         }
 
         return refsetsToProcess;
+    }
+
+    private static boolean persistVersion(String refsetId, Date branchVersion, Date versionDate, String branchPath, Set<Date> editionVersions) throws Exception {
+
+        if (refsetPerVersionSync) {
+
+            return true;
+        }
+
+        /*-
+         * Check new version refset version date. If none returned (null), then:
+         * a) no changes to refset itself and 
+         * b) thus no need to create  new version.
+         * c) Move onto nex refset
+         */
+        Date refsetVersionDate = null;
+
+        if (!testing || (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
+
+            refsetVersionDate = RefsetMemberService.getLatestChangedVersionDate(branchPath, refsetId);
+        }
+
+        if (refsetVersionDate == null) {
+
+            logger.debug("No changes to refset so don't create a new version");
+            return false;
+        }
+
+        Date earliestPublishedVersionDate = null;
+
+        if (!editionVersions.contains(refsetVersionDate)) {
+
+            for (Date editionDate : editionVersions) {
+
+                if (refsetVersionDate.after(editionDate)) {
+
+                    throw new Exception("Don't expect to be here at createRefsetsFromSnowstorm()");
+                }
+
+                if (earliestPublishedVersionDate == null || editionDate.before(earliestPublishedVersionDate)) {
+
+                    earliestPublishedVersionDate = editionDate;
+                }
+
+            }
+
+            if (earliestPublishedVersionDate == null) {
+
+                throw new Exception("Shouldn't be here at createRefsetsFromSnowstorm()");
+            }
+
+            refsetVersionDate = earliestPublishedVersionDate;
+        }
+
+        versionDate = refsetVersionDate;
+
+        if (!editionVersions.contains(versionDate)) {
+
+            logger.debug(" Don't add refset versions that don't have corresponding snowstorm -based edition versions with Refset / and VersionDate pair: " + refsetId + " / " + versionDate);
+            return false;
+        }
+
+        return true;
     }
 
     protected static void populateInitialData() throws Exception {
