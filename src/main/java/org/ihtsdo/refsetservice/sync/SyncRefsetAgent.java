@@ -31,8 +31,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private static Logger logger = LoggerFactory.getLogger(SyncRefsetAgent.class);
 
-    private static final Map<String, Date> refsetLatestVersionCache = new HashMap<>();
-
     private static final Set<Refset> snowstormRefsets = new HashSet<>();
 
     private static final Set<SyncRefsetMetadata> refsetsToProcess = new HashSet<>();
@@ -43,7 +41,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
         snowstormRefsets.clear();
         refsetsToProcess.clear();
-        refsetLatestVersionCache.clear();
     }
 
     public static void syncSnowstormRefsets(Map<String, SortedMap<Date, String>> branchesToProcess) throws Exception {
@@ -334,6 +331,12 @@ public class SyncRefsetAgent extends SyncAgent {
 
             for (String module : utilities.getEditionModulesMap().get(edition.getShortName())) {
 
+                if (!SyncAgentUtilities.isInternationalEdition(edition.getName()) && SyncAgentUtilities.internationalModules.contains(module)) {
+
+                    // Ignore non-international editions inheriting refsets from the int'l edition
+                    continue;
+                }
+
                 String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + SIMPLE_TYPE_REFSET_SCTID + "&module=%3C%3C" + module;
 
                 for (Date branchVersion : branchesToProcess.get(editionId).keySet()) {
@@ -374,7 +377,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
                             final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
-                            final boolean isInternationalEdition = ("international edition".equals(edition.getName().toLowerCase())) ? true : false;
 
                             if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
 
@@ -386,7 +388,7 @@ public class SyncRefsetAgent extends SyncAgent {
                              *  a) Listed in international edition or 
                              *  b) In a non-international module
                              */
-                            if (isInternationalEdition || !utilities.getInternationalModules().contains(moduleId)) {
+                            if (SyncAgentUtilities.isInternationalEdition(edition.getName()) || !utilities.getInternationalModules().contains(moduleId)) {
 
                                 if (isRefsetToProcess(refsetId)) {
 
@@ -431,12 +433,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         if (!testing || (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
 
-            if (!refsetLatestVersionCache.containsKey(refsetId)) {
-
-                refsetLatestVersionCache.put(refsetId, RefsetMemberService.getLatestChangedVersionDate(branchPath, refsetId));
-            }
-
-            refsetVersionDate = refsetLatestVersionCache.get(refsetId);
+            refsetVersionDate = RefsetMemberService.getLatestChangedVersionDate(branchPath, refsetId);
         }
 
         if (refsetVersionDate == null) {

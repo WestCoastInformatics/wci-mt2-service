@@ -169,7 +169,7 @@ public class SyncAgent {
                     continue;
                 }
 
-                if ("international edition".equals(codeSystem.get("name").asText().toLowerCase())) {
+                if (SyncAgentUtilities.isInternationalEdition(codeSystem.get("name").asText())) {
 
                     // At international Edition
                     Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();

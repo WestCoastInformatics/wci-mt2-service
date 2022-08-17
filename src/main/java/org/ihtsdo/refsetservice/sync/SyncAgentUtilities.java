@@ -41,7 +41,7 @@ public class SyncAgentUtilities {
 
     private static final Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
 
-    private static final Set<String> internationalModules = new HashSet<>();
+    static final Set<String> internationalModules = new HashSet<>();
 
     private static final Map<String, Set<String>> editionModulesMap = new HashMap<>();
 
@@ -336,12 +336,17 @@ public class SyncAgentUtilities {
 
     }
 
+    static boolean isInternationalEdition(String editionName) {
+
+        return ("international edition".equals(editionName.toLowerCase())) ? true : false;
+    }
+
     String identifyTopLevelModule(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
 
         Set<String> editionModules = new HashSet<>();
         String returnModule = null;
 
-        if ("international edition".equals(editionName.toLowerCase())) {
+        if (isInternationalEdition(editionName)) {
 
             editionModules.add(DEFAULT_SNOMED_CORE_MODULE);
             returnModule = DEFAULT_SNOMED_CORE_MODULE;
