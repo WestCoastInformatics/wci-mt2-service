@@ -2097,7 +2097,7 @@ public class RefsetService {
         final Project project = refset.getProject();
         final String projectAdminEmail = project.getPrimaryContactEmail();
         final String subject = "Refset Request: " + refset.getName() + " (" + refset.getRefsetId() + ")";
-        final String body = "A user is requesting access to a project you administer.\n\n" + "Organization: " + refset.getOrganizationName() + "\n" + "Project: " + project.getName() + "\n"
+        final String body = "A user is requesting access to a project you administer.\n\n" + "Edition: " + refset.getEditionName() + "\n" + "Project: " + project.getName() + "\n"
             + "Refset: " + refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" + "User: " + user.getName() + " (" + user.getEmail() + ")" + "\n\n" + "Comments: " + comments;
 
         EmailUtility.sendEmail(subject, user.getEmail(), projectAdminEmail, body);

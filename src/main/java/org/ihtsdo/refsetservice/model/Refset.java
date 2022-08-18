@@ -1115,29 +1115,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * Returns the organization name.
-     *
-     * @return the organization name
-     */
-    @FullTextField(analyzer = "standard")
-    @GenericField(name = "organizationNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    @IndexingDependency(derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
-    }))
-    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
-    public String getOrganizationName() {
-
-        if (project == null || project.getEdition().getOrganization() == null) {
-
-            return null;
-        } else {
-
-            return project.getEdition().getOrganization().getName();
-        }
-
-    }
-
-    /**
      * Sets the organization name.
      *
      * @param organizationName the organization name to set
