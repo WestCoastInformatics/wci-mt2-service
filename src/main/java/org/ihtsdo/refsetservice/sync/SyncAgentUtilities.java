@@ -63,7 +63,7 @@ public class SyncAgentUtilities {
 
     private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
 
-    Organization addOrganziation(final String orgName, String orgDesc, final Edition edition) throws Exception {
+    Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
