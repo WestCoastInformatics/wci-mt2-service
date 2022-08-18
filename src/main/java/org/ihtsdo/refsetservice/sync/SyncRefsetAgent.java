@@ -32,9 +32,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private static final Set<Refset> snowstormRefsets = new HashSet<>();
 
-    private static final Map<String, Edition> refsetEditions = new HashMap<>();
-
-    private static final Set<SyncRefsetMetadata> refsetsToProcess = new HashSet<>();
+    final private static Set<SyncRefsetMetadata> refsetsToProcess = new HashSet<>();
 
     protected SyncRefsetAgent() throws Exception {
 
@@ -42,7 +40,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
         snowstormRefsets.clear();
         refsetsToProcess.clear();
-        refsetEditions.clear();
     }
 
     public static void syncSnowstormRefsets(Map<String, SortedMap<Date, String>> branchesToProcess) throws Exception {
@@ -57,7 +54,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         for (String refsetId : allSnowstormRefsetVersionPairs.keySet()) {
 
-            counter += allSnowstormRefsetVersionPairs.get(refsetId).size();
+            counter += allSnowstormRefsetVersionPairs.get(refsetId).keySet().size();
         }
 
         logger.info(" syncSnowstormRefsets: Examinging if there are any new or changes to the  " + counter + " refset/version pairs found on Snowstorm");
@@ -68,7 +65,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             for (Date version : allSnowstormRefsetVersionPairs.get(refsetId).keySet()) {
 
-                syncSingleRefsetVersion(version, allSnowstormRefsetVersionPairs.get(refsetId).get(version), allDatabaseRefsetVersionPairs.get(refsetId));
+                syncRefsetVersion(version, allSnowstormRefsetVersionPairs.get(refsetId).get(version), allDatabaseRefsetVersionPairs.get(refsetId));
 
                 if (++counter % 100 == 0) {
 
@@ -83,26 +80,26 @@ public class SyncRefsetAgent extends SyncAgent {
 
     }
 
-    private static Refset syncSingleRefsetVersion(Date version, SyncRefsetMetadata snowstormRefsetVersionData, Map<Date, Refset> databaseRefsetVersionPairs) throws Exception {
+    private static Refset syncRefsetVersion(Date version, SyncRefsetMetadata snowstormRefsetVersionData, Map<Date, Refset> databaseRefsetVersionPairs) throws Exception {
 
         Refset syncedRefset = null;
 
         if (databaseRefsetVersionPairs == null || !databaseRefsetVersionPairs.containsKey(version)) {
 
             // First time seeing refset version pair from snowstorm
-            syncedRefset = handleNewRefsetVersionPair(snowstormRefsetVersionData);
+            syncedRefset = syncNewRefsetVersionPair(snowstormRefsetVersionData);
 
         } else {
 
             Refset databaseRefsetVersion = databaseRefsetVersionPairs.get(version);
-            syncedRefset = handleExistingRefsetVersionPairs(snowstormRefsetVersionData, databaseRefsetVersion);
+            syncedRefset = syncExistingRefsetVersionPairs(snowstormRefsetVersionData, databaseRefsetVersion);
         }
 
         return syncedRefset;
 
     }
 
-    private static Refset handleExistingRefsetVersionPairs(SyncRefsetMetadata snowstormRefsetData, Refset refset) throws Exception {
+    private static Refset syncExistingRefsetVersionPairs(SyncRefsetMetadata snowstormRefsetData, Refset refset) throws Exception {
 
         Refset syncedRefset = compareAndUpdateRefsetDifferences(refset, snowstormRefsetData);
 
@@ -120,7 +117,7 @@ public class SyncRefsetAgent extends SyncAgent {
         return syncedRefset;
     }
 
-    private static Refset handleNewRefsetVersionPair(SyncRefsetMetadata refsetData) throws Exception {
+    private static Refset syncNewRefsetVersionPair(SyncRefsetMetadata refsetData) throws Exception {
 
         final String moduleId = refsetData.getRefsetNode().get("moduleId").asText();
         final String refsetId = refsetData.getRefsetNode().get("conceptId").asText();
@@ -220,7 +217,7 @@ public class SyncRefsetAgent extends SyncAgent {
      *  - Version
      *  - Narrative
      *  
-     *  Note: Not supporting project updates or changes in RTT (such as ECL clauses) as that should be managed in tool
+     *  Note: Not supporting project updates as that should be managed in tool
      */
 
     private static Refset compareAndUpdateRefsetDifferences(Refset existingRefset, SyncRefsetMetadata refsetSnowstormData) throws Exception {
@@ -371,7 +368,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
                             final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
-                            boolean isInternationalEdition = ("international edition".equals(edition.getName().toLowerCase())) ? true : false;
 
                             if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
 
@@ -383,7 +379,7 @@ public class SyncRefsetAgent extends SyncAgent {
                              *  a) Listed in international edition or 
                              *  b) In a non-international module
                              */
-                            if (isInternationalEdition || !utilities.getInternationalModules().contains(moduleId)) {
+                            if (isInternationalEdition(edition.getName()) || !utilities.getInternationalModules().contains(moduleId)) {
 
                                 if (isRefsetToProcess(refsetId)) {
 
@@ -407,16 +403,9 @@ public class SyncRefsetAgent extends SyncAgent {
         return refsetsToProcess;
     }
 
-    protected static void populateInitialData() throws Exception {
+    private static boolean isInternationalEdition(String editionName) {
 
-        logger.info(" step - Populating initial data");
-
-        SyncDataInitializer initializer = new SyncDataInitializer();
-        initializer.initialize(develeperTestingEdition, allDatabaseEditions, allDatabaseRefsets, null);
-
-        // initializer.printResults();
-
-        logger.info(" step complete - Adding special content");
+        return ("international edition".equals(editionName.toLowerCase()));
     }
 
     /**
@@ -483,12 +472,14 @@ public class SyncRefsetAgent extends SyncAgent {
      */
     private static Project createRefsetProject(Refset refset) throws Exception {
 
-        Edition edition = refsetEditions.get(refset.getRefsetId());
+        logger.debug("222a");
 
-        if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refset)) {
+        if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refset.getRefsetId())) {
+
+            logger.debug("222b");
 
             // identify project name and description from Rtt Json
-            String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset);
+            String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
             String[] projectDetails = projectInfo.split(",");
 
             // Clean out project Details
@@ -506,33 +497,45 @@ public class SyncRefsetAgent extends SyncAgent {
 
             }
 
-            return utilities.addProject(edition, projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
+            logger.debug("222c");
+
+            return utilities.addProject(refset.getEdition(), projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
         } else {
 
-            // No project associated with refset, so use default Edition Project
-            if (!defaultOrganizationProjects.containsKey(edition.getId())) {
+            logger.debug("222d");
 
-                throw new Exception("Default project should have already been created of Org: " + edition.getName());
+            // No project associated with refset, so use default Edition Project
+            if (!defaultEditionProjects.containsKey(refset.getEditionId())) {
+
+                throw new Exception("Default project should have already been created of Edition: " + refset.getEdition().getName());
             }
 
-            return defaultOrganizationProjects.get(edition.getId());
+            logger.debug("222e");
+
+            return defaultEditionProjects.get(refset.getEditionId());
         }
 
     }
 
-    private static void matchRefsetToProject(Refset refset, Map<String, Project> rttProjects) throws Exception {
+    private static void associateRefsetProject(Refset refset, Map<String, Project> rttProjects) throws Exception {
 
         Project project = null;
+        logger.debug("111a");
 
         // Set refset Project making sure to cache it based on refsetId
         if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refset.getRefsetId())) {
+
+            logger.debug("111b");
 
             final String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
             final String rttProjectId = projectInfo.split("\t")[0];
 
             if (!rttProjects.containsKey(rttProjectId)) {
 
+                logger.debug("111c");
+
                 project = createRefsetProject(refset);
+                logger.debug("111d");
 
                 rttProjects.put(rttProjectId, project);
             }
@@ -540,19 +543,33 @@ public class SyncRefsetAgent extends SyncAgent {
             project = rttProjects.get(rttProjectId);
         } else {
 
-            // User Org's default project
-            Edition edition = refsetEditions.get(refset.getRefsetId());
-
-            project = defaultOrganizationProjects.get(edition.getId());
+            logger.debug("111e");
+            project = defaultEditionProjects.get(refset.getEditionId());
 
         }
+
+        logger.debug("111f");
 
         if (project == null) {
 
             throw new Exception("Must have created from RTT, already crearted from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
         }
 
+        logger.debug("111g");
+
         refset.setProject(project);
+
+    }
+
+    // Do not persist as will be done later
+    private static void associateRefsetClauses(final String rttId, final Refset refset) throws Exception {
+
+        // If has ECL clauses, associate them with refset
+        if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
+
+            Set<DefinitionClause> clauses = utilities.getRefsetClauses(rttId);
+            refset.getDefinitionClauses().addAll(clauses);
+        }
 
     }
 
@@ -571,7 +588,7 @@ public class SyncRefsetAgent extends SyncAgent {
         for (Refset refset : refsetsUpdated) {
 
             // identify the corresponding project which also defines the edition
-            matchRefsetToProject(refset, rttProjects);
+            associateRefsetProject(refset, rttProjects);
 
             // For now, default all refsets to PUBLIC
             refset.setPrivateRefset(false);
@@ -595,8 +612,24 @@ public class SyncRefsetAgent extends SyncAgent {
 
                     if (rttDataRefsetVersion != null && rttDataRefsetVersion.equals(refset.getVersionDate())) {
 
-                        // Foundmatch, set attributes
-                        setRefsetRttAttributes(rttId, refset, refsetJson);
+                        // Set type & narrative
+                        refset.setType(refsetJson.get("type").asText());
+                        refset.setNarrative(refsetJson.get("narrative").asText());
+
+                        // Tags
+                        if (refsetJson.has("tags")) {
+
+                            Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
+
+                            while (tagsIterator.hasNext()) {
+
+                                refset.getTags().add(tagsIterator.next().asText());
+                            }
+
+                        }
+
+                        // If has ECL clauses, create and associate with refset
+                        associateRefsetClauses(rttId, refset);
 
                         // Only one will match, so no need to keep reading
                         break;
@@ -643,37 +676,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
         }
 
-    }
-
-    private static void setRefsetRttAttributes(String rttId, Refset refset, JsonNode refsetJson) throws Exception {
-
-        // Set type & narrative
-        refset.setType(refsetJson.get("type").asText());
-        refset.setNarrative(refsetJson.get("narrative").asText());
-
-        // Tags
-        if (refsetJson.has("tags")) {
-
-            Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
-
-            while (tagsIterator.hasNext()) {
-
-                String tag = tagsIterator.next().asText();
-
-                refset.getTags().add(tag);
-            }
-
-        }
-
-        // If has ECL clauses, create and associate with refset
-        if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
-
-            Set<DefinitionClause> clauses = utilities.getRefsetClauses(rttId);
-
-            refset.getDefinitionClauses().addAll(clauses);
-        }
-
-        // Do not persist as will be done later
     }
 
     protected static Organization getOrgFromRefset(String refsetId) {

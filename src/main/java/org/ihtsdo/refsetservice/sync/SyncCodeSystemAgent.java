@@ -362,7 +362,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         } else {
 
             // Create a Default Project for the edition
-            if (syncedEdition != null && !defaultOrganizationProjects.containsKey(syncedEdition.getId())) {
+            if (syncedEdition != null && !defaultEditionProjects.containsKey(syncedEdition.getId())) {
 
                 Project project = null;
                 final String projectName = syncedEdition.getName() + " Default Project";
@@ -387,7 +387,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 }
 
-                defaultOrganizationProjects.put(syncedEdition.getId(), project);
+                defaultEditionProjects.put(syncedEdition.getId(), project);
             }
 
         }

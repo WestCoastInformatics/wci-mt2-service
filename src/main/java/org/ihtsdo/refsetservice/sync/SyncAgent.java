@@ -48,7 +48,7 @@ public class SyncAgent {
 
     protected static Organization develeperTestingOranization = null;
 
-    protected static final Map<String, Project> defaultOrganizationProjects = new HashMap<>();
+    protected static final Map<String, Project> defaultEditionProjects = new HashMap<>();
 
     protected static final Map<String, Edition> refsetEditions = new HashMap<>();
 
@@ -57,7 +57,7 @@ public class SyncAgent {
     private static final List<String> ignoredCodeSystemNames = new ArrayList<>();
 
     /** The testing. */
-    protected static final boolean testing = false;
+    protected static final boolean testing = true;
 
     protected static final String testingEdition = "elgia";
 
@@ -140,7 +140,8 @@ public class SyncAgent {
             // Update imported refsets with RTT-based metadata (as defined in parseRttData())
             if (!forProduction) {
 
-                SyncRefsetAgent.populateInitialData();
+                SyncDataInitializer initializer = new SyncDataInitializer();
+                initializer.initialize(develeperTestingEdition, allDatabaseEditions, allDatabaseRefsets, defaultEditionProjects);
             }
 
         } catch (Exception e) {
@@ -275,7 +276,7 @@ public class SyncAgent {
 
         develeperTestingEdition = null;
 
-        defaultOrganizationProjects.clear();
+        defaultEditionProjects.clear();
         refsetEditions.clear();
 
         uniqueRefsetIds.clear();
