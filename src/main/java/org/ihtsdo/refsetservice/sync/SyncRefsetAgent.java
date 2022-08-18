@@ -585,12 +585,10 @@ public class SyncRefsetAgent extends SyncAgent {
         // Set refset Project making sure to cache it based on refsetId
         if (utilities.getPropertyReader().getRefsetToProjectsInfoMap().containsKey(refset.getRefsetId())) {
 
-
             final String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
             final String rttProjectId = projectInfo.split("\t")[0];
 
             if (!rttProjects.containsKey(rttProjectId)) {
-
 
                 project = createRefsetProject(refset);
 
@@ -604,12 +602,10 @@ public class SyncRefsetAgent extends SyncAgent {
 
         }
 
-
         if (project == null) {
 
             throw new Exception("Must have created from RTT, already crearted from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
         }
-
 
         refset.setProject(project);
 
