@@ -31,8 +31,18 @@ public class SyncAgent {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
+    
+    /** Testing options. */
+    protected static final boolean testing = true;
 
-    protected static boolean runShortSync;
+    protected static final String testingEdition = "elgi";
+
+    protected static final String testingRefset = "741000172102"; // Basic refset to test
+    // protected static final String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
+    // protected static final String testingRefset = "121000210100"; // No changes across 5 versions (NZ Edition)
+
+    /** General class fields **/
+    protected static boolean refsetPerVersionSync;
 
     protected static boolean forProduction;
 
@@ -56,16 +66,7 @@ public class SyncAgent {
 
     private static final List<String> ignoredCodeSystemNames = new ArrayList<>();
 
-    /** The testing. */
-    protected static final boolean testing = true;
-
-    protected static final String testingEdition = "elgia";
-
-    protected static final String testingRefset = "741000172102"; // Intensional in Belgium: 11000172109
-
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
-
-    // The max number of record elasticsearch will return without erroring.
 
     /* Constants */
     protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -84,7 +85,7 @@ public class SyncAgent {
 
     protected static final Map<String, String> editionOwnerMap = new HashMap<>();
 
-    public SyncAgent(boolean runShortSync, boolean runForProduction) {
+    public SyncAgent(boolean perVersionCreation, boolean runForProduction) {
 
         if (utilities == null) {
 
@@ -92,8 +93,8 @@ public class SyncAgent {
 
             ignoredCodeSystemNames.addAll(SyncAgent.utilities.getPropertyReader().readCodeSystemsToIgnore());
 
-            SyncAgent.runShortSync = runShortSync;
-            SyncAgent.forProduction = runForProduction;
+            refsetPerVersionSync = perVersionCreation;
+            forProduction = runForProduction;
 
             try {
 
@@ -172,7 +173,7 @@ public class SyncAgent {
                     continue;
                 }
 
-                if ("international edition".equals(codeSystem.get("name").asText().toLowerCase())) {
+                if (SyncAgentUtilities.isInternationalEdition(codeSystem.get("name").asText())) {
 
                     // At international Edition
                     Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();

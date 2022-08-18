@@ -37,19 +37,13 @@ public class SyncAgentUtilities {
 
     private final Logger logger = LoggerFactory.getLogger(SyncAgentUtilities.class);
 
-    public static final String MODULE_ANCESTOR_CONCEPT_SCTID = "900000000000443000";
-
     private static final SyncPropertyFileReader propertyReader = new SyncPropertyFileReader();
-
-    private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
 
     private static final Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
 
-    private static final Set<String> internationalModules = new HashSet<>();
+    static final Set<String> internationalModules = new HashSet<>();
 
     private static final Map<String, Set<String>> editionModulesMap = new HashMap<>();
-
-    static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
     public static final String FEEDBACK_TESTING_USER_NAME = "FeedbackTesting";
 
@@ -57,11 +51,19 @@ public class SyncAgentUtilities {
 
     private static final String UNDEFINED_USER_NAME = "Undefined";
 
-    private static SyncPersistenceMetadata metadata = new SyncPersistenceMetadata(new Date(), SyncAgentUtilities.UNDEFINED_USER_NAME);
+    private static SyncPersistenceMetadata metadata = new SyncPersistenceMetadata(new Date(), UNDEFINED_USER_NAME);
 
     private static final SyncStatistics statistics = new SyncStatistics();
 
-    Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
+    private static final String DEFAULT_SNOMED_CORE_MODULE = "900000000000012004";
+
+    private static final String ANCESTOR_MODULE = "900000000000443000";
+
+    private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
+
+    private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
+
+    Organization addOrganziation(final String orgName, String orgDesc, final Edition edition) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -90,7 +92,7 @@ public class SyncAgentUtilities {
         final Set<String> defaultLanguageRefsets = identifyDefaultLanguageRefsets(codeSystem, shortName);
 
         // Case of no modules handled downstream
-        final String editionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(shortName, editionName, editionBranch, codeSystem) : "";
+        final String editionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(shortName, editionName, editionBranch, codeSystem) : DEFAULT_SNOMED_CORE_MODULE;
 
         Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionTopLevelModule, defaultLanguageCode, organization);
 
@@ -194,7 +196,7 @@ public class SyncAgentUtilities {
 
         refsetParameters.setName(name);
         refsetParameters.setRefsetId(refsetId);
-        refsetParameters.setModuleId("");
+        refsetParameters.setModuleId(moduleId);
         refsetParameters.setVersionStatus("PUBLISHED");
         refsetParameters.setWorkflowStatus("PUBLISHED");
         refsetParameters.setActive(true);
@@ -337,15 +339,20 @@ public class SyncAgentUtilities {
 
     }
 
+    static boolean isInternationalEdition(String editionName) {
+
+        return ("international edition".equals(editionName.toLowerCase())) ? true : false;
+    }
+
     String identifyTopLevelModule(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
 
         Set<String> editionModules = new HashSet<>();
         String returnModule = null;
 
-        if ("international edition".equals(editionName.toLowerCase())) {
+        if (isInternationalEdition(editionName)) {
 
-            editionModules.add(SyncAgentUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
-            returnModule = editionModules.iterator().next();
+            editionModules.add(DEFAULT_SNOMED_CORE_MODULE);
+            returnModule = DEFAULT_SNOMED_CORE_MODULE;
         } else {
 
             Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
@@ -358,6 +365,7 @@ public class SyncAgentUtilities {
                 if (!internationalModules.contains(module.get("conceptId").asText()) && !module.get("moduleId").asText().equals("900000000000012004")) {
 
                     editionModules.add(module.get("conceptId").asText());
+
                 }
 
             }
@@ -366,10 +374,17 @@ public class SyncAgentUtilities {
 
                 // If no non-CORE modules found, use the default Module
 
-                returnModule = SyncAgentUtilities.MODULE_ANCESTOR_CONCEPT_SCTID;
+                returnModule = DEFAULT_SNOMED_CORE_MODULE;
                 editionModules.add(returnModule);
 
-            } else if (editionModules.size() > 1) {
+            } else if (editionModules.size() == 1) {
+
+                // If single non-CORE module found, use it as default
+
+                returnModule = editionModules.iterator().next();
+                editionModules.add(returnModule);
+
+            } else {
 
                 // TODO: 1) Review this especially for the work arounds. In fact, hard coded solutions should be in prop file
                 // TODO: 2) If multiple non-CORE modules found... Possible??? how to handle?
@@ -481,7 +496,7 @@ public class SyncAgentUtilities {
 
     private Set<String> identifyModuleChildren(String branch) throws Exception {
 
-        String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/concepts/" + SyncAgentUtilities.MODULE_ANCESTOR_CONCEPT_SCTID + "/children";
+        String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/concepts/" + ANCESTOR_MODULE + "/children";
         Set<String> childrenSctIds = new HashSet<>();
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
