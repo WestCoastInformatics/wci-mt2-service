@@ -1289,23 +1289,18 @@ public class RefsetService {
      */
     public static LinkedHashMap<String, Project> getOrderedProjects(final TerminologyService service) throws Exception {
 
-        if (projectCache.size() == 0) {
+        final LinkedHashMap<String, Project> projects = new LinkedHashMap<>();
+        final PfsParameter pfs = new PfsParameter();
+        pfs.setAscending(true);
+        pfs.setSortFields(Arrays.asList("name", "id"));
 
-            final PfsParameter pfs = new PfsParameter();
-            pfs.setAscending(true);
-            pfs.setSortFields(Arrays.asList("name", "id"));
+        final ResultList<Project> results = service.find("", pfs, Project.class, null);
 
-            final ResultList<Project> results = service.find("", pfs, Project.class, null);
-
-            for (Project project : results.getItems()) {
-
-                projectCache.put(project.getId(), project);
-            }
-
+        for (Project project : results.getItems()) {
+            projects.put(project.getId(), project);
         }
-
-        return ModelUtility.fromJson(ModelUtility.toJson(projectCache), new TypeReference<LinkedHashMap<String, Project>>() {
-            /**/});
+        
+        return projects;
     }
 
     /**
