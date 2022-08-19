@@ -161,7 +161,7 @@ public class SyncAgentUtilities {
 
     }
 
-    Project addProject(Edition edition, String projectName, String projectDescription) throws Exception {
+    Project addProject(String projectName, String projectDescription, Edition edition) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -170,9 +170,9 @@ public class SyncAgentUtilities {
             final Project project = new Project();
             project.setName(projectName);
             project.setDescription(projectDescription);
-            project.setEdition(edition);
             project.setPrivateProject(false);
             project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
+            project.setEdition(edition);
 
             // Persist
             final Project p = service.add(project);

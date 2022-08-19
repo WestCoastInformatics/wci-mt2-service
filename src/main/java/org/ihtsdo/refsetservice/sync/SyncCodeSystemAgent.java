@@ -366,21 +366,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 Project project = null;
                 final String projectName = syncedEdition.getName() + " Default Project";
-
-                final List<Project> projects =
-                    allDatabaseProjects.stream().filter(p -> (p.getEdition().getId().equals(syncedEdition.getId()) && p.getName().equals(projectName))).collect(Collectors.toList());
-
-                // Shouldn't have to create it if it matched... must be an error so throw exception
-                if (projects != null && !projects.isEmpty()) {
-
-                    throw new Exception("This should not ever be the case for projects: " + projects);
-                }
-
-                // Create default project
                 final String projectDescription =
                     "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
 
-                project = utilities.addProject(syncedEdition, projectName, projectDescription);
+                // Create default project
+                project = utilities.addProject(projectName, projectDescription, syncedEdition);
 
                 defaultEditionProjects.put(syncedEdition.getId(), project);
             }

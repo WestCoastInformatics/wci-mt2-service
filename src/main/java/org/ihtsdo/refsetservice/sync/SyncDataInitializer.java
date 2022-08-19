@@ -179,7 +179,7 @@ public class SyncDataInitializer {
 
             utilities.initializeService(service);
 
-            testingProject = utilities.addProject(developerTestingEdition, WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION);
+            testingProject = utilities.addProject(WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, developerTestingEdition);
 
             utilities.addWCIRefset(getSyncUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getTopLevelModule(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"),
                 "", testingProject);

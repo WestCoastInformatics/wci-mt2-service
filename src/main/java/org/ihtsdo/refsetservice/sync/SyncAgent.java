@@ -31,13 +31,15 @@ public class SyncAgent {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
-    
+
     /** Testing options. */
-    protected static final boolean testing = true;
+    protected static final boolean testing = false;
 
     protected static final String testingEdition = "elgi";
 
-    protected static final String testingRefset = "741000172102"; // Basic refset to test
+ // protected static final String testingRefset = null; // To test entire edition
+    // protected static final String testingRefset = "561000172108"; // Default refset created upon Default Project
+    protected static final String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static final String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
     // protected static final String testingRefset = "121000210100"; // No changes across 5 versions (NZ Edition)
 

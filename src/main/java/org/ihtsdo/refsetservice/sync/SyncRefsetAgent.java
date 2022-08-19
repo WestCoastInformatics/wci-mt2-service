@@ -431,7 +431,7 @@ public class SyncRefsetAgent extends SyncAgent {
          */
         Date refsetVersionDate = null;
 
-        if (!testing || (testingRefset != null && !testingRefset.isEmpty() && refsetId.equals(testingRefset))) {
+        if (isRefsetToProcess(refsetId)) {
 
             refsetVersionDate = RefsetMemberService.getLatestChangedVersionDate(branchPath, refsetId);
         }
@@ -564,7 +564,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             }
 
-            return utilities.addProject(refset.getEdition(), projectDetails[0].replaceFirst("\"", ""), projectDetails[1]);
+            return utilities.addProject(projectDetails[0].replaceFirst("\"", ""), projectDetails[1], refsetEditions.get(refset.getRefsetId()));
         } else {
 
             // No project associated with refset, so use default Edition Project
@@ -741,7 +741,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
     protected static boolean isRefsetToProcess(String refsetId) {
 
-        return !testing || (testing && ((testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset)));
+        return !testing || (testing && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset));
     }
 
 }
