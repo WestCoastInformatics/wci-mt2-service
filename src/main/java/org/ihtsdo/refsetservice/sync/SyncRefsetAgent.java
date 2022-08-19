@@ -125,7 +125,7 @@ public class SyncRefsetAgent extends SyncAgent {
         final String refsetId = refsetData.getRefsetNode().get("conceptId").asText();
         final String snowstormRefsetName = identifyRefsetName(refsetData);
 
-        Refset newRefset = utilities.addRefset(snowstormRefsetName, refsetId, moduleId, refsetData.getVersion(), Refset.EXTENSIONAL, "", null);
+        Refset newRefset = utilities.addRefset(snowstormRefsetName, refsetId, moduleId, refsetData.getVersion(), Refset.EXTENSIONAL, "");
 
         snowstormRefsets.add(newRefset);
 
@@ -598,13 +598,13 @@ public class SyncRefsetAgent extends SyncAgent {
             project = rttProjects.get(rttProjectId);
         } else {
 
-            project = defaultEditionProjects.get(refset.getEditionId());
+            project = defaultEditionProjects.get(refsetEditions.get(refset.getRefsetId()).getId());
 
         }
 
         if (project == null) {
 
-            throw new Exception("Must have created from RTT, already crearted from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
+            throw new Exception("Must have created from RTT, already created from RTT, or found a UAT default project for this refset: " + refset.getRefsetId() + " / " + refset.getVersionDate());
         }
 
         refset.setProject(project);

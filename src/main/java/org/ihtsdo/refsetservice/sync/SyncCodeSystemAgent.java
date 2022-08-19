@@ -1,5 +1,6 @@
 package org.ihtsdo.refsetservice.sync;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -216,7 +217,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
         /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
         boolean modificationMade = false;
 
-
         // TODO: This is immutable, so nothing to check?
         if (updateAttribute("Edition shortName ", existingEdition.getShortName(), editionShortName)) {
 
@@ -366,26 +366,21 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 Project project = null;
                 final String projectName = syncedEdition.getName() + " Default Project";
+
                 final List<Project> projects =
                     allDatabaseProjects.stream().filter(p -> (p.getEdition().getId().equals(syncedEdition.getId()) && p.getName().equals(projectName))).collect(Collectors.toList());
 
+                // Shouldn't have to create it if it matched... must be an error so throw exception
                 if (projects != null && !projects.isEmpty()) {
 
-                    if (projects.size() > 1) {
-
-                        throw new Exception("This should not ever be the case for projects: " + projects);
-                    }
-
-                    project = projects.iterator().next();
-                } else {
-
-                    // Create default project
-                    final String projectDescription =
-                        "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
-
-                    project = utilities.addProject(syncedEdition, projectName, projectDescription);
-
+                    throw new Exception("This should not ever be the case for projects: " + projects);
                 }
+
+                // Create default project
+                final String projectDescription =
+                    "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
+
+                project = utilities.addProject(syncedEdition, projectName, projectDescription);
 
                 defaultEditionProjects.put(syncedEdition.getId(), project);
             }

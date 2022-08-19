@@ -130,7 +130,7 @@ public class SyncAgentUtilities {
 
     }
 
-    Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative, Project project) throws Exception {
+    Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -147,7 +147,6 @@ public class SyncAgentUtilities {
             refset.setVersionDate(versionDate);
             refset.setType(type);
             refset.setNarrative(narrative);
-            refset.setProject(project);
             refset.setLatestPublishedVersion(false);
 
             // Persist
