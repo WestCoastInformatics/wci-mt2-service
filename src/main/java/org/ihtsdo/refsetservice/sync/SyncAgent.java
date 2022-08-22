@@ -37,9 +37,9 @@ public class SyncAgent {
 
     protected static final String testingEdition = "elgi";
 
- // protected static final String testingRefset = null; // To test entire edition
+    protected static final String testingRefset = null; // To test entire edition
     // protected static final String testingRefset = "561000172108"; // Default refset created upon Default Project
-    protected static final String testingRefset = "741000172102"; // Refset with project defined in RTT
+    // protected static final String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static final String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
     // protected static final String testingRefset = "121000210100"; // No changes across 5 versions (NZ Edition)
 
@@ -55,8 +55,6 @@ public class SyncAgent {
     protected static List<Organization> allDatabaseOrganizations = new ArrayList<>();
 
     protected static List<Refset> allDatabaseRefsets = new ArrayList<>();
-
-    protected static List<Project> allDatabaseProjects = new ArrayList<>();
 
     protected static Organization develeperTestingOranization = null;
 
@@ -305,11 +303,6 @@ public class SyncAgent {
 
             logger.info("Identifying CodeSystem branches for: " + editionName);
 
-            if (testing && !editionName.contains(testingEdition) && !editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD) && !editionName.contains("International")) {
-
-                continue;
-            }
-
             Edition edition = allDatabaseEditions.stream().filter(e -> shortName.equals(e.getShortName())).collect(Collectors.toList()).iterator().next();
 
             final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
@@ -392,8 +385,6 @@ public class SyncAgent {
             allDatabaseRefsets = service.getAll(Refset.class);
             // logger.debug(" All Refsets: " + allDatabaseRefsets);
 
-            allDatabaseProjects = service.getAll(Project.class);
-            // logger.debug(" All Projects: " + allDatabaseProjects);
         }
 
     }
