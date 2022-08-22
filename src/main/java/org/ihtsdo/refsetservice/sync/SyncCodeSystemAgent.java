@@ -159,9 +159,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
     }
 
     private static void handleOrganizationForExistingEdition(Edition edition, boolean isActiveSnowstormEdition, JsonNode codeSystem) throws Exception {
+        /*-
+         * For testing orgs
+         * 
+         * 
+               String snowstormOrganizationName = edition.getShortName().equals(DEVELOPER_CODE_SYSTEM_SHORTNAME) ? "" : "testOrg";
+         */
 
-        // String snowstormOrganizationName = codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank() ? codeSystem.get("owner").asText() : "";
-        String snowstormOrganizationName = edition.getShortName().equals(DEVELOPER_CODE_SYSTEM_SHORTNAME) ? "" : "testOrg";
+        String snowstormOrganizationName = codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank() ? codeSystem.get("owner").asText() : "";
 
         if (snowstormOrganizationName.isBlank()) {
 
@@ -427,13 +432,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private static void setSnowstormEditionOwner(String editionShortName, String editionName, JsonNode codeSystem) {
 
+        /*-
+         * For testing orgs
         // final String owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
         String owner = "testOrg";
-
+        
         if (editionShortName.equals(DEVELOPER_CODE_SYSTEM_SHORTNAME)) {
-
+        
             owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
         }
+        */
+        final String owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
 
         // Identify Code System Owner
         if (!owner.trim().isBlank()) {
