@@ -127,10 +127,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
         Refset newRefset = utilities.addRefset(snowstormRefsetName, refsetId, moduleId, refsetData.getVersion(), Refset.EXTENSIONAL, "");
 
-        snowstormRefsets.add(newRefset);
-
-        statistics.getRefsetVersionsAdded().add(newRefset);
-
         postRefsetProcessing(newRefset, refsetData.getEdition());
 
         return newRefset;
@@ -306,6 +302,9 @@ public class SyncRefsetAgent extends SyncAgent {
             refsetEditions.put(refset.getRefsetId(), edition);
 
             snowstormRefsets.add(refset);
+            allDatabaseRefsets.add(refset);
+
+            statistics.getRefsetVersionsAdded().add(refset);
 
             if (!uniqueRefsetIds.contains(refset.getRefsetId())) {
 
@@ -549,7 +548,7 @@ public class SyncRefsetAgent extends SyncAgent {
             String projectInfo = utilities.getPropertyReader().getRefsetToProjectsInfoMap().get(refset.getRefsetId());
             String[] projectDetails = projectInfo.split(",");
 
-            // Clean out project Details
+            // Clean out project Name & Description
             for (int i = 0; i < 2; i++) {
 
                 if (projectDetails[i].startsWith("\"")) {
@@ -564,7 +563,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             }
 
-            return utilities.addProject(projectDetails[0].replaceFirst("\"", ""), projectDetails[1], refsetEditions.get(refset.getRefsetId()));
+            return utilities.addProject(projectDetails[0].replaceFirst("\"", ""), projectDetails[1], refset.getEdition());
         } else {
 
             // No project associated with refset, so use default Edition Project
@@ -591,7 +590,6 @@ public class SyncRefsetAgent extends SyncAgent {
             if (!rttProjects.containsKey(rttProjectId)) {
 
                 project = createRefsetProject(refset);
-
                 rttProjects.put(rttProjectId, project);
             }
 
@@ -705,8 +703,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         }
 
-        // Have latest version per refset. Set the latestVersion flag to true
-        // for them
+        // Have latest version per refset. Set the latestVersion flag to true for them
         for (Refset refset : refsetsUpdated) {
 
             if (latestRefsetCache.containsKey(refset.getRefsetId())) {

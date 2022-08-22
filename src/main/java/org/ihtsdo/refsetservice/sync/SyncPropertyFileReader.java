@@ -68,10 +68,7 @@ public class SyncPropertyFileReader {
     /** The rtt refset to clauses map. */
     private final Map<String, ArrayList<String>> rttRefsetToClausesMap = new HashMap<>();
 
-    /** The projects ID-to_Jsonmap. */
-    private final Map<String, String> rttIdToProjectsJsonMap = new HashMap<>();
-
-    private final Map<String, String> jsonProjectOrganziationMap = new HashMap<>();
+    private final Map<String, String> projectOrganizationMap = new HashMap<>();
 
     /** The logger. */
     private final Logger logger = LoggerFactory.getLogger(SyncPropertyFileReader.class);
@@ -522,14 +519,7 @@ public class SyncPropertyFileReader {
                         break;
 
                     case PROJECT:
-                        final String projectJson = lineToProjectJson(line, lineNumber++);
-                        if (projectJson != null) {
-
-                            rttIdToProjectsJsonMap.put(line.split(SPLIT_CHARACTER)[0], projectJson);
-                        } else {
-
-                            projectsToIgnore.add(line.split(SPLIT_CHARACTER)[0]);
-                        }
+                        parseProjectLine(line, lineNumber++);
                         break;
 
                     default:
@@ -721,19 +711,16 @@ public class SyncPropertyFileReader {
      * @return the string
      * @throws Exception the exception
      */
-    private String lineToProjectJson(final String line, int lineNumber) throws Exception {
+    private void parseProjectLine(final String line, int lineNumber) throws Exception {
 
-        String projectName;
-        String projectDescription;
         String organizationName;
         String modified;
         String modifiedBy;
-        final StringBuffer buf = new StringBuffer();
 
         if (line.toLowerCase().contains(SyncAgent.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
             logger.debug("Ignoring project line that has the word '" + SyncAgent.DEVELOPER_ORGANIZATION_NAME_KEYWORD + "' in it: " + line);
-            return null;
+            projectsToIgnore.add(line.split(SPLIT_CHARACTER)[0]);
         }
 
         try {
@@ -746,32 +733,21 @@ public class SyncPropertyFileReader {
                 // before finding other values
                 final int descStartIdx = line.indexOf("\"");
                 final int descEndIdx = line.substring(descStartIdx + 1).indexOf("\"");
+                final String[] values = line.substring(descStartIdx + descEndIdx + 3).split(SPLIT_CHARACTER);
 
-                projectDescription = line.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
-                String[] values = line.substring(descStartIdx + descEndIdx + 3).split(SPLIT_CHARACTER);
-
-                projectName = values[5].replaceAll("\"", "");
                 organizationName = values[7].replaceAll("\"", "");
                 modified = values[2];
                 modifiedBy = values[3];
             } else {
 
-                String[] values = line.split(SPLIT_CHARACTER);
+                final String[] values = line.split(SPLIT_CHARACTER);
 
-                projectDescription = values[1];
-                projectName = values[7].replaceAll("\"", "");
                 organizationName = values[9].replaceAll("\"", "");
                 modified = values[4];
                 modifiedBy = values[5];
             }
 
-            buf.append("{");
-            buf.append("\"name\": \"" + projectName + "\",");
-            buf.append("\"description\": \"" + projectDescription + "\",");
-            buf.append("\"organization\": {\"name\": \"" + organizationName + "\"}");
-            buf.append("}");
-
-            jsonProjectOrganziationMap.put("project-" + line.split(SPLIT_CHARACTER)[0], organizationName);
+            projectOrganizationMap.put(line.split(SPLIT_CHARACTER)[0], organizationName);
             metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncPersistenceMetadata(modified, modifiedBy));
         } catch (Exception e) {
 
@@ -780,8 +756,6 @@ public class SyncPropertyFileReader {
 
             throw e;
         }
-
-        return buf.toString();
     }
 
     Map<String, String> getRefsetToProjectsInfoMap() {
@@ -829,11 +803,6 @@ public class SyncPropertyFileReader {
         return metadataMap;
     }
 
-    public Map<String, String> getRttIdToProjectsJsonMap() {
-
-        return rttIdToProjectsJsonMap;
-    }
-
     public Map<String, Map<String, Set<String>>> getTeamCreation() {
 
         return teamCreation;
@@ -849,4 +818,7 @@ public class SyncPropertyFileReader {
         return teamMembership;
     }
 
+    Map<String, String> getProjectOrganizationMap(){ 
+       return projectOrganizationMap; 
+    }
 }

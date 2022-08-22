@@ -1,6 +1,5 @@
 package org.ihtsdo.refsetservice.sync;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -146,7 +145,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             setSnowstormEditionOwner(retEdition.getShortName(), retEdition.getName(), codeSystem);
 
-            handleExistingOrganization(retEdition, isActiveSsnowstormEdition, codeSystem);
+            handleOrganizationForExistingEdition(retEdition, isActiveSsnowstormEdition, codeSystem);
 
             return retEdition;
         } catch (Exception e) {
@@ -159,36 +158,53 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private static void handleExistingOrganization(Edition edition, boolean isActiveSnowstormEdition, JsonNode codeSystem) throws Exception {
+    private static void handleOrganizationForExistingEdition(Edition edition, boolean isActiveSnowstormEdition, JsonNode codeSystem) throws Exception {
 
-        Organization organization = null;
+        // String snowstormOrganizationName = codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank() ? codeSystem.get("owner").asText() : "";
+        String snowstormOrganizationName = edition.getShortName().equals(DEVELOPER_CODE_SYSTEM_SHORTNAME) ? "" : "testOrg";
 
-        /* See if have organization with corresponding edition.getOrganization.getId() */
-        final Organization correspondingDatabaseOrganization =
-            allDatabaseOrganizations.stream().filter(o -> edition.getOrganization().getId().equals(o.getId())).collect(Collectors.toList()).iterator().next();
+        if (snowstormOrganizationName.isBlank()) {
 
-        if (correspondingDatabaseOrganization == null) {
+            // Nothing to change given this edition already exists.
+            // In fact, don't even bother to see if editionName matches OrgName as a determination if something has changed. We will pick it up when next popualated
+            return;
+        }
 
-            // Previously synced code system now seeing new organization for first time
-            handleNewCodeSystem(edition.getShortName(), edition.getName(), edition.getBranch(), edition.isActive(), codeSystem);
+        // Can only match on name attribute as no other field in Snowstorm.CodeSystem as of yet
+        List<Organization> organizations = allDatabaseOrganizations.stream().filter(o -> o.getName().equals(snowstormOrganizationName)).collect(Collectors.toList());
+
+        if (organizations.size() > 1) {
+
+            throw new Exception("Cannot have multiple orgs with same name: " + snowstormOrganizationName);
+        }
+
+        Organization matchingDatabaseOrganization = organizations.iterator().next();
+
+        if (matchingDatabaseOrganization == null) {
+
+            // Code System has new name associated with it. Thus create a new Organziation
+            // TODO: Ask Rory what happens if this is a shared org. I imagine create new one rather than update across board? Implications here either way
+            identifyOrganization(edition.getShortName(), edition.getName(), codeSystem);
         } else {
 
-            final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(correspondingDatabaseOrganization, editionOwnerMap.get(edition.getName()), isActiveSnowstormEdition);
+            // Found corresponding Organization based on snowstorm owner. Now determine if that is a different Org than currently defined in Edition.
+            if (updateAttribute("Organization ", matchingDatabaseOrganization.getId(), edition.getOrganizationId())) {
 
-            if (syncedOrganization != null) {
+                edition.setOrganization(matchingDatabaseOrganization);
 
-                // A modification was made, so updated edition
-                statistics.getOrganizationsSynced().add(syncedOrganization);
-                organization = syncedOrganization;
+                try (final TerminologyService service = new TerminologyService()) {
+
+                    utilities.initializeService(service);
+
+                    service.update(edition);
+                    statistics.getOrganizationsSynced().add(matchingDatabaseOrganization);
+                }
 
             } else {
 
-                // No changes, return existing
-                statistics.getOrganizationsUnchanged().add(correspondingDatabaseOrganization);
-                organization = correspondingDatabaseOrganization;
+                statistics.getOrganizationsUnchanged().add(matchingDatabaseOrganization);
             }
 
-            logger.info("Synced " + organization.getName() + " Organization");
         }
 
     }
@@ -312,21 +328,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 return null;
             }
 
-            // Create new Organization
-            // TODO: 1 - Add a description default value or update snowstorm with value per codesystem
-            // TODO: 2 - Once support 1 Org : N Editions, update entire syncOrg routine to first see if already have defined Organization rather than assume 1:1 relationship
-            // b/w & Editions.
+            Organization organization = identifyOrganization(newEditionShortName, newEditionName, codeSystem);
 
-            setSnowstormEditionOwner(newEditionShortName, newEditionName, codeSystem);
-            final String organizationDescription = "";
-
-            final Organization newOrganization = utilities.addOrganziation(editionOwnerMap.get(newEditionName), organizationDescription);
-
-            statistics.getOrganizationsAdded().put(newOrganization.getName(), newOrganization);
-
-            // Create new Edition
-            final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, newOrganization, codeSystem);
+            final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, organization, codeSystem);
             statistics.getEditionsAdded().add(newEdition);
+            allDatabaseEditions.add(newEdition);
 
             return newEdition;
         } catch (Exception e) {
@@ -338,6 +344,41 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
 
     }
+
+    private static Organization identifyOrganization(String newEditionShortName, String newEditionName, JsonNode codeSystem) throws Exception {
+
+        // Create new Organization
+        // TODO: 1 - Add a description default value or update snowstorm with value per codesystem
+        setSnowstormEditionOwner(newEditionShortName, newEditionName, codeSystem);
+
+        // Determine Owner
+        List<Organization> organizations = allDatabaseOrganizations.stream().filter(o -> o.getName().equals(editionOwnerMap.get(newEditionName))).collect(Collectors.toList());
+
+        if (organizations.size() > 1) {
+
+            throw new Exception("Cannot have multiple orgs with same name: " + editionOwnerMap.get(newEditionName));
+        }
+
+        Organization organization = null;
+
+        if (organizations.isEmpty()) {
+
+            // Create new organization
+            final String organizationDescription = "";
+
+            organization = utilities.addOrganziation(editionOwnerMap.get(newEditionName), organizationDescription);
+
+            statistics.getOrganizationsAdded().put(organization.getName(), organization);
+            allDatabaseOrganizations.add(organization);
+        } else {
+
+            // Org already exists
+            organization = organizations.iterator().next();
+        }
+
+        return organization;
+    }
+
     // Organization is done at this point. Check if Developer Edition. If not, create a default UAT project
 
     private static void postCodeSystemProcessing(String snowstormEditionShortName, Edition syncedEdition) throws Exception {
@@ -386,7 +427,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private static void setSnowstormEditionOwner(String editionShortName, String editionName, JsonNode codeSystem) {
 
-        final String owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
+        // final String owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
+        String owner = "testOrg";
+
+        if (editionShortName.equals(DEVELOPER_CODE_SYSTEM_SHORTNAME)) {
+
+            owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
+        }
 
         // Identify Code System Owner
         if (!owner.trim().isBlank()) {
