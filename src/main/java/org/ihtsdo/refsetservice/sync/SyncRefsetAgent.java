@@ -563,7 +563,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             }
 
-            return utilities.addProject(projectDetails[0].replaceFirst("\"", ""), projectDetails[1], refset.getEdition());
+            return utilities.addProject(projectDetails[0].replaceFirst("\"", ""), projectDetails[1], refsetEditions.get(refset.getRefsetId()));
         } else {
 
             // No project associated with refset, so use default Edition Project
