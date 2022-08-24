@@ -64,7 +64,7 @@ public class SyncAgent {
 
     protected static final Set<String> uniqueRefsetIds = new HashSet<>();
 
-    private static final List<String> ignoredCodeSystemNames = new ArrayList<>();
+    protected static final List<String> ignoredCodeSystemNames = new ArrayList<>();
 
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
@@ -124,9 +124,7 @@ public class SyncAgent {
 
             clearPreviousRun();
 
-            Set<JsonNode> codeSystemsToProcess = filterCodeSystems();
-
-            SyncCodeSystemAgent.syncSnowstormCodeSystems(codeSystemsToProcess);
+            Set<JsonNode> codeSystemsToProcess = SyncCodeSystemAgent.syncSnowstormCodeSystems();
 
             // Only identify branches on filtered code systems and on runShortSync value
             Map<String, SortedMap<Date, String>> branchesToProcess = identifyEditionBranches(codeSystemsToProcess);
@@ -154,123 +152,6 @@ public class SyncAgent {
             logger.info(statistics.printStatistics());
         }
 
-    }
-
-    private void identifyInternationalModules(JsonNode root) throws Exception {
-
-        final Iterator<JsonNode> responseIterator = root.iterator();
-
-        while (responseIterator.hasNext()) {
-
-            final Iterator<JsonNode> codeSystems = responseIterator.next().iterator();
-
-            while (codeSystems.hasNext()) {
-
-                JsonNode codeSystem = codeSystems.next();
-
-                if (!codeSystem.has("name")) {
-
-                    continue;
-                }
-
-                if (SyncAgentUtilities.isInternationalEdition(codeSystem.get("name").asText())) {
-
-                    // At international Edition
-                    Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
-
-                    while (moduleIterator.hasNext()) {
-
-                        JsonNode module = moduleIterator.next();
-                        utilities.getInternationalModules().add(module.get("conceptId").asText());
-                    }
-
-                }
-
-            }
-
-        }
-
-        logger.info("Identified " + utilities.getInternationalModules().size() + " international modules");
-
-        if (utilities.getInternationalModules().isEmpty()) {
-
-            throw new Exception("Didn't find the international modules as anticipated");
-
-        }
-
-    }
-
-    /**
-     * Populate editions.
-     * 
-     * @param codeSystemsNode
-     *
-     * @return the sets the
-     * @throws Exception the exception
-     */
-    /**
-     * @return
-     * @throws Exception
-     */
-    private JsonNode getSnowstormCodeSystems() throws Exception {
-
-        final String url = SnowstormConnection.BASE_URL + "codesystems";
-        logger.debug("getSnowstormCodeSystems url: " + url);
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            final String resultString = response.readEntity(String.class);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
-
-            identifyInternationalModules(organizationJsonRootNode);
-
-            return organizationJsonRootNode;
-        }
-
-    }
-
-    private Set<JsonNode> filterCodeSystems() throws Exception {
-
-        final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
-
-        final Set<JsonNode> filteredCodeSystems = new HashSet<>();
-
-        final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-
-        while (organizationIterator.hasNext()) {
-
-            final Iterator<JsonNode> codeSystems = organizationIterator.next().iterator();
-
-            while (codeSystems.hasNext()) {
-
-                JsonNode codeSystem = codeSystems.next();
-
-                // Check for invalid or ignored code systems
-                if (!codeSystem.has("name")) {
-
-                    // Skipping odd code system without a name
-                    continue;
-                } else if (ignoredCodeSystemNames.contains(codeSystem.get("name").asText().toLowerCase())) {
-
-                    // Code System is defined as to-be-ignored
-                    continue;
-                }
-
-                // Testing
-                if (testing && !codeSystem.get("name").asText().contains(testingEdition) && !codeSystem.get("name").asText().toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD)
-                    && !codeSystem.get("name").asText().contains("Inter")) {
-
-                    continue;
-                }
-
-                filteredCodeSystems.add(codeSystem);
-            }
-
-        }
-
-        return filteredCodeSystems;
     }
 
     private void clearPreviousRun() {

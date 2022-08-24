@@ -1,18 +1,23 @@
 package org.ihtsdo.refsetservice.sync;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SyncCodeSystemAgent extends SyncAgent {
 
@@ -34,12 +39,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return develeperTestingEdition;
     }
 
-    protected static void syncSnowstormCodeSystems(Set<JsonNode> codeSystems) throws Exception {
+    protected static Set<JsonNode> syncSnowstormCodeSystems() throws Exception {
+
+        Set<JsonNode> codeSystemsToProcess = filterCodeSystems();
 
         // Clear this out to validate the developer code system
         develeperTestingEdition = null;
 
-        for (JsonNode codeSystem : codeSystems) {
+        for (JsonNode codeSystem : codeSystemsToProcess) {
 
             // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
 
@@ -55,6 +62,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         updateDatabaseCache();
 
+        return codeSystemsToProcess;
     }
 
     /*-
@@ -490,4 +498,122 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
 
     }
+
+    private static Set<JsonNode> filterCodeSystems() throws Exception {
+
+        final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
+
+        final Set<JsonNode> filteredCodeSystems = new HashSet<>();
+
+        final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
+
+        while (organizationIterator.hasNext()) {
+
+            final Iterator<JsonNode> codeSystems = organizationIterator.next().iterator();
+
+            while (codeSystems.hasNext()) {
+
+                JsonNode codeSystem = codeSystems.next();
+
+                // Check for invalid or ignored code systems
+                if (!codeSystem.has("name")) {
+
+                    // Skipping odd code system without a name
+                    continue;
+                } else if (ignoredCodeSystemNames.contains(codeSystem.get("name").asText().toLowerCase())) {
+
+                    // Code System is defined as to-be-ignored
+                    continue;
+                }
+
+                // Testing
+                if (testing && !codeSystem.get("name").asText().contains(testingEdition) && !codeSystem.get("name").asText().toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD)
+                    && !codeSystem.get("name").asText().contains("Inter")) {
+
+                    continue;
+                }
+
+                filteredCodeSystems.add(codeSystem);
+            }
+
+        }
+
+        return filteredCodeSystems;
+    }
+
+    /**
+     * Populate editions.
+     * 
+     * @param codeSystemsNode
+     *
+     * @return the sets the
+     * @throws Exception the exception
+     */
+    /**
+     * @return
+     * @throws Exception
+     */
+    private static JsonNode getSnowstormCodeSystems() throws Exception {
+
+        final String url = SnowstormConnection.BASE_URL + "codesystems";
+        logger.debug("getSnowstormCodeSystems url: " + url);
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            final String resultString = response.readEntity(String.class);
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
+
+            identifyInternationalModules(organizationJsonRootNode);
+
+            return organizationJsonRootNode;
+        }
+
+    }
+
+    private static void identifyInternationalModules(JsonNode root) throws Exception {
+
+        final Iterator<JsonNode> responseIterator = root.iterator();
+
+        while (responseIterator.hasNext()) {
+
+            final Iterator<JsonNode> codeSystems = responseIterator.next().iterator();
+
+            while (codeSystems.hasNext()) {
+
+                JsonNode codeSystem = codeSystems.next();
+
+                if (!codeSystem.has("name")) {
+
+                    continue;
+                }
+
+                if (SyncAgentUtilities.isInternationalEdition(codeSystem.get("name").asText())) {
+
+                    // At international Edition
+                    Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+
+                    while (moduleIterator.hasNext()) {
+
+                        JsonNode module = moduleIterator.next();
+                        utilities.getInternationalModules().add(module.get("conceptId").asText());
+                    }
+
+                }
+
+            }
+
+        }
+
+        logger.info("Identified " + utilities.getInternationalModules().size() + " international modules");
+
+        if (utilities.getInternationalModules().isEmpty()) {
+
+            throw new Exception("Didn't find the international modules as anticipated");
+
+        }
+
+    }
+
 }
