@@ -5,10 +5,10 @@ select refsetId, name, versionDate, project_id from refsets order by name, refse
 
 
 -- ***** Org/Proj/Refset/Version Info
-select c.name as edition_name, b.name as project_name, a.name as refset_name, a.versionDate, a.refsetId from refsets a, projects b, editions c where a.project_id = b.id  and b.edition_id = c.id order by c.name, b.name, a.name, a.versionDate;
--- select c.name as eidition_Name, c.id as edition_id, b.name as Project_Name, b.id as Project_id, a.name as Refset_Name, a.refsetId as Refse_Id, a.versionDate from refsets a, projects b, editions c where a.project_id = b.id  and b.edition_id = c.id order by c.name, b.name, a.name, a.versionDate;
----- These projects don't have refsets
--- select b.name as edition_Name, a.name as Project_without_refsets from projects a, editions b where a.id not in (select project_id from refsets) and b.id = a.edition_id order by b.name, a.name;
+select c.name as org_name, b.name as project_name, a.name as refset_name, a.versionDate, a.refsetId from refsets a, projects b, organizations c where a.project_id = b.id  and b.organization_id = c.id order by c.name, b.name, a.name, a.versionDate;
+-- select c.name as Org_Name, c.id as Org_Id, b.name as Project_Name, b.id as Project_id, a.name as Refset_Name, a.refsetId as Refse_Id, a.versionDate from refsets a, projects b, organizations c where a.project_id = b.id  and b.organization_id = c.id order by c.name, b.name, a.name, a.versionDate;
+-- These projects don't have refsets
+select b.name as Org_Name, a.name as Project_without_refsets from projects a, organizations b where a.id not in (select project_id from refsets) and b.id = a.organization_id order by b.name, a.name;
 
 
 
@@ -27,14 +27,14 @@ select organization_id, count(*) as Num_teams  from  teams group by organization
 
 -- ***** Projects (basic, stats & basic-join)
 -- select id, name, description  from projects order by name;
--- select edition_id, count(*) as num_projects from  projects group by edition_id;
-select a.id as edition_id, a.name as edition, b.name as uat_or_default_project, b.id as proj_id from editions a, projects b where a.id = b.edition_id and b.name like '%Default Project%' order by a.name, b.name;
-select a.id as edition_id, a.name as edition, b.name as non_uat_default_project, b.id as proj_id from editions a, projects b where a.id = b.edition_id and b.name not like '%Default Project%' order by a.name;
--- select a.name as edition, b.name as project from editions a, projects b where a.id = b.edition_id;
+-- select organization_id, count(*) as num_projects from  projects group by organization_id;
+ select a.id as org_id, a.name as org, b.name as uat_or_default_project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and b.name like '%Default Project%' order by a.name, b.name;
+select a.id as org_id, a.name as org, b.name as non_uat_default_project, b.id as proj_id from organizations a, projects b where a.id = b.organization_id and b.name not like '%Default Project%' order by a.name;
+-- select a.name as org, b.name as project from organizations a, projects b where a.id = b.organization_id;
 
 
 -- ***** J - Project Teams (basic)
-select d.name as Edition, b.name as Project, c.name as Team from project_teams a, projects b, teams c, editions d where b.id = a.project_id and c.id = a.teams and d.id = b.edition_id order by d.name, b.name, c.name;
+select d.name as Org, b.name as Project, c.name as Team from project_teams a, projects b, teams c, organizations d where b.id = a.project_id and c.id = a.teams and d.id = b.organization_id order by d.name, b.name, c.name;
 
 
 
