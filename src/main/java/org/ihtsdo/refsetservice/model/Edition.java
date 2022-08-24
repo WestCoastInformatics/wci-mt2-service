@@ -437,7 +437,11 @@ public class Edition extends AbstractHasModified {
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationId() throws Exception {
 
-        return organization == null ? null : organization.getId();
+        if (organization != null) {
+            return organization.getId();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -445,7 +449,7 @@ public class Edition extends AbstractHasModified {
      *
      * @param organizationId the organization ID to set
      */
-    public void getOrganizationId(final String organizationId) {
+    public void setOrganizationId(final String organizationId) {
 
         if (organization != null) {
 
@@ -455,7 +459,6 @@ public class Edition extends AbstractHasModified {
             this.organization = new Organization();
             this.organization.setId(organizationId);
         }
-
     }
 
     /**

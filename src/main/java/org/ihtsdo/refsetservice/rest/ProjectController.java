@@ -219,11 +219,11 @@ public class ProjectController extends BaseController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing project");
             }
 
-            final Set<String> projectNames = ProjectService.getProjectNamesForEdition(project.getEdition().getOrganizationId());
+            final Set<String> projectNames = ProjectService.getProjectNamesForEdition(project.getEdition().getId());
 
             if (projectNames.contains(project.getName())) {
 
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("A project with the name " + project.getName() + " already exists for this organization.");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("A project with the name " + project.getName() + " already exists for this edition.");
             }
 
             try {
