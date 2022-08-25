@@ -2437,7 +2437,7 @@ public class RefsetController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/share/", produces = "application/json")
+    @RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/share", produces = "application/json")
     public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, final ShareRefsetEmailInfo emailInfo) throws Exception {
 
         try {
