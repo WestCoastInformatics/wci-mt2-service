@@ -601,6 +601,38 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         }
 
     }
+    
+    /**
+     * Returns the organization name.
+     *
+     * @return the organization name
+     */
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "organizationNameSort", searchable = Searchable.YES,
+            projectable = Projectable.NO, sortable = Sortable.YES)
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({@PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")}))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    public String getOrganizationName() {
+
+        if (project == null || project.getEdition() == null || project.getEdition().getOrganization() == null) {
+            return null;
+        } else {
+            return project.getEdition().getOrganization().getName();
+        }
+    }
+    
+    /**
+     * Sets the organization name.
+     *
+     * @param organizationName the organization name to set
+     */
+    public void setOrganizationName(final String organizationName) {
+
+        if (project != null && project.getEdition() != null && project.getEdition().getOrganization() != null) {
+            this.project.getEdition().getOrganization().setName(organizationName);
+        }
+
+    }
 
     /**
      * Sets the edition.
@@ -1110,20 +1142,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
             this.project = new Project();
             this.project.setId(projectId);
-        }
-
-    }
-
-    /**
-     * Sets the organization name.
-     *
-     * @param organizationName the organization name to set
-     */
-    public void setOrganizationName(final String organizationName) {
-
-        if (project != null && project.getEdition().getOrganization() != null) {
-
-            this.project.getEdition().getOrganization().setName(organizationName);
         }
 
     }
