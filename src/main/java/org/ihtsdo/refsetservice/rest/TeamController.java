@@ -348,39 +348,6 @@ public class TeamController extends BaseController {
 
             final Team team = TeamService.addUserToTeam(authUser, teamId, email);
 
-            // add user to crowd groups
-            // crowd.unit.test.skip=true
-            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
-
-                final Organization organization = team.getOrganization();
-                final User user = UserService.getUserByEmail(email);
-
-                logger.info("CALLING CROWD API");
-                final String teamsQuery = "teams:" + teamId;
-                final SearchParameters searchParameters = new SearchParameters();
-                searchParameters.setQuery(teamsQuery);
-                final ResultList<Project> projectList = ProjectService.searchProjects(authUser, searchParameters);
-
-                if (projectList != null && projectList.getItems() != null) {
-
-                    for (Project project : projectList.getItems()) {
-
-                        for (String role : team.getRoles()) {
-
-                            // TODO: Tim Whalen for Permissions
-                            // final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                            // CrowdAPIClient.addMembership(groupName, user.getUserName());
-                        }
-
-                    }
-
-                }
-
-            } else {
-
-                logger.info("SKIP CALLING CROWD API");
-            }
-
             return new ResponseEntity<>(HttpStatus.CREATED);
 
         } catch (final NotFoundException nfe) {
@@ -418,37 +385,6 @@ public class TeamController extends BaseController {
         try {
 
             final Team team = TeamService.removeUserFromTeam(authUser, teamId, userId);
-            final User user = UserService.getUser(userId, false);
-
-            // remove user from crowd groups
-            // crowd.unit.test.skip=true
-            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
-
-                logger.info("CALLING CROWD API");
-                final Organization organization = team.getOrganization();
-                final String teamsQuery = "teams:" + teamId;
-                final SearchParameters searchParameters = new SearchParameters();
-                searchParameters.setQuery(teamsQuery);
-                final ResultList<Project> projectList = ProjectService.searchProjects(authUser, searchParameters);
-
-                if (projectList != null && projectList.getItems() != null) {
-
-                    for (Project project : projectList.getItems()) {
-
-                        for (String role : team.getRoles()) {
-
-                            final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                            CrowdAPIClient.deleteMembership(groupName, user.getUserName());
-                        }
-
-                    }
-
-                }
-
-            } else {
-
-                logger.info("SKIP CALLING CROWD API");
-            }
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 

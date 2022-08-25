@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.ws.rs.ForbiddenException;
@@ -28,11 +29,14 @@ import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -53,6 +57,9 @@ public class TeamService extends BaseService {
     public static String organizationLevelTeamPrefix = "Administrator(s) for organization ";
 
     public static String organizationLevelTeamDescription = "'s dedicated ADMIN Team to manage their projects, members, and teams with.";
+    
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /**
      * Creates the team.
@@ -229,14 +236,18 @@ public class TeamService extends BaseService {
      * @return the list
      * @throws Exception the exception
      */
-    public static void inactivateTeam(final User authUser, final String teamId) throws Exception {
+    public static void inactivateTeam(final User user, final String teamId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
             // Find the object
             final Team team = getTeam(teamId, true);
 
-            checkEditPermissions(authUser, team);
+            checkEditPermissions(user, team);
             
             if (isOrganizationTeam(team)) {
                 
@@ -245,17 +256,22 @@ public class TeamService extends BaseService {
                 throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, message);
             }
             
-            if (!team.getMembers().isEmpty()) {
-                team.getMembers().clear();
+            for (final User teamMember : team.getMemberList()) {
+                removeUserFromTeam(service, user, team, teamMember);
             }
-
-            service.setModifiedBy(authUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-
+            
             team.setActive(false);
             service.update(team);
             service.add(AuditEntryHelper.inactivateTeamEntry(team));
+            
+            final List<Project> teamProjects = getTeamProjects(team);
+            
+            for (final Project teamProject : teamProjects) {
+                
+                teamProject.getTeams().remove(team.getId());
+                service.update(teamProject);
+            }
+            
             service.commit();
         }
     }
@@ -308,6 +324,8 @@ public class TeamService extends BaseService {
             } else {
                 pfs.setSort("name");
             }
+            
+            searchParameters.setActiveOnly(true);
 
             if (query != null && !query.equals("")) {
                 query = IndexUtility.addWildcardsToQuery(query, Team.class);
@@ -394,15 +412,15 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team addUserToTeam(final User authUser, final String teamId, final String email) throws Exception {
+    public static Team addUserToTeam(final User user, final String teamId, final String email) throws Exception {
         
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(authUser.getUserName());
+            service.setModifiedBy(user.getUserName());
             
             final Team team = getTeam(teamId, true);
 
-            return addUserToTeam(service, authUser, team, email);
+            return addUserToTeam(service, user, team, email);
         }
     }
     
@@ -416,7 +434,7 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team addUserToTeam(final TerminologyService service, final User authUser, final Team team, final String email) throws Exception {
+    public static Team addUserToTeam(final TerminologyService service, final User user, final Team team, final String email) throws Exception {
         
         final User userToAdd = service.findSingle("email:" + email, User.class, null);
         
@@ -427,7 +445,7 @@ public class TeamService extends BaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
         
-        return addUserToTeam(service, authUser, team, userToAdd);
+        return addUserToTeam(service, user, team, userToAdd);
     }
 
     /**
@@ -440,9 +458,9 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team addUserToTeam(final TerminologyService service, final User authUser, final Team team, final User userToAdd) throws Exception {
+    public static Team addUserToTeam(final TerminologyService service, final User user, final Team team, final User userToAdd) throws Exception {
 
-        checkEditPermissions(authUser, team);
+        checkEditPermissions(user, team);
 
         final Organization organization = team.getOrganization();
         final Set<User> organizationMembers = organization.getMembers();
@@ -469,6 +487,31 @@ public class TeamService extends BaseService {
         service.commit();
         
         setUserRoles(userToAdd, team, team.getUserRoles());
+        
+        // add user to crowd groups
+        if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+
+            logger.info("CALLING CROWD API");
+            final String teamsQuery = "teams:" + team.getId();
+            final SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setQuery(teamsQuery);
+            final ResultList<Project> projectList = ProjectService.searchProjects(user, searchParameters);
+
+            if (projectList != null && projectList.getItems() != null) {
+
+                for (Project project : projectList.getItems()) {
+
+                    for (String role : team.getRoles()) {
+
+                        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                        CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
+                    }
+                }
+            }
+
+        } else {
+            logger.info("SKIP CALLING CROWD API");
+        }
 
         return team;
     }
@@ -477,50 +520,107 @@ public class TeamService extends BaseService {
      * Removes the user from team.
      *
      * @param user the user
-     * @param teamId the team id
-     * @param userId the user id
+     * @param teamId the team ID
+     * @param userId the user ID  to remove
      * @return the team
      * @throws Exception the exception
      */
-    public static Team removeUserFromTeam(final User authUser, final String teamId, final String userId) throws Exception {
-
+    public static Team removeUserFromTeam(final User user, final String teamId, final String userId) throws Exception {
+        
         try (final TerminologyService service = new TerminologyService()) {
 
-            // find team
+            service.setModifiedBy(user.getUserName());
+            
             final Team team = getTeam(teamId, true);
 
-            final User userToRemove = service.get(userId, User.class);
+            return removeUserFromTeam(service, user, team, userId);
+        }
+    }
+    
+    /**
+     * Removes the user from team.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param team the team
+     * @param userId the user ID  to remove
+     * @return the team
+     * @throws Exception the exception
+     */
+    public static Team removeUserFromTeam(final TerminologyService service, final User user, final Team team, final String userId) throws Exception {
+        
+        final User userToRemove = service.get(userId, User.class);
+        
+        if (userToRemove == null) {
             
-            if (userToRemove == null) {
-                final String message = "Unable to find user for id " + userId + ".";
-                logger.error(message);
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
-            }
+            final String message = "Unable to find user for id " + userId + ".";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+        }
+        
+        return removeUserFromTeam(service, user, team, userToRemove);
+    }
+    
+    /**
+     * Removes the user from team.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param team the team
+     * @param userToRemove the user to remove
+     * @return the team
+     * @throws Exception the exception
+     */
+    public static Team removeUserFromTeam(final TerminologyService service, final User user, final Team team, final User userToRemove) throws Exception {
 
-            if (team.getMembers() != null) {
+        if (team.getMembers() != null) {
+            
+            if (team.getMembers().contains(userToRemove.getId())) {
+                team.getMembers().remove(userToRemove.getId());
+            } else {
                 
-                if (team.getMembers().contains(userId)) {
-                    team.getMembers().remove(userId);
-                } else {
-                    
-                    final String message = "User " + userId + " is not a member of team " + teamId + ".";
-                    logger.error(message);
-                    throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+                final String message = "User " + userToRemove.getUserName() + " is not a member of team " + team.getName() + ".";
+                logger.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
+        }
+        
+        validateTeamData(service, team, false);
+
+        service.setModifiedBy(user.getUserName());
+        service.setTransactionPerOperation(false);
+        service.beginTransaction();
+
+        service.update(team);
+        service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToRemove));
+        service.commit();
+        
+        // remove user from crowd groups
+        if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+
+            logger.info("CALLING CROWD API");
+            final String teamsQuery = "teams:" + team.getId();
+            final SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setQuery(teamsQuery);
+            final ResultList<Project> projectList = ProjectService.searchProjects(user, searchParameters);
+
+            if (projectList != null && projectList.getItems() != null) {
+
+                for (Project project : projectList.getItems()) {
+
+                    for (String role : team.getRoles()) {
+
+                        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                        CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
+                    }
                 }
             }
-            
-            validateTeamData(service, team, false);
 
-            service.setModifiedBy(authUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-
-            service.update(team);
-            service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToRemove));
-            service.commit();
-
-            return team;
+        } else {
+            logger.info("SKIP CALLING CROWD API");
         }
+
+        return team;
     }
 
     /**
@@ -638,6 +738,31 @@ public class TeamService extends BaseService {
     }
     
     /**
+     * Returns the team users.
+     *
+     * @param team the team 
+     * @return the team projects
+     * @throws Exception the exception
+     */
+    public static List<Project> getTeamProjects(final Team team) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final ResultList<Project> allOrganizationProjects = service.find("active: true AND organizationId: " + team.getOrganizationId(), null, Project.class, null);
+            final List<Project> projects = new ArrayList<>();
+
+            for (final Project organizationProject : allOrganizationProjects.getItems()) {
+
+                if (organizationProject.getTeams().contains(team.getId())) {
+                    projects.add(organizationProject);
+                }
+            }
+
+            return projects;
+        }
+    }
+    
+    /**
      * Check if this is a special organization level team
      *
      * @param user the user
@@ -741,7 +866,7 @@ public class TeamService extends BaseService {
      * @param organization the organization the admin team is for
      * @return the name of the organization admin team
      */
-    public static String generateOrgTeamName(Organization organization) {
+    public static String generateOrganizationTeamName(Organization organization) {
 
         return organizationLevelTeamPrefix + organization.getName();
     }
@@ -752,7 +877,7 @@ public class TeamService extends BaseService {
      * @param organization the organization the admin team is for
      * @return the description of the organization admin team
      */
-    public static String getOrgTeamDescription(Organization organization) {
+    public static String getOrganizationTeamDescription(Organization organization) {
 
         return organization.getName() + organizationLevelTeamDescription;
     }

@@ -128,7 +128,7 @@ public class SyncDataInitializer {
 
                 memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
 
-                utilities.addTeam(TeamService.generateOrgTeamName(edition.getOrganization()), TeamService.getOrgTeamDescription(edition.getOrganization()), edition.getOrganization(),
+                utilities.addTeam(TeamService.generateOrganizationTeamName(edition.getOrganization()), TeamService.getOrganizationTeamDescription(edition.getOrganization()), edition.getOrganization(),
                     new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
 
                 // Finally, add the users to the organizaiton
