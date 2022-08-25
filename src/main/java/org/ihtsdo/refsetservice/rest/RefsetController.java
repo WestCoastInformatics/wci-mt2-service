@@ -25,6 +25,7 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -2437,8 +2438,8 @@ public class RefsetController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/share", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, final ShareRefsetEmailInfo emailInfo) throws Exception {
+    @PostMapping(value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final ShareRefsetEmailInfo emailInfo) throws Exception {
 
         try {
 
