@@ -586,12 +586,14 @@ public class SecurityService implements AutoCloseable {
      * @return the user from user name
      * @throws Exception the exception
      */
-    public User getUserFromUserName(final String userName) throws Exception {
+    public User getUserFromUserName(String userName) throws Exception {
 
         User user = null;
 
         try (final TerminologyService service = new TerminologyService()) {
 
+            // Note: When testing POSTMAN, hard code userName to your userName and relaunch server
+            // userName = "jefron";
             user = service.findSingle("userName:" + userName, User.class, null);
         }
 

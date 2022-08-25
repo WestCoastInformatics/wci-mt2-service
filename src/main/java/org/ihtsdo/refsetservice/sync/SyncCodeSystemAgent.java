@@ -1,9 +1,14 @@
 package org.ihtsdo.refsetservice.sync;
 
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
@@ -27,34 +32,47 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private static final Set<String> codeSystemsNewAndInactive = new HashSet<>();
 
-    protected SyncCodeSystemAgent() throws Exception {
+    public SyncCodeSystemAgent(boolean perVersionCreation, boolean runForProduction) throws Exception {
 
-        super();
+        super(perVersionCreation, runForProduction);
 
         codeSystemsNewAndInactive.clear();
     }
 
-    protected static Edition getDeveloperTestingEdition() {
+    protected Edition getDeveloperTestingEdition() {
 
-        return develeperTestingEdition;
+        return developerTestingEdition;
     }
 
-    protected static Set<JsonNode> syncSnowstormCodeSystems() throws Exception {
+    public void syncSnowstorm() throws Exception {
 
-        Set<JsonNode> codeSystemsToProcess = filterCodeSystems();
+        clearPreviousRun();
+        updateDatabaseCache();
 
-        // Clear this out to validate the developer code system
-        develeperTestingEdition = null;
+        final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
+        Iterator<JsonNode> itr = organizationJsonRootNode.iterator();
+        int counter = 0;
+
+        while (itr.hasNext()) {
+
+            counter++;
+            itr.next();
+        }
+
+        logger.info("All ?" + organizationJsonRootNode.size() + " but def " + counter + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
+
+        Set<JsonNode> codeSystemsToProcess = filterCodeSystems(organizationJsonRootNode);
+
+        logger.info("Will be processing only these " + codeSystemsToProcess.size() + " Code Systems: " + codeSystemsToProcess);
 
         for (JsonNode codeSystem : codeSystemsToProcess) {
-
             // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
 
             syncSingleSnowstormCodeSystem(codeSystem);
 
         }
 
-        if (develeperTestingEdition == null && !forProduction) {
+        if (developerTestingEdition == null && !forProduction) {
 
             // TODO: For now, ignore this, but shuolldn't ever throw exception at this point
             // throw new Exception("Must have a WCI Organization on a non-Prod instance");
@@ -62,7 +80,97 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         updateDatabaseCache();
 
-        return codeSystemsToProcess;
+        // Only identify branches on filtered code systems and on runShortSync value
+        Map<String, SortedMap<Date, String>> editionBranchesToProcess = identifyEditionBranches(codeSystemsToProcess);
+        branchesToProcess.putAll(editionBranchesToProcess);
+
+        logger.info("Will be processing these " + branchesToProcess.keySet() + " edition-branches for refsets: " + branchesToProcess);
+    }
+
+    /**
+     * Identify branches.
+     *
+     * @return the map
+     * @throws Exception the exception
+     */
+    private Map<String, SortedMap<Date, String>> identifyEditionBranches(Set<JsonNode> codeSystems) throws Exception {
+
+        Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
+
+        for (JsonNode codeSystem : codeSystems) {
+
+            final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
+            final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
+            final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
+
+            logger.info("Identifying CodeSystem branches for: " + editionName);
+            logger.info("With DB Database containing: " + allDatabaseEditions);
+
+            final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
+
+            SortedMap<Date, String> children = new TreeMap<>();
+            logger.debug(" genericUrl: " + genericUrl.replace("{branch}", branch));
+
+            try (final Response response = SnowstormConnection.getResponse(genericUrl.replace("{branch}", branch))) {
+
+                final String resultString = response.readEntity(String.class);
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString.toString());
+
+                // get RefSets from edition as long as a) active & b) within
+                // edition's module
+                final Iterator<JsonNode> branchIterator = root.iterator();
+
+                while (branchIterator.hasNext()) {
+
+                    JsonNode child = branchIterator.next();
+                    final String childBranch = child.get("path").asText();
+                    String childDate = childBranch.replace(branch, "");
+
+                    if (childDate.startsWith("/")) {
+
+                        childDate = childDate.substring(1);
+                    }
+
+                    // logger.debug(" Found Snowstorm Child Branch: " + childBranch);
+
+                    // Since grabbing all children branches, avoid
+                    // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
+                    boolean childAdded = false;
+
+                    if (childDate.matches(".*\\d{4}-\\d{2}-\\d{2}$")) {
+
+                        Date branchDate = branchDateFormatter.parse(childDate);
+
+                        if (branchDate.before(new Date())) {
+
+                            children.put(branchDate, childBranch);
+                            childAdded = true;
+                        }
+
+                    }
+
+                    if (!childAdded) {
+
+                        // logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official release
+                        // branch");
+                    }
+
+                }
+
+                logger.debug("Branch Dates for edition: " + editionName);
+
+                for (Date child : children.keySet()) {
+
+                    logger.debug("Child: " + child.toString() + " with branch: " + children.get(child));
+                }
+
+            }
+
+            retMap.put(shortName, children);
+        }
+
+        return retMap;
     }
 
     /*-
@@ -80,7 +188,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * 6) topLevelModule
      * 7) defaultLanguageRefsets
      */
-    private static void syncSingleSnowstormCodeSystem(JsonNode codeSystem) {
+    private void syncSingleSnowstormCodeSystem(JsonNode codeSystem) {
 
         Edition syncedEdition = null;
 
@@ -95,23 +203,24 @@ public class SyncCodeSystemAgent extends SyncAgent {
             logger.info(" Syncing Code System: " + generateCodeSystemCoordinates(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch));
 
             /* See if corresponding Edition exists in RT2 DB. If not, create it. */
-            List<Edition> dbEditions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(snowstormEditionShortName)).collect(Collectors.toList());
+            List<Edition> dbEditions = allDatabaseEditions.stream().filter(e -> e != null && e.getShortName().equals(snowstormEditionShortName)).collect(Collectors.toList());
 
-            if (dbEditions == null || dbEditions.isEmpty()) {
+            if (dbEditions.size() > 1) {
 
-                // If correspondingDbEdition is not null, we are updating an existing supported edition
+                throw new Exception("Have encounted multiple editions with the same shortName on Snowstorm: " + dbEditions);
+            } else if (dbEditions == null || dbEditions.isEmpty()) {
+
+                // If correspondingDbEdition is null, this is the first time we have observed this edition, so create it.
                 syncedEdition = handleNewCodeSystem(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
+
+                statistics.getEditionsAdded().add(syncedEdition);
+                allDatabaseEditions.add(syncedEdition);
 
             } else {
 
-                if (dbEditions.size() != 1) {
-
-                    throw new Exception("Have encounted two editions with the same shortName on Snowstorm: " + dbEditions);
-                }
-
+                // If correspondingDbEdition is not null, we are updating an existing supported edition
                 final Edition correspondingDbEdition = dbEditions.iterator().next();
 
-                // If correspondingDbEdition is null, this is the first time we have observed this edition, so create it.
                 syncedEdition = handleExistingCodeSystem(correspondingDbEdition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
 
             }
@@ -119,7 +228,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // TODO: See if any persisted Editions or Orgs are not even in Snowstorm. If so, inactivate
 
             // Final steps whether initial or updating sync
-            postCodeSystemProcessing(snowstormEditionShortName, syncedEdition);
+            postCodeSystemProcessing(syncedEdition);
 
         } catch (Exception e) {
 
@@ -129,29 +238,36 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private static Edition handleExistingCodeSystem(Edition edition, String snowstormEditionShortName, String snowstormEditionName, String snowstormEditionBranch, boolean isActiveSsnowstormEdition,
+    private Edition handleExistingCodeSystem(Edition edition, String snowstormEditionShortName, String snowstormEditionName, String snowstormEditionBranch, boolean isActiveSsnowstormEdition,
         JsonNode codeSystem) {
 
         logger.info(" Sync existing Edition with shortName: " + snowstormEditionShortName);
 
         Edition retEdition = null;
+        // Remove edition now and replace regardless of outcome
+        allDatabaseEditions.remove(edition);
 
         try {
 
             // Process one Organization per Edition.
-            final Edition syncedEdition = handleExistingEdition(edition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSsnowstormEdition, codeSystem);
+            final Edition syncedEdition = compareAndUpdateEditionDifferences(edition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSsnowstormEdition, codeSystem);
 
-            if (syncedEdition != null) {
-
-                // Differences found in edition
-                retEdition = syncedEdition;
-            } else {
+            if (syncedEdition == null) {
 
                 // No differences found in edition, but check Owner value as well
                 retEdition = edition;
+                statistics.getEditionsUnchanged().add(retEdition);
+
+            } else {
+
+                // Differences found in edition
+                retEdition = syncedEdition;
+                statistics.getEditionsSynced().add(retEdition);
+
             }
 
-            setSnowstormEditionOwner(retEdition.getShortName(), retEdition.getName(), codeSystem);
+            logger.info("Synced " + retEdition.getShortName() + " Edition");
+            allDatabaseEditions.add(retEdition);
 
             handleOrganizationForExistingEdition(retEdition, isActiveSsnowstormEdition, codeSystem);
 
@@ -166,81 +282,91 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private static void handleOrganizationForExistingEdition(Edition edition, boolean isActiveSnowstormEdition, JsonNode codeSystem) throws Exception {
+    private void handleOrganizationForExistingEdition(Edition edition, boolean isActiveSnowstormEdition, JsonNode codeSystem) throws Exception {
+
         /*-
          * For testing orgs
          * 
          * 
                String snowstormOrganizationName = edition.getShortName().equals(DEVELOPER_CODE_SYSTEM_SHORTNAME) ? "" : "testOrg";
          */
+        setSnowstormEditionOwner(edition.getShortName(), edition.getName(), codeSystem);
 
-        String snowstormOrganizationName = codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank() ? codeSystem.get("owner").asText() : "";
+        final String snowstormEditionShortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
 
-        if (snowstormOrganizationName.isBlank()) {
+        if (snowstormEditionShortName.isBlank()) {
 
+            statistics.getOrganizationsUnchanged().add(edition.getOrganization());
             // Nothing to change given this edition already exists.
             // In fact, don't even bother to see if editionName matches OrgName as a determination if something has changed. We will pick it up when next popualated
             return;
         }
 
-        // Can only match on name attribute as no other field in Snowstorm.CodeSystem as of yet
-        List<Organization> organizations = allDatabaseOrganizations.stream().filter(o -> o.getName().equals(snowstormOrganizationName)).collect(Collectors.toList());
-
-        if (organizations.size() > 1) {
-
-            throw new Exception("Cannot have multiple orgs with same name: " + snowstormOrganizationName);
-        }
-
-        Organization matchingDatabaseOrganization = organizations.iterator().next();
+        Organization matchingDatabaseOrganization = identifyMatchingOrganization(snowstormEditionShortName);
 
         if (matchingDatabaseOrganization == null) {
 
-            // Code System has new name associated with it. Thus create a new Organziation
-            // TODO: Ask Rory what happens if this is a shared org. I imagine create new one rather than update across board? Implications here either way
-            identifyOrganization(edition.getShortName(), edition.getName(), codeSystem);
+            // The Code System owner doesn't exist yet in system, so create org
+            createOrganization(snowstormEditionShortName);
+
+        } else if (matchingDatabaseOrganization.getId() != edition.getOrganizationId()) {
+
+            // Just reassigning org, not changing it to an another existing one. So consider org unchanged here.
+            statistics.getOrganizationsUnchanged().add(matchingDatabaseOrganization);
+
+            // Org name exists, but it's different than what it was previously
+            edition.setOrganization(matchingDatabaseOrganization);
+
+            try (final TerminologyService service = new TerminologyService()) {
+
+                utilities.initializeService(service);
+
+                service.update(edition);
+
+                if (statistics.getEditionsUnchanged().contains(edition)) {
+
+                    statistics.getEditionsSynced().add(edition);
+                    statistics.getEditionsUnchanged().remove(edition);
+                }
+
+            }
+
         } else {
 
-            // Found corresponding Organization based on snowstorm owner. Now determine if that is a different Org than currently defined in Edition.
-            if (updateAttribute("Organization ", matchingDatabaseOrganization.getId(), edition.getOrganizationId())) {
 
-                edition.setOrganization(matchingDatabaseOrganization);
+            final String snowstormOrganizationName = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
 
-                try (final TerminologyService service = new TerminologyService()) {
+            // Found matching org with same orgId as before. Now compare differences (although for now none exist, put in placeholder to expand as needed)
+            allDatabaseOrganizations.remove(matchingDatabaseOrganization);
 
-                    utilities.initializeService(service);
+            // Process one Organization per Edition.
+            final Organization syncedOrganization = compareAndUpdateOrganizationDifferences(matchingDatabaseOrganization, snowstormOrganizationName, isActiveSnowstormEdition);
+            Organization retOrganization;
 
-                    service.update(edition);
-                    statistics.getOrganizationsSynced().add(matchingDatabaseOrganization);
-                }
+            if (syncedOrganization == null) {
+
+
+                // No differences found in edition, but check Owner value as well
+                retOrganization = matchingDatabaseOrganization;
+                statistics.getOrganizationsUnchanged().add(retOrganization);
 
             } else {
 
-                statistics.getOrganizationsUnchanged().add(matchingDatabaseOrganization);
+
+                // Differences found in edition
+                retOrganization = syncedOrganization;
+                statistics.getOrganizationsSynced().add(retOrganization);
+
             }
 
+            logger.info("Synced Org: " + retOrganization.getName());
+            allDatabaseOrganizations.add(retOrganization);
+
         }
 
     }
 
-    private static Edition handleExistingEdition(Edition edition, String editionShortName, String editionName, String editionBranch, boolean isActiveEdition, JsonNode codeSystem) throws Exception {
-
-        final Edition syncedEdition = compareAndUpdateEditionDifferences(edition, editionShortName, editionName, editionBranch, isActiveEdition, codeSystem);
-
-        if (syncedEdition == null) {
-
-            statistics.getEditionsUnchanged().add(edition);
-        } else {
-
-            statistics.getEditionsSynced().add(syncedEdition);
-        }
-
-        logger.info("Synced " + edition.getShortName() + " Edition");
-
-        return syncedEdition;
-
-    }
-
-    private static Edition compareAndUpdateEditionDifferences(Edition existingEdition, String editionShortName, String editionName, String editionBranch, boolean isActiveEdition, JsonNode codeSystem)
+    private Edition compareAndUpdateEditionDifferences(Edition existingEdition, String editionShortName, String editionName, String editionBranch, boolean isActiveEdition, JsonNode codeSystem)
         throws Exception {
 
         /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
@@ -327,7 +453,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private static Edition handleNewCodeSystem(String newEditionShortName, String newEditionName, String newEditionBranch, boolean isNewActiveEdition, JsonNode codeSystem) throws Exception {
+    private Edition handleNewCodeSystem(String newEditionShortName, String newEditionName, String newEditionBranch, boolean isNewActiveEdition, JsonNode codeSystem) throws Exception {
 
         try {
 
@@ -341,11 +467,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 return null;
             }
 
-            Organization organization = identifyOrganization(newEditionShortName, newEditionName, codeSystem);
+            // If organization doesn't already exist (based on name), create it
+            setSnowstormEditionOwner(newEditionShortName, newEditionName, codeSystem);
+
+            Organization organization = identifyMatchingOrganization(newEditionShortName);
+
+            if (organization == null) {
+
+                organization = createOrganization(newEditionShortName);
+            }
 
             final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, organization, codeSystem);
-            statistics.getEditionsAdded().add(newEdition);
-            allDatabaseEditions.add(newEdition);
 
             return newEdition;
         } catch (Exception e) {
@@ -358,45 +490,50 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private static Organization identifyOrganization(String newEditionShortName, String newEditionName, JsonNode codeSystem) throws Exception {
-
-        // Create new Organization
-        // TODO: 1 - Add a description default value or update snowstorm with value per codesystem
-        setSnowstormEditionOwner(newEditionShortName, newEditionName, codeSystem);
+    /*
+     * See if organization with the name provided already exists. If so, return it. If not, create and then return.
+     */
+    private Organization identifyMatchingOrganization(String editionShortName) throws Exception {
 
         // Determine Owner
-        List<Organization> organizations = allDatabaseOrganizations.stream().filter(o -> o.getName().equals(editionOwnerMap.get(newEditionName))).collect(Collectors.toList());
-
-        if (organizations.size() > 1) {
-
-            throw new Exception("Cannot have multiple orgs with same name: " + editionOwnerMap.get(newEditionName));
-        }
-
-        Organization organization = null;
+        List<Organization> organizations = allDatabaseOrganizations.stream().filter(o -> o.getName().equals(editionOwnerMap.get(editionShortName))).collect(Collectors.toList());
 
         if (organizations.isEmpty()) {
 
-            // Create new organization
-            final String organizationDescription = "";
+            return null;
+        } else if (organizations.size() == 1) {
 
-            organization = utilities.addOrganziation(editionOwnerMap.get(newEditionName), organizationDescription);
-
-            statistics.getOrganizationsAdded().put(organization.getName(), organization);
-            allDatabaseOrganizations.add(organization);
+            organizations.iterator().next();
         } else {
 
-            // Org already exists
-            organization = organizations.iterator().next();
+            throw new Exception("Cannot have multiple orgs with same name: " + editionOwnerMap.get(editionShortName));
         }
+
+        return organizations.iterator().next();
+    }
+
+    private Organization createOrganization(String editionShortName) throws Exception {
+
+        // Create new organization
+        // TODO: 1 - Add a description default value or update snowstorm with value per codesystem
+        final String organizationName = editionOwnerMap.get(editionShortName);
+        final String organizationDescription = ownerDescriptionMap.get(organizationName);
+
+        Organization organization = utilities.addOrganziation(organizationName, organizationDescription);
+
+        statistics.getOrganizationsAdded().put(organization.getName(), organization);
+        allDatabaseOrganizations.add(organization);
+
+        logger.info("Created Organization: " + organization.getName());
 
         return organization;
     }
 
     // Organization is done at this point. Check if Developer Edition. If not, create a default UAT project
 
-    private static void postCodeSystemProcessing(String snowstormEditionShortName, Edition syncedEdition) throws Exception {
+    private void postCodeSystemProcessing(Edition syncedEdition) throws Exception {
 
-        if (snowstormEditionShortName.equals(DEVELOPER_CODE_SYSTEM_SHORTNAME)) {
+        if (syncedEdition.getShortName().toLowerCase().equals(DEVELOPER_CODE_SYSTEM_SHORTNAME.toLowerCase())) {
 
             // Support Developer Edition
             if (forProduction) {
@@ -404,41 +541,39 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 throw new Exception("Can't have a WCI Edition on a Prod instance");
             }
 
-            if (develeperTestingEdition != null) {
+            if (developerTestingEdition != null) {
 
-                throw new Exception("Can't have two WCI Editions with new one having shortName: " + snowstormEditionShortName);
+                throw new Exception("Can't have two WCI Editions with new one having shortName: " + syncedEdition.getShortName());
             } else {
 
                 // identified WCI Edition
-                develeperTestingEdition = syncedEdition;
+                developerTestingEdition = syncedEdition;
             }
 
         } else {
 
             // Create a Default Project for the edition
-            if (syncedEdition != null && !defaultEditionProjects.containsKey(syncedEdition.getId())) {
+            if (!defaultEditionProjects.containsKey(syncedEdition.getShortName())) {
 
-                Project project = null;
                 final String projectName = syncedEdition.getName() + " Default Project";
                 final String projectDescription =
                     "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
 
                 // Create default project
-                project = utilities.addProject(projectName, projectDescription, syncedEdition);
-
-                defaultEditionProjects.put(syncedEdition.getId(), project);
+                final Project project = utilities.addProject(projectName, projectDescription, syncedEdition);
+                defaultEditionProjects.put(syncedEdition.getShortName(), project);
             }
 
         }
 
     }
 
-    private static String generateCodeSystemCoordinates(String snowstormEditionShortName, String snowstormEditionName, String snowstormEditionBranch) {
+    private String generateCodeSystemCoordinates(String snowstormEditionShortName, String snowstormEditionName, String snowstormEditionBranch) {
 
         return snowstormEditionShortName + " / " + snowstormEditionName + " / " + snowstormEditionBranch;
     }
 
-    private static void setSnowstormEditionOwner(String editionShortName, String editionName, JsonNode codeSystem) {
+    private void setSnowstormEditionOwner(String editionShortName, String editionName, JsonNode codeSystem) {
 
         /*-
          * For testing orgs
@@ -450,27 +585,41 @@ public class SyncCodeSystemAgent extends SyncAgent {
             owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
         }
         */
-        final String owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
+        String owner = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
+        String description;
 
         // Identify Code System Owner
+
         if (!owner.trim().isBlank()) {
 
-            editionOwnerMap.put(editionShortName, owner);
-            editionOwnerMap.put(editionName, owner);
+            description = "Organizational administrators can update this default description.";
         } else {
 
-            editionOwnerMap.put(editionShortName, editionName);
-            editionOwnerMap.put(editionName, editionName);
+            owner = editionName;
+            description = "Two things to change." + System.lineSeparator()
+                + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name." + System.lineSeparator()
+                + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
+                + "2) Organizational administrator(s) can update this default description at any time";
+        }
+
+        editionOwnerMap.put(editionShortName, owner);
+
+        if (!ownerDescriptionMap.containsKey(owner)) {
+
+            ownerDescriptionMap.put(owner, description);
         }
 
     }
 
-    private static Organization compareAndUpdateOrganizationDifferences(Organization existingOrganization, String snowstormOrganizationName, boolean isActiveSnowstormOrganization) throws Exception {
+    private Organization compareAndUpdateOrganizationDifferences(Organization existingOrganization, String snowstormOrganizationName, boolean isActiveSnowstormOrganization) throws Exception {
 
-        /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
+        /*
+         * Found existing Organization, but for now, name will be handled as unique identifier. Compare the values to determine if something changed, and if so, update the
+         * Organization accordingly
+         */
         boolean modificationMade = false;
 
-        if (updateAttribute("Organization name ", existingOrganization.getName(), snowstormOrganizationName)) {
+        if (!snowstormOrganizationName.isBlank() && updateAttribute("Organization name ", existingOrganization.getName(), snowstormOrganizationName)) {
 
             existingOrganization.setName(snowstormOrganizationName);
             modificationMade = true;
@@ -499,9 +648,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private static Set<JsonNode> filterCodeSystems() throws Exception {
-
-        final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
+    private Set<JsonNode> filterCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
 
         final Set<JsonNode> filteredCodeSystems = new HashSet<>();
 
@@ -527,13 +674,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 }
 
                 // Testing
-                if (testing && !codeSystem.get("name").asText().contains(testingEdition) && !codeSystem.get("name").asText().toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD)
-                    && !codeSystem.get("name").asText().contains("Inter")) {
+                if (isEditionToProcess(codeSystem.get("name").asText())) {
 
-                    continue;
+                    filteredCodeSystems.add(codeSystem);
                 }
 
-                filteredCodeSystems.add(codeSystem);
             }
 
         }
@@ -553,7 +698,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * @return
      * @throws Exception
      */
-    private static JsonNode getSnowstormCodeSystems() throws Exception {
+    private JsonNode getSnowstormCodeSystems() throws Exception {
 
         final String url = SnowstormConnection.BASE_URL + "codesystems";
         logger.debug("getSnowstormCodeSystems url: " + url);
@@ -589,7 +734,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                     continue;
                 }
 
-                if (SyncAgentUtilities.isInternationalEdition(codeSystem.get("name").asText())) {
+                if (utilities.isInternationalEdition(codeSystem.get("name").asText())) {
 
                     // At international Edition
                     Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
@@ -616,4 +761,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
+    private boolean isEditionToProcess(String codeSystem) {
+
+        return !testing || (testing && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.contains(testingEdition) || utilities.isDeveloperEdition(codeSystem)
+            || utilities.isInternationalEdition(codeSystem));
+    }
 }

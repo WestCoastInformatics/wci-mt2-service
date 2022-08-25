@@ -717,9 +717,9 @@ public class SyncPropertyFileReader {
         String modified;
         String modifiedBy;
 
-        if (line.toLowerCase().contains(SyncAgent.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
+        if (line.toLowerCase().contains(SyncAgentUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
-            logger.debug("Ignoring project line that has the word '" + SyncAgent.DEVELOPER_ORGANIZATION_NAME_KEYWORD + "' in it: " + line);
+            logger.debug("Ignoring project line that has the word '" + SyncAgentUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD + "' in it: " + line);
             projectsToIgnore.add(line.split(SPLIT_CHARACTER)[0]);
         }
 
@@ -756,6 +756,7 @@ public class SyncPropertyFileReader {
 
             throw e;
         }
+
     }
 
     Map<String, String> getRefsetToProjectsInfoMap() {
@@ -818,7 +819,8 @@ public class SyncPropertyFileReader {
         return teamMembership;
     }
 
-    Map<String, String> getProjectOrganizationMap(){ 
-       return projectOrganizationMap; 
+    Map<String, String> getProjectOrganizationMap() {
+
+        return projectOrganizationMap;
     }
 }

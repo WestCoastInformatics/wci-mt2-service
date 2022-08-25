@@ -72,19 +72,9 @@ public class SyncDataInitializer {
 
     public SyncDataInitializer() {
 
-        commonConstructorInitialization(new SyncAgentUtilities());
-    }
-
-    public SyncDataInitializer(SyncAgentUtilities utilities) {
-
-        commonConstructorInitialization(utilities);
-    }
-
-    private void commonConstructorInitialization(SyncAgentUtilities utils) {
-
         try {
 
-            this.utilities = utils;
+            this.utilities = new SyncAgentUtilities();
 
             developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
@@ -107,6 +97,8 @@ public class SyncDataInitializer {
         // Only run this once on DEV and UAT (but never prod). If developerTestingEdition is set, we know that this has already been run
         if (edition != null) {
 
+            logger.debug("Creating testing support and content");
+
             if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(FEEDBACK_INITIAL_REFSET_ID))) {
 
                 // Create developer project and refsets (for DEV only)
@@ -117,6 +109,9 @@ public class SyncDataInitializer {
 
             }
 
+        } else {
+
+            logger.debug("Failed to create testing support and content as develeperTestingEdition is null");
         }
 
     }

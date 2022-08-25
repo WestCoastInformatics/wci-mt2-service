@@ -46,7 +46,10 @@ import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncAgent;
+import org.ihtsdo.refsetservice.sync.SyncAgentUtilities;
+import org.ihtsdo.refsetservice.sync.SyncCodeSystemAgent;
 import org.ihtsdo.refsetservice.sync.SyncDataInitializer;
+import org.ihtsdo.refsetservice.sync.SyncRefsetAgent;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
@@ -1511,8 +1514,8 @@ public class RefsetController extends BaseController {
 
         try {
 
-            boolean runForProduction = false;
             boolean refsetPerVersionSync = false;
+            boolean runForProduction = false;
 
             if (perVersionCreation != null && perVersionCreation.booleanValue()) {
 
@@ -1526,19 +1529,37 @@ public class RefsetController extends BaseController {
                 runForProduction = true;
             }
 
+            SyncAgent agent = new SyncCodeSystemAgent(refsetPerVersionSync, runForProduction);
+
             try (TerminologyService service = new TerminologyService()) {
 
-                final ResultList<String> editions = service.findIds("", null, Edition.class, null);
                 String message = "";
 
                 logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
 
-                SyncAgent agent = new SyncAgent(refsetPerVersionSync, runForProduction);
-                agent.sync();
+                // Only identify branches on filtered code systems and on runShortSync value
+                agent.syncSnowstorm();
+
+                SyncAgentUtilities syncUtilities = new SyncAgentUtilities();
+                syncUtilities.parseRttData();
+
+                // Find all refsets from filtered branches
+                agent = new SyncRefsetAgent(refsetPerVersionSync, runForProduction);
+                agent.syncSnowstorm();
+
+                // Update imported refsets with RTT-based metadata (as defined in parseRttData())
+                if (!runForProduction) {
+                        
+                    SyncDataInitializer initializer = new SyncDataInitializer();
+                    initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets(), agent.getDefaultEditionProjects());
+                }
 
                 logger.info("Completed Syncing with Snowstorm");
 
                 return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
+            } finally {
+
+                logger.info(agent.printStatistics());
             }
 
         } catch (final Exception e) {

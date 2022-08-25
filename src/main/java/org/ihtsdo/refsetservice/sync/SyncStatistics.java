@@ -13,37 +13,37 @@ import org.ihtsdo.refsetservice.model.Team;
 
 public class SyncStatistics {
 
-    // Organizations
-    private static final Map<String, Organization> organizationsAdded = new HashMap<>();
+    // orgName to Organization Map
+    private final Map<String, Organization> organizationsAdded = new HashMap<>();
 
-    private static final Set<Organization> organizationsUnchanged = new HashSet<>();
+    private final Set<Organization> organizationsUnchanged = new HashSet<>();
 
-    private static final Set<Organization> organizationsSynced = new HashSet<>();
+    private final Set<Organization> organizationsSynced = new HashSet<>();
 
-    private static final Set<Organization> organizationsProcessed = new HashSet<>();;
+    private final Set<Organization> organizationsProcessed = new HashSet<>();;
 
     // Editions
-    private static final Set<Edition> editionsAdded = new HashSet<>();
+    private final Set<Edition> editionsAdded = new HashSet<>();
 
-    private static final Set<Edition> editionsUnchanged = new HashSet<>();
+    private final Set<Edition> editionsUnchanged = new HashSet<>();
 
-    private static final Set<Edition> editionsSynced = new HashSet<>();
+    private final Set<Edition> editionsSynced = new HashSet<>();
 
-    private static final Set<Edition> editionsProcessed = new HashSet<>();;
+    private final Set<Edition> editionsProcessed = new HashSet<>();;
 
     // Refsets
-    private static final Set<Refset> refsetVersionsAdded = new HashSet<>();
+    private final Set<Refset> refsetVersionsAdded = new HashSet<>();
 
-    private static final Set<Refset> refsetVersionsUnchanged = new HashSet<>();
+    private final Set<Refset> refsetVersionsUnchanged = new HashSet<>();
 
-    private static final Set<Refset> refsetVersionsSynced = new HashSet<>();
+    private final Set<Refset> refsetVersionsSynced = new HashSet<>();
 
-    private static final Set<Refset> refsetVersionsProcessed = new HashSet<>();;
+    private final Set<Refset> refsetVersionsProcessed = new HashSet<>();;
 
     // Processing Only as we don't sync these with Snowstorm
-    private static final Set<Project> projectsProcessed = new HashSet<>();;
+    private final Set<Project> projectsProcessed = new HashSet<>();;
 
-    private static final Set<Team> teamsProcessed = new HashSet<>();;
+    private final Set<Team> teamsProcessed = new HashSet<>();;
 
     public String printStatistics() {
 
@@ -62,7 +62,7 @@ public class SyncStatistics {
         return buf.toString();
     }
 
-    public static void clearStatistics() {
+    public void clearStatistics() {
 
         organizationsAdded.clear();
         organizationsUnchanged.clear();

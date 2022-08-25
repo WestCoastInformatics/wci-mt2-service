@@ -5,93 +5,95 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-
-import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-public class SyncAgent {
+public abstract class SyncAgent {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
+
+    protected static SyncAgentUtilities utilities = null;
 
     /** Testing options. */
     protected static final boolean testing = false;
 
     protected static final String testingEdition = "elgi";
 
-    protected static final String testingRefset = null; // To test entire edition
-    // protected static final String testingRefset = "561000172108"; // Default refset created upon Default Project
+    // protected static final String testingRefset = null; // To test entire edition
+    protected static final String testingRefset = "561000172108"; // Default refset created upon Default Project
     // protected static final String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static final String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
     // protected static final String testingRefset = "121000210100"; // No changes across 5 versions (NZ Edition)
 
-    /** General class fields **/
-    protected static boolean refsetPerVersionSync;
+    protected static final SyncStatistics statistics = new SyncStatistics();
 
-    protected static boolean forProduction;
+    /** Cache for all DB values used during sync **/
+    protected static final List<Edition> allDatabaseEditions = new ArrayList<>();
 
-    protected static SyncAgentUtilities utilities = null;
+    protected static final List<Organization> allDatabaseOrganizations = new ArrayList<>();
 
-    protected static List<Edition> allDatabaseEditions = new ArrayList<>();
+    protected static final List<Refset> allDatabaseRefsets = new ArrayList<>();
 
-    protected static List<Organization> allDatabaseOrganizations = new ArrayList<>();
+    /** Maps to help assoicate across sync **/
 
-    protected static List<Refset> allDatabaseRefsets = new ArrayList<>();
+    // RefsetId to Edition
+    protected static final Map<String, Edition> refsetEditions = new HashMap<>();
 
-    protected static Organization develeperTestingOranization = null;
+    // Edition ShortName to Organization Name
+    protected static final Map<String, String> editionOwnerMap = new HashMap<>();
 
+    // Owner Name to Organization Description
+    protected static final Map<String, String> ownerDescriptionMap = new HashMap<>();
+
+    // Edition Short Name to map of dates to branch paths
+    protected static final Map<String, SortedMap<Date, String>> branchesToProcess = new HashMap<>();
+
+    /** Do not clear per run **/
+
+    // rttProject Id to Rt2Project
+    protected final static Map<String, Project> rttProjects = new HashMap<>();
+
+    // ShortName to Project
     protected static final Map<String, Project> defaultEditionProjects = new HashMap<>();
 
-    protected static final Map<String, Edition> refsetEditions = new HashMap<>();
+    /** General class fields **/
 
     protected static final Set<String> uniqueRefsetIds = new HashSet<>();
 
     protected static final List<String> ignoredCodeSystemNames = new ArrayList<>();
 
-    protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
-
-    /* Constants */
     protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
-    protected final Set<Refset> snowstormRefsets = new HashSet<>();
+    protected static final Set<Refset> snowstormRefsets = new HashSet<>();
 
-    protected Set<String> internationalModuleRefsets = new HashSet<>();
+    protected static final Set<String> internationalModuleRefsets = new HashSet<>();
 
-    protected static Edition develeperTestingEdition = null;
+    protected static Edition developerTestingEdition = null;
 
-    protected static final SyncStatistics statistics = new SyncStatistics();
+    protected static Organization develeperTestingOranization = null;
 
-    protected static final String SIMPLE_TYPE_REFSET_SCTID = "446609009";
+    protected boolean refsetPerVersionSync;
 
-    public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
-
-    protected static final Map<String, String> editionOwnerMap = new HashMap<>();
+    protected boolean forProduction;
 
     public SyncAgent(boolean perVersionCreation, boolean runForProduction) {
 
         if (utilities == null) {
 
-            SyncAgent.utilities = new SyncAgentUtilities();
+            utilities = new SyncAgentUtilities();
 
-            ignoredCodeSystemNames.addAll(SyncAgent.utilities.getPropertyReader().readCodeSystemsToIgnore());
+            ignoredCodeSystemNames.addAll(utilities.getPropertyReader().readCodeSystemsToIgnore());
 
             refsetPerVersionSync = perVersionCreation;
             forProduction = runForProduction;
@@ -109,168 +111,48 @@ public class SyncAgent {
 
     }
 
-    protected SyncAgent() throws Exception {
+    public abstract void syncSnowstorm() throws Exception;
 
-        if (SyncAgent.utilities == null) {
+    protected void clearPreviousRun() {
 
-            throw new Exception("How create a supporting agent without creating SyncAgent?");
-        }
+        developerTestingEdition = null;
 
-    }
-
-    public void sync() {
-
-        try {
-
-            clearPreviousRun();
-
-            Set<JsonNode> codeSystemsToProcess = SyncCodeSystemAgent.syncSnowstormCodeSystems();
-
-            // Only identify branches on filtered code systems and on runShortSync value
-            Map<String, SortedMap<Date, String>> branchesToProcess = identifyEditionBranches(codeSystemsToProcess);
-
-            // Identify all refset metadata, any refsets' ECL definitions, and project metadata from RTT files manually sync'd over
-            // TODO: Add a automated pull of the data off of RTT?
-            utilities.getPropertyReader().parseRttData();
-
-            // Find all refsets from filtered branches
-            SyncRefsetAgent.syncSnowstormRefsets(branchesToProcess);
-
-            // Update imported refsets with RTT-based metadata (as defined in parseRttData())
-            if (!forProduction) {
-
-                SyncDataInitializer initializer = new SyncDataInitializer();
-                initializer.initialize(develeperTestingEdition, allDatabaseEditions, allDatabaseRefsets, defaultEditionProjects);
-            }
-
-        } catch (Exception e) {
-
-            logger.error("Failed during sync");
-            e.printStackTrace();
-        } finally {
-
-            logger.info(statistics.printStatistics());
-        }
-
-    }
-
-    private void clearPreviousRun() {
-
-        develeperTestingEdition = null;
-
-        defaultEditionProjects.clear();
+        ownerDescriptionMap.clear();
+        editionOwnerMap.clear();
         refsetEditions.clear();
 
         uniqueRefsetIds.clear();
         ignoredCodeSystemNames.clear();
+        branchesToProcess.clear();
 
         statistics.clearStatistics();
     }
 
-    /**
-     * Identify branches.
-     *
-     * @return the map
-     * @throws Exception the exception
-     */
-    private Map<String, SortedMap<Date, String>> identifyEditionBranches(Set<JsonNode> codeSystems) throws Exception {
-
-        Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
-
-        for (JsonNode codeSystem : codeSystems) {
-
-            final String editionName = codeSystem.get("name").asText();
-            final String shortName = codeSystem.get("shortName").asText();
-
-            logger.info("Identifying CodeSystem branches for: " + editionName);
-
-            Edition edition = allDatabaseEditions.stream().filter(e -> shortName.equals(e.getShortName())).collect(Collectors.toList()).iterator().next();
-
-            final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
-
-            SortedMap<Date, String> children = new TreeMap<>();
-            logger.debug(" genericUrl: " + genericUrl.replace("{branch}", edition.getBranch()));
-
-            try (final Response response = SnowstormConnection.getResponse(genericUrl.replace("{branch}", edition.getBranch()))) {
-
-                final String resultString = response.readEntity(String.class);
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
-
-                // get RefSets from edition as long as a) active & b) within
-                // edition's module
-                final Iterator<JsonNode> branchIterator = root.iterator();
-
-                while (branchIterator.hasNext()) {
-
-                    JsonNode child = branchIterator.next();
-                    final String childBranch = child.get("path").asText();
-                    String childDate = childBranch.replace(edition.getBranch(), "");
-
-                    if (childDate.startsWith("/")) {
-
-                        childDate = childDate.substring(1);
-                    }
-
-                    // logger.debug(" Found Snowstorm Child Branch: " + childBranch);
-
-                    // Since grabbing all children branches, avoid
-                    // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
-                    boolean childAdded = false;
-
-                    if (childDate.matches(".*\\d{4}-\\d{2}-\\d{2}$")) {
-
-                        Date branchDate = branchDateFormatter.parse(childDate);
-
-                        if (branchDate.before(new Date())) {
-
-                            children.put(branchDate, childBranch);
-                            childAdded = true;
-                        }
-
-                    }
-
-                    if (!childAdded) {
-
-                        // logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official release
-                        // branch");
-                    }
-
-                }
-
-                logger.debug("Branch Dates for edition: " + edition.getName());
-
-                for (Date child : children.keySet()) {
-
-                    logger.debug("Child: " + child.toString() + " with branch: " + children.get(child));
-                }
-
-            }
-
-            retMap.put(edition.getId(), children);
-        }
-
-        return retMap;
-    }
-
-    protected static void updateDatabaseCache() throws Exception {
+    protected void updateDatabaseCache() throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            allDatabaseEditions = service.getAll(Edition.class);
-            // logger.debug(" All Editions: " + allDatabaseEditions);
+            editionOwnerMap.clear();
+            allDatabaseEditions.clear();
+            allDatabaseOrganizations.clear();
+            allDatabaseRefsets.clear();
 
-            allDatabaseOrganizations = service.getAll(Organization.class);
+            allDatabaseEditions.addAll(service.getAll(Edition.class));
+            allDatabaseEditions.stream().forEach(e -> editionOwnerMap.put(e.getShortName(), e.getOrganization().getName()));
+            // logger.debug(" All Editions: " + allDatabaseEditions);
+            // logger.debug(" Edition Owner Map: " + editionOwnerMap);
+
+            allDatabaseOrganizations.addAll(service.getAll(Organization.class));
             // logger.debug(" All Organizations: " + allDatabaseOrganizations);
 
-            allDatabaseRefsets = service.getAll(Refset.class);
+            allDatabaseRefsets.addAll(service.getAll(Refset.class));
             // logger.debug(" All Refsets: " + allDatabaseRefsets);
 
         }
 
     }
 
-    protected static boolean updateAttribute(String attributeName, Object databaseAttribute, Object snowstormAttribute) {
+    protected boolean updateAttribute(String attributeName, Object databaseAttribute, Object snowstormAttribute) {
 
         if (snowstormAttribute == null) {
 
@@ -303,6 +185,31 @@ public class SyncAgent {
             return true;
         }
 
+    }
+
+    public String printStatistics() {
+
+        return statistics.printStatistics();
+    }
+
+    public Edition getDeveleperTestingEdition() {
+
+        return developerTestingEdition;
+    }
+
+    public List<Edition> getAllDatabaseEditions() {
+
+        return allDatabaseEditions;
+    }
+
+    public List<Refset> getAllDatabaseRefsets() {
+
+        return allDatabaseRefsets;
+    }
+
+    public Map<String, Project> getDefaultEditionProjects() {
+
+        return defaultEditionProjects;
     }
 
 }

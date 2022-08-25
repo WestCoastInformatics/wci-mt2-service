@@ -41,8 +41,11 @@ public class SyncAgentUtilities {
 
     private static final Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
 
-    static final Set<String> internationalModules = new HashSet<>();
+    protected static final Set<String> internationalModules = new HashSet<>();
 
+    protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
+
+    // Edition shortName to Set<Module SctIds>
     private static final Map<String, Set<String>> editionModulesMap = new HashMap<>();
 
     public static final String FEEDBACK_TESTING_USER_NAME = "FeedbackTesting";
@@ -55,7 +58,7 @@ public class SyncAgentUtilities {
 
     private static final SyncStatistics statistics = new SyncStatistics();
 
-    private static final String DEFAULT_SNOMED_CORE_MODULE = "900000000000012004";
+    private static final String DEFAULT_SNOMED_CORE_MODULE = "900000000000445007";
 
     private static final String ANCESTOR_MODULE = "900000000000443000";
 
@@ -337,12 +340,6 @@ public class SyncAgentUtilities {
         return user;
 
     }
-
-    static boolean isInternationalEdition(String editionName) {
-
-        return ("international edition".equals(editionName.toLowerCase())) ? true : false;
-    }
-
     String identifyTopLevelModule(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
 
         Set<String> editionModules = new HashSet<>();
@@ -570,4 +567,24 @@ public class SyncAgentUtilities {
 
         return editionModulesMap;
     }
+
+    public void parseRttData() throws Exception {
+
+        // Identify all refset metadata, any refsets' ECL definitions, and project metadata from RTT files manually sync'd over
+        // TODO: #1: Add a automated pull of the data off of RTT?
+        // TODO: #2: Move this to a similar like SyncRttAgent class
+        getPropertyReader().parseRttData();
+
+    }
+
+    boolean isInternationalEdition(String editionName) {
+
+        return "international edition".equals(editionName.toLowerCase());
+    }
+
+    boolean isDeveloperEdition(String editionName) {
+
+        return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
+    }
+
 }
