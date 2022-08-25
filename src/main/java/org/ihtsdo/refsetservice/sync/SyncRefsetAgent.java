@@ -597,7 +597,7 @@ public class SyncRefsetAgent extends SyncAgent {
             project = rttProjects.get(rttProjectId);
         } else {
 
-            project = defaultEditionProjects.get(refset.getEdition().getShortName());
+            project = defaultEditionProjects.get(refsetEditions.get(refset.getRefsetId()).getShortName());
 
         }
 
