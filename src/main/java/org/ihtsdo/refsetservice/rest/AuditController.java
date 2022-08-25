@@ -12,11 +12,15 @@ package org.ihtsdo.refsetservice.rest;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.AuditEntry;
+import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.AuditService;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -113,6 +117,74 @@ public class AuditController extends BaseController {
 
             final ResultList<AuditEntry> results = AuditService.findAuditEntries(searchParameters);
             return ResponseEntity.status(HttpStatus.OK).body(results);
+
+        } catch (final Exception e) {
+            logger.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
+            return handleException(e);
+        }
+    }
+    
+    /**
+     * Search audit entries.
+     *
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the string
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Get audit entries search results", response = ResultList.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "entityType", value = "The entity type, e.g. 'REFSET'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
+        @ApiImplicitParam(name = "entityId", value = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true, dataTypeClass = String.class, paramType = "path",
+            defaultValue = ""),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId}", produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntriesForUser(@PathVariable final String entityType, @PathVariable final String entityId,
+        @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        if (StringUtils.isBlank(entityType)) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        if (StringUtils.isBlank(entityId)) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+
+        try {
+
+            logger.info("Search audit entry search parameters: {} : {} : {}", entityType, entityId, ModelUtility.toJson(searchParameters));
+
+            try (final TerminologyService service = new TerminologyService()) {
+                // is the user a member of the project? is yes return history, if not return null?? or error??
+                if ("REFSET".equalsIgnoreCase(entityType)) {
+                    // check user's permission
+                    final Refset refset = RefsetService.getRefset(service, authUser, entityId);
+
+                    if (refset == null || refset.getRoles() == null || refset.getRoles().isEmpty()) {
+                        // user has no permissions
+                        return ResponseEntity.status(HttpStatus.OK).body(null);
+                    }
+                }
+
+                final ResultList<AuditEntry> results = AuditService.findAuditEntries(searchParameters);
+                return ResponseEntity.status(HttpStatus.OK).body(results);
+            }
 
         } catch (final Exception e) {
             logger.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
