@@ -809,11 +809,15 @@ public class RefsetController extends BaseController {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
             logger.debug("completeAllRefsetPublications: versionDate: " + versionDate + " ; editionShortName (codeSystem): " + codeSystem);
 
             final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, codeSystem);
             String error = "";
+            
+            service.commit();
 
             // see if there are any refsets that were unable to be updated and craft the error message
             if (refsetsNotUpdated.size() > 0) {
