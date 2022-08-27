@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.ws.rs.ForbiddenException;
@@ -22,16 +23,16 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.IndexUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 /**
  * The Class ProjectService.
@@ -41,6 +42,9 @@ public class ProjectService extends BaseService {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(ProjectService.class);
 
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
+    
     /**
      * Adds the project.
      *
@@ -50,7 +54,8 @@ public class ProjectService extends BaseService {
      * @throws Exception the exception
      */
     public static Project addProject(final User user, final Project project) throws Exception {
-
+        // When a project is created, it does not have teams, those are added through update
+        
         try (final TerminologyService service = new TerminologyService()) {
 
             RefsetService.setProjectPermissions(user, project);
@@ -60,7 +65,7 @@ public class ProjectService extends BaseService {
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
-
+            
             service.add(project);
             service.add(AuditEntryHelper.newProjectEntry(project));
             service.commit();
@@ -212,7 +217,9 @@ public class ProjectService extends BaseService {
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
-
+            
+            updateMemberships(existingProject, existingProject.getTeams(), project.getTeams());            
+            
             // Apply changes
             existingProject.patchFrom(project);
 
@@ -238,9 +245,11 @@ public class ProjectService extends BaseService {
 
             // Find the object
             final Project project = getProject(projectId, true);
-            
+
             RefsetService.setProjectPermissions(user, project);
             checkPermissions(user, project);
+
+            final Set<String> copyOfProjectTeams = (project.getTeams() != null) ? new HashSet<String>(project.getTeams()) : new HashSet<String>();
 
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
@@ -249,8 +258,10 @@ public class ProjectService extends BaseService {
             // inactivate projects, clear teams, and inactivate refsets
             project.setActive(false);
 
+            updateMemberships(project, copyOfProjectTeams, null);
+            
             if (project.getTeams() != null && !project.getTeams().isEmpty()) {
-                for (String teamId : project.getTeams()) {
+                for (final String teamId : project.getTeams()) {
                     final Team team = service.get(teamId, Team.class);
                     if (team != null && !team.getMembers().isEmpty()) {
                         team.getMembers().clear();
@@ -263,7 +274,7 @@ public class ProjectService extends BaseService {
             // also inactivate refsets
             final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
             if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
-                for (Refset refset : projRefsets.getItems()) {
+                for (final Refset refset : projRefsets.getItems()) {
                     if (refset != null && !projRefsets.getItems().isEmpty()) {
                         refset.setActive(false);
                         service.update(refset);
@@ -271,10 +282,10 @@ public class ProjectService extends BaseService {
                     }
                 }
             }
-
+            
             service.update(project);
             service.add(AuditEntryHelper.inactivateProjectEntry(project));
-            service.commit();
+            service.commit();            
         }
     }
     
@@ -293,5 +304,58 @@ public class ProjectService extends BaseService {
             throw new ForbiddenException("User does not have permission to edit this project.");
         }
         
+    }
+    
+    /**
+     * Add or removes users from Crowd based on addition or removal from teams from a project.
+     *
+     * @param project the project
+     * @param oldTeams the old teams
+     * @param newTeams the new teams
+     * @throws Exception the exception
+     */
+    private static void updateMemberships(final Project project, final Set<String> oldTeams, final Set<String> newTeams) throws Exception {
+
+        if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+            logger.info("CALLING CROWD API from ProjectService updateMemberships");
+
+            final Set<String> copyOfOldTeams = (oldTeams != null) ? new HashSet<String>(oldTeams) : new HashSet<String>();
+            final Set<String> copyOfNewTeams = (newTeams != null) ? new HashSet<String>(newTeams) : new HashSet<String>();
+
+            if (oldTeams != null) {
+                copyOfNewTeams.removeAll(oldTeams);
+            }
+            if (copyOfNewTeams != null && !copyOfNewTeams.isEmpty()) {
+                for (final String teamId : copyOfNewTeams) {
+                    final Team team = TeamService.getTeam(teamId, true);
+                    if (team != null && team.getMemberList() != null) {
+                        for (final String role : team.getRoles()) {
+                            for (final User user : team.getMemberList()) {
+                                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                CrowdAPIClient.addMembership(groupName, user.getUserName());
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (newTeams != null) {
+                copyOfOldTeams.removeAll(newTeams);
+            }
+            if (copyOfOldTeams != null && !copyOfOldTeams.isEmpty()) {
+                for (final String teamId : copyOfOldTeams) {
+                    final Team team = TeamService.getTeam(teamId, true);
+                    if (team != null && team.getMemberList() != null) {
+                        for (final String role : team.getRoles()) {
+                            for (final User user : team.getMemberList()) {
+                                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                CrowdAPIClient.deleteMembership(groupName, user.getUserName());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }

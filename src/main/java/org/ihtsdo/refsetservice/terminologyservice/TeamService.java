@@ -16,15 +16,11 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
-import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
@@ -35,7 +31,6 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.IndexUtility;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -503,7 +498,7 @@ public class TeamService extends BaseService {
 
                     for (String role : team.getRoles()) {
 
-                        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                        final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                         CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
                     }
                 }
@@ -589,11 +584,9 @@ public class TeamService extends BaseService {
 
         service.setModifiedBy(user.getUserName());
         service.setTransactionPerOperation(false);
-        service.beginTransaction();
 
         service.update(team);
         service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToRemove));
-        service.commit();
         
         // remove user from crowd groups
         if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
@@ -605,12 +598,9 @@ public class TeamService extends BaseService {
             final ResultList<Project> projectList = ProjectService.searchProjects(user, searchParameters);
 
             if (projectList != null && projectList.getItems() != null) {
-
                 for (Project project : projectList.getItems()) {
-
                     for (String role : team.getRoles()) {
-
-                        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                        final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                         CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
                     }
                 }
@@ -663,6 +653,23 @@ public class TeamService extends BaseService {
             service.update(team);
             service.add(AuditEntryHelper.addRoleToTeamEntry(team, role));
             service.commit();
+            
+            // add user to crowd groups if team is assigned to projects.
+            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+                logger.info("CALLING CROWD API from ProjectService updateMemberships");
+
+                final List<Project> projects = getTeamProjects(team);
+                if (projects != null) {
+                    for (final Project project : projects) {
+                        if (team != null && team.getMemberList() != null) {
+                            for (final User user : team.getMemberList()) {
+                                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                CrowdAPIClient.addMembership(groupName, user.getUserName());
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -706,7 +713,23 @@ public class TeamService extends BaseService {
             service.update(team);
             service.add(AuditEntryHelper.removeRoleFromTeamEntry(team, role));
             service.commit();
+            
+            // remove users from team if team assigned to projects.
+            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+                logger.info("CALLING CROWD API from ProjectService updateMemberships");
 
+                final List<Project> projects = getTeamProjects(team);
+                if (projects != null) {
+                    for (final Project project : projects) {
+                        if (team != null && team.getMemberList() != null) {
+                            for (final User user : team.getMemberList()) {
+                                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                CrowdAPIClient.deleteMembership(groupName, user.getUserName());
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

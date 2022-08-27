@@ -63,6 +63,30 @@ public class CrowdGroupNameAlgorithm {
 
         return groupName.toString();
     }
+    
+    /**
+     * Builds the crowd group name.
+     *
+     * @param organizationName the organization name
+     * @param crowdProjectId the crowd project id
+     * @param role the role
+     * @return the string
+     * @throws Exception the exception
+     */
+    public static String buildCrowdGroupName(final String organizationName, final String crowdProjectId, final String role) throws Exception {
+
+        if (StringUtils.isAnyBlank(organizationName, crowdProjectId, role)) {
+            throw new Exception("Parameters cannot be empty or null");
+        }
+
+        final StringBuilder groupName = new StringBuilder();
+        groupName.append("rt2-");
+        groupName.append(getOrganizationString(organizationName)).append("-");
+        groupName.append(crowdProjectId).append("-");
+        groupName.append(role.toLowerCase());
+
+        return groupName.toString();
+    }
 
     /**
      * Returns the organization string.

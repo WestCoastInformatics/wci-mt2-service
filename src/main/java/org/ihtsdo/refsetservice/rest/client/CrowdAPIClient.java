@@ -330,7 +330,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         } else if (response.getStatus() == 404) {
             throw new Exception("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". Group could not be found.");
         } else if (response.getStatus() == 409) {
-            throw new Exception("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". User is already a direct member of the group.");
+            // throw new Exception("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". User is already a direct member of the group.");
+            logger.warn("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". User is already a direct member of the group.");
         } else {
             throw new Exception("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". Received HTTP " + response.getStatus() + " from the API server.");
         }

@@ -9,27 +9,21 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
-
-import javax.ws.rs.NotFoundException;
 
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -108,7 +102,7 @@ public class OrganizationService extends BaseService {
         setRoles(user, newOrganization, newOrganization.getRoles());
 
         if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
-            logger.info("CALLING CROWD API");
+            logger.info("CALLING CROWD API from OrganizationService createOrganization");
 
             try {
                 // TODO: Tim Whalen for Permissions
@@ -249,6 +243,7 @@ public class OrganizationService extends BaseService {
         organization.setActive(false);
         service.update(organization);
         service.add(AuditEntryHelper.inactivateOrganizationEntry(organization));
+
     }
 
     /**
@@ -445,24 +440,26 @@ public class OrganizationService extends BaseService {
         final Organization organization = service.get(organizationId, Organization.class);
 
         if (userToRemove == null) {
-            
+
             final String message = "Unable to find user for id " + userId + ".";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
         if (organization == null) {
-            
+
             final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
-        
+
         checkEditPermissions(user, organization);
 
         organization.getMembers().remove(userToRemove);
         service.update(organization);
         service.add(AuditEntryHelper.removeUserFromOrganizationEntry(organization, userToRemove));
+
+        removeUserFromCrowdGroups(service, organizationId, userToRemove);
 
         return organization;
     }
@@ -605,5 +602,40 @@ public class OrganizationService extends BaseService {
         }
         
         return organization.getRoles().contains(User.ROLE_VIEWER);
+    }
+    
+    /**
+     * Removes the user from crowd group belonging to the organization.
+     *
+     * @param service the service
+     * @param organizationId the organization id
+     * @param userToRemove the user to remove
+     */
+    private static void removeUserFromCrowdGroups(final TerminologyService service, final String organizationId, final User userToRemove) {
+
+        if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+            logger.info("CALLING CROWD API from ProjectService updateMemberships");
+
+            try {
+                final ResultList<Project> projects = getOrganizationProjects(service, organizationId);
+                if (projects != null && projects.getItems() != null) {
+                    for (final Project project : projects.getItems()) {
+                        for (final String teamId : project.getTeams()) {
+                            final Team team = TeamService.getTeam(teamId, true);
+                            for (final String role : team.getRoles()) {
+                                try {
+                                    final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                    CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
+                                } catch (Exception e) {
+                                    logger.error("ERROR removing user {} from team {} for organization {}.", userToRemove.getUserName(), team.getId(), organizationId, e);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("ERROR removing user {} from CROWD groups.", userToRemove.getUserName(), e);
+            }
+        }
     }
 }
