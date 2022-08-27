@@ -2176,7 +2176,7 @@ public class RefsetService {
 
         Refset updatedRefset = service.update(refset);
 
-        service.add(AuditEntryHelper.convertToExtensionalRefset(updatedRefset));
+        service.add(AuditEntryHelper.convertToExtensionalRefsetEntry(updatedRefset));
         logger.info("Converted refset from database: " + updatedRefset);
 
         return status;

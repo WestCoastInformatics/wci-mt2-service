@@ -571,13 +571,24 @@ public class AuditEntryHelper {
         return entry;
     }
 
-    public static HasModified convertToExtensionalRefset(Refset updatedRefset) {
+    public static HasModified convertToExtensionalRefsetEntry(Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.REFSET.toString());
-        entry.setEntityId(updatedRefset.getId());
+        entry.setEntityId(refset.getId());
         entry.setMessage("Convert Intensional to Extensional");
-        entry.setDetails("Note for converting intensional to extensional refset for refset " + updatedRefset.getRefsetId() + ".");
+        entry.setDetails("Note for converting intensional to extensional refset for refset " + refset.getRefsetId() + ".");
+        log(entry);
+        return entry;
+    }
+
+    public static HasModified sendCommunicationEmailEntry(Refset refset, String action, String from, String to) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(refset.getId());
+        entry.setMessage(action);
+        entry.setDetails(action + " from: " + from + " to " + to + " for refset " + refset.getRefsetId() + ".");
         log(entry);
         return entry;
     }

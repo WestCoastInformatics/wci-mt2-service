@@ -37,7 +37,7 @@ import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
-import org.ihtsdo.refsetservice.model.ShareRefsetEmailInfo;
+import org.ihtsdo.refsetservice.model.SendCommunicationEmailInfo;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
@@ -56,6 +56,7 @@ import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.EmailUtility;
@@ -108,8 +109,6 @@ public class RefsetController extends BaseController {
 
     /** The local directory to store exported refset files. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
-
-    private static final String emailValidationRegexPattern = "^(?=.{1,64}@)[\\p{L}0-9_-]+(\\.[\\p{L}0-9_-]+)*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,})$";
 
     private static final String SHARE_REFSET_EMAIL_SUBJECT = "SNOMED INternational Refset Tool - Shared Refset";
 
@@ -816,7 +815,7 @@ public class RefsetController extends BaseController {
 
             final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, codeSystem);
             String error = "";
-            
+
             service.commit();
 
             // see if there are any refsets that were unable to be updated and craft the error message
@@ -1554,7 +1553,7 @@ public class RefsetController extends BaseController {
 
                 // Update imported refsets with RTT-based metadata (as defined in parseRttData())
                 if (!runForProduction) {
-                        
+
                     SyncDataInitializer initializer = new SyncDataInitializer();
                     initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets(), agent.getDefaultEditionProjects());
                 }
@@ -2443,18 +2442,12 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @PostMapping(value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final ShareRefsetEmailInfo emailInfo) throws Exception {
+    public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
         try {
 
             logger
                 .debug("getRefset: refsetId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
-
-            if (!emailInfo.getRecipient().matches(emailValidationRegexPattern)) {
-
-                // invalid email address. Return 400
-                return new ResponseEntity<>("Invalid email address requested for recipient: " + emailInfo.getRecipient(), HttpStatus.BAD_REQUEST);
-            }
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -2468,12 +2461,12 @@ public class RefsetController extends BaseController {
                 emailBody.append(System.getProperty("line.separator"));
 
                 // Main announcement
-                emailBody.append(user.getName() + " would like to share " + refset.getName() + "with you: " + System.getProperty("line.separator"));
+                emailBody.append(user.getName() + " would like to share " + refset.getName() + " with you: " + 
                 emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator"));
                 emailBody.append(System.getProperty("line.separator"));
 
                 // Additonal Info from Sender
-                if (emailInfo.getAdditionalMessage() != null) {
+                if (emailInfo.getAdditionalMessage() != null && !emailInfo.getAdditionalMessage().isBlank()) {
 
                     emailBody.append(user.getName() + " has included the additional message:" + System.getProperty("line.separator"));
                     emailBody.append(emailInfo.getAdditionalMessage() + System.getProperty("line.separator"));
@@ -2489,6 +2482,8 @@ public class RefsetController extends BaseController {
                 emailBody.append("The SNOMED CT Referencve Set Tool Team");
 
                 EmailUtility.sendEmail(SHARE_REFSET_EMAIL_SUBJECT, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())), emailBody.toString());
+
+                AuditEntryHelper.sendCommunicationEmailEntry(refset, "Share email", user.getUserName(), emailInfo.getRecipient());
 
                 String returnString = "Shared refset";
 
