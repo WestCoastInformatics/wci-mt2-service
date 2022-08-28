@@ -3,6 +3,7 @@ package org.ihtsdo.refsetservice.util;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.mail.Authenticator;
 import javax.mail.Message;
@@ -82,10 +83,11 @@ public final class EmailUtility {
             throw new Exception("Email must have recipients");
         }
 
-        if (recipients.stream().anyMatch(r -> r.matches(emailValidationRegexPattern))) {
+        if (!recipients.stream().anyMatch(r -> r.matches(emailValidationRegexPattern))) {
 
             // invalid email address. Return 400
-            throw new Exception("Invalid email address requested for recipient(s): " + recipients.toString());
+            List<String> failingEmailAddresses = recipients.stream().filter(r -> r.matches(emailValidationRegexPattern)).collect(Collectors.toList());
+            throw new Exception("Invalid email address requested for recipient(s): " + failingEmailAddresses);
         }
 
         // avoid sending mail if disabled
@@ -115,7 +117,8 @@ public final class EmailUtility {
         }
 
         message.setSubject(subject);
-        message.setFrom(new InternetAddress(from));
+        String fromAdress = (from != null && !from.isBlank()) ? from : EMAIL_FROM;
+        message.setFrom(new InternetAddress(fromAdress));
 
         for (final String recipient : recipients) {
 
