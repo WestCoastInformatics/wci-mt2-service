@@ -34,10 +34,12 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.SendCommunicationEmailInfo;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
@@ -55,6 +57,7 @@ import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
@@ -110,7 +113,11 @@ public class RefsetController extends BaseController {
     /** The local directory to store exported refset files. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-    private static final String SHARE_REFSET_EMAIL_SUBJECT = "SNOMED INternational Refset Tool - Shared Refset";
+    private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
+
+    private static final String SHARE_ACTION = "Share-Refset";
+
+    private static final String REQUEST_ACTION = "Request-Access";
 
     /** Static initialization. */
     static {
@@ -2461,8 +2468,7 @@ public class RefsetController extends BaseController {
                 emailBody.append(System.getProperty("line.separator"));
 
                 // Main announcement
-                emailBody.append(user.getName() + " would like to share " + refset.getName() + " with you: " + 
-                emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator"));
+                emailBody.append(user.getName() + " would like to share " + refset.getName() + " with you: " + emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator")));
                 emailBody.append(System.getProperty("line.separator"));
 
                 // Additonal Info from Sender
@@ -2481,11 +2487,92 @@ public class RefsetController extends BaseController {
                 emailBody.append("Thank you," + System.getProperty("line.separator"));
                 emailBody.append("The SNOMED CT Referencve Set Tool Team");
 
-                EmailUtility.sendEmail(SHARE_REFSET_EMAIL_SUBJECT, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())), emailBody.toString());
+                String action = SHARE_ACTION;
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())), emailBody.toString());
 
-                AuditEntryHelper.sendCommunicationEmailEntry(refset, "Share email", user.getUserName(), emailInfo.getRecipient());
+                AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), emailInfo.getRecipient());
 
                 String returnString = "Shared refset";
+
+                return new ResponseEntity<>(returnString, HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    @ApiOperation(value = "Request project access from administrators", response = Refset.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully shared the requested refset"), @ApiResponse(code = 400, message = "Invalid email address recipient entered"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @PostMapping(value = "/project/{refsetInternalId}/request", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity<String> requestProjectAccess(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
+        throws Exception {
+
+        try {
+
+            logger.debug(
+                "getRefset: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
+
+            try (TerminologyService service = new TerminologyService()) {
+
+                User user = SecurityService.getUserFromSession();
+                final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+                final Project project = refset.getProject();
+
+                // Identify Admins who each get an email
+                Set<String> adminEmailRecipients = new HashSet<>();
+                List<Team> adminTeams = new ArrayList<>();
+
+                for (String teamId : project.getTeams()) {
+
+                    Team t = TeamService.getTeam(teamId, true);
+
+                    if (t.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
+
+                        adminTeams.add(t);
+                    }
+
+                }
+
+                adminTeams.stream().forEach(t -> t.getMemberList().stream().forEach(u -> adminEmailRecipients.add(u.getEmail())));
+
+                // Create Email itself
+                StringBuffer emailBody = new StringBuffer();
+
+                // Greeting
+                emailBody.append("Hello, {adminEmail}," + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+                // Static Message
+                emailBody.append(user.getName() + " has requested access to " + project.getName() + " via the " + refset.getName() + "." + System.getProperty("line.separator")
+                    + System.getProperty("line.separator"));
+
+                // Additonal Info from Sender
+                if (emailInfo.getAdditionalMessage() != null) {
+
+                    emailBody.append(user.getName() + " has included the additional message in their request:" + System.getProperty("line.separator") + System.getProperty("line.separator"));
+                    emailBody.append(emailInfo.getAdditionalMessage() + System.getProperty("line.separator") + System.getProperty("line.separator"));
+                }
+
+                // Warning
+                emailBody
+                    .append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. " + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+                emailBody.append(System.getProperty("line.separator") + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+                // Signature
+                emailBody.append("Not that this email has been sent to the other ADMIN teams on this project.");
+                adminEmailRecipients.stream().forEach(r -> AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access (via refset)", user.getUserName(), r));
+
+                String action = REQUEST_ACTION;
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), adminEmailRecipients, emailBody.toString());
+
+                String returnString = action;
 
                 return new ResponseEntity<>(returnString, HttpStatus.OK);
             }

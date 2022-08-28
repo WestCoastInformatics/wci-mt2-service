@@ -44,7 +44,7 @@ public class ProjectService extends BaseService {
 
     /** The config properties. */
     private static final Properties PROPERTIES = PropertyUtility.getProperties();
-    
+
     /**
      * Adds the project.
      *
@@ -55,7 +55,7 @@ public class ProjectService extends BaseService {
      */
     public static Project addProject(final User user, final Project project) throws Exception {
         // When a project is created, it does not have teams, those are added through update
-        
+
         try (final TerminologyService service = new TerminologyService()) {
 
             RefsetService.setProjectPermissions(user, project);
@@ -65,7 +65,7 @@ public class ProjectService extends BaseService {
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
-            
+
             service.add(project);
             service.add(AuditEntryHelper.newProjectEntry(project));
             service.commit();
@@ -73,6 +73,7 @@ public class ProjectService extends BaseService {
             // Return the response
             return project;
         }
+
     }
 
     /**
@@ -90,27 +91,38 @@ public class ProjectService extends BaseService {
             final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
 
             if (project == null) {
+
                 final String errorMessage = "Unable to find project for id " + projectId + ".";
                 logger.info(errorMessage);
                 throw new NotFoundException(errorMessage);
             }
 
             if (includeMembers) {
+
                 final Set<User> members = new HashSet<>();
+
                 for (final String teamId : project.getTeams()) {
+
                     final Team team = service.get(teamId, Team.class);
+
                     if (team != null && team.getMembers() != null) {
+
                         for (final String userId : team.getMembers()) {
+
                             final User member = service.get(userId, User.class);
                             members.add(member);
                         }
+
                     }
+
                 }
+
                 project.getMemberList().addAll(members);
             }
 
             return project;
         }
+
     }
 
     /**
@@ -129,15 +141,18 @@ public class ProjectService extends BaseService {
             final ResultList<Project> projects = service.find("edition.id: " + editionId + " AND active:true", null, Project.class, null);
 
             if (projects == null) {
+
                 return projectNames;
             }
 
             projects.getItems().forEach(project -> {
+
                 projectNames.add(project.getName());
             });
 
             return projectNames;
         }
+
     }
 
     /**
@@ -157,24 +172,30 @@ public class ProjectService extends BaseService {
             final PfsParameter pfs = new PfsParameter();
 
             if (searchParameters.getOffset() != null) {
+
                 pfs.setOffset(searchParameters.getOffset());
             }
 
             if (searchParameters.getLimit() != null) {
+
                 pfs.setLimit(searchParameters.getLimit());
             }
 
             if (searchParameters.getSortAscending() != null) {
+
                 pfs.setAscending(searchParameters.getSortAscending());
             }
 
             if (searchParameters.getSort() != null) {
+
                 pfs.setSort(searchParameters.getSort());
             } else {
+
                 pfs.setSort("name");
             }
 
             if (query != null && !query.equals("")) {
+
                 query = IndexUtility.addWildcardsToQuery(query, Refset.class);
             }
 
@@ -185,14 +206,19 @@ public class ProjectService extends BaseService {
             final List<Project> projectList = new ArrayList<>(results.getItems());
 
             for (Project project : projectList) {
+
                 project = RefsetService.setProjectPermissions(user, project);
+
                 if (!project.getRoles().contains(User.ROLE_VIEWER)) {
+
                     results.getItems().remove(project);
                 }
+
             }
 
             return results;
         }
+
     }
 
     /**
@@ -210,16 +236,16 @@ public class ProjectService extends BaseService {
 
             // Find the project
             final Project existingProject = getProject(projectId, true);
-            
+
             RefsetService.setProjectPermissions(user, existingProject);
             checkPermissions(user, existingProject);
 
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
-            
-            updateMemberships(existingProject, existingProject.getTeams(), project.getTeams());            
-            
+
+            updateMemberships(existingProject, existingProject.getTeams(), project.getTeams());
+
             // Apply changes
             existingProject.patchFrom(project);
 
@@ -230,6 +256,7 @@ public class ProjectService extends BaseService {
 
             return existingProject;
         }
+
     }
 
     /**
@@ -259,36 +286,49 @@ public class ProjectService extends BaseService {
             project.setActive(false);
 
             updateMemberships(project, copyOfProjectTeams, null);
-            
+
             if (project.getTeams() != null && !project.getTeams().isEmpty()) {
+
                 for (final String teamId : project.getTeams()) {
+
                     final Team team = service.get(teamId, Team.class);
+
                     if (team != null && !team.getMembers().isEmpty()) {
+
                         team.getMembers().clear();
                         service.update(team);
                     }
+
                 }
+
                 project.getTeams().clear();
             }
 
             // also inactivate refsets
             final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
+
             if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
+
                 for (final Refset refset : projRefsets.getItems()) {
+
                     if (refset != null && !projRefsets.getItems().isEmpty()) {
+
                         refset.setActive(false);
                         service.update(refset);
                         service.add(AuditEntryHelper.inactivateRefsetEntry(refset));
                     }
+
                 }
+
             }
-            
+
             service.update(project);
             service.add(AuditEntryHelper.inactivateProjectEntry(project));
-            service.commit();            
+            service.commit();
         }
+
     }
-    
+
     /**
      * Check if a user can edit a project.
      *
@@ -297,15 +337,15 @@ public class ProjectService extends BaseService {
      * @throws Exception the exception
      */
     public static void checkPermissions(final User user, final Project project) throws Exception {
-        
+
         if (!project.getRoles().contains(User.ROLE_ADMIN)) {
-            
+
             logger.error("User does not have permission to edit this project.");
             throw new ForbiddenException("User does not have permission to edit this project.");
         }
-        
+
     }
-    
+
     /**
      * Add or removes users from Crowd based on addition or removal from teams from a project.
      *
@@ -317,44 +357,70 @@ public class ProjectService extends BaseService {
     private static void updateMemberships(final Project project, final Set<String> oldTeams, final Set<String> newTeams) throws Exception {
 
         if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+
             logger.info("CALLING CROWD API from ProjectService updateMemberships");
 
             final Set<String> copyOfOldTeams = (oldTeams != null) ? new HashSet<String>(oldTeams) : new HashSet<String>();
             final Set<String> copyOfNewTeams = (newTeams != null) ? new HashSet<String>(newTeams) : new HashSet<String>();
 
             if (oldTeams != null) {
+
                 copyOfNewTeams.removeAll(oldTeams);
             }
+
             if (copyOfNewTeams != null && !copyOfNewTeams.isEmpty()) {
+
                 for (final String teamId : copyOfNewTeams) {
+
                     final Team team = TeamService.getTeam(teamId, true);
+
                     if (team != null && team.getMemberList() != null) {
+
                         for (final String role : team.getRoles()) {
+
                             for (final User user : team.getMemberList()) {
+
                                 final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                 CrowdAPIClient.addMembership(groupName, user.getUserName());
                             }
+
                         }
+
                     }
+
                 }
+
             }
 
             if (newTeams != null) {
+
                 copyOfOldTeams.removeAll(newTeams);
             }
+
             if (copyOfOldTeams != null && !copyOfOldTeams.isEmpty()) {
+
                 for (final String teamId : copyOfOldTeams) {
+
                     final Team team = TeamService.getTeam(teamId, true);
+
                     if (team != null && team.getMemberList() != null) {
+
                         for (final String role : team.getRoles()) {
+
                             for (final User user : team.getMemberList()) {
+
                                 final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                 CrowdAPIClient.deleteMembership(groupName, user.getUserName());
                             }
+
                         }
+
                     }
+
                 }
+
             }
+
         }
 
     }
