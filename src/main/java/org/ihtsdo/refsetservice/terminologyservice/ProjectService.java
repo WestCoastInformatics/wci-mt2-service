@@ -18,6 +18,7 @@ import java.util.Set;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -369,59 +370,38 @@ public class ProjectService extends BaseService {
             }
 
             if (copyOfNewTeams != null && !copyOfNewTeams.isEmpty()) {
-
                 for (final String teamId : copyOfNewTeams) {
-
                     final Team team = TeamService.getTeam(teamId, true);
-
+                    // ignores 400 errors, if the group already exists
+                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription());
                     if (team != null && team.getMemberList() != null) {
-
                         for (final String role : team.getRoles()) {
-
                             for (final User user : team.getMemberList()) {
-
                                 final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                 CrowdAPIClient.addMembership(groupName, user.getUserName());
                             }
-
                         }
-
                     }
-
                 }
-
             }
 
             if (newTeams != null) {
-
                 copyOfOldTeams.removeAll(newTeams);
             }
 
             if (copyOfOldTeams != null && !copyOfOldTeams.isEmpty()) {
-
                 for (final String teamId : copyOfOldTeams) {
-
                     final Team team = TeamService.getTeam(teamId, true);
-
                     if (team != null && team.getMemberList() != null) {
-
                         for (final String role : team.getRoles()) {
-
                             for (final User user : team.getMemberList()) {
-
                                 final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                 CrowdAPIClient.deleteMembership(groupName, user.getUserName());
                             }
-
                         }
-
                     }
-
                 }
-
             }
-
         }
-
     }
 }

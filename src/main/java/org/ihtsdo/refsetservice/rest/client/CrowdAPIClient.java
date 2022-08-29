@@ -149,8 +149,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                 logger.info("Added group {}", groupName);
             } else if (response.getStatus() == 400) {
                 // ignore 400 and continue?
-                logger.error("The group " + groupName + " already exists");
-                throw new Exception("The group " + groupName + " already exists");
+                // logger.error("The group " + groupName + " already exists");
+                // throw new Exception("The group " + groupName + " already exists");
             } else if (response.getStatus() == 403) {
                 logger.error("The group " + groupName + " could not be created. Not allowed.");
                 throw new Exception("The group " + groupName + " could not be created. Not allowed.");
