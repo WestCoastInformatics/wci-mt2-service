@@ -1,6 +1,6 @@
 package org.ihtsdo.refsetservice.model;
 
-public class ShareRefsetEmailInfo {
+public class SendCommunicationEmailInfo {
 
     private String recipient;
 

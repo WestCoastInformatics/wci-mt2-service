@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.sync;
+package org.ihtsdo.refsetservice.sync.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -114,7 +114,7 @@ public class SyncPropertyFileReader {
         populateFromFile(refsetsResource, FileProcessType.REFSET);
     }
 
-    List<String> readCodeSystemsToIgnore() {
+    public List<String> readCodeSystemsToIgnore() {
 
         BufferedReader reader;
         List<String> codeSystemNames = new ArrayList<>();
@@ -141,7 +141,7 @@ public class SyncPropertyFileReader {
         return codeSystemNames;
     }
 
-    List<String> getRefsetsToIgnore() {
+    public List<String> getRefsetsToIgnore() {
 
         if (refsetsToIgnore == null) {
 
@@ -717,9 +717,9 @@ public class SyncPropertyFileReader {
         String modified;
         String modifiedBy;
 
-        if (line.toLowerCase().contains(SyncAgentUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
+        if (line.toLowerCase().contains(SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
-            logger.debug("Ignoring project line that has the word '" + SyncAgentUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD + "' in it: " + line);
+            logger.debug("Ignoring project line that has the word '" + SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD + "' in it: " + line);
             projectsToIgnore.add(line.split(SPLIT_CHARACTER)[0]);
         }
 
@@ -759,7 +759,7 @@ public class SyncPropertyFileReader {
 
     }
 
-    Map<String, String> getRefsetToProjectsInfoMap() {
+    public Map<String, String> getRefsetToProjectsInfoMap() {
 
         return refsetToProjectsInfoMap;
     }
@@ -779,17 +779,17 @@ public class SyncPropertyFileReader {
         return refsetToTagsMap;
     }
 
-    Map<String, Set<String>> getRttRefsetSctIdToRttIdMap() {
+    public Map<String, Set<String>> getRttRefsetSctIdToRttIdMap() {
 
         return rttRefsetSctIdToRttIdMap;
     }
 
-    Map<String, String> getRttIdToRefsetJsonMap() {
+    public Map<String, String> getRttIdToRefsetJsonMap() {
 
         return rttIdToRefsetJsonMap;
     }
 
-    Map<String, ArrayList<String>> getRttRefsetToClausesMap() {
+    public Map<String, ArrayList<String>> getRttRefsetToClausesMap() {
 
         return rttRefsetToClausesMap;
     }

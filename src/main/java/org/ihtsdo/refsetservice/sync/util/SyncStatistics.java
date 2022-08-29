@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.sync;
+package org.ihtsdo.refsetservice.sync.util;
 
 import java.util.HashMap;
 import java.util.HashSet;

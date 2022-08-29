@@ -17,6 +17,7 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.util.SyncRefsetMetadata;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class SyncRefsetAgent extends SyncAgent {
+public class SyncRefsetAgent extends SyncService {
 
     private final Logger logger = LoggerFactory.getLogger(SyncRefsetAgent.class);
 
@@ -334,7 +335,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             for (String module : utilities.getEditionModulesMap().get(edition.getShortName())) {
 
-                if (!utilities.isInternationalEdition(edition.getName()) && utilities.internationalModules.contains(module)) {
+                if (!utilities.isInternationalEdition(edition.getName()) && utilities.getInternationalModules().contains(module)) {
 
                     // Ignore non-international editions inheriting refsets from the int'l edition
                     continue;
@@ -727,8 +728,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
     protected boolean isRefsetToProcess(String refsetId, String editionName) {
 
-        return !testing || (testing && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset) || utilities.isInternationalEdition(editionName)
-            || utilities.isDeveloperEdition(editionName));
+        return !testing || (testing && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset));
 
     }
 }

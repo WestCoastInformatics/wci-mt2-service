@@ -9,9 +9,14 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
@@ -20,12 +25,19 @@ import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.SendCommunicationEmailInfo;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
+import org.ihtsdo.refsetservice.terminologyservice.UserService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
+import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;

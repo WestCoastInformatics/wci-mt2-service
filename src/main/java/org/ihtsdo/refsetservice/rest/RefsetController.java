@@ -34,10 +34,12 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
-import org.ihtsdo.refsetservice.model.ShareRefsetEmailInfo;
+import org.ihtsdo.refsetservice.model.SendCommunicationEmailInfo;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
@@ -46,16 +48,14 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncAgent;
-import org.ihtsdo.refsetservice.sync.SyncAgentUtilities;
-import org.ihtsdo.refsetservice.sync.SyncCodeSystemAgent;
 import org.ihtsdo.refsetservice.sync.SyncDataInitializer;
-import org.ihtsdo.refsetservice.sync.SyncRefsetAgent;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.EmailUtility;
@@ -109,9 +109,11 @@ public class RefsetController extends BaseController {
     /** The local directory to store exported refset files. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-    private static final String emailValidationRegexPattern = "^(?=.{1,64}@)[\\p{L}0-9_-]+(\\.[\\p{L}0-9_-]+)*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,})$";
+    private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
 
-    private static final String SHARE_REFSET_EMAIL_SUBJECT = "SNOMED INternational Refset Tool - Shared Refset";
+    private static final String SHARE_ACTION = "Share-Refset";
+
+    private static final String REQUEST_ACTION = "Request-Access";
 
     /** Static initialization. */
     static {
@@ -816,7 +818,7 @@ public class RefsetController extends BaseController {
 
             final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, codeSystem);
             String error = "";
-            
+
             service.commit();
 
             // see if there are any refsets that were unable to be updated and craft the error message
@@ -1517,6 +1519,8 @@ public class RefsetController extends BaseController {
     public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction)
         throws Exception {
 
+        String message = "";
+
         try {
 
             boolean refsetPerVersionSync = false;
@@ -1534,37 +1538,11 @@ public class RefsetController extends BaseController {
                 runForProduction = true;
             }
 
-            SyncAgent agent = new SyncCodeSystemAgent(refsetPerVersionSync, runForProduction);
-
             try (TerminologyService service = new TerminologyService()) {
 
-                String message = "";
-
-                logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
-
-                // Only identify branches on filtered code systems and on runShortSync value
-                agent.syncSnowstorm();
-
-                SyncAgentUtilities syncUtilities = new SyncAgentUtilities();
-                syncUtilities.parseRttData();
-
-                // Find all refsets from filtered branches
-                agent = new SyncRefsetAgent(refsetPerVersionSync, runForProduction);
-                agent.syncSnowstorm();
-
-                // Update imported refsets with RTT-based metadata (as defined in parseRttData())
-                if (!runForProduction) {
-                        
-                    SyncDataInitializer initializer = new SyncDataInitializer();
-                    initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets(), agent.getDefaultEditionProjects());
-                }
-
-                logger.info("Completed Syncing with Snowstorm");
+                RefsetService.sync(service, refsetPerVersionSync, runForProduction);
 
                 return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
-            } finally {
-
-                logger.info(agent.printStatistics());
             }
 
         } catch (final Exception e) {
@@ -2443,18 +2421,12 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @PostMapping(value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final ShareRefsetEmailInfo emailInfo) throws Exception {
+    public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
         try {
 
             logger
                 .debug("getRefset: refsetId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
-
-            if (!emailInfo.getRecipient().matches(emailValidationRegexPattern)) {
-
-                // invalid email address. Return 400
-                return new ResponseEntity<>("Invalid email address requested for recipient: " + emailInfo.getRecipient(), HttpStatus.BAD_REQUEST);
-            }
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -2464,16 +2436,14 @@ public class RefsetController extends BaseController {
                 StringBuffer emailBody = new StringBuffer();
 
                 // Title
-                emailBody.append("Hello, " + emailInfo.getRecipient() + "!" + System.getProperty("line.separator"));
-                emailBody.append(System.getProperty("line.separator"));
+                emailBody.append("Hello, " + emailInfo.getRecipient() + "," + System.getProperty("line.separator") + System.getProperty("line.separator"));
 
                 // Main announcement
-                emailBody.append(user.getName() + " would like to share " + refset.getName() + "with you: " + System.getProperty("line.separator"));
-                emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator"));
-                emailBody.append(System.getProperty("line.separator"));
+                emailBody.append("Refset Tool user " + user.getUserName() + " would like to share " + refset.getName() + " with you: "
+                    + emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator") + System.getProperty("line.separator")));
 
-                // Additonal Info from Sender
-                if (emailInfo.getAdditionalMessage() != null) {
+                // Additional Info from Sender
+                if (emailInfo.getAdditionalMessage() != null && !emailInfo.getAdditionalMessage().isBlank()) {
 
                     emailBody.append(user.getName() + " has included the additional message:" + System.getProperty("line.separator"));
                     emailBody.append(emailInfo.getAdditionalMessage() + System.getProperty("line.separator"));
@@ -2488,12 +2458,136 @@ public class RefsetController extends BaseController {
                 emailBody.append("Thank you," + System.getProperty("line.separator"));
                 emailBody.append("The SNOMED CT Referencve Set Tool Team");
 
-                EmailUtility.sendEmail(SHARE_REFSET_EMAIL_SUBJECT, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())), emailBody.toString());
+                String action = SHARE_ACTION;
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())), emailBody.toString());
+
+                AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), emailInfo.getRecipient());
 
                 String returnString = "Shared refset";
 
                 return new ResponseEntity<>(returnString, HttpStatus.OK);
             }
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    @ApiOperation(value = "Request project access from administrators", response = Refset.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully requested access to the refset's ecnlosing project"), @ApiResponse(code = 400, message = "Invalid email address recipient entered"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @PostMapping(value = "/refset/{refsetInternalId}/request", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity<String> requestProjectAccess(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
+        throws Exception {
+
+        try {
+
+            final String action = REQUEST_ACTION;
+
+            logger.debug(
+                "getRefset: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
+
+            try (TerminologyService service = new TerminologyService()) {
+
+                User user = SecurityService.getUserFromSession();
+                final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+                final Project project = refset.getProject();
+
+                // TODO: Verify that user is NOT already member of project. if they are, throw exception with explanation
+
+                // Identify Admins who each get an email
+                Set<User> adminEmailRecipients = new HashSet<>();
+                List<Team> adminTeams = new ArrayList<>();
+
+                for (String teamId : project.getTeams()) {
+
+                    Team t = TeamService.getTeam(teamId, true);
+
+                    if (t.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
+
+                        adminTeams.add(t);
+                    }
+
+                }
+
+                adminTeams.stream().forEach(t -> t.getMemberList().stream().forEach(u -> adminEmailRecipients.add(u)));
+
+                // Create Email itself
+                StringBuffer emailBody = new StringBuffer();
+
+                // Greeting
+                emailBody.append("Hello, {projectAdminName}," + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+                // Static Message
+                emailBody.append(user.getName() + " has requested access to " + project.getName() + " via the " + refset.getName() + "." + System.getProperty("line.separator")
+                    + System.getProperty("line.separator"));
+
+                // Additional Info from Sender
+                if (emailInfo.getAdditionalMessage() != null) {
+
+                    emailBody.append(user.getName() + " has included the additional message in their request:" + System.getProperty("line.separator") + System.getProperty("line.separator"));
+                    emailBody.append(emailInfo.getAdditionalMessage() + System.getProperty("line.separator") + System.getProperty("line.separator"));
+                }
+
+                // Warning
+                emailBody
+                    .append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. " + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+                emailBody.append(System.getProperty("line.separator") + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+                // Signature
+                emailBody.append("Not that this email has been sent to the other ADMIN teams on this project.");
+
+                for (User recipient : adminEmailRecipients) {
+
+                    AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access (via refset)", recipient.getUserName(), project.getName() + "'s admins");
+
+                    EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())),
+                        emailBody.toString().replace("{projectAdminName}", recipient.getName()));
+                }
+
+                String returnString = action;
+
+                return new ResponseEntity<>(returnString, HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    @ApiOperation(value = "Request project access from administrators", response = Refset.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully requested access to the refset's ecnlosing project"), @ApiResponse(code = 400, message = "Invalid email address recipient entered"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/reset", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> requestProjectAccess(@PathVariable final String refsetId) throws Exception {
+
+        try {
+
+            String returnString = "Attempts to reset refset: " + refsetId + " were ";
+
+            if (RefsetService.getIsProductionSystem()) {
+                logger.debug("getRefset: refsetInternalId: " + refsetId);
+    
+                try (TerminologyService service = new TerminologyService()) {
+    
+                    User user = SecurityService.getUserFromSession();
+                    service.setModifiedBy(user.getUserName());
+    
+                    final String result = RefsetService.resetRefset(service, user, refsetId);
+    
+                    return new ResponseEntity<>(returnString + result, HttpStatus.OK);
+                }
 
         } catch (final Exception e) {
 

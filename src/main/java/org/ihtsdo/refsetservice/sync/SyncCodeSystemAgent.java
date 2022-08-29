@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class SyncCodeSystemAgent extends SyncAgent {
+public class SyncCodeSystemAgent extends SyncService {
 
     private static Logger logger = LoggerFactory.getLogger(SyncCodeSystemAgent.class);
 
@@ -333,7 +333,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         } else {
 
-
             final String snowstormOrganizationName = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
 
             // Found matching org with same orgId as before. Now compare differences (although for now none exist, put in placeholder to expand as needed)
@@ -345,13 +344,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             if (syncedOrganization == null) {
 
-
                 // No differences found in edition, but check Owner value as well
                 retOrganization = matchingDatabaseOrganization;
                 statistics.getOrganizationsUnchanged().add(retOrganization);
 
             } else {
-
 
                 // Differences found in edition
                 retOrganization = syncedOrganization;
@@ -763,7 +760,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private boolean isEditionToProcess(String codeSystem) {
 
-        return !testing || (testing && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.contains(testingEdition) || utilities.isDeveloperEdition(codeSystem)
-            || utilities.isInternationalEdition(codeSystem));
+        return !testing || (testing && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.contains(testingEdition) || utilities.isInternationalEdition(codeSystem));
     }
 }

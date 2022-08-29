@@ -46,6 +46,11 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.SyncCodeSystemAgent;
+import org.ihtsdo.refsetservice.sync.SyncDataInitializer;
+import org.ihtsdo.refsetservice.sync.SyncRefsetAgent;
+import org.ihtsdo.refsetservice.sync.SyncService;
+import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -61,7 +66,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -73,6 +77,10 @@ public class RefsetService {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetService.class);
+
+    private static Boolean isProductionSystem = null;
+
+    private static Boolean isPerVersionSync = null;
 
     /** The refset to language map. */
     private static final Map<String, String> refsetToLanguagesMap = new HashMap<>();
@@ -835,6 +843,43 @@ public class RefsetService {
         return statusMessage;
     }
 
+    public static String resetRefset(final TerminologyService service, final User user, final String refsetId) throws Exception {
+
+        if (!RefsetService.doesRefsetExist(refsetId, null)) {
+
+            return "unnecessary as it doesn't reside in RT2";
+        }
+
+        Refset latestVersion = getLatestRefsetVersion(service, refsetId);
+
+        final String editionName = latestVersion.getEditionName();
+        final String orgId = latestVersion.getEdition().getOrganization().getId();
+
+        // if the refset has never been versioned before then delete it
+        if (!doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
+
+            deleteInDevelopmentVersion(service, user, latestVersion.getId(), true);
+        }
+
+        final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
+
+        for (Refset refset : results.getItems()) {
+
+            service.add(AuditEntryHelper.resetRefsetEntry(refset));
+
+            deleteRefset(service, refset);
+
+        }
+
+        SyncService.setRefsetToSync(refsetId, editionName);
+        RefsetService.sync(service);
+
+        logger.info("Reset all versions in database of refsetId: " + refsetId);
+
+        return "succssfully";
+
+    }
+
     /**
      * Inactivate a refset.
      *
@@ -984,19 +1029,7 @@ public class RefsetService {
 
         // remove the edit and refset branches with all terminology changes
         WorkflowService.deleteEditBranch(service, user, refset.getEditionBranch(), refsetId, refset.getEditBranchId());
-        WorkflowService.deleteRefsetBranch(refset.getEditionBranch(), refsetId);
-
-        // remove any workflow history that exists
-        ResultList<WorkflowHistory> workflowResults = WorkflowService.getWorkflowHistory(service, refset, new SearchParameters());
-
-        for (final WorkflowHistory workflow : workflowResults.getItems()) {
-
-            service.remove(workflow);
-        }
-
-        // remove the refset from the database
-        service.remove(refset);
-        logger.info("Deleted refset from database: " + refsetInternalId);
+        deleteRefset(service, refset);
 
         // if there were other versions of this refset set the lastest version flag appropriately
         if (otherVersions) {
@@ -1008,6 +1041,23 @@ public class RefsetService {
         }
 
         return status;
+    }
+
+    private static void deleteRefset(TerminologyService service, Refset refset) throws Exception {
+
+        WorkflowService.deleteRefsetBranch(refset.getEditionBranch(), refset.getId());
+
+        // remove any workflow history that exists
+        ResultList<WorkflowHistory> workflowResults = WorkflowService.getWorkflowHistory(service, refset, new SearchParameters());
+
+        for (final WorkflowHistory workflow : workflowResults.getItems()) {
+
+            service.remove(workflow);
+        }
+
+        // remove the refset from the database
+        service.remove(refset);
+        logger.info("Deleted refset from database: " + refset.getId());
     }
 
     /**
@@ -1297,9 +1347,10 @@ public class RefsetService {
         final ResultList<Project> results = service.find("", pfs, Project.class, null);
 
         for (Project project : results.getItems()) {
+
             projects.put(project.getId(), project);
         }
-        
+
         return projects;
     }
 
@@ -2092,8 +2143,8 @@ public class RefsetService {
         final Project project = refset.getProject();
         final String projectAdminEmail = project.getPrimaryContactEmail();
         final String subject = "Refset Request: " + refset.getName() + " (" + refset.getRefsetId() + ")";
-        final String body = "A user is requesting access to a project you administer.\n\n" + "Edition: " + refset.getEditionName() + "\n" + "Project: " + project.getName() + "\n"
-            + "Refset: " + refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" + "User: " + user.getName() + " (" + user.getEmail() + ")" + "\n\n" + "Comments: " + comments;
+        final String body = "A user is requesting access to a project you administer.\n\n" + "Edition: " + refset.getEditionName() + "\n" + "Project: " + project.getName() + "\n" + "Refset: "
+            + refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" + "User: " + user.getName() + " (" + user.getEmail() + ")" + "\n\n" + "Comments: " + comments;
 
         EmailUtility.sendEmail(subject, user.getEmail(), projectAdminEmail, body);
     }
@@ -2176,10 +2227,57 @@ public class RefsetService {
 
         Refset updatedRefset = service.update(refset);
 
-        service.add(AuditEntryHelper.convertToExtensionalRefset(updatedRefset));
+        service.add(AuditEntryHelper.convertToExtensionalRefsetEntry(updatedRefset));
         logger.info("Converted refset from database: " + updatedRefset);
 
         return status;
     }
 
+    public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction) throws Exception {
+
+        if (isProductionSystem == null) {
+
+            isPerVersionSync = refsetPerVersionSync;
+            isProductionSystem = runForProduction;
+        }
+
+        sync(service);
+
+    }
+
+    public static void sync(TerminologyService service) throws Exception {
+
+        logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
+
+        SyncService agent = new SyncCodeSystemAgent(isPerVersionSync, isProductionSystem);
+
+        // Only identify branches on filtered code systems and on runShortSync value
+        agent.syncSnowstorm();
+
+        SyncUtilities syncUtilities = new SyncUtilities();
+        syncUtilities.parseRttData();
+
+        // Find all refsets from filtered branches
+        agent = new SyncRefsetAgent(isPerVersionSync, isProductionSystem);
+        agent.syncSnowstorm();
+
+        // Update imported refsets with RTT-based metadata (as defined in parseRttData())
+        if (!isProductionSystem) {
+
+            SyncDataInitializer initializer = new SyncDataInitializer();
+            initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets(), agent.getDefaultEditionProjects());
+        }
+
+        logger.info(agent.printStatistics());
+
+        service.add(AuditEntryHelper.syncEntry(new Date()));
+
+        logger.info("Completed Syncing with Snowstorm");
+
+    }
+
+    public static Boolean getIsProductionSystem() {
+
+        return isProductionSystem;
+    }
 }

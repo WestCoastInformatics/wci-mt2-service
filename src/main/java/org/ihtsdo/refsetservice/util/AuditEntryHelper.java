@@ -9,6 +9,8 @@
  */
 package org.ihtsdo.refsetservice.util;
 
+import java.util.Date;
+
 import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -28,7 +30,7 @@ import org.slf4j.LoggerFactory;
 public class AuditEntryHelper {
 
     public enum ENTITY_TYPE {
-        EDITION, ORGANIZATION, PROJECT, TEAM, REFSET, USER, DISCUSSION
+        EDITION, ORGANIZATION, PROJECT, TEAM, REFSET, USER, DISCUSSION, SYNC
     }
 
     /** Logger. */
@@ -483,6 +485,23 @@ public class AuditEntryHelper {
     }
 
     /**
+     * Reset refset entry.
+     *
+     * @param refset the refset
+     * @return the audit entry
+     */
+    public static AuditEntry resetRefsetEntry(final Refset refset) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(refset.getRefsetId());
+        entry.setMessage("RESET all versions of Refset");
+        entry.setDetails(refset.getName());
+        log(entry);
+        return entry;
+    }
+
+    /**
      * Complete refset publication entry.
      *
      * @param refset the refset
@@ -571,13 +590,35 @@ public class AuditEntryHelper {
         return entry;
     }
 
-    public static HasModified convertToExtensionalRefset(Refset updatedRefset) {
+    public static HasModified convertToExtensionalRefsetEntry(Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.REFSET.toString());
-        entry.setEntityId(updatedRefset.getId());
+        entry.setEntityId(refset.getId());
         entry.setMessage("Convert Intensional to Extensional");
-        entry.setDetails("Note for converting intensional to extensional refset for refset " + updatedRefset.getRefsetId() + ".");
+        entry.setDetails("Note for converting intensional to extensional refset for refset " + refset.getRefsetId() + ".");
+        log(entry);
+        return entry;
+    }
+
+    public static HasModified sendCommunicationEmailEntry(Refset refset, String action, String from, String to) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(refset.getId());
+        entry.setMessage(action);
+        entry.setDetails(action + " from: " + from + " to " + to + " for refset " + refset.getRefsetId() + ".");
+        log(entry);
+        return entry;
+    }
+
+    public static HasModified syncEntry(Date date) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.SYNC.toString());
+        entry.setEntityId("");
+        entry.setMessage("Sync completed successfully");
+        entry.setDetails("Finish date is " + date.getTime());
         log(entry);
         return entry;
     }
