@@ -2588,6 +2588,9 @@ public class RefsetController extends BaseController {
     
                     return new ResponseEntity<>(returnString + result, HttpStatus.OK);
                 }
+            }
+            
+            return new ResponseEntity<>("No changes were made", HttpStatus.OK);
 
         } catch (final Exception e) {
 
@@ -2595,5 +2598,4 @@ public class RefsetController extends BaseController {
         }
 
     }
-
 }
