@@ -15,23 +15,25 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
+import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class SyncAgent {
+public abstract class SyncService {
 
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
+    private static Logger logger = LoggerFactory.getLogger(SyncService.class);
 
-    protected static SyncAgentUtilities utilities = null;
+    protected static SyncUtilities utilities = null;
 
     /** Testing options. */
-    protected static final boolean testing = false;
+    protected static boolean testing = false;
 
-    protected static final String testingEdition = "elgi";
+    protected static String testingEdition = "elgi";
 
     // protected static final String testingRefset = null; // To test entire edition
-    protected static final String testingRefset = "561000172108"; // Default refset created upon Default Project
+    protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
     // protected static final String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static final String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
     // protected static final String testingRefset = "121000210100"; // No changes across 5 versions (NZ Edition)
@@ -87,11 +89,11 @@ public abstract class SyncAgent {
 
     protected boolean forProduction;
 
-    public SyncAgent(boolean perVersionCreation, boolean runForProduction) {
+    public SyncService(boolean perVersionCreation, boolean runForProduction) {
 
         if (utilities == null) {
 
-            utilities = new SyncAgentUtilities();
+            utilities = new SyncUtilities();
 
             ignoredCodeSystemNames.addAll(utilities.getPropertyReader().readCodeSystemsToIgnore());
 
@@ -112,6 +114,13 @@ public abstract class SyncAgent {
     }
 
     public abstract void syncSnowstorm() throws Exception;
+    
+    public static void setRefsetToSync(final String refsetId, final String editionName) throws Exception {
+
+        testing = true;
+        testingRefset = refsetId;
+        testingEdition = editionName;
+    }
 
     protected void clearPreviousRun() {
 

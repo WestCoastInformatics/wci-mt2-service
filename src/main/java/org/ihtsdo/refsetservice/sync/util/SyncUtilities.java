@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.sync;
+package org.ihtsdo.refsetservice.sync.util;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -21,6 +21,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.SyncDataInitializer;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
@@ -33,9 +34,9 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class SyncAgentUtilities {
+public class SyncUtilities {
 
-    private final Logger logger = LoggerFactory.getLogger(SyncAgentUtilities.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncUtilities.class);
 
     private static final SyncPropertyFileReader propertyReader = new SyncPropertyFileReader();
 
@@ -66,7 +67,7 @@ public class SyncAgentUtilities {
 
     private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
 
-    Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
+    public Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -88,7 +89,7 @@ public class SyncAgentUtilities {
 
     }
 
-    Edition addEdition(String shortName, String editionName, String editionBranch, final Organization organization, JsonNode codeSystem) throws Exception {
+    public Edition addEdition(String shortName, String editionName, String editionBranch, final Organization organization, JsonNode codeSystem) throws Exception {
 
         final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -133,7 +134,7 @@ public class SyncAgentUtilities {
 
     }
 
-    Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
+    public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -164,7 +165,7 @@ public class SyncAgentUtilities {
 
     }
 
-    Project addProject(String projectName, String projectDescription, Edition edition) throws Exception {
+    public Project addProject(String projectName, String projectDescription, Edition edition) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -190,7 +191,7 @@ public class SyncAgentUtilities {
 
     }
 
-    Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String narrative, Project project) throws Exception {
+    public Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String narrative, Project project) throws Exception {
 
         logger.debug("Adding WCI Testing Org's single project: " + project);
 
@@ -239,7 +240,7 @@ public class SyncAgentUtilities {
 
     }
 
-    Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberIds) throws Exception {
+    public Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberIds) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -289,7 +290,7 @@ public class SyncAgentUtilities {
 
     }
 
-    Set<DefinitionClause> getRefsetClauses(String rttId) throws Exception {
+    public Set<DefinitionClause> getRefsetClauses(String rttId) throws Exception {
 
         Set<DefinitionClause> refsetClauses = new HashSet<>();
 
@@ -313,7 +314,7 @@ public class SyncAgentUtilities {
 
     }
 
-    User getUser(String name, String userName, String email, Set<String> roles) throws Exception {
+    public User getUser(String name, String userName, String email, Set<String> roles) throws Exception {
 
         User user = null;
 
@@ -340,7 +341,7 @@ public class SyncAgentUtilities {
         return user;
 
     }
-    String identifyTopLevelModule(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
+    public String identifyTopLevelModule(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
 
         Set<String> editionModules = new HashSet<>();
         String returnModule = null;
@@ -436,7 +437,7 @@ public class SyncAgentUtilities {
         return returnModule;
     }
 
-    String identifyDefaultLanguageCode(JsonNode codeSystem, String editionName) throws Exception {
+    public String identifyDefaultLanguageCode(JsonNode codeSystem, String editionName) throws Exception {
 
         // Identify Edition's defaultLanguageCode - Per Kai, transform first language in set as defaultLangCode
         if (!codeSystem.has("languages")) {
@@ -449,7 +450,7 @@ public class SyncAgentUtilities {
         return languages.next();
     }
 
-    Set<String> identifyDefaultLanguageRefsets(JsonNode codeSystem, String shortName) {
+    public Set<String> identifyDefaultLanguageRefsets(JsonNode codeSystem, String shortName) {
 
         Set<String> retSet = new HashSet<>();
 
@@ -541,29 +542,29 @@ public class SyncAgentUtilities {
 
     }
 
-    void initializeService(TerminologyService service) {
+    public void initializeService(TerminologyService service) {
 
         service.setModifiedBy("Sync");
         service.setModifiedFlag(true);
 
     }
 
-    SimpleDateFormat getSdf() {
+    public SimpleDateFormat getSdf() {
 
         return metadata.getSdf();
     }
 
-    SyncPropertyFileReader getPropertyReader() {
+    public SyncPropertyFileReader getPropertyReader() {
 
         return propertyReader;
     }
 
-    Set<String> getInternationalModules() {
+    public Set<String> getInternationalModules() {
 
         return internationalModules;
     }
 
-    Map<String, Set<String>> getEditionModulesMap() {
+    public Map<String, Set<String>> getEditionModulesMap() {
 
         return editionModulesMap;
     }
@@ -577,12 +578,12 @@ public class SyncAgentUtilities {
 
     }
 
-    boolean isInternationalEdition(String editionName) {
+    public boolean isInternationalEdition(String editionName) {
 
         return "international edition".equals(editionName.toLowerCase());
     }
 
-    boolean isDeveloperEdition(String editionName) {
+    public boolean isDeveloperEdition(String editionName) {
 
         return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
     }

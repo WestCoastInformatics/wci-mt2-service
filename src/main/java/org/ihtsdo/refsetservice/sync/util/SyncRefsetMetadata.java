@@ -1,4 +1,4 @@
-package org.ihtsdo.refsetservice.sync;
+package org.ihtsdo.refsetservice.sync.util;
 
 import java.util.Date;
 import java.util.Set;
@@ -19,7 +19,7 @@ public class SyncRefsetMetadata {
 
     private String branchPath;
 
-    protected SyncRefsetMetadata(JsonNode refsetNode, Edition edition, Set<Date> allRefsetVersions, Date version, String branchPath) {
+    public SyncRefsetMetadata(JsonNode refsetNode, Edition edition, Set<Date> allRefsetVersions, Date version, String branchPath) {
 
         this.refsetNode = refsetNode;
         this.edition = edition;
@@ -28,7 +28,7 @@ public class SyncRefsetMetadata {
         this.branchPath = branchPath;
     }
 
-    protected JsonNode getRefsetNode() {
+    public JsonNode getRefsetNode() {
 
         return refsetNode;
     }
@@ -38,7 +38,7 @@ public class SyncRefsetMetadata {
         this.refsetNode = refsetNode;
     }
 
-    protected Edition getEdition() {
+    public Edition getEdition() {
 
         return edition;
     }
@@ -58,7 +58,7 @@ public class SyncRefsetMetadata {
         this.allRefsetVersions = allRefsetVersions;
     }
 
-    protected Date getVersion() {
+    public Date getVersion() {
 
         return version;
     }
@@ -68,7 +68,7 @@ public class SyncRefsetMetadata {
         this.version = version;
     }
 
-    protected String getBranchPath() {
+    public String getBranchPath() {
 
         return branchPath;
     }

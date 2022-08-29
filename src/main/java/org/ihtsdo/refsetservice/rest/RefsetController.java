@@ -48,11 +48,7 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncAgent;
-import org.ihtsdo.refsetservice.sync.SyncAgentUtilities;
-import org.ihtsdo.refsetservice.sync.SyncCodeSystemAgent;
 import org.ihtsdo.refsetservice.sync.SyncDataInitializer;
-import org.ihtsdo.refsetservice.sync.SyncRefsetAgent;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
@@ -1523,6 +1519,8 @@ public class RefsetController extends BaseController {
     public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction)
         throws Exception {
 
+        String message = "";
+
         try {
 
             boolean refsetPerVersionSync = false;
@@ -1540,37 +1538,11 @@ public class RefsetController extends BaseController {
                 runForProduction = true;
             }
 
-            SyncAgent agent = new SyncCodeSystemAgent(refsetPerVersionSync, runForProduction);
-
             try (TerminologyService service = new TerminologyService()) {
 
-                String message = "";
-
-                logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
-
-                // Only identify branches on filtered code systems and on runShortSync value
-                agent.syncSnowstorm();
-
-                SyncAgentUtilities syncUtilities = new SyncAgentUtilities();
-                syncUtilities.parseRttData();
-
-                // Find all refsets from filtered branches
-                agent = new SyncRefsetAgent(refsetPerVersionSync, runForProduction);
-                agent.syncSnowstorm();
-
-                // Update imported refsets with RTT-based metadata (as defined in parseRttData())
-                if (!runForProduction) {
-
-                    SyncDataInitializer initializer = new SyncDataInitializer();
-                    initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets(), agent.getDefaultEditionProjects());
-                }
-
-                logger.info("Completed Syncing with Snowstorm");
+                RefsetService.sync(service, refsetPerVersionSync, runForProduction);
 
                 return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
-            } finally {
-
-                logger.info(agent.printStatistics());
             }
 
         } catch (final Exception e) {
@@ -2467,7 +2439,8 @@ public class RefsetController extends BaseController {
                 emailBody.append("Hello, " + emailInfo.getRecipient() + "," + System.getProperty("line.separator") + System.getProperty("line.separator"));
 
                 // Main announcement
-                emailBody.append("Refset Tool user " + user.getUserName() + " would like to share " + refset.getName() + " with you: " + emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator") + System.getProperty("line.separator") ));
+                emailBody.append("Refset Tool user " + user.getUserName() + " would like to share " + refset.getName() + " with you: "
+                    + emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator") + System.getProperty("line.separator")));
 
                 // Additional Info from Sender
                 if (emailInfo.getAdditionalMessage() != null && !emailInfo.getAdditionalMessage().isBlank()) {
@@ -2581,6 +2554,38 @@ public class RefsetController extends BaseController {
                 String returnString = action;
 
                 return new ResponseEntity<>(returnString, HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    @ApiOperation(value = "Request project access from administrators", response = Refset.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully requested access to the refset's ecnlosing project"), @ApiResponse(code = 400, message = "Invalid email address recipient entered"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/reset", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> requestProjectAccess(@PathVariable final String refsetId) throws Exception {
+
+        try {
+
+            String returnString = "Attempts to reset refset: " + refsetId + " were ";
+
+            logger.debug("getRefset: refsetInternalId: " + refsetId);
+
+            try (TerminologyService service = new TerminologyService()) {
+
+                User user = SecurityService.getUserFromSession();
+                service.setModifiedBy(user.getUserName());
+
+                final String result = RefsetService.resetRefset(service, user, refsetId);
+
+                return new ResponseEntity<>(returnString + result, HttpStatus.OK);
             }
 
         } catch (final Exception e) {

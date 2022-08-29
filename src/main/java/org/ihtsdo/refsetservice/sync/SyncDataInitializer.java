@@ -20,6 +20,7 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,7 @@ public class SyncDataInitializer {
 
     private final Logger logger = LoggerFactory.getLogger(SyncDataInitializer.class);
 
-    private SyncAgentUtilities utilities;
+    private SyncUtilities utilities;
 
     private static User syncUser = null;
 
@@ -74,7 +75,7 @@ public class SyncDataInitializer {
 
         try {
 
-            this.utilities = new SyncAgentUtilities();
+            this.utilities = new SyncUtilities();
 
             developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
@@ -467,7 +468,7 @@ public class SyncDataInitializer {
         return developerTestingEdition;
     }
 
-    static User getSyncUser() {
+    public static User getSyncUser() {
 
         if (syncUser == null) {
 
