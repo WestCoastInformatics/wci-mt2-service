@@ -2464,14 +2464,12 @@ public class RefsetController extends BaseController {
                 StringBuffer emailBody = new StringBuffer();
 
                 // Title
-                emailBody.append("Hello, " + emailInfo.getRecipient() + "!" + System.getProperty("line.separator"));
-                emailBody.append(System.getProperty("line.separator"));
+                emailBody.append("Hello, " + emailInfo.getRecipient() + "," + System.getProperty("line.separator") + System.getProperty("line.separator"));
 
                 // Main announcement
-                emailBody.append(user.getName() + " would like to share " + refset.getName() + " with you: " + emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator")));
-                emailBody.append(System.getProperty("line.separator"));
+                emailBody.append("Refset Tool user " + user.getUserName() + " would like to share " + refset.getName() + " with you: " + emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator") + System.getProperty("line.separator") ));
 
-                // Additonal Info from Sender
+                // Additional Info from Sender
                 if (emailInfo.getAdditionalMessage() != null && !emailInfo.getAdditionalMessage().isBlank()) {
 
                     emailBody.append(user.getName() + " has included the additional message:" + System.getProperty("line.separator"));
@@ -2506,15 +2504,17 @@ public class RefsetController extends BaseController {
 
     @ApiOperation(value = "Request project access from administrators", response = Refset.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully shared the requested refset"), @ApiResponse(code = 400, message = "Invalid email address recipient entered"),
+        @ApiResponse(code = 200, message = "Successfully requested access to the refset's ecnlosing project"), @ApiResponse(code = 400, message = "Invalid email address recipient entered"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @PostMapping(value = "/project/{refsetInternalId}/request", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @PostMapping(value = "/refset/{refsetInternalId}/request", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<String> requestProjectAccess(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
         throws Exception {
 
         try {
+
+            final String action = REQUEST_ACTION;
 
             logger.debug(
                 "getRefset: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
@@ -2525,8 +2525,10 @@ public class RefsetController extends BaseController {
                 final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
                 final Project project = refset.getProject();
 
+                // TODO: Verify that user is NOT already member of project. if they are, throw exception with explanation
+
                 // Identify Admins who each get an email
-                Set<String> adminEmailRecipients = new HashSet<>();
+                Set<User> adminEmailRecipients = new HashSet<>();
                 List<Team> adminTeams = new ArrayList<>();
 
                 for (String teamId : project.getTeams()) {
@@ -2540,19 +2542,19 @@ public class RefsetController extends BaseController {
 
                 }
 
-                adminTeams.stream().forEach(t -> t.getMemberList().stream().forEach(u -> adminEmailRecipients.add(u.getEmail())));
+                adminTeams.stream().forEach(t -> t.getMemberList().stream().forEach(u -> adminEmailRecipients.add(u)));
 
                 // Create Email itself
                 StringBuffer emailBody = new StringBuffer();
 
                 // Greeting
-                emailBody.append("Hello, {adminEmail}," + System.getProperty("line.separator") + System.getProperty("line.separator"));
+                emailBody.append("Hello, {projectAdminName}," + System.getProperty("line.separator") + System.getProperty("line.separator"));
 
                 // Static Message
                 emailBody.append(user.getName() + " has requested access to " + project.getName() + " via the " + refset.getName() + "." + System.getProperty("line.separator")
                     + System.getProperty("line.separator"));
 
-                // Additonal Info from Sender
+                // Additional Info from Sender
                 if (emailInfo.getAdditionalMessage() != null) {
 
                     emailBody.append(user.getName() + " has included the additional message in their request:" + System.getProperty("line.separator") + System.getProperty("line.separator"));
@@ -2567,10 +2569,14 @@ public class RefsetController extends BaseController {
 
                 // Signature
                 emailBody.append("Not that this email has been sent to the other ADMIN teams on this project.");
-                adminEmailRecipients.stream().forEach(r -> AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access (via refset)", user.getUserName(), r));
 
-                String action = REQUEST_ACTION;
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), adminEmailRecipients, emailBody.toString());
+                for (User recipient : adminEmailRecipients) {
+
+                    AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access (via refset)", recipient.getUserName(), project.getName() + "'s admins");
+
+                    EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())),
+                        emailBody.toString().replace("{projectAdminName}", recipient.getName()));
+                }
 
                 String returnString = action;
 
