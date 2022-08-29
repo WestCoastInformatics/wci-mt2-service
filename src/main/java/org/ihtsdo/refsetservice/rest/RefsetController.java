@@ -2576,17 +2576,18 @@ public class RefsetController extends BaseController {
 
             String returnString = "Attempts to reset refset: " + refsetId + " were ";
 
-            logger.debug("getRefset: refsetInternalId: " + refsetId);
-
-            try (TerminologyService service = new TerminologyService()) {
-
-                User user = SecurityService.getUserFromSession();
-                service.setModifiedBy(user.getUserName());
-
-                final String result = RefsetService.resetRefset(service, user, refsetId);
-
-                return new ResponseEntity<>(returnString + result, HttpStatus.OK);
-            }
+            if (RefsetService.getIsProductionSystem()) {
+                logger.debug("getRefset: refsetInternalId: " + refsetId);
+    
+                try (TerminologyService service = new TerminologyService()) {
+    
+                    User user = SecurityService.getUserFromSession();
+                    service.setModifiedBy(user.getUserName());
+    
+                    final String result = RefsetService.resetRefset(service, user, refsetId);
+    
+                    return new ResponseEntity<>(returnString + result, HttpStatus.OK);
+                }
 
         } catch (final Exception e) {
 

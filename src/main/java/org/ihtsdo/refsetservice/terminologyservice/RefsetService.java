@@ -78,6 +78,10 @@ public class RefsetService {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetService.class);
 
+    private static Boolean isProductionSystem = null;
+
+    private static Boolean isPerVersionSync = null;
+
     /** The refset to language map. */
     private static final Map<String, String> refsetToLanguagesMap = new HashMap<>();
 
@@ -868,7 +872,7 @@ public class RefsetService {
         }
 
         SyncService.setRefsetToSync(refsetId, editionName);
-        RefsetService.sync(service, false, false);
+        RefsetService.sync(service);
 
         logger.info("Reset all versions in database of refsetId: " + refsetId);
 
@@ -2231,9 +2235,21 @@ public class RefsetService {
 
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction) throws Exception {
 
+        if (isProductionSystem == null) {
+
+            isPerVersionSync = refsetPerVersionSync;
+            isProductionSystem = runForProduction;
+        }
+
+        sync(service);
+
+    }
+
+    public static void sync(TerminologyService service) throws Exception {
+
         logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
 
-        SyncService agent = new SyncCodeSystemAgent(refsetPerVersionSync, runForProduction);
+        SyncService agent = new SyncCodeSystemAgent(isPerVersionSync, isProductionSystem);
 
         // Only identify branches on filtered code systems and on runShortSync value
         agent.syncSnowstorm();
@@ -2242,11 +2258,11 @@ public class RefsetService {
         syncUtilities.parseRttData();
 
         // Find all refsets from filtered branches
-        agent = new SyncRefsetAgent(refsetPerVersionSync, runForProduction);
+        agent = new SyncRefsetAgent(isPerVersionSync, isProductionSystem);
         agent.syncSnowstorm();
 
         // Update imported refsets with RTT-based metadata (as defined in parseRttData())
-        if (!runForProduction) {
+        if (!isProductionSystem) {
 
             SyncDataInitializer initializer = new SyncDataInitializer();
             initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets(), agent.getDefaultEditionProjects());
@@ -2258,5 +2274,10 @@ public class RefsetService {
 
         logger.info("Completed Syncing with Snowstorm");
 
+    }
+
+    public static Boolean getIsProductionSystem() {
+
+        return isProductionSystem;
     }
 }
