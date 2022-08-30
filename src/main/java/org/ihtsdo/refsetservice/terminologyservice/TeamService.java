@@ -496,6 +496,8 @@ public class TeamService extends BaseService {
 
                 for (Project project : projectList.getItems()) {
 
+                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription());
+                    
                     for (String role : team.getRoles()) {
 
                         final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
