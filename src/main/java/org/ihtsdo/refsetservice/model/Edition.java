@@ -460,6 +460,43 @@ public class Edition extends AbstractHasModified {
             this.organization.setId(organizationId);
         }
     }
+    
+    /**
+     * Returns the organization name.
+     *
+     * @return the organization name
+     * @throws Exception
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    @IndexingDependency(derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "organization")
+    }))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    public String getOrganizationName() throws Exception {
+
+        if (organization != null) {
+            return organization.getName();
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Sets the organization name.
+     *
+     * @param organizationName the organization name to set
+     */
+    public void setOrganizationName(final String organizationName) {
+
+        if (organization != null) {
+
+            this.organization.setName(organizationName);
+        } else {
+
+            this.organization = new Organization();
+            this.organization.setName(organizationName);
+        }
+    }
 
     /**
      * Hash code.

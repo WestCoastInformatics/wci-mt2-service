@@ -583,7 +583,6 @@ public class TeamService extends BaseService {
         validateTeamData(service, team, false);
 
         service.setModifiedBy(user.getUserName());
-        service.setTransactionPerOperation(false);
 
         service.update(team);
         service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToRemove));
