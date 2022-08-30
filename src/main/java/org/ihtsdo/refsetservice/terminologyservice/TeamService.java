@@ -834,7 +834,7 @@ public class TeamService extends BaseService {
         final Organization organization = team.getOrganization();
         final boolean isOrganizationAdmin = user.doesUserHavePermission(User.ROLE_ADMIN, organization);
         
-        if (isOrganizationAdmin || (team.getRoles().contains(User.ROLE_ADMIN) && team.getMembers().contains(user.getUserName()))){
+        if (isOrganizationAdmin || (team.getRoles().contains(User.ROLE_ADMIN) && team.getMembers().contains(user.getId()))){
             return true;
         } else {
             return false;
