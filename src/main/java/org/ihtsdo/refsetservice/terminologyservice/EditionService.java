@@ -100,7 +100,7 @@ public class EditionService extends BaseService {
         
         try (final TerminologyService service = new TerminologyService()) {
 
-            final Edition edition = service.get("organizationId:" + organizationId, Edition.class);
+            final Edition edition = service.findSingle("organizationId:" + organizationId, Edition.class, null);
 
             return edition;
         }
