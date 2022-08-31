@@ -2593,10 +2593,6 @@ public class RefsetController extends BaseController {
                 }
             }
             
-            return new ResponseEntity<>("No changes were made", HttpStatus.OK);
-
-            } else
-                logger.info("Reset refset unsuccessful. Cannot reset refset " + refsetId + " on a production system");
 
             final String returnMessage = "{ message: \"Reset didn't occur: Cannot reset on production system\"}";
             return new ResponseEntity<>(returnMessage, HttpStatus.FORBIDDEN);
