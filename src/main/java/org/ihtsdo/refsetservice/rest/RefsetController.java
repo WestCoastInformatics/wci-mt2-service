@@ -2591,6 +2591,9 @@ public class RefsetController extends BaseController {
 
                     return new ResponseEntity<>(returnMessage + result, HttpStatus.OK);
                 }
+            }
+            
+            return new ResponseEntity<>("No changes were made", HttpStatus.OK);
 
             } else
                 logger.info("Reset refset unsuccessful. Cannot reset refset " + refsetId + " on a production system");
@@ -2604,5 +2607,4 @@ public class RefsetController extends BaseController {
         }
 
     }
-
 }

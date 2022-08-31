@@ -496,6 +496,8 @@ public class TeamService extends BaseService {
 
                 for (Project project : projectList.getItems()) {
 
+                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription());
+                    
                     for (String role : team.getRoles()) {
 
                         final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
@@ -583,7 +585,6 @@ public class TeamService extends BaseService {
         validateTeamData(service, team, false);
 
         service.setModifiedBy(user.getUserName());
-        service.setTransactionPerOperation(false);
 
         service.update(team);
         service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToRemove));
@@ -833,7 +834,7 @@ public class TeamService extends BaseService {
         final Organization organization = team.getOrganization();
         final boolean isOrganizationAdmin = user.doesUserHavePermission(User.ROLE_ADMIN, organization);
         
-        if (isOrganizationAdmin || (team.getRoles().contains(User.ROLE_ADMIN) && team.getMembers().contains(user.getUserName()))){
+        if (isOrganizationAdmin || (team.getRoles().contains(User.ROLE_ADMIN) && team.getMembers().contains(user.getId()))){
             return true;
         } else {
             return false;

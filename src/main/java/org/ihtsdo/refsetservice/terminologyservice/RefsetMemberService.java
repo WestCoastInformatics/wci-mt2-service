@@ -4925,8 +4925,9 @@ public class RefsetMemberService {
                     final JsonNode inactivationIndicatorNode = conceptNode.get("inactivationIndicator");
 
                     if (inactivationIndicatorNode != null) {
-
                         inactiveConcept.setInactivationReason(inactivationIndicatorNode.asText());
+                    } else {
+                        inactiveConcept.setInactivationReason("NOT SPECIFIED");
                     }
 
                     final JsonNode associationTargets = conceptNode.get("associationTargets");

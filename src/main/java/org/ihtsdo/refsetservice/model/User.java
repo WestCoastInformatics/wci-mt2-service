@@ -27,6 +27,8 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -409,13 +411,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Organization organization) throws Exception {
 
-        Edition edition = null;
-
-        if (organization != null) {
-
-            // TODO: Tim Whalen for Permissions
-            // edition = organization.getEdition();
-        }
+        final Edition edition = EditionService.getEditionForOrganization(organization.getId());
 
         return checkPermission(roleToCheck, edition, null);
     }
@@ -436,24 +432,10 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
             String editionName = null;
 
             if (edition == null && projectCrowdId == null) {
-
                 editionName = "all";
-
             } else if (edition != null) {
-
-                editionName = edition.getShortName();
-
-                // logger.debug("doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
-
-                if (!edition.getShortName().equals("SNOMEDCT")) {
-
-                    editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
-                } else {
-
-                    editionName = "main";
-                }
-
-            }
+                editionName = CrowdGroupNameAlgorithm.getOrganizationString(edition.getShortName());
+            }           
 
             final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
 
@@ -481,18 +463,13 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                             // logger.debug("doesUserHavePermission = true");
                             return true;
                         }
-
                     }
-
                 }
-
             }
 
         } catch (Exception e) {
-
             return false;
         }
-
         return false;
     }
 
