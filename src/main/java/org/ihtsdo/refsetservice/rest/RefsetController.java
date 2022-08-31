@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -49,7 +50,6 @@ import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
-import org.ihtsdo.refsetservice.sync.SyncService;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
@@ -115,6 +115,9 @@ public class RefsetController extends BaseController {
     private static final String SHARE_ACTION = "Share-Refset";
 
     private static final String REQUEST_ACTION = "Request-Access";
+    
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /** Static initialization. */
     static {
@@ -2436,12 +2439,16 @@ public class RefsetController extends BaseController {
 
                 final StringBuffer emailBody = new StringBuffer();
 
+                final String version = (refset.getVersionDate() != null) ? refset.getVersionDate().toString().substring(0, 10) : refset.getVersionStatus();
+
+                final String refsetUrl = PROPERTIES.getProperty("RT2_WEB_ROOT") + "/details/" + refset.getRefsetId() + "/" + StringUtility.encodeValue(version).replace("+", "%20");
+
                 // Title
                 emailBody.append("Hello, ").append(emailInfo.getRecipient()).append(",").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
                 // Main announcement
                 emailBody.append("Refset Tool user ").append(user.getUserName()).append(" would like to share ").append(refset.getName()).append(" with you: ");
-                emailBody.append(refset.getExternalUrl()).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
+                emailBody.append(refsetUrl).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
                 // Additional Info from Sender
                 if (emailInfo.getAdditionalMessage() != null && !emailInfo.getAdditionalMessage().isBlank()) {
