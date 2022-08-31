@@ -2421,7 +2421,7 @@ public class RefsetController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @PostMapping(value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON)
+    @PostMapping(value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
         try {
@@ -2464,7 +2464,7 @@ public class RefsetController extends BaseController {
 
                 AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), emailInfo.getRecipient());
 
-                final String returnMessage = "{ message: \"Refset Shared\"}";
+                final String returnMessage = "{ \"message\": \"Refset Shared\"}";
 
                 return new ResponseEntity<>(returnMessage, HttpStatus.OK);
             }
