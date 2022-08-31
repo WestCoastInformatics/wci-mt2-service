@@ -48,7 +48,8 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncDataInitializer;
+import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
+import org.ihtsdo.refsetservice.sync.SyncService;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
@@ -1540,7 +1541,7 @@ public class RefsetController extends BaseController {
 
             try (TerminologyService service = new TerminologyService()) {
 
-                RefsetService.sync(service, refsetPerVersionSync, runForProduction);
+                SyncService.sync(service, refsetPerVersionSync, runForProduction);
 
                 return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
             }
@@ -1566,7 +1567,7 @@ public class RefsetController extends BaseController {
 
             String status = "Feedback testing refset created successfully";
             logger.info("Create new refset, initialized with feedback, for testing purposes");
-            SyncDataInitializer initializer = new SyncDataInitializer();
+            SyncOperationsInitializer initializer = new SyncOperationsInitializer();
             Refset refset = initializer.createTestingFeedbackRefset();
 
             logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
@@ -1594,7 +1595,7 @@ public class RefsetController extends BaseController {
 
             String status = "Intensional testing refset created successfully";
             logger.info("Create new intensional refset for testing purposes");
-            SyncDataInitializer initializer = new SyncDataInitializer();
+            SyncOperationsInitializer initializer = new SyncOperationsInitializer();
             Refset refset = initializer.createTestingIntensionalRefset();
 
             logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
@@ -2420,13 +2421,13 @@ public class RefsetController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @PostMapping(value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @PostMapping(value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
         try {
 
-            logger
-                .debug("getRefset: refsetId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
+            logger.debug(
+                "shareRefset: refsetId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -2489,8 +2490,8 @@ public class RefsetController extends BaseController {
 
             final String action = REQUEST_ACTION;
 
-            logger.debug(
-                "getRefset: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
+            logger.debug("requestProjectAccess: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: "
+                + emailInfo.getAdditionalMessage());
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -2571,32 +2572,30 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/reset", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> requestProjectAccess(@PathVariable final String refsetId) throws Exception {
+    public @ResponseBody ResponseEntity<String> resetRefset(@PathVariable final String refsetId) throws Exception {
 
         try {
 
-            final String baseMessage = "Attempts to reset refset: " + refsetId + " were ";
+            logger.info("resetRefset: refsetId: " + refsetId);
 
-            if (RefsetService.getIsProductionSystem()) {
-
-                logger.debug("getRefset: refsetInternalId: " + refsetId);
+            if (!SyncService.getIsProductionSystem()) {
 
                 try (TerminologyService service = new TerminologyService()) {
 
                     User user = SecurityService.getUserFromSession();
                     service.setModifiedBy(user.getUserName());
 
-                    final String result = RefsetService.resetRefset(service, user, refsetId);
+                    final String result = SyncService.resetRefset(service, user, refsetId);
                     final String returnMessage = "{ message: \"Reset Successful\"}";
 
                     return new ResponseEntity<>(returnMessage + result, HttpStatus.OK);
                 }
 
-            } else
-                logger.info("Reset refset unsuccessful. Cannot reset refset " + refsetId + " on a production system");
+            } else {
 
-            final String returnMessage = "{ message: \"Reset didn't occur: Cannot reset on production system\"}";
-            return new ResponseEntity<>(returnMessage, HttpStatus.FORBIDDEN);
+                final String returnMessage = "{ message: \"It is prohibited to be Reseting refsets on this production system\"}";
+                return new ResponseEntity<>(returnMessage, HttpStatus.FORBIDDEN);
+            }
 
         } catch (final Exception e) {
 
