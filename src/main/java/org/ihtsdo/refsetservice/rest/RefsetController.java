@@ -2429,12 +2429,12 @@ public class RefsetController extends BaseController {
             logger.debug(
                 "shareRefset: refsetId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
 
-            try (TerminologyService service = new TerminologyService()) {
+            try (final TerminologyService service = new TerminologyService()) {
 
-                User user = SecurityService.getUserFromSession();
+                final User user = SecurityService.getUserFromSession();
                 final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
-                StringBuffer emailBody = new StringBuffer();
+                final StringBuffer emailBody = new StringBuffer();
 
                 // Title
                 emailBody.append("Hello, ").append(emailInfo.getRecipient()).append(",").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
@@ -2452,14 +2452,14 @@ public class RefsetController extends BaseController {
                 }
 
                 // Warning
-                emailBody.append("If this email was recieved in error, you can safely ingnore it." + System.getProperty("line.separator"));
+                emailBody.append("If this email was recieved in error, you can safely ingnore it.").append(System.getProperty("line.separator"));
                 emailBody.append(System.getProperty("line.separator"));
 
                 // Signature
                 emailBody.append("Thank you,").append(System.getProperty("line.separator"));
-                emailBody.append("The SNOMED CT Referencve Set Tool Team");
+                emailBody.append("The SNOMED CT Reference Set Tool Team");
 
-                String action = SHARE_ACTION;
+                final String action = SHARE_ACTION;
                 EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())), emailBody.toString());
 
                 AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), emailInfo.getRecipient());
