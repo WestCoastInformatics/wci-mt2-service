@@ -2463,9 +2463,9 @@ public class RefsetController extends BaseController {
 
                 AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), emailInfo.getRecipient());
 
-                String returnString = "Shared refset";
+                final String returnMessage = "{ message: \"Refset Shared\"}";
 
-                return new ResponseEntity<>(returnString, HttpStatus.OK);
+                return new ResponseEntity<>(returnMessage, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
@@ -2552,8 +2552,9 @@ public class RefsetController extends BaseController {
                 }
 
                 String returnString = action;
+                final String returnMessage = "{ message: \"" + action + "\"}";
 
-                return new ResponseEntity<>(returnString, HttpStatus.OK);
+                return new ResponseEntity<>(returnMessage, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
@@ -2574,20 +2575,28 @@ public class RefsetController extends BaseController {
 
         try {
 
-            String returnString = "Attempts to reset refset: " + refsetId + " were ";
+            final String baseMessage = "Attempts to reset refset: " + refsetId + " were ";
 
             if (RefsetService.getIsProductionSystem()) {
+
                 logger.debug("getRefset: refsetInternalId: " + refsetId);
-    
+
                 try (TerminologyService service = new TerminologyService()) {
-    
+
                     User user = SecurityService.getUserFromSession();
                     service.setModifiedBy(user.getUserName());
-    
+
                     final String result = RefsetService.resetRefset(service, user, refsetId);
-    
-                    return new ResponseEntity<>(returnString + result, HttpStatus.OK);
+                    final String returnMessage = "{ message: \"Reset Successful\"}";
+
+                    return new ResponseEntity<>(returnMessage + result, HttpStatus.OK);
                 }
+
+            } else
+                logger.info("Reset refset unsuccessful. Cannot reset refset " + refsetId + " on a production system");
+
+            final String returnMessage = "{ message: \"Reset didn't occur: Cannot reset on production system\"}";
+            return new ResponseEntity<>(returnMessage, HttpStatus.FORBIDDEN);
 
         } catch (final Exception e) {
 
