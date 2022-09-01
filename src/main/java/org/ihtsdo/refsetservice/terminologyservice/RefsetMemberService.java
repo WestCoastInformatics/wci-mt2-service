@@ -5663,6 +5663,10 @@ public class RefsetMemberService {
 
     public static void clearUniqueRefsetVersions(String refsetId) {
 
-        refsetToPublishedVersionMap.get(refsetId).clear();
+        if (refsetToPublishedVersionMap.containsKey(refsetId)) {
+
+            refsetToPublishedVersionMap.get(refsetId).clear();
+        }
+
     }
 }
