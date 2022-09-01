@@ -36,9 +36,7 @@ public class SyncRefsetAgent extends SyncService {
 
     private final Set<SyncRefsetMetadata> refsetsToProcess = new HashSet<>();
 
-    public SyncRefsetAgent(boolean perVersionCreation, boolean runForProduction) throws Exception {
-
-        super(perVersionCreation, runForProduction);
+    public SyncRefsetAgent() throws Exception {
 
         snowstormRefsets.clear();
         refsetsToProcess.clear();
@@ -47,7 +45,7 @@ public class SyncRefsetAgent extends SyncService {
     public void syncSnowstorm() throws Exception {
 
         Set<SyncRefsetMetadata> filteredRefsets = filterRefsetsToProcess();
-
+        
         // Map each refsetId/version pair's SyncRefsetMetadata
         Map<String, Map<Date, SyncRefsetMetadata>> allSnowstormRefsetVersionPairs = parseSnowstormRefsetVersionPairs(filteredRefsets);
 
@@ -60,7 +58,7 @@ public class SyncRefsetAgent extends SyncService {
             counter += allSnowstormRefsetVersionPairs.get(refsetId).keySet().size();
         }
 
-        logger.info(" syncSnowstormRefsets: Examinging if there are any new or changes to the  " + counter + " refset/version pairs found on Snowstorm");
+        logger.info(" syncSnowstormRefsets: Examining if there are any new or changes to the  " + counter + " refset/version pairs found on Snowstorm");
 
         counter = 0;
 
@@ -347,6 +345,12 @@ public class SyncRefsetAgent extends SyncService {
 
                     final String branchPath = branchesToProcess.get(editionShortName).get(branchVersion);
 
+                    if (testing && !branchPath.contains("2020") && branchPath.contains("2021") && branchPath.contains("2022")) {
+
+                        // When testing, only look in this decade
+                        continue;
+                    }
+
                     try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", branchPath))) {
 
                         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -381,8 +385,11 @@ public class SyncRefsetAgent extends SyncService {
 
                             final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
+                            logger.debug("Found refsetId: " + refsetId);
 
                             if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
+
+                                logger.debug("Found refsetId: " + refsetId + ", but will not add it");
 
                                 continue;
                             }
@@ -394,7 +401,11 @@ public class SyncRefsetAgent extends SyncService {
                              */
                             if (utilities.isInternationalEdition(edition.getName()) || !utilities.getInternationalModules().contains(moduleId)) {
 
+                                logger.debug("Testing refsetId: " + refsetId);
+
                                 if (persistVersion(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), branchesToProcess.get(edition.getShortName()).keySet())) {
+
+                                    logger.debug("Adding it refsetId: " + refsetId);
 
                                     SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, branchesToProcess.get(edition.getShortName()).keySet(), branchVersion, branchPath);
 

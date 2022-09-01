@@ -32,9 +32,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
     private static final Set<String> codeSystemsNewAndInactive = new HashSet<>();
 
-    public SyncCodeSystemAgent(boolean perVersionCreation, boolean runForProduction) throws Exception {
-
-        super(perVersionCreation, runForProduction);
+    public SyncCodeSystemAgent() throws Exception {
 
         codeSystemsNewAndInactive.clear();
     }

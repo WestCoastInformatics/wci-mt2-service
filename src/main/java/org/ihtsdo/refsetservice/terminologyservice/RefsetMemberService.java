@@ -4925,8 +4925,10 @@ public class RefsetMemberService {
                     final JsonNode inactivationIndicatorNode = conceptNode.get("inactivationIndicator");
 
                     if (inactivationIndicatorNode != null) {
+
                         inactiveConcept.setInactivationReason(inactivationIndicatorNode.asText());
                     } else {
+
                         inactiveConcept.setInactivationReason("NOT SPECIFIED");
                     }
 
@@ -5657,5 +5659,10 @@ public class RefsetMemberService {
         logger.debug("compileComparisonData refsetMemberComparison: " + refsetMemberComparison);
 
         return status;
+    }
+
+    public static void clearUniqueRefsetVersions(String refsetId) {
+
+        refsetToPublishedVersionMap.get(refsetId).clear();
     }
 }

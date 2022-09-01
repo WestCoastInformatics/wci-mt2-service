@@ -9,14 +9,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +32,10 @@ public abstract class SyncService {
     private static Logger logger = LoggerFactory.getLogger(SyncService.class);
 
     protected static SyncUtilities utilities = null;
+
+    private static Boolean isProductionSystem = null;
+
+    private static Boolean isPerVersionSync = null;
 
     /** Testing options. */
     protected static boolean testing = false;
@@ -46,6 +56,8 @@ public abstract class SyncService {
     protected static final List<Organization> allDatabaseOrganizations = new ArrayList<>();
 
     protected static final List<Refset> allDatabaseRefsets = new ArrayList<>();
+
+    protected static final List<Project> allDatabaseProjects = new ArrayList<>();
 
     /** Maps to help assoicate across sync **/
 
@@ -89,16 +101,18 @@ public abstract class SyncService {
 
     protected boolean forProduction;
 
-    public SyncService(boolean perVersionCreation, boolean runForProduction) {
+    public abstract void syncSnowstorm() throws Exception;
+
+    private static void initialize(boolean refsetPerVersionSync, boolean runForProduction) {
 
         if (utilities == null) {
 
             utilities = new SyncUtilities();
 
-            ignoredCodeSystemNames.addAll(utilities.getPropertyReader().readCodeSystemsToIgnore());
+            isPerVersionSync = refsetPerVersionSync;
+            isProductionSystem = runForProduction;
 
-            refsetPerVersionSync = perVersionCreation;
-            forProduction = runForProduction;
+            ignoredCodeSystemNames.addAll(utilities.getPropertyReader().readCodeSystemsToIgnore());
 
             try {
 
@@ -113,13 +127,108 @@ public abstract class SyncService {
 
     }
 
-    public abstract void syncSnowstorm() throws Exception;
-    
+    public static String resetRefset(final TerminologyService service, final User user, final String refsetId) throws Exception {
+
+        if (!RefsetService.doesRefsetExist(refsetId, null)) {
+
+            final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
+            return "unnecessary as it doesn't reside in RT2";
+        }
+
+        Refset latestVersion = RefsetService.getLatestRefsetVersion(service, refsetId);
+
+        final String editionName = latestVersion.getEditionName();
+
+        // if the refset has never been versioned before then delete it
+        if (!RefsetService.doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
+
+            RefsetService.deleteInDevelopmentVersion(service, user, latestVersion.getId(), true);
+        }
+
+        final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
+
+        for (Refset refset : results.getItems()) {
+
+            service.add(AuditEntryHelper.resetRefsetEntry(refset));
+
+            RefsetService.deleteRefset(service, refset);
+
+        }
+
+        boolean testingStatus = SyncService.testing;
+
+        SyncService.setRefsetToSync(refsetId, editionName);
+        sync(service);
+        SyncService.testing = testingStatus;
+
+        logger.info("Successfully reset all versions in database of refsetId: " + refsetId);
+
+        return "successfully";
+
+    }
+
+    public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction) throws Exception {
+
+        if (isProductionSystem == null) {
+
+            initialize(refsetPerVersionSync, runForProduction);
+        }
+
+        sync(service);
+
+    }
+
+    public static void sync(TerminologyService service) throws Exception {
+
+        if (isProductionSystem == null) {
+
+            initialize(false, false);
+        }
+
+        logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
+
+        utilities.initializeService(service);
+
+        SyncService agent = new SyncCodeSystemAgent();
+
+        // Only identify branches on filtered code systems and on runShortSync value
+        agent.syncSnowstorm();
+
+        SyncUtilities syncUtilities = new SyncUtilities();
+        syncUtilities.parseRttData();
+
+        // Find all refsets from filtered branches
+        agent = new SyncRefsetAgent();
+        agent.syncSnowstorm();
+
+        // Update imported refsets with RTT-based metadata (as defined in parseRttData())
+        if (!isProductionSystem) {
+
+            SyncOperationsInitializer initializer = new SyncOperationsInitializer();
+
+            initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets());
+        }
+
+        logger.info(agent.printStatistics());
+
+        service.add(AuditEntryHelper.syncEntry(new Date()));
+
+        logger.info("Completed Syncing with Snowstorm");
+
+    }
+
+    public static Boolean getIsProductionSystem() {
+
+        return isProductionSystem == null ? false : isProductionSystem;
+    }
+
     public static void setRefsetToSync(final String refsetId, final String editionName) throws Exception {
 
         testing = true;
         testingRefset = refsetId;
         testingEdition = editionName;
+
+        RefsetMemberService.clearUniqueRefsetVersions(refsetId);
     }
 
     protected void clearPreviousRun() {
@@ -137,19 +246,19 @@ public abstract class SyncService {
         statistics.clearStatistics();
     }
 
-    protected void updateDatabaseCache() throws Exception {
+    protected static void updateDatabaseCache() throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            editionOwnerMap.clear();
             allDatabaseEditions.clear();
             allDatabaseOrganizations.clear();
+            allDatabaseProjects.clear();
             allDatabaseRefsets.clear();
+            editionOwnerMap.clear();
+            defaultEditionProjects.clear();
 
             allDatabaseEditions.addAll(service.getAll(Edition.class));
-            allDatabaseEditions.stream().forEach(e -> editionOwnerMap.put(e.getShortName(), e.getOrganization().getName()));
             // logger.debug(" All Editions: " + allDatabaseEditions);
-            // logger.debug(" Edition Owner Map: " + editionOwnerMap);
 
             allDatabaseOrganizations.addAll(service.getAll(Organization.class));
             // logger.debug(" All Organizations: " + allDatabaseOrganizations);
@@ -157,6 +266,17 @@ public abstract class SyncService {
             allDatabaseRefsets.addAll(service.getAll(Refset.class));
             // logger.debug(" All Refsets: " + allDatabaseRefsets);
 
+            allDatabaseProjects.addAll(service.getAll(Project.class));
+            // logger.debug(" All Projects: " + allDatabaseProjects);
+
+            /** Process supporting collections **/
+            allDatabaseEditions.stream().forEach(e -> editionOwnerMap.put(e.getShortName(), e.getOrganization().getName()));
+            logger.debug(" Edition Owner Map: " + editionOwnerMap);
+
+            List<Project> defaultProjects =
+                allDatabaseProjects.stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default"))).collect(Collectors.toList());
+            defaultProjects.stream().forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
+            logger.debug(" defaultEditionProjects: " + defaultEditionProjects);
         }
 
     }
@@ -214,6 +334,11 @@ public abstract class SyncService {
     public List<Refset> getAllDatabaseRefsets() {
 
         return allDatabaseRefsets;
+    }
+
+    public List<Project> getAllDatabaseProjects() {
+
+        return allDatabaseProjects;
     }
 
     public Map<String, Project> getDefaultEditionProjects() {

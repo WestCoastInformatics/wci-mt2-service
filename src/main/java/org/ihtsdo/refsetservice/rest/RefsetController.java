@@ -112,8 +112,6 @@ public class RefsetController extends BaseController {
 
     private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
 
-    private static final String SHARE_ACTION = "Share-Refset";
-
     private static final String REQUEST_ACTION = "Request-Access";
 
     /** Static initialization. */
@@ -1541,7 +1539,7 @@ public class RefsetController extends BaseController {
 
             try (TerminologyService service = new TerminologyService()) {
 
-                RefsetService.sync(service, refsetPerVersionSync, runForProduction);
+                SyncService.sync(service, refsetPerVersionSync, runForProduction);
 
                 return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
             }
@@ -2429,45 +2427,11 @@ public class RefsetController extends BaseController {
             logger.debug(
                 "shareRefset: refsetId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
 
-            try (TerminologyService service = new TerminologyService()) {
+            RefsetService.shareRefset(refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
-                User user = SecurityService.getUserFromSession();
-                final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            final String returnMessage = "{ message: \"Share Refset was Successful\"}";
 
-                StringBuffer emailBody = new StringBuffer();
-
-                // Title
-                emailBody.append("Hello, " + emailInfo.getRecipient() + "," + System.getProperty("line.separator") + System.getProperty("line.separator"));
-
-                // Main announcement
-                emailBody.append("Refset Tool user " + user.getUserName() + " would like to share " + refset.getName() + " with you: "
-                    + emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator") + System.getProperty("line.separator")));
-
-                // Additional Info from Sender
-                if (emailInfo.getAdditionalMessage() != null && !emailInfo.getAdditionalMessage().isBlank()) {
-
-                    emailBody.append(user.getName() + " has included the additional message:" + System.getProperty("line.separator"));
-                    emailBody.append(emailInfo.getAdditionalMessage() + System.getProperty("line.separator"));
-                    emailBody.append(System.getProperty("line.separator"));
-                }
-
-                // Warning
-                emailBody.append("If this email was recieved in error, you can safely ingnore it." + System.getProperty("line.separator"));
-                emailBody.append(System.getProperty("line.separator"));
-
-                // Signature
-                emailBody.append("Thank you," + System.getProperty("line.separator"));
-                emailBody.append("The SNOMED CT Referencve Set Tool Team");
-
-                String action = SHARE_ACTION;
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())), emailBody.toString());
-
-                AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), emailInfo.getRecipient());
-
-                final String returnMessage = "{ message: \"Refset Shared\"}";
-
-                return new ResponseEntity<>(returnMessage, HttpStatus.OK);
-            }
+            return new ResponseEntity<>(returnMessage, HttpStatus.OK);
 
         } catch (final Exception e) {
 
@@ -2567,7 +2531,7 @@ public class RefsetController extends BaseController {
 
     @ApiOperation(value = "Request project access from administrators", response = Refset.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully requested access to the refset's ecnlosing project"), @ApiResponse(code = 400, message = "Invalid email address recipient entered"),
+        @ApiResponse(code = 200, message = "Successfully requested access to the refset's ecnlosing project"), @ApiResponse(code = 403, message = "May not reset refset on a production system"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
@@ -2576,26 +2540,26 @@ public class RefsetController extends BaseController {
 
         try {
 
-            logger.info("resetRefset: refsetId: " + refsetId);
+            logger.debug("resetRefset: refsetId: " + refsetId);
 
-            if (!RefsetService.getIsProductionSystem()) {
+            if (!SyncService.getIsProductionSystem()) {
 
                 try (TerminologyService service = new TerminologyService()) {
 
                     User user = SecurityService.getUserFromSession();
                     service.setModifiedBy(user.getUserName());
 
-                    final String result = RefsetService.resetRefset(service, user, refsetId);
+                    final String result = SyncService.resetRefset(service, user, refsetId);
+
                     final String returnMessage = "{ message: \"Reset Successful\"}";
 
                     return new ResponseEntity<>(returnMessage + result, HttpStatus.OK);
                 }
 
-            } else {
-
-                final String returnMessage = "{ message: \"It is prohibited to be Reseting refsets on this production system\"}";
-                return new ResponseEntity<>(returnMessage, HttpStatus.FORBIDDEN);
             }
+
+            final String returnMessage = "{ message: \"It is prohibited to be Reseting refsets on this production system\"}";
+            return new ResponseEntity<>(returnMessage, HttpStatus.FORBIDDEN);
 
         } catch (final Exception e) {
 

@@ -21,7 +21,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncDataInitializer;
+import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
@@ -527,7 +527,7 @@ public class SyncUtilities {
             initializeService(service);
 
             // if the status is Published then create a new version of the refset that is ready to be edited
-            refset = WorkflowService.setWorkflowStatusByAction(service, SyncDataInitializer.getSyncUser(), WorkflowService.FINISH_EDIT, refset, "");
+            refset = WorkflowService.setWorkflowStatusByAction(service, SyncOperationsInitializer.getSyncUser(), WorkflowService.FINISH_EDIT, refset, "");
 
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {

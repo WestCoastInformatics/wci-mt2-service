@@ -46,11 +46,6 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncCodeSystemAgent;
-import org.ihtsdo.refsetservice.sync.SyncDataInitializer;
-import org.ihtsdo.refsetservice.sync.SyncRefsetAgent;
-import org.ihtsdo.refsetservice.sync.SyncService;
-import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -78,10 +73,6 @@ public class RefsetService {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(RefsetService.class);
 
-    private static Boolean isProductionSystem = null;
-
-    private static Boolean isPerVersionSync = null;
-
     /** The refset to language map. */
     private static final Map<String, String> refsetToLanguagesMap = new HashMap<>();
 
@@ -99,6 +90,10 @@ public class RefsetService {
 
     /** A list of refset actively being updated. */
     public static final Set<String> refsetsToShowUpgradeWarning = new HashSet<>();
+
+    private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
+
+    private static final String SHARE_ACTION = "Share-Refset";
 
     static {
 
@@ -843,43 +838,6 @@ public class RefsetService {
         return statusMessage;
     }
 
-    public static String resetRefset(final TerminologyService service, final User user, final String refsetId) throws Exception {
-
-        if (!RefsetService.doesRefsetExist(refsetId, null)) {
-
-            return "unnecessary as it doesn't reside in RT2";
-        }
-
-        Refset latestVersion = getLatestRefsetVersion(service, refsetId);
-
-        final String editionName = latestVersion.getEditionName();
-        final String orgId = latestVersion.getEdition().getOrganization().getId();
-
-        // if the refset has never been versioned before then delete it
-        if (!doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
-
-            deleteInDevelopmentVersion(service, user, latestVersion.getId(), true);
-        }
-
-        final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
-
-        for (Refset refset : results.getItems()) {
-
-            service.add(AuditEntryHelper.resetRefsetEntry(refset));
-
-            deleteRefset(service, refset);
-
-        }
-
-        SyncService.setRefsetToSync(refsetId, editionName);
-        RefsetService.sync(service);
-
-        logger.info("Reset all versions in database of refsetId: " + refsetId);
-
-        return "succssfully";
-
-    }
-
     /**
      * Inactivate a refset.
      *
@@ -1043,7 +1001,7 @@ public class RefsetService {
         return status;
     }
 
-    private static void deleteRefset(TerminologyService service, Refset refset) throws Exception {
+    public static void deleteRefset(TerminologyService service, Refset refset) throws Exception {
 
         WorkflowService.deleteRefsetBranch(refset.getEditionBranch(), refset.getId());
 
@@ -2233,51 +2191,41 @@ public class RefsetService {
         return status;
     }
 
-    public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction) throws Exception {
+    public static void shareRefset(String refsetInternalId, String recipient, String additionalMessage) throws Exception {
 
-        if (isProductionSystem == null) {
+        try (TerminologyService service = new TerminologyService()) {
 
-            isPerVersionSync = refsetPerVersionSync;
-            isProductionSystem = runForProduction;
+            User user = SecurityService.getUserFromSession();
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+
+            StringBuffer emailBody = new StringBuffer();
+
+            // Title
+            emailBody.append("Hello, " + user.getName() + "," + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+            // Main announcement
+            emailBody.append("A SNOMED International Refset Tool user named '" + user.getUserName() + " would like to share the reference set named: " + refset.getName()
+                + " with you. Here is a direct link to access that reference set: "
+                + emailBody.append(refset.getExternalUrl() + System.getProperty("line.separator") + System.getProperty("line.separator")));
+
+            // Additional Info from Sender
+            if (additionalMessage != null && !additionalMessage.isBlank()) {
+
+                emailBody.append("In addition, they have included the additional message: " + additionalMessage + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            }
+
+            // Warning
+            emailBody.append("If this email was recieved in error, you can safely ignore it." + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+            // Signature
+            emailBody.append("Thank you," + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            emailBody.append("The SNOMED International Refset Tooling Team");
+
+            String action = SHARE_ACTION;
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(recipient)), emailBody.toString());
+
+            AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), recipient);
         }
 
-        sync(service);
-
-    }
-
-    public static void sync(TerminologyService service) throws Exception {
-
-        logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
-
-        SyncService agent = new SyncCodeSystemAgent(isPerVersionSync, isProductionSystem);
-
-        // Only identify branches on filtered code systems and on runShortSync value
-        agent.syncSnowstorm();
-
-        SyncUtilities syncUtilities = new SyncUtilities();
-        syncUtilities.parseRttData();
-
-        // Find all refsets from filtered branches
-        agent = new SyncRefsetAgent(isPerVersionSync, isProductionSystem);
-        agent.syncSnowstorm();
-
-        // Update imported refsets with RTT-based metadata (as defined in parseRttData())
-        if (!isProductionSystem) {
-
-            SyncDataInitializer initializer = new SyncDataInitializer();
-            initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets(), agent.getDefaultEditionProjects());
-        }
-
-        logger.info(agent.printStatistics());
-
-        service.add(AuditEntryHelper.syncEntry(new Date()));
-
-        logger.info("Completed Syncing with Snowstorm");
-
-    }
-
-    public static Boolean getIsProductionSystem() {
-
-        return isProductionSystem;
     }
 }
