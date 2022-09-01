@@ -276,7 +276,7 @@ public class DiscussionService {
     public static boolean canUserViewPrivateThread(final User user, final Refset refset) throws Exception {
 
         // if the user does not have the correct roles on the refset or they did not create the thread then they can't edit it
-        if (refset.getRoles().contains(User.ROLE_VIEWER)) {
+        if (refset.getRoles().contains(User.ROLE_VIEWER) || refset.getRoles().contains(User.ROLE_ADMIN)) {
             return true;
         } else {
             return false;
