@@ -2232,7 +2232,7 @@ public class RefsetService {
             }
 
             // Warning
-            emailBody.append("If this email was recieved in error, you can safely ingnore it.").append(System.getProperty("line.separator"));
+            emailBody.append("If this email was received in error, you can safely ingnore it.").append(System.getProperty("line.separator"));
             emailBody.append(System.getProperty("line.separator"));
 
             // Signature
