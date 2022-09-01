@@ -2433,7 +2433,7 @@ public class RefsetController extends BaseController {
 
             RefsetService.shareRefset(refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
-            final String returnMessage = "{ message: \"Share Refset was Successful\"}";
+            final String returnMessage = "{\"message\": \"Share Refset was Successful\"}";
 
             return new ResponseEntity<>(returnMessage, HttpStatus.OK);
 
@@ -2456,75 +2456,14 @@ public class RefsetController extends BaseController {
 
         try {
 
-            final String action = REQUEST_ACTION;
-
             logger.debug("requestProjectAccess: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: "
                 + emailInfo.getAdditionalMessage());
 
-            try (TerminologyService service = new TerminologyService()) {
+            RefsetService.requestProjectAccess(refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
-                User user = SecurityService.getUserFromSession();
-                final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-                final Project project = refset.getProject();
+            final String returnMessage = "{\"message\": \"Refset access (via project access) was requested was Successful\"}";
 
-                // TODO: Verify that user is NOT already member of project. if they are, throw exception with explanation
-
-                // Identify Admins who each get an email
-                Set<User> adminEmailRecipients = new HashSet<>();
-                List<Team> adminTeams = new ArrayList<>();
-
-                for (String teamId : project.getTeams()) {
-
-                    Team t = TeamService.getTeam(teamId, true);
-
-                    if (t.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
-
-                        adminTeams.add(t);
-                    }
-
-                }
-
-                adminTeams.stream().forEach(t -> t.getMemberList().stream().forEach(u -> adminEmailRecipients.add(u)));
-
-                // Create Email itself
-                StringBuffer emailBody = new StringBuffer();
-
-                // Greeting
-                emailBody.append("Hello, {projectAdminName}," + System.getProperty("line.separator") + System.getProperty("line.separator"));
-
-                // Static Message
-                emailBody.append(user.getName() + " has requested access to " + project.getName() + " via the " + refset.getName() + "." + System.getProperty("line.separator")
-                    + System.getProperty("line.separator"));
-
-                // Additional Info from Sender
-                if (emailInfo.getAdditionalMessage() != null) {
-
-                    emailBody.append(user.getName() + " has included the additional message in their request:" + System.getProperty("line.separator") + System.getProperty("line.separator"));
-                    emailBody.append(emailInfo.getAdditionalMessage() + System.getProperty("line.separator") + System.getProperty("line.separator"));
-                }
-
-                // Warning
-                emailBody
-                    .append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. " + System.getProperty("line.separator") + System.getProperty("line.separator"));
-
-                emailBody.append(System.getProperty("line.separator") + System.getProperty("line.separator") + System.getProperty("line.separator"));
-
-                // Signature
-                emailBody.append("Not that this email has been sent to the other ADMIN teams on this project.");
-
-                for (User recipient : adminEmailRecipients) {
-
-                    AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access (via refset)", recipient.getUserName(), project.getName() + "'s admins");
-
-                    EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(emailInfo.getRecipient())),
-                        emailBody.toString().replace("{projectAdminName}", recipient.getName()));
-                }
-
-                String returnString = action;
-                final String returnMessage = "{ message: \"" + action + "\"}";
-
-                return new ResponseEntity<>(returnMessage, HttpStatus.OK);
-            }
+            return new ResponseEntity<>(returnMessage, HttpStatus.OK);
 
         } catch (final Exception e) {
 
@@ -2555,14 +2494,14 @@ public class RefsetController extends BaseController {
 
                     final String result = SyncService.resetRefset(service, user, refsetId);
 
-                    final String returnMessage = "{ message: \"Reset Successful\"}";
+                    final String returnMessage = "{\"message\": \"Reset Successful\"}";
 
                     return new ResponseEntity<>(returnMessage + result, HttpStatus.OK);
                 }
 
             }
 
-            final String returnMessage = "{ message: \"It is prohibited to be Reseting refsets on this production system\"}";
+            final String returnMessage = "{\"message\": \"It is prohibited to be Reseting refsets on this production system\"}";
             return new ResponseEntity<>(returnMessage, HttpStatus.FORBIDDEN);
 
         } catch (final Exception e) {
