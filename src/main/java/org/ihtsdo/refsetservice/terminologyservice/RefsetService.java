@@ -42,6 +42,7 @@ import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetEditHistory;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
@@ -2225,6 +2226,71 @@ public class RefsetService {
             EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(recipient)), emailBody.toString());
 
             AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), recipient);
+        }
+
+    }
+
+    public static void requestProjectAccess(String refsetInternalId, String recipient, String additionalMessage) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            User user = SecurityService.getUserFromSession();
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            final Project project = refset.getProject();
+
+            // TODO: Verify that user is NOT already member of project. if they are, throw exception with explanation
+
+            // Identify Admins who each get an email
+            Set<User> adminEmailRecipients = new HashSet<>();
+            List<Team> adminTeams = new ArrayList<>();
+
+            for (String teamId : project.getTeams()) {
+
+                Team t = TeamService.getTeam(teamId, true);
+
+                if (t.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
+
+                    adminTeams.add(t);
+                }
+
+            }
+
+            adminTeams.stream().forEach(t -> t.getMemberList().stream().forEach(u -> adminEmailRecipients.add(u)));
+
+            // Create Email itself
+            StringBuffer emailBody = new StringBuffer();
+
+            // Greeting
+            emailBody.append("Hello, {projectAdminName}," + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+            // Static Message
+            emailBody.append(
+                user.getName() + " has requested access to " + project.getName() + " via the " + refset.getName() + "." + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+            // Additional Info from Sender
+            if (additionalMessage != null) {
+
+                emailBody.append(user.getName() + " has included the additional message in their request:" + System.getProperty("line.separator") + System.getProperty("line.separator"));
+                emailBody.append(additionalMessage + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            }
+
+            // Warning
+            emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. " + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+            emailBody.append(System.getProperty("line.separator") + System.getProperty("line.separator") + System.getProperty("line.separator"));
+
+            // Signature
+            emailBody.append("Not that this email has been sent to the other ADMIN teams on this project.");
+
+            for (User adminRecipient : adminEmailRecipients) {
+
+                AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access ds(via refset)", adminRecipient.getUserName(), project.getName() + "'s admins");
+                Set<String> adminEmail = new HashSet<>();
+
+                adminEmail.add(adminRecipient.getEmail());
+                EmailUtility.sendEmail(EMAIL_SUBJECT + " access requested", user.getEmail(), adminEmail, emailBody.toString().replace("{projectAdminName}", adminRecipient.getName()));
+            }
+
         }
 
     }
