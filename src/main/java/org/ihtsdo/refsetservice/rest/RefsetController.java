@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -113,6 +114,9 @@ public class RefsetController extends BaseController {
     private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
 
     private static final String REQUEST_ACTION = "Request-Access";
+
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /** Static initialization. */
     static {
@@ -2419,7 +2423,7 @@ public class RefsetController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @PostMapping(value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON)
+    @PostMapping(value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
         try {
