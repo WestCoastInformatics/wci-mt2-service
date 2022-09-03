@@ -2398,8 +2398,6 @@ public class RefsetService {
         // TODO: For now, just putting it in topModuleId of edition. Update as needed.
         String moduleId = project.getEdition().getTopLevelModule();
 
-        
-        
         logger.debug("111a");
         /** Refset Name & Concept **/
         final List<Refset> projectRefsets = service.find("projectId:" + baseRefset.getProjectId() + " AND active:true", null, Refset.class, null).getItems();
@@ -2409,15 +2407,18 @@ public class RefsetService {
         for (Refset projectRefset : projectRefsets) {
 
             if (projectRefset.getRefsetId().startsWith(baseRefset.getRefsetId()) && projectRefset.getName().startsWith(baseRefset.getName())) {
+
                 char lastChar = projectRefset.getName().charAt(projectRefset.getName().length() - 1);
 
                 int refsetVersion = 0;
+
                 if (Character.isDigit(lastChar)) {
-                    
+
                     refsetVersion = Integer.parseInt(projectRefset.getName().substring(baseRefset.getName().length()).trim());
                 } else {
+
                     refsetVersion = 1;
-                    
+
                 }
 
                 if (refsetVersion > latestVersion) {
@@ -2431,6 +2432,7 @@ public class RefsetService {
             }
 
         }
+
         logger.debug("111b with latestVersion: " + latestVersion);
 
         Refset newTestingRefset;
@@ -2474,6 +2476,15 @@ public class RefsetService {
 
         // Persist
         final Refset copiedRefset = service.add(newRefset);
+
+        ConceptResultList members = RefsetMemberService.getRefsetMembers(service, user, copiedRefset.getId(), null, "list", null);
+        List<String> conceptIds = new ArrayList<>();
+
+        if (copiedRefset.getType().equals(Refset.EXTENSIONAL)) {
+
+            members.getItems().stream().forEach(m -> conceptIds.add(m.getCode()));
+            RefsetMemberService.addRefsetMembers(service, user, copiedRefset.getId(), conceptIds);
+        }
 
         logger.info("Copied refset from " + refsetId + ": " + copiedRefset);
 
