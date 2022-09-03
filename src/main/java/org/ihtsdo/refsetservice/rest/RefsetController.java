@@ -2467,22 +2467,22 @@ public class RefsetController extends BaseController {
         @ApiResponse(code = 200, message = "Successfully copied refset specified"), @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/copy/{name}", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetId, @PathVariable(required = true) final String name) throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/copy", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetId) throws Exception {
 
         // TODO: Add support for providing a zip RF2 or a refset file to clone off of.
         // Questions to be answered first: Always use a) latest version for refsetId provided or b) Version if provided RF2 file instead and c) Can't supply both
         try (TerminologyService service = new TerminologyService()) {
 
-            logger.debug("Copy Refset: refsetId: " + refsetId + " projectId: " + null + " with new name: " + name);
+            logger.debug("Copy Refset: refsetId: " + refsetId + " projectId: " + null + " with new name: " + null);
 
             User user = SecurityService.getUserFromSession();
             service.setModifiedBy(user.getUserName());
 
             // TODO: Support specifying path as RequestBody var (as should name be as well)
-            final Refset refset = RefsetService.copyRefset(service, user, refsetId, name, null);
+            final Refset refset = RefsetService.copyRefset(service, user, refsetId, null, null);
 
-            final String returnMessage = "{\"message\": \"Copied Successful from refsetId: " + refsetId + " into new refset: " + refset.getRefsetId() + "\"}";
+            final String returnMessage = "{\"message\": \"Copied Successfully from refsetId: " + refsetId + " into new refset: " + refset.getRefsetId() + "\"}";
 
             return new ResponseEntity<>(returnMessage, HttpStatus.OK);
 
