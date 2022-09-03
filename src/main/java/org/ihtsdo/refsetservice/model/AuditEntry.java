@@ -171,7 +171,8 @@ public class AuditEntry extends AbstractHasModified {
      *
      * @return the details
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "detailsSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getDetails() {
 
         return details;
