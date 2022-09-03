@@ -9,9 +9,12 @@
  */
 package org.ihtsdo.refsetservice.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.PfsParameter;
+import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -64,6 +67,7 @@ public class AuditService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final PfsParameter pfs = new PfsParameter();
+            String query = searchParameters.getQuery();
             if (searchParameters.getOffset() != null) {
                 pfs.setOffset(searchParameters.getOffset());
             }
@@ -81,8 +85,12 @@ public class AuditService {
             if (searchParameters.getSort() != null) {
                 pfs.setSort(searchParameters.getSort());
             }
-
-            final ResultList<AuditEntry> results = service.find(searchParameters.getQuery(), pfs, AuditEntry.class, null);
+            
+            if (query != null && !query.equals("")) {
+                query = IndexUtility.addWildcardsToQuery("(" + query + ")", AuditEntry.class);
+            }
+            
+            final ResultList<AuditEntry> results = service.find(query, pfs, AuditEntry.class, null);
 
             return results;
 
