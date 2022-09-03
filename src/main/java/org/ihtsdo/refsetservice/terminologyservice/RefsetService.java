@@ -2221,24 +2221,22 @@ public class RefsetService {
             emailBody.append("Hello, ").append(recipient).append(",").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Main announcement
-            emailBody.append("Refset Tool user ").append(user.getUserName()).append(" would like to share ").append(refset.getName()).append(" with you: ");
-            emailBody.append(refsetUrl).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
+            emailBody.append("A SNOMED International Refset Tool user named '").append(user.getUserName()).append(" would like to share the reference set named: ").append(refset.getName()).append(" with you. Here is a direct link to access that reference set: ").append(refsetUrl).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Additional Info from Sender
             if (!StringUtils.isBlank(additionalMessage)) {
 
-                emailBody.append(user.getName()).append(" has included the additional message:").append(System.getProperty("line.separator"));
-                emailBody.append(additionalMessage).append(System.getProperty("line.separator"));
-                emailBody.append(System.getProperty("line.separator"));
+                emailBody.append(user.getName()).append("In addition, they have included the additional message:").append(System.getProperty("line.separator"));
+                emailBody.append(additionalMessage).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
             }
 
             // Warning
-            emailBody.append("If this email was received in error, you can safely ingnore it.").append(System.getProperty("line.separator"));
+            emailBody.append("If this email was received in error, you can safely ignore it.").append(System.getProperty("line.separator"));
             emailBody.append(System.getProperty("line.separator"));
 
             // Signature
             emailBody.append("Thank you,").append(System.getProperty("line.separator"));
-            emailBody.append("The SNOMED CT Reference Set Tool Team");
+            emailBody.append("The SNOMED International Refset Tooling Team");
 
             String action = SHARE_ACTION;
             EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(recipient)), emailBody.toString());
