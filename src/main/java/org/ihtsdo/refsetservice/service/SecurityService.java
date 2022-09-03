@@ -586,7 +586,7 @@ public class SecurityService implements AutoCloseable {
      * @return the user from user name
      * @throws Exception the exception
      */
-    public User getUserFromUserName(String userName) throws Exception {
+    public static User getUserFromUserName(String userName) throws Exception {
 
         User user = null;
 

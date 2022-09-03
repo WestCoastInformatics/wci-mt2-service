@@ -758,6 +758,6 @@ public class SyncCodeSystemAgent extends SyncService {
 
     private boolean isEditionToProcess(String codeSystem) {
 
-        return !testing || (testing && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.contains(testingEdition) || utilities.isInternationalEdition(codeSystem));
+        return !isTesting() || (isTesting() && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.contains(testingEdition) || utilities.isInternationalEdition(codeSystem));
     }
 }

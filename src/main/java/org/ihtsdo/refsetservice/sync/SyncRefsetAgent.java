@@ -19,6 +19,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncRefsetMetadata;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +30,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class SyncRefsetAgent extends SyncService {
 
     private final Logger logger = LoggerFactory.getLogger(SyncRefsetAgent.class);
-
-    protected static final String SIMPLE_TYPE_REFSET_SCTID = "446609009";
 
     private final Set<Refset> snowstormRefsets = new HashSet<>();
 
@@ -339,13 +338,13 @@ public class SyncRefsetAgent extends SyncService {
                     continue;
                 }
 
-                String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + SIMPLE_TYPE_REFSET_SCTID + "&module=%3C%3C" + module;
+                String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + RefsetService.SIMPLE_TYPE_REFERENCE_SET + "&module=%3C%3C" + module;
 
                 for (Date branchVersion : branchesToProcess.get(editionShortName).keySet()) {
 
                     final String branchPath = branchesToProcess.get(editionShortName).get(branchVersion);
 
-                    if (testing && !branchPath.contains("2020") && branchPath.contains("2021") && branchPath.contains("2022")) {
+                    if (isTesting() && !branchPath.contains("2020") && branchPath.contains("2021") && branchPath.contains("2022")) {
 
                         // When testing, only look in this decade
                         continue;
@@ -739,7 +738,7 @@ public class SyncRefsetAgent extends SyncService {
 
     protected boolean isRefsetToProcess(String refsetId, String editionName) {
 
-        return !testing || (testing && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset));
+        return !isTesting() || (isTesting() && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset));
 
     }
 }

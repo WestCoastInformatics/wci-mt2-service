@@ -47,6 +47,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.SyncService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -81,7 +82,7 @@ public class RefsetService {
     private static final LinkedHashMap<String, Project> projectCache = new LinkedHashMap<>();
 
     /** The refset to language map. */
-    private static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
+    public static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
 
     /** The module Id of the SIMPLE_TYPE_REFERENCE_SET. */
     private static final String SNOMED_CORE_MODULE_ID = "900000000000012004";
@@ -2292,6 +2293,175 @@ public class RefsetService {
             }
 
         }
+
+    }
+
+    public static Refset copyRefset(TerminologyService service, User user, String refsetId, String name, String projectId) throws Exception {
+
+        user = SecurityService.getUserFromUserName("jefron@westcoastinformatics.com");
+
+        if (!RefsetService.doesRefsetExist(refsetId, null)) {
+
+            final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
+            return null;
+        }
+
+        // TODO: Check for a) private/public and b) User Role permission. Until open up, assume valid entries (twill testing)
+
+        final Refset baseRefset = RefsetService.getLatestRefsetVersion(service, refsetId);
+
+        /** Determine parent **/
+        // Use same parent as used by baseVersion if parent concept is in Core & is in the same Edition as the baseVersion. Otherwise, use SIMPLY_REFSET_TYPE and notify refset
+        // creator to move parent in authoring tool
+        String baseParentConceptId = baseRefset.getParentConceptId();
+        final Concept baseParentConcept = null;// = RefsetMemberService.getConceptDetails(baseParentConceptId, baseVersion);
+
+        if (baseParentConcept == null) {
+
+            baseParentConceptId = SIMPLE_TYPE_REFERENCE_SET;
+        }
+
+        // TODO: Ensure that the moduleId of the parent concept is visible to current Edition. Otherwise, use SIMPLE_TYPE_REFSET as parent Concept.
+
+        // TODO: Support lower extension (like VA or WCI ) accessing intermediate exstensions i.e., US Extension in this case
+
+        /** Create Descriptions **/
+        List<Map<String, String>> baseDescriptions = baseRefset.getDescriptions();
+        List<Map<String, String>> newDescriptions = new ArrayList<>();
+
+        for (Map<String, String> baseDescriptionMaps : baseDescriptions) {
+
+            Map<String, String> newDescriptionMap = new HashMap<>();
+
+            for (String key : baseDescriptionMaps.keySet()) {
+
+                final String baseDescription = baseDescriptionMaps.get(key);
+
+                if (baseDescription.toLowerCase().contains(baseRefset.getName().toLowerCase())) {
+
+                    // Replace the name-based aspects of the description
+                    // TODO: I'm making everying to lower case for expediency. Rather than a hard replace, find index and replcae with original desc & requested name i.e.,
+                    // without altering case in new description
+                    final String newDescription = baseDescription.toLowerCase().replaceAll(baseRefset.getName().toLowerCase(), name.toLowerCase());
+                } else {
+
+                    // Name is not in description so add as-is
+                    newDescriptionMap.put(key, baseDescription);
+                }
+
+            }
+
+            newDescriptions.add(newDescriptionMap);
+        }
+
+        /** Review Narrative **/
+        String newNarrative = null;
+
+        if (baseRefset.getNarrative().toLowerCase().contains(baseRefset.getName().toLowerCase())) {
+
+            // Replace the name-based aspects of the description
+            // TODO: I'm making everying to lower case for expediency. Rather than a hard replace, find index and replcae with original desc & requested name i.e., without
+            // altering case in new description
+            newNarrative = baseRefset.getNarrative().toLowerCase().replaceAll(baseRefset.getName().toLowerCase(), name.toLowerCase());
+        } else {
+
+            // Name is not in description so add as-is
+            newNarrative = baseRefset.getNarrative();
+        }
+
+        /** Identify Project Info **/
+        Project project = null;
+
+        if (projectId == null) {
+
+            project = baseRefset.getProject();
+        } else {
+
+            project = ProjectService.getProject(projectId, false);
+        }
+
+        // TODO: For now, just putting it in topModuleId of edition. Update as needed.
+        String moduleId = project.getEdition().getTopLevelModule();
+
+        /** Create Concept **/
+        Refset newRefset = new Refset();
+        newRefset.setName(name);
+
+        // From base refset
+        newRefset.setType(baseRefset.getType());
+        newRefset.setPrivateRefset(baseRefset.isPrivateRefset());
+        newRefset.setTags(new HashSet<String>(baseRefset.getTags()));
+        newRefset.setMemberCount(baseRefset.getMemberCount());
+        newRefset.setDefinitionClauses(baseRefset.getDefinitionClauses());
+        newRefset.setExternalUrl(baseRefset.getExternalUrl());
+
+        // Default options
+        newRefset.setActive(true);
+        newRefset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
+
+        // From previously calculated
+        newRefset.setDescriptions(newDescriptions);
+        newRefset.setNarrative(newNarrative);
+        newRefset.setParentConceptId(baseParentConceptId);
+        newRefset.setProject(project);
+        newRefset.setModuleId(moduleId);
+
+        // Touch any rfset collections
+        Object returned = RefsetService.createRefset(service, user, newRefset);
+
+        if (returned instanceof String) {
+
+            throw new Exception((String) returned);
+        } else {
+
+            final Refset copiedRefset = (Refset) returned;
+
+            logger.info("Copied refset from " + refsetId + ": " + copiedRefset);
+
+            /** Return message including parent concept info **/
+            return copiedRefset;
+        }
+
+    }
+
+    public static String resetRefset(final TerminologyService service, final User user, final String refsetId) throws Exception {
+
+        if (!RefsetService.doesRefsetExist(refsetId, null)) {
+
+            final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
+            return "unnecessary as it doesn't reside in RT2";
+        }
+
+        Refset latestVersion = RefsetService.getLatestRefsetVersion(service, refsetId);
+
+        final String editionName = latestVersion.getEditionName();
+
+        // if the refset has never been versioned before then delete it
+        if (!RefsetService.doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
+
+            RefsetService.deleteInDevelopmentVersion(service, user, latestVersion.getId(), true);
+        }
+
+        final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
+
+        for (Refset refset : results.getItems()) {
+
+            service.add(AuditEntryHelper.resetRefsetEntry(refset));
+
+            RefsetService.deleteRefset(service, refset);
+
+        }
+
+        /** Now that refset deleted, resync **/
+        boolean testingStatus = SyncService.isTesting();
+
+        SyncService.setRefsetToSync(refsetId, editionName);
+        SyncService.sync(service);
+        SyncService.setTesting(testingStatus);
+
+        logger.info("Successfully reset all versions in database of refsetId: " + refsetId);
+
+        return "successfully";
 
     }
 }

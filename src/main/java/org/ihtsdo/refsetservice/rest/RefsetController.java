@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -35,12 +34,10 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
-import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.SendCommunicationEmailInfo;
-import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
@@ -55,12 +52,9 @@ import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
-import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
-import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
-import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -2472,33 +2466,60 @@ public class RefsetController extends BaseController {
 
     }
 
-    @ApiOperation(value = "Request project access from administrators", response = Refset.class)
+    @ApiOperation(value = "Create a new refset that is a copy of an existing one.", response = Refset.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully requested access to the refset's ecnlosing project"), @ApiResponse(code = 403, message = "May not reset refset on a production system"),
+        @ApiResponse(code = 200, message = "Successfully copied refset specified"), @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/copy/{name}", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetId, @PathVariable(required = true) final String name) throws Exception {
+
+        // TODO: Add support for providing a zip RF2 or a refset file to clone off of.
+        // Questions to be answered first: Always use a) latest version for refsetId provided or b) Version if provided RF2 file instead and c) Can't supply both
+        try (TerminologyService service = new TerminologyService()) {
+
+            logger.debug("Copy Refset: refsetId: " + refsetId + " projectId: " + null + " with new name: " + name);
+
+            User user = SecurityService.getUserFromSession();
+            service.setModifiedBy(user.getUserName());
+
+            // TODO: Support specifying path as RequestBody var (as should name be as well)
+            final Refset refset = RefsetService.copyRefset(service, user, refsetId, name, null);
+
+            final String returnMessage = "{\"message\": \"Copied Successful from refsetId: " + refsetId + " into new refset: " + refset.getRefsetId() + "\"}";
+
+            return new ResponseEntity<>(returnMessage, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    @ApiOperation(value = "Reset a refset to contain the contents of Snowstorm. Note only works if refset has not been upgraded during edit cycle.", response = Refset.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully reset the refset"), @ApiResponse(code = 403, message = "May not reset refset on a production system"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/reset", produces = "application/json")
     public @ResponseBody ResponseEntity<String> resetRefset(@PathVariable final String refsetId) throws Exception {
 
-        try {
+        try (TerminologyService service = new TerminologyService()) {
 
             logger.debug("resetRefset: refsetId: " + refsetId);
 
             if (!SyncService.getIsProductionSystem()) {
 
-                try (TerminologyService service = new TerminologyService()) {
+                User user = SecurityService.getUserFromSession();
+                service.setModifiedBy(user.getUserName());
 
-                    User user = SecurityService.getUserFromSession();
-                    service.setModifiedBy(user.getUserName());
+                final String result = RefsetService.resetRefset(service, user, refsetId);
 
-                    final String result = SyncService.resetRefset(service, user, refsetId);
+                final String returnMessage = "{\"message\": \"Reset Successful " + result + "\"}";
 
-                    final String returnMessage = "{\"message\": \"Reset Successful\"}";
-
-                    return new ResponseEntity<>(returnMessage + result, HttpStatus.OK);
-                }
-
+                return new ResponseEntity<>(returnMessage, HttpStatus.OK);
             }
 
             final String returnMessage = "{\"message\": \"It is prohibited to be Reseting refsets on this production system\"}";
@@ -2510,4 +2531,5 @@ public class RefsetController extends BaseController {
         }
 
     }
+
 }

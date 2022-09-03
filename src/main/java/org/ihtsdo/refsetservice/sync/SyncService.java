@@ -15,14 +15,11 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
-import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,15 +35,17 @@ public abstract class SyncService {
     private static Boolean isPerVersionSync = null;
 
     /** Testing options. */
-    protected static boolean testing = false;
+    private static boolean testing = false;
 
-    protected static String testingEdition = "elgi";
+    // protected static String testingEdition = "elgi";
+    protected static String testingEdition = "wed";
 
-    // protected static final String testingRefset = null; // To test entire edition
-    protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
-    // protected static final String testingRefset = "741000172102"; // Refset with project defined in RTT
-    // protected static final String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
-    // protected static final String testingRefset = "121000210100"; // No changes across 5 versions (NZ Edition)
+    // protected static String testingRefset = null; // To test entire edition
+    // protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
+    protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
+    // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
+    // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
+    // protected static String testingRefset = "121000210100"; // No changes across 5 versions (NZ Edition)
 
     protected static final SyncStatistics statistics = new SyncStatistics();
 
@@ -127,46 +126,6 @@ public abstract class SyncService {
 
     }
 
-    public static String resetRefset(final TerminologyService service, final User user, final String refsetId) throws Exception {
-
-        if (!RefsetService.doesRefsetExist(refsetId, null)) {
-
-            final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
-            return "unnecessary as it doesn't reside in RT2";
-        }
-
-        Refset latestVersion = RefsetService.getLatestRefsetVersion(service, refsetId);
-
-        final String editionName = latestVersion.getEditionName();
-
-        // if the refset has never been versioned before then delete it
-        if (!RefsetService.doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
-
-            RefsetService.deleteInDevelopmentVersion(service, user, latestVersion.getId(), true);
-        }
-
-        final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
-
-        for (Refset refset : results.getItems()) {
-
-            service.add(AuditEntryHelper.resetRefsetEntry(refset));
-
-            RefsetService.deleteRefset(service, refset);
-
-        }
-
-        boolean testingStatus = SyncService.testing;
-
-        SyncService.setRefsetToSync(refsetId, editionName);
-        sync(service);
-        SyncService.testing = testingStatus;
-
-        logger.info("Successfully reset all versions in database of refsetId: " + refsetId);
-
-        return "successfully";
-
-    }
-
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction) throws Exception {
 
         if (isProductionSystem == null) {
@@ -224,7 +183,7 @@ public abstract class SyncService {
 
     public static void setRefsetToSync(final String refsetId, final String editionName) throws Exception {
 
-        testing = true;
+        setTesting(true);
         testingRefset = refsetId;
         testingEdition = editionName;
 
@@ -344,6 +303,18 @@ public abstract class SyncService {
     public Map<String, Project> getDefaultEditionProjects() {
 
         return defaultEditionProjects;
+    }
+
+    public static boolean isTesting() {
+
+        return testing;
+
+    }
+
+    public static void setTesting(boolean testing) {
+
+        SyncService.testing = testing;
+
     }
 
 }
