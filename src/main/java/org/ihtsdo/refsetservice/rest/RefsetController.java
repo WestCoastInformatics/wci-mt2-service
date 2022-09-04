@@ -2467,30 +2467,40 @@ public class RefsetController extends BaseController {
         @ApiResponse(code = 200, message = "Successfully copied refset specified"), @ApiResponse(code = 404, message = "Resource not found")
     })
     @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/copy", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetId) throws Exception {
-
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/copy", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetInternalId, 
+        @RequestParam final String name, @RequestParam final String projectId) throws Exception {
+        
         // TODO: Add support for providing a zip RF2 or a refset file to clone off of.
         // Questions to be answered first: Always use a) latest version for refsetId provided or b) Version if provided RF2 file instead and c) Can't supply both
         try (TerminologyService service = new TerminologyService()) {
 
-            logger.debug("Copy Refset: refsetId: " + refsetId + " projectId: " + null + " with new name: " + null);
+            logger.debug("Copy Refset: refsetId: " + refsetInternalId + " projectId: " + projectId + " with new name: " + name);
 
             User user = SecurityService.getUserFromSession();
             service.setModifiedBy(user.getUserName());
 
-            // TODO: Support specifying path as RequestBody var (as should name be as well)
-            final Refset refset = RefsetService.copyRefset(service, user, refsetId, null, null);
+            String status = "";
+            final Object returned = RefsetService.copyRefset(service, user, refsetInternalId, name, projectId);
 
-            final String returnMessage = "{\"message\": \"Copied Successfully from refsetId: " + refsetId + " into new refset: " + refset.getRefsetId() + "\"}";
+            if (returned instanceof String) {
+                status = (String) returned;
+            } else {
 
-            return new ResponseEntity<>(returnMessage, HttpStatus.OK);
+                final Refset refset = (Refset) returned;
+                status = refset.getRefsetId();
+            }
+
+            if (status.startsWith("Error")) {
+                return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
+            }
+
+            return new ResponseEntity<>("{\"refsetId\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
 
             return handleException(e);
         }
-
     }
 
     @ApiOperation(value = "Reset a refset to contain the contents of Snowstorm. Note only works if refset has not been upgraded during edit cycle.", response = Refset.class)

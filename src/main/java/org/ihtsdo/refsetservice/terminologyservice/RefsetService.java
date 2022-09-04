@@ -2312,184 +2312,113 @@ public class RefsetService {
 
     }
 
-    public static Refset copyRefset(TerminologyService service, User user, String refsetId, String name, String projectId) throws Exception {
+    public static Object copyRefset(TerminologyService service, User user, String refsetInternalId, String name, String projectId) throws Exception {
 
-        if (!RefsetService.doesRefsetExist(refsetId, null)) {
-
-            final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
-            return null;
+        String newRefsetInternalId = null;
+        final Refset originalRefset = getRefset(service, user, refsetInternalId);
+        String projectIdToGet = projectId;
+        
+        if (projectIdToGet == null || projectIdToGet.isEmpty()) {
+            projectIdToGet = originalRefset.getProjectId();
         }
-
-        // TODO: Check for a) private/public and b) User Role permission. Until open up, assume valid entries (twill testing)
-
-        final Refset baseRefset = RefsetService.getLatestRefsetVersion(service, refsetId);
-
-        /** Determine parent **/
-        // Use same parent as used by baseVersion if parent concept is in Core & is in the same Edition as the baseVersion. Otherwise, use SIMPLY_REFSET_TYPE and notify refset
-        // creator to move parent in authoring tool
-        String newParentConceptId = baseRefset.getParentConceptId();
-        ;
-        final Concept baseParentConcept = null;// = RefsetMemberService.getConceptDetails(baseParentConceptId, baseVersion);
-
-        if (baseParentConcept == null) {
-
-            newParentConceptId = SIMPLE_TYPE_REFERENCE_SET;
+        
+        Project project = service.get(projectIdToGet, Project.class);
+        
+        if (name == null || name.equals("")) {
+            throw new Exception("A name for the new refset must be supplied");
         }
+        
+        if (originalRefset.isPrivateRefset() && !originalRefset.getRoles().contains(User.ROLE_VIEWER)) {
+            throw new Exception("User does not have the permission to copy this refset " + originalRefset.getRefsetId());
+        }
+        
+        if (project == null) {
+            throw new Exception("Project Id: " + projectId + " does not exist in the RT2 database");
+        }
+        
+        project = setProjectPermissions(user, project);
+        
+        if (!project.getRoles().contains(User.ROLE_AUTHOR) || !project.getRoles().contains(User.ROLE_ADMIN)) {
+            throw new Exception("User does not have the permission to create a refset in this project " + project.getName());
+        }
+        
+        Refset newRefset = new Refset(originalRefset);
+        newRefset.setId(null);
+        newRefset.setRefsetId(null);
+        newRefset.setName(name);
+        newRefset.setProject(project);
+        newRefset.setActive(true);
+        newRefset.setVersionStatus(null);
+        newRefset.setWorkflowStatus(null);
+        newRefset.setVersionNotes("");
+        newRefset.setLatestPublishedVersion(false);
+        
+        // Fix Descriptions
+        for (Map<String, String> descriptionMap : newRefset.getDescriptions()) {
 
-        // TODO: Ensure that the moduleId of the parent concept is visible to current Edition. Otherwise, use SIMPLE_TYPE_REFSET as parent Concept.
+            for (String key : descriptionMap.keySet()) {
 
-        // TODO: Support lower extension (like VA or WCI ) accessing intermediate exstensions i.e., US Extension in this case
+                final String description = descriptionMap.get(key);
 
-        /** Create Descriptions **/
-        List<Map<String, String>> baseDescriptions = baseRefset.getDescriptions();
-        List<Map<String, String>> newDescriptions = new ArrayList<>();
-
-        for (Map<String, String> baseDescriptionMaps : baseDescriptions) {
-
-            Map<String, String> newDescriptionMap = new HashMap<>();
-
-            for (String key : baseDescriptionMaps.keySet()) {
-
-                final String baseDescription = baseDescriptionMaps.get(key);
-
-                if (baseDescription.toLowerCase().contains(baseRefset.getName().toLowerCase())) {
+                if (description.toLowerCase().contains(originalRefset.getName().toLowerCase())) {
 
                     // Replace the name-based aspects of the description
                     // TODO: I'm making everying to lower case for expediency. Rather than a hard replace, find index and replcae with original desc & requested name i.e.,
                     // without altering case in new description
-                    final String newDescription = baseDescription.toLowerCase().replaceAll(baseRefset.getName().toLowerCase(), name.toLowerCase());
-                } else {
-
-                    // Name is not in description so add as-is
-                    newDescriptionMap.put(key, baseDescription);
+                    descriptionMap.put(key, description.toLowerCase().replaceAll(originalRefset.getName().toLowerCase(), name.toLowerCase()));
                 }
-
             }
-
-            newDescriptions.add(newDescriptionMap);
         }
 
-        /** Review Narrative **/
-        String newNarrative = null;
-
-        if (baseRefset.getNarrative().toLowerCase().contains(baseRefset.getName().toLowerCase())) {
+        // fix Narrative
+        if (newRefset.getNarrative().toLowerCase().contains(originalRefset.getName().toLowerCase())) {
 
             // Replace the name-based aspects of the description
             // TODO: I'm making everying to lower case for expediency. Rather than a hard replace, find index and replcae with original desc & requested name i.e., without
             // altering case in new description
-            newNarrative = baseRefset.getNarrative().toLowerCase().replaceAll(baseRefset.getName().toLowerCase(), name.toLowerCase());
-        } else {
-
-            // Name is not in description so add as-is
-            newNarrative = baseRefset.getNarrative();
+            newRefset.setNarrative(newRefset.getNarrative().toLowerCase().replaceAll(originalRefset.getName().toLowerCase(), name.toLowerCase()));
         }
+        
+        if (newRefset.getType().equals(Refset.INTENSIONAL)) {
 
-        /** Identify Project Info **/
-        Project project = null;
-
-        if (projectId == null) {
-
-            project = baseRefset.getProject();
-        } else {
-
-            project = ProjectService.getProject(projectId, false);
-        }
-
-        // TODO: For now, just putting it in topModuleId of edition. Update as needed.
-        String moduleId = project.getEdition().getTopLevelModule();
-
-        logger.debug("111a");
-        /** Refset Name & Concept **/
-        final List<Refset> projectRefsets = service.find("projectId:" + baseRefset.getProjectId() + " AND active:true", null, Refset.class, null).getItems();
-
-        int latestVersion = 0;
-
-        for (Refset projectRefset : projectRefsets) {
-
-            if (projectRefset.getRefsetId().startsWith(baseRefset.getRefsetId()) && projectRefset.getName().startsWith(baseRefset.getName())) {
-
-                char lastChar = projectRefset.getName().charAt(projectRefset.getName().length() - 1);
-
-                int refsetVersion = 0;
-
-                if (Character.isDigit(lastChar)) {
-
-                    refsetVersion = Integer.parseInt(projectRefset.getName().substring(baseRefset.getName().length()).trim());
-                } else {
-
-                    refsetVersion = 1;
-
-                }
-
-                if (refsetVersion > latestVersion) {
-
-                    latestVersion = refsetVersion;
-                }
-                // Iterate through the refsets, look at the refset name, and find the integer list after the default name.
-                // if keysize = 0, this is first one. So create with RefsetId: based on the testingRefsetId and iteration.
-                // else, if the refset integer is greater than the greatest one seen, make this the new refsetName & refsetId integer
-
+            // clear definition clauses IDs
+            for (final DefinitionClause clause : newRefset.getDefinitionClauses()) {
+                clause.setId(null);
             }
-
+        }
+        
+        // create the new refset object
+        final Object returned = createRefset(service, user, newRefset);
+        
+        if (returned instanceof String) {
+            return returned;
         }
 
-        logger.debug("111b with latestVersion: " + latestVersion);
+        newRefset = (Refset) returned;
+        newRefsetInternalId = newRefset.getId();
 
-        Refset newTestingRefset;
+        try {
 
-        latestVersion++;
-        String tensValue = Integer.toString(latestVersion / 10);
-        String onesValue = Integer.toString(latestVersion % 10);
-
-        String newRefsetName = baseRefset.getName() + latestVersion;
-        String newRefsetId = baseRefset.getRefsetId() + tensValue + onesValue;
-        logger.debug("111c with newRefsetName: " + newRefsetName);
-        logger.debug("111c with newRefsetId: " + newRefsetId);
-
-        /** Create Concept **/
-
-        final Refset newRefset = new Refset();
-
-        newRefset.setName(newRefsetName);
-        newRefset.setRefsetId(newRefsetId);
-        newRefset.setModuleId(moduleId);
-
-        // Generic values
-        newRefset.setVersionStatus("PUBLISHED");
-        newRefset.setWorkflowStatus("PUBLISHED");
-        newRefset.setActive(true);
-        newRefset.setVersionNotes("");
-        newRefset.setNarrative(newNarrative);
-        newRefset.setParentConceptId(newParentConceptId);
-        newRefset.setProject(project);
-        newRefset.setLatestPublishedVersion(true);
-
-        // From base refset
-        newRefset.setType(baseRefset.getType());
-        newRefset.setVersionDate(baseRefset.getVersionDate());
-        newRefset.setPrivateRefset(baseRefset.isPrivateRefset());
-        newRefset.setTags(new HashSet<String>(baseRefset.getTags()));
-        newRefset.setMemberCount(baseRefset.getMemberCount());
-        newRefset.setDefinitionClauses(new ArrayList<DefinitionClause>(baseRefset.getDefinitionClauses()));
-        newRefset.setExternalUrl(baseRefset.getExternalUrl());
-        logger.debug("111d with newRefset: " + newRefset);
-
-        // Persist
-        final Refset copiedRefset = service.add(newRefset);
-
-        ConceptResultList members = RefsetMemberService.getRefsetMembers(service, user, copiedRefset.getId(), null, "list", null);
-        List<String> conceptIds = new ArrayList<>();
-
-        if (copiedRefset.getType().equals(Refset.EXTENSIONAL)) {
-
-            members.getItems().stream().forEach(m -> conceptIds.add(m.getCode()));
-            RefsetMemberService.addRefsetMembers(service, user, copiedRefset.getId(), conceptIds);
+            final SearchParameters searchParameters = new SearchParameters();
+            ConceptResultList members = RefsetMemberService.getRefsetMembers(service, user, originalRefset.getId(), searchParameters, "list", null);
+            List<String> conceptIds = new ArrayList<>();
+    
+            if (newRefset.getType().equals(Refset.EXTENSIONAL)) {
+    
+                members.getItems().stream().forEach(member -> conceptIds.add(member.getCode()));
+                RefsetMemberService.addRefsetMembers(service, user, newRefset.getId(), conceptIds);
+            }
+    
+            logger.info("Copied refset from " + refsetInternalId + ": " + newRefset);
+        
+        } catch (Exception e) {
+            throw new Exception(e);
+            
+        } finally {
+            RefsetMemberService.refsetsBeingUpdated.remove(newRefsetInternalId);
         }
 
-        logger.info("Copied refset from " + refsetId + ": " + copiedRefset);
-
-        /** Return message including parent concept info **/
-        return copiedRefset;
+        return newRefset;
     }
 
     public static String resetRefset(final TerminologyService service, final User user, final String refsetId) throws Exception {
