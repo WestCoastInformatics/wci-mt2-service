@@ -1,11 +1,19 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.service;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -13,21 +21,24 @@ import java.util.Set;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
+import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.User;
-//import org.ihtsdo.refsetservice.model.UserRole;
+import org.ihtsdo.refsetservice.model.UserProjectRole;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -45,6 +56,9 @@ public class SecurityService implements AutoCloseable {
 
     /** The token login time . */
     private static Map<String, Date> tokenTimeoutMap = Collections.synchronizedMap(new HashMap<String, Date>());
+
+    /** a place to store temporary user data in memory . */
+    private static Map<String, Map<String, Object>> userInMemoryStorage = Collections.synchronizedMap(new HashMap<String, Map<String, Object>>());
 
     /** The handler. */
     private static SecurityServiceHandler handler = null;
@@ -72,6 +86,22 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
+     * Get a user for application level changes that has full permissions.
+     *
+     * @return the user from the session or null
+     * @throws Exception the exception
+     */
+    public static User getApplicationAdminUser() throws Exception {
+
+        final User user = new User();
+        user.setName("RT2 Internal Application Admin");
+        user.setUserName("RT2_Internal_Application_Admin");
+        user.getRoles().add("all-all-all");
+
+        return user;
+    }
+
+    /**
      * Get the user from the session.
      *
      * @return the user from the session or null
@@ -90,7 +120,7 @@ public class SecurityService implements AutoCloseable {
         // TODO - Find a better solution for unit tests
         if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
 
-            final User testUser = new User("unitTestUser", "Unit Test User", "", new HashSet<String>());
+            final User testUser = new User("unitTestUser", "Unit Test User", "", "", "", new HashSet<String>());
             testUser.getRoles().add("all-all-author");
             testUser.getRoles().add("all-all-reviewer");
             testUser.getRoles().add("all-all-admin");
@@ -98,7 +128,7 @@ public class SecurityService implements AutoCloseable {
             return testUser;
         }
 
-        final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", new HashSet<String>());
+        final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", "", "", new HashSet<String>());
         logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
 
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -111,9 +141,9 @@ public class SecurityService implements AutoCloseable {
         ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
 
         Cookie[] cookies = requestAttributes.getRequest().getCookies();
-        
-        if (cookies != null) { 
-            
+
+        if (cookies != null) {
+
             HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
             logger.debug("getUserFromSession cookies: " + ModelUtility.toJson(cookies));
             logger.debug("getUserFromSession Builder Host: " + builder.build().toString());
@@ -133,10 +163,51 @@ public class SecurityService implements AutoCloseable {
                     response.addCookie(cookie);
                     break;
                 }
+
             }
+
         }
 
         return nonLoggedInUser;
+    }
+
+    /**
+     * Clear cookies.
+     *
+     * @throws Exception the exception
+     */
+    private static void clearCookies() throws Exception {
+
+        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (requestAttributes != null && requestAttributes.getRequest() != null) {
+
+            final Cookie[] cookies = requestAttributes.getRequest().getCookies();
+
+            if (cookies != null) {
+
+                final HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
+
+                for (int i = 0; i < cookies.length; i++) {
+
+                    if (cookies[i].getName().contains("ims-ihtsdo")) {
+
+                        logger.debug("clearCookies ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+                        final Cookie cookie = new Cookie(cookies[i].getName(), null);
+                        cookie.setPath("/");
+                        cookie.setDomain(".ihtsdotools.org");
+                        cookie.setHttpOnly(cookies[i].isHttpOnly());
+                        cookie.setMaxAge(0);
+                        response.addCookie(cookie);
+                        break;
+                    }
+
+                }
+
+            }
+
+        }
+
     }
 
     /**
@@ -167,6 +238,34 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
+     * Get the something from the session.
+     *
+     * @param attributeName the session attribute name
+     * @param value the value to store in the session
+     * @return true if the value was set in the session, otherwise false
+     * @throws Exception the exception
+     */
+    public static boolean setInSession(final String attributeName, final String value) throws Exception {
+
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+
+            return false;
+        }
+
+        final HttpSession session = requestAttributes.getRequest().getSession();
+
+        if (session == null) {
+
+            return false;
+        }
+
+        session.setAttribute(attributeName, value);
+        return true;
+    }
+
+    /**
      * Remove the something from the session.
      *
      * @param attributeName the session attribute name
@@ -192,11 +291,83 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param userName
-     * @param password
-     * @return
-     * @throws Exception
+     * Get something from the user specific in memory storage.
+     *
+     * @param attributeName the storage attribute name
+     * @return the object from the storage or null
+     * @throws Exception the exception
+     */
+    public static Object getFromInMemoryStorage(final String attributeName) throws Exception {
+
+        final User user = getUserFromSession();
+        Object returnObject = null;
+
+        if (userInMemoryStorage.containsKey(user.getUserName())) {
+
+            final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
+
+            if (storageMap.containsKey(attributeName)) {
+
+                returnObject = storageMap.get(attributeName);
+            }
+
+        }
+
+        return returnObject;
+    }
+
+    /**
+     * Set something in the user specific in memory storage.
+     *
+     * @param attributeName the storage attribute name
+     * @param value the value to store in the storage
+     * @return true if the value was set in the storage, otherwise false
+     * @throws Exception the exception
+     */
+    public static boolean setInMemoryStorage(final String attributeName, final Object value) throws Exception {
+
+        final User user = getUserFromSession();
+
+        if (userInMemoryStorage.containsKey(user.getUserName())) {
+
+            final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
+            storageMap.put(attributeName, value);
+
+        } else {
+
+            final Map<String, Object> storageMap = new HashMap<>();
+            storageMap.put(attributeName, value);
+            userInMemoryStorage.put(user.getUserName(), storageMap);
+        }
+
+        return true;
+    }
+
+    /**
+     * Remove the something from the in memory storage.
+     *
+     * @param attributeName the storage attribute name
+     * @throws Exception the exception
+     */
+    public static void removeFromInMemoryStorage(final String attributeName) throws Exception {
+
+        final User user = getUserFromSession();
+
+        if (userInMemoryStorage.containsKey(user.getUserName())) {
+
+            final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
+            storageMap.remove(attributeName);
+        }
+
+    }
+
+    /**
+     * Authenticate.
+     *
+     * @param userName the user name
+     * @param password the password
+     * @return the user
+     * @throws Exception the exception
      */
     public User authenticate(final String userName, final String password) throws Exception {
 
@@ -283,26 +454,118 @@ public class SecurityService implements AutoCloseable {
         logger.debug("User = " + authUser.getUserName() + ", " + authUser);
 
         // Reload the user to populate UserPreferences
-        final User result = getUser(userId);
-        result.setAuthToken(token);
+        final User finalUser = getUser(userId);
+        finalUser.setAuthToken(token);
 
-        return result;
+        // checkAndAddUserToOrganization(finalUser);
+
+        return finalUser;
+    }
+
+    /**
+     * Adds the user to organization if entered in Crowd but not a member in RT2's organization.
+     *
+     * @param user the user
+     * @throws Exception the exception
+     */
+    private void checkAndAddUserToOrganization(final User user) throws Exception {
+
+        // break down org-project-role
+        if (user == null || user.getRoles() == null || user.getRoles().isEmpty()) {
+
+            return;
+        }
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final User appAdminUser = getApplicationAdminUser();
+
+            service.setModifiedBy(appAdminUser.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            final Set<String> permissionEditionAbbreviations = new HashSet<>();
+
+            for (final String groupName : user.getRoles()) {
+
+                final UserProjectRole userProjectRole = new UserProjectRole(groupName);
+                permissionEditionAbbreviations.add(userProjectRole.getOrganization());
+            }
+
+            final ResultList<Edition> editions = EditionService.searchEditions(new SearchParameters());
+            final Map<String, Organization> organizationMap = new HashMap<>();
+
+            for (final Edition edition : editions.getItems()) {
+
+                organizationMap.put(edition.getAbbreviation(), edition.getOrganization());
+            }
+
+            for (final String permissionEditionAbbreviation : permissionEditionAbbreviations) {
+
+                for (final Edition possibleEdition : new ArrayList<Edition>(editions.getItems())) {
+
+                    Edition edition = null;
+                    boolean isMember = false;
+
+                    if (possibleEdition.getAbbreviation().equals(permissionEditionAbbreviation)) {
+
+                        edition = possibleEdition;
+                        editions.getItems().remove(possibleEdition);
+
+                    } else {
+
+                        continue;
+                    }
+
+                    OrganizationService.setRoles(appAdminUser, edition.getOrganization(), edition.getOrganization().getRoles());
+
+                    for (final User member : edition.getOrganization().getMembers()) {
+
+                        if (member.getId().equals(user.getId())) {
+
+                            isMember = true;
+                            break;
+                        }
+
+                    }
+
+                    if (!isMember) {
+
+                        logger.debug("Add user " + user.getUserName() + " to organization " + edition.getOrganization().getName());
+                        OrganizationService.addUserToOrganization(service, appAdminUser, edition.getOrganization().getId(), user.getEmail());
+                    }
+
+                }
+
+            }
+
+            service.commit();
+        }
+
     }
 
     /* see superclass */
+    /**
+     * Logout.
+     *
+     * @param authToken the auth token
+     * @throws Exception the exception
+     */
     // @Override
     public void logout(final String authToken) throws Exception {
 
         tokenUsernameMap.remove(authToken);
         tokenTimeoutMap.remove(authToken);
         removeFromSession(SESSION_USER_OBJECT_KEY);
+        clearCookies();
     }
 
     /**
-     * 
-     * @param id
-     * @return
-     * @throws Exception
+     * Returns the user.
+     *
+     * @param id the id
+     * @return the user
+     * @throws Exception the exception
      */
     public User getUser(final String id) throws Exception {
 
@@ -317,17 +580,20 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param userName
-     * @return
-     * @throws Exception
+     * Returns the user from user name.
+     *
+     * @param userName the user name
+     * @return the user from user name
+     * @throws Exception the exception
      */
-    public User getUserFromUserName(final String userName) throws Exception {
+    public static User getUserFromUserName(String userName) throws Exception {
 
         User user = null;
 
         try (final TerminologyService service = new TerminologyService()) {
 
+            // Note: When testing POSTMAN, hard code userName to your userName and relaunch server
+            // userName = "jefron";
             user = service.findSingle("userName:" + userName, User.class, null);
         }
 
@@ -335,10 +601,11 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param user
-     * @return
-     * @throws Exception
+     * Adds the user.
+     *
+     * @param user the user
+     * @return the user
+     * @throws Exception the exception
      */
     public User addUser(User user) throws Exception {
 
@@ -354,9 +621,10 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param user
-     * @throws Exception
+     * Removes the user.
+     *
+     * @param user the user
+     * @throws Exception the exception
      */
     public void removeUser(User user) throws Exception {
 
@@ -371,9 +639,10 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * 
-     * @param user
-     * @throws Exception
+     * Update user.
+     *
+     * @param user the user
+     * @throws Exception the exception
      */
     public void updateUser(User user) throws Exception {
 
@@ -387,6 +656,7 @@ public class SecurityService implements AutoCloseable {
 
     }
 
+    /* see superclass */
     @Override
     public void close() throws Exception {
         // TODO Auto-generated method stub

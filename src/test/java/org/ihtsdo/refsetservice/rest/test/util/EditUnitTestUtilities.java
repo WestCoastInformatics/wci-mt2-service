@@ -17,8 +17,9 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.UpgradeInactiveConcecpt;
-import org.ihtsdo.refsetservice.model.UpgradeReplacementConcecpt;
+import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
+import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
+import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -566,7 +567,7 @@ public class EditUnitTestUtilities {
         }
     }
     
-    public ResultList<UpgradeInactiveConcecpt> getUpgradeData(String refsetInternalId) {
+    public ResultList<UpgradeInactiveConcept> getUpgradeData(String refsetInternalId) {
         
         try {
             
@@ -578,7 +579,7 @@ public class EditUnitTestUtilities {
             final String content = result.getResponse().getContentAsString();
             logger.info(" content = " + content);
             
-            final ResultList<UpgradeInactiveConcecpt> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<UpgradeInactiveConcecpt>>(){}));
+            final ResultList<UpgradeInactiveConcept> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<UpgradeInactiveConcept>>(){}));
             assertThat(resultList).isNotNull();
             
             return resultList;
@@ -590,7 +591,7 @@ public class EditUnitTestUtilities {
         }
     }
 
-    public void updateUpgradeConcept(String refsetInternalId, String changed, final String inactiveConceptId, final String replacementConceptId, UpgradeReplacementConcecpt manualReplacementConcept) {
+    public void updateUpgradeConcept(String refsetInternalId, String changed, final String inactiveConceptId, final String replacementConceptId, UpgradeReplacementConcept manualReplacementConcept) {
     
         try {
             
@@ -618,7 +619,45 @@ public class EditUnitTestUtilities {
         }
     }
     
-    public ResultList<UpgradeReplacementConcecpt> searchReplacementConcepts(String internalRefsetId, String searchTerm) {
+    public void removeAllInactiveUpgradeConcepts(String refsetInternalId) {
+        
+        try {
+            
+            String url = baseUrl + "/" + refsetInternalId + "/removeAllUpgradeInactiveConcepts";
+            
+            logger.info("Testing url - " + url);
+    
+            final MvcResult result = mvc.perform(post(url).content("").contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            
+            assertThat(content).contains("All changes made successfully");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public void addAllUpgradeReplacementConcepts(String refsetInternalId) {
+        
+        try {
+            
+            String url = baseUrl + "/" + refsetInternalId + "/addAllUpgradeReplacementConcepts";
+            
+            logger.info("Testing url - " + url);
+    
+            final MvcResult result = mvc.perform(post(url).content("").contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            
+            assertThat(content).contains("All changes made successfully");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public ResultList<UpgradeReplacementConcept> searchReplacementConcepts(String internalRefsetId, String searchTerm) {
 
         try {
 
@@ -629,7 +668,7 @@ public class EditUnitTestUtilities {
             final String content = result.getResponse().getContentAsString();
 
             logger.info(" content = " + content);
-            final ResultList<UpgradeReplacementConcecpt> results = new ObjectMapper().readValue(content, (new TypeReference<ResultList<UpgradeReplacementConcecpt>>(){}));
+            final ResultList<UpgradeReplacementConcept> results = new ObjectMapper().readValue(content, (new TypeReference<ResultList<UpgradeReplacementConcept>>(){}));
 
             // Testing Results
             assertThat(results).isNotNull();
@@ -641,5 +680,45 @@ public class EditUnitTestUtilities {
             return null;
         }
 
+    }
+    
+    public void compileComparisonData(final String activeRefsetInternalId, final String comparisonRefsetInternalId) {
+        
+        try {
+            
+            final String url = baseUrl + "/" + activeRefsetInternalId + "/compileComparisonData?comparisonRefsetInternalId=" + comparisonRefsetInternalId;
+
+            logger.info("Testing url - " + url);
+
+            mvc.perform(get(url));
+
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public RefsetMemberComparison getComparisonData(final String activeRefsetInternalId) {
+        
+        try {
+            
+            final String url = baseUrl + "/" + activeRefsetInternalId + "/comparisonData";
+
+            logger.info("Testing url - " + url);
+
+            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            logger.info(" content = " + content);
+            
+            final RefsetMemberComparison refsetMemberComparison = new ObjectMapper().readValue(content, RefsetMemberComparison.class);
+            assertThat(refsetMemberComparison).isNotNull();
+            
+            return refsetMemberComparison;
+            
+        } catch (Exception e) {
+            
+            e.printStackTrace();
+            return null;
+        }
     }
 }

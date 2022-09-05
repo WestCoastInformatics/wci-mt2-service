@@ -1,3 +1,12 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model;
 
@@ -18,12 +27,14 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,11 +45,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @Entity
 @Table(name = "users")
-@Schema(description = "Represents a message to send (and possibly have confirmed)")
-@JsonInclude(Include.NON_EMPTY)
+@Schema(description = "Represents an application user.")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class User extends AbstractHasModified implements Comparable<User> {
+public class User extends AbstractHasModified implements Comparable<User>, Copyable<User>, ValidateCrud<User> {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(User.class);
@@ -55,6 +65,14 @@ public class User extends AbstractHasModified implements Comparable<User> {
     @Column(nullable = false, length = 250)
     private String email;
 
+    /** The user's title. */
+    @Column(nullable = true, length = 250)
+    private String title;
+
+    /** The user's title. */
+    @Column(nullable = true, length = 250)
+    private String company;
+
     /** The auth token. */
     @Transient
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -65,22 +83,37 @@ public class User extends AbstractHasModified implements Comparable<User> {
     @Fetch(FetchMode.JOIN)
     private Set<String> roles = new HashSet<>();
 
+    /** The icon uri. */
+    @Column(nullable = true, length = 255)
+    private String iconUri;
+
+    /** The teams. */
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Set<Team> teams = new HashSet<>();
+
     /** The admin role. */
+    @Transient
     public static final String ROLE_ADMIN = "ADMIN";
 
     /** The lead role. */
+    @Transient
     public static final String ROLE_LEAD = "LEAD";
 
     /** The reviewer role. */
+    @Transient
     public static final String ROLE_REVIEWER = "REVIEWER";
 
     /** The author role. */
+    @Transient
     public static final String ROLE_AUTHOR = "AUTHOR";
 
     /** The user role. */
+    @Transient
     public static final String ROLE_USER = "USER";
 
     /** The user role. */
+    @Transient
     public static final String ROLE_VIEWER = "VIEWER";
 
     /**
@@ -97,13 +130,17 @@ public class User extends AbstractHasModified implements Comparable<User> {
      * @param userName the username
      * @param name the user's full name
      * @param email the user's email
+     * @param title the title
+     * @param company the company
      * @param roles the roles this user has
      */
-    public User(final String userName, final String name, final String email, final Set<String> roles) {
+    public User(final String userName, final String name, final String email, final String title, final String company, final Set<String> roles) {
 
         this.userName = userName;
         this.name = name;
         this.email = email;
+        this.title = title;
+        this.company = company;
         this.roles = roles;
     }
 
@@ -128,7 +165,31 @@ public class User extends AbstractHasModified implements Comparable<User> {
         userName = other.getUserName();
         name = other.getName();
         email = other.getEmail();
-        roles = other.getRoles();
+        title = other.getTitle();
+        company = other.getCompany();
+        roles = new HashSet<String>(other.getRoles());
+        authToken = other.getAuthToken();
+        iconUri = other.iconUri;
+        teams = other.teams;
+    }
+
+    /**
+     * Populate from.
+     *
+     * @param other the other
+     */
+    public void patchFrom(final User other) {
+
+        // super.populateFrom(other);
+        userName = other.getUserName();
+        name = other.getName();
+        email = other.getEmail();
+        title = other.getTitle();
+        company = other.getCompany();
+        roles = new HashSet<String>(other.getRoles());
+        authToken = other.getAuthToken();
+        iconUri = other.iconUri;
+        teams = other.teams;
     }
 
     /**
@@ -178,6 +239,8 @@ public class User extends AbstractHasModified implements Comparable<User> {
      *
      * @return the email
      */
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "emailSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getEmail() {
 
         return email;
@@ -194,9 +257,29 @@ public class User extends AbstractHasModified implements Comparable<User> {
     }
 
     /**
+     * Returns the title.
+     *
+     * @return the title
+     */
+    public String getTitle() {
+
+        return title;
+    }
+
+    /**
+     * Sets the title.
+     *
+     * @param title the title
+     */
+    public void setTitle(final String title) {
+
+        this.title = title;
+    }
+
+    /**
      * Sets the authentication token.
-     * 
-     * @return
+     *
+     * @return the auth token
      */
     public String getAuthToken() {
 
@@ -205,10 +288,10 @@ public class User extends AbstractHasModified implements Comparable<User> {
 
     /**
      * Returns the authentication token.
-     * 
-     * @param authToken
+     *
+     * @param authToken the auth token
      */
-    public void setAuthToken(String authToken) {
+    public void setAuthToken(final String authToken) {
 
         this.authToken = authToken;
     }
@@ -234,13 +317,79 @@ public class User extends AbstractHasModified implements Comparable<User> {
      *
      * @param roles the roles to set
      */
-    public void setRoles(Set<String> roles) {
+    public void setRoles(final Set<String> roles) {
 
         this.roles = roles;
     }
 
     /**
-     * Check if the user has the specified role on the refset.
+     * Gets the company.
+     *
+     * @return the company
+     */
+    public String getCompany() {
+
+        return company;
+    }
+
+    /**
+     * Sets the company.
+     *
+     * @param company the company
+     */
+    public void setCompany(final String company) {
+
+        this.company = company;
+    }
+
+    /**
+     * Returns the icon URI.
+     *
+     * @return the icon URI
+     */
+    public String getIconUri() {
+
+        return iconUri;
+    }
+
+    /**
+     * Sets the icon URI.
+     *
+     * @param iconUri the icon uri
+     */
+    public void setIconUri(final String iconUri) {
+
+        this.iconUri = iconUri;
+    }
+
+    /**
+     * Returns the teams.
+     *
+     * @return the teams
+     */
+    @JsonGetter()
+    public Set<Team> getTeams() {
+
+        if (teams == null) {
+
+            teams = new HashSet<>();
+        }
+
+        return teams;
+    }
+
+    /**
+     * Sets the teams.
+     *
+     * @param teams the teams
+     */
+    public void setTeams(final Set<Team> teams) {
+
+        this.teams = teams;
+    }
+
+    /**
+     * Check if the user has the specified role on the project.
      *
      * @param roleToCheck the role to look for
      * @param project the project to check permissions against
@@ -249,75 +398,99 @@ public class User extends AbstractHasModified implements Comparable<User> {
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Project project) throws Exception {
 
-        String editionName = project.getOrganization().getEdition().getShortName();
-
-        //logger.debug("******** doesUserHavePermission edition short name: " + project.getOrganization().getEdition().getShortName());
-        
-        if (!project.getOrganization().getEdition().getShortName().equals("SNOMEDCT")) {
-            editionName = editionName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
-        } else {
-            editionName = "main";
-        }
-
-        final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
-
-        for (final String role : roles) {
-
-            final String lowerCasedRole = role.toLowerCase();
-            final int indexFirstHyphen = lowerCasedRole.indexOf("-");
-            final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
-            //logger.debug("******** doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
-
-            // first check the edition permissions
-            if (editionPart.equals("all") || editionPart.equals(editionName)) {
-
-                final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
-                final String projectName = project.getName().toLowerCase().replace(" ", "_");
-                //logger.debug("******** doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
-
-                // then check the project level permissions
-                if (projectPart.equals("all") || projectPart.equals(projectName)) {
-
-                    //logger.debug("******** doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
-                    
-                    // last check for the role or if they have any permission at this level they have the VIEWER role
-                    if (lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
-                        
-                        //logger.debug("******** doesUserHavePermission = true");
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
+        return checkPermission(roleToCheck, project.getEdition(), project.getCrowdProjectId());
     }
 
     /**
-     * Hash code.
+     * Check if the user has the specified role on the organization.
      *
-     * @return the int
+     * @param roleToCheck the role to look for
+     * @param organization the organization
+     * @return if the user has the specified role on the refset
+     * @throws Exception the exception
      */
+    public boolean doesUserHavePermission(final String roleToCheck, final Organization organization) throws Exception {
+
+        final Edition edition = EditionService.getEditionForOrganization(organization.getId());
+
+        return checkPermission(roleToCheck, edition, null);
+    }
+
+    /**
+     * Check if the user has the specified role on the organization or project.
+     *
+     * @param roleToCheck the role to look for
+     * @param edition the edition to check permissions against
+     * @param projectCrowdId the crowd ID of the project to check permissions against or null for org level permission
+     * @return if the user has the specified role on the refset
+     * @throws Exception the exception
+     */
+    public boolean checkPermission(final String roleToCheck, final Edition edition, final String projectCrowdId) throws Exception {
+
+        try {
+
+            String editionName = null;
+
+            if (edition == null && projectCrowdId == null) {
+                editionName = "all";
+            } else if (edition != null) {
+                editionName = CrowdGroupNameAlgorithm.getOrganizationString(edition.getShortName());
+            }           
+
+            final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
+
+            for (final String role : roles) {
+
+                final String lowerCasedRole = role.toLowerCase();
+                final int indexFirstHyphen = lowerCasedRole.indexOf("-");
+                final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
+                // logger.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
+
+                // first check the edition permissions
+                if (editionPart.equals("all") || editionPart.equals(editionName)) {
+
+                    final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
+                    // logger.debug("doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
+
+                    // then check the project level permissions against 1: all access, 2: org level viewer, 3: project level project name
+                    if (projectPart.equals("all") || (projectCrowdId == null && roleToCheck.equals(ROLE_VIEWER)) || (projectCrowdId != null && projectPart.equals(projectCrowdId))) {
+
+                        // logger.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
+
+                        // last check for the role or if they have any permission at this level they have the VIEWER role
+                        if (lowerCasedRole.endsWith("-all") || lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
+
+                            // logger.debug("doesUserHavePermission = true");
+                            return true;
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
+    }
+
     /* see superclass */
     @Override
     public int hashCode() {
 
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((userName == null) ? 0 : userName.hashCode());
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((authToken == null) ? 0 : authToken.hashCode());
+        result = prime * result + ((company == null) ? 0 : company.hashCode());
         result = prime * result + ((email == null) ? 0 : email.hashCode());
+        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
-
+        result = prime * result + ((teams == null) ? 0 : teams.hashCode());
+        result = prime * result + ((title == null) ? 0 : title.hashCode());
+        result = prime * result + ((userName == null) ? 0 : userName.hashCode());
         return result;
     }
 
-    /**
-     * Equals.
-     *
-     * @param obj the obj
-     * @return true, if successful
-     */
     /* see superclass */
     @Override
     public boolean equals(final Object obj) {
@@ -327,11 +500,6 @@ public class User extends AbstractHasModified implements Comparable<User> {
             return true;
         }
 
-        if (obj == null) {
-
-            return false;
-        }
-
         if (getClass() != obj.getClass()) {
 
             return false;
@@ -339,26 +507,26 @@ public class User extends AbstractHasModified implements Comparable<User> {
 
         final User other = (User) obj;
 
-        if (userName == null) {
+        if (authToken == null) {
 
-            if (other.userName != null) {
+            if (other.authToken != null) {
 
                 return false;
             }
 
-        } else if (!userName.equals(other.userName)) {
+        } else if (!authToken.equals(other.authToken)) {
 
             return false;
         }
 
-        if (name == null) {
+        if (company == null) {
 
-            if (other.name != null) {
+            if (other.company != null) {
 
                 return false;
             }
 
-        } else if (!name.equals(other.name)) {
+        } else if (!company.equals(other.company)) {
 
             return false;
         }
@@ -375,6 +543,30 @@ public class User extends AbstractHasModified implements Comparable<User> {
             return false;
         }
 
+        if (iconUri == null) {
+
+            if (other.iconUri != null) {
+
+                return false;
+            }
+
+        } else if (!iconUri.equals(other.iconUri)) {
+
+            return false;
+        }
+
+        if (name == null) {
+
+            if (other.name != null) {
+
+                return false;
+            }
+
+        } else if (!name.equals(other.name)) {
+
+            return false;
+        }
+
         if (roles == null) {
 
             if (other.roles != null) {
@@ -387,7 +579,57 @@ public class User extends AbstractHasModified implements Comparable<User> {
             return false;
         }
 
+        if (teams == null) {
+
+            if (other.teams != null) {
+
+                return false;
+            }
+
+        } else if (!teams.equals(other.teams)) {
+
+            return false;
+        }
+
+        if (title == null) {
+
+            if (other.title != null) {
+
+                return false;
+            }
+
+        } else if (!title.equals(other.title)) {
+
+            return false;
+        }
+
+        if (userName == null) {
+
+            if (other.userName != null) {
+
+                return false;
+            }
+
+        } else if (!userName.equals(other.userName)) {
+
+            return false;
+        }
+
         return true;
+    }
+
+    /* see superclass */
+    @Override
+    public String toString() {
+
+        try {
+
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+
+            return e.getMessage();
+        }
+
     }
 
     /**
@@ -409,6 +651,30 @@ public class User extends AbstractHasModified implements Comparable<User> {
      */
     @Override
     public void lazyInit() {
+        // TODO Auto-generated method stub
+
+    }
+
+    /* see superclass */
+    @Override
+    public void validateAdd() throws Exception {
+
+        // TODO Auto-generated method stub
+
+    }
+
+    /* see superclass */
+    @Override
+    public void validateUpdate(final User other) throws Exception {
+
+        // TODO Auto-generated method stub
+
+    }
+
+    /* see superclass */
+    @Override
+    public void validateDelete() throws Exception {
+
         // TODO Auto-generated method stub
 
     }

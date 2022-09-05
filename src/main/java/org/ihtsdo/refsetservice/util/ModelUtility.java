@@ -283,6 +283,20 @@ public final class ModelUtility {
         final String json = toJson(o);
         return fromJson(json, graphClass);
     }
+    
+    /**
+     * Json copy.
+     *
+     * @param <T> the
+     * @param o the o
+     * @param typeRef the type reference
+     * @return the t
+     * @throws Exception the exception
+     */
+    public static <T> T jsonCopy(final Object o, final TypeReference<T> typeRef) throws Exception {
+        final String json = toJson(o);
+        return fromJson(json, typeRef);
+    }
 
     /**
      * Reflection sort.

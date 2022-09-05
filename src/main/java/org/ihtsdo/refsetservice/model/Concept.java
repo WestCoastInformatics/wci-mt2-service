@@ -47,7 +47,6 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /** The descriptions. */
     private List<Map<String, String>> descriptions = new ArrayList<>();
 
-    // These next two booleans are NOT needed for tree
     /** The flag for if a user can see the history for this concept. */
     private boolean historyVisible;
 
@@ -66,23 +65,21 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /** The internal ID of intensional refset definition exception */
     private String definitionExceptionId;
 
-    // Members below are filled in when open Concept Details screen only (for
-    // now)
+    // Members below are filled in when open Concept Details screen only (for now)
     /** A list of the parents of this concept. */
     private List<Concept> parents = new ArrayList<>();
 
-    /**
-     * Does this concept have ancestors that are members of the refset.
-     */
+    /**  Does this concept have ancestors that are members of the refset. */
     private boolean hasAncestorRefsetMembers;
 
     /** A list of the children of this concept. */
     private List<Concept> children = new ArrayList<>();
 
-    /**
-     * Does this concept have descendants that are members of the refset.
-     */
+    /** Does this concept have descendants that are members of the refset. */
     private boolean hasDescendantRefsetMembers;
+    
+    /** The count of discussions for this item. */
+    private int discussionCount;
 
     private Map<Integer, List<String>> roleGroups = new HashMap<>();
 
@@ -90,7 +87,6 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      * Instantiates an empty {@link Concept}.
      */
     public Concept() {
-
         // n/a
     }
 
@@ -154,6 +150,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         defined = other.isDefined();
         released = other.isReleased();
         descriptions = other.getDescriptions();
+        discussionCount = other.getDiscussionCount();
     }
 
     /**
@@ -294,6 +291,26 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     public void setDescriptions(List<Map<String, String>> descriptions) {
 
         this.descriptions = descriptions;
+    }
+    
+    /**
+     * Gets the discussion count.
+     *
+     * @return the discussion count
+     */
+    public int getDiscussionCount() {
+        
+        return discussionCount;
+    }
+    
+    /**
+     * Sets the discussion count.
+     *
+     * @param discussionCount the discussion count
+     */
+    public void setDiscussionCount(int discussionCount) {
+        
+        this.discussionCount = discussionCount;
     }
 
     /**
@@ -576,6 +593,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
         result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
+        result = prime * result + discussionCount;
         result = prime * result + ((super.getModified() == null) ? 0 : super.getModifiedBy().hashCode());
         return result;
     }
@@ -734,6 +752,10 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
             }
 
         } else if (!version.equals(other.version)) {
+            return false;
+        }
+        
+        if (other.discussionCount != discussionCount) {
             return false;
         }
 

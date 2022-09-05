@@ -52,11 +52,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  * 
  */
 @Entity
-@Table(name = "upgrade_replacement_concecpts")
-public class UpgradeReplacementConcecpt extends AbstractHasModified {
+@Table(name = "upgrade_replacement_concepts")
+public class UpgradeReplacementConcept extends AbstractHasModified {
 
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(UpgradeReplacementConcecpt.class);
+    private static Logger logger = LoggerFactory.getLogger(UpgradeReplacementConcept.class);
     
     /** The code. */
     @Column(nullable = false, length = 256)
@@ -80,18 +80,18 @@ public class UpgradeReplacementConcecpt extends AbstractHasModified {
     private boolean added;
 
     /**
-     * Instantiates an empty {@link UpgradeReplacementConcecpt}.
+     * Instantiates an empty {@link UpgradeReplacementConcept}.
      */
-    public UpgradeReplacementConcecpt() {
+    public UpgradeReplacementConcept() {
         // n/a
     }
 
     /**
-     * Instantiates a {@link UpgradeReplacementConcecpt} from the specified parameters.
+     * Instantiates a {@link UpgradeReplacementConcept} from the specified parameters.
      *
      * @param other the other
      */
-    public UpgradeReplacementConcecpt(final UpgradeReplacementConcecpt other) {
+    public UpgradeReplacementConcept(final UpgradeReplacementConcept other) {
         populateFrom(other);
     }
 
@@ -100,7 +100,7 @@ public class UpgradeReplacementConcecpt extends AbstractHasModified {
      *
      * @param other the other
      */
-    public void populateFrom(final UpgradeReplacementConcecpt other) {
+    public void populateFrom(final UpgradeReplacementConcept other) {
         
         super.populateFrom(other);
         code = other.getCode();
@@ -237,7 +237,7 @@ public class UpgradeReplacementConcecpt extends AbstractHasModified {
             return false;
         }
 
-        final UpgradeReplacementConcecpt other = (UpgradeReplacementConcecpt) obj;
+        final UpgradeReplacementConcept other = (UpgradeReplacementConcept) obj;
         
         if (code == null) {
             if (other.code != null) {

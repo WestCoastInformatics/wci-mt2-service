@@ -199,14 +199,11 @@ public class RefsetUnitTest extends BaseTest {
             service.add(object);
 
             edition.setId(null);
+            edition.setOrganization(organization);
             service.add(edition);
 
-            organization.setId(null);
-            organization.setEdition(edition);
-            service.add(organization);
-
             project.setId(null);
-            project.setOrganization(organization);
+            project.setEdition(edition);
             service.add(project);
             object.setProject(project);
 
@@ -247,8 +244,8 @@ public class RefsetUnitTest extends BaseTest {
             }
 
             // test that project and organization were properly added.
-            if (retrievedObject.getProject() == null || !retrievedObject.getProject().getName().equals("1") || retrievedObject.getProject().getOrganization() == null
-                || !retrievedObject.getProject().getOrganization().getName().equals("1")) {
+            if (retrievedObject.getProject() == null || !retrievedObject.getProject().getName().equals("1") || retrievedObject.getProject().getEdition().getOrganization() == null
+                || !retrievedObject.getProject().getEdition().getOrganization().getName().equals("1")) {
                 throw new Exception("Refset project and organization not properly saved = " + retrievedObject.getId());
             }
 

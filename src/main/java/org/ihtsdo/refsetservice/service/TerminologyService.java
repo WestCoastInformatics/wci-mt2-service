@@ -22,6 +22,7 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.LockModeType;
 import javax.persistence.NoResultException;
 import javax.persistence.Persistence;
+import javax.persistence.Query;
 
 import org.hibernate.CacheMode;
 import org.hibernate.search.mapper.orm.Search;
@@ -72,6 +73,12 @@ public class TerminologyService implements RootService {
 
     /** The transaction per operation. */
     private boolean transactionPerOperation = true;
+    
+    /** Should multiple transactions per operation be automatically allowed. */
+    private boolean autoMultipleTransactionsPerOperation = true;
+    
+    /** The transaction per operation internally changed. */
+    private boolean transactionPerOperationIntenallyChanged = false;
 
     /** The transaction entity. */
     private EntityTransaction transaction;
@@ -248,13 +255,13 @@ public class TerminologyService implements RootService {
     @Override
     public void beginTransaction() throws Exception {
 
-        if (getTransactionPerOperation()) {
-            throw new IllegalStateException(
-                    "Error attempting to begin a transaction when using transactions "
-                            + "per operation mode.");
+        if (transactionPerOperation && autoMultipleTransactionsPerOperation) {
+            
+            transactionPerOperation = false;
+            transactionPerOperationIntenallyChanged = true;
+            
         } else if (transaction != null && transaction.isActive()) {
-            throw new IllegalStateException("Error attempting to begin a transaction when there "
-                    + "is already an active transaction");
+            throw new IllegalStateException("Error attempting to begin a transaction when there " + "is already an active transaction");
         }
 
         transaction = manager.getTransaction();
@@ -270,16 +277,22 @@ public class TerminologyService implements RootService {
     @Override
     public void commit() throws Exception {
 
-        if (getTransactionPerOperation()) {
-            throw new IllegalStateException(
-                    "Error attempting to commit a transaction when using transactions per "
-                            + "operation mode.");
+        if (transactionPerOperation) {
+            throw new IllegalStateException("Error attempting to commit a transaction when using transactions per operation mode.");
+            
         } else if (transaction != null && !transaction.isActive()) {
-            throw new IllegalStateException("Error attempting to commit a transaction when there "
-                    + "is no active transaction");
+            throw new IllegalStateException("Error attempting to commit a transaction when there is no active transaction");
+            
         } else if (transaction != null) {
+            
             transaction.commit();
             manager.clear();
+            
+            if (transactionPerOperationIntenallyChanged) {
+                
+                transactionPerOperationIntenallyChanged = false;
+                transactionPerOperation = true;
+            }
         }
     }
 
@@ -1544,6 +1557,26 @@ public class TerminologyService implements RootService {
     public void addCache(final String cache, final String key, final String value)
         throws Exception {
         // TODO Auto-generated method stub
+
+    }
+    
+    /**
+     * Clear user sessions.
+     *
+     * @throws Exception the exception
+     */
+    public void clearUserSessions() throws Exception {
+
+        this.setTransactionPerOperation(false);
+        this.beginTransaction();
+
+        final Query query1 = manager.createNativeQuery("DELETE from spring_session_attributes");
+        query1.executeUpdate();
+
+        final Query query2 = manager.createNativeQuery("DELETE from spring_session");
+        query2.executeUpdate();
+
+        this.commit();
 
     }
 

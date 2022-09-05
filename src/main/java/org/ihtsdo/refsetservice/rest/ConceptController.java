@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -62,11 +63,11 @@ public class ConceptController extends BaseController {
     })
     @ApiImplicitParams({
             @ApiImplicitParam(name = "terminology", value = "Terminology, e.g. 'ncit'",
-                    required = true, dataType = "string", paramType = "path",
+                    required = true, dataTypeClass = String.class, paramType = "path",
                     defaultValue = "ncit"),
             @ApiImplicitParam(name = "code",
                     value = "Code in the specified terminology, e.g. 'C3224'", required = true,
-                    dataType = "string", paramType = "path"),
+                    dataTypeClass = String.class, paramType = "path"),
             @ApiImplicitParam(name = "include",
                     value = "Indicator of how much data to return. Comma-separated list of any of "
                             + "the following values: minimal, summary, full, associations, "
@@ -74,18 +75,18 @@ public class ConceptController extends BaseController {
                             + "inverseRoles, maps, parents, properties, roles, synonyms. "
                             + "<a href='https://github.com/NCIEVS/evsrestapi-client-SDK/"
                             + "blob/master/doc/INCLUDE.md'>See here for detailed information</a>.",
-                    required = false, dataType = "string", paramType = "query",
+                    required = false, dataTypeClass = String.class, paramType = "query",
                     defaultValue = "summary")
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{code}",
             produces = "application/json")
-    public @ResponseBody Concept getConcept(@PathVariable(value = "terminology")
+    public @ResponseBody ResponseEntity<Concept> getConcept(@PathVariable(value = "terminology")
     final String terminology, @PathVariable(value = "code")
     final String code) throws Exception {
         try {
 
-            logger.info("*********** getConcept: terminology: " + terminology + " ; code: " + code);
+            logger.info("getConcept: terminology: " + terminology + " ; code: " + code);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -93,15 +94,14 @@ public class ConceptController extends BaseController {
                         + " AND code:" + QueryParserBase.escape(code) + "", Concept.class, null);
 
                 logger.info(
-                        "*********** getConcept: serviceConcept: " + ModelUtility.toJson(concept));
+                        "getConcept: serviceConcept: " + ModelUtility.toJson(concept));
 
-                return concept;
+                return new ResponseEntity<>(concept, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -114,12 +114,12 @@ public class ConceptController extends BaseController {
      * @throws Exception the exception
      */
     @PutMapping("/concept/{code}")
-    Concept updateActive(final @RequestBody boolean active, final @PathVariable String code)
+    ResponseEntity<Concept> updateActive(final @RequestBody boolean active, final @PathVariable String code)
         throws Exception {
 
         try {
 
-            logger.info("*********** getConcept: active: " + active + " ; code: " + code);
+            logger.info("getConcept: active: " + active + " ; code: " + code);
 
             try (TerminologyService service = new TerminologyService()) {
 
@@ -130,15 +130,14 @@ public class ConceptController extends BaseController {
                 service.update(concept);
 
                 logger.info(
-                        "*********** getConcept: serviceConcept: " + ModelUtility.toJson(concept));
+                        "getConcept: serviceConcept: " + ModelUtility.toJson(concept));
 
-                return concept;
+                return new ResponseEntity<>(concept, HttpStatus.OK);
             }
 
         } catch (final Exception e) {
 
-            handleException(e);
-            return null;
+            return handleException(e);
         }
     }
 
@@ -165,20 +164,20 @@ public class ConceptController extends BaseController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "terminology",
                     value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true,
-                    dataType = "string", paramType = "query", defaultValue = "ncit"),
+                    dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
             @ApiImplicitParam(name = "query",
                     value = "The term, phrase, or code to be searched, e.g. 'melanoma'",
-                    required = false, dataType = "string", paramType = "query", defaultValue = ""),
+                    required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
             @ApiImplicitParam(name = "limit", value = "The max number of results to return",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0"),
+                    required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
             @ApiImplicitParam(name = "offset", value = "The offset for the first result",
-                    required = false, dataType = "int", paramType = "query", defaultValue = "0")
+                    required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
     // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/concept/search",
             produces = "application/json")
-    public @ResponseBody ConceptResultList search(@ModelAttribute
+    public @ResponseBody ResponseEntity<ConceptResultList> search(@ModelAttribute
     final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         // Check whether or not parameter binding was successful
@@ -201,12 +200,10 @@ public class ConceptController extends BaseController {
 
             // TBD
             results.setTimeTaken(System.currentTimeMillis() - start);
-            return results;
-        } catch (final ResponseStatusException rse) {
-            throw rse;
+            return new ResponseEntity<>(results, HttpStatus.OK);
+
         } catch (final Exception e) {
-            handleException(e);
-            return null;
+            return handleException(e);
         }
 
         /**

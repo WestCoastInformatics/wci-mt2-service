@@ -29,7 +29,7 @@ repositories {
 
 // Project.version info (upgrade version when needed)
 group = "org.ihtsdo.refsetservice"
-version = "0.1.8" 
+version = "0.1.10" 
 
 // Extra Properties
 ext {
@@ -152,6 +152,8 @@ dependencies {
   implementation "org.springframework.boot:spring-boot-starter-jdbc"
   implementation "org.springframework.session:spring-session-core"
   implementation "org.springframework.session:spring-session-jdbc"
+  implementation "org.springframework.security:spring-security-core"
+  implementation "org.springframework.security:spring-security-web"
   implementation "org.springframework:spring-aop"
   implementation "org.springframework.boot:spring-boot-starter-tomcat"
   implementation "org.apache.commons:commons-lang3:3.4"
@@ -172,6 +174,7 @@ dependencies {
   implementation "org.hibernate:hibernate-hikaricp:5.5.3.Final"
   implementation "org.reflections:reflections:0.9.11"
   implementation "javax.ws.rs:javax.ws.rs-api:2.1.1"
+  implementation "com.sun.mail:javax.mail:1.6.2"
   implementation "org.jboss.resteasy:resteasy-client:4.7.2.Final"
   implementation "org.jboss.resteasy:resteasy-jackson2-provider:4.7.2.Final"
   implementation "mysql:mysql-connector-java"
@@ -241,6 +244,10 @@ test {
    // Use junit platform for unit tests
    systemProperty "spring.profiles.active", "test"
    useJUnitPlatform()
+   //testLogging {
+   //  showStandardStreams = true
+   //}
+   //exclude "**/*IntegrationTest*"
 }
 
 // ./gradlew reindex

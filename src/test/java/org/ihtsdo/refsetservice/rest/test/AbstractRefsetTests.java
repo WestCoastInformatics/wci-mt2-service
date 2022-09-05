@@ -44,7 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AutoConfigureMockMvc
 abstract public class AbstractRefsetTests extends BaseTest {
 
-    protected final static SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+    protected static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
     /** The config properties. */
     protected final Properties properties = PropertyUtility.getProperties();
@@ -76,7 +76,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String MAIN_NRC_TESTING_REFSET_ID = "561000172108"; // Belgian
 
-    protected static final String MAIN_NRC_TESTING_REFSET_VERSION = "2020-09-15";
+    protected static final String MAIN_NRC_TESTING_REFSET_VERSION = "2022-03-15";
 
     protected static final String MAIN_CORE_TESTING_REFSET_ID = "721145008"; // Belgian
 
@@ -96,7 +96,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     protected static final String WCI_TESTING_PROJECT_NAME = "WCI Testing Project";
 
-    protected static final String WCI_TESTING_EDITION_NAME = "WCI";
+    protected static final String WCI_TESTING_EDITION_NAME = "WCI Testing Extension";
 
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID = "450970008";
 

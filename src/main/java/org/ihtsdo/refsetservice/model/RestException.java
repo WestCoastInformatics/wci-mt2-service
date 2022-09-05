@@ -1,6 +1,7 @@
 package org.ihtsdo.refsetservice.model;
 
 import org.ihtsdo.refsetservice.model.Error;
+import org.springframework.http.HttpStatus;
 
 /**
  * Wrapper REST exception so we can properly format all exception responses to
@@ -29,6 +30,19 @@ public class RestException extends RuntimeException {
     public RestException(final boolean local, final int status, final String error,
             final String message) {
         this.error = new Error(local, status, error, message);
+    }
+    
+    /**
+     * Instantiates a {@link RestException} from the specified parameters.
+     *
+     * @param local the local
+     * @param httpStatus the httpStatus
+     * @param error the error
+     * @param message the message
+     */
+    public RestException(final boolean local, final HttpStatus httpStatus, final String error,
+            final String message) {
+        this.error = new Error(local, httpStatus.ordinal(), error, message);
     }
 
     /**

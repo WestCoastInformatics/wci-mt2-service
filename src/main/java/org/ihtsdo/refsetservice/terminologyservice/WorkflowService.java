@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -21,12 +20,12 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
-import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -235,6 +234,7 @@ public final class WorkflowService {
             refset.setLatestPublishedVersion(true);
             
             service.update(refset);
+            service.add(AuditEntryHelper.completeRefsetPublicationEntry(refset));
             
             if (!refset.getWorkflowStatus().equals(PUBLISHED)) {
                 throw new Exception("Refset was not able to have publication completed " + refset.getId());
@@ -307,7 +307,7 @@ public final class WorkflowService {
                 
                 final String currentStatus = refset.getWorkflowStatus();
                 
-                setWorkflowStatusByAction(user, action, refset, notes);
+                setWorkflowStatusByAction(service, user, action, refset, notes);
                 
                 if (currentStatus.equals(refset.getWorkflowStatus())) {
                     refsetsNotUpdated.add(refset.getRefsetId());
@@ -326,6 +326,7 @@ public final class WorkflowService {
     /**
      * Set the workflow status for the refset.
      *
+     * @param service the Terminology Service
      * @param user the user
      * @param action the action
      * @param refset the refset
@@ -335,12 +336,12 @@ public final class WorkflowService {
      * @return the updated refset
      * @throws Exception the exception
      */
-    public static Refset setWorkflowStatus(final User user, final String action, final Refset refset, final String notes, final String nextStatus, final String assignedUser) throws Exception {
+    public static Refset setWorkflowStatus(final TerminologyService service, final User user, final String action, final Refset refset, final String notes, final String nextStatus, final String assignedUser) throws Exception {
 
         if (WorkflowService.getAllowedActions(user, refset).contains(action)) {
 
-            final Refset updatedRefset = setRefsetWorkflowStatus(user, refset, nextStatus, assignedUser);
-            addWorkflowHistory(user, action, refset, notes);
+            final Refset updatedRefset = setRefsetWorkflowStatus(service, user, refset, nextStatus, assignedUser);
+            addWorkflowHistory(service, user, action, refset, notes);
             return updatedRefset;
         } else {
 
@@ -353,6 +354,7 @@ public final class WorkflowService {
     /**
      * Set the workflow status for the refset based on the action the user took.
      *
+     * @param service the Terminology Service
      * @param user the user
      * @param action the action
      * @param refset the refset
@@ -361,112 +363,110 @@ public final class WorkflowService {
      * @return the updated refset
      * @throws Exception the exception
      */
-    public static Refset setWorkflowStatusByAction(final User user, final String action, final Refset refset, final String notes) throws Exception {
+    public static Refset setWorkflowStatusByAction(final TerminologyService service, final User user, final String action, final Refset refset, final String notes) throws Exception {
 
         final String currentStatus = refset.getWorkflowStatus();
         boolean restoreHistory = false;
         List<String> roles = RefsetService.setRoles(user, refset.getProject(), new ArrayList<>());
-        
-        try (final TerminologyService service = new TerminologyService()) {
 
-            // get the next status based on the user, current status, and supplied action
-            logger.debug("WORKFLOW_PERMUTATIONS: " + ModelUtility.toJson(WORKFLOW_PERMUTATIONS));
+        // get the next status based on the user, current status, and supplied action
+        logger.debug("WORKFLOW_PERMUTATIONS: " + ModelUtility.toJson(WORKFLOW_PERMUTATIONS));
+        
+        String nextStatus = null;
+        String assignedUser = null;
+        
+        // loop thru the roles to find a match for the action and current status. !! This only works if any multiple matches between role, current status, and action go to the same next status !!
+        for (final String role: roles) {
             
-            String nextStatus = null;
-            String assignedUser = null;
-            
-            // loop thru the roles to find a match for the action and current status. !! This only works if any multiple matches between role, current status, and action go to the same next status !!
-            for (final String role: roles) {
+            if (WORKFLOW_PERMUTATIONS.containsKey(role) && WORKFLOW_PERMUTATIONS.get(role).containsKey(refset.getWorkflowStatus())) {
                 
-                if (WORKFLOW_PERMUTATIONS.containsKey(role) && WORKFLOW_PERMUTATIONS.get(role).containsKey(refset.getWorkflowStatus())) {
+                final String possibleStatus = WORKFLOW_PERMUTATIONS.get(role).get(refset.getWorkflowStatus()).get(action);
+                
+                if (possibleStatus != null) {
                     
-                    final String possibleStatus = WORKFLOW_PERMUTATIONS.get(role).get(refset.getWorkflowStatus()).get(action);
-                    
-                    if (possibleStatus != null) {
-                        
-                        nextStatus = possibleStatus;
-                        break;
-                    }
+                    nextStatus = possibleStatus;
+                    break;
                 }
-            }
-            
-            if (Arrays.asList(EDIT, UPGRADE, REVIEW).contains(action)) {
-                assignedUser = user.getUserName();
-            }
-            
-            logger.debug("currentStatus: " + currentStatus + " ; nextStatus: " + nextStatus);
-    
-            // if edits have just been completed then merge the edit branch into the refset branch and delete the edit branch
-            if ((currentStatus.equals(IN_EDIT) && Arrays.asList(FINISH_EDIT, REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(FINISH_UPGRADE).contains(action))) {
-    
-                final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(), notes);
-    
-                if (merged) {
-                    
-                    refset.setEditBranchId(null);
-                    RefsetService.removeRefsetEditHistory(user, refset.getRefsetId());
-                    
-                } else {
-    
-                    final String message = "Unable to merge edit into refset branch for refset " + refset.getRefsetId() + " because the edit branch doesn't exist.";
-                    logger.error(message);
-                    throw new Exception(message);
-                }
-    
-            }
-            
-            else if ((currentStatus.equals(IN_EDIT) && Arrays.asList(CANCEL_EDIT).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(CANCEL_UPGRADE).contains(action))) {
-                
-                RefsetMemberService.clearAllMemberCaches(getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId()));
-                refset.setEditBranchId(null);
-                restoreHistory = true;
-            }
-    
-            // else if this is the start of edits create the refset edit branch
-            else if (action.equals(EDIT) || action.equals(UPGRADE)) {
-                
-                final String branchId = generateEditBranchId();
-                refset.setEditBranchId(branchId);
-                String projectBranchPath = getProjectBranchPath(refset.getEditionBranch());
-                String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
-                
-                mergeBranch(refset.getEditionBranch(), projectBranchPath, "Updating branch to latest changes");
-                mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes");
-                createEditBranch(user, refset.getEditionBranch(), refset.getId(), refset.getRefsetId(), branchId);
-            }
-            
-            if (currentStatus.equals(IN_UPGRADE)) {
-                RefsetMemberService.removeUpgradeData(service, user, refset.getId());
-            }
-    
-            // if publication is being requested merge the refset branch into the edition branch
-            if (action.equals(REQUEST_PUBLICATION)) {
-    
-                final boolean merged = mergeRefsetIntoProjectBranch(refset.getEditionBranch(), refset.getRefsetId(), notes);
-    
-                if (!merged) {
-                    
-                    final String message = "Unable to merge refset into project branch for refset " + refset.getRefsetId() + " because the project branch doesn't exist.";
-                    logger.error(message);
-                    throw new Exception(message);
-                }
-            }
-            
-            setWorkflowStatus(user, action, refset, notes, nextStatus, assignedUser);
-            
-            if (restoreHistory) {
-                
-                RefsetService.replaceRefsetWithEditHistory(user, refset.getId());
-                RefsetService.removeRefsetEditHistory(user, refset.getRefsetId());
             }
         }
         
+        if (Arrays.asList(EDIT, UPGRADE, REVIEW).contains(action)) {
+            assignedUser = user.getUserName();
+        }
+        
+        logger.debug("currentStatus: " + currentStatus + " ; nextStatus: " + nextStatus);
+
+        // if edits have just been completed then merge the edit branch into the refset branch and delete the edit branch
+        if ((currentStatus.equals(IN_EDIT) && Arrays.asList(FINISH_EDIT, REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(FINISH_UPGRADE).contains(action))) {
+
+            final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(), notes);
+
+            if (merged) {
+                
+                refset.setEditBranchId(null);
+                RefsetService.removeRefsetEditHistory(service, user, refset.getRefsetId());
+                
+            } else {
+
+                final String message = "Unable to merge edit into refset branch for refset " + refset.getRefsetId() + " because the edit branch doesn't exist.";
+                logger.error(message);
+                throw new Exception(message);
+            }
+
+        }
+        
+        else if ((currentStatus.equals(IN_EDIT) && Arrays.asList(CANCEL_EDIT).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(CANCEL_UPGRADE).contains(action))) {
+            
+            RefsetMemberService.clearAllMemberCaches(getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId()));
+            refset.setEditBranchId(null);
+            restoreHistory = true;
+        }
+
+        // else if this is the start of edits create the refset edit branch
+        else if (action.equals(EDIT) || action.equals(UPGRADE)) {
+            
+            final String branchId = generateEditBranchId();
+            refset.setEditBranchId(branchId);
+            String projectBranchPath = getProjectBranchPath(refset.getEditionBranch());
+            String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
+            
+            mergeBranch(refset.getEditionBranch(), projectBranchPath, "Updating branch to latest changes");
+            mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes");
+            createEditBranch(service, user, refset.getEditionBranch(), refset, refset.getRefsetId(), branchId);
+        }
+        
+        if (currentStatus.equals(IN_UPGRADE)) {
+            RefsetMemberService.removeUpgradeData(service, user, refset.getId());
+        }
+
+        // if publication is being requested merge the refset branch into the edition branch
+        if (action.equals(REQUEST_PUBLICATION)) {
+
+            final boolean merged = mergeRefsetIntoProjectBranch(refset.getEditionBranch(), refset.getRefsetId(), notes);
+
+            if (!merged) {
+                
+                final String message = "Unable to merge refset into project branch for refset " + refset.getRefsetId() + " because the project branch doesn't exist.";
+                logger.error(message);
+                throw new Exception(message);
+            }
+        }
+        
+        setWorkflowStatus(service, user, action, refset, notes, nextStatus, assignedUser);
+        
+        if (restoreHistory) {
+            
+            RefsetService.replaceRefsetWithEditHistory(service, user, refset.getId());
+            RefsetService.removeRefsetEditHistory(service, user, refset.getRefsetId());
+        }
+         
         return refset;
     }
 
     /**
      * Update the refset to a new workflow status.
      *
+     * @param service the Terminology Service
      * @param user the user
      * @param refset the refset
      * @param status the new workflow status
@@ -474,192 +474,174 @@ public final class WorkflowService {
      * @return the updated refset
      * @throws Exception the exception
      */
-    public static Refset setRefsetWorkflowStatus(final User user, final Refset refset, final String status, final String assignedUser) throws Exception {
+    public static Refset setRefsetWorkflowStatus(final TerminologyService service, final User user, final Refset refset, final String status, final String assignedUser) throws Exception {
 
         final long start = System.currentTimeMillis();
-        
-        try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getUserName());
-            service.setModifiedFlag(true);
+        refset.setWorkflowStatus(status);
+        refset.setAssignedUser(assignedUser);
 
-            refset.setWorkflowStatus(status);
-            refset.setAssignedUser(assignedUser);
+        // Published is the final status so set the version information
+        if (status.equals(PUBLISHED)) {
 
-            // Published is the final status so set the version information
-            if (status.equals(PUBLISHED)) {
+            // get the latest edition version branch
+            final List<String> branchVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
 
-                // get the latest edition version branch
-                final List<String> branchVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
+            if (branchVersions.size() < 1) {
 
-                if (branchVersions.size() < 1) {
-
-                    final String message = "Could not retrieve branch versions for branch " + refset.getEditionBranch();
-                    logger.error(message);
-                    throw new Exception(message);
-                }
-
-                final String newVersion = branchVersions.get(0);
-
-                
-                refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(newVersion));
-                refset.setVersionStatus(Refset.PUBLISHED);
+                final String message = "Could not retrieve branch versions for branch " + refset.getEditionBranch();
+                logger.error(message);
+                throw new Exception(message);
             }
-            
-            // Update an object
-            service.update(refset);
-            logger.info("Refset workflow status set to " + status + " for refset " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
 
-            // update the refset permissions
-            return RefsetService.setRefsetPermissions(user, refset);
+            final String newVersion = branchVersions.get(0);
+
+            
+            refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(newVersion));
+            refset.setVersionStatus(Refset.PUBLISHED);
         }
+        
+        // Update an object
+        service.update(refset);
+        service.add(AuditEntryHelper.statusUpdateRefsetEntry(refset));
+        logger.info("Refset workflow status set to " + status + " for refset " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
+
+        // update the refset permissions
+        return RefsetService.setRefsetPermissions(user, refset);
     }
 
     /**
      * Add an entry in the workflow history table.
      *
+     * @param service the Terminology Service
      * @param user the user
      * @param action the action
      * @param refset the refset
      * @param notes the workflow status notes
      * @throws Exception the exception
      */
-    public static void addWorkflowHistory(final User user, final String action, final Refset refset, final String notes) throws Exception {
+    public static void addWorkflowHistory(final TerminologyService service, final User user, final String action, final Refset refset, final String notes) throws Exception {
 
         final long start = System.currentTimeMillis();
-        
-        try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getUserName());
-            service.setModifiedFlag(true);
+        final WorkflowHistory workflow = new WorkflowHistory(user.getUserName(), refset.getWorkflowStatus(), action, notes, refset);
 
-            final WorkflowHistory workflow = new WorkflowHistory(user.getUserName(), refset.getWorkflowStatus(), action, notes, refset);
+        // Add an object
+        service.add(workflow);
+        service.add(AuditEntryHelper.addWorkflowHistoryEntry(workflow, refset));
+        final String newWorkflowId = workflow.getId();
 
-            // Add an object
-            service.add(workflow);
-            final String newWorkflowId = workflow.getId();
-
-            if (newWorkflowId == null) {
-                throw new Exception("Unable to create a new workflow history entry.");
-            }
-
-            logger.info("New workflow history entry with status " + refset.getWorkflowStatus() + " added for refset " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
+        if (newWorkflowId == null) {
+            throw new Exception("Unable to create a new workflow history entry.");
         }
+
+        logger.info("New workflow history entry with status " + refset.getWorkflowStatus() + " added for refset " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
     }
 
     /**
      * Get the current workflow for a refset.
      *
+     * @param service the Terminology Service
      * @param refset the refset
      * @return the current workflow object
      * @throws Exception the exception
      */
-    public static WorkflowHistory getCurrentWorkflow(final Refset refset) throws Exception {
+    public static WorkflowHistory getCurrentWorkflow(final TerminologyService service, final Refset refset) throws Exception {
 
-        try (final TerminologyService service = new TerminologyService()) {
+        final PfsParameter pfs = new PfsParameter();
+        pfs.setSort("modified");
+        pfs.setAscending(false);
+        pfs.setLimit(1);
 
-            final PfsParameter pfs = new PfsParameter();
-            pfs.setSort("modified");
-            pfs.setAscending(false);
-            pfs.setLimit(1);
+        ResultList<WorkflowHistory> results = service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + "", pfs, WorkflowHistory.class, null);
 
-            ResultList<WorkflowHistory> results = service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + "", pfs, WorkflowHistory.class, null);
-
-            if (results.getItems().size() == 0) {
-                throw new Exception("Unable to retrieve worflow for refset " + refset.getId());
-            }
-
-            return results.getItems().get(0);
+        if (results.getItems().size() == 0) {
+            throw new Exception("Unable to retrieve worflow for refset " + refset.getId());
         }
+
+        return results.getItems().get(0);
     }
 
     /**
      * Get the workflow history for a refset.
      *
+     * @param service the Terminology Service
      * @param refset the refset
      * @param searchParameters the search parameters
      * @return the current workflow object
      * @throws Exception the exception
      */
-    public static ResultList<WorkflowHistory> getWorkflowHistory(final Refset refset, final SearchParameters searchParameters) throws Exception {
+    public static ResultList<WorkflowHistory> getWorkflowHistory(final TerminologyService service, final Refset refset, final SearchParameters searchParameters) throws Exception {
 
-        try (final TerminologyService service = new TerminologyService()) {
+        final PfsParameter pfs = new PfsParameter();
+        String query = "";
 
-            final PfsParameter pfs = new PfsParameter();
-            String query = "";
-
-            if (searchParameters.getOffset() != null) {
-                pfs.setOffset(searchParameters.getOffset());
-            }
-
-            if (searchParameters.getLimit() != null) {
-                pfs.setLimit(searchParameters.getLimit());
-            }
-
-            if (searchParameters.getSortAscending() != null) {
-                pfs.setAscending(searchParameters.getSortAscending());
-            }
-
-            if (searchParameters.getSort() != null) {
-                pfs.setSort(searchParameters.getSort());
-            }
-
-            if (searchParameters.getQuery() != null) {
-                query = " AND " + IndexUtility.addWildcardsToQuery(searchParameters.getQuery(), WorkflowHistory.class);
-            }
-
-            ResultList<WorkflowHistory> results = service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + query, pfs, WorkflowHistory.class, null);
-
-            logger.debug("getWorkflowHistory results: " + ModelUtility.toJson(results));
-
-            return results;
+        if (searchParameters.getOffset() != null) {
+            pfs.setOffset(searchParameters.getOffset());
         }
+
+        if (searchParameters.getLimit() != null) {
+            pfs.setLimit(searchParameters.getLimit());
+        }
+
+        if (searchParameters.getSortAscending() != null) {
+            pfs.setAscending(searchParameters.getSortAscending());
+        }
+
+        if (searchParameters.getSort() != null) {
+            pfs.setSort(searchParameters.getSort());
+        }
+
+        if (searchParameters.getQuery() != null) {
+            query = " AND " + IndexUtility.addWildcardsToQuery(searchParameters.getQuery(), WorkflowHistory.class);
+        }
+
+        ResultList<WorkflowHistory> results = service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + query, pfs, WorkflowHistory.class, null);
+
+        logger.debug("getWorkflowHistory results: " + ModelUtility.toJson(results));
+
+        return results;
     }
 
     /**
      * Update the notes for the current workflow status.
      *
+     * @param service the Terminology Service
      * @param user the user
      * @param refset the refset
      * @param notes the notes
-     * @return the current workflow object
      * @throws Exception the exception
      */
-    public static void updateWorkflowNote(final User user, final Refset refset, final String notes) throws Exception {
+    public static void updateWorkflowNote(final TerminologyService service, final User user, final Refset refset, final String notes) throws Exception {
 
-        WorkflowHistory workflow = getCurrentWorkflow(refset);
+        WorkflowHistory workflow = getCurrentWorkflow(service, refset);
 
-        try (final TerminologyService service = new TerminologyService()) {
+        workflow.setNotes(notes);
 
-            service.setModifiedBy(user.getUserName());
-            service.setModifiedFlag(true);
-
-            workflow.setNotes(notes);
-
-            // Update an object
-            service.update(workflow);
-            logger.info("Note for workflow history entry with status " + refset.getWorkflowStatus() + " updated for refset " + refset.getId());
-        }
+        // Update an object
+        service.update(workflow);
+        service.add(AuditEntryHelper.updateWorkflowNoteEntry(workflow, refset));
+        logger.info("Note for workflow history entry with status " + refset.getWorkflowStatus() + " updated for refset " + refset.getId());
     }
 
     /**
      * Get the current assigned username.
      *
+     * @param service the Terminology Service
      * @param refset the refset
      * @return the current assigned username
      * @throws Exception the exception
      */
-    public static String getAssignedUserName(final Refset refset) throws Exception {
+    public static String getAssignedUserName(final TerminologyService service, final Refset refset) throws Exception {
 
         // if the refset isn't being edited or reviewed no one is assigned
         if (!Arrays.asList(IN_EDIT, IN_REVIEW).contains(refset.getWorkflowStatus())) {
             return "";
         }
 
-        WorkflowHistory workflow = getCurrentWorkflow(refset);
+        WorkflowHistory workflow = getCurrentWorkflow(service, refset);
         logger.debug("getAssignedUserName: " + workflow.getUserName());
         return workflow.getUserName();
-
     }
 
     /**
@@ -823,20 +805,21 @@ public final class WorkflowService {
     /**
      * Create the edit branch for a refset.
      *
+     * @param service the Terminology Service
      * @param user the user
      * @param editionBranchPath the branch path of the edition to create the new branch in
-     * @param refsetInternalId the internal refset ID to modify
+     * @param refset the refset to modify
      * @param refsetId the refset ID
      * @param branchId the ID for the edit branch
      * @return the branch path of the new edit branch
      * @throws Exception the exception
      */
-    public static String createEditBranch(final User user, final String editionBranchPath, final String refsetInternalId, final String refsetId, final String branchId) throws Exception {
+    public static String createEditBranch(final TerminologyService service, final User user, final String editionBranchPath, final Refset refset, final String refsetId, final String branchId) throws Exception {
 
         final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
 
-        if (refsetInternalId != null) {
-            RefsetService.createRefsetEditHistory(user, refsetInternalId);
+        if (refset != null) {
+            RefsetService.createRefsetEditHistory(service, user, refset);
         }
         
         final String editBranchPath = createBranch(refsetBranchPath, EDIT_BRANCH_NAME + branchId);
@@ -873,6 +856,7 @@ public final class WorkflowService {
     /**
      * Delete the edit branch for a refset.
      *
+     * @param service the Terminology Service
      * @param user the user
      * @param editionBranchPath the branch path of the edition to create the new branch in
      * @param refsetId the refset ID
@@ -880,9 +864,9 @@ public final class WorkflowService {
      * @return was the branch deleted
      * @throws Exception the exception
      */
-    public static boolean deleteEditBranch(final User user, final String editionBranchPath, final String refsetId, final String branchId) throws Exception {
+    public static boolean deleteEditBranch(final TerminologyService service, final User user, final String editionBranchPath, final String refsetId, final String branchId) throws Exception {
 
-        RefsetService.removeRefsetEditHistory(user, refsetId);
+        RefsetService.removeRefsetEditHistory(service, user, refsetId);
         
         final String branchPath = getEditBranchPath(editionBranchPath, refsetId, branchId);
         return deleteBranch(branchPath);
@@ -941,7 +925,6 @@ public final class WorkflowService {
     public static boolean deleteBranch(final String branchPath) throws Exception {
 
         final long start = System.currentTimeMillis();
-        String refsetBranchPath = null;
         final String url = SnowstormConnection.BASE_URL + "admin/" + branchPath + "/actions/hard-delete";
 
         logger.debug("deleteBranch URL: " + url);
@@ -996,13 +979,11 @@ public final class WorkflowService {
      * @param sourceBranchPath the branch path with the content to merge
      * @param targetBranchPath the branch path to merge content into
      * @param comment the merge comment
-     * @return the branch path of the new branch
      * @throws Exception the exception
      */
     public static void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment) throws Exception {
 
         final long start = System.currentTimeMillis();
-        String refsetBranchPath = null;
         final String url = SnowstormConnection.BASE_URL + "merges";
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath)
@@ -1041,7 +1022,6 @@ public final class WorkflowService {
      * get generated in a temp branch first.
      *
      * @param editionBranchPath the branch path of the temporary branch
-     * @param branchName the name the new branch
      * @return the branch path of the new branch
      * @throws Exception the exception
      */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 SNOMED International - All Rights Reserved.
+ * Copyright 2022 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -10,31 +10,53 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import io.micrometer.core.instrument.util.StringUtils;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Represents an Organization.
  */
 @Entity
 @Table(name = "organizations")
+@Schema(description = "Represents an organization.")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class Organization extends AbstractHasModified {
+public class Organization extends AbstractHasModified implements Copyable<Organization>, ValidateCrud<Organization> {
 
     /** The name. */
     @Column(nullable = false)
@@ -43,17 +65,36 @@ public class Organization extends AbstractHasModified {
     /** The description. */
     @Column(nullable = true, length = 4000)
     private String description;
-    
-    /** The edition. */
-    @ManyToOne(targetEntity = Edition.class)
-    @JoinColumn(nullable = true)
+
+    /** email for primary contact. */
+    @Column(nullable = true, length = 255)
+    private String primaryContactEmail;
+
+    /** The members. */
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {
+        CascadeType.ALL
+    })
+    @JoinTable(name = "organization_members", joinColumns = {
+        @JoinColumn(name = "organization_id")
+    }, inverseJoinColumns = {
+        @JoinColumn(name = "user_id")
+    })
     @Fetch(FetchMode.JOIN)
-    private Edition edition;
+    private Set<User> members;
+
+    /** The icon uri. */
+    @Column(nullable = true, length = 255)
+    private String iconUri;
+
+    /** The of roles for this project. */
+    @Transient
+    private List<String> roles;
 
     /**
      * Instantiates an empty {@link Organization}.
      */
     public Organization() {
+
         // n/a
     }
 
@@ -63,6 +104,7 @@ public class Organization extends AbstractHasModified {
      * @param other the other
      */
     public Organization(final Organization other) {
+
         populateFrom(other);
     }
 
@@ -72,6 +114,7 @@ public class Organization extends AbstractHasModified {
      * @param name the value
      */
     public Organization(final String name) {
+
         this.name = name;
     }
 
@@ -81,10 +124,28 @@ public class Organization extends AbstractHasModified {
      * @param other the other
      */
     public void populateFrom(final Organization other) {
+
         super.populateFrom(other);
         name = other.getName();
         description = other.getDescription();
-        edition = other.getEdition();
+        primaryContactEmail = other.getPrimaryContactEmail();
+        iconUri = other.iconUri;
+        members = other.getMembers();
+        roles = other.getRoles();
+    }
+
+    /**
+     * Patch from.
+     *
+     * @param other the other
+     */
+    public void patchFrom(final Organization other) {
+
+        // Only these field can be patched
+        name = other.getName();
+        description = other.getDescription();
+        primaryContactEmail = other.getPrimaryContactEmail();
+        roles = other.getRoles();
     }
 
     /**
@@ -95,6 +156,7 @@ public class Organization extends AbstractHasModified {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getName() {
+
         return name;
     }
 
@@ -104,113 +166,302 @@ public class Organization extends AbstractHasModified {
      * @param name the name
      */
     public void setName(final String name) {
+
         this.name = name;
     }
 
     /**
+     * Returns the description.
+     *
      * @return the description
      */
     public String getDescription() {
+
         return description;
     }
 
     /**
+     * Sets the description.
+     *
      * @param description the description to set
      */
     public void setDescription(final String description) {
+
         this.description = description;
     }
-    
+
     /**
-     * Gets the edition.
+     * Returns the primary contact email.
      *
-     * @return the edition
+     * @return the primary contact email
      */
-    @JsonSerialize(contentAs = Edition.class)
-    @JsonDeserialize(contentAs = Edition.class)
-    public Edition getEdition() {
-        return edition;
+    public String getPrimaryContactEmail() {
+
+        return primaryContactEmail;
     }
 
     /**
-     * Sets the edition.
+     * Sets the primary contact email.
      *
-     * @param edition the edition to set
+     * @param primaryContactEmail the primary contact email
      */
-    public void setEdition(final Edition edition) {
-        this.edition = edition;
+    public void setPrimaryContactEmail(final String primaryContactEmail) {
+
+        this.primaryContactEmail = primaryContactEmail;
     }
 
     /**
-     * Hash code.
+     * Returns the members.
      *
-     * @return the int
+     * @return Members (users) of the organization
      */
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    @JsonIgnoreProperties("organizations")
+    @JsonSerialize(contentAs = User.class)
+    @JsonDeserialize(contentAs = User.class)
+    public Set<User> getMembers() {
+
+        if (members == null) {
+
+            members = new HashSet<>();
+        }
+
+        return members;
+    }
+
+    /**
+     * Sets the members.
+     *
+     * @param members the members
+     */
+    public void setMembers(final Set<User> members) {
+
+        this.members = members;
+    }
+
+    /**
+     * Returns the icon URI.
+     *
+     * @return the icon URI
+     */
+    public String getIconUri() {
+
+        return iconUri;
+    }
+
+    /**
+     * Sets the icon URI.
+     *
+     * @param iconUri the icon uri
+     */
+    public void setIconUri(final String iconUri) {
+
+        this.iconUri = iconUri;
+    }
+
+    /**
+     * Returns the roles.
+     *
+     * @return the roles
+     */
+    @JsonGetter()
+    public List<String> getRoles() {
+
+        if (roles == null) {
+
+            roles = new ArrayList<>();
+        }
+
+        return roles;
+    }
+
+    /**
+     * Sets the roles.
+     *
+     * @param roles the roles
+     */
+    public void setRoles(final List<String> roles) {
+
+        this.roles = roles;
+    }
+
+    /* see superclass */
     @Override
     public int hashCode() {
 
         final int prime = 31;
-        int result = 1;
+        int result = super.hashCode();
+        result = prime * result + ((description == null) ? 0 : description.hashCode());
+        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
+        result = prime * result + ((members == null) ? 0 : members.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((edition == null) ? 0 : edition.hashCode());
-        result = prime * result
-                + ((description == null) ? 0 : description.hashCode());
+        result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
+        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         return result;
     }
 
-    /**
-     * Equals.
-     *
-     * @param obj the obj
-     * @return true, if successful
-     */
+    /* see superclass */
     @Override
     public boolean equals(final Object obj) {
 
         if (this == obj) {
+
             return true;
         }
 
-        if (obj == null) {
-            return false;
-        }
-
         if (getClass() != obj.getClass()) {
+
             return false;
         }
 
         final Organization other = (Organization) obj;
 
-        if (name == null) {
-            if (other.name != null) {
+        if (description == null) {
+
+            if (other.description != null) {
+
                 return false;
             }
-        } else if (!name.equals(other.name)) {
+
+        } else if (!description.equals(other.description)) {
+
             return false;
         }
 
-        if (description == null) {
-            if (other.description != null) {
+        if (iconUri == null) {
+
+            if (other.iconUri != null) {
+
                 return false;
             }
-        } else if (!description.equals(other.description)) {
+
+        } else if (!iconUri.equals(other.iconUri)) {
+
             return false;
         }
-        
-        if (edition == null) {
-            if (other.edition != null) {
+
+        if (members == null) {
+
+            if (other.members != null) {
+
                 return false;
             }
-        } else if (!edition.equals(other.edition)) {
+
+        } else if (!members.equals(other.members)) {
+
+            return false;
+        }
+
+        if (name == null) {
+
+            if (other.name != null) {
+
+                return false;
+            }
+
+        } else if (!name.equals(other.name)) {
+
+            return false;
+        }
+
+        if (primaryContactEmail == null) {
+
+            if (other.primaryContactEmail != null) {
+
+                return false;
+            }
+
+        } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
+
+            return false;
+        }
+
+        if (roles == null) {
+
+            if (other.roles != null) {
+
+                return false;
+            }
+
+        } else if (!roles.equals(other.roles)) {
+
             return false;
         }
 
         return true;
     }
 
+    /* see superclass */
+    @Override
+    public String toString() {
+
+        try {
+
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+
+            return e.getMessage();
+        }
+
+    }
+
+    /* see superclass */
     @Override
     public void lazyInit() {
+
         // TODO Auto-generated method stub
+    }
+
+    /* see superclass */
+    @Override
+    public void validateAdd() throws Exception {
+
+        if (getId() != null) {
+
+            throw new Exception("Unexpected non-null id");
+        }
+
+        if (StringUtils.isBlank(getName())) {
+
+            throw new Exception("Unexpected null/empty name");
+        }
+
+        if (StringUtils.isBlank(getPrimaryContactEmail())) {
+
+            throw new Exception("Unexpected null/empty primary contact email");
+        }
+
+    }
+
+    /* see superclass */
+    @Override
+    public void validateUpdate(Organization other) throws Exception {
+
+        if (StringUtils.isBlank(getId())) {
+
+            throw new Exception("Unexpected null/empty id");
+        }
+
+        if (StringUtils.isBlank(getName())) {
+
+            throw new Exception("Unexpected null/empty name");
+        }
+
+        if (StringUtils.isBlank(getPrimaryContactEmail())) {
+
+            throw new Exception("Unexpected null/empty primary contact email");
+        }
+
+    }
+
+    /* see superclass */
+    @Override
+    public void validateDelete() throws Exception {
+
+        if (StringUtils.isBlank(getId())) {
+
+            throw new Exception("Unexpected null/empty id");
+        }
 
     }
 }
