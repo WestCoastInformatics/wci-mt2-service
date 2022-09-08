@@ -182,6 +182,9 @@ public class AuditController extends BaseController {
                     }
                 }
 
+                final String query = "entityType:" + entityType + " AND entityId:" + entityId + (StringUtils.isNotEmpty(searchParameters.getQuery()) ? " AND " + searchParameters.getQuery() : "");
+                searchParameters.setQuery(query);
+
                 final ResultList<AuditEntry> results = AuditService.findAuditEntries(searchParameters);
                 return ResponseEntity.status(HttpStatus.OK).body(results);
             }
