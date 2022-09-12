@@ -4211,7 +4211,7 @@ public class RefsetMemberService {
         final List<String> unaddedConcepts = new ArrayList<>();
 
         final ObjectMapper mapper = new ObjectMapper();
-        final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId).put("moduleId", conceptId).put("referencedComponentId", conceptId);
+        final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId).put("moduleId", moduleId).put("referencedComponentId", conceptId);
 
         logger.debug("callAddMemberSingle URL: " + url);
         logger.debug("callAddMemberSingle URL body: " + body.toString());
