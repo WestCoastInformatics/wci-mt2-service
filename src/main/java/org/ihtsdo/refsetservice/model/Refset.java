@@ -294,8 +294,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         versionList = other.getVersionList();
         roles = other.getRoles();
         descriptions = other.getDescriptions();
-        definitionClauses = new ArrayList<DefinitionClause>(other.getDefinitionClauses());
         tags = new HashSet<String>(other.getTags());
+        definitionClauses = new ArrayList<DefinitionClause>();
+        
+        for (final DefinitionClause otherClause : other.getDefinitionClauses()) {
+            definitionClauses.add(new DefinitionClause(otherClause));
+        }
     }
 
     /**
