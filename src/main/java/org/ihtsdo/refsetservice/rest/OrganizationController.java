@@ -574,6 +574,51 @@ public class OrganizationController extends BaseController {
             return handleException(e);
         }
     }
+    
+    /**
+     * Delete organization icon.
+     *
+     * @param organizationId the organization id
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Remove User icon", response = User.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "User successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 415, message = "Unsupported Media Type"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @DeleteMapping(value = "/organization/{organizationId}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity<Organization> deleteOrganizationIcon(@PathVariable(value = "organizationId") final String organizationId) throws Exception {
+
+        logger.info("Delete organization icon: {}", organizationId);
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, false);
+            if (organization == null || !org.apache.commons.lang3.StringUtils.equals(organizationId, organization.getId())) {
+                logger.info("Organization is null or organization id does not match id in URL.");
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            organization.setIconUri(null);
+            final Organization original = OrganizationService.updateOrganization(service, authUser, organization);
+            return new ResponseEntity<>(original, HttpStatus.OK);
+
+        } catch (final NotFoundException nfe) {
+            logger.error("Error getting user. Id {} not found.", organizationId);
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+
+        } catch (final Exception e) {
+            logger.error("Error updating user.  Id: {}", organizationId, e);
+            return handleException(e);
+        }
+    }
 
     // @SuppressWarnings("rawtypes")
     // @Hidden
