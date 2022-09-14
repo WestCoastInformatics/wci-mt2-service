@@ -226,7 +226,6 @@ public class OrganizationController extends BaseController {
     public ResponseEntity updateOrganization(@PathVariable(value = "id") final String id, @RequestBody final Organization organization) throws Exception {
 
         logger.info("Update organization: {}", organization);
-        // TODO check permissions, fail if not authorized.
         final User user = SecurityService.getUserFromSession();
 
         if (user == null) {
@@ -252,6 +251,8 @@ public class OrganizationController extends BaseController {
 
             service.setModifiedBy(user.getUserName());
             final Organization org = OrganizationService.updateOrganization(service, user, organization);
+            
+            service.commit();
 
             return new ResponseEntity<>(org, HttpStatus.OK);
 
@@ -601,6 +602,8 @@ public class OrganizationController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
             
             service.setModifiedBy(authUser.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
             
             final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, false);
             if (organization == null || !org.apache.commons.lang3.StringUtils.equals(organizationId, organization.getId())) {
