@@ -600,6 +600,8 @@ public class OrganizationController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
             
+            service.setModifiedBy(authUser.getUserName());
+            
             final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, false);
             if (organization == null || !org.apache.commons.lang3.StringUtils.equals(organizationId, organization.getId())) {
                 logger.info("Organization is null or organization id does not match id in URL.");
@@ -608,14 +610,17 @@ public class OrganizationController extends BaseController {
 
             organization.setIconUri(null);
             final Organization original = OrganizationService.updateOrganization(service, authUser, organization);
+            
+            service.commit();
+            
             return new ResponseEntity<>(original, HttpStatus.OK);
 
         } catch (final NotFoundException nfe) {
-            logger.error("Error getting user. Id {} not found.", organizationId);
+            logger.error("Error getting organization. Id {} not found.", organizationId);
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-            logger.error("Error updating user.  Id: {}", organizationId, e);
+            logger.error("Error updating organization.  Id: {}", organizationId, e);
             return handleException(e);
         }
     }
