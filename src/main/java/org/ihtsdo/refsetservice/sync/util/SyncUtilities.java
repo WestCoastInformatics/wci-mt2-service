@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -341,6 +342,7 @@ public class SyncUtilities {
         return user;
 
     }
+
     public String identifyTopLevelModule(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
 
         Set<String> editionModules = new HashSet<>();
@@ -536,6 +538,32 @@ public class SyncUtilities {
             } else {
 
                 return null;
+            }
+
+        }
+
+    }
+
+    public void printEditionValues(Edition edition) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null).getItems();
+            final List<Team> teams = service.getAll(Team.class);
+
+            for (Project project : orgProjects) {
+
+                for (String teamId : project.getTeams()) {
+
+                    Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
+
+                    if (team == null) {
+
+                        throw new Exception("  Unable to locate team in project " + project.getName() + " for team: " + teamId);
+                    }
+
+                }
+
             }
 
         }

@@ -474,10 +474,11 @@ public class SyncCodeSystemAgent extends SyncService {
                 organization = createOrganization(newEditionShortName);
             }
 
-            final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, organization, codeSystem);
-
             // Create a single Admin team per Edition when we first discover it
-            initializer.createAdminEditionTeam(newEdition);
+            initializer.createAdminOrganizationTeam(organization);
+
+            final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, organization, codeSystem);
+            utilities.printEditionValues(newEdition);
 
             return newEdition;
         } catch (Exception e) {

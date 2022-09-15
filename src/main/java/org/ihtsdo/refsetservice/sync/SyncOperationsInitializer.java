@@ -113,7 +113,7 @@ public class SyncOperationsInitializer {
 
     }
 
-    void createAdminEditionTeam(Edition edition) throws Exception {
+    void createAdminOrganizationTeam(Organization organization) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -123,38 +123,12 @@ public class SyncOperationsInitializer {
 
             memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
 
-            Team t = utilities.addTeam(TeamService.generateOrganizationTeamName(edition.getOrganization()), TeamService.getOrganizationTeamDescription(edition.getOrganization()),
-                edition.getOrganization(), new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
+            utilities.addTeam(TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
+                new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
 
-            // Finally, add the users to the organizaiton
-            edition.getOrganization().getMembers().addAll(adminUsers);
-            Edition updatedEdition = service.update(edition);
-
-            printAllValues(updatedEdition);
-
-        }
-
-    }
-
-    public void printResults() throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            // Print out orgs & projects
-            final List<Organization> organizations = service.getAll(Organization.class);
-            final List<Project> projects = service.getAll(Project.class);
-
-            for (Organization organization : organizations) {
-
-                logger.info("Have Out with org: " + organization.getId() + " (" + organization.getName() + ") with members: ");
-                organization.getMembers().stream().forEach(member -> logger.info("   Member: " + member.getName()));
-            }
-
-            for (Project project : projects) {
-
-                logger.info("Out with project: " + project.getId() + " (" + project.getName() + ") with teams: ");
-                project.getTeams().stream().forEach(team -> logger.info("   Team: " + team));
-            }
+            // Finally, add the users to the organization
+            organization.getMembers().addAll(adminUsers);
+            service.update(organization);
 
         }
 
@@ -373,32 +347,6 @@ public class SyncOperationsInitializer {
             getDeveloperTestingEdition().getOrganization().getMembers().add(feedbackInitiatiorUser);
             getDeveloperTestingEdition().getOrganization().getMembers().add(userResponderUser);
             service.update(getDeveloperTestingEdition().getOrganization());
-        }
-
-    }
-
-    private void printAllValues(Edition edition) throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null).getItems();
-            final List<Team> teams = service.getAll(Team.class);
-
-            for (Project project : orgProjects) {
-
-                for (String teamId : project.getTeams()) {
-
-                    Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
-
-                    if (team == null) {
-
-                        throw new Exception("  Unable to locate team in project " + project.getName() + " for team: " + teamId);
-                    }
-
-                }
-
-            }
-
         }
 
     }
