@@ -383,6 +383,7 @@ public class SyncRefsetAgent extends SyncService {
 
                             final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
+
                             logger.debug("Found refsetId: " + refsetId);
 
                             if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
@@ -426,6 +427,7 @@ public class SyncRefsetAgent extends SyncService {
 
         if (refsetPerVersionSync) {
 
+            // In this scenario, each version is persisted regardless if change found
             return true;
         }
 
@@ -445,6 +447,8 @@ public class SyncRefsetAgent extends SyncService {
         if (refsetVersionDate == null) {
 
             // No changes to refset so don't create a new version
+            logger.debug("No changes to refset " + refsetId + " was found in version: " + branchVersion + ", so not persisting this version");
+
             return false;
         }
 
@@ -479,6 +483,7 @@ public class SyncRefsetAgent extends SyncService {
         if (!editionVersions.contains(versionDate)) {
 
             logger.debug(" Don't add refset versions that don't have corresponding snowstorm -based edition versions with Refset / and VersionDate pair: " + refsetId + " / " + versionDate);
+
             return false;
         }
 
