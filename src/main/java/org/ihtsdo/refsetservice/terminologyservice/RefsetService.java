@@ -2314,7 +2314,7 @@ public class RefsetService {
     }
 
     public static Object copyRefset(final TerminologyService service, final User user, final String refsetInternalId, final String name, 
-        final String projectId, final Boolean localSet, final Boolean comboSet, final String narrative, final Set<String> tags, 
+        final String projectId, final Boolean localSet, final Boolean privateRefset, final Boolean comboSet, final String narrative, final Set<String> tags, 
         final String parentConceptId, final String newRefsetConceptId) throws Exception {
 
         String newRefsetInternalId = null;
@@ -2382,6 +2382,10 @@ public class RefsetService {
         
         if (comboSet != null) {
             newRefset.setComboRefset(comboSet);
+        }
+        
+        if (privateRefset != null) {
+            newRefset.setPrivateRefset(privateRefset);
         }
         
         // Fix Descriptions

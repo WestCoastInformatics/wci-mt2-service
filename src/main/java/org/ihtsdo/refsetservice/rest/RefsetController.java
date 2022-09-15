@@ -2469,7 +2469,7 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/copy", produces = "application/json")
     public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetInternalId, 
-        @RequestParam final String name, @RequestParam final String projectId, @RequestParam final Boolean localSet, 
+        @RequestParam final String name, @RequestParam final String projectId, @RequestParam final Boolean localSet, @RequestParam final Boolean privateRefset, 
         @RequestParam final Boolean comboSet, @RequestParam final String narrative, @RequestParam final Set<String> tags, 
         @RequestParam final String parentConceptId, @RequestParam final String newRefsetConceptId) throws Exception {
         
@@ -2483,7 +2483,7 @@ public class RefsetController extends BaseController {
             service.setModifiedBy(user.getUserName());
 
             String status = "";
-            final Object returned = RefsetService.copyRefset(service, user, refsetInternalId, name, projectId, localSet, comboSet, narrative, tags, parentConceptId, newRefsetConceptId);
+            final Object returned = RefsetService.copyRefset(service, user, refsetInternalId, name, projectId, localSet, privateRefset, comboSet, narrative, tags, parentConceptId, newRefsetConceptId);
 
             if (returned instanceof String) {
                 status = (String) returned;
