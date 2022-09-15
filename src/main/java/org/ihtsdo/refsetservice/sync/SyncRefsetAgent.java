@@ -44,7 +44,7 @@ public class SyncRefsetAgent extends SyncService {
     public void syncSnowstorm() throws Exception {
 
         Set<SyncRefsetMetadata> filteredRefsets = filterRefsetsToProcess();
-        
+
         // Map each refsetId/version pair's SyncRefsetMetadata
         Map<String, Map<Date, SyncRefsetMetadata>> allSnowstormRefsetVersionPairs = parseSnowstormRefsetVersionPairs(filteredRefsets);
 
@@ -177,7 +177,6 @@ public class SyncRefsetAgent extends SyncService {
 
         int count = 0;
 
-        // TODO: See if any persisted Refsets are not even in Snowstorm. If so, inactivate them
         updateRefsetsWithRttMetadata(refsetsUpdated);
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -388,7 +387,7 @@ public class SyncRefsetAgent extends SyncService {
 
                             if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
 
-                                logger.debug("Found refsetId: " + refsetId + ", but will not add it");
+                                logger.debug("Found refsetId: " + refsetId + ", but will not add it per prop file");
 
                                 continue;
                             }
@@ -400,11 +399,7 @@ public class SyncRefsetAgent extends SyncService {
                              */
                             if (utilities.isInternationalEdition(edition.getName()) || !utilities.getInternationalModules().contains(moduleId)) {
 
-                                logger.debug("Testing refsetId: " + refsetId);
-
                                 if (persistVersion(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), branchesToProcess.get(edition.getShortName()).keySet())) {
-
-                                    logger.debug("Adding it refsetId: " + refsetId);
 
                                     SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, branchesToProcess.get(edition.getShortName()).keySet(), branchVersion, branchPath);
 
@@ -658,8 +653,7 @@ public class SyncRefsetAgent extends SyncService {
                 /* Refset lived in RTT as well */
                 final Set<String> rttIds = utilities.getPropertyReader().getRttRefsetSctIdToRttIdMap().get(refset.getRefsetId());
 
-                // Add Refset. Keep track of which are added this way as to not add them from RTT as well
-
+                // Add Refset with RTT data as long as it also version resides on snowstorm. Keep track of which are added this way as to not add them from RTT as well
                 for (String rttId : rttIds) {
 
                     final String refsetJsonString = utilities.getPropertyReader().getRttIdToRefsetJsonMap().get(rttId);

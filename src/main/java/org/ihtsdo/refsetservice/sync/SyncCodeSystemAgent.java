@@ -662,7 +662,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
                     // Skipping odd code system without a name
                     continue;
-                } else if (ignoredCodeSystemNames.contains(codeSystem.get("name").asText())) {
+                } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(codeSystem.get("name").asText())) {
 
                     // Code System has been0 defined as to-be-ignored
                     continue;

@@ -37,15 +37,15 @@ public abstract class SyncService {
     /** Testing options. */
     private static boolean testing = false;
 
-    // protected static String testingEdition = "elgi";
-    protected static String testingEdition = "wed";
+    protected static String testingEdition = "elgi";
+    // protected static String testingEdition = "wed";
 
     // protected static String testingRefset = null; // To test entire edition
     // protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
-    protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
+    // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
     // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
-    // protected static String testingRefset = "121000210100"; // No changes across 5 versions (NZ Edition)
+    protected static String testingRefset = "721000172106"; // Belgian GP Refset (from refset defined in RTT but of which only 1 of the 2 versions came over)
 
     protected static final SyncStatistics statistics = new SyncStatistics();
 
@@ -84,8 +84,6 @@ public abstract class SyncService {
 
     protected static final Set<String> uniqueRefsetIds = new HashSet<>();
 
-    protected static final List<String> ignoredCodeSystemNames = new ArrayList<>();
-
     protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
     protected static final Set<Refset> snowstormRefsets = new HashSet<>();
@@ -110,8 +108,6 @@ public abstract class SyncService {
 
             isPerVersionSync = refsetPerVersionSync;
             isProductionSystem = runForProduction;
-
-            ignoredCodeSystemNames.addAll(utilities.getPropertyReader().readCodeSystemsToIgnore());
 
             try {
 
@@ -199,7 +195,6 @@ public abstract class SyncService {
         refsetEditions.clear();
 
         uniqueRefsetIds.clear();
-        ignoredCodeSystemNames.clear();
         branchesToProcess.clear();
 
         statistics.clearStatistics();
