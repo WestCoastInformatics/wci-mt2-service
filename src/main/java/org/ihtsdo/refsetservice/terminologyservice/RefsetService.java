@@ -62,6 +62,7 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -2312,7 +2313,9 @@ public class RefsetService {
 
     }
 
-    public static Object copyRefset(TerminologyService service, User user, String refsetInternalId, String name, String projectId) throws Exception {
+    public static Object copyRefset(final TerminologyService service, final User user, final String refsetInternalId, final String name, 
+        final String projectId, final Boolean localSet, final Boolean comboSet, final String narrative, final Set<String> tags, 
+        final String parentConceptId, final String newRefsetConceptId) throws Exception {
 
         String newRefsetInternalId = null;
         final Refset originalRefset = getRefset(service, user, refsetInternalId);
@@ -2323,10 +2326,6 @@ public class RefsetService {
         }
         
         Project project = service.get(projectIdToGet, Project.class);
-        
-        if (name == null || name.equals("")) {
-            throw new Exception("A name for the new refset must be supplied");
-        }
         
         if (originalRefset.isPrivateRefset() && !originalRefset.getRoles().contains(User.ROLE_VIEWER)) {
             throw new Exception("User does not have the permission to copy this refset " + originalRefset.getRefsetId());
@@ -2344,14 +2343,46 @@ public class RefsetService {
         
         Refset newRefset = new Refset(originalRefset);
         newRefset.setId(null);
-        newRefset.setRefsetId(null);
-        newRefset.setName(name);
         newRefset.setProject(project);
         newRefset.setActive(true);
         newRefset.setVersionStatus(null);
         newRefset.setWorkflowStatus(null);
         newRefset.setVersionNotes("");
         newRefset.setLatestPublishedVersion(false);
+        
+        if (newRefsetConceptId == null || newRefsetConceptId.isEmpty()) {
+            
+            newRefset.setRefsetId(null);
+            
+            if (name == null || name.equals("")) {
+                throw new Exception("A name for the new refset must be supplied");
+            }
+            
+            newRefset.setName(name);
+            
+        } else {
+            newRefset.setRefsetId(newRefsetConceptId);
+        }
+        
+        if (narrative != null) {
+            newRefset.setNarrative(narrative);
+        }
+        
+        if (tags != null) {
+            newRefset.setTags(tags);
+        }
+        
+        if (parentConceptId != null) {
+            newRefset.setParentConceptId(parentConceptId);
+        }
+        
+        if (localSet != null) {
+            newRefset.setLocalSet(localSet);
+        }
+        
+        if (comboSet != null) {
+            newRefset.setComboRefset(comboSet);
+        }
         
         // Fix Descriptions
         for (Map<String, String> descriptionMap : newRefset.getDescriptions()) {

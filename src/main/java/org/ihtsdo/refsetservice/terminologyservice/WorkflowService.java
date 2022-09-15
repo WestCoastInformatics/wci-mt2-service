@@ -225,7 +225,11 @@ public final class WorkflowService {
         try {
             
             if (!refset.getWorkflowStatus().equals(READY_FOR_PUBLICATION)) {
-                throw new Exception("Refset is not in the proper status to have publication completed " + refset.getId());
+                throw new Exception("Refset is not in the proper status to have publication completed " + refset.getRefsetId());
+            }
+            
+            if (!refset.isLocalSet()) {
+                throw new Exception("Refset can not be published because it is a local set " + refset.getRefsetId());
             }
             
             refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(versionDate));
@@ -365,6 +369,13 @@ public final class WorkflowService {
      */
     public static Refset setWorkflowStatusByAction(final TerminologyService service, final User user, final String action, final Refset refset, final String notes) throws Exception {
 
+        if (action.equals(REQUEST_PUBLICATION) && refset.isLocalSet()) {
+            
+            final String message = "Refset can not be published because it is a local set.";
+            logger.error(message);
+            throw new Exception(message);
+        }
+        
         final String currentStatus = refset.getWorkflowStatus();
         boolean restoreHistory = false;
         List<String> roles = RefsetService.setRoles(user, refset.getProject(), new ArrayList<>());

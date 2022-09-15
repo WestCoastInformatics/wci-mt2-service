@@ -99,7 +99,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The local set flag. */
     @Column(nullable = false)
-    private boolean localSet;
+    private boolean localSet = false;
+    
+    /** The local set flag. */
+    @Column(nullable = false)
+    private boolean comboRefset;
 
     /** The latest published version flag. */
     @Column(nullable = true)
@@ -208,6 +212,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The value to use for the 'EXTENSIONAL' refset type. */
     @Transient
     public static final String EXTENSIONAL = "EXTENSIONAL";
+    
+    /** The value to use for the 'EXTERNAL' refset type. */
+    @Transient
+    public static final String EXTERNAL = "EXTERNAL";
 
     /** The value to use for the 'INCLUSION' intensional definition exception type. */
     @Transient
@@ -282,6 +290,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         assignedUser = other.getAssignedUser();
         memberCount = other.getMemberCount();
         privateRefset = other.isPrivateRefset();
+        localSet = other.isLocalSet();
+        comboRefset = other.isComboRefset();
         downloadable = other.isDownloadable();
         locked = other.isLocked();
         upgradeWarning = other.getUpgradeWarning();
@@ -809,6 +819,27 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         this.localSet = localSet;
     }
+    
+    /**
+     * Checks if is combo refset.
+     *
+     * @return the combo refset flag
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public boolean isComboRefset() {
+        
+        return comboRefset;
+    }
+    
+    /**
+     * Sets the combo refset flag.
+     *
+     * @param comboRefset the combo refset flag to set
+     */
+    public void setComboRefset(final boolean comboRefset) {
+        
+        this.comboRefset = comboRefset;
+    }
 
     /**
      * Gets the module id.
@@ -1243,6 +1274,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (locked ? 1 : 0);
         result = prime * result + (upgradeWarning ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
+        result = prime * result + (comboRefset ? 1 : 0);
         return result;
     }
 
@@ -1476,6 +1508,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         if (localSet != other.localSet) {
 
+            return false;
+        }
+        
+        if (comboRefset != other.comboRefset) {
+            
             return false;
         }
 

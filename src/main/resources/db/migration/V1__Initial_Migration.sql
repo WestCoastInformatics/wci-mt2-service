@@ -24,7 +24,6 @@ drop table ${pre_if_exists} discussion_threads_discussion_posts ${post_if_exists
 drop table ${pre_if_exists} audit_entries ${post_if_exists};
 drop table ${pre_if_exists} artifacts ${post_if_exists};
 
-
 CREATE TABLE `organizations` (
   `id` varchar(64) NOT NULL,
   `active` bit(1) NOT NULL,
@@ -37,7 +36,6 @@ CREATE TABLE `organizations` (
   `iconUri` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
-
 
 CREATE TABLE `editions` (
   `id` varchar(64) NOT NULL,
@@ -55,28 +53,15 @@ CREATE TABLE `editions` (
   `organization_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
-
+ALTER TABLE `editions` ADD INDEX `FK9og41jo3e6xe033my21t6wscf` (`organization_id`);
+ALTER TABLE `editions` ADD CONSTRAINT `FK9og41jo3e6xe033my21t6wscf` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`);
 
 CREATE TABLE `edition_defaultlanguagerefsets` (
   `Edition_id` varchar(64) NOT NULL,
   `defaultLanguageRefsets` varchar(255) DEFAULT NULL
 );
-
 ALTER TABLE `edition_defaultlanguagerefsets` ADD INDEX `FKsty54m8wa2yvysx49lsgdapq0` (`Edition_id`);
 ALTER TABLE `edition_defaultlanguagerefsets` ADD CONSTRAINT `FKsty54m8wa2yvysx49lsgdapq0` FOREIGN KEY (`Edition_id`) REFERENCES `editions` (`id`);
-
-
-
-
-
-
-ALTER TABLE `editions` ADD INDEX `FK9og41jo3e6xe033my21t6wscf` (`organization_id`);
-ALTER TABLE `editions` ADD CONSTRAINT `FK9og41jo3e6xe033my21t6wscf` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`);
-
-
-
-
-
 
 CREATE TABLE `projects` (
   `id` varchar(64) NOT NULL,
@@ -103,6 +88,7 @@ CREATE TABLE `refsets` (
   `modifiedBy` varchar(256) NOT NULL,
   `externalUrl` varchar(4000) DEFAULT NULL,
   `localSet` bit(1) NOT NULL,
+  `comboRefset` bit(1) NOT NULL,
   `latestPublishedVersion` bit(1) DEFAULT false,
   `hasVersionInDevelopment` bit(1) DEFAULT false,
   `moduleId` varchar(256) NOT NULL,

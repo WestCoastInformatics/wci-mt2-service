@@ -2469,7 +2469,9 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/copy", produces = "application/json")
     public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetInternalId, 
-        @RequestParam final String name, @RequestParam final String projectId) throws Exception {
+        @RequestParam final String name, @RequestParam final String projectId, @RequestParam final Boolean localSet, 
+        @RequestParam final Boolean comboSet, @RequestParam final String narrative, @RequestParam final Set<String> tags, 
+        @RequestParam final String parentConceptId, @RequestParam final String newRefsetConceptId) throws Exception {
         
         // TODO: Add support for providing a zip RF2 or a refset file to clone off of.
         // Questions to be answered first: Always use a) latest version for refsetId provided or b) Version if provided RF2 file instead and c) Can't supply both
@@ -2481,7 +2483,7 @@ public class RefsetController extends BaseController {
             service.setModifiedBy(user.getUserName());
 
             String status = "";
-            final Object returned = RefsetService.copyRefset(service, user, refsetInternalId, name, projectId);
+            final Object returned = RefsetService.copyRefset(service, user, refsetInternalId, name, projectId, localSet, comboSet, narrative, tags, parentConceptId, newRefsetConceptId);
 
             if (returned instanceof String) {
                 status = (String) returned;
