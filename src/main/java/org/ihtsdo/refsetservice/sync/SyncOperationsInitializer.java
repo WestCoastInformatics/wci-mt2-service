@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -105,11 +104,8 @@ public class SyncOperationsInitializer {
                 // Create developer project and refsets (for DEV only)
                 createTestingContent();
 
-                // Create a single Admin team per Org
-                createAdminOrganizationTeams(allDatabaseEditions);
-
             }
-            
+
         } else {
 
             logger.debug("Failed to create testing support and content as develeperTestingEdition is null");
@@ -117,27 +113,24 @@ public class SyncOperationsInitializer {
 
     }
 
-    private void createAdminOrganizationTeams(List<Edition> allDatabaseEditions) throws Exception {
+    void createAdminEditionTeam(Edition edition) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
 
-            for (Edition edition : allDatabaseEditions) {
+            Set<String> memberIds = new HashSet<>();
 
-                Set<String> memberIds = new HashSet<>();
+            memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
 
-                memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
+            Team t = utilities.addTeam(TeamService.generateOrganizationTeamName(edition.getOrganization()), TeamService.getOrganizationTeamDescription(edition.getOrganization()),
+                edition.getOrganization(), new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
 
-                utilities.addTeam(TeamService.generateOrganizationTeamName(edition.getOrganization()), TeamService.getOrganizationTeamDescription(edition.getOrganization()), edition.getOrganization(),
-                    new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
+            // Finally, add the users to the organizaiton
+            edition.getOrganization().getMembers().addAll(adminUsers);
+            Edition updatedEdition = service.update(edition);
 
-                // Finally, add the users to the organizaiton
-                edition.getOrganization().getMembers().addAll(adminUsers);
-                Edition updatedEdition = service.update(edition);
-
-                printAllValues(updatedEdition);
-            }
+            printAllValues(updatedEdition);
 
         }
 

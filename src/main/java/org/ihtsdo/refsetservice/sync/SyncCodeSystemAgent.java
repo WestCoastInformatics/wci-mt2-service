@@ -32,6 +32,8 @@ public class SyncCodeSystemAgent extends SyncService {
 
     private static final Set<String> codeSystemsNewAndInactive = new HashSet<>();
 
+    private static final SyncOperationsInitializer initializer = new SyncOperationsInitializer();
+
     public SyncCodeSystemAgent() throws Exception {
 
         codeSystemsNewAndInactive.clear();
@@ -474,6 +476,9 @@ public class SyncCodeSystemAgent extends SyncService {
 
             final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, organization, codeSystem);
 
+            // Create a single Admin team per Edition when we first discover it
+            initializer.createAdminEditionTeam(newEdition);
+
             return newEdition;
         } catch (Exception e) {
 
@@ -759,5 +764,6 @@ public class SyncCodeSystemAgent extends SyncService {
     private boolean isEditionToProcess(String codeSystem) {
 
         return !isTesting() || (isTesting() && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.contains(testingEdition) || utilities.isInternationalEdition(codeSystem));
+
     }
 }

@@ -41,12 +41,11 @@ public abstract class SyncService {
     // protected static String testingEdition = "wed";
 
     // protected static String testingRefset = null; // To test entire edition
-    // protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
-    // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
+     protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
+//     protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
     // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
-    protected static String testingRefset = "721000172106"; // Belgian GP Refset (from refset defined in RTT but of which only 1 of the 2 versions came over)
-
+    
     protected static final SyncStatistics statistics = new SyncStatistics();
 
     /** Cache for all DB values used during sync **/
