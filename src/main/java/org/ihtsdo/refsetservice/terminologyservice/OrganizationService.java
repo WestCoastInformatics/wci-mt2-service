@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import java.util.List;
 import java.util.Properties;
 
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -421,6 +422,11 @@ public class OrganizationService extends BaseService {
         organization.getMembers().add(userToAdd);
         service.add(AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd));
         service.update(organization);
+        
+        final Edition edition = EditionService.getEditionForOrganization(organizationId);
+        final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
+        CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization user", false);
+        CrowdAPIClient.addMembership(crowdGroupName, userToAdd.getUserName());
     }
 
     /**
@@ -460,6 +466,10 @@ public class OrganizationService extends BaseService {
         service.add(AuditEntryHelper.removeUserFromOrganizationEntry(organization, userToRemove));
 
         removeUserFromTeams(service, organizationId, userToRemove, authUser);
+        
+        final Edition edition = EditionService.getEditionForOrganization(organizationId);
+        final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);;
+        CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName());
 
         return organization;
     }

@@ -116,7 +116,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @param projectDescription the project description
      * @throws Exception the exception
      */
-    public static void addGroup(final String organization, final String projectName, final String projectDescription) throws Exception {
+    public static void addGroup(final String organization, final String projectName, final String projectDescription, final boolean generateProjectName) throws Exception {
 
         logger.info("Add group {} to organization {} with description of {}", projectName, organization, projectDescription);
 
@@ -133,7 +133,9 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         /* {"name": "rt2-test-all-author", "description": "test crowd client", "type": "GROUP" } */
         for (String role : ROLES) {
 
-            final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, projectName, role);
+            final String groupName = generateProjectName 
+                    ? CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, projectName, role) 
+                    : CrowdGroupNameAlgorithm.buildCrowdGroupName(organization, projectName, role);
 
             logger.info("CALL CROWD API url:" + BASE_URL + ADD_GROUP);
             final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
