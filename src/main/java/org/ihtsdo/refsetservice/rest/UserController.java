@@ -22,7 +22,6 @@ import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
-import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.terminologyservice.UserService;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -37,6 +36,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -47,7 +47,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -153,6 +152,53 @@ public class UserController extends BaseController {
 
         try {
 
+            final User original = UserService.updateUser(authUser, user);
+            return new ResponseEntity<>(original, HttpStatus.OK);
+
+        } catch (final NotFoundException nfe) {
+            logger.error("Error getting user. Id {} not found.", id);
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+
+        } catch (final Exception e) {
+            logger.error("Error updating user.  Id: {}", id, e);
+            return handleException(e);
+        }
+    }
+    
+    
+    /**
+     * Delete user icon.
+     *
+     * @param id the id of the user
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Remove User icon", response = User.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "User successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 415, message = "Unsupported Media Type"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @DeleteMapping(value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id) throws Exception {
+
+        logger.info("Delete user icon: {}", id);
+        // TODO check permissions, fail if not authorized.
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        final User user = UserService.getUser(id, false);
+        if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+            logger.info("User is null or user id does not match id in URL.");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        try {
+
+            user.setIconUri(null);
             final User original = UserService.updateUser(authUser, user);
             return new ResponseEntity<>(original, HttpStatus.OK);
 

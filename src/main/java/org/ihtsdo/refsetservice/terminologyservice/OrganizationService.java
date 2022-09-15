@@ -382,7 +382,7 @@ public class OrganizationService extends BaseService {
 
         final PfsParameter pfs = new PfsParameter();
         final QueryParameter query = new QueryParameter();
-        query.setQuery("organization.id:" + organizationId + " AND active:true");
+        query.setQuery("organizationId:" + organizationId + " AND active:true");
 
         return service.find(query, pfs, Project.class, null);
     }
@@ -433,7 +433,7 @@ public class OrganizationService extends BaseService {
      * @return the organization
      * @throws Exception the exception
      */
-    public static Organization removeUserFromOrganization(final TerminologyService service, final User user, final String userId, final String organizationId) throws Exception {
+    public static Organization removeUserFromOrganization(final TerminologyService service, final User authUser, final String userId, final String organizationId) throws Exception {
 
         // Find the user
         final User userToRemove = service.get(userId, User.class);
@@ -453,13 +453,13 @@ public class OrganizationService extends BaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
-        checkEditPermissions(user, organization);
+        checkEditPermissions(authUser, organization);
 
         organization.getMembers().remove(userToRemove);
         service.update(organization);
         service.add(AuditEntryHelper.removeUserFromOrganizationEntry(organization, userToRemove));
 
-        removeUserFromCrowdGroups(service, organizationId, userToRemove);
+        removeUserFromTeams(service, organizationId, userToRemove, authUser);
 
         return organization;
     }
@@ -611,17 +611,19 @@ public class OrganizationService extends BaseService {
      * @param organizationId the organization id
      * @param userToRemove the user to remove
      */
-    private static void removeUserFromCrowdGroups(final TerminologyService service, final String organizationId, final User userToRemove) {
+    private static void removeUserFromTeams(final TerminologyService service, final String organizationId, final User userToRemove, final User authUser) {
 
         if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
             logger.info("CALLING CROWD API from ProjectService updateMemberships");
 
             try {
+                // teams associated with projects for removal from crowd too.
                 final ResultList<Project> projects = getOrganizationProjects(service, organizationId);
                 if (projects != null && projects.getItems() != null) {
                     for (final Project project : projects.getItems()) {
                         for (final String teamId : project.getTeams()) {
                             final Team team = TeamService.getTeam(teamId, true);
+                            TeamService.removeUserFromTeam(authUser, teamId, userToRemove.getId());
                             for (final String role : team.getRoles()) {
                                 try {
                                     final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
@@ -633,6 +635,16 @@ public class OrganizationService extends BaseService {
                         }
                     }
                 }
+
+                // teams not associated with project that are would not be in crowd.
+                final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, organizationId);
+                if (orgTeams != null && orgTeams.getItems() != null)
+                    for (final Team team : orgTeams.getItems()) {
+                        if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
+                            TeamService.removeUserFromTeam(authUser, team.getId(), userToRemove.getId());
+                        }
+                    }
+
             } catch (Exception e) {
                 logger.error("ERROR removing user {} from CROWD groups.", userToRemove.getUserName(), e);
             }
