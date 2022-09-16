@@ -1,6 +1,12 @@
-/**
-* 
-*/
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.BufferedReader;
@@ -719,7 +725,7 @@ public class RefsetMemberService {
             dates.add(startEffectiveTime);
         }
 
-        ExportHandler exporter = new ExportHandler();
+        final ExportHandler exporter = new ExportHandler();
 
         try {
 
@@ -812,9 +818,7 @@ public class RefsetMemberService {
             return EXPORT_DOWNLOAD_URL + rt2VersionFileName; // builder.build().toString()
                                                              // +
 
-        } catch (
-
-        Exception ex) {
+        } catch (Exception ex) {
 
             throw new Exception("Failed to export zip file name" + ex.getMessage(), ex);
         }
@@ -1086,6 +1090,18 @@ public class RefsetMemberService {
 
     }
 
+    /**
+     * Generate RT2 export file.
+     *
+     * @param refset the refset
+     * @param localSnowGeneratedFilePath the local snow generated file path
+     * @param rt2VersionFileName the rt 2 version file name
+     * @param exportMetadata the export metadata
+     * @param appendNames the append names
+     * @param languageId the language id
+     * @return the string
+     * @throws Exception the exception
+     */
     private static String generateRt2ExportFile(final Refset refset, final String localSnowGeneratedFilePath, final String rt2VersionFileName, final boolean exportMetadata, final boolean appendNames,
         final String languageId) throws Exception {
 
@@ -1446,8 +1462,6 @@ public class RefsetMemberService {
                 throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
 
-            service.close();
-
             refsetFileName = "freeset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + ".txt";
             tempDirectoryPath = Files.createTempDirectory("freeset-" + refsetFileName.replace(".txt", ""));
             zipOutputPath += refsetFileName.replace(".txt", ".zip");
@@ -1575,9 +1589,9 @@ public class RefsetMemberService {
 
             while ((zipEntry = zis.getNextEntry()) != null) {
 
-                File newFile = new File(extractionDirectory, zipEntry.getName());
-                String extractionCanonicalPath = extractionDirectory.getCanonicalPath();
-                String fileCanonicalPath = newFile.getCanonicalPath();
+                final File newFile = new File(extractionDirectory, zipEntry.getName());
+                final String extractionCanonicalPath = extractionDirectory.getCanonicalPath();
+                final String fileCanonicalPath = newFile.getCanonicalPath();
 
                 if (!fileCanonicalPath.startsWith(extractionCanonicalPath + File.separator)) {
 
@@ -1594,7 +1608,7 @@ public class RefsetMemberService {
                 } else {
 
                     // fix for Windows-created archives
-                    File parent = newFile.getParentFile();
+                    final File parent = newFile.getParentFile();
 
                     if (!parent.isDirectory() && !parent.mkdirs()) {
 
