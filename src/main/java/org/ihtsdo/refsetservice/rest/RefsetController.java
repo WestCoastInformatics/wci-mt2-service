@@ -1323,7 +1323,7 @@ public class RefsetController extends BaseController {
 
             } else if ("freeset".equals(format)) {
                 
-                final String downloadUri = RefsetMemberService.exportFreeset(service, refsetInternalId);
+                final String downloadUri = RefsetMemberService.exportFreeset(service, refsetInternalId, languageId);
                 responseMessage = "{\"url\": \"" + downloadUri + "\"}"; 
             }
 

@@ -1459,13 +1459,13 @@ public class RefsetMemberService {
      * @return the freeset in export format
      * @throws Exception the exception
      */
-    public static String exportFreeset(final TerminologyService service, final String refsetInternalId) throws Exception {
+    public static String exportFreeset(final TerminologyService service, final String refsetInternalId, final String languageId) throws Exception {
 
-        StringBuilder fileLines = new StringBuilder();
+        final StringBuilder fileLines = new StringBuilder();
         String sctidsOutputPath = "";
         String zipOutputPath = EXPORT_FILE_DIR;
         String refsetFileName = "";
-        List<String> sourceFiles = new ArrayList<>();
+        final List<String> sourceFiles = new ArrayList<>();
         Path tempDirectoryPath = null;
 
         try {
@@ -1476,7 +1476,7 @@ public class RefsetMemberService {
 
                 throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
-
+            
             refsetFileName = "freeset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + ".txt";
             tempDirectoryPath = Files.createTempDirectory("freeset-" + refsetFileName.replace(".txt", ""));
             zipOutputPath += refsetFileName.replace(".txt", ".zip");
@@ -1490,31 +1490,42 @@ public class RefsetMemberService {
             final long start = System.currentTimeMillis();
             ConceptResultList results = new ConceptResultList();
 
-            List<Concept> concepts = getAllRefsetMembers(service, refsetInternalId, "", new ArrayList<Concept>());
+            final List<Concept> concepts = getAllRefsetMembers(service, refsetInternalId, "", new ArrayList<Concept>());
             Collections.sort(concepts, Comparator.comparing((Concept concept) -> Long.parseLong(concept.getCode())));
 
+            populateAllLanguageDescriptions(refset, concepts);
+            
             results.setTimeTaken(System.currentTimeMillis() - start);
             results.setItems(concepts);
 
             fileLines.append("ConceptID").append("\t");
             fileLines.append("Active").append("\t");
             fileLines.append("FSN").append("\t");
-            fileLines.append("USPreferredTerm").append("\t");
+            fileLines.append("PreferredTerm").append("\t");
             fileLines.append("\r\n");
 
-            for (Concept cpt : results.getItems()) {
+            for (final Concept cpt : results.getItems()) {
 
                 String fsn = "";
+                String pt = "";
+                
+                for (final Map<String, String> entry : cpt.getDescriptions()) {
 
-                for (Map<String, String> entry : cpt.getDescriptions()) {
-
-                    fsn = entry.get("fsn");
+                    if (entry.get("type").equalsIgnoreCase("fsn") && StringUtils.isBlank(fsn)) {
+                        fsn = entry.get("term");    
+                    }
+                                        
+                    if (StringUtils.isNotBlank(languageId) && StringUtils.isBlank(pt)) {
+                        if (entry.get("languageId").equals(languageId)) {
+                            pt = entry.get("term");
+                        }
+                    }
                 }
 
                 fileLines.append(cpt.getCode()).append("\t");
                 fileLines.append(cpt.isActive() ? "1" : "0").append("\t");
-                fileLines.append(fsn).append("\t");
-                fileLines.append(cpt.getName());
+                fileLines.append(StringUtils.isNotEmpty(fsn) ? fsn : "").append("\t");
+                fileLines.append(StringUtils.isNotEmpty(pt) ? pt : cpt.getName());
                 fileLines.append("\r\n");
             }
 
