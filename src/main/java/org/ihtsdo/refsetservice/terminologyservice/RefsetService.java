@@ -422,6 +422,7 @@ public class RefsetService {
         refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
         refset.setType(refsetEditParameters.getType());
         refset.setExternalUrl(refsetEditParameters.getExternalUrl());
+        refset.setLocalSet(refsetEditParameters.isLocalSet());
 
         // update an object
         service.update(refset);
