@@ -1274,9 +1274,9 @@ public class RefsetController extends BaseController {
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA", required = false, dataTypeClass = String.class, paramType = "query"),
         @ApiImplicitParam(name = "languageId", value = "For formats with names which language to display the name in.", required = false, dataTypeClass = String.class, paramType = "query"),
-        @ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names', ' or 'sctids'.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names', 'sctids' or 'freeset'.", required = true, dataTypeClass = String.class, paramType = "query"),
         @ApiImplicitParam(name = "fileNameDate", value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.", required = true, dataTypeClass = String.class, paramType = "query"),
         @ApiImplicitParam(name = "startEffectiveTime", value = "Format: yyyymmdd. Can be used to produce a delta after content is versioned by filtering a SNAPSHOT export by effectiveTime.",
             required = false, dataTypeClass = String.class, paramType = "query"),
@@ -1295,38 +1295,39 @@ public class RefsetController extends BaseController {
             logger.debug("exportRefset: refsetInternalId: " + refsetInternalId + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: " + fileNameDate + " ; startEffectiveTime: "
                 + startEffectiveTime + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: " + exportMetadata);
 
-            String url = null;
+            String responseMessage = null;
 
-            if (format.equals("rf2") || format.equals("rf2_with_names")) {
+            if ("rf2".equalsIgnoreCase(format) || "rf2_with_names".equalsIgnoreCase(format)) {
 
-                boolean withNames = false;
+                final boolean withNames = ("rf2_with_names".equalsIgnoreCase(format));
 
-                if (format.equals("rf2_with_names")) {
-
-                    withNames = true;
-                }
-
-                String uri = "";
+                String downloadUri = "";
 
                 if (exportType.contentEquals("SNAPSHOT")) {
 
-                    uri = RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+                    downloadUri = RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+                
                 } else {
 
-                    uri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
+                    downloadUri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
                         withNames);
                 }
 
-                logger.debug("results: " + uri);
-                url = "{\"url\": \"" + uri + "\"}";
+                logger.debug("results: " + downloadUri);
+                responseMessage = "{\"url\": \"" + downloadUri + "\"}";
 
             } else if (format.equals("sctids")) {
 
-                String uri = RefsetMemberService.exportRefsetSctidList(service, refsetInternalId, exportMetadata);
-                url = "{\"url\": \"" + uri + "\"}";
+                final String downloadUri = RefsetMemberService.exportRefsetSctidList(service, refsetInternalId, exportMetadata);
+                responseMessage = "{\"url\": \"" + downloadUri + "\"}";
+
+            } else if ("freeset".equals(format)) {
+                
+                final String downloadUri = RefsetMemberService.exportFreeset(service, refsetInternalId, languageId);
+                responseMessage = "{\"url\": \"" + downloadUri + "\"}"; 
             }
 
-            return new ResponseEntity<>(url, HttpStatus.OK);
+            return new ResponseEntity<>(responseMessage, HttpStatus.OK);
 
         } catch (final Exception e) {
 
@@ -2539,5 +2540,5 @@ public class RefsetController extends BaseController {
         }
 
     }
-
+    
 }
