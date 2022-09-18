@@ -62,7 +62,6 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -2222,7 +2221,7 @@ public class RefsetService {
             emailBody.append("Hello, ").append(recipient).append(",").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Main announcement
-            emailBody.append("A SNOMED International Refset Tool user named '").append(user.getUserName()).append(" would like to share the reference set named: ").append(refset.getName())
+            emailBody.append("A SNOMED International Refset Tool user named '").append(user.getUserName()).append("' would like to share the reference set named: ").append(refset.getName())
                 .append(" with you. Here is a direct link to access that reference set: ").append(refsetUrl).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Additional Info from Sender
@@ -2273,29 +2272,31 @@ public class RefsetService {
 
             }
 
+            // Add to admin list
             adminTeams.stream().forEach(t -> t.getMemberList().stream().forEach(u -> adminEmailRecipients.add(u)));
 
-            // Create Email itself
+            /** Create Email **/
             StringBuffer emailBody = new StringBuffer();
 
             // Greeting
-            emailBody.append("Hello, {projectAdminName}," + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            emailBody.append("Hello, {projectAdminName},").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Static Message
-            emailBody.append(
-                user.getName() + " has requested access to " + project.getName() + " via the " + refset.getName() + "." + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            emailBody.append(user.getName()).append(" has requested access to ").append(project.getName()).append(" via the " + refset.getName()).append(".")
+                .append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Additional Info from Sender
             if (additionalMessage != null) {
 
-                emailBody.append(user.getName() + " has included the additional message in their request:" + System.getProperty("line.separator") + System.getProperty("line.separator"));
-                emailBody.append(additionalMessage + System.getProperty("line.separator") + System.getProperty("line.separator"));
+                emailBody.append(user.getName()).append(" has included the additional message in their request:").append(System.getProperty("line.separator"))
+                    .append(System.getProperty("line.separator")).append(additionalMessage).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
             }
 
             // Warning
-            emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. " + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. ").append(System.getProperty("line.separator"))
+                .append(System.getProperty("line.separator"));
 
-            emailBody.append(System.getProperty("line.separator") + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            emailBody.append(System.getProperty("line.separator")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Signature
             emailBody.append("Not that this email has been sent to the other ADMIN teams on this project.");
@@ -2313,34 +2314,37 @@ public class RefsetService {
 
     }
 
-    public static Object copyRefset(final TerminologyService service, final User user, final String refsetInternalId, final String name, 
-        final String projectId, final Boolean localSet, final Boolean privateRefset, final Boolean comboSet, final String narrative, final Set<String> tags, 
-        final String parentConceptId, final String newRefsetConceptId) throws Exception {
+    public static Object copyRefset(final TerminologyService service, final User user, final String refsetInternalId, final String name, final String projectId, final Boolean localSet,
+        final Boolean privateRefset, final Boolean comboSet, final String narrative, final Set<String> tags, final String parentConceptId, final String newRefsetConceptId) throws Exception {
 
         String newRefsetInternalId = null;
         final Refset originalRefset = getRefset(service, user, refsetInternalId);
         String projectIdToGet = projectId;
-        
+
         if (projectIdToGet == null || projectIdToGet.isEmpty()) {
+
             projectIdToGet = originalRefset.getProjectId();
         }
-        
+
         Project project = service.get(projectIdToGet, Project.class);
-        
+
         if (originalRefset.isPrivateRefset() && !originalRefset.getRoles().contains(User.ROLE_VIEWER)) {
+
             throw new Exception("User does not have the permission to copy this refset " + originalRefset.getRefsetId());
         }
-        
+
         if (project == null) {
+
             throw new Exception("Project Id: " + projectId + " does not exist in the RT2 database");
         }
-        
+
         project = setProjectPermissions(user, project);
-        
+
         if (!project.getRoles().contains(User.ROLE_AUTHOR) || !project.getRoles().contains(User.ROLE_ADMIN)) {
+
             throw new Exception("User does not have the permission to create a refset in this project " + project.getName());
         }
-        
+
         Refset newRefset = new Refset(originalRefset);
         newRefset.setId(null);
         newRefset.setProject(project);
@@ -2349,45 +2353,53 @@ public class RefsetService {
         newRefset.setWorkflowStatus(null);
         newRefset.setVersionNotes("");
         newRefset.setLatestPublishedVersion(false);
-        
+
         if (newRefsetConceptId == null || newRefsetConceptId.isEmpty()) {
-            
+
             newRefset.setRefsetId(null);
-            
+
             if (name == null || name.equals("")) {
+
                 throw new Exception("A name for the new refset must be supplied");
             }
-            
+
             newRefset.setName(name);
-            
+
         } else {
+
             newRefset.setRefsetId(newRefsetConceptId);
         }
-        
+
         if (narrative != null) {
+
             newRefset.setNarrative(narrative);
         }
-        
+
         if (tags != null) {
+
             newRefset.setTags(tags);
         }
-        
+
         if (parentConceptId != null) {
+
             newRefset.setParentConceptId(parentConceptId);
         }
-        
+
         if (localSet != null) {
+
             newRefset.setLocalSet(localSet);
         }
-        
+
         if (comboSet != null) {
+
             newRefset.setComboRefset(comboSet);
         }
-        
+
         if (privateRefset != null) {
+
             newRefset.setPrivateRefset(privateRefset);
         }
-        
+
         // Fix Descriptions
         for (Map<String, String> descriptionMap : newRefset.getDescriptions()) {
 
@@ -2402,7 +2414,9 @@ public class RefsetService {
                     // without altering case in new description
                     descriptionMap.put(key, description.toLowerCase().replaceAll(originalRefset.getName().toLowerCase(), name.toLowerCase()));
                 }
+
             }
+
         }
 
         // fix Narrative
@@ -2413,19 +2427,22 @@ public class RefsetService {
             // altering case in new description
             newRefset.setNarrative(newRefset.getNarrative().toLowerCase().replaceAll(originalRefset.getName().toLowerCase(), name.toLowerCase()));
         }
-        
+
         if (newRefset.getType().equals(Refset.INTENSIONAL)) {
 
             // clear definition clauses IDs
             for (final DefinitionClause clause : newRefset.getDefinitionClauses()) {
+
                 clause.setId(null);
             }
+
         }
-        
+
         // create the new refset object
         final Object returned = createRefset(service, user, newRefset);
-        
+
         if (returned instanceof String) {
+
             return returned;
         }
 
@@ -2437,19 +2454,21 @@ public class RefsetService {
             final SearchParameters searchParameters = new SearchParameters();
             ConceptResultList members = RefsetMemberService.getRefsetMembers(service, user, originalRefset.getId(), searchParameters, "list", null);
             List<String> conceptIds = new ArrayList<>();
-    
+
             if (newRefset.getType().equals(Refset.EXTENSIONAL)) {
-    
+
                 members.getItems().stream().forEach(member -> conceptIds.add(member.getCode()));
                 RefsetMemberService.addRefsetMembers(service, user, newRefset.getId(), conceptIds);
             }
-    
+
             logger.info("Copied refset from " + refsetInternalId + ": " + newRefset);
-        
+
         } catch (Exception e) {
+
             throw new Exception(e);
-            
+
         } finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(newRefsetInternalId);
         }
 
