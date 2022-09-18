@@ -1697,6 +1697,10 @@ public class RefsetMemberService {
 
             fileLines.append("Refset Version Date" + separator + "\n");
         }
+        
+        if (refset.isLocalSet()) {
+            fileLines.append("Local Refset" + separator + "True" + "\n");
+        }
 
         fileLines.append("Refset Last Modified Date" + separator + DateUtility.formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
         fileLines.append("Refset Type" + separator + refset.getType() + "\n");
@@ -1707,6 +1711,14 @@ public class RefsetMemberService {
         } else {
 
             fileLines.append("Refset Status" + separator + "Inactive" + "\n");
+        }
+        
+        if (refset.isPrivateRefset()) {
+
+            fileLines.append("Private Refset" + separator + "True" + "\n");
+        } else {
+
+            fileLines.append("Private Refset" + separator + "False" + "\n");
         }
 
         fileLines.append("Tags" + separator + String.join(", ", refset.getTags()) + "\n");
