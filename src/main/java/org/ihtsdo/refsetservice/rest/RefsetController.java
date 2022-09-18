@@ -1305,12 +1305,13 @@ public class RefsetController extends BaseController {
 
                 if (exportType.contentEquals("SNAPSHOT")) {
 
-                    downloadUri = RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
-                
+                    downloadUri =
+                        RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+
                 } else {
 
-                    downloadUri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
-                        withNames);
+                    downloadUri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime,
+                        exportMetadata, withNames);
                 }
 
                 logger.debug("results: " + downloadUri);
@@ -1322,9 +1323,9 @@ public class RefsetController extends BaseController {
                 responseMessage = "{\"url\": \"" + downloadUri + "\"}";
 
             } else if ("freeset".equals(format)) {
-                
+
                 final String downloadUri = RefsetMemberService.exportFreeset(service, refsetInternalId, languageId);
-                responseMessage = "{\"url\": \"" + downloadUri + "\"}"; 
+                responseMessage = "{\"url\": \"" + downloadUri + "\"}";
             }
 
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);
@@ -2419,10 +2420,12 @@ public class RefsetController extends BaseController {
 
         try {
 
+            User user = SecurityService.getUserFromSession();
+
             logger.debug(
                 "shareRefset: refsetId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
 
-            RefsetService.shareRefset(refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
+            RefsetService.shareRefset(user, refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
             final String returnMessage = "{\"message\": \"Share Refset was Successful\"}";
 
@@ -2447,10 +2450,12 @@ public class RefsetController extends BaseController {
 
         try {
 
+            User user = SecurityService.getUserFromSession();
+
             logger.debug("requestProjectAccess: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: "
                 + emailInfo.getAdditionalMessage());
 
-            RefsetService.requestProjectAccess(refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
+            RefsetService.requestProjectAccess(user, refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
             final String returnMessage = "{\"message\": \"Refset access (via project access) was requested was Successful\"}";
 
@@ -2469,11 +2474,10 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/copy", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetInternalId, 
-        @RequestParam final String name, @RequestParam final String projectId, @RequestParam final Boolean localSet, @RequestParam final Boolean privateRefset, 
-        @RequestParam final Boolean comboSet, @RequestParam final String narrative, @RequestParam final Set<String> tags, 
-        @RequestParam final String parentConceptId, @RequestParam final String newRefsetConceptId) throws Exception {
-        
+    public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetInternalId, @RequestParam final String name, @RequestParam final String projectId,
+        @RequestParam final Boolean localSet, @RequestParam final Boolean privateRefset, @RequestParam final Boolean comboSet, @RequestParam final String narrative,
+        @RequestParam final Set<String> tags, @RequestParam final String parentConceptId, @RequestParam final String newRefsetConceptId) throws Exception {
+
         // TODO: Add support for providing a zip RF2 or a refset file to clone off of.
         // Questions to be answered first: Always use a) latest version for refsetId provided or b) Version if provided RF2 file instead and c) Can't supply both
         try (TerminologyService service = new TerminologyService()) {
@@ -2487,6 +2491,7 @@ public class RefsetController extends BaseController {
             final Object returned = RefsetService.copyRefset(service, user, refsetInternalId, name, projectId, localSet, privateRefset, comboSet, narrative, tags, parentConceptId, newRefsetConceptId);
 
             if (returned instanceof String) {
+
                 status = (String) returned;
             } else {
 
@@ -2495,6 +2500,7 @@ public class RefsetController extends BaseController {
             }
 
             if (status.startsWith("Error")) {
+
                 return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
@@ -2504,6 +2510,7 @@ public class RefsetController extends BaseController {
 
             return handleException(e);
         }
+
     }
 
     @ApiOperation(value = "Reset a refset to contain the contents of Snowstorm. Note only works if refset has not been upgraded during edit cycle.", response = Refset.class)
@@ -2540,5 +2547,5 @@ public class RefsetController extends BaseController {
         }
 
     }
-    
+
 }

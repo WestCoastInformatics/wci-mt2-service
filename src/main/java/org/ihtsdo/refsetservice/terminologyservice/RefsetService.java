@@ -2205,11 +2205,10 @@ public class RefsetService {
      * @param additionalMessage the additional message
      * @throws Exception the exception
      */
-    public static void shareRefset(String refsetInternalId, String recipient, String additionalMessage) throws Exception {
+    public static void shareRefset(final User user, String refsetInternalId, String recipient, String additionalMessage) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
             final StringBuffer emailBody = new StringBuffer();
@@ -2247,27 +2246,37 @@ public class RefsetService {
 
     }
 
-    public static void requestProjectAccess(String refsetInternalId, String recipient, String additionalMessage) throws Exception {
+    public static void requestProjectAccess(final User user, String refsetInternalId, String recipient, String additionalMessage) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             final Project project = refset.getProject();
 
-            // TODO: Verify that user is NOT already member of project. if they are, throw exception with explanation
-
-            // Identify Admins who each get an email
             Set<User> adminEmailRecipients = new HashSet<>();
             List<Team> adminTeams = new ArrayList<>();
+            List<Team> allTeams = new ArrayList<>();
 
             for (String teamId : project.getTeams()) {
 
                 Team t = TeamService.getTeam(teamId, true);
+                allTeams.add(t);
 
+                // Identify Admins who each get an email
                 if (t.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
 
                     adminTeams.add(t);
+                }
+
+            }
+
+            // Verify not already in project before sending emails to admins
+            for (Team t : allTeams) {
+
+                if (t.getMemberList().stream().anyMatch(u -> u.getId().equals(user.getId()))) {
+
+                    throw new Exception(
+                        "User: " + user.getUserName() + " is already a member of team: " + t.getName() + "in  project: " + project.getName() + " under " + project.getEdition().getName());
                 }
 
             }
