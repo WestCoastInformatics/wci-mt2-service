@@ -96,6 +96,8 @@ public class SyncCodeSystemAgent extends SyncService {
     private Map<String, SortedMap<Date, String>> identifyEditionBranches(Set<JsonNode> codeSystems) throws Exception {
 
         Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
+        logger.info("Database editions already in DB at start of sync in identifyEditionBranches() are: ");
+        allDatabaseEditions.stream().forEach(e -> logger.debug(e.getName()));
 
         for (JsonNode codeSystem : codeSystems) {
 
@@ -104,7 +106,6 @@ public class SyncCodeSystemAgent extends SyncService {
             final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
 
             logger.info("Identifying CodeSystem branches for: " + editionName);
-            logger.info("With DB Database containing: " + allDatabaseEditions);
 
             final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
 
