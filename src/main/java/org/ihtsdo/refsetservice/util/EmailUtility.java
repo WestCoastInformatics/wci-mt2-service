@@ -84,7 +84,7 @@ public final class EmailUtility {
             throw new Exception("Email must have recipients");
         }
 
-        if (!recipients.stream().anyMatch(r -> r.matches(emailValidationRegexPattern))) {
+        if (recipients.stream().anyMatch(r -> !r.matches(emailValidationRegexPattern))) {
 
             // invalid email address. Return 400
             List<String> failingEmailAddresses = recipients.stream().filter(r -> r.matches(emailValidationRegexPattern)).collect(Collectors.toList());
