@@ -1,3 +1,12 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model;
 
@@ -6,6 +15,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.persistence.Transient;
 
 /**
  * Represents a concept with a code from a terminology.
@@ -62,7 +73,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /** What kind of intensional refset definition exception type is this concept. (definition/inclusion/exclusion) */
     private String definitionExceptionType;
 
-    /** The internal ID of intensional refset definition exception */
+    /**  The internal ID of intensional refset definition exception. */
     private String definitionExceptionId;
 
     // Members below are filled in when open Concept Details screen only (for now)
@@ -79,8 +90,12 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     private boolean hasDescendantRefsetMembers;
     
     /** The count of discussions for this item. */
-    private int discussionCount;
+    private int openDiscussionCount;
+    
+    /** The count of discussions for this item. */
+    private int resolvedDiscussionCount;
 
+    /**  The role groups. */
     private Map<Integer, List<String>> roleGroups = new HashMap<>();
 
     /**
@@ -150,7 +165,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         defined = other.isDefined();
         released = other.isReleased();
         descriptions = other.getDescriptions();
-        discussionCount = other.getDiscussionCount();
+        openDiscussionCount = other.getOpenDiscussionCount();
+        resolvedDiscussionCount = other.getResolvedDiscussionCount();
     }
 
     /**
@@ -294,23 +310,43 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
     
     /**
-     * Gets the discussion count.
+     * Returns the open discussion count.
      *
      * @return the discussion count
      */
-    public int getDiscussionCount() {
-        
-        return discussionCount;
+    public int getOpenDiscussionCount() {
+
+        return openDiscussionCount;
+    }
+
+    /**
+     * Sets the open discussion count.
+     *
+     * @param openDiscussionCount the open discussion count
+     */
+    public void setOpenDiscussionCount(int openDiscussionCount) {
+
+        this.openDiscussionCount = openDiscussionCount;
     }
     
     /**
+     * Returns the resolved discussion count.
+     *
+     * @return the discussion count
+     */
+    public int getResolvedDiscussionCount() {
+
+        return resolvedDiscussionCount;
+    }
+
+    /**
      * Sets the discussion count.
      *
-     * @param discussionCount the discussion count
+     * @param resolvedDiscussionCount the resolved discussion count
      */
-    public void setDiscussionCount(int discussionCount) {
-        
-        this.discussionCount = discussionCount;
+    public void setResolvedDiscussionCount(int resolvedDiscussionCount) {
+
+        this.resolvedDiscussionCount = resolvedDiscussionCount;
     }
 
     /**
@@ -521,17 +557,29 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         this.hasDescendantRefsetMembers = hasDescendantRefsetMembers;
     }
 
+    /**
+     * Returns the role groups.
+     *
+     * @return the role groups
+     */
     public Map<Integer, List<String>> getRoleGroups() {
 
         return roleGroups;
     }
 
+    /**
+     * Sets the role groups.
+     *
+     * @param map the map
+     */
     public void setRoleGroups(Map<Integer, List<String>> map) {
 
         this.roleGroups = map;
     }
 
     /**
+     * Indicates whether or not defined is the case.
+     *
      * @return the isDefined
      */
     public boolean isDefined() {
@@ -540,6 +588,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Sets the defined.
+     *
      * @param isDefined the isDefined to set
      */
     public void setDefined(boolean isDefined) {
@@ -548,6 +598,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Indicates whether or not released is the case.
+     *
      * @return has the concept been released
      */
     public boolean isReleased() {
@@ -556,6 +608,8 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     /**
+     * Sets the released.
+     *
      * @param released the value to set the released flag to
      */
     public void setReleased(boolean released) {
@@ -593,11 +647,13 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
         result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
-        result = prime * result + discussionCount;
+        result = prime * result + openDiscussionCount;
+        result = prime * result + resolvedDiscussionCount;
         result = prime * result + ((super.getModified() == null) ? 0 : super.getModifiedBy().hashCode());
         return result;
     }
 
+    /* see superclass */
     @Override
     public boolean equals(final Object obj) {
 
@@ -755,7 +811,11 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
             return false;
         }
         
-        if (other.discussionCount != discussionCount) {
+        if (other.openDiscussionCount != openDiscussionCount) {
+            return false;
+        }
+        
+        if (other.resolvedDiscussionCount != resolvedDiscussionCount) {
             return false;
         }
 
