@@ -11,8 +11,8 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
@@ -22,7 +22,6 @@ import org.ihtsdo.refsetservice.model.DiscussionType;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
-import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -163,12 +162,12 @@ public class DiscussionService {
     }
 
     /**
-     * Adds discussion count to a refset.
+     * Adds discussion counts to a refset.
      *
      * @param service the Terminology Service
      * @param user the user
      * @param refset the refset
-     * @return the refset with discussion count included
+     * @return the refset with discussion counts included
      * @throws Exception the exception
      */
     public static Refset attachRefsetDiscussionCount(final TerminologyService service, final User user, final Refset refset) throws Exception {
@@ -177,16 +176,33 @@ public class DiscussionService {
             return refset;
         }
 
-        String query = "type:" + DiscussionType.REFSET + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
-
-        if (!canUserViewPrivateThread(user, refset)) {
-            query += " AND privateThread: false";
-        }
+        final String query = "type:" + DiscussionType.REFSET + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
 
         final ResultList<DiscussionThread> results = service.find(query, null, DiscussionThread.class, null);
-        int count = results.getItems().size();
 
-        refset.setDiscussionCount(count);
+        if (results == null || results.getItems() == null || results.getItems().size() == 0) {
+            return refset;
+        } else {
+            int openDiscussionCount = 0;
+            int resolvedDiscussionCount = 0;
+            boolean userIsThreadMember = false;
+
+            for (final DiscussionThread thread : results.getItems()) {
+                userIsThreadMember = thread.getPosts().stream().anyMatch(post -> post.getUser().equals(user));
+
+                if (!thread.isPrivateThread() || (userIsThreadMember && thread.isPrivateThread())) {
+                    if ("OPEN".equals(thread.getStatus())) {
+                        openDiscussionCount++;
+                    }
+                    if ("RESOLVED".equals(thread.getStatus())) {
+                        resolvedDiscussionCount++;
+                    }
+                }
+            }
+
+            refset.setOpenDiscussionCount(openDiscussionCount);
+            refset.setResolvedDiscussionCount(resolvedDiscussionCount);
+        }
 
         return refset;
     }
@@ -211,34 +227,33 @@ public class DiscussionService {
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("conceptId");
 
-        if (!canUserViewPrivateThread(user, refset)) {
-            query += " AND privateThread: false";
-        }
+        final ResultList<DiscussionThread> results = service.find(query, null, DiscussionThread.class, null);
 
-        final ResultList<DiscussionThread> results = service.find(query, pfs, DiscussionThread.class, null);
-
-        if (results.getItems().size() == 0) {
+        if (results == null || results.getItems() == null || results.getItems().size() == 0) {
             return concepts;
-        }
+        } else {
+            for (final Concept concept : concepts) {
+                int openDiscussionCount = 0;
+                int resolvedDiscussionCount = 0;
+                boolean userIsThreadMember = false;
 
-        for (final Concept concept : concepts) {
+                for (final DiscussionThread thread : results.getItems().stream().filter(c -> c.getConceptId().contentEquals(concept.getCode())).collect(Collectors.toList())) {
 
-            int count = 0;
+                    userIsThreadMember = thread.getPosts().stream().anyMatch(post -> post.getUser().equals(user));
 
-            for (final DiscussionThread thread : results.getItems()) {
-
-                if (!thread.getConceptId().equals(concept.getCode()) && count == 0) {
-                    continue;
-
-                } else if (thread.getConceptId().equals(concept.getCode())) {
-                    count++;
-
-                } else {
-                    break;
+                    if (!thread.isPrivateThread() || (userIsThreadMember && thread.isPrivateThread())) {
+                        if ("OPEN".equals(thread.getStatus())) {
+                            openDiscussionCount++;
+                        }
+                        if ("RESOLVED".equals(thread.getStatus())) {
+                            resolvedDiscussionCount++;
+                        }
+                    }
                 }
-            }
 
-            concept.setDiscussionCount(count);
+                concept.setOpenDiscussionCount(openDiscussionCount);
+                concept.setResolvedDiscussionCount(resolvedDiscussionCount);
+            }
         }
 
         return concepts;
