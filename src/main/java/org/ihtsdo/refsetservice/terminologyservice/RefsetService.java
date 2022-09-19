@@ -430,7 +430,12 @@ public class RefsetService {
         // if this is an intensional refset update the definition
         if (refset.getType().equals(Refset.INTENSIONAL)) {
 
+            AuditEntryHelper.updateRefsetMetadataEntry(refset, true);
+
             statusMessage = modifyRefsetDefinition(user, service, refset, refsetEditParameters.getDefinitionClauses());
+        } else {
+
+            AuditEntryHelper.updateRefsetMetadataEntry(refset, false);
         }
 
         // we also need to clear the refset export cache on S3
@@ -502,7 +507,9 @@ public class RefsetService {
 
             return;
         }
-
+        
+        //TODO: Add unique Audit Entry Helper for this case
+        
         refset.setRefsetId(history.getRefsetId());
         refset.setName(history.getName());
         refset.setType(history.getType());
@@ -518,7 +525,7 @@ public class RefsetService {
         refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
         refset.setAssignedUser(null);
         refset.setMemberCount(history.getMemberCount());
-
+     
         service.update(refset);
 
         // if this is an intensional refset save the definition
@@ -2326,6 +2333,7 @@ public class RefsetService {
 
     public static Object copyRefset(final TerminologyService service, final User user, final String refsetInternalId, final String name, final String projectId, final Boolean localSet,
         final Boolean privateRefset, final Boolean comboSet, final String narrative, final Set<String> tags, final String parentConceptId, final String newRefsetConceptId) throws Exception {
+        //TODO: Add unique Audit Entry Helper for this case
 
         String newRefsetInternalId = null;
         final Refset originalRefset = getRefset(service, user, refsetInternalId);
