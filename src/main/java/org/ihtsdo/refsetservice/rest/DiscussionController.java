@@ -87,8 +87,8 @@ public class DiscussionController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/discussion/{type}/{refsetInternalId}")
-    public @ResponseBody ResponseEntity<ResultList<DiscussionThread>> getDiscussions(@PathVariable(value = "type") final DiscussionType type, @PathVariable(value = "refsetInternalId") final String refsetInternalId,
-        @RequestParam(required = false) final String conceptId) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<DiscussionThread>> getDiscussions(@PathVariable(value = "type") final DiscussionType type,
+        @PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = false) final String conceptId) throws Exception {
 
         try {
 
@@ -197,6 +197,8 @@ public class DiscussionController extends BaseController {
                     throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
                 }
 
+                service.setTransactionPerOperation(false);
+                service.beginTransaction();
                 service.setModifiedBy(user.getUserName());
                 service.setModifiedFlag(true);
 
@@ -204,7 +206,10 @@ public class DiscussionController extends BaseController {
                 post.setUser(user);
                 service.add(post);
 
+                service.update(refset);
                 service.add(thread);
+
+                service.commit();
 
                 return new ResponseEntity<>(thread, new HttpHeaders(), HttpStatus.CREATED);
             }
@@ -261,10 +266,10 @@ public class DiscussionController extends BaseController {
                     throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
                 }
 
-                service.setModifiedBy(user.getUserName());
-                service.setModifiedFlag(true);
                 service.setTransactionPerOperation(false);
                 service.beginTransaction();
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
 
                 post.setUser(user);
                 service.add(post);
@@ -272,12 +277,14 @@ public class DiscussionController extends BaseController {
                 thread.getPosts().add(post);
                 service.update(thread);
 
+                service.update(refset);
+
                 service.commit();
             }
 
             return new ResponseEntity<>(post, new HttpHeaders(), HttpStatus.CREATED);
         }
-        
+
         catch (final Exception e) {
 
             logger.error("Error adding post: {} to discussionThreadId: {}", post, threadId);
@@ -331,10 +338,10 @@ public class DiscussionController extends BaseController {
                     throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
                 }
 
-                service.setModifiedBy(user.getUserName());
-                service.setModifiedFlag(true);
                 service.setTransactionPerOperation(false);
                 service.beginTransaction();
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
 
                 originalThread.setSubject(thread.getSubject());
                 originalThread.setStatus(thread.getStatus());
@@ -346,6 +353,8 @@ public class DiscussionController extends BaseController {
                 post.setMessage(thread.getPosts().get(0).getMessage());
                 post.setPrivatePost(thread.isPrivateThread());
                 service.update(post);
+
+                service.update(refset);
 
                 service.commit();
 
@@ -405,6 +414,8 @@ public class DiscussionController extends BaseController {
                     throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
                 }
 
+                service.setTransactionPerOperation(false);
+                service.beginTransaction();
                 service.setModifiedBy(user.getUserName());
                 service.setModifiedFlag(true);
 
@@ -412,6 +423,9 @@ public class DiscussionController extends BaseController {
 
                 // Update
                 service.update(thread);
+                service.update(refset);
+
+                service.commit();
 
                 return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
             }
@@ -470,10 +484,10 @@ public class DiscussionController extends BaseController {
                     throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
                 }
 
-                service.setModifiedBy(user.getUserName());
-                service.setModifiedFlag(true);
                 service.setTransactionPerOperation(false);
                 service.beginTransaction();
+                service.setModifiedBy(user.getUserName());
+                service.setModifiedFlag(true);
 
                 thread.setPrivateThread(isPrivate);
                 service.update(thread);
@@ -481,6 +495,8 @@ public class DiscussionController extends BaseController {
                 final DiscussionPost post = thread.getPosts().get(0);
                 post.setPrivatePost(isPrivate);
                 service.update(post);
+
+                service.update(refset);
 
                 service.commit();
 
@@ -541,6 +557,8 @@ public class DiscussionController extends BaseController {
                     throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
                 }
 
+                service.setTransactionPerOperation(false);
+                service.beginTransaction();
                 service.setModifiedBy(user.getUserName());
                 service.setModifiedFlag(true);
 
@@ -548,6 +566,9 @@ public class DiscussionController extends BaseController {
 
                 // Update
                 service.update(thread);
+                service.update(refset);
+
+                service.commit();
 
                 return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
             }
@@ -615,22 +636,27 @@ public class DiscussionController extends BaseController {
                     throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
                 }
 
+                service.setTransactionPerOperation(false);
+                service.beginTransaction();
                 service.setModifiedBy(user.getUserName());
                 service.setModifiedFlag(true);
 
                 post.setPrivatePost(isPrivate);
                 service.update(post);
-                
+
                 for (final DiscussionPost threadPost : thread.getPosts()) {
-                    
+
                     if (threadPost.getId().equals(post.getId())) {
-                        
+
                         threadPost.setPrivatePost(isPrivate);
                         break;
                     }
                 }
-                
+
                 service.update(thread);
+                service.update(refset);
+
+                service.commit();
 
                 return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
             }
@@ -653,9 +679,7 @@ public class DiscussionController extends BaseController {
      */
     @ApiOperation(value = "Updates a discussion post.", response = DiscussionThread.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully updated the discussion post."), 
-        @ApiResponse(code = 400, message = "Bad request"), 
-        @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 200, message = "Successfully updated the discussion post."), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 404, message = "Resource not found"),
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
@@ -665,9 +689,8 @@ public class DiscussionController extends BaseController {
     })
     @RecordMetric
     @PutMapping("/discussion/{threadId}/post/{postId}")
-    public @ResponseBody ResponseEntity<DiscussionPost> updateDiscussionPost(
-        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId, @RequestBody final DiscussionPost updatedPost) throws Exception 
-    {
+    public @ResponseBody ResponseEntity<DiscussionPost> updateDiscussionPost(@PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId,
+        @RequestBody final DiscussionPost updatedPost) throws Exception {
 
         try {
 
@@ -680,7 +703,7 @@ public class DiscussionController extends BaseController {
                 final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
                 if (!postId.equals(updatedPost.getId())) {
-                    
+
                     final String message = "The postId parameter " + postId + " does not match the id property of the updatedPost parameter " + updatedPost.getId() + ".";
                     logger.error("updateDiscussionPost: " + message);
                     throw new RestException(false, HttpStatus.EXPECTATION_FAILED, "Expectation Failed", message);
@@ -708,23 +731,28 @@ public class DiscussionController extends BaseController {
                     throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to perform this action.");
                 }
 
+                service.setTransactionPerOperation(false);
+                service.beginTransaction();
                 service.setModifiedBy(user.getUserName());
                 service.setModifiedFlag(true);
 
                 existingPost.setMessage(updatedPost.getMessage());
                 existingPost.setPrivatePost(updatedPost.isPrivatePost());
                 service.update(existingPost);
-                
+
                 for (final DiscussionPost threadPost : thread.getPosts()) {
-                    
+
                     if (threadPost.getId().equals(existingPost.getId())) {
-                        
+
                         threadPost.populateFrom(existingPost);
                         break;
                     }
                 }
-                
+
                 service.update(thread);
+                service.update(refset);
+
+                service.commit();
 
                 return new ResponseEntity<>(existingPost, new HttpHeaders(), HttpStatus.OK);
             }
@@ -735,7 +763,7 @@ public class DiscussionController extends BaseController {
             return handleException(e);
         }
     }
-    
+
     /**
      * Delete a discussion post.
      *
@@ -746,9 +774,7 @@ public class DiscussionController extends BaseController {
      */
     @ApiOperation(value = "Deletes a discussion post.", response = DiscussionThread.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully updated the discussion post."), 
-        @ApiResponse(code = 400, message = "Bad request"), 
-        @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 200, message = "Successfully updated the discussion post."), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 404, message = "Resource not found"),
         @ApiResponse(code = 500, message = "Server error")
     })
     @ApiImplicitParams({
@@ -757,16 +783,15 @@ public class DiscussionController extends BaseController {
     })
     @RecordMetric
     @DeleteMapping("/discussion/{threadId}/post/{postId}")
-    public @ResponseBody ResponseEntity<DiscussionThread> deleteDiscussionPost(
-        @PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId) throws Exception 
-    {
+    public @ResponseBody ResponseEntity<DiscussionThread> deleteDiscussionPost(@PathVariable(value = "threadId") final String threadId, @PathVariable(value = "postId") final String postId)
+        throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             logger.debug("deleteDiscussionPost threadId: " + threadId + "; postId: " + postId);
 
             final User user = SecurityService.getUserFromSession();
-            
+
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
