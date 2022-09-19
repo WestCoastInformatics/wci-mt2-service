@@ -189,13 +189,13 @@ public class DiscussionService {
             boolean userIsThreadMember = false;
 
             for (final DiscussionThread thread : results.getItems()) {
-                userIsThreadMember = thread.getPosts().stream().anyMatch(post -> post.getUser().equals(user));
+                userIsThreadMember = thread.getPosts().stream().anyMatch(post -> post.getUser().getId().equals(user.getId()));
 
                 if (!thread.isPrivateThread() || (userIsThreadMember && thread.isPrivateThread())) {
-                    if ("OPEN".equals(thread.getStatus())) {
+                    if ("open".equalsIgnoreCase(thread.getStatus())) {
                         openDiscussionCount++;
                     }
-                    if ("RESOLVED".equals(thread.getStatus())) {
+                    if ("resolved".equalsIgnoreCase(thread.getStatus())) {
                         resolvedDiscussionCount++;
                     }
                 }
@@ -239,14 +239,13 @@ public class DiscussionService {
                 boolean userIsThreadMember = false;
 
                 for (final DiscussionThread thread : results.getItems().stream().filter(c -> c.getConceptId().contentEquals(concept.getCode())).collect(Collectors.toList())) {
-
-                    userIsThreadMember = thread.getPosts().stream().anyMatch(post -> post.getUser().equals(user));
+                    userIsThreadMember = thread.getPosts().stream().anyMatch(post -> post.getUser().getId().equals(user.getId()));
 
                     if (!thread.isPrivateThread() || (userIsThreadMember && thread.isPrivateThread())) {
-                        if ("OPEN".equals(thread.getStatus())) {
+                        if ("open".equalsIgnoreCase(thread.getStatus())) {
                             openDiscussionCount++;
                         }
-                        if ("RESOLVED".equals(thread.getStatus())) {
+                        if ("resolved".equalsIgnoreCase(thread.getStatus())) {
                             resolvedDiscussionCount++;
                         }
                     }
