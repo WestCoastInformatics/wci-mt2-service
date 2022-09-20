@@ -251,9 +251,7 @@ public class OrganizationController extends BaseController {
 
             service.setModifiedBy(user.getUserName());
             final Organization org = OrganizationService.updateOrganization(service, user, organization);
-            
-            service.commit();
-
+           
             return new ResponseEntity<>(org, HttpStatus.OK);
 
         } catch (final Exception e) {
