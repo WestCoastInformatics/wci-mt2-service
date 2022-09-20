@@ -420,9 +420,12 @@ public class RefsetService {
         refset.setVersionNotes(refsetEditParameters.getVersionNotes());
         refset.setNarrative(refsetEditParameters.getNarrative());
         refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
-        refset.setType(refsetEditParameters.getType());
         refset.setExternalUrl(refsetEditParameters.getExternalUrl());
         refset.setLocalSet(refsetEditParameters.isLocalSet());
+        
+        if (refset.getType().equals(Refset.EXTERNAL)) {
+            refset.setName(refsetEditParameters.getName());
+        }
 
         // update an object
         service.update(refset);
