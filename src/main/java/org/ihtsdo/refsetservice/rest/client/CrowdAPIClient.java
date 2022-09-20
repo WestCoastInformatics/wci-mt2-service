@@ -47,6 +47,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     // USER
     /** Get user GET. */
     private static final String GET_USER = "/rest/usermanagement/1/user";
+    
+    private static final String FIND_USER = "/rest/usermanagement/1/search?entity-type=user&restriction=email=";
 
     /** Get avatar for user EXPERIMENTAL GET. */
     private static final String GET_AVATAR_FOR_USER = "/rest/usermanagement/1/user/avatar?username=";
@@ -219,7 +221,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     public static String getUserAvatar(String username) throws Exception {
 
         logger.debug("Get avatar for username {}", username);
-        if (StringUtils.isEmpty(username)) {
+        if (StringUtils.isBlank(username)) {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
         }
 
@@ -249,7 +251,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     public static Set<String> getMembershipsForUser(final String username) throws Exception {
 
         logger.debug("Get memberships for user {}", username);
-        if (StringUtils.isEmpty(username)) {
+        if (StringUtils.isBlank(username)) {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
         }
 
@@ -314,7 +316,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (StringUtils.isBlank(groupname)) {
             throw new Exception("Group name cannot be empty or null. Received groupname: " + groupname);
         }
-        if (StringUtils.isEmpty(username)) {
+        if (StringUtils.isBlank(username)) {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
         }
 
@@ -352,7 +354,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (StringUtils.isBlank(groupname)) {
             throw new Exception("Group name cannot be empty or null. Received groupname: " + groupname);
         }
-        if (StringUtils.isEmpty(username)) {
+        if (StringUtils.isBlank(username)) {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
         }
 
@@ -369,20 +371,47 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             throw new Exception("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Received HTTP " + response.getStatus() + " from the API server.");
         }
     }
-
+    
     /**
-     * Application entry point.
+     * Find user by email.
      *
-     * @param args the command line arguments
+     * @param email the email
+     * @return the user
      * @throws Exception the exception
      */
-    /* for testing */
-    public static void main(String[] args) throws Exception {
+    public static User findUserByEmail(final String email) throws Exception {
 
-        Set<String> memberships = getMembershipsForUser("nmarques");
-        System.out.println("Memberships ->" + memberships);
+        logger.info("Find user by email: {} ", email);
 
-        getUserAvatar("nmarques");
+        if (StringUtils.isBlank(email)) {
+            logger.warn("Email is blank or empty. Received email: " + email);
+            return null;
+        }
 
+        final Response response = get(BASE_URL + FIND_USER + email);
+
+        // 204 Returned if the user membership is successfully deleted.
+        User foundUser = null;
+        if (response.getStatus() == 200) {
+
+            final String jsonString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(jsonString);
+            final JsonNode users = root.get("users");
+            if (users != null && !users.isEmpty()) {
+                for (JsonNode user : users) {
+                    final String name = user.findValue("name").asText();
+                    if (StringUtils.isNotBlank(name)) {
+                        foundUser = getUser(name);
+                        break;
+                    }
+                }
+            }
+            return foundUser;
+
+        } else {
+            // All other codes are errors
+            throw new Exception("Failed to user with email of " + email + ". Received HTTP " + response.getStatus() + " from the API server.");
+        }
     }
 }

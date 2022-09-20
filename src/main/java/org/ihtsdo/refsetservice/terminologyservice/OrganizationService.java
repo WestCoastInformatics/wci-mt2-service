@@ -45,6 +45,9 @@ public class OrganizationService extends BaseService {
     /** The config properties. */
     private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
+    /** The Constant EMAIL_SUBJECT. */
+    private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
+
     /**
      * Creates the organization.
      *
@@ -57,29 +60,29 @@ public class OrganizationService extends BaseService {
     public static Organization createOrganization(final TerminologyService service, final User user, final Organization organization) throws Exception {
 
         checkEditPermissions(user, null);
-        
+
         SearchParameters organizationsParameters = new SearchParameters();
-        
+
         List<Organization> organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
-        
+
         if (organizationList.size() > 0) {
-            
+
             final String errorMessage = "There is already an organization tied to that edition.";
             logger.error(errorMessage);
             throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
         }
-        
+
         organizationsParameters.setQuery("name:" + organization.getName());
-        
+
         organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
-        
+
         if (organizationList.size() > 0) {
-            
+
             final String errorMessage = "There is already an organization with that name.";
             logger.error(errorMessage);
             throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
         }
-        
+
         final User userToAdd = service.findSingle("id:" + user.getId(), User.class, null);
 
         final Organization newOrganization = new Organization();
@@ -97,9 +100,9 @@ public class OrganizationService extends BaseService {
         adminTeam.getMembers().add(user.getId());
         adminTeam.setOrganization(newOrganization);
         adminTeam.getRoles().add(User.ROLE_ADMIN);
-        
+
         TeamService.createTeam(user, adminTeam);
-        
+
         setRoles(user, newOrganization, newOrganization.getRoles());
 
         if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
@@ -139,7 +142,7 @@ public class OrganizationService extends BaseService {
         final Organization organization = service.findSingle("id: " + id + " AND active:true", Organization.class, null);
 
         if (organization == null) {
-            
+
             final String message = "Unable to find organization for id " + id + ".";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
@@ -148,12 +151,12 @@ public class OrganizationService extends BaseService {
         if (includeMembers) {
             organization.getMembers();
         } else {
-            
+
             if (organization.getMembers() != null && !organization.getMembers().isEmpty()) {
                 organization.getMembers().clear();
             }
         }
-        
+
         setRoles(user, organization, organization.getRoles());
 
         return organization;
@@ -171,14 +174,14 @@ public class OrganizationService extends BaseService {
     public static Organization updateOrganization(final TerminologyService service, final User user, final Organization organization) throws Exception {
 
         final Organization originalOrganization = getOrganization(service, user, organization.getId(), false);
-        
+
         if (originalOrganization == null) {
-            
+
             final String message = "Unable to find organization for id " + organization.getId() + ".";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
-        
+
         checkEditPermissions(user, originalOrganization);
 
         originalOrganization.patchFrom(organization);
@@ -204,12 +207,12 @@ public class OrganizationService extends BaseService {
         final Organization organization = getOrganization(service, user, organizationId, false);
 
         if (organization == null) {
-            
+
             final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
-        
+
         checkEditPermissions(user, organization);
 
         // inactivate projects, clear teams, and inactivate refsets
@@ -253,10 +256,12 @@ public class OrganizationService extends BaseService {
      * @param service the Terminology Service
      * @param user the user
      * @param searchParameters the search parameters
+     * @param includeMembers the include members
      * @return the list of projects
      * @throws Exception the exception
      */
-    public static ResultList<Organization> searchOrganizations(final TerminologyService service, final User user, final SearchParameters searchParameters, final boolean includeMembers) throws Exception {
+    public static ResultList<Organization> searchOrganizations(final TerminologyService service, final User user, final SearchParameters searchParameters, final boolean includeMembers)
+        throws Exception {
 
         final long start = System.currentTimeMillis();
         String query = getQueryForActiveOnly(searchParameters);
@@ -285,7 +290,7 @@ public class OrganizationService extends BaseService {
         }
 
         final ResultList<Organization> results = service.find(query, pfs, Organization.class, null);
-        
+
         final ResultList<Organization> resultsWithPermissions = new ResultList<>();
 
         for (Organization organization : results.getItems()) {
@@ -326,7 +331,7 @@ public class OrganizationService extends BaseService {
         final Organization organization = service.findSingle("id: " + organizationId + " AND active:true", Organization.class, null);
 
         if (organization == null) {
-            
+
             final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
@@ -336,19 +341,19 @@ public class OrganizationService extends BaseService {
         usersResultList.getItems().addAll(organization.getMembers());
 
         if (includeTeams && !usersResultList.getItems().isEmpty()) {
-            
+
             for (final User user : usersResultList.getItems()) {
 
                 final SearchParameters sp = new SearchParameters();
                 sp.setQuery("members:" + user.getId());
                 final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
-                
+
                 if (teamsResultList != null && teamsResultList.getItems() != null) {
                     user.getTeams().addAll(teamsResultList.getItems());
                 }
             }
         }
-        
+
         usersResultList.setTotal(usersResultList.getItems().size());
 
         return usersResultList;
@@ -397,32 +402,32 @@ public class OrganizationService extends BaseService {
      * @param email the email
      * @throws Exception the exception
      */
-    public static void addUserToOrganization(final TerminologyService service, final User user, final String organizationId, final String email) throws Exception {
+    public static void addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final String email) throws Exception {
 
         final User userToAdd = service.findSingle("email:" + email, User.class, null);
 
         if (userToAdd == null) {
-            
+
             final String message = "Unable to find user for email " + email + ".";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
-        final Organization organization = service.get(organizationId, Organization.class);
+        final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, false);
 
         if (organization == null) {
-            
+
             final String message = "Unable to find organization for " + organizationId + ".";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
-        
-        checkEditPermissions(user, organization);
+
+        checkEditPermissions(authUser, organization);
 
         organization.getMembers().add(userToAdd);
         service.add(AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd));
         service.update(organization);
-        
+
         final Edition edition = EditionService.getEditionForOrganization(organizationId);
         final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
         CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization user", false);
@@ -433,7 +438,7 @@ public class OrganizationService extends BaseService {
      * Removes the user from organization.
      *
      * @param service the Terminology Service
-     * @param user the user
+     * @param authUser the auth user
      * @param userId the user id
      * @param organizationId the organization id
      * @return the organization
@@ -466,9 +471,10 @@ public class OrganizationService extends BaseService {
         service.add(AuditEntryHelper.removeUserFromOrganizationEntry(organization, userToRemove));
 
         removeUserFromTeams(service, organizationId, userToRemove, authUser);
-        
+
         final Edition edition = EditionService.getEditionForOrganization(organizationId);
-        final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);;
+        final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
+        ;
         CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName());
 
         return organization;
@@ -490,19 +496,19 @@ public class OrganizationService extends BaseService {
         final Organization organization = service.get(organizationId, Organization.class);
 
         if (organization == null) {
-            
+
             final String message = "Unable to find organization for id " + organizationId + ".";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
-        
+
         checkEditPermissions(user, organization);
 
         organization.setIconUri(iconUrlPrefix + fileName);
         service.add(AuditEntryHelper.updateIconForOrganizationEntry(organization, fileName));
         service.update(organization);
     }
-    
+
     /**
      * set the list of roles a user has for a organization.
      *
@@ -541,7 +547,7 @@ public class OrganizationService extends BaseService {
 
         return roles;
     }
-    
+
     /**
      * Throw an exception if a user can't edit an organization.
      *
@@ -550,23 +556,23 @@ public class OrganizationService extends BaseService {
      * @throws Exception the exception
      */
     public static void checkEditPermissions(final User user, final Organization organization) throws Exception {
-        
+
         boolean canUserEdit = false;
-        
+
         if (organization == null) {
             canUserEdit = canUserCreateOrganizations(user);
         } else {
             canUserEdit = canUserEditOrganization(user, organization);
         }
-        
+
         if (!canUserEdit) {
-            
+
             final String message = "User does not have permission to perform this Organization action.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, message);
         }
     }
-    
+
     /**
      * Check if a user can create an organization (must have "all_all_admin").
      *
@@ -575,11 +581,11 @@ public class OrganizationService extends BaseService {
      * @throws Exception the exception
      */
     public static boolean canUserCreateOrganizations(final User user) throws Exception {
-        
+
         final Organization organization = null;
         return user.doesUserHavePermission(User.ROLE_ADMIN, organization);
     }
-    
+
     /**
      * Check if a user can edit an organization.
      *
@@ -589,14 +595,14 @@ public class OrganizationService extends BaseService {
      * @throws Exception the exception
      */
     public static boolean canUserEditOrganization(final User user, final Organization organization) throws Exception {
-        
+
         if (organization.getRoles().isEmpty()) {
             setRoles(user, organization, organization.getRoles());
         }
-        
+
         return organization.getRoles().contains(User.ROLE_ADMIN);
     }
-    
+
     /**
      * Check if a user can view an organization.
      *
@@ -606,20 +612,21 @@ public class OrganizationService extends BaseService {
      * @throws Exception the exception
      */
     public static boolean canUserViewOrganization(final User user, final Organization organization) throws Exception {
-        
+
         if (organization.getRoles().isEmpty()) {
             setRoles(user, organization, organization.getRoles());
         }
-        
+
         return organization.getRoles().contains(User.ROLE_VIEWER);
     }
-    
+
     /**
      * Removes the user from crowd group belonging to the organization.
      *
      * @param service the service
      * @param organizationId the organization id
      * @param userToRemove the user to remove
+     * @param authUser the auth user
      */
     private static void removeUserFromTeams(final TerminologyService service, final String organizationId, final User userToRemove, final User authUser) {
 

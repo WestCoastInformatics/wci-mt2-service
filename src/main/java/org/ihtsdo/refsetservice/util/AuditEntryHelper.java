@@ -9,9 +9,7 @@
  */
 package org.ihtsdo.refsetservice.util;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
@@ -205,6 +203,24 @@ public class AuditEntryHelper {
         log(entry);
         return entry;
     }
+
+    // /**
+    // * Update icon for organization entry.
+    // *
+    // * @param organization the organization
+    // * @param fileName the file name
+    // * @return the audit entry
+    // */
+    // public static AuditEntry emailOrganizationEntry(final Organization organization, final String action, final String email) {
+    //
+    // final AuditEntry entry = new AuditEntry();
+    // entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
+    // entry.setEntityId(organization.getId());
+    // entry.setMessage("INVITE Organization");
+    // entry.setDetails(action + " " + email + " to organization " + organization.getName() + ".");
+    // log(entry);
+    // return entry;
+    // }
 
     /**
      * New project entry.
@@ -511,6 +527,7 @@ public class AuditEntryHelper {
      * @return the audit entry
      */
     public static AuditEntry updateRefsetMetadataEntry(final Refset refset, final boolean eclUpdated) {
+
         final String eclInfo = (eclUpdated) ? "including" : "not including";
 
         final AuditEntry entry = new AuditEntry();
@@ -565,6 +582,7 @@ public class AuditEntryHelper {
      * @return the audit entry
      */
     public static AuditEntry addEditingCycleEntry(final Refset refset, final boolean isSaving) {
+
         final String type = (isSaving) ? "saved" : " canceled";
 
         final AuditEntry entry = new AuditEntry();
@@ -572,6 +590,46 @@ public class AuditEntryHelper {
         entry.setEntityId(refset.getId());
         entry.setMessage("UPDATE Refset");
         entry.setDetails("Refset " + refset.getRefsetId() + " changes since refset was put IN_EDIT have been " + type);
+        log(entry);
+
+        return entry;
+    }
+
+    /**
+     * Send refset invite.
+     *
+     * @param refset the refset
+     * @param requester the requester
+     * @param recipientEmail the recipient email
+     * @return the audit entry
+     */
+    public static AuditEntry sendRefsetInvite(final Refset refset, final User requester, final String recipientEmail) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(refset.getId());
+        entry.setMessage("INVITE Refset");
+        entry.setDetails("User " + requester.getUserName() + " sent request for " + recipientEmail + " to join refset " + refset.getRefsetId());
+        log(entry);
+
+        return entry;
+    }
+
+    /**
+     * Response for refset invite.
+     *
+     * @param refset the refset
+     * @param requester the requester
+     * @param recipientEmail the recipient email
+     * @return the audit entry
+     */
+    public static AuditEntry responseForRefsetInvite(final Refset refset, final User requester, final String recipientEmail, final boolean acceptance) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(refset.getId());
+        entry.setMessage("INVITE Refset Response");
+        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName() + " request to join refset " + refset.getRefsetId());
         log(entry);
 
         return entry;

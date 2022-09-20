@@ -23,11 +23,13 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.ResultListProject;
 import org.ihtsdo.refsetservice.model.ResultListTeam;
 import org.ihtsdo.refsetservice.model.ResultListUser;
+import org.ihtsdo.refsetservice.model.SendCommunicationEmailInfo;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -41,6 +43,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -59,6 +62,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Hidden;
 
 /**
  * Controller for /organization endpoints.
@@ -429,20 +433,19 @@ public class OrganizationController extends BaseController {
     public @ResponseBody ResponseEntity<String> addUserToOrganization(@PathVariable final String organizationId, final String email) throws Exception {
 
         logger.info("Add user: {} to organization: {}.", email, organizationId);
-        // TODO check permissions, fail if not authorized.
-        final User user = SecurityService.getUserFromSession();
+        final User authUser = SecurityService.getUserFromSession();
 
-        if (user == null) {
+        if (authUser == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
 
-            OrganizationService.addUserToOrganization(service, user, organizationId, email);
+            OrganizationService.addUserToOrganization(service, authUser, organizationId, email);
             // service.commit();
 
             return new ResponseEntity<>(HttpStatus.CREATED);
@@ -625,7 +628,7 @@ public class OrganizationController extends BaseController {
             return handleException(e);
         }
     }
-
+    
     // @SuppressWarnings("rawtypes")
     // @Hidden
     // @PostMapping(value = "/organization/{organizationId}/user/{userId}/temp")
