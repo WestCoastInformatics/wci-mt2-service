@@ -52,6 +52,7 @@ import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -274,16 +275,27 @@ public class RefsetController extends BaseController {
 
             logger.debug("addRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
 
+            String type = "an individual concept";
+
             // create the list of concepts based on what was passed in
             if (conceptIds != null && !conceptIds.equals("")) {
 
                 conceptIdList = new ArrayList<String>(Arrays.asList(conceptIds.split(",")));
 
+                if (conceptIdList.size() > 1) {
+
+                    type = "concepts by list";
+                }
+
             } else if (ecl != null && !ecl.equals("")) {
+
+                type = "by changing ECL definition";
 
                 final String branchPath = RefsetService.getBranchPath(service, refsetInternalId);
                 conceptIdList = RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl);
             } else {
+
+                type = "by file";
 
                 conceptIdList = RefsetService.getConceptIdsFromFile(conceptFile, fileType);
             }
@@ -310,6 +322,9 @@ public class RefsetController extends BaseController {
             logger.debug("addRefsetMembers: Finished with " + unaddedConcepts.size() + " invaild concepts");
 
             if (error.equals("")) {
+
+                Refset refset = service.get(refsetInternalId, Refset.class);
+                AuditEntryHelper.addMembersEntry(refset, type, conceptIds);
 
                 return new ResponseEntity<>("{\"status\": \"All concepts added.\"}", HttpStatus.OK);
             } else {
@@ -358,17 +373,27 @@ public class RefsetController extends BaseController {
             logger.debug("removeRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
 
             String error = "";
+            String type = "an individual concept";
 
             // If concepts were passed in use those
             if (conceptIds != null && !conceptIds.equals("")) {
 
                 conceptsToRemove = conceptIds;
 
+                if (Arrays.asList(conceptsToRemove.split(",")).size() > 1) {
+
+                    type = "concepts by list";
+                }
+
             } else if (ecl != null && !ecl.equals("")) {
+
+                type = "by changing ECL definition";
 
                 final String branchPath = RefsetService.getBranchPath(service, refsetInternalId);
                 conceptsToRemove = String.join(",", RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl));
             } else {
+
+                type = "by file";
 
                 conceptsToRemove = String.join(",", RefsetService.getConceptIdsFromFile(conceptFile, fileType));
             }
@@ -393,6 +418,9 @@ public class RefsetController extends BaseController {
             }
 
             if (error.equals("")) {
+
+                Refset refset = service.get(refsetInternalId, Refset.class);
+                AuditEntryHelper.removeMembersEntry(refset, type, conceptsToRemove);
 
                 return new ResponseEntity<>("{\"status\": \"All concepts removed.\"}", HttpStatus.OK);
             } else {
@@ -617,7 +645,6 @@ public class RefsetController extends BaseController {
             // service.commit();
 
             if (!status.startsWith("Error")) {
-
                 return new ResponseEntity<>("{\"refsetInternalId\": \"" + refsetInternalId + "\"}", HttpStatus.OK);
             } else {
 
@@ -703,6 +730,14 @@ public class RefsetController extends BaseController {
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
+
+            if (action.equals(WorkflowService.FINISH_EDIT)) {
+
+                AuditEntryHelper.addEditingCycleEntry(refset, true);
+            } else if (action.equals(WorkflowService.CANCEL_EDIT)) {
+
+                AuditEntryHelper.addEditingCycleEntry(refset, false);
+            }
 
             // if the status is Published then create a new version of the refset that is ready to be edited
             if (currentStatus == null || currentStatus.equals(WorkflowService.PUBLISHED)) {

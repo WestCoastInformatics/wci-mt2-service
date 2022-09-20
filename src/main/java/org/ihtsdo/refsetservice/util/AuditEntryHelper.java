@@ -9,7 +9,9 @@
  */
 package org.ihtsdo.refsetservice.util;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
@@ -451,23 +453,6 @@ public class AuditEntryHelper {
     }
 
     /**
-     * Update refset entry.
-     *
-     * @param refset the refset
-     * @return the audit entry
-     */
-    public static AuditEntry updateRefsetEntry(final Refset refset) {
-
-        final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
-        entry.setEntityId(refset.getId());
-        entry.setMessage("UPDATE Refset");
-        entry.setDetails(refset.getName());
-        log(entry);
-        return entry;
-    }
-
-    /**
      * Inactivate refset entry.
      *
      * @param refset the refset
@@ -520,19 +505,75 @@ public class AuditEntryHelper {
     }
 
     /**
-     * Status update refset entry.
+     * Update refset entry.
      *
      * @param refset the refset
      * @return the audit entry
      */
-    public static AuditEntry statusUpdateRefsetEntry(final Refset refset) {
+    public static AuditEntry updateRefsetMetadataEntry(final Refset refset, final boolean eclUpdated) {
+        final String eclInfo = (eclUpdated) ? "including" : "not including";
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("UPDATE Refset");
-        entry.setDetails("Refset workflow status set to " + refset.getVersionStatus() + " for refset " + refset.getRefsetId() + ".");
+        entry.setDetails("Refset " + refset.getRefsetId() + " metadata changed " + eclInfo + " the ECL definition");
         log(entry);
+        return entry;
+    }
+
+    /**
+     * Add Refset Members entry.
+     *
+     * @param refset the refset
+     * @return the audit entry
+     */
+    public static AuditEntry addMembersEntry(final Refset refset, final String additionalInformation, final String conceptIds) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(refset.getId());
+        entry.setMessage("UPDATE Refset");
+        entry.setDetails("Refset " + refset.getRefsetId() + " modified by adding " + additionalInformation + ": " + conceptIds);
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Remove Refset Members entry.
+     *
+     * @param refset the refset
+     * @return the audit entry
+     */
+    public static AuditEntry removeMembersEntry(Refset refset, String additionalInformation, String conceptIds) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(refset.getId());
+        entry.setMessage("UPDATE Refset");
+        entry.setDetails("Refset " + refset.getRefsetId() + " modified by removing " + additionalInformation + ": " + conceptIds);
+        log(entry);
+
+        return entry;
+    }
+
+    /**
+     * Adds editing cycle entry.
+     *
+     * @param workflowHistory the workflow history
+     * @param refset the refset
+     * @return the audit entry
+     */
+    public static AuditEntry addEditingCycleEntry(final Refset refset, final boolean isSaving) {
+        final String type = (isSaving) ? "saved" : " canceled";
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(refset.getId());
+        entry.setMessage("UPDATE Refset");
+        entry.setDetails("Refset " + refset.getRefsetId() + " changes since refset was put IN_EDIT have been " + type);
+        log(entry);
+
         return entry;
     }
 
@@ -543,13 +584,13 @@ public class AuditEntryHelper {
      * @param refset the refset
      * @return the audit entry
      */
-    public static AuditEntry addWorkflowHistoryEntry(final WorkflowHistory workflowHistory, final Refset refset) {
+    public static AuditEntry addWorkflowHistoryEntry(final WorkflowHistory workflowHistory, final Refset refset, final String newState) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("NEW Workflow History");
-        entry.setDetails("New workflow history entry with status " + refset.getWorkflowStatus() + " added for refset " + refset.getRefsetId() + ".");
+        entry.setDetails("Refset " + refset.getRefsetId() + " has advanced workflow to " + newState);
         log(entry);
         return entry;
     }
