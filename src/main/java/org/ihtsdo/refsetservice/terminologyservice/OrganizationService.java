@@ -157,7 +157,9 @@ public class OrganizationService extends BaseService {
             }
         }
 
-        setRoles(user, organization, organization.getRoles());
+        if (user != null) {
+            setRoles(user, organization, organization.getRoles());
+        }
 
         return organization;
     }
