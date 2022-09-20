@@ -2003,15 +2003,14 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Compile and store the data to upgrade a refset.
+     * Compile and store the data to upgrade a list of refsets.
      *
-     * @param refsetInternalId the internal refset ID
-     * @param upgradeBranch the branch to upgrade to
+     * @param refsetInternalIds a list of comma separated internal refset IDs to upgrade
      * @return The operation status
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/compileUpgradeData", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> compileUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = false) final String upgradeBranch)
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalIds}/compileUpgradeData", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> compileUpgradeData(@PathVariable(value = "refsetInternalIds") final String refsetInternalIds)
         throws Exception {
 
         final User user = SecurityService.getUserFromSession();
@@ -2020,16 +2019,39 @@ public class RefsetController extends BaseController {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
-
-            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            
             String status = "";
+            
+            final String[] refsetInternalIdArray = refsetInternalIds.split(",");
+            boolean isBatch = false;
+            
+            if (refsetInternalIdArray.length > 1) {
+                
+                isBatch = true;
+                RefsetMemberService.refsetsBeingUpdated.add(refsetInternalIds);
+                logger.debug("compileUpgradeData: Batch upgrade started with refsetInternalIds: " + refsetInternalIds);
+            }
+            
+            for (final String internalId : refsetInternalIdArray) {
+                
+                RefsetMemberService.refsetsBeingUpdated.add(internalId);
+                logger.debug("compileUpgradeData: individual refsetInternalId: " + internalId);
 
-            logger.debug("compileUpgradeData: refsetInternalId: " + refsetInternalId + "; upgradeBranch: " + upgradeBranch);
+                try {
+                    
+                    // add the list of concepts as members to the refset
+                    status = RefsetMemberService.compileUpgradeData(service, user, internalId);
+                    
+                } finally {
+                    RefsetMemberService.refsetsBeingUpdated.remove(internalId);
+                }
 
-            // add the list of concepts as members to the refset
-            status = RefsetMemberService.compileUpgradeData(service, user, refsetInternalId, upgradeBranch);
+                logger.debug("compileUpgradeData: individual refsetInternalId " + internalId + " finished with status " + status);
+            }
 
-            logger.debug("compileUpgradeData: Finished with status " + status);
+            if (isBatch) {
+                logger.debug("compileUpgradeData: Batch upgrade finished");
+            }
 
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
@@ -2040,7 +2062,7 @@ public class RefsetController extends BaseController {
 
         finally {
 
-            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalIds);
         }
 
     }

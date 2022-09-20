@@ -1337,7 +1337,7 @@ public class RefsetService {
         final long start = System.currentTimeMillis();
         ResultList<Refset> results = new ResultList<Refset>();
         String query = searchParameters.getQuery();
-        final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!(){}[]^\"~*?:\\/") + "]+?";
+        final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!{}[]^\"~*?:\\/") + "]+?";
 
         final PfsParameter pfs = new PfsParameter();
 

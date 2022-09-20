@@ -4794,11 +4794,10 @@ public class RefsetMemberService {
      * @param service the Terminology Service
      * @param user the user
      * @param refsetInternalId the internal refset ID
-     * @param upgradeBranch the branch to upgrade to
      * @return The operation status
      * @throws Exception the exception
      */
-    public static String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId, String upgradeBranch) throws Exception {
+    public static String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
 
         String status = "Upgrade data compiled";
         Refset tempRefset = RefsetService.getRefset(service, user, refsetInternalId);
