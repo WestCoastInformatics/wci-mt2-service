@@ -438,8 +438,9 @@ public class RefsetService {
         refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
         refset.setExternalUrl(refsetEditParameters.getExternalUrl());
         refset.setLocalSet(refsetEditParameters.isLocalSet());
-        
+
         if (refset.getType().equals(Refset.EXTERNAL)) {
+
             refset.setName(refsetEditParameters.getName());
         }
 
@@ -2600,88 +2601,103 @@ public class RefsetService {
      * Invite user to refset.
      *
      * @param authUser the auth user
-     * @param refsetId the refset id
+     * @param refsetInternalId the refset id
      * @param recipientEmail the recipient email
      * @param additionalMessage the additional message
      * @throws Exception the exception
      */
-    public static void inviteUserToRefset(final User authUser, final String refsetId, final String recipientEmail, final String additionalMessage) throws Exception {
+    public static void inviteUserToOrganization(final User authUser, final String refsetInternalId, final String recipientEmail, final String additionalMessage) throws Exception {
 
         if (StringUtils.isBlank(recipientEmail)) {
+
             throw new Exception("Recipient must have an email address to invite to Refset.");
         }
-        
+
         // TODO: move this URL to properties.
         final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final Refset refset = getRefset(service, authUser, refsetId);
+            final Refset refset = getRefset(service, authUser, refsetInternalId);
 
-            final User memberUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
-            final boolean isMember = (memberUser != null);
+            final User crowdUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+            final boolean isCrowdMember = (crowdUser != null);
 
-            final Set<String> memberships = CrowdAPIClient.getMembershipsForUser(memberUser.getUserName());
+            // TODO: Determine needs of hasMembership based on approach implemented
+            final Set<String> memberships = CrowdAPIClient.getMembershipsForUser(crowdUser.getUserName());
             final boolean hasMemberships = (memberships != null) ? memberships.stream().anyMatch(m -> m.startsWith("rt2-")) : false;
 
-            if (isMember && hasMemberships && false /* see note */) {
-                // add to project and send email telling them they've been added.
-                
-                // Can't do this.  User must be added to org and then to a team in the project.  How do we pick a team?                
-                
-            } else {
-                
-                final String queryString = "requester=" + authUser.getId() + "&email=" + URLEncoder.encode(recipientEmail, "UTF-8");
-                
-                final String acceptUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetId + "/response?acceptance=true&" + queryString;
-                final String declineUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetId + "/response?acceptance=false&" + queryString;
+            if (isCrowdMember) {
 
-                final String BUTTON = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
-                    + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
-                    + "    <a href='{{BUTTION_LINK}}' target='_blank' style='padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;text-decoration: none;font-weight:bold;display: inline-block;'>"
-                    + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
+                // Ensure not already members of the organization
+                if (refset.getEdition().getOrganization().getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
 
-                final StringBuffer emailBody = new StringBuffer();
-                emailBody.append("<html>");
-                emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-                emailBody.append("<div>");
+                    throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: " + refset.getOrganizationName());
 
-                // Title TODO: what text to use if user is not a member?
-                emailBody.append("    <span>Hello, ").append(memberUser.getName()).append("</span><br/><br/>");
-
-                // Main invite
-                emailBody.append("    <span>").append(authUser.getName()).append(" would like to invite you to join ").append(refset.getOrganizationName())
-                    .append(" as a collaborator.</span><br/><br/>");
-                emailBody.append("    <span>To accept this invitation, and alert ").append(authUser.getName()).append(" of your acceptance, please click the button below.</span><br/><br/>");
-
-                // accept
-                emailBody.append("    <span style='width: 300px; display: inline-block'>").append(BUTTON.replace("{{BUTTION_LINK}}", acceptUrl).replace("{{BUTTON_TEXT}}", "Accept Invitation"))
-                    .append("</span>");
-
-                // decline
-                emailBody.append("    <span style='width: 300px; display: inline-block'>").append(BUTTON.replace("{{BUTTION_LINK}}", declineUrl).replace("{{BUTTON_TEXT}}", "Decline Invitation"))
-                    .append("</span>");
-                
-                if (!isMember) {
-                    emailBody.append("    <span><a href='").append(accountSetupUrl).append("' target='_blank'></a></span><br/><br/>");
                 }
 
-                emailBody.append("    <br/><br/>");
-                // Warning
-                emailBody.append("    <span>If you do not wish to accept the invitation, or this email was received in error, you can safely ignore it.</span><br/><br/>");
-
-                // Signature
-                emailBody.append("    <span>Thank you,</span><br/>");
-                emailBody.append("    <span>The SNOMED CT Reference Set Tool Team</span>");
-                emailBody.append("</div>");
-                emailBody.append("</body>");
-                emailBody.append("</html>");
-
-                final String action = INVITE_ACTION;
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), new HashSet<>(Arrays.asList(recipientEmail.trim())), emailBody.toString());
-
-                AuditEntryHelper.sendRefsetInvite(refset, authUser, recipientEmail.trim());
             }
+
+            final String queryString = "requester=" + authUser.getId() + "&email=" + URLEncoder.encode(recipientEmail, "UTF-8");
+
+            final String acceptUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=true&" + queryString;
+            final String declineUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=false&" + queryString;
+
+            final String BUTTON = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+                + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
+                + "    <a href='{{BUTTION_LINK}}' target='_blank' style='padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;text-decoration: none;font-weight:bold;display: inline-block;'>"
+                + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
+
+            final StringBuffer emailBody = new StringBuffer();
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
+
+            // Title TODO: what text to use if user is not a member?
+            // --> Isn't that the above if-case?
+            emailBody.append("    <span>Hello ").append(crowdUser.getName()).append(",</span><br/><br/>");
+
+            // Main invite
+            emailBody.append("    <span>").append(authUser.getName()).append(" would like to invite you to work with the Organization '").append(refset.getOrganizationName())
+                .append("' in order to participate in the reference set modeling project with the RT2 tool.</span><br/><br/>");
+            emailBody.append("    <span>To accept this invitation, and alert ").append(authUser.getName()).append(" of your acceptance, please click the button below.</span><br/><br/>");
+
+            // Additional Information
+            if (!StringUtils.isBlank(additionalMessage)) {
+
+                emailBody.append("In addition, they have included the additional message:").append(System.getProperty("line.separator"));
+                emailBody.append(additionalMessage).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
+            }
+
+            // accept
+            emailBody.append("    <span style='width: 300px; display: inline-block'>").append(BUTTON.replace("{{BUTTION_LINK}}", acceptUrl).replace("{{BUTTON_TEXT}}", "Accept Invitation"))
+                .append("</span>");
+
+            // decline
+            emailBody.append("    <span style='width: 300px; display: inline-block'>").append(BUTTON.replace("{{BUTTION_LINK}}", declineUrl).replace("{{BUTTON_TEXT}}", "Decline Invitation"))
+                .append("</span>");
+
+            if (!isCrowdMember) {
+
+                emailBody.append("    <span><a href='").append(accountSetupUrl).append("' target='_blank'></a></span><br/><br/>");
+            }
+
+            emailBody.append("    <br/><br/>");
+            // Warning
+            emailBody.append("    <span>If you do not wish to accept the invitation, or this email was received in error, you can safely ignore it.</span><br/><br/>");
+
+            // Signature
+            emailBody.append("    <span>Thank you,</span><br/>");
+            emailBody.append("    <span>The SNOMED CT Reference Set Tool Team</span>");
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
+
+            final String action = INVITE_ACTION;
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), new HashSet<>(Arrays.asList(recipientEmail.trim())), emailBody.toString());
+
+            AuditEntryHelper.sendRefsetInvite(refset, authUser, recipientEmail.trim());
+
         }
 
     }
@@ -2713,6 +2729,7 @@ public class RefsetService {
 
             // if rejected, send notification to requester
             if (!acceptance) {
+
                 emailBody.append("<html>");
                 emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
                 emailBody.append("<div>");
@@ -2733,7 +2750,7 @@ public class RefsetService {
                 emailBody.append("</html>");
 
                 final String action = INVITE_DECLINED;
-                
+
                 // TODO: what should the from email be?
                 EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), new HashSet<>(Arrays.asList(authUser.getEmail().trim())), emailBody.toString());
 
@@ -2769,12 +2786,12 @@ public class RefsetService {
                 emailBody.append("</html>");
 
                 final String action = INVITE_ACCEPTED;
-                
+
                 // TODO: what should the from email be?
                 EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), new HashSet<>(Arrays.asList(authUser.getEmail().trim())), emailBody.toString());
 
             }
-            
+
             AuditEntryHelper.responseForRefsetInvite(refset, authUser, recipientEmail.trim(), acceptance);
 
         }

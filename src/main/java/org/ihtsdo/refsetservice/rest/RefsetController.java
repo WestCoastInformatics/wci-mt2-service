@@ -2609,18 +2609,18 @@ public class RefsetController extends BaseController {
 
     @ApiOperation(value = "Request member/non-member to join organization")
     @RecordMetric
-    @PostMapping(value = "/refset/{refsetId}/invite", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @PostMapping(value = "/refset/{refsetInternalId}/invite", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     @Hidden
-    public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String refsetId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
+    public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
         try {
 
             final User authUser = SecurityService.getUserFromSession();
 
             logger
-                .debug("inviteUserToRefset: refsetId: " + refsetId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
+                .debug("inviteUserToRefset: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
 
-            RefsetService.inviteUserToRefset(authUser, refsetId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
+            RefsetService.inviteUserToOrganization(authUser, refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
             final String returnMessage = "{\"message\": \"Refset invite was Successful\"}";
 
