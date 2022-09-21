@@ -2624,18 +2624,16 @@ public class RefsetService {
             final boolean isCrowdMember = (crowdUser != null);
 
             // TODO: Determine needs of hasMembership based on approach implemented
-            final Set<String> memberships = CrowdAPIClient.getMembershipsForUser(crowdUser.getUserName());
-            final boolean hasMemberships = (memberships != null) ? memberships.stream().anyMatch(m -> m.startsWith("rt2-")) : false;
+            if (isCrowdMember) {
+                final Set<String> memberships = CrowdAPIClient.getMembershipsForUser(crowdUser.getUserName());
+                final boolean hasMemberships = (memberships != null) ? memberships.stream().anyMatch(m -> m.startsWith("rt2-")) : false;
+            }
 
             if (isCrowdMember) {
-
                 // Ensure not already members of the organization
                 if (refset.getEdition().getOrganization().getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
-
                     throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: " + refset.getOrganizationName());
-
                 }
-
             }
 
             final String queryString = "requester=" + authUser.getId() + "&recipientEmail=" + URLEncoder.encode(recipientEmail, "UTF-8");
@@ -2655,7 +2653,7 @@ public class RefsetService {
 
             // Title TODO: what text to use if user is not a member?
             // --> Isn't that the above if-case?
-            emailBody.append("    <span>Hello ").append(crowdUser.getName()).append(",</span><br/><br/>");
+            emailBody.append("    <span>Hello ").append((isCrowdMember) ? crowdUser.getName() : "").append(",</span><br/><br/>");
 
             // Main invite
             emailBody.append("    <span>").append(authUser.getName()).append(" would like to invite you to work with the Organization '").append(refset.getOrganizationName())
@@ -2665,8 +2663,8 @@ public class RefsetService {
             // Additional Information
             if (!StringUtils.isBlank(additionalMessage)) {
 
-                emailBody.append("In addition, they have included the additional message:").append(System.getProperty("line.separator"));
-                emailBody.append(additionalMessage).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
+                emailBody.append("In addition, they have included the additional message:").append("<br/><br/>");
+                emailBody.append(additionalMessage).append("<br/><br/>");
             }
 
             // accept
@@ -2738,7 +2736,6 @@ public class RefsetService {
                 emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
                 emailBody.append("<div>");
 
-                // Title TODO: what text to use if user is not a member?
                 emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
 
                 // Main invite
@@ -2756,7 +2753,9 @@ public class RefsetService {
                 final String action = INVITE_DECLINED;
 
                 // TODO: what should the from email be?
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), new HashSet<>(Arrays.asList(requesterUser.getEmail())), emailBody.toString());
+                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+                logger.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients );
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
 
             }
 
@@ -2770,7 +2769,6 @@ public class RefsetService {
                 emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
                 emailBody.append("<div>");
 
-                // Title TODO: what text to use if user is not a member?
                 emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
 
                 // Main invite
@@ -2792,7 +2790,9 @@ public class RefsetService {
                 final String action = INVITE_ACCEPTED;
 
                 // TODO: what should the from email be?
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), new HashSet<>(Arrays.asList(requesterUser.getEmail())), emailBody.toString());
+                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+                logger.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients );
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
 
             }
 
