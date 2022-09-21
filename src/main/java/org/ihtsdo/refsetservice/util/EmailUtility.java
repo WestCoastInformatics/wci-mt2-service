@@ -46,7 +46,7 @@ public final class EmailUtility {
     /** The email address sent emails are from. */
     public static String EMAIL_FROM;
 
-    private static final String emailValidationRegexPattern = "^(?=.{1,64}@)[\\p{L}0-9_-]+(\\.[\\p{L}0-9_-]+)*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,})$";
+    private static final String emailValidationRegexPattern = "^(?=.{1,64}@)[\\p{L}0-9_+-]+(\\.[\\p{L}0-9_+-]+)*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,})$";
 
     /** Static initialization. */
     static {
