@@ -2655,10 +2655,10 @@ public class RefsetController extends BaseController {
             RefsetService.processRefsetInvitation(refsetId, acceptance, requester, recipientEmail);
 
             // Redirect here
-            HttpHeaders headers = new HttpHeaders();
+            final HttpHeaders headers = new HttpHeaders();
             headers.add("Location", PROPERTIES.getProperty("app.url.root"));
             
-            return new ResponseEntity<>(HttpStatus.OK);
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
 
         } catch (final Exception e) {
 
