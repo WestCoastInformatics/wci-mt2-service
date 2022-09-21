@@ -2724,8 +2724,12 @@ public class RefsetService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final User authUser = UserService.getUser(requesterId, false);
-            final Refset refset = getRefset(service, authUser, refsetId);
+            final User requesterUser = UserService.getUser(requesterId, false);
+            if (requesterUser == null) {
+                logger.error("Requester not found: {}", requesterId);
+            }
+            logger.info("Requester is: {}", requesterUser);
+            final Refset refset = getRefset(service, requesterUser, refsetId);
 
             // if rejected, send notification to requester
             if (!acceptance) {
@@ -2735,7 +2739,7 @@ public class RefsetService {
                 emailBody.append("<div>");
 
                 // Title TODO: what text to use if user is not a member?
-                emailBody.append("    <span>Hello, ").append(authUser.getName()).append("</span><br/><br/>");
+                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
 
                 // Main invite
                 emailBody.append("    <span>").append(isMember ? memberUser.getName() : recipientEmail).append(" has declined your invitation to join ").append(refset.getOrganizationName())
@@ -2752,7 +2756,7 @@ public class RefsetService {
                 final String action = INVITE_DECLINED;
 
                 // TODO: what should the from email be?
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), new HashSet<>(Arrays.asList(authUser.getEmail().trim())), emailBody.toString());
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), new HashSet<>(Arrays.asList(requesterUser.getEmail())), emailBody.toString());
 
             }
 
@@ -2760,14 +2764,14 @@ public class RefsetService {
             if (acceptance) {
 
                 // add user to org as a viewer, will not error if already a member.
-                OrganizationService.addUserToOrganization(service, authUser, refset.getEdition().getOrganizationId(), memberUser.getEmail());
+                OrganizationService.addUserToOrganization(service, requesterUser, refset.getEdition().getOrganizationId(), memberUser.getEmail());
 
                 emailBody.append("<html>");
                 emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
                 emailBody.append("<div>");
 
                 // Title TODO: what text to use if user is not a member?
-                emailBody.append("    <span>Hello, ").append(authUser.getName()).append("</span><br/><br/>");
+                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
 
                 // Main invite
                 emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ").append(refset.getOrganizationName())
@@ -2788,11 +2792,11 @@ public class RefsetService {
                 final String action = INVITE_ACCEPTED;
 
                 // TODO: what should the from email be?
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), new HashSet<>(Arrays.asList(authUser.getEmail().trim())), emailBody.toString());
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), new HashSet<>(Arrays.asList(requesterUser.getEmail())), emailBody.toString());
 
             }
 
-            AuditEntryHelper.responseForRefsetInvite(refset, authUser, recipientEmail.trim(), acceptance);
+            AuditEntryHelper.responseForRefsetInvite(refset, requesterUser, recipientEmail.trim(), acceptance);
 
         }
 

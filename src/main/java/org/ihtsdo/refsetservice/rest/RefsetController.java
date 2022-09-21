@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -110,6 +111,9 @@ public class RefsetController extends BaseController {
     private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
 
     private static final String REQUEST_ACTION = "Request-Access";
+    
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /** Static initialization. */
     static {
@@ -2650,6 +2654,10 @@ public class RefsetController extends BaseController {
 
             RefsetService.processRefsetInvitation(refsetId, acceptance, requester, recipientEmail);
 
+            // Redirect here
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Location", PROPERTIES.getProperty("app.url.root"));
+            
             return new ResponseEntity<>(HttpStatus.OK);
 
         } catch (final Exception e) {
