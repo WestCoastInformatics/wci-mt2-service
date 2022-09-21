@@ -2638,7 +2638,7 @@ public class RefsetService {
 
             }
 
-            final String queryString = "requester=" + authUser.getId() + "&email=" + URLEncoder.encode(recipientEmail, "UTF-8");
+            final String queryString = "requester=" + authUser.getId() + "&recipientEmail=" + URLEncoder.encode(recipientEmail, "UTF-8");
 
             final String acceptUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=true&" + queryString;
             final String declineUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=false&" + queryString;
