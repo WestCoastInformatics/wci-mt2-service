@@ -11,6 +11,7 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
@@ -32,6 +33,7 @@ import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -81,6 +83,9 @@ public class OrganizationController extends BaseController {
 
     /** The local icon file directory. */
     private static final String ICON_URL_PREFIX = "user/icon/";
+    
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /** The request. */
     @Autowired
@@ -626,6 +631,62 @@ public class OrganizationController extends BaseController {
         } catch (final Exception e) {
             logger.error("Error updating organization.  Id: {}", organizationId, e);
             return handleException(e);
+        }
+    }
+    
+    @ApiOperation(value = "Request member/non-member to join organization")
+    @RecordMetric
+    @PostMapping(value = "/organization/{organizationId}/invite", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Hidden
+    public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String organizationId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
+
+        try {
+
+            final User authUser = SecurityService.getUserFromSession();
+
+            logger
+                .debug("inviteUserToOrganization: organizationId: " + organizationId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
+
+            RefsetService.inviteUserToOrganization(authUser, organizationId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
+
+            final String returnMessage = "{\"message\": \"Refset invite was Successful\"}";
+
+            return new ResponseEntity<>(returnMessage, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    @ApiOperation(value = "Process response to invitation to join organization.")
+    @RecordMetric
+    @GetMapping(value = "/organization/{organizationId}/response")
+    @Hidden
+    public @ResponseBody ResponseEntity<String> responseToInviteOrganization(
+
+        @PathVariable final String refsetId, @QueryParam(value = "acceptance") final boolean acceptance, @QueryParam(value = "requester") final String requester,
+        @QueryParam(value = "recipientEmail") final String recipientEmail
+
+    ) throws Exception {
+
+        try {
+
+            logger.debug("responseToInviteOrganization: refsetId: " + refsetId + " and acceptance: " + acceptance + " and requester: " + requester + " recipientEmail: " + recipientEmail);
+
+            RefsetService.processRefsetInvitation(refsetId, acceptance, requester, recipientEmail);
+
+            // Redirect here
+            final HttpHeaders headers = new HttpHeaders();
+            headers.add("Location", PROPERTIES.getProperty("app.url.root"));
+            
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+
+        } catch (final Exception e) {
+
+            logger.error("Exception while processing response for refset invite", e);
+            return new ResponseEntity<>(HttpStatus.OK);
         }
     }
     

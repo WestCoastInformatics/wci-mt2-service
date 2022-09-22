@@ -203,6 +203,45 @@ public class AuditEntryHelper {
         log(entry);
         return entry;
     }
+    
+    /**
+     * Send organization invite.
+     *
+     * @param organization the organization
+     * @param requester the requester
+     * @param recipientEmail the recipient email
+     * @return the audit entry
+     */
+    public static AuditEntry sendOrganizationInvite(final Organization organization, final User requester, final String recipientEmail) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(organization.getId());
+        entry.setMessage("INVITE Organization");
+        entry.setDetails("User " + requester.getUserName() + " sent request for " + recipientEmail + " to join organization " + organization.getId());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Response for refset invite.
+     *
+     * @param refset the refset
+     * @param requester the requester
+     * @param recipientEmail the recipient email
+     * @return the audit entry
+     */
+    public static AuditEntry responseForOrganizationInvite(final Organization organization, final User requester, final String recipientEmail, final boolean acceptance) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(organization.getId());
+        entry.setMessage("INVITE Organization Response");
+        entry.setDetails(
+            "Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName() + " request to join organization " + organization.getId());
+        log(entry);
+        return entry;
+    }
 
     // /**
     // * Update icon for organization entry.
