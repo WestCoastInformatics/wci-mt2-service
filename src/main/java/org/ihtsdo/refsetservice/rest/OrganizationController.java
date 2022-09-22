@@ -647,7 +647,7 @@ public class OrganizationController extends BaseController {
             logger
                 .debug("inviteUserToOrganization: organizationId: " + organizationId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
 
-            RefsetService.inviteUserToOrganization(authUser, organizationId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
+            OrganizationService.inviteUserToOrganization(authUser, organizationId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
             final String returnMessage = "{\"message\": \"Refset invite was Successful\"}";
 
@@ -675,7 +675,7 @@ public class OrganizationController extends BaseController {
 
             logger.debug("responseToInviteOrganization: refsetId: " + refsetId + " and acceptance: " + acceptance + " and requester: " + requester + " recipientEmail: " + recipientEmail);
 
-            RefsetService.processRefsetInvitation(refsetId, acceptance, requester, recipientEmail);
+            OrganizationService.processOrganizationInvitation(refsetId, acceptance, requester, recipientEmail);
 
             // Redirect here
             final HttpHeaders headers = new HttpHeaders();
