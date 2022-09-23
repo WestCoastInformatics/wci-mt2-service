@@ -10,10 +10,13 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -47,6 +50,7 @@ import org.ihtsdo.refsetservice.model.RefsetEditHistory;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncService;
@@ -97,9 +101,20 @@ public class RefsetService {
     /** A list of refset actively being updated. */
     public static final Set<String> refsetsToShowUpgradeWarning = new HashSet<>();
 
+    /** The Constant EMAIL_SUBJECT. */
     private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
 
+    /** The Constant SHARE_ACTION. */
     private static final String SHARE_ACTION = "Share-Refset";
+
+    /** The Constant INVITE_ACTION. */
+    private static final String INVITE_ACTION = "Invite";
+
+    /** The Constant INVITE_ACCEPTED. */
+    private static final String INVITE_ACCEPTED = "Invite accepted";
+
+    /** The Constant INVITE_DECLINED. */
+    private static final String INVITE_DECLINED = "Invite declined";
 
     static {
 
@@ -425,8 +440,9 @@ public class RefsetService {
         refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
         refset.setExternalUrl(refsetEditParameters.getExternalUrl());
         refset.setLocalSet(refsetEditParameters.isLocalSet());
-        
+
         if (refset.getType().equals(Refset.EXTERNAL)) {
+
             refset.setName(refsetEditParameters.getName());
         }
 
@@ -513,9 +529,9 @@ public class RefsetService {
 
             return;
         }
-        
-        //TODO: Add unique Audit Entry Helper for this case
-        
+
+        // TODO: Add unique Audit Entry Helper for this case
+
         refset.setRefsetId(history.getRefsetId());
         refset.setName(history.getName());
         refset.setType(history.getType());
@@ -531,7 +547,7 @@ public class RefsetService {
         refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
         refset.setAssignedUser(null);
         refset.setMemberCount(history.getMemberCount());
-     
+
         service.update(refset);
 
         // if this is an intensional refset save the definition
@@ -1021,6 +1037,13 @@ public class RefsetService {
         return status;
     }
 
+    /**
+     * Delete refset.
+     *
+     * @param service the service
+     * @param refset the refset
+     * @throws Exception the exception
+     */
     public static void deleteRefset(TerminologyService service, Refset refset) throws Exception {
 
         WorkflowService.deleteRefsetBranch(refset.getEditionBranch(), refset.getId());
@@ -1041,7 +1064,6 @@ public class RefsetService {
     /**
      * Does a refset ID exist in the database.
      *
-     * @param service the Terminology Service
      * @param refsetId the refset ID
      * @param addedQueryParameters additional query string to limit the refset versions
      * @return does the refset exist (true/fase)
@@ -1971,7 +1993,6 @@ public class RefsetService {
     /**
      * Fetch editions for given branch.
      *
-     * @param service the Terminology Service
      * @param branch the branch
      * @return List <Edition> list of editions matching branch
      * @throws Exception the exception
@@ -2130,6 +2151,7 @@ public class RefsetService {
     /**
      * Concepts to remove.
      *
+     * @param excludeCurrentSiRefsets the exclude current si refsets
      * @return the sets the
      */
     private static Set<String> conceptsToRemove(boolean excludeCurrentSiRefsets) {
@@ -2214,6 +2236,7 @@ public class RefsetService {
     /**
      * Share refset.
      *
+     * @param user the user
      * @param refsetInternalId the refset internal id
      * @param recipient the recipient
      * @param additionalMessage the additional message
@@ -2267,6 +2290,15 @@ public class RefsetService {
 
     }
 
+    /**
+     * Request project access.
+     *
+     * @param user the user
+     * @param refsetInternalId the refset internal id
+     * @param recipient the recipient
+     * @param additionalMessage the additional message
+     * @throws Exception the exception
+     */
     public static void requestProjectAccess(final User user, String refsetInternalId, String recipient, String additionalMessage) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
@@ -2382,9 +2414,27 @@ public class RefsetService {
 
     }
 
+    /**
+     * Copy refset.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refsetInternalId the refset internal id
+     * @param name the name
+     * @param projectId the project id
+     * @param localSet the local set
+     * @param privateRefset the private refset
+     * @param comboSet the combo set
+     * @param narrative the narrative
+     * @param tags the tags
+     * @param parentConceptId the parent concept id
+     * @param newRefsetConceptId the new refset concept id
+     * @return the object
+     * @throws Exception the exception
+     */
     public static Object copyRefset(final TerminologyService service, final User user, final String refsetInternalId, final String name, final String projectId, final Boolean localSet,
         final Boolean privateRefset, final Boolean comboSet, final String narrative, final Set<String> tags, final String parentConceptId, final String newRefsetConceptId) throws Exception {
-        //TODO: Add unique Audit Entry Helper for this case
+        // TODO: Add unique Audit Entry Helper for this case
 
         String newRefsetInternalId = null;
         final Refset originalRefset = getRefset(service, user, refsetInternalId);
@@ -2544,6 +2594,15 @@ public class RefsetService {
         return newRefset;
     }
 
+    /**
+     * Reset refset.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refsetId the refset id
+     * @return the string
+     * @throws Exception the exception
+     */
     public static String resetRefset(final TerminologyService service, final User user, final String refsetId) throws Exception {
 
         if (!RefsetService.doesRefsetExist(refsetId, null)) {
@@ -2582,6 +2641,210 @@ public class RefsetService {
         logger.info("Successfully reset all versions in database of refsetId: " + refsetId);
 
         return "successfully";
+
+    }
+
+    /**
+     * Invite user to refset.
+     *
+     * @param authUser the auth user
+     * @param refsetInternalId the refset id
+     * @param recipientEmail the recipient email
+     * @param additionalMessage the additional message
+     * @throws Exception the exception
+     */
+    public static void inviteUserToOrganization(final User authUser, final String refsetInternalId, final String recipientEmail, final String additionalMessage) throws Exception {
+
+        if (StringUtils.isBlank(recipientEmail)) {
+
+            throw new Exception("Recipient must have an email address to invite to Refset.");
+        }
+
+        // TODO: move this URL to properties.
+        final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final Refset refset = getRefset(service, authUser, refsetInternalId);
+
+            final User crowdUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+            final boolean isCrowdMember = (crowdUser != null);
+
+            // TODO: Determine needs of hasMembership based on approach implemented
+            if (isCrowdMember) {
+                final Set<String> memberships = CrowdAPIClient.getMembershipsForUser(crowdUser.getUserName());
+                // final boolean hasMemberships = (memberships != null) ? memberships.stream().anyMatch(m -> m.startsWith("rt2-")) : false;
+
+                // Ensure not already members of the organization
+                if (refset.getEdition().getOrganization().getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
+                    throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: " + refset.getOrganizationName());
+                }
+            }
+
+            final String queryString = "requester=" + authUser.getId() + "&recipientEmail=" + URLEncoder.encode(recipientEmail, "UTF-8");
+
+            final String acceptUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=true&" + queryString;
+            final String declineUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=false&" + queryString;
+
+            final String BUTTON = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+                + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
+                + "    <a href='{{BUTTION_LINK}}' target='_blank' style='padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;text-decoration: none;font-weight:bold;display: inline-block;'>"
+                + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
+
+            final StringBuffer emailBody = new StringBuffer();
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
+
+            emailBody.append("    <span>Hello ").append((isCrowdMember) ? crowdUser.getName() : "").append(",</span><br/><br/>");
+
+            // Main invite
+            emailBody.append("    <span>").append(authUser.getName()).append(" would like to invite you to work with the Organization '").append(refset.getOrganizationName())
+                .append("' in order to participate in the reference set modeling project with the RT2 tool.</span><br/><br/>");
+            emailBody.append("    <span>To accept this invitation, and alert ").append(authUser.getName()).append(" of your acceptance, please click the button below.</span><br/><br/>");
+
+            // Additional Information
+            if (!StringUtils.isBlank(additionalMessage)) {
+
+                emailBody.append("In addition, they have included the additional message:").append("<br/><br/>");
+                emailBody.append(additionalMessage).append("<br/><br/>");
+            }
+
+            // accept
+            emailBody.append("    <span style='width: 300px; display: inline-block'>").append(BUTTON.replace("{{BUTTION_LINK}}", acceptUrl).replace("{{BUTTON_TEXT}}", "Accept Invitation"))
+                .append("</span>");
+
+            // decline
+            emailBody.append("    <span style='width: 300px; display: inline-block'>").append(BUTTON.replace("{{BUTTION_LINK}}", declineUrl).replace("{{BUTTON_TEXT}}", "Decline Invitation"))
+                .append("</span>");
+
+            if (!isCrowdMember) {
+
+                emailBody.append("    <span><a href='").append(accountSetupUrl).append("' target='_blank'></a></span><br/><br/>");
+            }
+
+            emailBody.append("    <br/><br/>");
+            // Warning
+            emailBody.append("    <span>If you do not wish to accept the invitation, or this email was received in error, you can safely ignore it.</span><br/><br/>");
+
+            // Signature
+            emailBody.append("    <span>Thank you,</span><br/>");
+            emailBody.append("    <span>The SNOMED CT Reference Set Tool Team</span>");
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
+
+            final String action = INVITE_ACTION;
+            final Set<String> recipients = new HashSet<>(Arrays.asList(recipientEmail.trim()));
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), recipients, emailBody.toString());
+
+            logger.info("INVITE request - from {} to {} for refset {}", authUser.getEmail(), recipients, refsetInternalId);
+
+            AuditEntryHelper.sendRefsetInvite(refset, authUser, recipientEmail.trim());
+
+        }
+
+    }
+
+    /**
+     * Accept invitation.
+     *
+     * @param refsetId the refset id
+     * @param acceptance the acceptance
+     * @param requesterId the requester id
+     * @param recipientEmail the recipient email
+     * @throws Exception the exception
+     */
+    public static void processRefsetInvitation(final String refsetId, final boolean acceptance, final String requesterId, final String recipientEmail) throws Exception {
+
+        final User memberUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+        final boolean isMember = (memberUser != null);
+        final StringBuffer emailBody = new StringBuffer();
+
+        final String BUTTON = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+            + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
+            + "    <a href='{{BUTTION_LINK}}' target='_blank' style='padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;text-decoration: none;font-weight:bold;display: inline-block;'>"
+            + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final User requesterUser = UserService.getUser(requesterId, false);
+            if (requesterUser == null) {
+                logger.error("Requester not found: {}", requesterId);
+            }
+            logger.info("Requester is: {}", requesterUser);
+            final Refset refset = getRefset(service, requesterUser, refsetId);
+
+            // if rejected, send notification to requester
+            if (!acceptance) {
+
+                emailBody.append("<html>");
+                emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+                emailBody.append("<div>");
+
+                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+
+                // Main invite
+                emailBody.append("    <span>").append(isMember ? memberUser.getName() : recipientEmail).append(" has declined your invitation to join ").append(refset.getOrganizationName())
+                    .append(" as a collaborator.</span><br/><br/>");
+
+                // Go to app
+                emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                    .append(BUTTON.replace("{{BUTTION_LINK}}", PROPERTIES.getProperty("app.url.root")).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+
+                emailBody.append("</div>");
+                emailBody.append("</body>");
+                emailBody.append("</html>");
+
+                final String action = INVITE_DECLINED;
+
+                // TODO: what should the from email be?
+                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+                logger.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients );
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+
+            }
+
+            // if accepted, add user to org, admin has to add to team and project since we can't determine here which of the project's team to add the user.
+            if (acceptance) {
+
+                // add user to org as a viewer, will not error if already a member.
+                OrganizationService.addUserToOrganization(service, requesterUser, refset.getEdition().getOrganizationId(), memberUser.getEmail());
+
+                emailBody.append("<html>");
+                emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+                emailBody.append("<div>");
+
+                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+
+                // Main invite
+                emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ").append(refset.getOrganizationName())
+                    .append(" as a collaborator.</span><br/><br/>");
+                emailBody.append("    <span>").append(memberUser.getName()).append("has been added to ").append(refset.getOrganizationName()).append(" as a <b>Viewer</b>.</span><br/><br/>");
+
+                // Warning
+                emailBody.append("    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
+
+                // Go to app
+                emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                    .append(BUTTON.replace("{{BUTTION_LINK}}", PROPERTIES.getProperty("app.url.root")).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+
+                emailBody.append("</div>");
+                emailBody.append("</body>");
+                emailBody.append("</html>");
+
+                final String action = INVITE_ACCEPTED;
+
+                // TODO: what should the from email be?
+                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+                logger.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients );
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+
+            }
+
+            AuditEntryHelper.responseForRefsetInvite(refset, requesterUser, recipientEmail.trim(), acceptance);
+
+        }
 
     }
 }

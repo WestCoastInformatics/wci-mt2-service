@@ -11,6 +11,7 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
@@ -23,13 +24,16 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.ResultListProject;
 import org.ihtsdo.refsetservice.model.ResultListTeam;
 import org.ihtsdo.refsetservice.model.ResultListUser;
+import org.ihtsdo.refsetservice.model.SendCommunicationEmailInfo;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -41,6 +45,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -59,6 +64,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Hidden;
 
 /**
  * Controller for /organization endpoints.
@@ -77,6 +83,9 @@ public class OrganizationController extends BaseController {
 
     /** The local icon file directory. */
     private static final String ICON_URL_PREFIX = "user/icon/";
+    
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /** The request. */
     @Autowired
@@ -429,20 +438,19 @@ public class OrganizationController extends BaseController {
     public @ResponseBody ResponseEntity<String> addUserToOrganization(@PathVariable final String organizationId, final String email) throws Exception {
 
         logger.info("Add user: {} to organization: {}.", email, organizationId);
-        // TODO check permissions, fail if not authorized.
-        final User user = SecurityService.getUserFromSession();
+        final User authUser = SecurityService.getUserFromSession();
 
-        if (user == null) {
+        if (authUser == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
 
-            OrganizationService.addUserToOrganization(service, user, organizationId, email);
+            OrganizationService.addUserToOrganization(service, authUser, organizationId, email);
             // service.commit();
 
             return new ResponseEntity<>(HttpStatus.CREATED);
@@ -625,7 +633,63 @@ public class OrganizationController extends BaseController {
             return handleException(e);
         }
     }
+    
+    @ApiOperation(value = "Request member/non-member to join organization")
+    @RecordMetric
+    @PostMapping(value = "/organization/{organizationId}/invite", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Hidden
+    public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String organizationId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
+        try {
+
+            final User authUser = SecurityService.getUserFromSession();
+
+            logger
+                .debug("inviteUserToOrganization: organizationId: " + organizationId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
+
+            OrganizationService.inviteUserToOrganization(authUser, organizationId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
+
+            final String returnMessage = "{\"message\": \"Refset invite was Successful\"}";
+
+            return new ResponseEntity<>(returnMessage, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    @ApiOperation(value = "Process response to invitation to join organization.")
+    @RecordMetric
+    @GetMapping(value = "/organization/{organizationId}/response")
+    @Hidden
+    public @ResponseBody ResponseEntity<String> responseToInviteOrganization(
+
+        @PathVariable final String refsetId, @QueryParam(value = "acceptance") final boolean acceptance, @QueryParam(value = "requester") final String requester,
+        @QueryParam(value = "recipientEmail") final String recipientEmail
+
+    ) throws Exception {
+
+        try {
+
+            logger.debug("responseToInviteOrganization: refsetId: " + refsetId + " and acceptance: " + acceptance + " and requester: " + requester + " recipientEmail: " + recipientEmail);
+
+            OrganizationService.processOrganizationInvitation(refsetId, acceptance, requester, recipientEmail);
+
+            // Redirect here
+            final HttpHeaders headers = new HttpHeaders();
+            headers.add("Location", PROPERTIES.getProperty("app.url.root"));
+            
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+
+        } catch (final Exception e) {
+
+            logger.error("Exception while processing response for refset invite", e);
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
+    }
+    
     // @SuppressWarnings("rawtypes")
     // @Hidden
     // @PostMapping(value = "/organization/{organizationId}/user/{userId}/temp")
