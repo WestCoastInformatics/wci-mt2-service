@@ -453,7 +453,8 @@ public class OrganizationService extends BaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
-        final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, false);
+        // must return members in order to add another member.
+        final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, true);
 
         if (organization == null) {
 
