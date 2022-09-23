@@ -358,7 +358,7 @@ public class TeamService extends BaseService {
             resultsToReturn.setTotalKnown(true);
             resultsToReturn.setTotal(resultsToReturn.getItems().size());
             
-            logger.debug("TEAM SEARCH resultsToReturn: " + resultsToReturn);
+            //logger.debug("TEAM SEARCH resultsToReturn: " + resultsToReturn);
 
             return resultsToReturn;
         }

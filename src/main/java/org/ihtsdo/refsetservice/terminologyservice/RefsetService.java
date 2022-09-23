@@ -1541,7 +1541,7 @@ public class RefsetService {
         results.setTimeTaken(System.currentTimeMillis() - start);
         results.setTotalKnown(true);
 
-        logger.debug("searchRefsets results: " + ModelUtility.toJson(results));
+        //logger.debug("searchRefsets results: " + ModelUtility.toJson(results));
 
         return results;
     }
