@@ -39,6 +39,7 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DefinitionClauseEditHistory;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -62,7 +63,9 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -2220,6 +2223,13 @@ public class RefsetService {
 
         try (TerminologyService service = new TerminologyService()) {
 
+            if (recipient == null || recipient.isEmpty()) {
+                
+                final String message = "There was no recipient email provided.";
+                logger.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
+            
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
             final StringBuffer emailBody = new StringBuffer();
@@ -2263,37 +2273,75 @@ public class RefsetService {
 
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             final Project project = refset.getProject();
+            final Organization organization = project.getEdition().getOrganization();
 
-            Set<User> adminEmailRecipients = new HashSet<>();
+            Map<String, User> adminEmailRecipients = new HashMap<>();
             List<Team> adminTeams = new ArrayList<>();
             List<Team> allTeams = new ArrayList<>();
+            
+            if (project.getPrimaryContactEmail() != null && !project.getPrimaryContactEmail().isEmpty()) {
+                
+                final User projectUser = new User();
+                projectUser.setEmail(project.getPrimaryContactEmail());
+                projectUser.setUserName("ProjectPrimaryEmail");
+                projectUser.setName("Project Primary Email");
+                adminEmailRecipients.put(project.getPrimaryContactEmail(), projectUser);
+                
+            } else if (organization.getPrimaryContactEmail() != null && !organization.getPrimaryContactEmail().isEmpty()) {
+                
+                final User organizationUser = new User();
+                organizationUser.setEmail(organization.getPrimaryContactEmail());
+                organizationUser.setUserName("OrganizationPrimaryEmail");
+                organizationUser.setName("Organization Primary Email");
+                adminEmailRecipients.put(organization.getPrimaryContactEmail(), organizationUser);
+            }
 
             for (String teamId : project.getTeams()) {
 
-                Team t = TeamService.getTeam(teamId, true);
-                allTeams.add(t);
+                Team team = TeamService.getTeam(teamId, true);
+                allTeams.add(team);
 
                 // Identify Admins who each get an email
-                if (t.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
+                if (team.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
 
-                    adminTeams.add(t);
+                    adminTeams.add(team);
                 }
 
             }
+            
+            // if there are no teams add organization admin team
+            if (allTeams.size() == 0) {
+                
+                final Team organizationAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
+                
+                if (organizationAdminTeam != null) {
+                    allTeams.add(organizationAdminTeam);
+                }
+            }
 
             // Verify not already in project before sending emails to admins
-            for (Team t : allTeams) {
+            for (Team team : allTeams) {
 
-                if (t.getMemberList().stream().anyMatch(u -> u.getId().equals(user.getId()))) {
+                if (team.getMemberList().stream().anyMatch(u -> u.getId().equals(user.getId()))) {
 
-                    throw new Exception(
-                        "User: " + user.getUserName() + " is already a member of team: " + t.getName() + "in  project: " + project.getName() + " under " + project.getEdition().getName());
+                    final String message = "User: " + user.getUserName() + " is already a member of team: " + team.getName() + "in  project: " + project.getName() + " under " + project.getEdition().getName() + ".";
+                    logger.error(message);
+                    throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
                 }
 
             }
 
             // Add to admin list
-            adminTeams.stream().forEach(t -> t.getMemberList().stream().forEach(u -> adminEmailRecipients.add(u)));
+            adminTeams.stream().forEach(team -> team.getMemberList().stream().forEach(teamUser -> adminEmailRecipients.put(teamUser.getEmail(), teamUser)));
+            
+            // make sure there is at least once recipient
+            if (adminEmailRecipients.size() == 0) {
+                
+                final String message = "There are no emails set up to request access from in project: " + project.getName() + " under " + project.getEdition().getName() + ".";
+                logger.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
+            
 
             /** Create Email **/
             StringBuffer emailBody = new StringBuffer();
@@ -2321,7 +2369,7 @@ public class RefsetService {
             // Signature
             emailBody.append("Not that this email has been sent to the other ADMIN teams on this project.");
 
-            for (User adminRecipient : adminEmailRecipients) {
+            for (User adminRecipient : adminEmailRecipients.values()) {
 
                 AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access ds(via refset)", adminRecipient.getUserName(), project.getName() + "'s admins");
                 Set<String> adminEmail = new HashSet<>();

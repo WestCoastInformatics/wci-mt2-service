@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -369,6 +370,28 @@ public class OrganizationService extends BaseService {
         query.setQuery("organizationId:" + organizationId + " AND active:true");
 
         return service.find(query, pfs, Team.class, null);
+    }
+    
+    /**
+     * Returns the organization admin team.
+     *
+     * @param service the Terminology Service
+     * @param organizationId the organization id
+     * @return the organization admin team
+     * @throws Exception the exception
+     */
+    public static Team getOrganizationAdminTeam(final TerminologyService service, final String organizationId) throws Exception {
+
+        final ResultList<Team> teams = getOrganizationTeams(service, organizationId);
+        
+        for (final Team team : new ArrayList<Team>(teams.getItems())) {
+            
+            if (TeamService.isOrganizationTeam(team)) {
+                return team;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Utility class for interacting with email.
@@ -81,14 +82,19 @@ public final class EmailUtility {
 
         if (recipients == null || recipients.isEmpty()) {
 
-            throw new Exception("Email must have recipients");
+            final String message = "Email must have recipients";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
         }
 
         if (recipients.stream().anyMatch(r -> !r.matches(emailValidationRegexPattern))) {
 
             // invalid email address. Return 400
             List<String> failingEmailAddresses = recipients.stream().filter(r -> r.matches(emailValidationRegexPattern)).collect(Collectors.toList());
-            throw new Exception("Invalid email address requested for recipient(s): " + failingEmailAddresses);
+            
+            final String message = "Invalid email address requested for recipient(s): " + failingEmailAddresses;
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
         }
 
         // avoid sending mail if disabled
