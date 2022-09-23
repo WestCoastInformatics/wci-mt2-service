@@ -2382,7 +2382,7 @@ public class RefsetService {
             emailBody.append("Hello, {projectAdminName},").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Static Message
-            emailBody.append(user.getName()).append(" has requested access to ").append(project.getName()).append(" via the " + refset.getName()).append(".")
+            emailBody.append(user.getName()).append(" (").append(user.getEmail()).append(") has requested access to ").append(project.getName()).append(" via the " + refset.getName()).append(".")
                 .append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Additional Info from Sender
@@ -2399,7 +2399,7 @@ public class RefsetService {
             emailBody.append(System.getProperty("line.separator")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Signature
-            emailBody.append("Not that this email has been sent to the other ADMIN teams on this project.");
+            emailBody.append("Note that this email has been sent to the other ADMIN teams on this project.");
 
             for (User adminRecipient : adminEmailRecipients.values()) {
 
@@ -2407,7 +2407,7 @@ public class RefsetService {
                 Set<String> adminEmail = new HashSet<>();
 
                 adminEmail.add(adminRecipient.getEmail());
-                EmailUtility.sendEmail(EMAIL_SUBJECT + " access requested", user.getEmail(), adminEmail, emailBody.toString().replace("{projectAdminName}", adminRecipient.getName()));
+                EmailUtility.sendEmail(EMAIL_SUBJECT + " access requested", null, adminEmail, emailBody.toString().replace("{projectAdminName}", adminRecipient.getName()));
             }
 
         }
