@@ -2395,6 +2395,9 @@ public class RefsetService {
             // Warning
             emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. ").append(System.getProperty("line.separator"))
                 .append(System.getProperty("line.separator"));
+            
+            
+            emailBody.append("Go to the Reference Set Tool: ").append(PROPERTIES.getProperty("app.url.root")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             emailBody.append(System.getProperty("line.separator")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
