@@ -2270,7 +2270,7 @@ public class RefsetService {
             // Additional Info from Sender
             if (!StringUtils.isBlank(additionalMessage)) {
 
-                emailBody.append(user.getName()).append("In addition, they have included the additional message:").append(System.getProperty("line.separator"));
+                emailBody.append("In addition, they have included the additional message:").append(System.getProperty("line.separator"));
                 emailBody.append(additionalMessage).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
             }
 
