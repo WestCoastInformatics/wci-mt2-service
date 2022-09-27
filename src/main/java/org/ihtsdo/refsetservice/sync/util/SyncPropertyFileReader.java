@@ -59,6 +59,8 @@ public class SyncPropertyFileReader {
 
     private final Map<String, Set<String>> teamMembership = readTeamMembership();
 
+    private final List<String> codeSystemNames = new ArrayList<>();
+
     /** The refset internal id map. */
     private final Map<String, String> rttIdToRefsetJsonMap = new HashMap<>();
 
@@ -114,28 +116,31 @@ public class SyncPropertyFileReader {
         populateFromFile(refsetsResource, FileProcessType.REFSET);
     }
 
-    public List<String> readCodeSystemsToIgnore() {
+    public List<String> getCodeSystemsToIgnore() {
 
-        BufferedReader reader;
-        List<String> codeSystemNames = new ArrayList<>();
+        if (codeSystemNames == null || codeSystemNames.isEmpty()) {
 
-        try {
+            BufferedReader reader;
 
-            reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
+            try {
 
-            String line = reader.readLine();
+                reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
 
-            while (line != null) {
+                String line = reader.readLine();
 
-                codeSystemNames.add(line.toLowerCase());
+                while (line != null) {
 
-                line = reader.readLine();
+                    codeSystemNames.add(line);
+
+                    line = reader.readLine();
+                }
+
+                reader.close();
+            } catch (IOException e) {
+
+                e.printStackTrace();
             }
 
-            reader.close();
-        } catch (IOException e) {
-
-            e.printStackTrace();
         }
 
         return codeSystemNames;

@@ -3,11 +3,8 @@ package org.ihtsdo.refsetservice.model.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.ihtsdo.refsetservice.migration.MigrationUtilities;
-import org.ihtsdo.refsetservice.migration.SyncAgent;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
-import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.CopyConstructorTester;
@@ -35,6 +32,8 @@ public class EditionUnitTest extends BaseTest {
 
     /** The organization object. */
     private Organization organization;
+
+    private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
     /**
      * Setup.
@@ -126,7 +125,7 @@ public class EditionUnitTest extends BaseTest {
 
         final PersistenceTester tester = new PersistenceTester(object, true, true);
         tester.test();
-        
+
         try (final TerminologyService service = new TerminologyService()) {
 
             final ProxyTester tester2 = new ProxyTester(new Edition());
@@ -145,7 +144,7 @@ public class EditionUnitTest extends BaseTest {
             service.add(organization);
             object.setOrganization(organization);
 
-            object.getDefaultLanguageRefsets().add(MigrationUtilities.MODULE_ANCESTOR_CONCEPT_SCTID);
+            object.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET);
 
             service.update(object);
 
@@ -153,16 +152,19 @@ public class EditionUnitTest extends BaseTest {
 
             // test that the edition can be retrieved.
             if (!object.getId().equals(retrievedObject.getId())) {
+
                 throw new Exception("Original id unexpectedly does not match retrieved object id = " + object.getId() + ", " + retrievedObject.getId());
             }
 
             // test that the organization was properly added.
             if (retrievedObject.getOrganization() == null || !retrievedObject.getOrganization().getName().equals("1")) {
+
                 throw new Exception("Refset organization not properly saved = " + retrievedObject.getId());
             }
 
             // test that the correct number of default language refset.
             if (retrievedObject.getDefaultLanguageRefsets().size() != 1) {
+
                 throw new Exception("Expected 1 default language refset, found = " + retrievedObject.getDefaultLanguageRefsets().size());
             }
 
@@ -172,7 +174,11 @@ public class EditionUnitTest extends BaseTest {
             retrievedObject = service.get(object.getId(), object.getClass());
 
             if (retrievedObject != null) {
+
                 throw new Exception("Search results size is unexpectedly not empty = " + retrievedObject.getId());
             }
-        }    }
+
+        }
+
+    }
 }

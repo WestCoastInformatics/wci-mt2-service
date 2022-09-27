@@ -10,16 +10,21 @@
 package org.ihtsdo.refsetservice.rest;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.AuditEntry;
+import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.AuditService;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -36,7 +41,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -123,7 +127,7 @@ public class AuditController extends BaseController {
             return handleException(e);
         }
     }
-    
+
     /**
      * Search audit entries.
      *
@@ -141,6 +145,8 @@ public class AuditController extends BaseController {
         @ApiImplicitParam(name = "entityType", value = "The entity type, e.g. 'REFSET'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
         @ApiImplicitParam(name = "entityId", value = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true, dataTypeClass = String.class, paramType = "path",
             defaultValue = ""),
+        @ApiImplicitParam(name = "expand", value = "Will expand the result to include related entries.  e.g include project and teams for an organization ", required = false,
+            dataTypeClass = Boolean.class, paramType = "path", defaultValue = "false"),
         @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
         @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
         @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
@@ -148,7 +154,7 @@ public class AuditController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId}", produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntriesForUser(@PathVariable final String entityType, @PathVariable final String entityId,
-        @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+        @QueryParam(value = "expand") final Boolean expand, @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         final User authUser = SecurityService.getUserFromSession();
         if (authUser == null) {
@@ -180,6 +186,41 @@ public class AuditController extends BaseController {
                         // user has no permissions
                         return ResponseEntity.status(HttpStatus.OK).body(null);
                     }
+                }
+
+                if ("ORGANIZATION".equalsIgnoreCase(entityType) && expand != null && expand) {
+
+                    final Organization organization = OrganizationService.getOrganization(service, authUser, entityId, false);
+                    if (organization == null || organization.getRoles() == null || organization.getRoles().isEmpty()) {
+                        // user has no permissions
+                        logger.info("Audit Entry: User {} does not have permissions on organization {}.", authUser.getUserName(), entityId);
+                        return ResponseEntity.status(HttpStatus.OK).body(null);
+                    }
+
+                    final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, entityId);
+                    final ResultList<Project> orgProjects = OrganizationService.getOrganizationProjects(service, entityId);
+
+                    final StringBuilder additionalQuery = new StringBuilder();
+                    if (orgTeams != null && !orgTeams.getItems().isEmpty()) {
+                        for (final Team team : orgTeams.getItems()) {
+                            additionalQuery.append(" OR (entityType:TEAM AND entityId:").append(team.getId()).append(")");
+                        }
+                    }
+                    if (orgProjects != null && !orgProjects.getItems().isEmpty()) {
+                        for (final Project project : orgProjects.getItems()) {
+                            additionalQuery.append(" OR (entityType:PROJECT AND entityId:").append(project.getId()).append(")");
+                        }
+                    }
+
+                    final String query = "(entityType:" + entityType + " AND entityId:" + entityId + ") " + (StringUtils.isNotEmpty(additionalQuery.toString()) ? additionalQuery.toString() : "")
+                        + (StringUtils.isNotEmpty(searchParameters.getQuery()) ? " AND " + searchParameters.getQuery() : "");
+                    searchParameters.setQuery(query);
+
+                } else {
+
+                    final String query = "entityType:" + entityType + " AND entityId:" + entityId + (StringUtils.isNotEmpty(searchParameters.getQuery()) ? " AND " + searchParameters.getQuery() : "");
+                    searchParameters.setQuery(query);
+
                 }
 
                 final ResultList<AuditEntry> results = AuditService.findAuditEntries(searchParameters);

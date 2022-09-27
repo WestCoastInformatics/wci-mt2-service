@@ -32,6 +32,8 @@ public class SyncCodeSystemAgent extends SyncService {
 
     private static final Set<String> codeSystemsNewAndInactive = new HashSet<>();
 
+    private static final SyncOperationsInitializer initializer = new SyncOperationsInitializer();
+
     public SyncCodeSystemAgent() throws Exception {
 
         codeSystemsNewAndInactive.clear();
@@ -94,6 +96,8 @@ public class SyncCodeSystemAgent extends SyncService {
     private Map<String, SortedMap<Date, String>> identifyEditionBranches(Set<JsonNode> codeSystems) throws Exception {
 
         Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
+        logger.info("Database editions already in DB at start of sync in identifyEditionBranches() are: ");
+        allDatabaseEditions.stream().forEach(e -> logger.debug(e.getName()));
 
         for (JsonNode codeSystem : codeSystems) {
 
@@ -102,7 +106,6 @@ public class SyncCodeSystemAgent extends SyncService {
             final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
 
             logger.info("Identifying CodeSystem branches for: " + editionName);
-            logger.info("With DB Database containing: " + allDatabaseEditions);
 
             final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
 
@@ -472,7 +475,11 @@ public class SyncCodeSystemAgent extends SyncService {
                 organization = createOrganization(newEditionShortName);
             }
 
+            // Create a single Admin team per Edition when we first discover it
+            initializer.createAdminOrganizationTeam(organization);
+
             final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, organization, codeSystem);
+            utilities.printEditionValues(newEdition);
 
             return newEdition;
         } catch (Exception e) {
@@ -662,9 +669,9 @@ public class SyncCodeSystemAgent extends SyncService {
 
                     // Skipping odd code system without a name
                     continue;
-                } else if (ignoredCodeSystemNames.contains(codeSystem.get("name").asText().toLowerCase())) {
+                } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(codeSystem.get("name").asText())) {
 
-                    // Code System is defined as to-be-ignored
+                    // Code System has been0 defined as to-be-ignored
                     continue;
                 }
 
@@ -759,5 +766,6 @@ public class SyncCodeSystemAgent extends SyncService {
     private boolean isEditionToProcess(String codeSystem) {
 
         return !isTesting() || (isTesting() && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.contains(testingEdition) || utilities.isInternationalEdition(codeSystem));
+
     }
 }

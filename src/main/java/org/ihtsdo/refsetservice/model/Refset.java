@@ -1,3 +1,12 @@
+/*
+ * Copyright 2022 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model;
 
@@ -99,7 +108,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The local set flag. */
     @Column(nullable = false)
-    private boolean localSet;
+    private boolean localSet = false;
+    
+    /** The local set flag. */
+    @Column(nullable = false)
+    private boolean comboRefset;
 
     /** The latest published version flag. */
     @Column(nullable = true)
@@ -171,8 +184,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The count of discussions for this item. */
     @Transient
-    private int discussionCount;
-
+    private int openDiscussionCount;
+    
+    /** The count of discussions for this item. */
+    @Transient
+    private int resolvedDiscussionCount;
+    
     /** The project. */
     @ManyToOne(targetEntity = Project.class)
     @JoinColumn(nullable = true)
@@ -208,6 +225,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The value to use for the 'EXTENSIONAL' refset type. */
     @Transient
     public static final String EXTENSIONAL = "EXTENSIONAL";
+    
+    /** The value to use for the 'EXTERNAL' refset type. */
+    @Transient
+    public static final String EXTERNAL = "EXTERNAL";
 
     /** The value to use for the 'INCLUSION' intensional definition exception type. */
     @Transient
@@ -282,6 +303,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         assignedUser = other.getAssignedUser();
         memberCount = other.getMemberCount();
         privateRefset = other.isPrivateRefset();
+        localSet = other.isLocalSet();
+        comboRefset = other.isComboRefset();
         downloadable = other.isDownloadable();
         locked = other.isLocked();
         upgradeWarning = other.getUpgradeWarning();
@@ -294,8 +317,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         versionList = other.getVersionList();
         roles = other.getRoles();
         descriptions = other.getDescriptions();
-        definitionClauses = new ArrayList<DefinitionClause>(other.getDefinitionClauses());
         tags = new HashSet<String>(other.getTags());
+        definitionClauses = new ArrayList<DefinitionClause>();
+        
+        for (final DefinitionClause otherClause : other.getDefinitionClauses()) {
+            definitionClauses.add(new DefinitionClause(otherClause));
+        }
     }
 
     /**
@@ -805,6 +832,27 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         this.localSet = localSet;
     }
+    
+    /**
+     * Checks if is combo refset.
+     *
+     * @return the combo refset flag
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public boolean isComboRefset() {
+        
+        return comboRefset;
+    }
+    
+    /**
+     * Sets the combo refset flag.
+     *
+     * @param comboRefset the combo refset flag to set
+     */
+    public void setComboRefset(final boolean comboRefset) {
+        
+        this.comboRefset = comboRefset;
+    }
 
     /**
      * Gets the module id.
@@ -1181,24 +1229,45 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * Gets the discussion count.
+     * Returns the open discussion count.
      *
      * @return the discussion count
      */
     @JsonGetter()
-    public int getDiscussionCount() {
+    public int getOpenDiscussionCount() {
 
-        return discussionCount;
+        return openDiscussionCount;
+    }
+
+    /**
+     * Sets the open discussion count.
+     *
+     * @param openDiscussionCount the open discussion count
+     */
+    public void setOpenDiscussionCount(int openDiscussionCount) {
+
+        this.openDiscussionCount = openDiscussionCount;
+    }
+    
+    /**
+     * Returns the resolved discussion count.
+     *
+     * @return the discussion count
+     */
+    @JsonGetter()
+    public int getResolvedDiscussionCount() {
+
+        return resolvedDiscussionCount;
     }
 
     /**
      * Sets the discussion count.
      *
-     * @param discussionCount the discussion count
+     * @param resolvedDiscussionCount the resolved discussion count
      */
-    public void setDiscussionCount(int discussionCount) {
+    public void setResolvedDiscussionCount(int resolvedDiscussionCount) {
 
-        this.discussionCount = discussionCount;
+        this.resolvedDiscussionCount = resolvedDiscussionCount;
     }
 
     /**
@@ -1230,7 +1299,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         result = prime * result + memberCount;
-        result = prime * result + discussionCount;
+        result = prime * result + openDiscussionCount;
+        result = prime * result + resolvedDiscussionCount;
         result = prime * result + (privateRefset ? 1 : 0);
         result = prime * result + (downloadable ? 1 : 0);
         result = prime * result + (feedbackVisible ? 1 : 0);
@@ -1239,6 +1309,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (locked ? 1 : 0);
         result = prime * result + (upgradeWarning ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
+        result = prime * result + (comboRefset ? 1 : 0);
         return result;
     }
 
@@ -1474,6 +1545,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
             return false;
         }
+        
+        if (comboRefset != other.comboRefset) {
+            
+            return false;
+        }
 
         if (latestPublishedVersion != other.latestPublishedVersion) {
 
@@ -1505,7 +1581,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
             return false;
         }
 
-        if (other.discussionCount != discussionCount) {
+        if (other.openDiscussionCount != openDiscussionCount) {
+
+            return false;
+        }
+        
+        if (other.resolvedDiscussionCount != resolvedDiscussionCount) {
 
             return false;
         }

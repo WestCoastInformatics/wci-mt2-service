@@ -358,7 +358,7 @@ public class TeamService extends BaseService {
             resultsToReturn.setTotalKnown(true);
             resultsToReturn.setTotal(resultsToReturn.getItems().size());
             
-            logger.debug("TEAM SEARCH resultsToReturn: " + resultsToReturn);
+            //logger.debug("TEAM SEARCH resultsToReturn: " + resultsToReturn);
 
             return resultsToReturn;
         }
@@ -496,7 +496,7 @@ public class TeamService extends BaseService {
 
                 for (Project project : projectList.getItems()) {
 
-                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription());
+                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true);
                     
                     for (String role : team.getRoles()) {
 
@@ -516,21 +516,21 @@ public class TeamService extends BaseService {
     /**
      * Removes the user from team.
      *
-     * @param user the user
+     * @param authUser the auth user
      * @param teamId the team ID
      * @param userId the user ID  to remove
      * @return the team
      * @throws Exception the exception
      */
-    public static Team removeUserFromTeam(final User user, final String teamId, final String userId) throws Exception {
+    public static Team removeUserFromTeam(final User authUser, final String teamId, final String userId) throws Exception {
         
         try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(user.getUserName());
+            service.setModifiedBy(authUser.getUserName());
             
             final Team team = getTeam(teamId, true);
 
-            return removeUserFromTeam(service, user, team, userId);
+            return removeUserFromTeam(service, authUser, team, userId);
         }
     }
     

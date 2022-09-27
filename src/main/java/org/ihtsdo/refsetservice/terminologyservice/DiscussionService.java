@@ -11,8 +11,8 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
@@ -22,7 +22,6 @@ import org.ihtsdo.refsetservice.model.DiscussionType;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
-import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -71,7 +70,7 @@ public class DiscussionService {
         }
 
         if (!canUserViewPrivateThread(user, refset)) {
-            
+
             canViewPrivate = false;
             query += " AND privateThread: false";
         }
@@ -82,24 +81,25 @@ public class DiscussionService {
         for (int i = results.getItems().size() - 1; i >= 0; i--) {
 
             final DiscussionThread thread = results.getItems().get(i);
-            final List<DiscussionPost> postList = ModelUtility.jsonCopy(thread.getPosts(), new TypeReference<List<DiscussionPost>>(){});
+            final List<DiscussionPost> postList = ModelUtility.jsonCopy(thread.getPosts(), new TypeReference<List<DiscussionPost>>() {
+            });
             thread.getPosts().clear();
-            
+
             for (final DiscussionPost post : postList) {
-                
+
                 if (post.isPrivatePost() && !canViewPrivate) {
                     continue;
                 }
-                
+
                 thread.getPosts().add(post);
             }
-            
+
             thread.setLastPost(thread.getPosts().get(thread.getPosts().size() - 1).getCreated());
-            
+
             if (thread.getPosts().size() > 1) {
                 thread.setNumberReplies(thread.getPosts().size() - 1);
             }
-            
+
         }
 
         results.setTotal(results.getItems().size());
@@ -134,12 +134,12 @@ public class DiscussionService {
      * @throws Exception the exception
      */
     public static DiscussionPost getDiscussionPost(final TerminologyService service, final User user, final String id) throws Exception {
-        
+
         final DiscussionPost discussionPost = service.get(id, DiscussionPost.class);
-        
+
         return discussionPost;
     }
-    
+
     /**
      * Adds discussion count to a refset
      *
@@ -155,7 +155,7 @@ public class DiscussionService {
             return refsets;
         }
 
-        for (Refset refset : refsets) {
+        for (final Refset refset : refsets) {
             attachRefsetDiscussionCount(service, user, refset);
         }
 
@@ -163,12 +163,12 @@ public class DiscussionService {
     }
 
     /**
-     * Adds discussion count to a refset.
+     * Adds discussion counts to a refset.
      *
      * @param service the Terminology Service
      * @param user the user
      * @param refset the refset
-     * @return the refset with discussion count included
+     * @return the refset with discussion counts included
      * @throws Exception the exception
      */
     public static Refset attachRefsetDiscussionCount(final TerminologyService service, final User user, final Refset refset) throws Exception {
@@ -177,16 +177,33 @@ public class DiscussionService {
             return refset;
         }
 
-        String query = "type:" + DiscussionType.REFSET + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
-
-        if (!canUserViewPrivateThread(user, refset)) {
-            query += " AND privateThread: false";
-        }
+        final String query = "type:" + DiscussionType.REFSET + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
 
         final ResultList<DiscussionThread> results = service.find(query, null, DiscussionThread.class, null);
-        int count = results.getItems().size();
 
-        refset.setDiscussionCount(count);
+        if (results == null || results.getItems() == null || results.getItems().size() == 0) {
+            return refset;
+        } else {
+            int openDiscussionCount = 0;
+            int resolvedDiscussionCount = 0;
+            boolean userIsThreadMember = false;
+
+            for (final DiscussionThread thread : results.getItems()) {
+                userIsThreadMember = thread.getPosts().stream().anyMatch(post -> post.getUser().getId().equals(user.getId()));
+
+                if (!thread.isPrivateThread() || (userIsThreadMember && thread.isPrivateThread())) {
+                    if ("open".equalsIgnoreCase(thread.getStatus())) {
+                        openDiscussionCount++;
+                    }
+                    if ("resolved".equalsIgnoreCase(thread.getStatus())) {
+                        resolvedDiscussionCount++;
+                    }
+                }
+            }
+
+            refset.setOpenDiscussionCount(openDiscussionCount);
+            refset.setResolvedDiscussionCount(resolvedDiscussionCount);
+        }
 
         return refset;
     }
@@ -211,34 +228,32 @@ public class DiscussionService {
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("conceptId");
 
-        if (!canUserViewPrivateThread(user, refset)) {
-            query += " AND privateThread: false";
-        }
+        final ResultList<DiscussionThread> results = service.find(query, null, DiscussionThread.class, null);
 
-        final ResultList<DiscussionThread> results = service.find(query, pfs, DiscussionThread.class, null);
-
-        if (results.getItems().size() == 0) {
+        if (results == null || results.getItems() == null || results.getItems().size() == 0) {
             return concepts;
-        }
+        } else {
+            for (final Concept concept : concepts) {
+                int openDiscussionCount = 0;
+                int resolvedDiscussionCount = 0;
+                boolean userIsThreadMember = false;
 
-        for (final Concept concept : concepts) {
+                for (final DiscussionThread thread : results.getItems().stream().filter(c -> c.getConceptId().contentEquals(concept.getCode())).collect(Collectors.toList())) {
+                    userIsThreadMember = thread.getPosts().stream().anyMatch(post -> post.getUser().getId().equals(user.getId()));
 
-            int count = 0;
-
-            for (final DiscussionThread thread : results.getItems()) {
-
-                if (!thread.getConceptId().equals(concept.getCode()) && count == 0) {
-                    continue;
-
-                } else if (thread.getConceptId().equals(concept.getCode())) {
-                    count++;
-
-                } else {
-                    break;
+                    if (!thread.isPrivateThread() || (userIsThreadMember && thread.isPrivateThread())) {
+                        if ("open".equalsIgnoreCase(thread.getStatus())) {
+                            openDiscussionCount++;
+                        }
+                        if ("resolved".equalsIgnoreCase(thread.getStatus())) {
+                            resolvedDiscussionCount++;
+                        }
+                    }
                 }
-            }
 
-            concept.setDiscussionCount(count);
+                concept.setOpenDiscussionCount(openDiscussionCount);
+                concept.setResolvedDiscussionCount(resolvedDiscussionCount);
+            }
         }
 
         return concepts;
@@ -314,50 +329,53 @@ public class DiscussionService {
      * @throws Exception the exception
      */
     public static void deletePost(final TerminologyService service, final User user, final String threadId, final String postId) throws Exception {
-        
+
         final DiscussionThread thread = getDiscussion(service, user, threadId);
-        
+
         if (thread == null) {
-            
+
             logger.error("deletePost: Unable to retrieve discussion thread id: {}.", threadId);
             throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
         }
 
         final DiscussionPost post = getDiscussionPost(service, user, postId);
         final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-        
+
         if (post == null) {
-            
+
             logger.error("deletePost: Unable to retrieve discussion post id: {}.", postId);
             throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion post for " + postId + ".");
         }
-        
+
         if (!DiscussionService.canUserEditPost(user, refset, post)) {
-            
+
             logger.error("deletePost: User does not have permissions to perform this action: {}.", user.getUserName());
             throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to delete this discussion post.");
         }
-        
+
         service.setTransactionPerOperation(false);
         service.beginTransaction();
-        
+        service.setModifiedBy(user.getUserName());
+        service.setModifiedFlag(true);
+
         service.remove(post);
-        
+
         for (int i = 0; i < thread.getPosts().size(); i++) {
-            
+
             final DiscussionPost threadPost = thread.getPosts().get(i);
-            
+
             if (threadPost.getId().equals(postId)) {
-                
+
                 thread.getPosts().remove(i);
                 break;
             }
         }
-        
+
+        service.update(refset);
         service.update(thread);
         service.commit();
     }
-    
+
     /**
      * Delete a discussion thread by ID
      *
@@ -369,9 +387,9 @@ public class DiscussionService {
     public static void deleteThread(final TerminologyService service, final User user, final String threadId) throws Exception {
 
         final DiscussionThread thread = getDiscussion(service, user, threadId);
-        
+
         if (thread == null) {
-            
+
             logger.error("deleteThread: Unable to retrieve discussion thread id: {}.", threadId);
             throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
         }
@@ -386,6 +404,8 @@ public class DiscussionService {
 
         service.setTransactionPerOperation(false);
         service.beginTransaction();
+        service.setModifiedBy(user.getUserName());
+        service.setModifiedFlag(true);
 
         for (int i = thread.getPosts().size() - 1; i >= 0; i--) {
 
@@ -393,6 +413,7 @@ public class DiscussionService {
             service.remove(post);
         }
 
+        service.update(refset);
         service.remove(thread);
         service.commit();
     }

@@ -145,16 +145,16 @@ public class SecurityService implements AutoCloseable {
         if (cookies != null) {
 
             HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
-            logger.debug("getUserFromSession cookies: " + ModelUtility.toJson(cookies));
-            logger.debug("getUserFromSession Builder Host: " + builder.build().toString());
-            logger.debug("getUserFromSession getServerName: " + requestAttributes.getRequest().getServerName());
-            logger.debug("getUserFromSession getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
+            //logger.debug("getUserFromSession cookies: " + ModelUtility.toJson(cookies));
+            //logger.debug("getUserFromSession Builder Host: " + builder.build().toString());
+            //logger.debug("getUserFromSession getServerName: " + requestAttributes.getRequest().getServerName());
+            //logger.debug("getUserFromSession getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
 
             for (int i = 0; i < cookies.length; i++) {
 
                 if (cookies[i].getName().contains("ims-ihtsdo")) {
 
-                    logger.debug("getUserFromSession ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+                    //logger.debug("getUserFromSession ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
                     Cookie cookie = new Cookie(cookies[i].getName(), null);
                     cookie.setPath("/"); // cookies[i].getPath()
                     cookie.setDomain(".ihtsdotools.org"); // cookies[i].getDomain()

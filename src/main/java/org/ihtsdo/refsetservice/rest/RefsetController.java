@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -52,6 +53,7 @@ import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -69,6 +71,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -86,6 +89,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Hidden;
 
 /**
  * Controller for /concept endpoints.
@@ -107,6 +111,9 @@ public class RefsetController extends BaseController {
     private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
 
     private static final String REQUEST_ACTION = "Request-Access";
+    
+    /** The config properties. */
+    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /** Static initialization. */
     static {
@@ -274,16 +281,27 @@ public class RefsetController extends BaseController {
 
             logger.debug("addRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
 
+            String type = "an individual concept";
+
             // create the list of concepts based on what was passed in
             if (conceptIds != null && !conceptIds.equals("")) {
 
                 conceptIdList = new ArrayList<String>(Arrays.asList(conceptIds.split(",")));
 
+                if (conceptIdList.size() > 1) {
+
+                    type = "concepts by list";
+                }
+
             } else if (ecl != null && !ecl.equals("")) {
+
+                type = "by changing ECL definition";
 
                 final String branchPath = RefsetService.getBranchPath(service, refsetInternalId);
                 conceptIdList = RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl);
             } else {
+
+                type = "by file";
 
                 conceptIdList = RefsetService.getConceptIdsFromFile(conceptFile, fileType);
             }
@@ -310,6 +328,9 @@ public class RefsetController extends BaseController {
             logger.debug("addRefsetMembers: Finished with " + unaddedConcepts.size() + " invaild concepts");
 
             if (error.equals("")) {
+
+                Refset refset = service.get(refsetInternalId, Refset.class);
+                AuditEntryHelper.addMembersEntry(refset, type, conceptIds);
 
                 return new ResponseEntity<>("{\"status\": \"All concepts added.\"}", HttpStatus.OK);
             } else {
@@ -358,17 +379,27 @@ public class RefsetController extends BaseController {
             logger.debug("removeRefsetMembers: refsetInternalId: " + refsetInternalId + "; conceptIds: " + conceptIds + "; ecl: " + ecl + "; fileType: " + fileType);
 
             String error = "";
+            String type = "an individual concept";
 
             // If concepts were passed in use those
             if (conceptIds != null && !conceptIds.equals("")) {
 
                 conceptsToRemove = conceptIds;
 
+                if (Arrays.asList(conceptsToRemove.split(",")).size() > 1) {
+
+                    type = "concepts by list";
+                }
+
             } else if (ecl != null && !ecl.equals("")) {
+
+                type = "by changing ECL definition";
 
                 final String branchPath = RefsetService.getBranchPath(service, refsetInternalId);
                 conceptsToRemove = String.join(",", RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl));
             } else {
+
+                type = "by file";
 
                 conceptsToRemove = String.join(",", RefsetService.getConceptIdsFromFile(conceptFile, fileType));
             }
@@ -393,6 +424,9 @@ public class RefsetController extends BaseController {
             }
 
             if (error.equals("")) {
+
+                Refset refset = service.get(refsetInternalId, Refset.class);
+                AuditEntryHelper.removeMembersEntry(refset, type, conceptsToRemove);
 
                 return new ResponseEntity<>("{\"status\": \"All concepts removed.\"}", HttpStatus.OK);
             } else {
@@ -617,7 +651,6 @@ public class RefsetController extends BaseController {
             // service.commit();
 
             if (!status.startsWith("Error")) {
-
                 return new ResponseEntity<>("{\"refsetInternalId\": \"" + refsetInternalId + "\"}", HttpStatus.OK);
             } else {
 
@@ -703,6 +736,14 @@ public class RefsetController extends BaseController {
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
+
+            if (action.equals(WorkflowService.FINISH_EDIT)) {
+
+                AuditEntryHelper.addEditingCycleEntry(refset, true);
+            } else if (action.equals(WorkflowService.CANCEL_EDIT)) {
+
+                AuditEntryHelper.addEditingCycleEntry(refset, false);
+            }
 
             // if the status is Published then create a new version of the refset that is ready to be edited
             if (currentStatus == null || currentStatus.equals(WorkflowService.PUBLISHED)) {
@@ -1274,9 +1315,9 @@ public class RefsetController extends BaseController {
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "exportType", value = "The RF2 type SNAPSHOT or DELTA", required = false, dataTypeClass = String.class, paramType = "query"),
         @ApiImplicitParam(name = "languageId", value = "For formats with names which language to display the name in.", required = false, dataTypeClass = String.class, paramType = "query"),
-        @ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names', ' or 'sctids'.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names', 'sctids' or 'freeset'.", required = true, dataTypeClass = String.class, paramType = "query"),
         @ApiImplicitParam(name = "fileNameDate", value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.", required = true, dataTypeClass = String.class, paramType = "query"),
         @ApiImplicitParam(name = "startEffectiveTime", value = "Format: yyyymmdd. Can be used to produce a delta after content is versioned by filtering a SNAPSHOT export by effectiveTime.",
             required = false, dataTypeClass = String.class, paramType = "query"),
@@ -1295,38 +1336,40 @@ public class RefsetController extends BaseController {
             logger.debug("exportRefset: refsetInternalId: " + refsetInternalId + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: " + fileNameDate + " ; startEffectiveTime: "
                 + startEffectiveTime + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: " + exportMetadata);
 
-            String url = null;
+            String responseMessage = null;
 
-            if (format.equals("rf2") || format.equals("rf2_with_names")) {
+            if ("rf2".equalsIgnoreCase(format) || "rf2_with_names".equalsIgnoreCase(format)) {
 
-                boolean withNames = false;
+                final boolean withNames = ("rf2_with_names".equalsIgnoreCase(format));
 
-                if (format.equals("rf2_with_names")) {
-
-                    withNames = true;
-                }
-
-                String uri = "";
+                String downloadUri = "";
 
                 if (exportType.contentEquals("SNAPSHOT")) {
 
-                    uri = RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+                    downloadUri =
+                        RefsetMemberService.exportRefsetRf2(service, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+
                 } else {
 
-                    uri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
-                        withNames);
+                    downloadUri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime,
+                        exportMetadata, withNames);
                 }
 
-                logger.debug("results: " + uri);
-                url = "{\"url\": \"" + uri + "\"}";
+                logger.debug("results: " + downloadUri);
+                responseMessage = "{\"url\": \"" + downloadUri + "\"}";
 
             } else if (format.equals("sctids")) {
 
-                String uri = RefsetMemberService.exportRefsetSctidList(service, refsetInternalId, exportMetadata);
-                url = "{\"url\": \"" + uri + "\"}";
+                final String downloadUri = RefsetMemberService.exportRefsetSctidList(service, refsetInternalId, exportMetadata);
+                responseMessage = "{\"url\": \"" + downloadUri + "\"}";
+
+            } else if ("freeset".equals(format)) {
+
+                final String downloadUri = RefsetMemberService.exportFreeset(service, refsetInternalId, languageId);
+                responseMessage = "{\"url\": \"" + downloadUri + "\"}";
             }
 
-            return new ResponseEntity<>(url, HttpStatus.OK);
+            return new ResponseEntity<>(responseMessage, HttpStatus.OK);
 
         } catch (final Exception e) {
 
@@ -2001,15 +2044,14 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Compile and store the data to upgrade a refset.
+     * Compile and store the data to upgrade a list of refsets.
      *
-     * @param refsetInternalId the internal refset ID
-     * @param upgradeBranch the branch to upgrade to
+     * @param refsetInternalIds a list of comma separated internal refset IDs to upgrade
      * @return The operation status
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/compileUpgradeData", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> compileUpgradeData(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = false) final String upgradeBranch)
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalIds}/compileUpgradeData", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> compileUpgradeData(@PathVariable(value = "refsetInternalIds") final String refsetInternalIds)
         throws Exception {
 
         final User user = SecurityService.getUserFromSession();
@@ -2018,16 +2060,39 @@ public class RefsetController extends BaseController {
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
-
-            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            
             String status = "";
+            
+            final String[] refsetInternalIdArray = refsetInternalIds.split(",");
+            boolean isBatch = false;
+            
+            if (refsetInternalIdArray.length > 1) {
+                
+                isBatch = true;
+                RefsetMemberService.refsetsBeingUpdated.add(refsetInternalIds);
+                logger.debug("compileUpgradeData: Batch upgrade started with refsetInternalIds: " + refsetInternalIds);
+            }
+            
+            for (final String internalId : refsetInternalIdArray) {
+                
+                RefsetMemberService.refsetsBeingUpdated.add(internalId);
+                logger.debug("compileUpgradeData: individual refsetInternalId: " + internalId);
 
-            logger.debug("compileUpgradeData: refsetInternalId: " + refsetInternalId + "; upgradeBranch: " + upgradeBranch);
+                try {
+                    
+                    // add the list of concepts as members to the refset
+                    status = RefsetMemberService.compileUpgradeData(service, user, internalId);
+                    
+                } finally {
+                    RefsetMemberService.refsetsBeingUpdated.remove(internalId);
+                }
 
-            // add the list of concepts as members to the refset
-            status = RefsetMemberService.compileUpgradeData(service, user, refsetInternalId, upgradeBranch);
+                logger.debug("compileUpgradeData: individual refsetInternalId " + internalId + " finished with status " + status);
+            }
 
-            logger.debug("compileUpgradeData: Finished with status " + status);
+            if (isBatch) {
+                logger.debug("compileUpgradeData: Batch upgrade finished");
+            }
 
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
@@ -2038,7 +2103,7 @@ public class RefsetController extends BaseController {
 
         finally {
 
-            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalIds);
         }
 
     }
@@ -2418,10 +2483,12 @@ public class RefsetController extends BaseController {
 
         try {
 
+            User user = SecurityService.getUserFromSession();
+
             logger.debug(
                 "shareRefset: refsetId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
 
-            RefsetService.shareRefset(refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
+            RefsetService.shareRefset(user, refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
             final String returnMessage = "{\"message\": \"Share Refset was Successful\"}";
 
@@ -2446,10 +2513,12 @@ public class RefsetController extends BaseController {
 
         try {
 
+            User user = SecurityService.getUserFromSession();
+
             logger.debug("requestProjectAccess: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: "
                 + emailInfo.getAdditionalMessage());
 
-            RefsetService.requestProjectAccess(refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
+            RefsetService.requestProjectAccess(user, refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
             final String returnMessage = "{\"message\": \"Refset access (via project access) was requested was Successful\"}";
 
@@ -2468,9 +2537,10 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/copy", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetInternalId, 
-        @RequestParam final String name, @RequestParam final String projectId) throws Exception {
-        
+    public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetInternalId, @RequestParam final String name, @RequestParam final String projectId,
+        @RequestParam final Boolean localSet, @RequestParam final Boolean privateRefset, @RequestParam final Boolean comboSet, @RequestParam final String narrative,
+        @RequestParam final Set<String> tags, @RequestParam final String parentConceptId, @RequestParam final String newRefsetConceptId) throws Exception {
+
         // TODO: Add support for providing a zip RF2 or a refset file to clone off of.
         // Questions to be answered first: Always use a) latest version for refsetId provided or b) Version if provided RF2 file instead and c) Can't supply both
         try (TerminologyService service = new TerminologyService()) {
@@ -2481,9 +2551,10 @@ public class RefsetController extends BaseController {
             service.setModifiedBy(user.getUserName());
 
             String status = "";
-            final Object returned = RefsetService.copyRefset(service, user, refsetInternalId, name, projectId);
+            final Object returned = RefsetService.copyRefset(service, user, refsetInternalId, name, projectId, localSet, privateRefset, comboSet, narrative, tags, parentConceptId, newRefsetConceptId);
 
             if (returned instanceof String) {
+
                 status = (String) returned;
             } else {
 
@@ -2492,6 +2563,7 @@ public class RefsetController extends BaseController {
             }
 
             if (status.startsWith("Error")) {
+
                 return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
             }
 
@@ -2501,6 +2573,7 @@ public class RefsetController extends BaseController {
 
             return handleException(e);
         }
+
     }
 
     @ApiOperation(value = "Reset a refset to contain the contents of Snowstorm. Note only works if refset has not been upgraded during edit cycle.", response = Refset.class)
@@ -2536,6 +2609,62 @@ public class RefsetController extends BaseController {
             return handleException(e);
         }
 
+    }
+
+    @ApiOperation(value = "Request member/non-member to join organization")
+    @RecordMetric
+    @PostMapping(value = "/refset/{refsetInternalId}/invite", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Hidden
+    public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String refsetInternalId, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
+
+        try {
+
+            final User authUser = SecurityService.getUserFromSession();
+
+            logger
+                .debug("inviteUserToRefset: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
+
+            RefsetService.inviteUserToOrganization(authUser, refsetInternalId, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
+
+            final String returnMessage = "{\"message\": \"Refset invite was Successful\"}";
+
+            return new ResponseEntity<>(returnMessage, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+
+    @ApiOperation(value = "Process response to invitation to join refset.")
+    @RecordMetric
+    @GetMapping(value = "/refset/{refsetId}/response")
+    @Hidden
+    public @ResponseBody ResponseEntity<String> responseToInviteOrganization(
+
+        @PathVariable final String refsetId, @QueryParam(value = "acceptance") final boolean acceptance, @QueryParam(value = "requester") final String requester,
+        @QueryParam(value = "recipientEmail") final String recipientEmail
+
+    ) throws Exception {
+
+        try {
+
+            logger.debug("responseToInviteOrganization: refsetId: " + refsetId + " and acceptance: " + acceptance + " and requester: " + requester + " recipientEmail: " + recipientEmail);
+
+            RefsetService.processRefsetInvitation(refsetId, acceptance, requester, recipientEmail);
+
+            // Redirect here
+            final HttpHeaders headers = new HttpHeaders();
+            headers.add("Location", PROPERTIES.getProperty("app.url.root"));
+            
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+
+        } catch (final Exception e) {
+
+            logger.error("Exception while processing response for refset invite", e);
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
     }
 
 }

@@ -10,10 +10,13 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -39,6 +42,7 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DefinitionClauseEditHistory;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -46,6 +50,7 @@ import org.ihtsdo.refsetservice.model.RefsetEditHistory;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncService;
@@ -62,7 +67,9 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -94,9 +101,20 @@ public class RefsetService {
     /** A list of refset actively being updated. */
     public static final Set<String> refsetsToShowUpgradeWarning = new HashSet<>();
 
+    /** The Constant EMAIL_SUBJECT. */
     private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
 
+    /** The Constant SHARE_ACTION. */
     private static final String SHARE_ACTION = "Share-Refset";
+
+    /** The Constant INVITE_ACTION. */
+    private static final String INVITE_ACTION = "Invite";
+
+    /** The Constant INVITE_ACCEPTED. */
+    private static final String INVITE_ACCEPTED = "Invite accepted";
+
+    /** The Constant INVITE_DECLINED. */
+    private static final String INVITE_DECLINED = "Invite declined";
 
     static {
 
@@ -420,8 +438,13 @@ public class RefsetService {
         refset.setVersionNotes(refsetEditParameters.getVersionNotes());
         refset.setNarrative(refsetEditParameters.getNarrative());
         refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
-        refset.setType(refsetEditParameters.getType());
         refset.setExternalUrl(refsetEditParameters.getExternalUrl());
+        refset.setLocalSet(refsetEditParameters.isLocalSet());
+
+        if (refset.getType().equals(Refset.EXTERNAL)) {
+
+            refset.setName(refsetEditParameters.getName());
+        }
 
         // update an object
         service.update(refset);
@@ -429,7 +452,12 @@ public class RefsetService {
         // if this is an intensional refset update the definition
         if (refset.getType().equals(Refset.INTENSIONAL)) {
 
+            AuditEntryHelper.updateRefsetMetadataEntry(refset, true);
+
             statusMessage = modifyRefsetDefinition(user, service, refset, refsetEditParameters.getDefinitionClauses());
+        } else {
+
+            AuditEntryHelper.updateRefsetMetadataEntry(refset, false);
         }
 
         // we also need to clear the refset export cache on S3
@@ -501,6 +529,8 @@ public class RefsetService {
 
             return;
         }
+
+        // TODO: Add unique Audit Entry Helper for this case
 
         refset.setRefsetId(history.getRefsetId());
         refset.setName(history.getName());
@@ -1007,6 +1037,13 @@ public class RefsetService {
         return status;
     }
 
+    /**
+     * Delete refset.
+     *
+     * @param service the service
+     * @param refset the refset
+     * @throws Exception the exception
+     */
     public static void deleteRefset(TerminologyService service, Refset refset) throws Exception {
 
         WorkflowService.deleteRefsetBranch(refset.getEditionBranch(), refset.getId());
@@ -1027,7 +1064,6 @@ public class RefsetService {
     /**
      * Does a refset ID exist in the database.
      *
-     * @param service the Terminology Service
      * @param refsetId the refset ID
      * @param addedQueryParameters additional query string to limit the refset versions
      * @return does the refset exist (true/fase)
@@ -1336,7 +1372,7 @@ public class RefsetService {
         final long start = System.currentTimeMillis();
         ResultList<Refset> results = new ResultList<Refset>();
         String query = searchParameters.getQuery();
-        final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!(){}[]^\"~*?:\\/") + "]+?";
+        final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!{}[]^\"~*?:\\/") + "]+?";
 
         final PfsParameter pfs = new PfsParameter();
 
@@ -1505,7 +1541,7 @@ public class RefsetService {
         results.setTimeTaken(System.currentTimeMillis() - start);
         results.setTotalKnown(true);
 
-        logger.debug("searchRefsets results: " + ModelUtility.toJson(results));
+        //logger.debug("searchRefsets results: " + ModelUtility.toJson(results));
 
         return results;
     }
@@ -1957,7 +1993,6 @@ public class RefsetService {
     /**
      * Fetch editions for given branch.
      *
-     * @param service the Terminology Service
      * @param branch the branch
      * @return List <Edition> list of editions matching branch
      * @throws Exception the exception
@@ -2116,6 +2151,7 @@ public class RefsetService {
     /**
      * Concepts to remove.
      *
+     * @param excludeCurrentSiRefsets the exclude current si refsets
      * @return the sets the
      */
     private static Set<String> conceptsToRemove(boolean excludeCurrentSiRefsets) {
@@ -2200,16 +2236,23 @@ public class RefsetService {
     /**
      * Share refset.
      *
+     * @param user the user
      * @param refsetInternalId the refset internal id
      * @param recipient the recipient
      * @param additionalMessage the additional message
      * @throws Exception the exception
      */
-    public static void shareRefset(String refsetInternalId, String recipient, String additionalMessage) throws Exception {
+    public static void shareRefset(final User user, String refsetInternalId, String recipient, String additionalMessage) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            User user = SecurityService.getUserFromSession();
+            if (recipient == null || recipient.isEmpty()) {
+                
+                final String message = "There was no recipient email provided.";
+                logger.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
+            
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
             final StringBuffer emailBody = new StringBuffer();
@@ -2221,13 +2264,13 @@ public class RefsetService {
             emailBody.append("Hello, ").append(recipient).append(",").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Main announcement
-            emailBody.append("A SNOMED International Refset Tool user named '").append(user.getUserName()).append(" would like to share the reference set named: ").append(refset.getName())
+            emailBody.append("A SNOMED International Refset Tool user named '").append(user.getUserName()).append("' (").append(user.getEmail()).append(") would like to share the reference set named: ").append(refset.getName())
                 .append(" with you. Here is a direct link to access that reference set: ").append(refsetUrl).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Additional Info from Sender
             if (!StringUtils.isBlank(additionalMessage)) {
 
-                emailBody.append(user.getName()).append("In addition, they have included the additional message:").append(System.getProperty("line.separator"));
+                emailBody.append("In addition, they have included the additional message:").append(System.getProperty("line.separator"));
                 emailBody.append(additionalMessage).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
             }
 
@@ -2240,119 +2283,245 @@ public class RefsetService {
             emailBody.append("The SNOMED International Refset Tooling Team");
 
             String action = SHARE_ACTION;
-            EmailUtility.sendEmail(EMAIL_SUBJECT + action, user.getEmail(), new HashSet<>(Arrays.asList(recipient)), emailBody.toString());
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, null, new HashSet<>(Arrays.asList(recipient)), emailBody.toString());
 
             AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), recipient);
         }
 
     }
 
-    public static void requestProjectAccess(String refsetInternalId, String recipient, String additionalMessage) throws Exception {
+    /**
+     * Request project access.
+     *
+     * @param user the user
+     * @param refsetInternalId the refset internal id
+     * @param recipient the recipient
+     * @param additionalMessage the additional message
+     * @throws Exception the exception
+     */
+    public static void requestProjectAccess(final User user, String refsetInternalId, String recipient, String additionalMessage) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             final Project project = refset.getProject();
+            final Organization organization = project.getEdition().getOrganization();
 
-            // TODO: Verify that user is NOT already member of project. if they are, throw exception with explanation
-
-            // Identify Admins who each get an email
-            Set<User> adminEmailRecipients = new HashSet<>();
+            Map<String, User> adminEmailRecipients = new HashMap<>();
             List<Team> adminTeams = new ArrayList<>();
+            List<Team> allTeams = new ArrayList<>();
+            
+            if (project.getPrimaryContactEmail() != null && !project.getPrimaryContactEmail().isEmpty()) {
+                
+                final User projectUser = new User();
+                projectUser.setEmail(project.getPrimaryContactEmail());
+                projectUser.setUserName("ProjectPrimaryEmail");
+                projectUser.setName("Project Primary Email");
+                adminEmailRecipients.put(project.getPrimaryContactEmail(), projectUser);
+                
+            } else if (organization.getPrimaryContactEmail() != null && !organization.getPrimaryContactEmail().isEmpty()) {
+                
+                final User organizationUser = new User();
+                organizationUser.setEmail(organization.getPrimaryContactEmail());
+                organizationUser.setUserName("OrganizationPrimaryEmail");
+                organizationUser.setName("Organization Primary Email");
+                adminEmailRecipients.put(organization.getPrimaryContactEmail(), organizationUser);
+            }
 
             for (String teamId : project.getTeams()) {
 
-                Team t = TeamService.getTeam(teamId, true);
+                Team team = TeamService.getTeam(teamId, true);
+                allTeams.add(team);
 
-                if (t.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
+                // Identify Admins who each get an email
+                if (team.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
 
-                    adminTeams.add(t);
+                    adminTeams.add(team);
+                }
+
+            }
+            
+            // if there are no teams add organization admin team
+            if (allTeams.size() == 0) {
+                
+                final Team organizationAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
+                
+                if (organizationAdminTeam != null) {
+                    allTeams.add(organizationAdminTeam);
+                }
+            }
+
+            // Verify not already in project before sending emails to admins
+            for (Team team : allTeams) {
+
+                if (team.getMemberList().stream().anyMatch(u -> u.getId().equals(user.getId()))) {
+
+                    final String message = "User: " + user.getUserName() + " is already a member of team: " + team.getName() + "in  project: " + project.getName() + " under " + project.getEdition().getName() + ".";
+                    logger.error(message);
+                    throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
                 }
 
             }
 
-            adminTeams.stream().forEach(t -> t.getMemberList().stream().forEach(u -> adminEmailRecipients.add(u)));
+            // Add to admin list
+            adminTeams.stream().forEach(team -> team.getMemberList().stream().forEach(teamUser -> adminEmailRecipients.put(teamUser.getEmail(), teamUser)));
+            
+            // make sure there is at least once recipient
+            if (adminEmailRecipients.size() == 0) {
+                
+                final String message = "There are no emails set up to request access from in project: " + project.getName() + " under " + project.getEdition().getName() + ".";
+                logger.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
+            
 
-            // Create Email itself
+            /** Create Email **/
             StringBuffer emailBody = new StringBuffer();
 
             // Greeting
-            emailBody.append("Hello, {projectAdminName}," + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            emailBody.append("Hello, {projectAdminName},").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Static Message
-            emailBody.append(
-                user.getName() + " has requested access to " + project.getName() + " via the " + refset.getName() + "." + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            emailBody.append(user.getName()).append(" (").append(user.getEmail()).append(") has requested access to ").append(project.getName()).append(" via the " + refset.getName()).append(".")
+                .append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Additional Info from Sender
             if (additionalMessage != null) {
 
-                emailBody.append(user.getName() + " has included the additional message in their request:" + System.getProperty("line.separator") + System.getProperty("line.separator"));
-                emailBody.append(additionalMessage + System.getProperty("line.separator") + System.getProperty("line.separator"));
+                emailBody.append(user.getName()).append(" has included the additional message in their request:").append(System.getProperty("line.separator"))
+                    .append(System.getProperty("line.separator")).append(additionalMessage).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
             }
 
             // Warning
-            emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. " + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. ").append(System.getProperty("line.separator"))
+                .append(System.getProperty("line.separator"));
+            
+            
+            emailBody.append("Go to the Reference Set Tool: ").append(PROPERTIES.getProperty("app.url.root")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
-            emailBody.append(System.getProperty("line.separator") + System.getProperty("line.separator") + System.getProperty("line.separator"));
+            emailBody.append(System.getProperty("line.separator")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Signature
-            emailBody.append("Not that this email has been sent to the other ADMIN teams on this project.");
+            emailBody.append("Note that this email has been sent to the other ADMIN teams on this project.");
 
-            for (User adminRecipient : adminEmailRecipients) {
+            for (User adminRecipient : adminEmailRecipients.values()) {
 
                 AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access ds(via refset)", adminRecipient.getUserName(), project.getName() + "'s admins");
                 Set<String> adminEmail = new HashSet<>();
 
                 adminEmail.add(adminRecipient.getEmail());
-                EmailUtility.sendEmail(EMAIL_SUBJECT + " access requested", user.getEmail(), adminEmail, emailBody.toString().replace("{projectAdminName}", adminRecipient.getName()));
+                EmailUtility.sendEmail(EMAIL_SUBJECT + " access requested", null, adminEmail, emailBody.toString().replace("{projectAdminName}", adminRecipient.getName()));
             }
 
         }
 
     }
 
-    public static Object copyRefset(TerminologyService service, User user, String refsetInternalId, String name, String projectId) throws Exception {
+    /**
+     * Copy refset.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refsetInternalId the refset internal id
+     * @param name the name
+     * @param projectId the project id
+     * @param localSet the local set
+     * @param privateRefset the private refset
+     * @param comboSet the combo set
+     * @param narrative the narrative
+     * @param tags the tags
+     * @param parentConceptId the parent concept id
+     * @param newRefsetConceptId the new refset concept id
+     * @return the object
+     * @throws Exception the exception
+     */
+    public static Object copyRefset(final TerminologyService service, final User user, final String refsetInternalId, final String name, final String projectId, final Boolean localSet,
+        final Boolean privateRefset, final Boolean comboSet, final String narrative, final Set<String> tags, final String parentConceptId, final String newRefsetConceptId) throws Exception {
+        // TODO: Add unique Audit Entry Helper for this case
 
         String newRefsetInternalId = null;
         final Refset originalRefset = getRefset(service, user, refsetInternalId);
         String projectIdToGet = projectId;
-        
+
         if (projectIdToGet == null || projectIdToGet.isEmpty()) {
+
             projectIdToGet = originalRefset.getProjectId();
         }
-        
+
         Project project = service.get(projectIdToGet, Project.class);
-        
-        if (name == null || name.equals("")) {
-            throw new Exception("A name for the new refset must be supplied");
-        }
-        
+
         if (originalRefset.isPrivateRefset() && !originalRefset.getRoles().contains(User.ROLE_VIEWER)) {
+
             throw new Exception("User does not have the permission to copy this refset " + originalRefset.getRefsetId());
         }
-        
+
         if (project == null) {
+
             throw new Exception("Project Id: " + projectId + " does not exist in the RT2 database");
         }
-        
+
         project = setProjectPermissions(user, project);
-        
+
         if (!project.getRoles().contains(User.ROLE_AUTHOR) || !project.getRoles().contains(User.ROLE_ADMIN)) {
+
             throw new Exception("User does not have the permission to create a refset in this project " + project.getName());
         }
-        
+
         Refset newRefset = new Refset(originalRefset);
         newRefset.setId(null);
-        newRefset.setRefsetId(null);
-        newRefset.setName(name);
         newRefset.setProject(project);
         newRefset.setActive(true);
         newRefset.setVersionStatus(null);
         newRefset.setWorkflowStatus(null);
         newRefset.setVersionNotes("");
         newRefset.setLatestPublishedVersion(false);
-        
+
+        if (newRefsetConceptId == null || newRefsetConceptId.isEmpty()) {
+
+            newRefset.setRefsetId(null);
+
+            if (name == null || name.equals("")) {
+
+                throw new Exception("A name for the new refset must be supplied");
+            }
+
+            newRefset.setName(name);
+
+        } else {
+
+            newRefset.setRefsetId(newRefsetConceptId);
+        }
+
+        if (narrative != null) {
+
+            newRefset.setNarrative(narrative);
+        }
+
+        if (tags != null) {
+
+            newRefset.setTags(tags);
+        }
+
+        if (parentConceptId != null) {
+
+            newRefset.setParentConceptId(parentConceptId);
+        }
+
+        if (localSet != null) {
+
+            newRefset.setLocalSet(localSet);
+        }
+
+        if (comboSet != null) {
+
+            newRefset.setComboRefset(comboSet);
+        }
+
+        if (privateRefset != null) {
+
+            newRefset.setPrivateRefset(privateRefset);
+        }
+
         // Fix Descriptions
         for (Map<String, String> descriptionMap : newRefset.getDescriptions()) {
 
@@ -2367,7 +2536,9 @@ public class RefsetService {
                     // without altering case in new description
                     descriptionMap.put(key, description.toLowerCase().replaceAll(originalRefset.getName().toLowerCase(), name.toLowerCase()));
                 }
+
             }
+
         }
 
         // fix Narrative
@@ -2378,19 +2549,22 @@ public class RefsetService {
             // altering case in new description
             newRefset.setNarrative(newRefset.getNarrative().toLowerCase().replaceAll(originalRefset.getName().toLowerCase(), name.toLowerCase()));
         }
-        
+
         if (newRefset.getType().equals(Refset.INTENSIONAL)) {
 
             // clear definition clauses IDs
             for (final DefinitionClause clause : newRefset.getDefinitionClauses()) {
+
                 clause.setId(null);
             }
+
         }
-        
+
         // create the new refset object
         final Object returned = createRefset(service, user, newRefset);
-        
+
         if (returned instanceof String) {
+
             return returned;
         }
 
@@ -2402,25 +2576,36 @@ public class RefsetService {
             final SearchParameters searchParameters = new SearchParameters();
             ConceptResultList members = RefsetMemberService.getRefsetMembers(service, user, originalRefset.getId(), searchParameters, "list", null);
             List<String> conceptIds = new ArrayList<>();
-    
+
             if (newRefset.getType().equals(Refset.EXTENSIONAL)) {
-    
+
                 members.getItems().stream().forEach(member -> conceptIds.add(member.getCode()));
                 RefsetMemberService.addRefsetMembers(service, user, newRefset.getId(), conceptIds);
             }
-    
+
             logger.info("Copied refset from " + refsetInternalId + ": " + newRefset);
-        
+
         } catch (Exception e) {
+
             throw new Exception(e);
-            
+
         } finally {
+
             RefsetMemberService.refsetsBeingUpdated.remove(newRefsetInternalId);
         }
 
         return newRefset;
     }
 
+    /**
+     * Reset refset.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refsetId the refset id
+     * @return the string
+     * @throws Exception the exception
+     */
     public static String resetRefset(final TerminologyService service, final User user, final String refsetId) throws Exception {
 
         if (!RefsetService.doesRefsetExist(refsetId, null)) {
@@ -2459,6 +2644,210 @@ public class RefsetService {
         logger.info("Successfully reset all versions in database of refsetId: " + refsetId);
 
         return "successfully";
+
+    }
+
+    /**
+     * Invite user to refset.
+     *
+     * @param authUser the auth user
+     * @param refsetInternalId the refset id
+     * @param recipientEmail the recipient email
+     * @param additionalMessage the additional message
+     * @throws Exception the exception
+     */
+    public static void inviteUserToOrganization(final User authUser, final String refsetInternalId, final String recipientEmail, final String additionalMessage) throws Exception {
+
+        if (StringUtils.isBlank(recipientEmail)) {
+
+            throw new Exception("Recipient must have an email address to invite to Refset.");
+        }
+
+        // TODO: move this URL to properties.
+        final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final Refset refset = getRefset(service, authUser, refsetInternalId);
+
+            final User crowdUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+            final boolean isCrowdMember = (crowdUser != null);
+
+            // TODO: Determine needs of hasMembership based on approach implemented
+            if (isCrowdMember) {
+                final Set<String> memberships = CrowdAPIClient.getMembershipsForUser(crowdUser.getUserName());
+                // final boolean hasMemberships = (memberships != null) ? memberships.stream().anyMatch(m -> m.startsWith("rt2-")) : false;
+
+                // Ensure not already members of the organization
+                if (refset.getEdition().getOrganization().getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
+                    throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: " + refset.getOrganizationName());
+                }
+            }
+
+            final String queryString = "requester=" + authUser.getId() + "&recipientEmail=" + URLEncoder.encode(recipientEmail, "UTF-8");
+
+            final String acceptUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=true&" + queryString;
+            final String declineUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=false&" + queryString;
+
+            final String BUTTON = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+                + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
+                + "    <a href='{{BUTTION_LINK}}' target='_blank' style='padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;text-decoration: none;font-weight:bold;display: inline-block;'>"
+                + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
+
+            final StringBuffer emailBody = new StringBuffer();
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
+
+            emailBody.append("    <span>Hello ").append((isCrowdMember) ? crowdUser.getName() : "").append(",</span><br/><br/>");
+
+            // Main invite
+            emailBody.append("    <span>").append(authUser.getName()).append(" would like to invite you to work with the Organization '").append(refset.getOrganizationName())
+                .append("' in order to participate in the reference set modeling project with the RT2 tool.</span><br/><br/>");
+            emailBody.append("    <span>To accept this invitation, and alert ").append(authUser.getName()).append(" of your acceptance, please click the button below.</span><br/><br/>");
+
+            // Additional Information
+            if (!StringUtils.isBlank(additionalMessage)) {
+
+                emailBody.append("In addition, they have included the additional message:").append("<br/><br/>");
+                emailBody.append(additionalMessage).append("<br/><br/>");
+            }
+
+            // accept
+            emailBody.append("    <span style='width: 300px; display: inline-block'>").append(BUTTON.replace("{{BUTTION_LINK}}", acceptUrl).replace("{{BUTTON_TEXT}}", "Accept Invitation"))
+                .append("</span>");
+
+            // decline
+            emailBody.append("    <span style='width: 300px; display: inline-block'>").append(BUTTON.replace("{{BUTTION_LINK}}", declineUrl).replace("{{BUTTON_TEXT}}", "Decline Invitation"))
+                .append("</span>");
+
+            if (!isCrowdMember) {
+
+                emailBody.append("    <span><a href='").append(accountSetupUrl).append("' target='_blank'></a></span><br/><br/>");
+            }
+
+            emailBody.append("    <br/><br/>");
+            // Warning
+            emailBody.append("    <span>If you do not wish to accept the invitation, or this email was received in error, you can safely ignore it.</span><br/><br/>");
+
+            // Signature
+            emailBody.append("    <span>Thank you,</span><br/>");
+            emailBody.append("    <span>The SNOMED CT Reference Set Tool Team</span>");
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
+
+            final String action = INVITE_ACTION;
+            final Set<String> recipients = new HashSet<>(Arrays.asList(recipientEmail.trim()));
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), recipients, emailBody.toString());
+
+            logger.info("INVITE request - from {} to {} for refset {}", authUser.getEmail(), recipients, refsetInternalId);
+
+            AuditEntryHelper.sendRefsetInvite(refset, authUser, recipientEmail.trim());
+
+        }
+
+    }
+
+    /**
+     * Accept invitation.
+     *
+     * @param refsetId the refset id
+     * @param acceptance the acceptance
+     * @param requesterId the requester id
+     * @param recipientEmail the recipient email
+     * @throws Exception the exception
+     */
+    public static void processRefsetInvitation(final String refsetId, final boolean acceptance, final String requesterId, final String recipientEmail) throws Exception {
+
+        final User memberUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+        final boolean isMember = (memberUser != null);
+        final StringBuffer emailBody = new StringBuffer();
+
+        final String BUTTON = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+            + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
+            + "    <a href='{{BUTTION_LINK}}' target='_blank' style='padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;text-decoration: none;font-weight:bold;display: inline-block;'>"
+            + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final User requesterUser = UserService.getUser(requesterId, false);
+            if (requesterUser == null) {
+                logger.error("Requester not found: {}", requesterId);
+            }
+            logger.info("Requester is: {}", requesterUser);
+            final Refset refset = getRefset(service, requesterUser, refsetId);
+
+            // if rejected, send notification to requester
+            if (!acceptance) {
+
+                emailBody.append("<html>");
+                emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+                emailBody.append("<div>");
+
+                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+
+                // Main invite
+                emailBody.append("    <span>").append(isMember ? memberUser.getName() : recipientEmail).append(" has declined your invitation to join ").append(refset.getOrganizationName())
+                    .append(" as a collaborator.</span><br/><br/>");
+
+                // Go to app
+                emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                    .append(BUTTON.replace("{{BUTTION_LINK}}", PROPERTIES.getProperty("app.url.root")).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+
+                emailBody.append("</div>");
+                emailBody.append("</body>");
+                emailBody.append("</html>");
+
+                final String action = INVITE_DECLINED;
+
+                // TODO: what should the from email be?
+                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+                logger.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients );
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+
+            }
+
+            // if accepted, add user to org, admin has to add to team and project since we can't determine here which of the project's team to add the user.
+            if (acceptance) {
+
+                // add user to org as a viewer, will not error if already a member.
+                OrganizationService.addUserToOrganization(service, requesterUser, refset.getEdition().getOrganizationId(), memberUser.getEmail());
+
+                emailBody.append("<html>");
+                emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+                emailBody.append("<div>");
+
+                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+
+                // Main invite
+                emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ").append(refset.getOrganizationName())
+                    .append(" as a collaborator.</span><br/><br/>");
+                emailBody.append("    <span>").append(memberUser.getName()).append("has been added to ").append(refset.getOrganizationName()).append(" as a <b>Viewer</b>.</span><br/><br/>");
+
+                // Warning
+                emailBody.append("    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
+
+                // Go to app
+                emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                    .append(BUTTON.replace("{{BUTTION_LINK}}", PROPERTIES.getProperty("app.url.root")).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+
+                emailBody.append("</div>");
+                emailBody.append("</body>");
+                emailBody.append("</html>");
+
+                final String action = INVITE_ACCEPTED;
+
+                // TODO: what should the from email be?
+                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+                logger.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients );
+                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+
+            }
+
+            AuditEntryHelper.responseForRefsetInvite(refset, requesterUser, recipientEmail.trim(), acceptance);
+
+        }
 
     }
 }
