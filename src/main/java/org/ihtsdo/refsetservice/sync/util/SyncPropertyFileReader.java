@@ -1,6 +1,7 @@
 package org.ihtsdo.refsetservice.sync.util;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -541,6 +543,16 @@ public class SyncPropertyFileReader {
             e.printStackTrace();
         }
 
+    }
+    
+    public List<String> getTestQueries(final ClassPathResource classPathResource) throws Exception {
+        
+        logger.info("NUNO TEST READ FILE {}", classPathResource.getPath());
+        
+        final List<String> lines = FileUtils.readLines(new File(classPathResource.getPath()), "utf-8");
+        
+        return lines;
+        
     }
 
     private String stripQuotes(String str) {

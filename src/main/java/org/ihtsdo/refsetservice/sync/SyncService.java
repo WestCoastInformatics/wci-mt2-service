@@ -1,5 +1,8 @@
 package org.ihtsdo.refsetservice.sync;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -7,10 +10,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
@@ -20,8 +26,11 @@ import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
+import org.ihtsdo.refsetservice.util.EmailUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 public abstract class SyncService {
 
@@ -167,10 +176,17 @@ public abstract class SyncService {
 
         service.add(AuditEntryHelper.syncEntry(new Date()));
 
+        final String queryResults = getPostSyncResults();
+        final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
+
+        if (StringUtils.isNotBlank(emailReceipients)) {
+            EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, queryResults);
+        }
+        
         logger.info("Completed Syncing with Snowstorm");
-
+        
     }
-
+    
     public static Boolean getIsProductionSystem() {
 
         return isProductionSystem == null ? false : isProductionSystem;
@@ -309,6 +325,65 @@ public abstract class SyncService {
 
         SyncService.testing = testing;
 
+    }
+    
+    private static String getPostSyncResults() throws Exception {
+
+        final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
+
+        final List<String> sqlQueries = new ArrayList<>();
+
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(syncTestQueries.getInputStream()));) {
+
+            String line = reader.readLine();
+
+            while (line != null) {
+                if (StringUtils.isNoneBlank(line)) {
+                    sqlQueries.add(line);
+                }
+                line = reader.readLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        logger.info("POST SYNC DATA QUERIES");
+        if (sqlQueries != null) {
+            sqlQueries.forEach(l -> logger.info(l));
+        }
+
+        final StringBuilder result = new StringBuilder();
+
+        // Collect results
+        try (final TerminologyService service = new TerminologyService()) {
+
+            for (final String query : sqlQueries) {
+                if (query != null && !query.contains("--") && query.contains("select ")) {
+
+                    @SuppressWarnings("unchecked")
+                    final List<Object[]> rows = service.getEntityManager().createNativeQuery(query).getResultList();
+                    result.append(query).append("\r\n");
+
+                    if (rows != null) {
+                        for (final Object[] row : rows) {
+                            for (final Object field : row) {
+                                result.append(field).append("|");
+                            }
+                            result.append("\r\n");
+                        }
+                    }
+                    result.append("\r\n");
+                }
+            }
+            
+            logger.info("DONE POST SYNC DATA QUERIES");
+            logger.info(result.toString());
+                        
+        } catch (Exception e) {
+            logger.error("ERROR getting db results", e);
+        }
+        
+        return result.toString();
     }
 
 }
