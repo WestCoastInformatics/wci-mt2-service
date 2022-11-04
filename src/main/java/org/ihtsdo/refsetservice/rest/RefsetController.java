@@ -174,6 +174,50 @@ public class RefsetController extends BaseController {
         }
 
     }
+    
+    /**
+     * Returns the refset member count.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset member count
+     * @throws Exception the exception
+     */
+
+    @ApiOperation(value = "Returns the refset member count", response = Refset.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/memberCount", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> getRefsetMemberCount(@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            logger.debug("getRefsetMemberCount: refsetInternalId: " + refsetInternalId);
+
+            final User user = SecurityService.getUserFromSession();
+            final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+
+            if (refset == null) {
+                throw new Exception("Unable to retrieve refset " + refsetInternalId);
+            }
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            RefsetService.setRefsetMemberCount(service, refset);
+
+            logger.debug("getRefsetMemberCount: refset: " + refset.getRefsetId() + " ; member count: " + refset.getMemberCount());
+
+            return new ResponseEntity<>(refset.getMemberCount() + "", HttpStatus.OK);
+
+        } catch (final Exception e) {
+            return handleException(e);
+        }
+    }
 
     /**
      * Returns the refset.
