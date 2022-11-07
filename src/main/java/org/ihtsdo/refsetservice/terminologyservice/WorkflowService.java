@@ -58,7 +58,7 @@ public final class WorkflowService {
     /**
      * The name of a temporary branch to create empty concepts in to generate concept IDs for new refsets.
      */
-    public static final String TEMP_BRANCH_NAME = "temp";
+    public static final String TEMP_BRANCH_NAME = "TEMP";
 
     /** The PUBLISHED workflow status . */
     public static final String PUBLISHED = "PUBLISHED";
@@ -1085,13 +1085,14 @@ public final class WorkflowService {
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectNode body = mapper.createObjectNode();
         String tempBranchPath = null;
+        final String projectBranchPath = getProjectBranchPath(editionBranchPath);
 
-        if (doesBranchExist(editionBranchPath + "/" + TEMP_BRANCH_NAME)) {
+        if (doesBranchExist(projectBranchPath + "/" + TEMP_BRANCH_NAME)) {
 
-            tempBranchPath = editionBranchPath + "/" + TEMP_BRANCH_NAME;
+            tempBranchPath = projectBranchPath + "/" + TEMP_BRANCH_NAME;
         } else {
 
-            tempBranchPath = createBranch(editionBranchPath, TEMP_BRANCH_NAME);
+            tempBranchPath = createBranch(projectBranchPath, TEMP_BRANCH_NAME);
         }
 
         final long start = System.currentTimeMillis();
