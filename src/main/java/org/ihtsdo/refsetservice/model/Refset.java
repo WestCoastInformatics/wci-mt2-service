@@ -146,7 +146,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private boolean locked = false;
 
-    /** The flag for if the refset was last published more than one edition version prior. */
+    /** The flag for if the refset was published in the last edition version. */
+    @Transient
+    private boolean basedOnLatestVersion = false;
+    
+    /** The flag to display a warning when first editing if the refset was last published more than one edition version prior. */
     @Transient
     private boolean upgradeWarning = false;
 
@@ -307,6 +311,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         comboRefset = other.isComboRefset();
         downloadable = other.isDownloadable();
         locked = other.isLocked();
+        basedOnLatestVersion = other.isBasedOnLatestVersion();
         upgradeWarning = other.getUpgradeWarning();
         availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
@@ -990,23 +995,43 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
-     * Gets the flag that shows if the refset was last published more than one edition version prior.
+     * Gets the flag for if the refset was published in the last edition version.
+     *
+     * @return the based on latest version flag
+     */
+    @JsonGetter()
+    public boolean isBasedOnLatestVersion() {
+
+        return basedOnLatestVersion;
+    }
+
+    /**
+     * Sets the flag for if the refset was published in the last edition version.
+     *
+     * @param basedOnLatestVersion the based on latest version flag
+     */
+    public void setBasedOnLatestVersion(final boolean basedOnLatestVersion) {
+
+        this.basedOnLatestVersion = basedOnLatestVersion;
+    }
+    /**
+     * Gets the flag to display a warning when first editing if the refset was last published more than one edition version prior.
      *
      * @return the upgrade warning flag
      */
     @JsonGetter()
     public boolean getUpgradeWarning() {
-
+        
         return upgradeWarning;
     }
-
+    
     /**
-     * Sets the flag that shows if the refset was last published more than one edition version prior.
+     * Sets the flag to display a warning when first editing if the refset was last published more than one edition version prior.
      *
      * @param upgradeWarning the upgrade warning flag
      */
     public void setUpgradeWarning(final boolean upgradeWarning) {
-
+        
         this.upgradeWarning = upgradeWarning;
     }
 
@@ -1307,6 +1332,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (latestPublishedVersion ? 1 : 0);
         result = prime * result + (hasVersionInDevelopment ? 1 : 0);
         result = prime * result + (locked ? 1 : 0);
+        result = prime * result + (basedOnLatestVersion ? 1 : 0);
         result = prime * result + (upgradeWarning ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         result = prime * result + (comboRefset ? 1 : 0);
@@ -1576,8 +1602,13 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
             return false;
         }
 
-        if (upgradeWarning != other.upgradeWarning) {
+        if (basedOnLatestVersion != other.basedOnLatestVersion) {
 
+            return false;
+        }
+        
+        if (upgradeWarning != other.upgradeWarning) {
+            
             return false;
         }
 

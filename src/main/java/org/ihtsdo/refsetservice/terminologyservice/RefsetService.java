@@ -1296,6 +1296,23 @@ public class RefsetService {
         refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
         refset.setBranchPath(getBranchPath(refset));
         setRefsetMemberCount(service, refset);
+        
+        final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
+        String versionDate = null;
+        
+        if (refset.getVersionDate() != null) {
+            versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
+        
+        } else if (refset.getVersionList().size() > 1){
+            versionDate = refset.getVersionList().get(1).get("date");
+        }
+        
+        if (versionDate == null) {
+            refset.setBasedOnLatestVersion(true);
+        
+        } else if (editionVersions.indexOf(versionDate) == 0) {
+            refset.setBasedOnLatestVersion(true);
+        }
     }
 
     /**

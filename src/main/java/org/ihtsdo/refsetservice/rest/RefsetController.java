@@ -792,13 +792,10 @@ public class RefsetController extends BaseController {
             // if the status is Published then create a new version of the refset that is ready to be edited
             if (currentStatus == null || currentStatus.equals(WorkflowService.PUBLISHED)) {
 
-                final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
-                final String versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
-
                 final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, refset.getId(), true);
                 refset = RefsetService.getRefset(service, user, newRefsetInternalId);
 
-                if (action.equals(WorkflowService.EDIT) && editionVersions.indexOf(versionDate) > 0) {
+                if (action.equals(WorkflowService.EDIT) && !refset.isBasedOnLatestVersion()) {
 
                     RefsetService.refsetsToShowUpgradeWarning.add(newRefsetInternalId);
                     refset.setUpgradeWarning(true);
