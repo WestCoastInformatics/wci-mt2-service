@@ -386,7 +386,7 @@ public class SecurityService implements AutoCloseable {
 
         if (handler == null) {
 
-            timeout = (StringUtils.isNotBlank(config.getProperty("security.timeout"))) ? Integer.valueOf(config.getProperty("security.timeout")) : 7200000;
+            timeout = (StringUtils.isNotBlank(config.getProperty("spring.session.timeout.seconds"))) ? Integer.valueOf(config.getProperty("spring.session.timeout.seconds")) : 900000;
 
             final String handlerName =
                 (StringUtils.isNotBlank(config.getProperty("security.handler"))) ? config.getProperty("security.handler") : "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
