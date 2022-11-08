@@ -1307,10 +1307,15 @@ public class RefsetService {
             versionDate = refset.getVersionList().get(1).get("date");
         }
         
+        refset.setTerminologyVersionDate(versionDate);
+        
         if (versionDate == null) {
+            
+            refset.setTerminologyVersionDate(editionVersions.get(0));
             refset.setBasedOnLatestVersion(true);
         
         } else if (editionVersions.indexOf(versionDate) == 0) {
+            
             refset.setBasedOnLatestVersion(true);
         }
     }

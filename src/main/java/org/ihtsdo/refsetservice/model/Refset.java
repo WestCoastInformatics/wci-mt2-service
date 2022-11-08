@@ -130,6 +130,34 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = false)
     private int memberCount = -1;
 
+    /** The edit branch ID. */
+    @Column(nullable = true, length = 256)
+    private String editBranchId;
+
+    /** The external URL. */
+    @Column(nullable = true, length = 4000)
+    private String externalUrl;
+
+    /** The module ID. */
+    @Column(nullable = false, length = 256)
+    private String moduleId;
+    
+    /** The project. */
+    @ManyToOne(targetEntity = Project.class)
+    @JoinColumn(nullable = true)
+    @Fetch(FetchMode.JOIN)
+    private Project project;
+
+    /** The tags. */
+    @ElementCollection
+    private Set<String> tags = new HashSet<String>();
+
+    /** The definition clauses. */
+    // @Fetch(FetchMode.JOIN)
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("created ASC")
+    private List<DefinitionClause> definitionClauses = new ArrayList<>();
+
     /** The flag for if a user can download this refset. */
     @Transient
     private boolean downloadable;
@@ -145,6 +173,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The flag for if the refset is locked due to an edit. */
     @Transient
     private boolean locked = false;
+    
+    /** The date of the terminology version this refset is based on. */
+    @Transient
+    private String terminologyVersionDate;
 
     /** The flag for if the refset was published in the last edition version. */
     @Transient
@@ -174,18 +206,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private List<Map<String, String>> versionList;
 
-    /** The module ID. */
-    @Column(nullable = false, length = 256)
-    private String moduleId;
-
-    /** The edit branch ID. */
-    @Column(nullable = true, length = 256)
-    private String editBranchId;
-
-    /** The external URL. */
-    @Column(nullable = true, length = 4000)
-    private String externalUrl;
-
     /** The count of discussions for this item. */
     @Transient
     private int openDiscussionCount;
@@ -194,22 +214,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private int resolvedDiscussionCount;
     
-    /** The project. */
-    @ManyToOne(targetEntity = Project.class)
-    @JoinColumn(nullable = true)
-    @Fetch(FetchMode.JOIN)
-    private Project project;
-
-    /** The tags. */
-    @ElementCollection
-    private Set<String> tags = new HashSet<String>();
-
-    /** The definition clauses. */
-    // @Fetch(FetchMode.JOIN)
-    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class, orphanRemoval = true, fetch = FetchType.LAZY)
-    @OrderBy("created ASC")
-    private List<DefinitionClause> definitionClauses = new ArrayList<>();
-
     /** The value to use for the 'published' version status. */
     @Transient
     public static final String PUBLISHED = "PUBLISHED";
@@ -311,6 +315,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         comboRefset = other.isComboRefset();
         downloadable = other.isDownloadable();
         locked = other.isLocked();
+        terminologyVersionDate = other.getTerminologyVersionDate();
         basedOnLatestVersion = other.isBasedOnLatestVersion();
         upgradeWarning = other.getUpgradeWarning();
         availableActions = other.getAvailableActions();
@@ -993,6 +998,27 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         this.locked = locked;
     }
+    
+    /**
+     * Returns the date of the terminology version this refset is based on.
+     *
+     * @return the terminology version date
+     */
+    @JsonGetter()
+    public String getTerminologyVersionDate() {
+
+        return terminologyVersionDate;
+    }
+
+    /**
+     * Sets the date of the terminology version this refset is based on.
+     *
+     * @param terminologyVersionDate the terminology version date to set
+     */
+    public void setTerminologyVersionDate(final String terminologyVersionDate) {
+
+        this.terminologyVersionDate = terminologyVersionDate;
+    }
 
     /**
      * Gets the flag for if the refset was published in the last edition version.
@@ -1089,17 +1115,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public String getParentConceptId() {
-
+        
         return parentConceptId;
     }
-
+    
     /**
      * Sets the ID of the parent of the underlying refset concept.
      *
      * @param parentConceptId the parent concept ID to set
      */
     public void setParentConceptId(final String parentConceptId) {
-
+        
         this.parentConceptId = parentConceptId;
     }
 
@@ -1323,6 +1349,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((branchPath == null) ? 0 : branchPath.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((terminologyVersionDate == null) ? 0 : terminologyVersionDate.hashCode());
         result = prime * result + memberCount;
         result = prime * result + openDiscussionCount;
         result = prime * result + resolvedDiscussionCount;
@@ -1554,6 +1581,18 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         } else if (!externalUrl.equals(other.externalUrl)) {
 
+            return false;
+        }
+        
+        if (terminologyVersionDate == null) {
+            
+            if (other.terminologyVersionDate != null) {
+                
+                return false;
+            }
+            
+        } else if (!terminologyVersionDate.equals(other.terminologyVersionDate)) {
+            
             return false;
         }
 
