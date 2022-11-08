@@ -44,16 +44,16 @@ public final class WorkflowService {
     private static Logger logger = LoggerFactory.getLogger(WorkflowService.class);
 
     /** The name of a refset project branch . */
-    public static final String PROJECT_BRANCH_NAME = "refsets";
+    public static final String PROJECT_BRANCH_NAME = "REFSETS";
 
     /** The prefix to use for a refset branch . */
-    public static final String REFSET_BRANCH_PREFIX = "refset-";
+    public static final String REFSET_BRANCH_PREFIX = "REFSET-";
 
     /** The path prefix to use for a refset branch . */
-    public static final String REFSET_BRANCH_PATH_PREFIX = PROJECT_BRANCH_NAME + "/refset-";
+    public static final String REFSET_BRANCH_PATH_PREFIX = PROJECT_BRANCH_NAME + "/REFSET-";
 
     /** The name of a refset edit branch . */
-    public static final String EDIT_BRANCH_NAME = "edit-";
+    public static final String EDIT_BRANCH_NAME = "EDIT-";
 
     /**
      * The name of a temporary branch to create empty concepts in to generate concept IDs for new refsets.
@@ -1063,9 +1063,9 @@ public final class WorkflowService {
             logger.info("Merged branch " + sourceBranchPath + " into branch " + targetBranchPath);
             logger.debug("Merge branch info at " + jobStatusUrl);
 
-            try (final Response mergeInforesponse = SnowstormConnection.getResponse(jobStatusUrl)) {
+            try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
 
-                logger.debug("Merge branch info: " + mergeInforesponse.readEntity(String.class) + ". Time: " + (System.currentTimeMillis() - start));
+                logger.debug("Merge branch info: " + mergeInfoResponse.readEntity(String.class) + ". Time: " + (System.currentTimeMillis() - start));
             }
 
         }
@@ -1084,14 +1084,16 @@ public final class WorkflowService {
         String refsetConceptId = null;
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectNode body = mapper.createObjectNode();
-        String tempBranchPath = null;
         final String projectBranchPath = getProjectBranchPath(editionBranchPath);
+        String tempBranchPath = null;
+        
+        if (!doesBranchExist(projectBranchPath)) {
+            createBranch(editionBranchPath, PROJECT_BRANCH_NAME);
+        }
 
         if (doesBranchExist(projectBranchPath + "/" + TEMP_BRANCH_NAME)) {
-
             tempBranchPath = projectBranchPath + "/" + TEMP_BRANCH_NAME;
         } else {
-
             tempBranchPath = createBranch(projectBranchPath, TEMP_BRANCH_NAME);
         }
 
