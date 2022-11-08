@@ -458,8 +458,8 @@ public final class WorkflowService {
             String projectBranchPath = getProjectBranchPath(refset.getEditionBranch());
             String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
 
-            mergeBranch(refset.getEditionBranch(), projectBranchPath, "Updating branch to latest changes");
-            mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes");
+            mergeBranch(refset.getEditionBranch(), projectBranchPath, "Updating branch to latest changes", true);
+            mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
             createEditBranch(service, user, refset.getEditionBranch(), refset, refset.getRefsetId(), branchId);
         }
 
@@ -705,7 +705,7 @@ public final class WorkflowService {
 
         if (doesBranchExist(projectBranchPath)) {
 
-            mergeBranch(editionBranchPath, projectBranchPath, "Updating branch to latest changes");
+            mergeBranch(editionBranchPath, projectBranchPath, "Updating branch to latest changes", true);
             return projectBranchPath;
 
         } else {
@@ -730,7 +730,7 @@ public final class WorkflowService {
 
         if (doesBranchExist(projectBranchPath)) {
 
-            mergeBranch(projectBranchPath, editionBranchPath, comment);
+            mergeBranch(projectBranchPath, editionBranchPath, comment, false);
             return true;
 
         } else {
@@ -770,7 +770,7 @@ public final class WorkflowService {
 
         if (doesBranchExist(refsetBranchPath)) {
 
-            mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes");
+            mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
             return refsetBranchPath;
 
         } else {
@@ -798,7 +798,7 @@ public final class WorkflowService {
 
         if (doesBranchExist(refsetBranchPath)) {
 
-            mergeBranch(refsetBranchPath, projectBranchPath, comment);
+            mergeBranch(refsetBranchPath, projectBranchPath, comment, false);
             return true;
         } else {
 
@@ -890,7 +890,7 @@ public final class WorkflowService {
 
         if (doesBranchExist(refsetBranchPath) && doesBranchExist(editBranchPath)) {
 
-            mergeBranch(editBranchPath, refsetBranchPath, comment);
+            mergeBranch(editBranchPath, refsetBranchPath, comment, false);
 
             RefsetMemberService.copyAllMemberCachesToBranch(editBranchPath, refsetBranchPath, "true");
             RefsetMemberService.clearAllMemberCaches(editBranchPath);
@@ -1033,12 +1033,13 @@ public final class WorkflowService {
      * @param sourceBranchPath the branch path with the content to merge
      * @param targetBranchPath the branch path to merge content into
      * @param comment the merge comment
+     * @param rebase is this a rebase or a promotion
      * @throws Exception the exception
      */
-    public static void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment) throws Exception {
+    public static void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment, final boolean rebase) throws Exception {
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.BASE_URL + "merges";
+        final String mergeUrl = SnowstormConnection.BASE_URL + "merges";
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
 
@@ -1047,9 +1048,30 @@ public final class WorkflowService {
             body.put("commitComment", comment);
         }
 
-        logger.debug("mergeBranch URL: " + url + " ; body: " + body.toString());
+        if (rebase) {
+            
+            final String reviewUrl = SnowstormConnection.BASE_URL + "merge-reviews";
+            logger.debug("mergeBranch reviewUrl: " + reviewUrl + " ; body: " + body.toString());
 
-        try (final Response response = SnowstormConnection.postResponse(url, body.toString())) {
+            try (final Response response = SnowstormConnection.postResponse(reviewUrl, body.toString())) {
+
+                // Only process payload if Rest call is successful
+                if (response.getStatus() != Response.Status.OK.getStatusCode() && response.getStatus() != Response.Status.CREATED.getStatusCode()) {
+
+                    final String error = "Could not review merge branch " + sourceBranchPath + " into branch " + targetBranchPath;
+                    logger.error(error);
+                    throw new Exception(error);
+                }
+                
+                final String[] location = response.getHeaderString("Location").split("/");
+                final String reviewId = location[location.length - 1];
+                body.put("reviewId", reviewId);
+            }
+        }
+        
+        logger.debug("mergeBranch URL: " + mergeUrl + " ; body: " + body.toString());
+        
+        try (final Response response = SnowstormConnection.postResponse(mergeUrl, body.toString())) {
 
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode() && response.getStatus() != Response.Status.CREATED.getStatusCode()) {
@@ -1060,16 +1082,34 @@ public final class WorkflowService {
             }
 
             final String jobStatusUrl = response.getHeaderString("Location");
-            logger.info("Merged branch " + sourceBranchPath + " into branch " + targetBranchPath);
-            logger.debug("Merge branch info at " + jobStatusUrl);
+            
+            logger.debug("Merge status info at " + jobStatusUrl);
 
             try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
 
-                logger.debug("Merge branch info: " + mergeInfoResponse.readEntity(String.class) + ". Time: " + (System.currentTimeMillis() - start));
+                final String resultString = mergeInfoResponse.readEntity(String.class);
+                final JsonNode root = mapper.readTree(resultString.toString());
+                final String status = root.get("status").asText();
+                
+                if (status.equals("FAILED")) {
+                    
+                    final String message = root.get("message").asText();
+                    
+                    if (!message.contains("This rebase is not meaningful")) {
+                        
+                        final String error = "Could not merge branch " + sourceBranchPath + " into branch " + targetBranchPath + ". Error: " + message;
+                        logger.error(error);
+                        throw new Exception(error);
+                        
+                    } else {
+                        logger.debug("Merge did not occurr. " + message);
+                    }
+                    
+                } else {
+                    logger.info("Merged branch " + sourceBranchPath + " into branch " + targetBranchPath + ". Time: " + (System.currentTimeMillis() - start));
+                }
             }
-
         }
-
     }
 
     /**
@@ -1107,7 +1147,7 @@ public final class WorkflowService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. " + response.readEntity(String.class));
             }
 
             // Only process payload if Rest call is successful
