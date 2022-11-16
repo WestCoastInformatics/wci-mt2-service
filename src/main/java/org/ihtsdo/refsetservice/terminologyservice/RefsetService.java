@@ -1306,7 +1306,7 @@ public class RefsetService {
         String versionDate = null;
         
         if (editionVersions.size() == 0) {
-            editionVersions.add("Development"); // DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null);
+            editionVersions.add("Never Published"); // DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null);
         }
         
         if (refset.getVersionDate() != null) {
