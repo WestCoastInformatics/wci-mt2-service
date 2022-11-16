@@ -1076,7 +1076,8 @@ public final class WorkflowService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode() && response.getStatus() != Response.Status.CREATED.getStatusCode()) {
 
-                logger.error("mergeBranch response: " + ModelUtility.toJson(response));
+                logger.error("mergeBranch response status: " + response.getStatus());
+                logger.error("mergeBranch response status reason: " + response.getStatusInfo().getReasonPhrase());
                 final String error = "Could not merge branch " + sourceBranchPath + " into branch " + targetBranchPath;
                 logger.error(error);
                 throw new Exception(error);
