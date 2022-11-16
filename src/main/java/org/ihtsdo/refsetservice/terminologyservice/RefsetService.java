@@ -100,6 +100,9 @@ public class RefsetService {
 
     /** A list of refset actively being updated. */
     public static final Set<String> refsetsToShowUpgradeWarning = new HashSet<>();
+    
+    /** A cache of the unique refset IDs in the system. */
+    public static final Set<String> uniqueRefsetIds = new HashSet<>();
 
     /** The Constant EMAIL_SUBJECT. */
     private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
@@ -321,6 +324,8 @@ public class RefsetService {
             final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset.getId(), conceptIdList);
             WorkflowService.mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), branchId, "Initial intensional refset creation.");
         }
+        
+        clearAllRefsetCaches(refset.getEditionBranch());
 
         logger.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added. Time: " + (System.currentTimeMillis() - start));
         logger.debug("Create Refset: Refset: " + ModelUtility.toJson(refset));
@@ -1300,6 +1305,10 @@ public class RefsetService {
         final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
         String versionDate = null;
         
+        if (editionVersions.size() == 0) {
+            editionVersions.add("Development"); // DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null);
+        }
+        
         if (refset.getVersionDate() != null) {
             versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
         
@@ -1463,23 +1472,18 @@ public class RefsetService {
                     refsetIds.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009"));
                 }
 
+                termQueryForRt2 = "(tags: (" + termQueryForRt2 + ")";
+                
                 if (!refsetIds.isEmpty()) {
-
-                    termQueryForRt2 = "((" + termQueryForRt2 + ")";
-
-                    if (!refsetIds.isEmpty()) {
-
-                        termQueryForRt2 = termQueryForRt2 + " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
-                    }
-
-                    termQueryForRt2 += ")";
-
-                } else {
-
-                    termQueryForRt2 = "(" + termQueryForRt2 + ")";
+                    
+                    getUniqueRefsetIds(service);
+                    refsetIds.retainAll(uniqueRefsetIds);
+                    
+                    termQueryForRt2 += " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
                 }
+                
+                termQueryForRt2 += ")";
 
-                termQueryForRt2 = "tags: " + termQueryForRt2;
             }
 
             // if the filter query isn't empty then prepare the query with wildcards
@@ -1703,6 +1707,28 @@ public class RefsetService {
 
         final Refset refset = getRefsetFromInternalId(service, refsetInternalId);
         return getBranchPath(refset);
+    }
+    
+    /**
+     * Get the set of unique Refset IDs.
+     *
+     * @param service the Terminology Service
+     * @return the set of unique Refset IDs
+     * @throws Exception the exception
+     */
+    public static Set<String> getUniqueRefsetIds(final TerminologyService service) throws Exception {
+
+        if (!uniqueRefsetIds.isEmpty()) {
+            return uniqueRefsetIds;
+        }
+
+        final ResultList<Refset> results = service.find("(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR (versionStatus: " + Refset.IN_DEVELOPMENT + ")", new PfsParameter(), Refset.class, null);
+
+        for (final Refset refset : results.getItems()) {
+            uniqueRefsetIds.add(refset.getRefsetId());
+        }
+        
+        return uniqueRefsetIds;
     }
 
     /**
@@ -2072,6 +2098,8 @@ public class RefsetService {
             logger.debug("clearAllRefsetCaches: Clearing caches for all branches");
             branchVersionCache.clear();
         }
+        
+        uniqueRefsetIds.clear();
 
     }
 

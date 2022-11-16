@@ -25,6 +25,7 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -177,6 +178,10 @@ public abstract class SyncService {
         service.add(AuditEntryHelper.syncEntry(new Date()));
 
         final String queryResults = getPostSyncResults();
+        
+        RefsetService.clearAllRefsetCaches(null);
+        RefsetMemberService.clearAllMemberCaches(null);
+        
         final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
 
         if (StringUtils.isNotBlank(emailReceipients)) {

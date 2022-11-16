@@ -1095,7 +1095,7 @@ public final class WorkflowService {
                     
                     final String message = root.get("message").asText();
                     
-                    if (!message.contains("This rebase is not meaningful")) {
+                    if (!message.contains("is not meaningful")) {
                         
                         final String error = "Could not merge branch " + sourceBranchPath + " into branch " + targetBranchPath + ". Error: " + message;
                         logger.error(error);

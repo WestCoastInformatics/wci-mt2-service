@@ -607,7 +607,7 @@ public class RefsetMemberService {
             }
 
             final String resultString = response.readEntity(String.class);
-            logger.debug("searchDirectoryMembers resultString: " + resultString);
+            
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
