@@ -73,6 +73,11 @@ public class Edition extends AbstractHasModified {
     /** The ancestor module concept to the edition's modules. */
     @Column(nullable = true)
     private String topLevelModule;
+    
+    /** The modules that are part of this edition. */
+    @ElementCollection
+    @Fetch(FetchMode.JOIN)
+    private Set<String> modules = new HashSet<String>();
 
     /** The default language code. */
     @Column(nullable = true, length = 256)
@@ -128,6 +133,7 @@ public class Edition extends AbstractHasModified {
         name = other.getName();
         namespace = other.getNamespace();
         defaultLanguageRefsets = other.getDefaultLanguageRefsets();
+        modules = other.getModules();
         defaultLanguageCode = other.getDefaultLanguageCode();
         branch = other.getBranch();
         topLevelModule = other.getTopLevelModule();
@@ -271,6 +277,34 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
+     * Gets the modules that are part of this edition.
+     *
+     * @return the modules
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    // @IndexedEmbedded
+    public Set<String> getModules() {
+
+        if (modules == null) {
+
+            modules = new HashSet<>();
+        }
+
+        return modules;
+    }
+    
+
+    /**
+     * Sets the modules that are part of this edition.
+     *
+     * @param modules the set of modules IDs
+     */
+    public void setModules(final Set<String> modules) {
+
+        this.modules = modules;
+    }
+    
+    /**
      * Gets the default language refsets.
      *
      * @return the default language refsets
@@ -278,12 +312,12 @@ public class Edition extends AbstractHasModified {
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     // @IndexedEmbedded
     public Set<String> getDefaultLanguageRefsets() {
-
+        
         if (defaultLanguageRefsets == null) {
-
+            
             defaultLanguageRefsets = new HashSet<>();
         }
-
+        
         return defaultLanguageRefsets;
     }
 
@@ -513,6 +547,7 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((branch == null) ? 0 : branch.hashCode());
         result = prime * result + ((topLevelModule == null) ? 0 : topLevelModule.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
+        result = prime * result + ((modules == null) ? 0 : modules.hashCode());
         result = prime * result + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
         result = prime * result + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
         result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
@@ -606,15 +641,27 @@ public class Edition extends AbstractHasModified {
             return false;
         }
 
-        if (defaultLanguageRefsets == null) {
+        if (modules == null) {
 
-            if (other.defaultLanguageRefsets != null) {
+            if (other.modules != null) {
 
                 return false;
             }
 
-        } else if (!defaultLanguageRefsets.equals(other.defaultLanguageRefsets)) {
+        } else if (!modules.equals(other.modules)) {
 
+            return false;
+        }
+        
+        if (defaultLanguageRefsets == null) {
+            
+            if (other.defaultLanguageRefsets != null) {
+                
+                return false;
+            }
+            
+        } else if (!defaultLanguageRefsets.equals(other.defaultLanguageRefsets)) {
+            
             return false;
         }
 

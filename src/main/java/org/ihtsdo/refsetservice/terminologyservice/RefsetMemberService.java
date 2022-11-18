@@ -4362,6 +4362,7 @@ public class RefsetMemberService {
 
                     } else if (status.equalsIgnoreCase("failed")) {
 
+                        jobDone = true;
                         logger.error(errorMessage + root.get("message").asText());
                     } else {
 

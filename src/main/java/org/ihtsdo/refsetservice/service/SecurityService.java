@@ -131,44 +131,66 @@ public class SecurityService implements AutoCloseable {
         final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", "", "", new HashSet<String>());
         logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
 
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
         if (requestAttributes == null || requestAttributes.getRequest() == null) {
 
             return nonLoggedInUser;
         }
 
-        ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
+        final HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
+        final Cookie imsCookie = getImsCookie();
 
-        Cookie[] cookies = requestAttributes.getRequest().getCookies();
+        if (imsCookie != null) {
+
+            final Cookie cookie = new Cookie(imsCookie.getName(), null);
+            cookie.setPath("/"); // cookies[i].getPath()
+            cookie.setDomain(".ihtsdotools.org"); // cookies[i].getDomain()
+            cookie.setHttpOnly(imsCookie.isHttpOnly());
+            cookie.setMaxAge(0);
+            response.addCookie(cookie);
+        }
+
+        return nonLoggedInUser;
+    }
+    
+    /**
+     * Clear cookies.
+     *
+     * @throws Exception the exception
+     */
+    public static Cookie getImsCookie() throws Exception {
+        
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+            return null;
+        }
+        
+        ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
+        Cookie imsCookie = null;
+        final Cookie[] cookies = requestAttributes.getRequest().getCookies();
 
         if (cookies != null) {
 
             HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
-            //logger.debug("getUserFromSession cookies: " + ModelUtility.toJson(cookies));
-            //logger.debug("getUserFromSession Builder Host: " + builder.build().toString());
-            //logger.debug("getUserFromSession getServerName: " + requestAttributes.getRequest().getServerName());
-            //logger.debug("getUserFromSession getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
+            //logger.debug("getImsCookie cookies: " + ModelUtility.toJson(cookies));
+            //logger.debug("getImsCookie Builder Host: " + builder.build().toString());
+            //logger.debug("getImsCookie getServerName: " + requestAttributes.getRequest().getServerName());
+            //logger.debug("getImsCookie getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
 
             for (int i = 0; i < cookies.length; i++) {
 
                 if (cookies[i].getName().contains("ims-ihtsdo")) {
 
-                    //logger.debug("getUserFromSession ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
-                    Cookie cookie = new Cookie(cookies[i].getName(), null);
-                    cookie.setPath("/"); // cookies[i].getPath()
-                    cookie.setDomain(".ihtsdotools.org"); // cookies[i].getDomain()
-                    cookie.setHttpOnly(cookies[i].isHttpOnly());
-                    cookie.setMaxAge(0);
-                    response.addCookie(cookie);
+                    //logger.debug("getImsCookie ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+                    imsCookie = cookies[i];
                     break;
                 }
-
             }
-
         }
-
-        return nonLoggedInUser;
+        
+        return imsCookie;
     }
 
     /**
@@ -375,11 +397,6 @@ public class SecurityService implements AutoCloseable {
         if (userName == null || userName.isEmpty()) {
 
             throw new LocalException("Invalid userName: null");
-        }
-
-        if (password == null || password.isEmpty()) {
-
-            throw new LocalException("Invalid password: null");
         }
 
         Properties config = PropertyUtility.getProperties();

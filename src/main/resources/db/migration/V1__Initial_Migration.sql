@@ -56,6 +56,13 @@ CREATE TABLE `editions` (
 ALTER TABLE `editions` ADD INDEX `FK9og41jo3e6xe033my21t6wscf` (`organization_id`);
 ALTER TABLE `editions` ADD CONSTRAINT `FK9og41jo3e6xe033my21t6wscf` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`);
 
+CREATE TABLE `edition_modules` (
+  `Edition_id` varchar(64) NOT NULL,
+  `modules` varchar(255) DEFAULT NULL
+);
+ALTER TABLE `edition_modules` ADD INDEX `FKdomyqf663j9mkuqekmkleyyq5` (`Edition_id`);
+ALTER TABLE `edition_modules` ADD CONSTRAINT `FKdomyqf663j9mkuqekmkleyyq5` FOREIGN KEY (`Edition_id`) REFERENCES `editions` (`id`);
+
 CREATE TABLE `edition_defaultlanguagerefsets` (
   `Edition_id` varchar(64) NOT NULL,
   `defaultLanguageRefsets` varchar(255) DEFAULT NULL

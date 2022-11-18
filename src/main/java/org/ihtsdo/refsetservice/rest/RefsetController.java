@@ -862,6 +862,69 @@ public class RefsetController extends BaseController {
         }
 
     }
+    
+    /**
+     * Start the publication of all Ready for Publication refsets in a code system by promoting them to the REFSETS branch.
+     * ** IMPORTANT ** Once this step is taken it will be very hard to reverse
+     *
+     * @param codeSystem a code system to limit the refset to
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    @PutMapping("/admin/startAllRefsetPublications")
+    public @ResponseBody ResponseEntity<String> startAllRefsetPublications(@RequestParam(required = true) final String codeSystem)
+        throws Exception {
+
+        final User user = SecurityService.getUserFromSession();
+        
+        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+        }
+
+        if (StringUtility.isEmpty(codeSystem)) {
+
+            throw new Exception("A Code System must be specified.");
+        }
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+
+            logger.debug("startAllRefsetPublications: editionShortName (codeSystem): " + codeSystem);
+
+            final List<String> refsetsNotUpdated = WorkflowService.startAllRefsetPublications(service, codeSystem);
+            String error = "";
+
+            // see if there are any refsets that were unable to be updated and craft the error message
+            if (refsetsNotUpdated.size() > 0) {
+
+                error = "Unable to promote refsets in code system " + codeSystem + ": ";
+
+                for (final String unremovedConcept : refsetsNotUpdated) {
+
+                    error += unremovedConcept + ", ";
+                }
+
+                error = StringUtils.removeEnd(error, ", ");
+            }
+
+            if (error.equals("")) {
+
+                String message = "All refsets promoted in code system " + codeSystem;
+                return new ResponseEntity<>("{\"status\": \"" + message + ".\"}", HttpStatus.OK);
+
+            } else {
+
+                return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
 
     /**
      * Complete the publication of all Ready for Publication refsetsin a code system.
@@ -876,6 +939,10 @@ public class RefsetController extends BaseController {
         throws Exception {
 
         final User user = SecurityService.getUserFromSession();
+        
+        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+        }
 
         if (StringUtility.isEmpty(codeSystem)) {
 
@@ -925,7 +992,7 @@ public class RefsetController extends BaseController {
         }
 
     }
-
+    
     /**
      * Set refsets that failed publication back to 'Ready For Edit' status.
      *
@@ -938,6 +1005,10 @@ public class RefsetController extends BaseController {
     public @ResponseBody ResponseEntity<String> failRefsetPublications(@RequestParam(required = true) final String refsetIds, @RequestParam(required = true) final String notes) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
+        
+        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+        }
 
         try (TerminologyService service = new TerminologyService()) {
 

@@ -1262,7 +1262,7 @@ public class RefsetService {
 
         service.setModifiedBy(user.getUserName());
         service.setModifiedFlag(true);
-
+        
         String query = "latestPublishedVersion: true";
 
         if (versionDate != null && !versionDate.equals("") & !versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {

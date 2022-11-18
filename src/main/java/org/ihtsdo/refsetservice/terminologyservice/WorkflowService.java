@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -48,9 +49,6 @@ public final class WorkflowService {
 
     /** The prefix to use for a refset branch . */
     public static final String REFSET_BRANCH_PREFIX = "REFSET-";
-
-    /** The path prefix to use for a refset branch . */
-    public static final String REFSET_BRANCH_PATH_PREFIX = PROJECT_BRANCH_NAME + "/REFSET-";
 
     /** The name of a refset edit branch . */
     public static final String EDIT_BRANCH_NAME = "EDIT-";
@@ -211,6 +209,74 @@ public final class WorkflowService {
 
         // n/a
     }
+    
+    /**
+     * Start the publication of all Ready for Publication refsets in a code system by promoting them to the REFSETS branch.
+     *
+     * @param service the Terminology Service
+     * @param editionShortName an code system to limit the refset to
+     * @return A list of concepts that were unable to be promoted
+     * @throws Exception the exception
+     */
+    public static List<String> startAllRefsetPublications(final TerminologyService service, final String editionShortName) throws Exception {
+
+        List<String> refsetsNotUpdated = new ArrayList<>();
+        String query = "workflowStatus: " + READY_FOR_PUBLICATION + " AND editionShortName: " + QueryParserBase.escape(editionShortName);
+
+        final ResultList<Refset> results = service.find(query, null, Refset.class, null);
+
+        // see if there is an "In Development" version as that should be the latest.
+        for (final Refset refset : results.getItems()) {
+            
+            try {
+                
+                final String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
+                final String editBranchPath = getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId());
+                
+                mergeBranch(getProjectBranchPath(refset.getEditionBranch()), refsetBranchPath, "Updating branch to latest changes", true);
+
+                final boolean merged = mergeRefsetIntoProjectBranch(refset.getEditionBranch(), refset.getRefsetId(), "Preparing for publication");
+    
+                if (!merged) {
+    
+                    final String message = "Unable to merge refset into project branch for refset " + refset.getRefsetId() + " because the project branch doesn't exist.";
+                    logger.error(message);
+                    throw new Exception(message);
+                }
+            } catch (Exception e) {
+                
+                logger.error("Unable to merge refset into project branch for refset " + refset.getRefsetId() + " because: " + e.getMessage(), e);
+                refsetsNotUpdated.add(refset.getRefsetId());
+            }
+        }
+
+        return refsetsNotUpdated;
+    }
+
+    /**
+     * Complete the publication of all Ready for Publication refsets.
+     *
+     * @param service the Terminology Service
+     * @param versionDate the publication date of the refset in YYYY/mm/dd format
+     * @param editionShortName an code system to limit the refset to
+     * @return A list of concepts that were unable to have publication completed
+     * @throws Exception the exception
+     */
+    public static List<String> completeAllRefsetPublications(final TerminologyService service, final String versionDate, final String editionShortName) throws Exception {
+
+        List<String> refsetsNotUpdated = new ArrayList<>();
+        String query = "workflowStatus: " + READY_FOR_PUBLICATION + " AND editionShortName: " + QueryParserBase.escape(editionShortName);
+
+        final ResultList<Refset> results = service.find(query, null, Refset.class, null);
+
+        // see if there is an "In Development" version as that should be the latest.
+        for (final Refset refset : results.getItems()) {
+
+            refsetsNotUpdated.addAll(completeRefsetPublication(service, refset, versionDate));
+        }
+
+        return refsetsNotUpdated;
+    }
 
     /**
      * Complete the publication of a refset.
@@ -269,32 +335,7 @@ public final class WorkflowService {
 
         return refsetsNotUpdated;
     }
-
-    /**
-     * Complete the publication of all Ready for Publication refsets.
-     *
-     * @param service the Terminology Service
-     * @param versionDate the publication date of the refset in YYYY/mm/dd format
-     * @param editionShortName an code system to limit the refset to
-     * @return A list of concepts that were unable to have publication completed
-     * @throws Exception the exception
-     */
-    public static List<String> completeAllRefsetPublications(final TerminologyService service, final String versionDate, final String editionShortName) throws Exception {
-
-        List<String> refsetsNotUpdated = new ArrayList<>();
-        String query = "workflowStatus: " + READY_FOR_PUBLICATION + " AND editionShortName: " + QueryParserBase.escape(editionShortName);
-
-        final ResultList<Refset> results = service.find(query, null, Refset.class, null);
-
-        // see if there is an "In Development" version as that should be the latest.
-        for (final Refset refset : results.getItems()) {
-
-            refsetsNotUpdated.addAll(completeRefsetPublication(service, refset, versionDate));
-        }
-
-        return refsetsNotUpdated;
-    }
-
+    
     /**
      * Set workflow status for a number of refsets at once.
      *
@@ -466,20 +507,6 @@ public final class WorkflowService {
         if (currentStatus.equals(IN_UPGRADE)) {
 
             RefsetMemberService.removeUpgradeData(service, user, refset.getId());
-        }
-
-        // if publication is being requested merge the refset branch into the edition branch
-        if (action.equals(REQUEST_PUBLICATION)) {
-
-            final boolean merged = mergeRefsetIntoProjectBranch(refset.getEditionBranch(), refset.getRefsetId(), notes);
-
-            if (!merged) {
-
-                final String message = "Unable to merge refset into project branch for refset " + refset.getRefsetId() + " because the project branch doesn't exist.";
-                logger.error(message);
-                throw new Exception(message);
-            }
-
         }
 
         setWorkflowStatus(service, user, action, refset, notes, nextStatus, assignedUser);
@@ -681,6 +708,25 @@ public final class WorkflowService {
     }
 
     /**
+     * Get the project branch name for an edition.
+     *
+     * @param editionBranchPath the branch path of the edition the project belongs to
+     * @return the project branch name
+     * @throws Exception the exception
+     */
+    public static String getProjectBranchName(final String editionBranchPath) throws Exception {
+
+        final int initialsLocationIndex = editionBranchPath.lastIndexOf("-");
+        String projectBranchName = PROJECT_BRANCH_NAME;
+            
+        if (initialsLocationIndex > 0) { 
+            projectBranchName += editionBranchPath.substring(initialsLocationIndex);
+        }
+        
+        return projectBranchName;
+    }
+    
+    /**
      * Get the project branch path for an edition.
      *
      * @param editionBranchPath the branch path of the edition the project belongs to
@@ -688,8 +734,8 @@ public final class WorkflowService {
      * @throws Exception the exception
      */
     public static String getProjectBranchPath(final String editionBranchPath) throws Exception {
-
-        return editionBranchPath + "/" + PROJECT_BRANCH_NAME;
+        
+        return editionBranchPath + "/" + getProjectBranchName(editionBranchPath);
     }
 
     /**
@@ -710,7 +756,7 @@ public final class WorkflowService {
 
         } else {
 
-            projectBranchPath = createBranch(editionBranchPath, PROJECT_BRANCH_NAME);
+            projectBranchPath = createBranch(editionBranchPath, getProjectBranchName(editionBranchPath));
             return projectBranchPath;
         }
 
@@ -1050,6 +1096,8 @@ public final class WorkflowService {
 
         if (rebase) {
             
+            String jobStatusUrl = null;
+            boolean jobDone = false;
             final String reviewUrl = SnowstormConnection.BASE_URL + "merge-reviews";
             logger.debug("mergeBranch reviewUrl: " + reviewUrl + " ; body: " + body.toString());
 
@@ -1063,9 +1111,53 @@ public final class WorkflowService {
                     throw new Exception(error);
                 }
                 
-                final String[] location = response.getHeaderString("Location").split("/");
+                jobStatusUrl = response.getHeaderString("Location");
+                final String[] location = jobStatusUrl.split("/");
                 final String reviewId = location[location.length - 1];
                 body.put("reviewId", reviewId);
+            }
+            
+            logger.debug("mergeBranch review job status URL: " + jobStatusUrl);
+
+            while (!jobDone) {
+
+                try (final Response response = SnowstormConnection.getResponse(jobStatusUrl)) {
+                    
+                    final String error = "Could not review merge branch " + sourceBranchPath + " into branch " + targetBranchPath + ". ";
+
+                    // Only process payload if Rest call is successful
+                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+
+                        logger.error(error + response.toString());
+                    }
+
+                    final String resultString = response.readEntity(String.class);
+                    final JsonNode root = mapper.readTree(resultString.toString());
+
+                    // logger.debug("addRefsetMembers job status response: " + root);
+                    final String status = root.get("status").asText();
+                    logger.debug("merge review status: " + status);
+                    
+                    if (status.equalsIgnoreCase("PENDING")) {
+
+                        logger.debug("merge review hasn't finished yet...");
+
+                        try {
+
+                            Thread.sleep(300);
+                        } catch (InterruptedException ex) {
+
+                            Thread.currentThread().interrupt();
+                        }
+
+                    } else if (status.equalsIgnoreCase("failed")) {
+
+                        jobDone = true;
+                        logger.error(error + root.get("message").asText());
+                    } else {
+                        jobDone = true;
+                    }
+                }
             }
         }
         
@@ -1130,7 +1222,7 @@ public final class WorkflowService {
         String tempBranchPath = null;
         
         if (!doesBranchExist(projectBranchPath)) {
-            createBranch(editionBranchPath, PROJECT_BRANCH_NAME);
+            createBranch(editionBranchPath, getProjectBranchName(editionBranchPath));
         }
 
         if (doesBranchExist(projectBranchPath + "/" + TEMP_BRANCH_NAME)) {

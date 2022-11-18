@@ -130,6 +130,46 @@ public class WorkflowUnitTestUtilities {
         final String content = result.getResponse().getContentAsString();
         assertThat(content).isEqualTo("true");
     }
+    
+    /**
+     * start publication.
+     *
+     * @throws Exception the exception
+     */
+    public String startPublication(final String editionShortName) throws Exception{
+        
+        final String url = "/admin/startAllRefsetPublications?codeSystem=" + editionShortName;
+        
+        final MvcResult result = mvc
+                .perform(put(url)
+                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+        
+        final String content = result.getResponse().getContentAsString();
+        assertThat(content).contains("status");
+        
+        return content;
+    }
+    
+    /**
+     * complete publication.
+     *
+     * @throws Exception the exception
+     */
+    public String completePublication(final String versionDate, final String editionShortName) throws Exception{
+        
+        final String url = "/admin/completeAllRefsetPublications?versionDate=" + versionDate + "&codeSystem=" + editionShortName;
+        
+        final MvcResult result = mvc
+                .perform(put(url)
+                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+        
+        final String content = result.getResponse().getContentAsString();
+        assertThat(content).contains("status");
+        
+        return content;
+    }
 
     /**
      * Publication Fails call.
