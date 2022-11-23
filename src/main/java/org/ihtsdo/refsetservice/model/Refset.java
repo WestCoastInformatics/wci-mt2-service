@@ -189,6 +189,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The flag to display a warning when first editing if the refset was last published more than one edition version prior. */
     @Transient
     private boolean upgradeWarning = false;
+    
+    /** The flag to indicate that this refset is included in search results in part because it matched member or alternate refset descriptions . */
+    @Transient
+    private boolean memberSearchMatch = false;
 
     /** The list of actions available for the user to perform on this refset. */
     @Transient
@@ -323,6 +327,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         terminologyVersionDate = other.getTerminologyVersionDate();
         basedOnLatestVersion = other.isBasedOnLatestVersion();
         upgradeWarning = other.getUpgradeWarning();
+        memberSearchMatch = other.isMemberSearchMatch();
         availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
         branchPath = other.getBranchPath();
@@ -1025,6 +1030,27 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
+     * Gets the flag to indicate that this refset is included in search results in part because it matched member or alternate refset descriptions.
+     *
+     * @return the member search match flag
+     */
+    @JsonGetter()
+    public boolean isMemberSearchMatch() {
+        
+        return memberSearchMatch;
+    }
+    
+    /**
+     * Sets the flag to indicate that this refset is included in search results in part because it matched member or alternate refset descriptions.
+     *
+     * @param memberSearchMatch the member search match flag
+     */
+    public void setMemberSearchMatch(final boolean memberSearchMatch) {
+        
+        this.memberSearchMatch = memberSearchMatch;
+    }
+    
+    /**
      * Returns the date of the terminology version this refset is based on.
      *
      * @return the terminology version date
@@ -1385,6 +1411,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (latestPublishedVersion ? 1 : 0);
         result = prime * result + (hasVersionInDevelopment ? 1 : 0);
         result = prime * result + (locked ? 1 : 0);
+        result = prime * result + (memberSearchMatch ? 1 : 0);
         result = prime * result + (basedOnLatestVersion ? 1 : 0);
         result = prime * result + (upgradeWarning ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
@@ -1676,6 +1703,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         if (locked != other.locked) {
 
+            return false;
+        }
+        
+        if (memberSearchMatch != other.memberSearchMatch) {
+            
             return false;
         }
 

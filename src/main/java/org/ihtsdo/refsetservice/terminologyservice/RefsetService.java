@@ -1411,6 +1411,7 @@ public class RefsetService {
         ResultList<Refset> results = new ResultList<Refset>();
         String query = searchParameters.getQuery();
         final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!{}[]^\"~*?:\\/") + "]+?";
+        Set<String> refsetIdsFromTermServer = new HashSet<>();
 
         final PfsParameter pfs = new PfsParameter();
 
@@ -1468,25 +1469,25 @@ public class RefsetService {
 
                 termQuery = StringUtils.removeEnd(termQuery, " AND ");
                 termQueryForRt2 = StringUtils.removeEnd(termQueryForRt2, " AND ");
-                Set<String> refsetIds = new HashSet<>();
+                
 
                 // if it was requested search member concepts
                 if (searchConcepts) {
 
-                    refsetIds.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
+                    refsetIdsFromTermServer.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
 
                     // search descriptions of Simple type reference set (foundation metadata concept) "<446609009"
-                    refsetIds.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009"));
+                    refsetIdsFromTermServer.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009"));
                 }
 
                 termQueryForRt2 = "(tags: (" + termQueryForRt2 + ")";
                 
-                if (!refsetIds.isEmpty()) {
+                if (!refsetIdsFromTermServer.isEmpty()) {
                     
                     getUniqueRefsetIds(service);
-                    refsetIds.retainAll(uniqueRefsetIds);
+                    refsetIdsFromTermServer.retainAll(uniqueRefsetIds);
                     
-                    termQueryForRt2 += " OR refsetId:(" + String.join(" OR ", refsetIds) + ")";
+                    termQueryForRt2 += " OR refsetId:(" + String.join(" OR ", refsetIdsFromTermServer) + ")";
                 }
                 
                 termQueryForRt2 += ")";
@@ -1556,6 +1557,10 @@ public class RefsetService {
         if (setPermissions || setVersions) {
 
             for (Refset refset : results.getItems()) {
+                
+                if (refsetIdsFromTermServer.contains(refset.getRefsetId())) {
+                    refset.setMemberSearchMatch(true);
+                }
 
                 if (setPermissions) {
 
