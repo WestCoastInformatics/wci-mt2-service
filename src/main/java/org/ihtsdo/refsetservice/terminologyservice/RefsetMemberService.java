@@ -4231,6 +4231,8 @@ public class RefsetMemberService {
 
             unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds, moduleId));
         }
+        
+        conceptIds.removeAll(unaddedConcepts);
 
         // update the member count and save the refset
         if (refset.getMemberCount() == -1) {
@@ -4238,7 +4240,7 @@ public class RefsetMemberService {
             refset.setMemberCount(0);
         }
 
-        refset.setMemberCount(refset.getMemberCount() + (conceptIds.size() - unaddedConcepts.size()));
+        refset.setMemberCount(refset.getMemberCount() + conceptIds.size());
         service.update(refset);
 
         for (final String conceptId : unaddedConcepts) {
