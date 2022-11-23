@@ -954,7 +954,7 @@ public final class WorkflowService {
     public static boolean mergeEditIntoRefsetBranch(final String editionBranchPath, final String refsetId, final String editBranchId, final String refsetBranchId, final String comment) throws Exception {
 
         final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId, refsetBranchId);
-        final String editBranchPath = getEditBranchPath(editionBranchPath, refsetId, refsetBranchId, refsetBranchId);
+        final String editBranchPath = getEditBranchPath(editionBranchPath, refsetId, editBranchId, refsetBranchId);
 
         if (doesBranchExist(refsetBranchPath) && doesBranchExist(editBranchPath)) {
 

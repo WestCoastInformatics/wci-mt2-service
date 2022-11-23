@@ -82,6 +82,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -148,6 +149,14 @@ public class RefsetController extends BaseController {
 
             User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(service, user, refsetId, versionDate);
+            
+//            if (user.getUserName().equals(SecurityService.GUEST_USERNAME) && (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT) || refset.isPrivateRefset())) {
+//                return new ResponseEntity<>(new Refset(), HttpStatus.OK);
+//                
+//            } else if ((refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT) || refset.isPrivateRefset()) && !user.doesUserHavePermission(User.ROLE_VIEWER, refset.getProject())) {
+//                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have permission to view this refset.");
+//            }
+            
             RefsetService.getRefsetDescriptions(refset);
 
             logger.debug("getRefset: Including discussion count");

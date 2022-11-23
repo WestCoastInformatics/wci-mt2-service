@@ -288,7 +288,7 @@ public class RefsetService {
         refset.setProject(project);
         refset.setVersionDate(null);
         refset.setEditBranchId(editBranchId);
-        refset.setRefsetBranchId(editBranchId);
+        refset.setRefsetBranchId(refsetBranchId);
 
         if (refset.getType().equals(Refset.INTENSIONAL)) {
 
