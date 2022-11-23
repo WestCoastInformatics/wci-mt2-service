@@ -3172,14 +3172,14 @@ public class RefsetMemberService {
 
             iterator = root.get("items").iterator();
         }
-
+        
         while (lookupParameters.isSingleConceptRequest() || iterator.hasNext()) {
 
             if (!lookupParameters.isSingleConceptRequest()) {
 
                 conceptNode = iterator.next();
             }
-
+            
             String conceptId = null;
 
             if (conceptNode.has("referencedComponent")) {
@@ -3238,6 +3238,10 @@ public class RefsetMemberService {
                 // grab all membership info
                 memberStatus = conceptNode.get("active").asBoolean();
                 concept.setReleased(conceptNode.get("released").asBoolean());
+                
+                if (conceptNode.has("memberId")) {
+                    concept.setMemberId(conceptNode.get("memberId").asText());
+                }
 
                 // if the member has been released get the effective time
                 if (conceptNode.has("releasedEffectiveTime")) {
@@ -4929,6 +4933,7 @@ public class RefsetMemberService {
                 final UpgradeInactiveConcept inactiveConcept = new UpgradeInactiveConcept();
                 inactiveConcept.setRefsetId(refsetId);
                 inactiveConcept.setCode(member.getCode());
+                inactiveConcept.setMemberId(member.getMemberId());
                 inactiveConcept.setStillMember(true);
                 inactiveData.put(conceptId, inactiveConcept);
                 bodyConceptIds += conceptId + ",";
@@ -5298,7 +5303,46 @@ public class RefsetMemberService {
 
                         upgradeInactiveConcept.setStillMember(false);
                     }
+                    
+                    // If a replacement was successfully added for the first time then populate the member ID
+                    if (changed.equals(REPLACEMENT_ADDED) && unchangedConcepts.size() == 0) {
+                        
+                        final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+                        
+                        // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
+                        final String url = SnowstormConnection.BASE_URL + refset.getBranchPath() + "/members?referenceSet=" + refset.getRefsetId() + "&active=true&referencedComponentId=" + conceptIdToChange;
 
+                        logger.debug("modifyUpgradeConcept Member list URL: " + url);
+
+                        try (final Response response = SnowstormConnection.getResponse(url, SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES)) {
+
+                            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                            }
+
+                            final ObjectMapper mapper = new ObjectMapper();
+                            final String resultString = response.readEntity(String.class);
+
+                            // Only process payload if Rest call is successful
+                            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                                throw new Exception(Integer.toString(response.getStatus()));
+                            }
+
+                            final JsonNode root = mapper.readTree(resultString.toString());
+                            Iterator<JsonNode> iterator = root.get("items").iterator();
+                            
+                            if (iterator.hasNext()) {
+
+                                final JsonNode conceptNode = iterator.next();
+                                
+                                if (conceptNode.get("referencedComponentId").asText().equals(conceptIdToChange)) {
+                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asText());
+                                } else {
+                                    throw new Exception("There was a problem getting the member ID");
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // save or remove the replacement concept

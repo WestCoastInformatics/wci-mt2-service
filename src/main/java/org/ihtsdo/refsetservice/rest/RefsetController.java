@@ -244,9 +244,9 @@ public class RefsetController extends BaseController {
             User user = SecurityService.getUserFromSession();
             final boolean isLocked = RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId);
             String returnString = isLocked + "";
-            logger.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
-            logger.debug("isRefsetLocked: refsetsUpdatedMembers: " + RefsetMemberService.refsetsUpdatedMembers);
-            logger.debug("isRefsetLocked: does update map contain this refset: " + RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId));
+            //logger.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
+            //logger.debug("isRefsetLocked: refsetsUpdatedMembers: " + RefsetMemberService.refsetsUpdatedMembers);
+            //logger.debug("isRefsetLocked: does update map contain this refset: " + RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId));
 
             if (!isLocked && RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId)) {
 
@@ -1167,7 +1167,6 @@ public class RefsetController extends BaseController {
 
             final String status = RefsetService.deleteInDevelopmentVersion(service, user, refsetInternalId, true);
             // service.commit();
-
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {

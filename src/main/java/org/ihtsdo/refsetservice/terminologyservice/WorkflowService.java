@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -230,12 +231,12 @@ public final class WorkflowService {
             
             try {
                 
-                final String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
-                final String editBranchPath = getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId());
+                final String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getRefsetBranchId());
+                final String editBranchPath = getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(), refset.getRefsetBranchId());
                 
                 mergeBranch(getProjectBranchPath(refset.getEditionBranch()), refsetBranchPath, "Updating branch to latest changes", true);
 
-                final boolean merged = mergeRefsetIntoProjectBranch(refset.getEditionBranch(), refset.getRefsetId(), "Preparing for publication");
+                final boolean merged = mergeRefsetIntoProjectBranch(refset.getEditionBranch(), refset.getRefsetId(), refset.getRefsetBranchId(), "Preparing for publication");
     
                 if (!merged) {
     
@@ -468,7 +469,7 @@ public final class WorkflowService {
         if ((currentStatus.equals(IN_EDIT) && Arrays.asList(FINISH_EDIT, REQUEST_REVIEW, REQUEST_PUBLICATION).contains(action))
             || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(FINISH_UPGRADE).contains(action))) {
 
-            final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(), notes);
+            final boolean merged = mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(), refset.getRefsetBranchId(), notes);
 
             if (merged) {
 
@@ -486,7 +487,7 @@ public final class WorkflowService {
 
         else if ((currentStatus.equals(IN_EDIT) && Arrays.asList(CANCEL_EDIT).contains(action)) || (currentStatus.equals(IN_UPGRADE) && Arrays.asList(CANCEL_UPGRADE).contains(action))) {
 
-            RefsetMemberService.clearAllMemberCaches(getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId()));
+            RefsetMemberService.clearAllMemberCaches(getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(), refset.getRefsetBranchId()));
             refset.setEditBranchId(null);
             restoreHistory = true;
         }
@@ -494,14 +495,14 @@ public final class WorkflowService {
         // else if this is the start of edits create the refset edit branch
         else if (action.equals(EDIT) || action.equals(UPGRADE)) {
 
-            final String branchId = generateEditBranchId();
+            final String branchId = generateBranchId();
             refset.setEditBranchId(branchId);
             String projectBranchPath = getProjectBranchPath(refset.getEditionBranch());
-            String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
+            String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getRefsetBranchId());
 
             mergeBranch(refset.getEditionBranch(), projectBranchPath, "Updating branch to latest changes", true);
             mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
-            createEditBranch(service, user, refset.getEditionBranch(), refset, refset.getRefsetId(), branchId);
+            createEditBranch(service, user, refset.getEditionBranch(), refset, refset.getRefsetId(), branchId, refset.getRefsetBranchId());
         }
 
         if (currentStatus.equals(IN_UPGRADE)) {
@@ -791,12 +792,13 @@ public final class WorkflowService {
      *
      * @param editionBranchPath the branch path of the edition the refset belongs to
      * @param refsetId the refset ID
+     * @param branchId the ID for the refset branch
      * @return the branch path of the refset branch
      * @throws Exception the exception
      */
-    public static String getRefsetBranchPath(final String editionBranchPath, final String refsetId) throws Exception {
+    public static String getRefsetBranchPath(final String editionBranchPath, final String refsetId, final String branchId) throws Exception {
 
-        return getProjectBranchPath(editionBranchPath) + "/" + REFSET_BRANCH_PREFIX + refsetId;
+        return getProjectBranchPath(editionBranchPath) + "/" + REFSET_BRANCH_PREFIX + refsetId + "-" + branchId;
     }
 
     /**
@@ -804,15 +806,15 @@ public final class WorkflowService {
      *
      * @param editionBranchPath the branch path of the edition to create the new branch in
      * @param refsetId the refset ID
-     * @param orginalBranchPath the branch path of the original refset
+     * @param branchId the ID for the refset branch
      * @return the branch path of the new refset branch
      * @throws Exception the exception
      */
-    public static String createRefsetBranch(final String editionBranchPath, final String refsetId, final String orginalBranchPath) throws Exception {
+    public static String createRefsetBranch(final String editionBranchPath, final String refsetId, final String branchId) throws Exception {
 
-        final String branchName = REFSET_BRANCH_PREFIX + refsetId;
+        final String branchName = REFSET_BRANCH_PREFIX + refsetId + "-" + branchId;
         final String projectBranchPath = getProjectBranchPath(editionBranchPath);
-        String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
+        String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId, branchId);
 
         if (doesBranchExist(refsetBranchPath)) {
 
@@ -833,14 +835,15 @@ public final class WorkflowService {
      *
      * @param editionBranchPath the branch path of the edition the refset belongs to
      * @param refsetId the refset ID
+     * @param branchId the ID for the refset branch
      * @param comment the merge comment
      * @return were the branches merged
      * @throws Exception the exception
      */
-    public static boolean mergeRefsetIntoProjectBranch(final String editionBranchPath, final String refsetId, final String comment) throws Exception {
+    public static boolean mergeRefsetIntoProjectBranch(final String editionBranchPath, final String refsetId, final String branchId, final String comment) throws Exception {
 
         final String projectBranchPath = getProjectBranchPath(editionBranchPath);
-        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
+        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId, branchId);
 
         if (doesBranchExist(refsetBranchPath)) {
 
@@ -856,24 +859,40 @@ public final class WorkflowService {
     /**
      * Delete the refset branch for a refset.
      *
+     * @param service the Terminology Service
+     * @param user the user
      * @param editionBranchPath the branch path of the edition to create the new branch in
      * @param refsetId the refset ID
+     * @param branchId the ID for the refset branch
      * @return was the branch deleted
      * @throws Exception the exception
      */
-    public static boolean deleteRefsetBranch(final String editionBranchPath, final String refsetId) throws Exception {
+    public static boolean deleteRefsetBranch(final TerminologyService service, final User user, final String editionBranchPath, final String refsetId, final String branchId) throws Exception {
 
-        final String branchPath = getRefsetBranchPath(editionBranchPath, refsetId);
+        RefsetService.removeRefsetEditHistory(service, user, refsetId);
+        
+        final String branchPath = getRefsetBranchPath(editionBranchPath, refsetId, branchId);
+        final List<String> childBranchPaths = getBranchChildren(branchPath);
+        
+        for (final String childBranchPath : childBranchPaths) {
+            
+            final boolean deleted = deleteBranch(childBranchPath);
+            
+            if (!deleted) {
+                break;
+            }
+        }
+        
         return deleteBranch(branchPath);
     }
 
     /**
-     * Generate a ID for an edit branch based on a millisecond unix timestamp.
+     * Generate a ID for a branch based on a millisecond unix timestamp.
      *
-     * @return the ID for the edit branch
+     * @return the ID for the branch
      * @throws Exception the exception
      */
-    public static String generateEditBranchId() throws Exception {
+    public static String generateBranchId() throws Exception {
 
         long unixTime = Instant.now().toEpochMilli();
         return unixTime + "";
@@ -884,13 +903,14 @@ public final class WorkflowService {
      *
      * @param editionBranchPath the branch path of the edition the refset belongs to
      * @param refsetId the refset ID
-     * @param branchId the ID for the edit branch
+     * @param editBranchId the ID for the edit branch
+     * @param refsetBranchId the ID for the refset branch
      * @return the branch path of the edit branch
      * @throws Exception the exception
      */
-    public static String getEditBranchPath(final String editionBranchPath, final String refsetId, final String branchId) throws Exception {
+    public static String getEditBranchPath(final String editionBranchPath, final String refsetId, final String editBranchId, final String refsetBranchId) throws Exception {
 
-        return getRefsetBranchPath(editionBranchPath, refsetId) + "/" + EDIT_BRANCH_NAME + branchId;
+        return getRefsetBranchPath(editionBranchPath, refsetId, refsetBranchId) + "/" + EDIT_BRANCH_NAME + editBranchId;
     }
 
     /**
@@ -901,21 +921,22 @@ public final class WorkflowService {
      * @param editionBranchPath the branch path of the edition to create the new branch in
      * @param refset the refset to modify
      * @param refsetId the refset ID
-     * @param branchId the ID for the edit branch
+     * @param editBranchId the ID for the edit branch
+     * @param refsetBranchId the ID for the refset branch
      * @return the branch path of the new edit branch
      * @throws Exception the exception
      */
-    public static String createEditBranch(final TerminologyService service, final User user, final String editionBranchPath, final Refset refset, final String refsetId, final String branchId)
+    public static String createEditBranch(final TerminologyService service, final User user, final String editionBranchPath, final Refset refset, final String refsetId, final String editBranchId, final String refsetBranchId)
         throws Exception {
 
-        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
+        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId, refsetBranchId);
 
         if (refset != null) {
 
             RefsetService.createRefsetEditHistory(service, user, refset);
         }
 
-        final String editBranchPath = createBranch(refsetBranchPath, EDIT_BRANCH_NAME + branchId);
+        final String editBranchPath = createBranch(refsetBranchPath, EDIT_BRANCH_NAME + editBranchId);
         return editBranchPath;
     }
 
@@ -924,15 +945,16 @@ public final class WorkflowService {
      *
      * @param editionBranchPath the branch path of the edition the refset belongs to
      * @param refsetId the refset ID
-     * @param branchId the ID for the edit branch
+     * @param editBranchId the ID for the edit branch
+     * @param refsetBranchId the ID for the refset branch
      * @param comment the merge comment
      * @return were the branches merged
      * @throws Exception the exception
      */
-    public static boolean mergeEditIntoRefsetBranch(final String editionBranchPath, final String refsetId, final String branchId, final String comment) throws Exception {
+    public static boolean mergeEditIntoRefsetBranch(final String editionBranchPath, final String refsetId, final String editBranchId, final String refsetBranchId, final String comment) throws Exception {
 
-        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId);
-        final String editBranchPath = getEditBranchPath(editionBranchPath, refsetId, branchId);
+        final String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId, refsetBranchId);
+        final String editBranchPath = getEditBranchPath(editionBranchPath, refsetId, refsetBranchId, refsetBranchId);
 
         if (doesBranchExist(refsetBranchPath) && doesBranchExist(editBranchPath)) {
 
@@ -955,15 +977,16 @@ public final class WorkflowService {
      * @param user the user
      * @param editionBranchPath the branch path of the edition to create the new branch in
      * @param refsetId the refset ID
-     * @param branchId the ID for the edit branch
+     * @param editBranchId the ID for the edit branch
+     * @param refsetBranchId the ID for the refset branch
      * @return was the branch deleted
      * @throws Exception the exception
      */
-    public static boolean deleteEditBranch(final TerminologyService service, final User user, final String editionBranchPath, final String refsetId, final String branchId) throws Exception {
+    public static boolean deleteEditBranch(final TerminologyService service, final User user, final String editionBranchPath, final String refsetId, final String editBranchId, final String refsetBranchId) throws Exception {
 
         RefsetService.removeRefsetEditHistory(service, user, refsetId);
 
-        final String branchPath = getEditBranchPath(editionBranchPath, refsetId, branchId);
+        final String branchPath = getEditBranchPath(editionBranchPath, refsetId, editBranchId, refsetBranchId);
         return deleteBranch(branchPath);
     }
 
@@ -1071,6 +1094,49 @@ public final class WorkflowService {
 
         }
 
+    }
+    
+    /**
+     * get the branch paths for all children of a branch.
+     *
+     * @param branchPath the branch path to get children for
+     * @return a list of the child branch paths
+     * @throws Exception the exception
+     */
+    public static List<String> getBranchChildren(final String branchPath) throws Exception {
+        
+        final String url = SnowstormConnection.BASE_URL + "branches/" + branchPath + "children?immediateChildren=true&page=0&size=9000";
+        List<String> childBranchPaths = new ArrayList<>();
+        
+        logger.debug("getBranchChildren URL: " + url);
+        
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+            
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
+                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+            }
+
+            final String resultString = response.readEntity(String.class);
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+
+                throw new Exception(Integer.toString(response.getStatus()));
+            }
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+            final Iterator<JsonNode> iterator = root.iterator();
+
+            if (iterator.hasNext()) {
+
+                final JsonNode childNode = iterator.next();
+                childBranchPaths.add(childNode.get("path").asText());
+            }
+        }
+        
+        return childBranchPaths;
     }
 
     /**

@@ -133,6 +133,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The edit branch ID. */
     @Column(nullable = true, length = 256)
     private String editBranchId;
+    
+    /** The refset branch ID. */
+    @Column(nullable = true, length = 256)
+    private String refsetBranchId;
 
     /** The external URL. */
     @Column(nullable = true, length = 4000)
@@ -308,6 +312,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         externalUrl = other.getExternalUrl();
         moduleId = other.getModuleId();
         editBranchId = other.getEditBranchId();
+        refsetBranchId = other.getRefsetBranchId();
         assignedUser = other.getAssignedUser();
         memberCount = other.getMemberCount();
         privateRefset = other.isPrivateRefset();
@@ -904,6 +909,26 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         this.editBranchId = editBranchId;
     }
+    
+    /**
+     * Gets the refset branch ID.
+     *
+     * @return the refset branch ID
+     */
+    public String getRefsetBranchId() {
+        
+        return refsetBranchId;
+    }
+    
+    /**
+     * Sets the refset branch ID.
+     *
+     * @param refsetBranchId the refset branch ID to set
+     */
+    public void setRefsetBranchId(final String refsetBranchId) {
+        
+        this.refsetBranchId = refsetBranchId;
+    }
 
     /**
      * Gets the external url.
@@ -1341,6 +1366,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((versionNotes == null) ? 0 : versionNotes.hashCode());
         result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
         result = prime * result + ((editBranchId == null) ? 0 : editBranchId.hashCode());
+        result = prime * result + ((refsetBranchId == null) ? 0 : refsetBranchId.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
         result = prime * result + ((project == null) ? 0 : project.hashCode());
         result = prime * result + ((versionList == null) ? 0 : versionList.hashCode());
@@ -1569,6 +1595,18 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         } else if (!editBranchId.equals(other.editBranchId)) {
 
+            return false;
+        }
+        
+        if (refsetBranchId == null) {
+            
+            if (other.refsetBranchId != null) {
+                
+                return false;
+            }
+            
+        } else if (!refsetBranchId.equals(other.refsetBranchId)) {
+            
             return false;
         }
 

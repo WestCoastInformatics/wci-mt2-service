@@ -401,7 +401,7 @@ public class RefsetWorkflowTests extends AbstractRefsetTests {
             assertThat(members.size()).isEqualTo(5);
     
             // Merge Edit branch back to Refset branch
-            success = WorkflowService.mergeEditIntoRefsetBranch(refset.getEdition().getBranch(), refsetId, refset.getEditBranchId(), "Merging after adding one member to refset");
+            success = WorkflowService.mergeEditIntoRefsetBranch(refset.getEdition().getBranch(), refsetId, refset.getEditBranchId(), refset.getRefsetBranchId(), "Merging after adding one member to refset");
             assertThat(success).isTrue();
     
             // Verify still have the same 6 members in the refset found under the newly create branch
