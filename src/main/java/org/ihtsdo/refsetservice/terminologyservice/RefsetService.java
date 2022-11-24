@@ -1487,7 +1487,9 @@ public class RefsetService {
                     getUniqueRefsetIds(service);
                     refsetIdsFromTermServer.retainAll(uniqueRefsetIds);
                     
-                    termQueryForRt2 += " OR refsetId:(" + String.join(" OR ", refsetIdsFromTermServer) + ")";
+                    if (!refsetIdsFromTermServer.isEmpty()) {
+                        termQueryForRt2 += " OR refsetId:(" + String.join(" OR ", refsetIdsFromTermServer) + ")";
+                    }
                 }
                 
                 termQueryForRt2 += ")";
