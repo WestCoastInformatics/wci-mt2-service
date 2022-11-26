@@ -661,7 +661,7 @@ public final class WorkflowService {
 
         ResultList<WorkflowHistory> results = service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + query, pfs, WorkflowHistory.class, null);
 
-        logger.debug("getWorkflowHistory results: " + ModelUtility.toJson(results));
+        //logger.debug("getWorkflowHistory results: " + ModelUtility.toJson(results));
 
         return results;
     }

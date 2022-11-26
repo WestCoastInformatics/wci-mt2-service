@@ -2633,26 +2633,32 @@ public class RefsetMemberService {
             }
 
             conceptsCallCache.put(toBranchPath, tempCache);
+        } else {
+            conceptsCallCache.remove(toBranchPath);
         }
 
         if (conceptDetailsCache.containsKey(fromBranchPath)) {
-
             conceptDetailsCache.put(toBranchPath, conceptDetailsCache.get(fromBranchPath));
+        } else {
+            conceptDetailsCache.remove(toBranchPath);
         }
 
         if (taxonomySearchAncestorsCache.containsKey(fromBranchPath)) {
-
             taxonomySearchAncestorsCache.put(toBranchPath, taxonomySearchAncestorsCache.get(fromBranchPath));
+        } else {
+            taxonomySearchAncestorsCache.remove(toBranchPath);
         }
 
         if (treeCache.containsKey(fromBranchPath)) {
-
             treeCache.put(toBranchPath, treeCache.get(fromBranchPath));
+        } else {
+            treeCache.remove(toBranchPath);
         }
 
         if (ancestorsCache.containsKey(fromBranchPath)) {
-
             ancestorsCache.put(toBranchPath, ancestorsCache.get(fromBranchPath));
+        } else {
+            ancestorsCache.remove(toBranchPath);
         }
 
     }
@@ -4062,9 +4068,6 @@ public class RefsetMemberService {
 
         final String refsetId = refset.getRefsetId();
 
-        // clear the caches for this refset
-        clearAllMemberCaches(branchPath);
-
         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
         final String conceptSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/concepts/search";
         final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
@@ -4233,6 +4236,9 @@ public class RefsetMemberService {
         }
         
         conceptIds.removeAll(unaddedConcepts);
+        
+        // clear the caches for this refset
+        clearAllMemberCaches(branchPath);
 
         // update the member count and save the refset
         if (refset.getMemberCount() == -1) {
