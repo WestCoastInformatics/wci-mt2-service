@@ -4427,9 +4427,6 @@ public class RefsetMemberService {
         final String branchPath = RefsetService.getBranchPath(refset);
         final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
 
-        // clear the caches for this refset
-        clearAllMemberCaches(branchPath);
-
         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
         final String memberSearchUrlBase =
             SnowstormConnection.BASE_URL + branchPath + "/members?referenceSet=" + refset.getRefsetId() + "&offset=0&active=true" + "&limit=" + URL_MAX_CHAR_LENGTH + "&referencedComponentId=";
@@ -4546,39 +4543,46 @@ public class RefsetMemberService {
         // }
         // });
 
-        // delete any members that haven't been released
-        if (memberDeleteArray.size() > 0) {
-
-            final String deleteBody = mapper.createObjectNode().set("memberIds", memberDeleteArray).toString();
-            final String deleteUrl = url + "?force";
-            String errorMessage = "Remove Refset Member bulk call to url '" + deleteUrl + "' for refset '" + refsetId + " wasn't successful. ";
-
-            logger.debug("removeRefsetMembers URL: " + deleteUrl);
-            logger.debug("removeRefsetMembers URL Body: " + deleteBody);
-
-            try (final Response response = SnowstormConnection.deleteResponse(deleteUrl, deleteBody)) {
-
-                // Only process payload if Rest call is successful
-                if (response.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
-
-                    logger.error(errorMessage + response.toString());
+        try {
+            
+            // delete any members that haven't been released
+            if (memberDeleteArray.size() > 0) {
+    
+                final String deleteBody = mapper.createObjectNode().set("memberIds", memberDeleteArray).toString();
+                final String deleteUrl = url + "?force";
+                String errorMessage = "Remove Refset Member bulk call to url '" + deleteUrl + "' for refset '" + refsetId + " wasn't successful. ";
+    
+                logger.debug("removeRefsetMembers URL: " + deleteUrl);
+                logger.debug("removeRefsetMembers URL Body: " + deleteBody);
+    
+                try (final Response response = SnowstormConnection.deleteResponse(deleteUrl, deleteBody)) {
+    
+                    // Only process payload if Rest call is successful
+                    if (response.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
+    
+                        logger.error(errorMessage + response.toString());
+                    }
+    
                 }
-
+    
             }
-
+    
+            // If there is one member to inactivate call the single update method, otherwise call the batch update
+            if (memberUpdateArray.size() == 1) {
+    
+                final JsonNode memberBody = memberUpdateArray.get(0);
+                unremovedConcepts = callUpdateMemberSingle(refsetId, url + "/" + memberBody.get("memberId").asText(), memberBody);
+    
+            } else if (memberUpdateArray.size() > 1) {
+    
+                unremovedConcepts = callUpdateMembersBulk(refsetId, url + "/bulk", memberUpdateArray);
+            }
+        } finally {
+            
+            // clear the caches for this refset
+            clearAllMemberCaches(branchPath);
         }
-
-        // If there is one member to inactivate call the single update method, otherwise call the batch update
-        if (memberUpdateArray.size() == 1) {
-
-            final JsonNode memberBody = memberUpdateArray.get(0);
-            unremovedConcepts = callUpdateMemberSingle(refsetId, url + "/" + memberBody.get("memberId").asText(), memberBody);
-
-        } else if (memberUpdateArray.size() > 1) {
-
-            unremovedConcepts = callUpdateMembersBulk(refsetId, url + "/bulk", memberUpdateArray);
-        }
-
+        
         // update the member count and save the refset
         refset.setMemberCount(getMemberCount(refset));
         service.update(refset);
