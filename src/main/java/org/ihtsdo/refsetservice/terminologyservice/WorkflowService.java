@@ -1266,6 +1266,19 @@ public final class WorkflowService {
                     }
                     
                 } else {
+                    
+                    if (!rebase) {
+                        
+                        try {
+
+                            logger.debug("Merge promotion sleep 300ms to let snowstorm caches update.");
+                            Thread.sleep(300);
+                        } catch (InterruptedException ex) {
+
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                    
                     logger.info("Merged branch " + sourceBranchPath + " into branch " + targetBranchPath + ". Time: " + (System.currentTimeMillis() - start));
                 }
             }
