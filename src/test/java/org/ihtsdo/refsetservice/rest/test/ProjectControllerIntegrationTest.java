@@ -517,7 +517,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         assertThat(newEdition.getNamespace()).isEqualTo(originalEdition.getNamespace());
         assertThat(newEdition.getShortName()).isEqualTo(originalEdition.getShortName());
         assertThat(newEdition.getBranch()).isEqualTo(originalEdition.getBranch());
-        assertThat(newEdition.getTopLevelModule()).isEqualTo(originalEdition.getTopLevelModule());
+        assertThat(newEdition.getModules()).isEqualTo(originalEdition.getModules());
         assertThat(newEdition.getDefaultLanguageCode()).isEqualTo(originalEdition.getDefaultLanguageCode());
 
         if (nonUpdatedAttributes) {

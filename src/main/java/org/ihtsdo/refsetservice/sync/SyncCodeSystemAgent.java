@@ -397,12 +397,12 @@ public class SyncCodeSystemAgent extends SyncService {
             modificationMade = true;
         }
 
-        final String editionTopLevelModule = utilities.identifyTopLevelModule(editionShortName, editionName, editionBranch, codeSystem);
+        final Set<String> editionModules = utilities.identifyModules(editionShortName, editionName, editionBranch, codeSystem);
 
         // TODO: Can we remove topLevelModule?
-        if (updateAttribute("Edition topLevelModule ", existingEdition.getTopLevelModule(), editionTopLevelModule)) {
+        if (updateAttribute("Edition modules ", existingEdition.getModules(), editionModules)) {
 
-            existingEdition.setTopLevelModule(editionTopLevelModule);
+            existingEdition.setModules(editionModules);
             modificationMade = true;
         }
 
@@ -535,7 +535,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
     private void postCodeSystemProcessing(Edition syncedEdition) throws Exception {
 
-        if (syncedEdition.getShortName().toLowerCase().equals(DEVELOPER_CODE_SYSTEM_SHORTNAME.toLowerCase())) {
+        if (DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(syncedEdition.getShortName())) {
 
             // Support Developer Edition
             if (forProduction) {

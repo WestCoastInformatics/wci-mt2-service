@@ -70,10 +70,6 @@ public class Edition extends AbstractHasModified {
     @Column(nullable = true)
     private String branch;
 
-    /** The ancestor module concept to the edition's modules. */
-    @Column(nullable = true)
-    private String topLevelModule;
-    
     /** The modules that are part of this edition. */
     @ElementCollection
     @Fetch(FetchMode.JOIN)
@@ -136,7 +132,6 @@ public class Edition extends AbstractHasModified {
         modules = other.getModules();
         defaultLanguageCode = other.getDefaultLanguageCode();
         branch = other.getBranch();
-        topLevelModule = other.getTopLevelModule();
         iconUri = other.getIconUri();
         shortName = other.getShortName();
         organization = other.getOrganization();
@@ -229,16 +224,6 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
-     * Gets the top level module.
-     *
-     * @return the top level module
-     */
-    public String getTopLevelModule() {
-
-        return topLevelModule;
-    }
-
-    /**
      * Gets the abbreviation version of the name.
      *
      * @return the abbreviation version of the name
@@ -267,16 +252,6 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
-     * Sets the top level module.
-     *
-     * @param topLevelModule the top level module to set
-     */
-    public void setTopLevelModule(final String topLevelModule) {
-
-        this.topLevelModule = topLevelModule;
-    }
-
-    /**
      * Gets the modules that are part of this edition.
      *
      * @return the modules
@@ -292,7 +267,6 @@ public class Edition extends AbstractHasModified {
 
         return modules;
     }
-    
 
     /**
      * Sets the modules that are part of this edition.
@@ -303,7 +277,7 @@ public class Edition extends AbstractHasModified {
 
         this.modules = modules;
     }
-    
+
     /**
      * Gets the default language refsets.
      *
@@ -312,12 +286,12 @@ public class Edition extends AbstractHasModified {
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     // @IndexedEmbedded
     public Set<String> getDefaultLanguageRefsets() {
-        
+
         if (defaultLanguageRefsets == null) {
-            
+
             defaultLanguageRefsets = new HashSet<>();
         }
-        
+
         return defaultLanguageRefsets;
     }
 
@@ -494,7 +468,7 @@ public class Edition extends AbstractHasModified {
             this.organization.setId(organizationId);
         }
     }
-    
+
     /**
      * Returns the organization name.
      *
@@ -545,7 +519,6 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((namespace == null) ? 0 : namespace.hashCode());
         result = prime * result + ((branch == null) ? 0 : branch.hashCode());
-        result = prime * result + ((topLevelModule == null) ? 0 : topLevelModule.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         result = prime * result + ((modules == null) ? 0 : modules.hashCode());
         result = prime * result + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
@@ -617,18 +590,6 @@ public class Edition extends AbstractHasModified {
             return false;
         }
 
-        if (topLevelModule == null) {
-
-            if (other.topLevelModule != null) {
-
-                return false;
-            }
-
-        } else if (!topLevelModule.equals(other.topLevelModule)) {
-
-            return false;
-        }
-
         if (iconUri == null) {
 
             if (other.iconUri != null) {
@@ -652,16 +613,16 @@ public class Edition extends AbstractHasModified {
 
             return false;
         }
-        
+
         if (defaultLanguageRefsets == null) {
-            
+
             if (other.defaultLanguageRefsets != null) {
-                
+
                 return false;
             }
-            
+
         } else if (!defaultLanguageRefsets.equals(other.defaultLanguageRefsets)) {
-            
+
             return false;
         }
 

@@ -233,11 +233,11 @@ public class RefsetService {
                 .set("relationships", mapper.createArrayNode().add(mapper.createObjectNode().put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)))));
 
             final long start = System.currentTimeMillis();
-            final ObjectNode body = mapper.createObjectNode().put("conceptId", refsetConceptId);
+            final ObjectNode body = mapper.createObjectNode().put("conceptId", refsetConceptId).put("moduleId", "12345");
             body.setAll(relationships);
             body.setAll(classAxioms);
             body.setAll(descriptions);
-
+            
             final String url = SnowstormConnection.BASE_URL + "browser/" + refsetBranch + "/" + "concepts/";
 
             logger.debug("createRefset URL: " + url);
@@ -1133,7 +1133,9 @@ public class RefsetService {
 
         if (editions.size() > 0) {
 
-            modules = editions.stream().map(Edition::getTopLevelModule).collect(Collectors.joining(",")) + ",";
+            for (Edition edition : editions) {
+                modules += edition.getModules().stream().collect(Collectors.joining(",")) + ", ";
+            }
         }
 
         modules += SNOMED_CORE_MODULE_ID;
