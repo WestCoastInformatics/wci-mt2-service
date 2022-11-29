@@ -1272,7 +1272,7 @@ public final class WorkflowService {
                         try {
 
                             logger.debug("Merge promotion sleep 300ms to let snowstorm caches update.");
-                            Thread.sleep(300);
+                            Thread.sleep(500);
                         } catch (InterruptedException ex) {
 
                             Thread.currentThread().interrupt();
