@@ -1411,7 +1411,7 @@ public class RefsetService {
         ResultList<Refset> results = new ResultList<Refset>();
         String query = searchParameters.getQuery();
         final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!{}[]^\"~*?:\\/") + "]+?";
-        Set<String> refsetIdsFromTermServer = new HashSet<>();
+        Set<String> refsetIdsFromMembers = new HashSet<>();
 
         final PfsParameter pfs = new PfsParameter();
 
@@ -1467,6 +1467,7 @@ public class RefsetService {
             // if the term query isn't empty then search members and build the full term query string
             if (!termQuery.equals("")) {
 
+                Set<String> refsetIdsFromTermServer = new HashSet<>();
                 termQuery = StringUtils.removeEnd(termQuery, " AND ");
                 termQueryForRt2 = StringUtils.removeEnd(termQueryForRt2, " AND ");
                 
@@ -1474,7 +1475,8 @@ public class RefsetService {
                 // if it was requested search member concepts
                 if (searchConcepts) {
 
-                    refsetIdsFromTermServer.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
+                    refsetIdsFromMembers.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
+                    refsetIdsFromTermServer.addAll(refsetIdsFromMembers);
 
                     // search descriptions of Simple type reference set (foundation metadata concept) "<446609009"
                     refsetIdsFromTermServer.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009"));
@@ -1560,7 +1562,7 @@ public class RefsetService {
 
             for (Refset refset : results.getItems()) {
                 
-                if (refsetIdsFromTermServer.contains(refset.getRefsetId())) {
+                if (refsetIdsFromMembers.contains(refset.getRefsetId())) {
                     refset.setMemberSearchMatch(true);
                 }
 
