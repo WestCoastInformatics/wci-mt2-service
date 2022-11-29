@@ -3,6 +3,10 @@ package org.ihtsdo.refsetservice.sync;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -10,12 +14,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
@@ -178,7 +180,18 @@ public abstract class SyncService {
         service.add(AuditEntryHelper.syncEntry(new Date()));
 
         final String queryResults = getPostSyncResults();
-        
+
+        try {
+            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
+            final Path path = Paths.get(fileName);
+            byte[] queryResultsToBytes = queryResults.getBytes();
+
+            Files.write(path, queryResultsToBytes);
+        } catch (IOException e) {
+            logger.error("Error occured writing post sync report to file", e);
+        }
+
         RefsetService.clearAllRefsetCaches(null);
         RefsetMemberService.clearAllMemberCaches(null);
         
@@ -189,7 +202,6 @@ public abstract class SyncService {
         }
         
         logger.info("Completed Syncing with Snowstorm");
-        
     }
     
     public static Boolean getIsProductionSystem() {
@@ -352,11 +364,6 @@ public abstract class SyncService {
             e.printStackTrace();
         }
 
-        logger.info("POST SYNC DATA QUERIES");
-        if (sqlQueries != null) {
-            sqlQueries.forEach(l -> logger.info(l));
-        }
-
         final StringBuilder result = new StringBuilder();
 
         // Collect results
@@ -382,7 +389,6 @@ public abstract class SyncService {
             }
             
             logger.info("DONE POST SYNC DATA QUERIES");
-            logger.info(result.toString());
                         
         } catch (Exception e) {
             logger.error("ERROR getting db results", e);
