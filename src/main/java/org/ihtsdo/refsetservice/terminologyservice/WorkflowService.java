@@ -1269,14 +1269,14 @@ public final class WorkflowService {
                     
                     if (!rebase) {
                         
-//                        try {
-//
-//                            logger.debug("Merge promotion sleep 500ms to let snowstorm caches update.");
-//                            Thread.sleep(500);
-//                        } catch (InterruptedException ex) {
-//
-//                            Thread.currentThread().interrupt();
-//                        }
+                        try {
+
+                            logger.debug("Merge promotion sleep 1000ms to let snowstorm caches update.");
+                            Thread.sleep(500);
+                        } catch (InterruptedException ex) {
+
+                            Thread.currentThread().interrupt();
+                        }
                     }
                     
                     logger.info("Merged branch " + sourceBranchPath + " into branch " + targetBranchPath + ". Time: " + (System.currentTimeMillis() - start));
