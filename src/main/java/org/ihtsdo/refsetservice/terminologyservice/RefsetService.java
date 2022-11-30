@@ -1009,15 +1009,14 @@ public class RefsetService {
         String refsetId = "";
 
         boolean otherVersions = false;
-        final Refset refset = service.get(refsetInternalId, Refset.class);
+        final Refset refset = getRefset(service, user, refsetInternalId);
+        WorkflowService.canUserEditRefset(user, refset);
         
         if (refset == null) {
-
-            throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
 
         } else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-
-            throw new Exception("Refset Internal Id: " + refsetInternalId + " is not 'In Development' and can not be removed.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refset Internal Id: " + refsetInternalId + " is not 'In Development' and can not be removed.");
         }
 
         refsetId = refset.getRefsetId();
