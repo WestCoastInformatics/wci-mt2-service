@@ -5308,8 +5308,31 @@ public class RefsetMemberService {
 
                 if (memberChange) {
 
-                    upgradeInactiveConcept.setReplaced(add);
-                    logger.debug("modifyUpgradeConcept: inactive concept marked as replaced = " + add);
+                    if (add) {
+                        
+                        upgradeInactiveConcept.setReplaced(add);
+                        logger.debug("modifyUpgradeConcept: inactive concept marked as replaced = " + add);
+                    } else {
+                        
+                        boolean isStillReplaced = false;
+                        
+                        for (final UpgradeReplacementConcept replacementData : upgradeInactiveConcept.getReplacementConcepts()) {
+                            
+                            if (upgradeReplacementConcept.getId().equals(replacementData.getId())) {
+                                continue;
+                            }
+                            
+                            if (replacementData.isAdded() || replacementData.isExistingMember()) {
+                                isStillReplaced = true;
+                            }
+                        }
+                        
+                        if (!isStillReplaced) {
+                            
+                            upgradeInactiveConcept.setReplaced(add);
+                            logger.debug("modifyUpgradeConcept: inactive concept marked as replaced = " + add);
+                        }
+                    }
 
                     if (removeInactiveAlso && !unchangedConcepts.contains(inactiveConceptId)) {
 
@@ -5377,6 +5400,56 @@ public class RefsetMemberService {
 
             // save the inactive concept
             service.update(upgradeInactiveConcept);
+            
+            // if this is adding or removing a replacement concept make the same changes to any duplicate concepts in the upgrade data
+            if (Arrays.asList(REPLACEMENT_REMOVED, REPLACEMENT_ADDED).contains(changed)) {
+                
+                final ResultList<UpgradeInactiveConcept> upgradeData = getUpgradeData(service, user, refsetInternalId);
+                
+                for (final UpgradeInactiveConcept inactiveData : upgradeData.getItems()) {
+                    
+                    if (upgradeInactiveConcept.getId().equals(inactiveData.getId())) {
+                        continue;
+                    }
+                    
+                    boolean isStillReplaced = false;
+                    boolean isReplacementChanging = false;
+                    
+                    for (final UpgradeReplacementConcept replacementData : inactiveData.getReplacementConcepts()) {
+                        
+                        // if this is already in the state it would be changed to then skip to the next inactive concept
+                        if (add == replacementData.isAdded()) {
+                            break;
+                        }
+                        
+                        // if this is the same concept as the main replacement being worked on change it as well
+                        if (upgradeReplacementConcept.getCode().equals(replacementData.getCode())) {
+                            
+                            isReplacementChanging = true;
+                                
+                            replacementData.setAdded(upgradeReplacementConcept.isAdded());
+                            replacementData.setMemberId(upgradeReplacementConcept.getMemberId());
+                            service.update(replacementData);
+                            logger.debug("modifyUpgradeConcept: duplicate replacement marked as added = " + add);
+                            
+                            continue;
+                        }
+                        
+                        if (replacementData.isAdded() || replacementData.isExistingMember()) {
+                            isStillReplaced = true;
+                        }
+                    }
+                    
+                    // if a replacement is being added or the replacement is being removed and there are no other added replacements
+                    if ((add && isReplacementChanging) || (!add && isReplacementChanging && !isStillReplaced)) {
+                        
+                        inactiveData.setReplaced(add);
+                        inactiveData.setReplaced(inactiveData.isReplaced());
+                        service.update(inactiveData);
+                        logger.debug("modifyUpgradeConcept: inactive concept marked as replaced = " + add);
+                    }
+                }
+            }
 
             return "All changes made successfully";
 
