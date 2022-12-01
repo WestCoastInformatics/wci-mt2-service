@@ -80,7 +80,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
         if (developerTestingEdition == null && !forProduction) {
 
-            // TODO: For now, ignore this, but shuolldn't ever throw exception at this point
+            // TODO: For now, ignore this, but shouldn't ever throw exception at this point
             // throw new Exception("Must have a WCI Organization on a non-Prod instance");
         }
 
