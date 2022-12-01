@@ -324,7 +324,7 @@ public class SyncRefsetAgent extends SyncService {
 
             if (editions == null || editions.size() != 1) {
 
-                throw new Exception("Have unexpected editions matching with editionId '" + editionShortName + "'. Editions: " + editions);
+                throw new Exception("Unable to find  unexpected editions matching with editionId '" + editionShortName + "'. Editions: " + editions);
             }
 
             final Edition edition = editions.iterator().next();

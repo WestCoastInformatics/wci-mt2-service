@@ -64,7 +64,7 @@ public class SyncUtilities {
 
     private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
 
-    public Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
+    public Organization addOrganziation(final String orgName, String orgDesc, String orgMaintainerType) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -73,6 +73,7 @@ public class SyncUtilities {
             final Organization org = new Organization();
             org.setName(orgName);
             org.setDescription(orgDesc);
+            org.setCodeSystemType(orgMaintainerType);
 
             // Persist
             final Organization o = service.add(org);

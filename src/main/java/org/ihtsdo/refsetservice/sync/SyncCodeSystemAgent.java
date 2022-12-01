@@ -50,20 +50,24 @@ public class SyncCodeSystemAgent extends SyncService {
         updateDatabaseCache();
 
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
-        Iterator<JsonNode> itr = organizationJsonRootNode.iterator();
+
+        final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
+
         int counter = 0;
+        while (organizationIterator.hasNext()) {
 
-        while (itr.hasNext()) {
+            final Iterator<JsonNode> codeSystems = organizationIterator.next().iterator();
 
-            counter++;
-            itr.next();
+            while (codeSystems.hasNext()) {
+    
+                counter++;
+                codeSystems.next();
+            }
         }
-
-        logger.info("All ?" + organizationJsonRootNode.size() + " but def " + counter + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
-
+        
+        logger.info("Found " + counter + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
         Set<JsonNode> codeSystemsToProcess = filterCodeSystems(organizationJsonRootNode);
-
-        logger.info("Will be processing only these " + codeSystemsToProcess.size() + " Code Systems: " + codeSystemsToProcess);
+        logger.info("Will be processing only these " + codeSystemsToProcess.size() + " Code Systems: " + organizationJsonRootNode);
 
         for (JsonNode codeSystem : codeSystemsToProcess) {
             // Simplified approach is to not consider at this point if new edition was created or a new one was discovered
@@ -200,6 +204,7 @@ public class SyncCodeSystemAgent extends SyncService {
             final String snowstormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
             final String snowstormEditionBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
             final boolean isActiveSnowstormEdition = codeSystem.has("active") ? codeSystem.get("active").asBoolean() : true;
+            final String snowstormMaintainerType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
 
             logger.info(" Syncing Code System: " + generateCodeSystemCoordinates(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch));
 
@@ -212,7 +217,7 @@ public class SyncCodeSystemAgent extends SyncService {
             } else if (dbEditions == null || dbEditions.isEmpty()) {
 
                 // If correspondingDbEdition is null, this is the first time we have observed this edition, so create it.
-                syncedEdition = handleNewCodeSystem(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, codeSystem);
+                syncedEdition = handleNewCodeSystem(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition, snowstormMaintainerType, codeSystem);
 
                 statistics.getEditionsAdded().add(syncedEdition);
                 allDatabaseEditions.add(syncedEdition);
@@ -294,6 +299,7 @@ public class SyncCodeSystemAgent extends SyncService {
         setSnowstormEditionOwner(edition.getShortName(), edition.getName(), codeSystem);
 
         final String snowstormEditionShortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
+        final String snowstormMaintainerType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
 
         if (snowstormEditionShortName.isBlank()) {
 
@@ -308,8 +314,8 @@ public class SyncCodeSystemAgent extends SyncService {
         if (matchingDatabaseOrganization == null) {
 
             // The Code System owner doesn't exist yet in system, so create org
-            createOrganization(snowstormEditionShortName);
-
+            createOrganization(snowstormEditionShortName, snowstormMaintainerType);
+ 
         } else if (matchingDatabaseOrganization.getId() != edition.getOrganizationId()) {
 
             // Just reassigning org, not changing it to an another existing one. So consider org unchanged here.
@@ -451,7 +457,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
     }
 
-    private Edition handleNewCodeSystem(String newEditionShortName, String newEditionName, String newEditionBranch, boolean isNewActiveEdition, JsonNode codeSystem) throws Exception {
+    private Edition handleNewCodeSystem(String newCodeSystemShortName, String newEditionName, String newEditionBranch, boolean isNewActiveEdition, String snowstormMaintainerType, JsonNode codeSystem) throws Exception {
 
         try {
 
@@ -459,26 +465,26 @@ public class SyncCodeSystemAgent extends SyncService {
 
                 // New Code System created as inactive. Given this is being run nightly and a new org/edition that is inactive at first pass was likely made erroneously.
                 // Once fixed and becomes active, we will get it at the following sync. For now, don't add to retSet
-                String codeSystemCoordinates = generateCodeSystemCoordinates(newEditionShortName, newEditionName, newEditionBranch);
+                String codeSystemCoordinates = generateCodeSystemCoordinates(newCodeSystemShortName, newEditionName, newEditionBranch);
                 codeSystemsNewAndInactive.add(codeSystemCoordinates);
 
                 return null;
             }
 
             // If organization doesn't already exist (based on name), create it
-            setSnowstormEditionOwner(newEditionShortName, newEditionName, codeSystem);
+            setSnowstormEditionOwner(newCodeSystemShortName, newEditionName, codeSystem);
 
-            Organization organization = identifyMatchingOrganization(newEditionShortName);
+            Organization organization = identifyMatchingOrganization(newCodeSystemShortName);
 
             if (organization == null) {
 
-                organization = createOrganization(newEditionShortName);
+                organization = createOrganization(newCodeSystemShortName, snowstormMaintainerType);
             }
 
             // Create a single Admin team per Edition when we first discover it
             initializer.createAdminOrganizationTeam(organization);
 
-            final Edition newEdition = utilities.addEdition(newEditionShortName, newEditionName, newEditionBranch, organization, codeSystem);
+            final Edition newEdition = utilities.addEdition(newCodeSystemShortName, newEditionName, newEditionBranch, organization, codeSystem);
             utilities.printEditionValues(newEdition);
 
             return newEdition;
@@ -514,14 +520,14 @@ public class SyncCodeSystemAgent extends SyncService {
         return organizations.iterator().next();
     }
 
-    private Organization createOrganization(String editionShortName) throws Exception {
+    private Organization createOrganization(String editionShortName, String organizationMaintainerType) throws Exception {
 
         // Create new organization
         // TODO: 1 - Add a description default value or update snowstorm with value per codesystem
         final String organizationName = editionOwnerMap.get(editionShortName);
         final String organizationDescription = ownerDescriptionMap.get(organizationName);
 
-        Organization organization = utilities.addOrganziation(organizationName, organizationDescription);
+        Organization organization = utilities.addOrganziation(organizationName, organizationDescription, organizationMaintainerType);
 
         statistics.getOrganizationsAdded().put(organization.getName(), organization);
         allDatabaseOrganizations.add(organization);
