@@ -12,3 +12,5 @@ Korean Extension
 Spanish Edition
 Traditional Medicine
 WCI Testing Extension
+Common German Translation
+Netherlands Extension Fix
