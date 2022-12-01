@@ -1511,6 +1511,11 @@ public final class WorkflowService {
                     allowedActions.add(REQUEST_PUBLICATION);
                 }
 
+                if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
+                    allowedActions.add(CANCEL_EDIT);
+                    allowedActions.add(FINISH_EDIT);
+                }
+
             }
 
             else if (currentStatus.equals(IN_UPGRADE)) {
@@ -1546,6 +1551,11 @@ public final class WorkflowService {
                     allowedActions.add(REJECT_REVIEW);
                     allowedActions.add(ACCEPT_REVIEW);
                     allowedActions.add(UNASSIGN);
+                }
+
+                if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
+                    allowedActions.add(UNASSIGN);
+                    allowedActions.add(READY_FOR_REVIEW);
                 }
 
             }
