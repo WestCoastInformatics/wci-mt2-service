@@ -527,7 +527,7 @@ public class SyncUtilities {
 
     public boolean isInternationalEdition(String editionName) {
 
-        return "international edition".equals(editionName.toLowerCase());
+        return "international edition".equals(editionName.toLowerCase()) || "snomedct".equals(editionName.toLowerCase());
     }
 
     public boolean isDeveloperEdition(String editionName) {
