@@ -151,6 +151,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         description = other.getDescription();
         primaryContactEmail = other.getPrimaryContactEmail();
         roles = other.getRoles();
+        codeSystemType = other.getCodeSystemType();
     }
 
     /**
