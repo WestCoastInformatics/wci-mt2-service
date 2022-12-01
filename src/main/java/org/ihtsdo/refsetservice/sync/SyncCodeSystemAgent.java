@@ -54,17 +54,19 @@ public class SyncCodeSystemAgent extends SyncService {
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
 
         int counter = 0;
+
         while (organizationIterator.hasNext()) {
 
             final Iterator<JsonNode> codeSystems = organizationIterator.next().iterator();
 
             while (codeSystems.hasNext()) {
-    
+
                 counter++;
                 codeSystems.next();
             }
+
         }
-        
+
         logger.info("Found " + counter + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
         Set<JsonNode> codeSystemsToProcess = filterCodeSystems(organizationJsonRootNode);
         logger.info("Will be processing only these " + codeSystemsToProcess.size() + " Code Systems: " + organizationJsonRootNode);
@@ -78,7 +80,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
         if (developerTestingEdition == null && !forProduction) {
 
-            // TODO: For now, ignore this, but shuolldn't ever throw exception at this point
+            // TODO: For now, ignore this, but shouldn't ever throw exception at this point
             // throw new Exception("Must have a WCI Organization on a non-Prod instance");
         }
 
@@ -204,7 +206,7 @@ public class SyncCodeSystemAgent extends SyncService {
             final String snowstormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
             final String snowstormEditionBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
             final boolean isActiveSnowstormEdition = codeSystem.has("active") ? codeSystem.get("active").asBoolean() : true;
-            final String snowstormMaintainerType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
+            final String snowstormMaintainerType = identifyMaintainerType(codeSystem, snowstormEditionShortName);
 
             logger.info(" Syncing Code System: " + generateCodeSystemCoordinates(snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch));
 
@@ -299,7 +301,7 @@ public class SyncCodeSystemAgent extends SyncService {
         setSnowstormEditionOwner(edition.getShortName(), edition.getName(), codeSystem);
 
         final String snowstormEditionShortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
-        final String snowstormMaintainerType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
+        final String snowstormMaintainerType = identifyMaintainerType(codeSystem, snowstormEditionShortName);
 
         if (snowstormEditionShortName.isBlank()) {
 
@@ -315,7 +317,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
             // The Code System owner doesn't exist yet in system, so create org
             createOrganization(snowstormEditionShortName, snowstormMaintainerType);
- 
+
         } else if (matchingDatabaseOrganization.getId() != edition.getOrganizationId()) {
 
             // Just reassigning org, not changing it to an another existing one. So consider org unchanged here.
@@ -457,7 +459,8 @@ public class SyncCodeSystemAgent extends SyncService {
 
     }
 
-    private Edition handleNewCodeSystem(String newCodeSystemShortName, String newEditionName, String newEditionBranch, boolean isNewActiveEdition, String snowstormMaintainerType, JsonNode codeSystem) throws Exception {
+    private Edition handleNewCodeSystem(String newCodeSystemShortName, String newEditionName, String newEditionBranch, boolean isNewActiveEdition, String snowstormMaintainerType, JsonNode codeSystem)
+        throws Exception {
 
         try {
 
@@ -767,6 +770,26 @@ public class SyncCodeSystemAgent extends SyncService {
 
         }
 
+    }
+
+    private String identifyMaintainerType(JsonNode codeSystem, String editionShortName) throws Exception {
+
+        String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
+
+        // SNOMED Core Edition are blank in Snowstorm, but we treat them identically to the Managed Service maintainerType
+        if (codeSystemType.isBlank()) {
+
+            if (utilities.isInternationalEdition(editionShortName)) {
+
+                codeSystemType = "Managed Service";
+            } else {
+
+                throw new Exception("Encountered non-CORE edition without a maintainerType specified in the corresponding Code System");
+            }
+
+        }
+
+        return codeSystemType;
     }
 
     private boolean isEditionToProcess(String codeSystem) {
