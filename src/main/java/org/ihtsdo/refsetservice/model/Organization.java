@@ -69,6 +69,10 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     /** email for primary contact. */
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
+    
+    /** the type of code system. */
+    @Column(nullable = true, length = 255)
+    private String codeSystemType;
 
     /** The members. */
     @ManyToMany(fetch = FetchType.LAZY, cascade = {
@@ -132,6 +136,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         iconUri = other.iconUri;
         members = other.getMembers();
         roles = other.getRoles();
+        codeSystemType = other.getCodeSystemType();
     }
 
     /**
@@ -188,6 +193,26 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public void setDescription(final String description) {
 
         this.description = description;
+    }
+    
+    /**
+     * Returns the type of code system.
+     *
+     * @return the code system type
+     */
+    public String getCodeSystemType() {
+        
+        return codeSystemType;
+    }
+    
+    /**
+     * Sets the type of code system.
+     *
+     * @param codeSystemType the type of code system to set
+     */
+    public void setCodeSystemType(final String codeSystemType) {
+        
+        this.codeSystemType = codeSystemType;
     }
 
     /**
@@ -297,6 +322,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((codeSystemType == null) ? 0 : codeSystemType.hashCode());
         return result;
     }
 
@@ -325,6 +351,18 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         } else if (!description.equals(other.description)) {
 
+            return false;
+        }
+        
+        if (codeSystemType == null) {
+            
+            if (other.codeSystemType != null) {
+                
+                return false;
+            }
+            
+        } else if (!codeSystemType.equals(other.codeSystemType)) {
+            
             return false;
         }
 

@@ -32,6 +32,7 @@ CREATE TABLE `organizations` (
   `modifiedBy` varchar(256) NOT NULL,
   `description` varchar(4000) DEFAULT NULL,
   `name` varchar(255) NOT NULL,
+  `codeSystemType` varchar(255) NOT NULL,
   `primaryContactEmail` varchar(255) DEFAULT NULL,
   `iconUri` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)

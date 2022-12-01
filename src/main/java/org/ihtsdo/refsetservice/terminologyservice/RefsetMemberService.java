@@ -5562,7 +5562,9 @@ public class RefsetMemberService {
 
                     if (!replacementConcept.isAdded() && !replacementConcept.isExistingMember()) {
 
-                        conceptIdsToChange.add(replacementConcept.getCode());
+                        if (!conceptIdsToChange.contains(replacementConcept.getCode())) {
+                            conceptIdsToChange.add(replacementConcept.getCode());
+                        }
                     }
 
                 }
