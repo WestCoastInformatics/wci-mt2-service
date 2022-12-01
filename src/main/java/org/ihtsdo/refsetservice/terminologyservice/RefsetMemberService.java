@@ -4070,14 +4070,17 @@ public class RefsetMemberService {
 
         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
         final String conceptSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/concepts/search";
+        final String memberSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/members/search?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
         final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
+        final String memberSearchBodyBase = "{\"active\":true, \"referenceSet\":\"" + refsetId + "\", \"referencedComponentIds\":[";
         final List<String> permanentFullConceptList = new ArrayList<>(conceptIds);
         final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
         final List<String> validatedConcepts = new ArrayList<>();
         boolean searchAgain = true;
         int searchIndex = 0;
         int loopNumber = 1;
-        logger.debug("addRefsetMembers concept search/verification URL: " + conceptSearchUrl);
+        logger.debug("addRefsetMembers concept search URL: " + conceptSearchUrl);
+        logger.debug("addRefsetMembers concept member verification URL: " + memberSearchUrl);
 
         while (searchAgain) {
 
@@ -4177,20 +4180,20 @@ public class RefsetMemberService {
 
             if (conceptBatch.size() > 0) {
 
-                bodyConceptIds = "\"conceptIds\":[";
+                bodyConceptIds = "";
 
                 // generate the body list for the check for concepts that are already members
                 for (final String conceptId : conceptBatch) {
 
-                    bodyConceptIds += "\"" + conceptId + "\",";
+                    bodyConceptIds += conceptId + ",";
                 }
 
-                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
-                final String memberSearchBody = bodyBase + bodyConceptIds + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\"}";
+                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+                final String memberSearchBody = memberSearchBodyBase + bodyConceptIds + "]}";
                 logger.debug("addRefsetMembers member search body: " + memberSearchBody);
                 logger.debug("addRefsetMembers conceptIds: " + conceptIds);
 
-                try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
+                try (final Response response = SnowstormConnection.postResponse(memberSearchUrl, memberSearchBody)) {
 
                     final String resultString = response.readEntity(String.class);
 
@@ -4207,7 +4210,7 @@ public class RefsetMemberService {
                     while (iterator != null && iterator.hasNext()) {
 
                         final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("conceptId").asText();
+                        final String conceptId = conceptNode.get("referencedComponentId").asText();
                         logger.debug("addRefsetMembers removing already member conceptId: " + conceptId);
                         conceptIds.remove(conceptId);
 
