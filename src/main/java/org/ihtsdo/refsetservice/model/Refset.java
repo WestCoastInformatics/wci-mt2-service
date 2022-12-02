@@ -130,6 +130,38 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = false)
     private int memberCount = -1;
 
+    /** The edit branch ID. */
+    @Column(nullable = true, length = 256)
+    private String editBranchId;
+    
+    /** The refset branch ID. */
+    @Column(nullable = true, length = 256)
+    private String refsetBranchId;
+
+    /** The external URL. */
+    @Column(nullable = true, length = 4000)
+    private String externalUrl;
+
+    /** The module ID. */
+    @Column(nullable = false, length = 256)
+    private String moduleId;
+    
+    /** The project. */
+    @ManyToOne(targetEntity = Project.class)
+    @JoinColumn(nullable = true)
+    @Fetch(FetchMode.JOIN)
+    private Project project;
+
+    /** The tags. */
+    @ElementCollection
+    private Set<String> tags = new HashSet<String>();
+
+    /** The definition clauses. */
+    // @Fetch(FetchMode.JOIN)
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("created ASC")
+    private List<DefinitionClause> definitionClauses = new ArrayList<>();
+
     /** The flag for if a user can download this refset. */
     @Transient
     private boolean downloadable;
@@ -145,10 +177,22 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     /** The flag for if the refset is locked due to an edit. */
     @Transient
     private boolean locked = false;
+    
+    /** The date of the terminology version this refset is based on. */
+    @Transient
+    private String terminologyVersionDate;
 
-    /** The flag for if the refset was last published more than one edition version prior. */
+    /** The flag for if the refset was published in the last edition version. */
+    @Transient
+    private boolean basedOnLatestVersion = false;
+    
+    /** The flag to display a warning when first editing if the refset was last published more than one edition version prior. */
     @Transient
     private boolean upgradeWarning = false;
+    
+    /** The flag to indicate that this refset is included in search results in part because it matched member or alternate refset descriptions . */
+    @Transient
+    private boolean memberSearchMatch = false;
 
     /** The list of actions available for the user to perform on this refset. */
     @Transient
@@ -170,18 +214,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private List<Map<String, String>> versionList;
 
-    /** The module ID. */
-    @Column(nullable = false, length = 256)
-    private String moduleId;
-
-    /** The edit branch ID. */
-    @Column(nullable = true, length = 256)
-    private String editBranchId;
-
-    /** The external URL. */
-    @Column(nullable = true, length = 4000)
-    private String externalUrl;
-
     /** The count of discussions for this item. */
     @Transient
     private int openDiscussionCount;
@@ -190,22 +222,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Transient
     private int resolvedDiscussionCount;
     
-    /** The project. */
-    @ManyToOne(targetEntity = Project.class)
-    @JoinColumn(nullable = true)
-    @Fetch(FetchMode.JOIN)
-    private Project project;
-
-    /** The tags. */
-    @ElementCollection
-    private Set<String> tags = new HashSet<String>();
-
-    /** The definition clauses. */
-    // @Fetch(FetchMode.JOIN)
-    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClause.class, orphanRemoval = true, fetch = FetchType.LAZY)
-    @OrderBy("created ASC")
-    private List<DefinitionClause> definitionClauses = new ArrayList<>();
-
     /** The value to use for the 'published' version status. */
     @Transient
     public static final String PUBLISHED = "PUBLISHED";
@@ -300,6 +316,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         externalUrl = other.getExternalUrl();
         moduleId = other.getModuleId();
         editBranchId = other.getEditBranchId();
+        refsetBranchId = other.getRefsetBranchId();
         assignedUser = other.getAssignedUser();
         memberCount = other.getMemberCount();
         privateRefset = other.isPrivateRefset();
@@ -307,7 +324,10 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         comboRefset = other.isComboRefset();
         downloadable = other.isDownloadable();
         locked = other.isLocked();
+        terminologyVersionDate = other.getTerminologyVersionDate();
+        basedOnLatestVersion = other.isBasedOnLatestVersion();
         upgradeWarning = other.getUpgradeWarning();
+        memberSearchMatch = other.isMemberSearchMatch();
         availableActions = other.getAvailableActions();
         parentConceptId = other.getParentConceptId();
         branchPath = other.getBranchPath();
@@ -894,6 +914,26 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         this.editBranchId = editBranchId;
     }
+    
+    /**
+     * Gets the refset branch ID.
+     *
+     * @return the refset branch ID
+     */
+    public String getRefsetBranchId() {
+        
+        return refsetBranchId;
+    }
+    
+    /**
+     * Sets the refset branch ID.
+     *
+     * @param refsetBranchId the refset branch ID to set
+     */
+    public void setRefsetBranchId(final String refsetBranchId) {
+        
+        this.refsetBranchId = refsetBranchId;
+    }
 
     /**
      * Gets the external url.
@@ -988,25 +1028,87 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         this.locked = locked;
     }
+    
+    /**
+     * Gets the flag to indicate that this refset is included in search results in part because it matched member or alternate refset descriptions.
+     *
+     * @return the member search match flag
+     */
+    @JsonGetter()
+    public boolean isMemberSearchMatch() {
+        
+        return memberSearchMatch;
+    }
+    
+    /**
+     * Sets the flag to indicate that this refset is included in search results in part because it matched member or alternate refset descriptions.
+     *
+     * @param memberSearchMatch the member search match flag
+     */
+    public void setMemberSearchMatch(final boolean memberSearchMatch) {
+        
+        this.memberSearchMatch = memberSearchMatch;
+    }
+    
+    /**
+     * Returns the date of the terminology version this refset is based on.
+     *
+     * @return the terminology version date
+     */
+    @JsonGetter()
+    public String getTerminologyVersionDate() {
+
+        return terminologyVersionDate;
+    }
 
     /**
-     * Gets the flag that shows if the refset was last published more than one edition version prior.
+     * Sets the date of the terminology version this refset is based on.
+     *
+     * @param terminologyVersionDate the terminology version date to set
+     */
+    public void setTerminologyVersionDate(final String terminologyVersionDate) {
+
+        this.terminologyVersionDate = terminologyVersionDate;
+    }
+
+    /**
+     * Gets the flag for if the refset was published in the last edition version.
+     *
+     * @return the based on latest version flag
+     */
+    @JsonGetter()
+    public boolean isBasedOnLatestVersion() {
+
+        return basedOnLatestVersion;
+    }
+
+    /**
+     * Sets the flag for if the refset was published in the last edition version.
+     *
+     * @param basedOnLatestVersion the based on latest version flag
+     */
+    public void setBasedOnLatestVersion(final boolean basedOnLatestVersion) {
+
+        this.basedOnLatestVersion = basedOnLatestVersion;
+    }
+    /**
+     * Gets the flag to display a warning when first editing if the refset was last published more than one edition version prior.
      *
      * @return the upgrade warning flag
      */
     @JsonGetter()
     public boolean getUpgradeWarning() {
-
+        
         return upgradeWarning;
     }
-
+    
     /**
-     * Sets the flag that shows if the refset was last published more than one edition version prior.
+     * Sets the flag to display a warning when first editing if the refset was last published more than one edition version prior.
      *
      * @param upgradeWarning the upgrade warning flag
      */
     public void setUpgradeWarning(final boolean upgradeWarning) {
-
+        
         this.upgradeWarning = upgradeWarning;
     }
 
@@ -1064,17 +1166,17 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @JsonGetter()
     public String getParentConceptId() {
-
+        
         return parentConceptId;
     }
-
+    
     /**
      * Sets the ID of the parent of the underlying refset concept.
      *
      * @param parentConceptId the parent concept ID to set
      */
     public void setParentConceptId(final String parentConceptId) {
-
+        
         this.parentConceptId = parentConceptId;
     }
 
@@ -1290,6 +1392,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((versionNotes == null) ? 0 : versionNotes.hashCode());
         result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
         result = prime * result + ((editBranchId == null) ? 0 : editBranchId.hashCode());
+        result = prime * result + ((refsetBranchId == null) ? 0 : refsetBranchId.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
         result = prime * result + ((project == null) ? 0 : project.hashCode());
         result = prime * result + ((versionList == null) ? 0 : versionList.hashCode());
@@ -1298,6 +1401,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((branchPath == null) ? 0 : branchPath.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((terminologyVersionDate == null) ? 0 : terminologyVersionDate.hashCode());
         result = prime * result + memberCount;
         result = prime * result + openDiscussionCount;
         result = prime * result + resolvedDiscussionCount;
@@ -1307,6 +1411,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + (latestPublishedVersion ? 1 : 0);
         result = prime * result + (hasVersionInDevelopment ? 1 : 0);
         result = prime * result + (locked ? 1 : 0);
+        result = prime * result + (memberSearchMatch ? 1 : 0);
+        result = prime * result + (basedOnLatestVersion ? 1 : 0);
         result = prime * result + (upgradeWarning ? 1 : 0);
         result = prime * result + (localSet ? 1 : 0);
         result = prime * result + (comboRefset ? 1 : 0);
@@ -1518,6 +1624,18 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
             return false;
         }
+        
+        if (refsetBranchId == null) {
+            
+            if (other.refsetBranchId != null) {
+                
+                return false;
+            }
+            
+        } else if (!refsetBranchId.equals(other.refsetBranchId)) {
+            
+            return false;
+        }
 
         if (externalUrl == null) {
 
@@ -1528,6 +1646,18 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         } else if (!externalUrl.equals(other.externalUrl)) {
 
+            return false;
+        }
+        
+        if (terminologyVersionDate == null) {
+            
+            if (other.terminologyVersionDate != null) {
+                
+                return false;
+            }
+            
+        } else if (!terminologyVersionDate.equals(other.terminologyVersionDate)) {
+            
             return false;
         }
 
@@ -1575,9 +1705,19 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
             return false;
         }
+        
+        if (memberSearchMatch != other.memberSearchMatch) {
+            
+            return false;
+        }
 
+        if (basedOnLatestVersion != other.basedOnLatestVersion) {
+
+            return false;
+        }
+        
         if (upgradeWarning != other.upgradeWarning) {
-
+            
             return false;
         }
 

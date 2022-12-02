@@ -61,6 +61,10 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
     /** The code. */
     @Column(nullable = false, length = 256)
     private String code;
+    
+    /** The UUID of the membership. */
+    @Column(nullable = true, length = 256)
+    private String memberId;
 
     /** The descriptions. */
     @Column(nullable = false, length = 10000)
@@ -104,6 +108,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
         
         super.populateFrom(other);
         code = other.getCode();
+        memberId = other.getMemberId();
         descriptions = other.getDescriptions();
         reason = other.getReason();
         existingMember = other.isExistingMember();
@@ -126,6 +131,26 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      */
     public void setCode(final String code) {
         this.code = code;
+    }
+    
+    /**
+     * Returns the UUID of the membership.
+     *
+     * @return the member ID
+     */
+    public String getMemberId() {
+        
+        return memberId;
+    }
+    
+    /**
+     * Sets the UUID of the membership.
+     *
+     * @param memberId the member ID
+     */
+    public void setMemberId(final String memberId) {
+        
+        this.memberId = memberId;
     }
 
     /**
@@ -210,6 +235,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((code == null) ? 0 : code.hashCode());
+        result = prime * result + ((memberId == null) ? 0 : memberId.hashCode());
         result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
         result = prime * result + (existingMember ? 1 : 0);
         result = prime * result + (added ? 1 : 0);
@@ -244,6 +270,14 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
                 return false;
             }
         } else if (!code.equals(other.code)) {
+            return false;
+        }
+        
+        if (memberId == null) {
+            if (other.memberId != null) {
+                return false;
+            }
+        } else if (!memberId.equals(other.memberId)) {
             return false;
         }
 

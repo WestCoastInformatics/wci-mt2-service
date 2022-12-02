@@ -55,7 +55,6 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -148,6 +147,14 @@ public class RefsetController extends BaseController {
 
             User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(service, user, refsetId, versionDate);
+            
+//            if (user.getUserName().equals(SecurityService.GUEST_USERNAME) && (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT) || refset.isPrivateRefset())) {
+//                return new ResponseEntity<>(new Refset(), HttpStatus.OK);
+//                
+//            } else if ((refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT) || refset.isPrivateRefset()) && !user.doesUserHavePermission(User.ROLE_VIEWER, refset.getProject())) {
+//                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have permission to view this refset.");
+//            }
+            
             RefsetService.getRefsetDescriptions(refset);
 
             logger.debug("getRefset: Including discussion count");
@@ -173,6 +180,50 @@ public class RefsetController extends BaseController {
             return handleException(e);
         }
 
+    }
+    
+    /**
+     * Returns the refset member count.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset member count
+     * @throws Exception the exception
+     */
+
+    @ApiOperation(value = "Returns the refset member count", response = Refset.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/memberCount", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> getRefsetMemberCount(@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            logger.debug("getRefsetMemberCount: refsetInternalId: " + refsetInternalId);
+
+            final User user = SecurityService.getUserFromSession();
+            final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+
+            if (refset == null) {
+                throw new Exception("Unable to retrieve refset " + refsetInternalId);
+            }
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            RefsetService.setRefsetMemberCount(service, refset);
+
+            logger.debug("getRefsetMemberCount: refset: " + refset.getRefsetId() + " ; member count: " + refset.getMemberCount());
+
+            return new ResponseEntity<>(refset.getMemberCount() + "", HttpStatus.OK);
+
+        } catch (final Exception e) {
+            return handleException(e);
+        }
     }
 
     /**
@@ -200,9 +251,9 @@ public class RefsetController extends BaseController {
             User user = SecurityService.getUserFromSession();
             final boolean isLocked = RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId);
             String returnString = isLocked + "";
-            logger.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
-            logger.debug("isRefsetLocked: refsetsUpdatedMembers: " + RefsetMemberService.refsetsUpdatedMembers);
-            logger.debug("isRefsetLocked: does update map contain this refset: " + RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId));
+            //logger.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ; Locked: " + isLocked);
+            //logger.debug("isRefsetLocked: refsetsUpdatedMembers: " + RefsetMemberService.refsetsUpdatedMembers);
+            //logger.debug("isRefsetLocked: does update map contain this refset: " + RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId));
 
             if (!isLocked && RefsetMemberService.refsetsUpdatedMembers.containsKey(refsetInternalId)) {
 
@@ -234,7 +285,8 @@ public class RefsetController extends BaseController {
 
             // logger.debug("updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
-            final Refset refset = service.findSingle("refsetId:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
             refset.setActive(active);
             service.setModifiedBy("restApi");
             service.update(refset);
@@ -274,6 +326,9 @@ public class RefsetController extends BaseController {
             String error = "";
             List<String> unaddedConcepts;
             final User user = SecurityService.getUserFromSession();
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
@@ -296,9 +351,7 @@ public class RefsetController extends BaseController {
             } else if (ecl != null && !ecl.equals("")) {
 
                 type = "by changing ECL definition";
-
-                final String branchPath = RefsetService.getBranchPath(service, refsetInternalId);
-                conceptIdList = RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl);
+                conceptIdList = RefsetMemberService.getConceptIdsFromEcl(refset.getBranchPath(), ecl);
             } else {
 
                 type = "by file";
@@ -309,7 +362,7 @@ public class RefsetController extends BaseController {
             logger.debug("addRefsetMembers: conceptIdList: " + conceptIdList);
 
             // add the list of concepts as members to the refset
-            unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refsetInternalId, conceptIdList);
+            unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdList);
 
             // see if there are any concepts that were unable to be added and craft the error message
             if (unaddedConcepts.size() > 0) {
@@ -329,7 +382,6 @@ public class RefsetController extends BaseController {
 
             if (error.equals("")) {
 
-                Refset refset = service.get(refsetInternalId, Refset.class);
                 AuditEntryHelper.addMembersEntry(refset, type, conceptIds);
 
                 return new ResponseEntity<>("{\"status\": \"All concepts added.\"}", HttpStatus.OK);
@@ -371,6 +423,9 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             String conceptsToRemove = null;
             User user = SecurityService.getUserFromSession();
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
@@ -394,9 +449,7 @@ public class RefsetController extends BaseController {
             } else if (ecl != null && !ecl.equals("")) {
 
                 type = "by changing ECL definition";
-
-                final String branchPath = RefsetService.getBranchPath(service, refsetInternalId);
-                conceptsToRemove = String.join(",", RefsetMemberService.getConceptIdsFromEcl(branchPath, ecl));
+                conceptsToRemove = String.join(",", RefsetMemberService.getConceptIdsFromEcl(refset.getBranchPath(), ecl + " AND ^" + refset.getRefsetId()));
             } else {
 
                 type = "by file";
@@ -407,7 +460,7 @@ public class RefsetController extends BaseController {
             logger.debug("removeRefsetMembers: conceptIds: " + conceptIds);
 
             // add the list of concepts as members to the refset
-            final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refsetInternalId, conceptsToRemove);
+            final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptsToRemove);
             // service.commit();
 
             // see if there are any concepts that were unable to be added and craft the error message
@@ -425,7 +478,6 @@ public class RefsetController extends BaseController {
 
             if (error.equals("")) {
 
-                Refset refset = service.get(refsetInternalId, Refset.class);
                 AuditEntryHelper.removeMembersEntry(refset, type, conceptsToRemove);
 
                 return new ResponseEntity<>("{\"status\": \"All concepts removed.\"}", HttpStatus.OK);
@@ -469,6 +521,9 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             List<String> conceptIdList = new ArrayList<>();
             final User user = SecurityService.getUserFromSession();
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
@@ -494,7 +549,7 @@ public class RefsetController extends BaseController {
                 inclusionEcl = RefsetMemberService.conceptListToEclStatement(conceptIdList);
             }
 
-            final String status = RefsetService.addDefinitionException(service, user, refsetInternalId, inclusionEcl, definitionExceptionType);
+            final String status = RefsetService.addDefinitionException(service, user, refset, inclusionEcl, definitionExceptionType);
             // service.commit();
 
             if (!status.startsWith("Error")) {
@@ -535,12 +590,15 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             final User user = SecurityService.getUserFromSession();
             logger.debug("removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId + "; definitionExceptionId: " + definitionExceptionId);
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
 
-            final String status = RefsetService.removeDefinitionException(service, user, refsetInternalId, definitionExceptionId);
+            final String status = RefsetService.removeDefinitionException(service, user, refset, definitionExceptionId);
             // service.commit();
 
             if (!status.startsWith("Error")) {
@@ -642,12 +700,15 @@ public class RefsetController extends BaseController {
             RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
             RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
             User user = SecurityService.getUserFromSession();
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
 
-            final String status = RefsetService.modifyRefset(service, user, refsetInternalId, refsetParameters);
+            final String status = RefsetService.modifyRefset(service, user, refset, refsetParameters);
             // service.commit();
 
             if (!status.startsWith("Error")) {
@@ -748,13 +809,10 @@ public class RefsetController extends BaseController {
             // if the status is Published then create a new version of the refset that is ready to be edited
             if (currentStatus == null || currentStatus.equals(WorkflowService.PUBLISHED)) {
 
-                final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
-                final String versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
-
                 final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, refset.getId(), true);
                 refset = RefsetService.getRefset(service, user, newRefsetInternalId);
 
-                if (action.equals(WorkflowService.EDIT) && editionVersions.indexOf(versionDate) > 0) {
+                if (action.equals(WorkflowService.EDIT) && !refset.isBasedOnLatestVersion()) {
 
                     RefsetService.refsetsToShowUpgradeWarning.add(newRefsetInternalId);
                     refset.setUpgradeWarning(true);
@@ -821,6 +879,69 @@ public class RefsetController extends BaseController {
         }
 
     }
+    
+    /**
+     * Start the publication of all Ready for Publication refsets in a code system by promoting them to the REFSETS branch.
+     * ** IMPORTANT ** Once this step is taken it will be very hard to reverse
+     *
+     * @param codeSystem a code system to limit the refset to
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    @PutMapping("/admin/startAllRefsetPublications")
+    public @ResponseBody ResponseEntity<String> startAllRefsetPublications(@RequestParam(required = true) final String codeSystem)
+        throws Exception {
+
+        final User user = SecurityService.getUserFromSession();
+        
+        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+        }
+
+        if (StringUtility.isEmpty(codeSystem)) {
+
+            throw new Exception("A Code System must be specified.");
+        }
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+
+            logger.debug("startAllRefsetPublications: editionShortName (codeSystem): " + codeSystem);
+
+            final List<String> refsetsNotUpdated = WorkflowService.startAllRefsetPublications(service, codeSystem);
+            String error = "";
+
+            // see if there are any refsets that were unable to be updated and craft the error message
+            if (refsetsNotUpdated.size() > 0) {
+
+                error = "Unable to promote refsets in code system " + codeSystem + ": ";
+
+                for (final String unremovedConcept : refsetsNotUpdated) {
+
+                    error += unremovedConcept + ", ";
+                }
+
+                error = StringUtils.removeEnd(error, ", ");
+            }
+
+            if (error.equals("")) {
+
+                String message = "All refsets promoted in code system " + codeSystem;
+                return new ResponseEntity<>("{\"status\": \"" + message + ".\"}", HttpStatus.OK);
+
+            } else {
+
+                return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
 
     /**
      * Complete the publication of all Ready for Publication refsetsin a code system.
@@ -835,6 +956,10 @@ public class RefsetController extends BaseController {
         throws Exception {
 
         final User user = SecurityService.getUserFromSession();
+        
+        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+        }
 
         if (StringUtility.isEmpty(codeSystem)) {
 
@@ -884,7 +1009,7 @@ public class RefsetController extends BaseController {
         }
 
     }
-
+    
     /**
      * Set refsets that failed publication back to 'Ready For Edit' status.
      *
@@ -897,6 +1022,10 @@ public class RefsetController extends BaseController {
     public @ResponseBody ResponseEntity<String> failRefsetPublications(@RequestParam(required = true) final String refsetIds, @RequestParam(required = true) final String notes) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
+        
+        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+        }
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -989,12 +1118,15 @@ public class RefsetController extends BaseController {
 
             // logger.debug("inactiveRefset: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
 
-            final String status = RefsetService.inactivateRefset(service, user, refsetInternalId);
+            final String status = RefsetService.inactivateRefset(service, user, refset);
             // service.commit();
 
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
@@ -1020,10 +1152,13 @@ public class RefsetController extends BaseController {
 
             // logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
 
-            final String status = RefsetService.convertToExtensional(service, user, refsetInternalId);
+            final String status = RefsetService.convertToExtensional(service, user, refset);
 
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
@@ -1048,14 +1183,16 @@ public class RefsetController extends BaseController {
 
             // logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserPerformInDevelopmentActionsOnRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
 
-            final String status = RefsetService.deleteInDevelopmentVersion(service, user, refsetInternalId, true);
+            final String status = RefsetService.deleteInDevelopmentVersion(service, user, refset, true);
             // service.commit();
-
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
         } catch (final Exception e) {
@@ -1328,7 +1465,7 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}", produces = "application/json")
     public @ResponseBody ResponseEntity<String> exportRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String format, final String exportType,
-        final String languageId, final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
+        final String languageId, final String fileNameDate, final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1368,6 +1505,52 @@ public class RefsetController extends BaseController {
                 final String downloadUri = RefsetMemberService.exportFreeset(service, refsetInternalId, languageId);
                 responseMessage = "{\"url\": \"" + downloadUri + "\"}";
             }
+
+            return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+    
+    /**
+     * Export all published refsets for a project.
+     *
+     * @param projectId the project id
+     * @param format the format
+     * @param languageId the language to display names in
+     * @param fileNameDate the file name date
+     * @param exportMetadata the export metadata
+     * @return the uri
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Export the all latest version of all published refsets for the project.")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "projectId", value = "The id of the project to export refsets.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "languageId", value = "For formats with names which language to display the name in.", required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "fileNameDate", value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names'", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "exportMetadata", value = "e.g.  true or false", required = true, dataType = "boolean", paramType = "query")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/export/project/{projectId}", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> exportAllRefsetsForProject(@PathVariable(value = "projectId") final String projectId, final String format, final String languageId,
+        final String fileNameDate, final boolean exportMetadata) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final User user = SecurityService.getUserFromSession();
+            logger.debug("exportAllRefsetsForProject: projectId: " + projectId + " ; fileNameDate: " + fileNameDate);
+            final boolean withNames = ("rf2_with_names".equalsIgnoreCase(format));
+
+            final String downloadUri = RefsetMemberService.exportAllRefsetsRf2ForProject(service, user, projectId, "snapshot", languageId, fileNameDate, exportMetadata, withNames);
+            final String responseMessage = "{\"url\": \"" + downloadUri + "\"}";
 
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);
 
@@ -2124,9 +2307,11 @@ public class RefsetController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             logger.debug("getUpgradeData: refsetInternalId: " + refsetInternalId);
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
             // add the list of concepts as members to the refset
-            final ResultList<UpgradeInactiveConcept> results = RefsetMemberService.getUpgradeData(service, user, refsetInternalId);
+            final ResultList<UpgradeInactiveConcept> results = RefsetMemberService.getUpgradeData(service, user, refset);
 
             logger.debug("getUpgradeData: results " + results);
 
@@ -2159,6 +2344,9 @@ public class RefsetController extends BaseController {
         final User user = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -2167,7 +2355,7 @@ public class RefsetController extends BaseController {
             logger.debug("modifyUpgradeConcept: refsetInternalId: " + refsetInternalId + "; changed: " + changed + "; inactiveConceptId: " + inactiveConceptId + "; replacementConceptId: "
                 + replacementConceptId + "; manualReplacementConcept: " + manualReplacementConcept);
 
-            status = RefsetMemberService.modifyUpgradeConcept(service, user, refsetInternalId, inactiveConceptId, replacementConceptId, manualReplacementConcept, changed);
+            status = RefsetMemberService.modifyUpgradeConcept(service, user, refset, inactiveConceptId, replacementConceptId, manualReplacementConcept, changed);
 
             logger.debug("modifyUpgradeConcept: Finished with status: " + status);
 
@@ -2194,6 +2382,9 @@ public class RefsetController extends BaseController {
         final User user = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -2201,7 +2392,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("removeAllUpgradeInactiveConcepts: refsetInternalId: " + refsetInternalId);
 
-            status = RefsetMemberService.removeAllUpgradeInactiveConcepts(service, user, refsetInternalId);
+            status = RefsetMemberService.removeAllUpgradeInactiveConcepts(service, user, refset);
 
             logger.debug("removeAllUpgradeInactiveConcepts: Finished with status: " + status);
 
@@ -2228,6 +2419,9 @@ public class RefsetController extends BaseController {
         final User user = SecurityService.getUserFromSession();
 
         try (final TerminologyService service = new TerminologyService()) {
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -2235,7 +2429,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("addAllUpgradeReplacementConcepts: refsetInternalId: " + refsetInternalId);
 
-            status = RefsetMemberService.addAllUpgradeReplacementConcepts(service, user, refsetInternalId);
+            status = RefsetMemberService.addAllUpgradeReplacementConcepts(service, user, refset);
 
             logger.debug("addAllUpgradeReplacementConcepts: Finished with status: " + status);
 

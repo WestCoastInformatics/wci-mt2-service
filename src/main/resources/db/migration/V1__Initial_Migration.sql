@@ -32,6 +32,7 @@ CREATE TABLE `organizations` (
   `modifiedBy` varchar(256) NOT NULL,
   `description` varchar(4000) DEFAULT NULL,
   `name` varchar(255) NOT NULL,
+  `codeSystemType` varchar(255),
   `primaryContactEmail` varchar(255) DEFAULT NULL,
   `iconUri` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -49,12 +50,18 @@ CREATE TABLE `editions` (
   `name` varchar(4000) NOT NULL,
   `namespace` varchar(256) DEFAULT NULL,
   `shortName` varchar(256) DEFAULT NULL,
-  `topLevelModule` varchar(256) DEFAULT NULL,
   `organization_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
 ALTER TABLE `editions` ADD INDEX `FK9og41jo3e6xe033my21t6wscf` (`organization_id`);
 ALTER TABLE `editions` ADD CONSTRAINT `FK9og41jo3e6xe033my21t6wscf` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`);
+
+CREATE TABLE `edition_modules` (
+  `Edition_id` varchar(64) NOT NULL,
+  `modules` varchar(255) DEFAULT NULL
+);
+ALTER TABLE `edition_modules` ADD INDEX `FKdomyqf663j9mkuqekmkleyyq5` (`Edition_id`);
+ALTER TABLE `edition_modules` ADD CONSTRAINT `FKdomyqf663j9mkuqekmkleyyq5` FOREIGN KEY (`Edition_id`) REFERENCES `editions` (`id`);
 
 CREATE TABLE `edition_defaultlanguagerefsets` (
   `Edition_id` varchar(64) NOT NULL,
@@ -93,6 +100,7 @@ CREATE TABLE `refsets` (
   `hasVersionInDevelopment` bit(1) DEFAULT false,
   `moduleId` varchar(256) NOT NULL,
   `editBranchId` varchar(256),
+  `refsetBranchId` varchar(256),
   `name` varchar(4000) NOT NULL,
   `narrative` longtext,
   `privateRefset` bit(1) NOT NULL,
@@ -247,6 +255,7 @@ CREATE TABLE `upgrade_inactive_concepts` (
   `modified` datetime(6) NOT NULL,
   `modifiedBy` varchar(256) NOT NULL,
   `code` varchar(256) NOT NULL,
+  `memberId` varchar(256),
   `descriptions` longtext NOT NULL,
   `inactivationReason` varchar(256),
   `refsetId` varchar(256) NOT NULL,
@@ -263,6 +272,7 @@ CREATE TABLE `upgrade_replacement_concepts` (
   `modifiedBy` varchar(256) NOT NULL,
   `added` bit(1) NOT NULL,
   `code` varchar(256) NOT NULL,
+  `memberId` varchar(256),
   `descriptions` longtext NOT NULL,
   `existingMember` bit(1) NOT NULL,
   `reason` varchar(256) NOT NULL,

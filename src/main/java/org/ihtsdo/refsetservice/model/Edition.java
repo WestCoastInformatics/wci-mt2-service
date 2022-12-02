@@ -70,9 +70,10 @@ public class Edition extends AbstractHasModified {
     @Column(nullable = true)
     private String branch;
 
-    /** The ancestor module concept to the edition's modules. */
-    @Column(nullable = true)
-    private String topLevelModule;
+    /** The modules that are part of this edition. */
+    @ElementCollection
+    @Fetch(FetchMode.JOIN)
+    private Set<String> modules = new HashSet<String>();
 
     /** The default language code. */
     @Column(nullable = true, length = 256)
@@ -128,9 +129,9 @@ public class Edition extends AbstractHasModified {
         name = other.getName();
         namespace = other.getNamespace();
         defaultLanguageRefsets = other.getDefaultLanguageRefsets();
+        modules = other.getModules();
         defaultLanguageCode = other.getDefaultLanguageCode();
         branch = other.getBranch();
-        topLevelModule = other.getTopLevelModule();
         iconUri = other.getIconUri();
         shortName = other.getShortName();
         organization = other.getOrganization();
@@ -223,16 +224,6 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
-     * Gets the top level module.
-     *
-     * @return the top level module
-     */
-    public String getTopLevelModule() {
-
-        return topLevelModule;
-    }
-
-    /**
      * Gets the abbreviation version of the name.
      *
      * @return the abbreviation version of the name
@@ -261,13 +252,30 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
-     * Sets the top level module.
+     * Gets the modules that are part of this edition.
      *
-     * @param topLevelModule the top level module to set
+     * @return the modules
      */
-    public void setTopLevelModule(final String topLevelModule) {
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    // @IndexedEmbedded
+    public Set<String> getModules() {
 
-        this.topLevelModule = topLevelModule;
+        if (modules == null) {
+
+            modules = new HashSet<>();
+        }
+
+        return modules;
+    }
+
+    /**
+     * Sets the modules that are part of this edition.
+     *
+     * @param modules the set of modules IDs
+     */
+    public void setModules(final Set<String> modules) {
+
+        this.modules = modules;
     }
 
     /**
@@ -460,7 +468,7 @@ public class Edition extends AbstractHasModified {
             this.organization.setId(organizationId);
         }
     }
-    
+
     /**
      * Returns the organization name.
      *
@@ -511,8 +519,8 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((namespace == null) ? 0 : namespace.hashCode());
         result = prime * result + ((branch == null) ? 0 : branch.hashCode());
-        result = prime * result + ((topLevelModule == null) ? 0 : topLevelModule.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
+        result = prime * result + ((modules == null) ? 0 : modules.hashCode());
         result = prime * result + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
         result = prime * result + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
         result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
@@ -582,18 +590,6 @@ public class Edition extends AbstractHasModified {
             return false;
         }
 
-        if (topLevelModule == null) {
-
-            if (other.topLevelModule != null) {
-
-                return false;
-            }
-
-        } else if (!topLevelModule.equals(other.topLevelModule)) {
-
-            return false;
-        }
-
         if (iconUri == null) {
 
             if (other.iconUri != null) {
@@ -602,6 +598,18 @@ public class Edition extends AbstractHasModified {
             }
 
         } else if (!iconUri.equals(other.iconUri)) {
+
+            return false;
+        }
+
+        if (modules == null) {
+
+            if (other.modules != null) {
+
+                return false;
+            }
+
+        } else if (!modules.equals(other.modules)) {
 
             return false;
         }

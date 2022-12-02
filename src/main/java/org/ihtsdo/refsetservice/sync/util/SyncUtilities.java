@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.core.Response;
-
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
@@ -24,7 +22,6 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -33,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SyncUtilities {
 
@@ -68,7 +64,7 @@ public class SyncUtilities {
 
     private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
 
-    public Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
+    public Organization addOrganziation(final String orgName, String orgDesc, String orgMaintainerType) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -77,6 +73,7 @@ public class SyncUtilities {
             final Organization org = new Organization();
             org.setName(orgName);
             org.setDescription(orgDesc);
+            org.setCodeSystemType(orgMaintainerType);
 
             // Persist
             final Organization o = service.add(org);
@@ -97,14 +94,14 @@ public class SyncUtilities {
         final Set<String> defaultLanguageRefsets = identifyDefaultLanguageRefsets(codeSystem, shortName);
 
         // Case of no modules handled downstream
-        final String editionTopLevelModule = codeSystem.has("modules") ? identifyTopLevelModule(shortName, editionName, editionBranch, codeSystem) : DEFAULT_SNOMED_CORE_MODULE;
+        final Set<String> editionModules = identifyModules(shortName, editionName, editionBranch, codeSystem);
 
-        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionTopLevelModule, defaultLanguageCode, organization);
+        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionModules, defaultLanguageCode, organization);
 
         return newEdition;
     }
 
-    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, String topLevelModule, String defaultLanguageCode, Organization organization)
+    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, Organization organization)
         throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -117,7 +114,7 @@ public class SyncUtilities {
             edition.setName(name);
             edition.setBranch(branch);
             edition.setDefaultLanguageRefsets(defaultLanguageRefsets);
-            edition.setTopLevelModule(topLevelModule);
+            edition.setModules(modules);
             edition.setDefaultLanguageCode(defaultLanguageCode);
             edition.setOrganization(organization);
 
@@ -343,15 +340,21 @@ public class SyncUtilities {
 
     }
 
-    public String identifyTopLevelModule(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
+    public Set<String> identifyModules (String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
 
         Set<String> editionModules = new HashSet<>();
-        String returnModule = null;
 
         if (isInternationalEdition(editionName)) {
 
-            editionModules.add(DEFAULT_SNOMED_CORE_MODULE);
-            returnModule = DEFAULT_SNOMED_CORE_MODULE;
+            Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+            while( moduleIterator.hasNext()) {
+                JsonNode module = moduleIterator.next();
+                if (module.get("active").asBoolean()) {
+                    internationalModules.add(module.get("conceptId").asText());
+                    editionModules.add(module.get("conceptId").asText());
+                }
+            }
+            
         } else {
 
             Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
@@ -361,7 +364,7 @@ public class SyncUtilities {
 
                 JsonNode module = moduleIterator.next();
 
-                if (!internationalModules.contains(module.get("conceptId").asText()) && !module.get("moduleId").asText().equals("900000000000012004")) {
+                if (module.get("active").asBoolean() && !internationalModules.contains(module.get("conceptId").asText())) {
 
                     editionModules.add(module.get("conceptId").asText());
 
@@ -369,74 +372,17 @@ public class SyncUtilities {
 
             }
 
-            if (editionModules.size() == 0) {
+            if (editionModules.isEmpty()) {
 
-                // If no non-CORE modules found, use the default Module
-
-                returnModule = DEFAULT_SNOMED_CORE_MODULE;
-                editionModules.add(returnModule);
-
-            } else if (editionModules.size() == 1) {
-
-                // If single non-CORE module found, use it as default
-
-                returnModule = editionModules.iterator().next();
-                editionModules.add(returnModule);
-
-            } else {
-
-                // TODO: 1) Review this especially for the work arounds. In fact, hard coded solutions should be in prop file
-                // TODO: 2) If multiple non-CORE modules found... Possible??? how to handle?
-                Set<String> childrenModules = new HashSet<>();
-
-                Set<String> children = identifyModuleChildren(editionBranch);
-
-                for (String moduleId : editionModules) {
-
-                    if (children.contains(moduleId)) {
-
-                        childrenModules.add(moduleId);
-                    }
-
-                }
-
-                if (shortName.equals("SNOMEDCT-NL")) {
-
-                    childrenModules.remove("15561000146104"); // 15561000146104
-                                                              // - Represents
-                                                              // Patient
-                                                              // Friendly Terms
-                } else if (shortName.equals("SNOMEDCT-AU")) {
-
-                    childrenModules.add("32570231000036109");
-                }
-
-                if (shortName.equals("SNOMEDCT-NO")) {
-
-                    childrenModules.remove("57091000202101");
-                    childrenModules.remove("57101000202106");
-                } else if (shortName.equals("SNOMEDCT-US")) {
-
-                    childrenModules.remove("5991000124107");
-                }
-
-                if (childrenModules.size() == 0 || childrenModules.size() > 1) {
-
-                    String msg = "Seeing odd number of modules during secondary analysis for " + editionName + ": " + childrenModules.toString();
-
-                    logger.info(msg);
-                    throw new Exception("This situation shouldn't happen during sync: " + msg);
-                }
-
-                returnModule = childrenModules.iterator().next();
+                // All non-core code systems must have a non-core module.
+                throw new Exception("Did not find any modules for code system " + editionName);
 
             }
-
         }
 
         editionModulesMap.put(shortName, editionModules);
 
-        return returnModule;
+        return editionModules;
     }
 
     public String identifyDefaultLanguageCode(JsonNode codeSystem, String editionName) throws Exception {
@@ -491,33 +437,6 @@ public class SyncUtilities {
         object.setModified(metadata.getModified());
         object.setCreated(metadata.getModified());
         object.setModifiedBy(metadata.getModifiedBy());
-    }
-
-    private Set<String> identifyModuleChildren(String branch) throws Exception {
-
-        String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/concepts/" + ANCESTOR_MODULE + "/children";
-        Set<String> childrenSctIds = new HashSet<>();
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(resultString.toString());
-
-            Iterator<JsonNode> conceptIterator = root.iterator();
-
-            while (conceptIterator.hasNext()) {
-
-                JsonNode node = conceptIterator.next();
-                childrenSctIds.add(node.get("conceptId").asText());
-            }
-
-        } catch (Exception e) {
-
-            throw new Exception("Failed in getting code systems (first call to Snowstorm) with: " + e.getMessage(), e);
-        }
-
-        return childrenSctIds;
     }
 
     private Refset initializeWorkflowStatus(Refset refset) throws Exception {
@@ -608,7 +527,7 @@ public class SyncUtilities {
 
     public boolean isInternationalEdition(String editionName) {
 
-        return "international edition".equals(editionName.toLowerCase());
+        return "international edition".equals(editionName.toLowerCase()) || "snomedct".equals(editionName.toLowerCase());
     }
 
     public boolean isDeveloperEdition(String editionName) {

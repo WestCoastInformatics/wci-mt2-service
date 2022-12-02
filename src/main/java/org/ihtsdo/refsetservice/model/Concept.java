@@ -33,6 +33,9 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The code. */
     private String code;
+    
+    /** The UUID of the membership. */
+    private String memberId;
 
     /** The name. */
     private String name;
@@ -148,6 +151,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
         super.populateFrom(other);
         code = other.getCode();
+        memberId = other.getMemberId();
         name = other.getName();
         fsn = other.getFsn();
         terminology = other.getTerminology();
@@ -187,6 +191,26 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     public void setCode(final String code) {
 
         this.code = code;
+    }
+    
+    /**
+     * Returns the UUID of the membership.
+     *
+     * @return the member ID
+     */
+    public String getMemberId() {
+        
+        return memberId;
+    }
+    
+    /**
+     * Sets the UUID of the membership.
+     *
+     * @param memberId the member ID
+     */
+    public void setMemberId(final String memberId) {
+        
+        this.memberId = memberId;
     }
 
     /**
@@ -629,6 +653,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         int result = super.hashCode();
         result = prime * result + ((children == null) ? 0 : children.hashCode());
         result = prime * result + ((code == null) ? 0 : code.hashCode());
+        result = prime * result + ((memberId == null) ? 0 : memberId.hashCode());
         result = prime * result + (defined ? 1231 : 1237);
         result = prime * result + ((definitionExceptionId == null) ? 0 : definitionExceptionId.hashCode());
         result = prime * result + ((definitionExceptionType == null) ? 0 : definitionExceptionType.hashCode());
@@ -686,6 +711,15 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
             }
 
         } else if (!code.equals(other.code)) {
+            return false;
+        }
+        
+        if (memberId == null) {
+            if (other.memberId != null) {
+                return false;
+            }
+            
+        } else if (!memberId.equals(other.memberId)) {
             return false;
         }
 

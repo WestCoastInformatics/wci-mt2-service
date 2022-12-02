@@ -312,9 +312,10 @@ public class RefsetWorkflowTests extends AbstractRefsetTests {
         // !!!! DO NOT LEAVE UNCOMMENTED !!!!
         // Publication Complete
         // String publicationDate = "2000-04-14";
-        // String results = completePublication(publicationDate,
-        // refset.getEditionShortName());
-        // assertThat(results).doesNotContain(refset.getRefsetId());
+        // String publicationResults = startPublication(refset.getEditionShortName());
+        // assertThat(publicationResults).doesNotContain(refset.getRefsetId());
+        // publicationResults = completePublication(publicationDate, refset.getEditionShortName());
+        // assertThat(publicationResults).doesNotContain(refset.getRefsetId());
         // updatedRefset = getUtil.getRefsetFromInternalId(refsetInternalId);
         // assertThat(updatedRefset).isNotNull();
         //
@@ -324,8 +325,7 @@ public class RefsetWorkflowTests extends AbstractRefsetTests {
         // assertThat(updatedRefset.getVersionStatus()).isEqualTo(Refset.PUBLISHED);
         // assertThat(updatedRefset.getWorkflowStatus()).isEqualTo(Refset.PUBLISHED);
 
-        // !!!! LEAVE THIS UNCOMMENTED EXCEPT WHEN TESTING PUBLICATION COMPLETE
-        // STATUS !!!!
+        // !!!! LEAVE THIS UNCOMMENTED EXCEPT WHEN TESTING PUBLICATION COMPLETE STATUS !!!!
         // remove the refset version
         boolean success = editUtil.deleteRefsetVersion(newRefsetVersionInternalId);
         assertThat(success).isTrue();
@@ -401,7 +401,7 @@ public class RefsetWorkflowTests extends AbstractRefsetTests {
             assertThat(members.size()).isEqualTo(5);
     
             // Merge Edit branch back to Refset branch
-            success = WorkflowService.mergeEditIntoRefsetBranch(refset.getEdition().getBranch(), refsetId, refset.getEditBranchId(), "Merging after adding one member to refset");
+            success = WorkflowService.mergeEditIntoRefsetBranch(refset.getEdition().getBranch(), refsetId, refset.getEditBranchId(), refset.getRefsetBranchId(), "Merging after adding one member to refset");
             assertThat(success).isTrue();
     
             // Verify still have the same 6 members in the refset found under the newly create branch

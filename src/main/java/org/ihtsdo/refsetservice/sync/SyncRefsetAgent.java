@@ -35,10 +35,13 @@ public class SyncRefsetAgent extends SyncService {
 
     private final Set<SyncRefsetMetadata> refsetsToProcess = new HashSet<>();
 
+    private final Map<String, String> refsetToModuleMap = new HashMap<String, String>();
+
     public SyncRefsetAgent() throws Exception {
 
         snowstormRefsets.clear();
         refsetsToProcess.clear();
+        refsetToModuleMap.clear();
     }
 
     public void syncSnowstorm() throws Exception {
@@ -121,8 +124,8 @@ public class SyncRefsetAgent extends SyncService {
 
     private Refset syncNewRefsetVersionPair(SyncRefsetMetadata refsetData) throws Exception {
 
-        final String moduleId = refsetData.getRefsetNode().get("moduleId").asText();
         final String refsetId = refsetData.getRefsetNode().get("conceptId").asText();
+        final String moduleId = refsetToModuleMap.get(refsetId);
         final String snowstormRefsetName = identifyRefsetName(refsetData);
 
         Refset newRefset = utilities.addRefset(snowstormRefsetName, refsetId, moduleId, refsetData.getVersion(), Refset.EXTENSIONAL, "");
@@ -222,24 +225,28 @@ public class SyncRefsetAgent extends SyncService {
         /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
         boolean modificationMade = false;
 
-        final String snowstormRefsetName = identifyRefsetName(refsetSnowstormData);
-        final String snowstormModuleId = refsetSnowstormData.getRefsetNode().get("moduleId").asText();
         final boolean isActiveSnowstormRefset = refsetSnowstormData.getRefsetNode().get("active").asBoolean();
         final String snowstormRefsetNarrative = refsetSnowstormData.getRefsetNode().has("narrative") ? refsetSnowstormData.getRefsetNode().get("narrative").asText() : "";
 
         // TODO: This is immutable, so nothing to check?
+        /*-
+        final String snowstormRefsetName = identifyRefsetName(refsetSnowstormData);
         if (updateAttribute("Refset name", existingRefset.getName(), snowstormRefsetName)) {
-
+        
             existingRefset.setName(snowstormRefsetName);
             modificationMade = true;
         }
+        */
 
         // TODO: This is immutable, so nothing to check?
+        /*-
+        final String snowstormModuleId = refsetSnowstormData.getRefsetNode().get("moduleId").asText();
         if (updateAttribute("Refset moduleId", existingRefset.getModuleId(), snowstormModuleId)) {
-
+        
             existingRefset.setModuleId(snowstormModuleId);
             modificationMade = true;
         }
+        */
 
         if (updateAttribute("Refset active", existingRefset.isActive(), isActiveSnowstormRefset)) {
 
@@ -324,7 +331,7 @@ public class SyncRefsetAgent extends SyncService {
 
             if (editions == null || editions.size() != 1) {
 
-                throw new Exception("Have unexpected editions matching with editionId '" + editionShortName + "'. Editions: " + editions);
+                throw new Exception("Unable to find  unexpected editions matching with editionId '" + editionShortName + "'. Editions: " + editions);
             }
 
             final Edition edition = editions.iterator().next();
@@ -376,13 +383,20 @@ public class SyncRefsetAgent extends SyncService {
 
                             final JsonNode refsetNode = refsetIterator.next();
 
-                            if (!refsetNode.has("moduleId") || !refsetNode.has("conceptId") || !refsetNode.has("active")) {
+                            if (!refsetNode.has("conceptId") || !refsetNode.has("active")) {
 
                                 throw new Exception("Getting unexpected Refset info from node: " + refsetNode.toString());
                             }
 
-                            final String moduleId = refsetNode.get("moduleId").asText();
                             final String refsetId = refsetNode.get("conceptId").asText();
+
+                            if (!refsetToModuleMap.containsKey(refsetId)) {
+
+                                String moduleId = identifyConceptModuleId(refsetId, edition.getBranch());
+                                refsetToModuleMap.put(refsetId, moduleId);
+                            }
+
+                            final String moduleId = refsetToModuleMap.get(refsetId);
 
                             logger.debug("Found refsetId: " + refsetId);
 
@@ -421,6 +435,30 @@ public class SyncRefsetAgent extends SyncService {
         }
 
         return refsetsToProcess;
+    }
+
+    private String identifyConceptModuleId(String refsetId, String branch) throws Exception {
+
+        String url = SnowstormConnection.BASE_URL + branch + "/concepts/" + refsetId;
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
+                throw new Exception("Unable to retrieve concept " + refsetId + " on branch " + branch + " in order to identify its moduleId");
+
+            }
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+
+            // get RefSets from edition as long as a) active & b)
+            // within edition's moduleˇ
+            return root.get("moduleId").asText();
+
+        }
+
     }
 
     private boolean persistVersion(String refsetId, Date branchVersion, Date versionDate, String branchPath, String editionName, Set<Date> editionVersions) throws Exception {
