@@ -1609,7 +1609,7 @@ public final class WorkflowService {
         
     }
     
-    /**
+    /** 
      * Test if a user can perform In Development actions on the refset.
      *
      * @param user the user
