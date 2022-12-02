@@ -323,7 +323,7 @@ public class RefsetService {
         if (refset.getType().equals(Refset.INTENSIONAL)) {
 
             // add the list of concepts as members to the refset
-            final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset.getId(), conceptIdList);
+            final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdList);
             WorkflowService.mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), editBranchId, refsetBranchId, "Initial intensional refset creation.");
         }
         
@@ -425,19 +425,18 @@ public class RefsetService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID to modify
+     * @param refset the refset to modify
      * @param refsetEditParameters the parameters for creating the refset
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String modifyRefset(final TerminologyService service, final User user, final String refsetInternalId, final Refset refsetEditParameters) throws Exception {
+    public static String modifyRefset(final TerminologyService service, final User user, final Refset refset, final Refset refsetEditParameters) throws Exception {
 
         String statusMessage = "Success";
-        Refset refset = getRefset(service, user, refsetInternalId);
 
         if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
 
-            throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
+            throw new Exception("Refset is not in the proper status to be modified " + refset.getId());
         }
 
         // set user changed fields
@@ -628,26 +627,25 @@ public class RefsetService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID to modify
+     * @param refset the refset to modify
      * @param ecl the ecl to use for the clause
      * @param definitionExceptionType is the exception an inclusion or exclusion
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String addDefinitionException(final TerminologyService service, final User user, final String refsetInternalId, final String ecl, final String definitionExceptionType)
+    public static String addDefinitionException(final TerminologyService service, final User user, final Refset refset, final String ecl, final String definitionExceptionType)
         throws Exception {
 
         String statusMessage = "Success";
-        Refset refset = getRefset(service, user, refsetInternalId);
 
         if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
 
-            throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
+            throw new Exception("Refset is not in the proper status to be modified " + refset.getId());
         }
 
         if (!refset.getType().equals(Refset.INTENSIONAL)) {
 
-            throw new Exception("This is not an Intensional Refset " + refsetInternalId);
+            throw new Exception("This is not an Intensional Refset " + refset.getId());
         }
 
         final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
@@ -690,24 +688,23 @@ public class RefsetService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID to modify
+     * @param refset the refset to modify
      * @param definitionExceptionId the exception ID
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String removeDefinitionException(final TerminologyService service, final User user, final String refsetInternalId, final String definitionExceptionId) throws Exception {
+    public static String removeDefinitionException(final TerminologyService service, final User user, final Refset refset, final String definitionExceptionId) throws Exception {
 
         String statusMessage = "Success";
-        Refset refset = getRefset(service, user, refsetInternalId);
 
         if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
 
-            throw new Exception("Refset is not in the proper status to be modified " + refsetInternalId);
+            throw new Exception("Refset is not in the proper status to be modified " + refset.getId());
         }
 
         if (!refset.getType().equals(Refset.INTENSIONAL)) {
 
-            throw new Exception("This is not an Intensional Refset " + refsetInternalId);
+            throw new Exception("This is not an Intensional Refset " + refset.getId());
         }
 
         final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
@@ -849,7 +846,7 @@ public class RefsetService {
                 if (conceptsToRemove.size() > 0) {
 
                     logger.debug("modifyRefsetDefinition intensional conceptsToRemove: " + conceptsToRemove);
-                    unprocessedConcepts.addAll(RefsetMemberService.removeRefsetMembers(service, user, refset.getId(), String.join(",", conceptsToRemove)));
+                    unprocessedConcepts.addAll(RefsetMemberService.removeRefsetMembers(service, user, refset, String.join(",", conceptsToRemove)));
                 }
 
                 // Get the list of members to add
@@ -858,7 +855,7 @@ public class RefsetService {
                 if (conceptsToAdd.size() > 0) {
 
                     logger.debug("modifyRefsetDefinition intensional conceptsToAdd: " + conceptsToAdd);
-                    unprocessedConcepts.addAll(RefsetMemberService.addRefsetMembers(service, user, refset.getId(), conceptsToAdd));
+                    unprocessedConcepts.addAll(RefsetMemberService.addRefsetMembers(service, user, refset, conceptsToAdd));
                 }
 
             }
@@ -886,20 +883,18 @@ public class RefsetService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String inactivateRefset(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+    public static String inactivateRefset(final TerminologyService service, final User user, final Refset refset) throws Exception {
 
         String status = "inactivated";
         String refsetId = "";
 
-        final Refset refset = service.get(refsetInternalId, Refset.class);
-
         if (refset == null) {
 
-            throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+            throw new Exception("Refset Internal Id: " + refset.getId() + " does not exist in the RT2 database");
         }
 
         refsetId = refset.getRefsetId();
@@ -907,7 +902,7 @@ public class RefsetService {
         // if the refset has never been versioned before then delete it
         if (!doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
 
-            return deleteInDevelopmentVersion(service, user, refsetInternalId, true);
+            return deleteInDevelopmentVersion(service, user, refset, true);
         }
 
         // inactive the underlying refset concept
@@ -917,7 +912,7 @@ public class RefsetService {
         refset.setActive(false);
         service.update(refset);
         service.add(AuditEntryHelper.inactivateRefsetEntry(refset));
-        logger.info("Inactivated refset in database: " + refsetInternalId);
+        logger.info("Inactivated refset in database: " + refset.getId());
 
         return status;
     }
@@ -998,25 +993,23 @@ public class RefsetService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @param deleteConcept if the underlying refset concept should be deleted
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String deleteInDevelopmentVersion(final TerminologyService service, final User user, final String refsetInternalId, final boolean deleteConcept) throws Exception {
+    public static String deleteInDevelopmentVersion(final TerminologyService service, final User user, final Refset refset, final boolean deleteConcept) throws Exception {
 
         String status = "deleted";
         String refsetId = "";
 
         boolean otherVersions = false;
-        final Refset refset = getRefset(service, user, refsetInternalId);
-        WorkflowService.canUserEditRefset(user, refset);
         
         if (refset == null) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refset Internal Id: " + refset.getId() + " does not exist in the RT2 database");
 
         } else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refset Internal Id: " + refsetInternalId + " is not 'In Development' and can not be removed.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refset Internal Id: " + refset.getId() + " is not 'In Development' and can not be removed.");
         }
 
         refsetId = refset.getRefsetId();
@@ -2253,28 +2246,17 @@ public class RefsetService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String convertToExtensional(TerminologyService service, User user, String refsetInternalId) throws Exception {
+    public static String convertToExtensional(TerminologyService service, User user, Refset refset) throws Exception {
 
         String status = "convert";
-        String refsetId = "";
-
-        final Refset refset = service.get(refsetInternalId, Refset.class);
         logger.debug("refset is: " + refset);
 
-        if (refset == null) {
-
-            throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
-
-        } else if (!refset.getType().equals(Refset.INTENSIONAL)) {
-
-            throw new Exception("Refset Internal Id: " + refsetInternalId + " is not 'Intensional' and can not be converted.");
-            // } else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-            //
-            // throw new Exception("Refset Internal Id: " + refsetInternalId + " is not 'In Development' and can not be converted.");
+        if (!refset.getType().equals(Refset.INTENSIONAL)) {
+            throw new Exception("Refset Internal Id: " + refset.getId() + " is not 'Intensional' and can not be converted.");
         }
 
         // Identify members from ECL query results and populate them as refset members
@@ -2286,7 +2268,7 @@ public class RefsetService {
 
             final List<String> conceptIdList = RefsetMemberService.getConceptIdsFromEcl(refset.getEditionBranch(), currentEcl);
 
-            RefsetMemberService.addRefsetMembers(service, user, refsetInternalId, conceptIdList);
+            RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdList);
         }
 
         // Convert Metadata
@@ -2648,7 +2630,7 @@ public class RefsetService {
             if (newRefset.getType().equals(Refset.EXTENSIONAL)) {
 
                 members.getItems().stream().forEach(member -> conceptIds.add(member.getCode()));
-                RefsetMemberService.addRefsetMembers(service, user, newRefset.getId(), conceptIds);
+                RefsetMemberService.addRefsetMembers(service, user, newRefset, conceptIds);
             }
 
             logger.info("Copied refset from " + refsetInternalId + ": " + newRefset);
@@ -2689,7 +2671,7 @@ public class RefsetService {
         // if the refset has never been versioned before then delete it
         if (!RefsetService.doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
 
-            RefsetService.deleteInDevelopmentVersion(service, user, latestVersion.getId(), true);
+            RefsetService.deleteInDevelopmentVersion(service, user, latestVersion, true);
         }
 
         final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
