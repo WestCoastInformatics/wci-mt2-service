@@ -55,7 +55,6 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -82,7 +81,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -1467,7 +1465,7 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}", produces = "application/json")
     public @ResponseBody ResponseEntity<String> exportRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String format, final String exportType,
-        final String languageId, final String fileNameDate, String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
+        final String languageId, final String fileNameDate, final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -1507,6 +1505,52 @@ public class RefsetController extends BaseController {
                 final String downloadUri = RefsetMemberService.exportFreeset(service, refsetInternalId, languageId);
                 responseMessage = "{\"url\": \"" + downloadUri + "\"}";
             }
+
+            return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+    
+    /**
+     * Export all published refsets for a project.
+     *
+     * @param projectId the project id
+     * @param format the format
+     * @param languageId the language to display names in
+     * @param fileNameDate the file name date
+     * @param exportMetadata the export metadata
+     * @return the uri
+     * @throws Exception the exception
+     */
+    @ApiOperation(value = "Export the all latest version of all published refsets for the project.")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "projectId", value = "The id of the project to export refsets.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "languageId", value = "For formats with names which language to display the name in.", required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "fileNameDate", value = "Format: yyyymmdd. Date to be embedded in the RF2 file names.", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names'", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "exportMetadata", value = "e.g.  true or false", required = true, dataType = "boolean", paramType = "query")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/export/project/{projectId}", produces = "application/json")
+    public @ResponseBody ResponseEntity<String> exportAllRefsetsForProject(@PathVariable(value = "projectId") final String projectId, final String format, final String languageId,
+        final String fileNameDate, final boolean exportMetadata) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final User user = SecurityService.getUserFromSession();
+            logger.debug("exportAllRefsetsForProject: projectId: " + projectId + " ; fileNameDate: " + fileNameDate);
+            final boolean withNames = ("rf2_with_names".equalsIgnoreCase(format));
+
+            final String downloadUri = RefsetMemberService.exportAllRefsetsRf2ForProject(service, user, projectId, "snapshot", languageId, fileNameDate, exportMetadata, withNames);
+            final String responseMessage = "{\"url\": \"" + downloadUri + "\"}";
 
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);
 
