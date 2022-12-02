@@ -740,7 +740,7 @@ public class RefsetMemberService {
 
                     for (final Refset refset : refsetList.getItems()) {
 
-                        final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, null, exportMetadata, withNames);
+                        final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, versionDate.replace("-", ""), exportMetadata, withNames);
                         refsetFiles.add(EXPORT_FILE_DIR + fileName);
                     }
                 }
