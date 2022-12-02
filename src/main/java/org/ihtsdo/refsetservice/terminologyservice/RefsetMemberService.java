@@ -19,7 +19,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,7 +39,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -51,11 +49,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import javax.persistence.Query;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
@@ -699,6 +697,65 @@ public class RefsetMemberService {
     }
 
     /**
+     * Export latest version of published all refsets for a project.
+     *
+     * @param service the service
+     * @param user the user
+     * @param projectId the project id
+     * @param type the type
+     * @param languageId the language id
+     * @param fileNameDate the file name date
+     * @param exportMetadata the export metadata
+     * @param withNames the with names
+     * @return the string
+     * @throws Exception the exception
+     */
+    public static String exportAllRefsetsRf2ForProject(final TerminologyService service, final User user, final String projectId, final String type, final String languageId, final String fileNameDate,
+        final boolean exportMetadata, final boolean withNames) throws Exception {
+
+        final List<String> refsetFiles = new ArrayList<>();
+        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        final Query query =
+            service.getEntityManager().createNativeQuery("SELECT refsetId, MAX(versionDate) FROM refsets WHERE project_Id = :projectId AND versionStatus = 'PUBLISHED' GROUP BY project_id, refsetId")
+                .setParameter("projectId", projectId);
+        final List<Object[]> queryResults = query.getResultList();
+
+        if (queryResults == null || queryResults.isEmpty()) {
+            throw new Exception("Found no published refsets for project id " + projectId + " to export.");
+        }
+
+        try {
+
+            for (final Object[] o : queryResults) {
+
+                final SearchParameters searchParameters = new SearchParameters();
+                final String versionDate = simpleDateFormat.format(o[1]);
+                searchParameters.setQuery("refsetId:" + o[0].toString() + " AND versionDate:" + versionDate + " AND versionStatus:PUBLISHED");
+                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false);
+
+                if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
+
+                    for (final Refset refset : refsetList.getItems()) {
+
+                        final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, null, exportMetadata, withNames);
+                        refsetFiles.add(EXPORT_FILE_DIR + fileName);
+                    }
+                }
+            }
+
+            // add all files into a zip file
+            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyymmdd-hhmmss");
+            final String zipFileName = String.format("RT2-Downloaded-refsets-%s.zip", dateFormat.format(new Date()));
+            zipFiles(refsetFiles, EXPORT_FILE_DIR + zipFileName);
+            return EXPORT_DOWNLOAD_URL + zipFileName;
+
+        } catch (Exception ex) {
+            throw new Exception("Failed to export zip file name " + ex.getMessage(), ex);
+        }
+    }
+    
+    /**
      * Get the refset member concepts in RF2 format.
      *
      * @param service the Terminology Service
@@ -715,7 +772,32 @@ public class RefsetMemberService {
     @SuppressWarnings({
         "null", "unused"
     })
-    public static String exportRefsetRf2(final TerminologyService service, final String refsetInternalId, final String type, final String languageId, final String fileNameDate,
+    public static String exportRefsetRf2(final TerminologyService service, final String refsetInternalId, final String type, final String languageId, final String fileNameDate,       
+        final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames) throws Exception {
+        
+        return EXPORT_DOWNLOAD_URL + exportRefsetRf2File(service, refsetInternalId, type, languageId, fileNameDate,       
+            startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+    }
+    
+    
+    /**
+     * Get the refset member concepts in RF2 format.
+     *
+     * @param service the Terminology Service
+     * @param refsetInternalId the internal refset ID
+     * @param type the type
+     * @param languageId the language to display names in
+     * @param fileNameDate the file name date
+     * @param startEffectiveTime the start effective time
+     * @param transientEffectiveTime the transient effective time
+     * @param exportMetadata should refset metadata be included in the export
+     * @return the refset member concepts
+     * @throws Exception the exception
+     */
+    @SuppressWarnings({
+        "null", "unused"
+    })
+    private static String exportRefsetRf2File(final TerminologyService service, final String refsetInternalId, final String type, final String languageId, final String fileNameDate,
         final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames) throws Exception {
 
         final Set<String> dates = new HashSet<>();
@@ -815,9 +897,8 @@ public class RefsetMemberService {
             logger.debug("Final Export File Path: " + EXPORT_FILE_DIR + rt2VersionFileName);
 
             // if download is from RT2 server
-            ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-            return EXPORT_DOWNLOAD_URL + rt2VersionFileName; // builder.build().toString()
-                                                             // +
+            //ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
+            return rt2VersionFileName;
 
         } catch (Exception ex) {
 
@@ -825,6 +906,7 @@ public class RefsetMemberService {
         }
 
     }
+    
 
     /**
      * Get the refset member concepts in RF2 DELTA format.
@@ -1168,11 +1250,6 @@ public class RefsetMemberService {
         return EXPORT_FILE_DIR;
     }
     
-    private static void addEmptyFileToZip() throws Exception {
-    
-        
-    }
-
     private static void appendNamesToRf2(final Refset refset, final String origFilePath, String newFileWithNamesPath, final String languageId) throws Exception {
 
         // Move rf2 file to a tmp (as we create new one below). Update sourceFiles accordingly
