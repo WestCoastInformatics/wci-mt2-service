@@ -1507,6 +1507,7 @@ public final class WorkflowService {
 
                 if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
                     allowedActions.add(CANCEL_EDIT);
+                    allowedActions.add(FINISH_EDIT);
                 }
 
             }
