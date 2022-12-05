@@ -331,7 +331,9 @@ public class SyncRefsetAgent extends SyncService {
 
             if (editions == null || editions.size() != 1) {
 
-                throw new Exception("Unable to find  unexpected editions matching with editionId '" + editionShortName + "'. Editions: " + editions);
+                logger.error("Unable to find  editions associated with Code System: " + editionShortName);
+                continue;
+
             }
 
             final Edition edition = editions.iterator().next();
@@ -349,12 +351,6 @@ public class SyncRefsetAgent extends SyncService {
                 for (Date branchVersion : branchesToProcess.get(editionShortName).keySet()) {
 
                     final String branchPath = branchesToProcess.get(editionShortName).get(branchVersion);
-
-                    if (isTesting() && !branchPath.contains("2020") && branchPath.contains("2021") && branchPath.contains("2022")) {
-
-                        // When testing, only look in this decade
-                        continue;
-                    }
 
                     try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", branchPath))) {
 
