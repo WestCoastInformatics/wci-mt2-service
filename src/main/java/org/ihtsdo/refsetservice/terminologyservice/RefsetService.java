@@ -2263,12 +2263,7 @@ public class RefsetService {
         List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
 
         if (currentClauses != null) {
-
-            String currentEcl = getEclFromDefinition(currentClauses);
-
-            final List<String> conceptIdList = RefsetMemberService.getConceptIdsFromEcl(refset.getEditionBranch(), currentEcl);
-
-            RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdList);
+            modifyRefsetDefinition(user, service, refset, currentClauses);
         }
 
         // Convert Metadata
