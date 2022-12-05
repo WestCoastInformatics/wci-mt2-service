@@ -1149,6 +1149,9 @@ public class RefsetController extends BaseController {
     public @ResponseBody ResponseEntity<String> convertToExtensional(final @PathVariable String refsetInternalId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
+            
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
 
             // logger.debug("deleteRefsetEditVersion: refsetInternalId: " + refsetInternalId);
             User user = SecurityService.getUserFromSession();
@@ -1165,6 +1168,11 @@ public class RefsetController extends BaseController {
         } catch (final Exception e) {
 
             return handleException(e);
+        }
+        
+        finally {
+
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
         }
 
     }

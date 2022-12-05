@@ -189,6 +189,9 @@ public class RefsetMemberService {
     public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
 
     private static boolean returnEmptyCache = true;
+    
+    /** Snomed code for prefrered term in English **/ 
+    private static final String PREFERRED_TERM_EN = "900000000000509007PT";
 
     private static final Map<String, List<Date>> refsetToPublishedVersionMap = new HashMap<>();
 
@@ -740,7 +743,7 @@ public class RefsetMemberService {
 
                     for (final Refset refset : refsetList.getItems()) {
 
-                        final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, null, exportMetadata, withNames);
+                        final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, versionDate.replace("-", ""), exportMetadata, withNames);
                         refsetFiles.add(EXPORT_FILE_DIR + fileName);
                     }
                 }
@@ -1348,7 +1351,7 @@ public class RefsetMemberService {
                     if (description == null || !languageId.equals(description.get(LANGUAGE_ID))) {
 
                         // If this is the English PT add it as a fallback to use if the language we want isn't on this concept
-                        if (description != null && description.get(LANGUAGE_ID).equals("900000000000509007PT")) {
+                        if (description != null && description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
 
                             fallbackDescription = extractedLine + "\t" + description.get(DESCRIPTION_TERM);
                         }
@@ -1981,7 +1984,7 @@ public class RefsetMemberService {
                             continue;
                         }
 
-                        if (description.get(LANGUAGE_ID).equals("900000000000509007PT")) {
+                        if (description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
 
                             concept.setName(description.get(DESCRIPTION_TERM));
                             break;
@@ -5852,7 +5855,7 @@ public class RefsetMemberService {
         refsetMemberComparison.setActiveRefsetMemberTotal(activeRefsetMembers.size());
         refsetMemberComparison.setComparisonRefsetMemberTotal(comparisonRefsetMembers.size());
 
-        for (Map.Entry<String, Concept> activeMemberEntry : activeRefsetMembers.entrySet()) {
+        for (final Map.Entry<String, Concept> activeMemberEntry : activeRefsetMembers.entrySet()) {
 
             final String activeConceptId = activeMemberEntry.getKey();
             final Concept activeConcept = activeMemberEntry.getValue();
@@ -5862,7 +5865,8 @@ public class RefsetMemberService {
             returnMap.put("memberOfRefset", "true");
             returnMap.put("definitionExceptionType", activeConcept.getDefinitionExceptionType());
             returnMap.put("hasChildren", "false"); // activeConcept.getHasChildren() + "");
-            returnMap.put("name", activeConcept.getName().strip());
+            final Map<String, String> preferedTermEnglish = activeConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
+            returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : activeConcept.getName().strip());
 
             // check to see if this member is also a member of the comparison refset
             if (comparisonRefsetMembers.containsKey(activeConceptId)) {
@@ -5880,7 +5884,7 @@ public class RefsetMemberService {
         // since the members of the active or both refsets are handled, remove all but the unique comparison refset members
         comparisonRefsetMembers.keySet().removeAll(activeRefsetMembers.keySet());
 
-        for (Map.Entry<String, Concept> comparisonMemberEntry : comparisonRefsetMembers.entrySet()) {
+        for (final Map.Entry<String, Concept> comparisonMemberEntry : comparisonRefsetMembers.entrySet()) {
 
             final String comparisonConceptId = comparisonMemberEntry.getKey();
             final Concept comparisonConcept = comparisonMemberEntry.getValue();
@@ -5892,7 +5896,8 @@ public class RefsetMemberService {
             returnMap.put("hasChildren", "false"); // comparisonConcept.getHasChildren() + "");
             returnMap.put("membership", "Comparison Refset");
             refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
-            returnMap.put("name", comparisonConcept.getName().strip());
+            final Map<String, String> preferedTermEnglish = comparisonConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
+            returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : comparisonConcept.getName().strip());
 
             refsetMemberComparison.getItems().add(returnMap);
         }

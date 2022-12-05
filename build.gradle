@@ -29,7 +29,7 @@ repositories {
 
 // Project.version info (upgrade version when needed)
 group = "org.ihtsdo.refsetservice"
-version = "0.1.12" 
+version = "0.1.13" 
 
 // Extra Properties
 ext {

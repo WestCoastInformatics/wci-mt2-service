@@ -2259,18 +2259,6 @@ public class RefsetService {
             throw new Exception("Refset Internal Id: " + refset.getId() + " is not 'Intensional' and can not be converted.");
         }
 
-        // Identify members from ECL query results and populate them as refset members
-        List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
-
-        if (currentClauses != null) {
-
-            String currentEcl = getEclFromDefinition(currentClauses);
-
-            final List<String> conceptIdList = RefsetMemberService.getConceptIdsFromEcl(refset.getEditionBranch(), currentEcl);
-
-            RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdList);
-        }
-
         // Convert Metadata
         refset.setType(Refset.EXTENSIONAL);
         refset.getDefinitionClauses().clear();
