@@ -101,6 +101,8 @@ public class SnowstormConnection {
                 run = true;
                 firstRun = false;
                 cookie = getGenericUserCookie(true);
+                // close the response because we're going to make another
+                response.close();
             }
         }
         
