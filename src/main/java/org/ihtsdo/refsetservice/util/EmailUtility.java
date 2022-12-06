@@ -2,7 +2,6 @@ package org.ihtsdo.refsetservice.util;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -18,7 +17,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -150,19 +148,18 @@ public final class EmailUtility {
 
         if (recipients != null && StringUtils.isNotBlank(recipients)) {
 
-            Set<String> recipientList = new HashSet<>();
+            final Set<String> recipientList = new HashSet<>();
 
             if (recipients.contains(";")) {
-
-                recipientList = FieldedStringTokenizer.splitAsSet(recipients, ";");
+                recipientList.addAll(FieldedStringTokenizer.splitAsSet(recipients, ";"));
             } else if (recipients.contains(",")) {
-
-                recipientList = FieldedStringTokenizer.splitAsSet(recipients, ",");
+                recipientList.addAll(FieldedStringTokenizer.splitAsSet(recipients, ","));
+            } else {
+                recipientList.add(recipients);
             }
 
             sendEmail(subject, from, recipientList, body);
         } else {
-
             throw new Exception("Email must have recipients");
         }
 

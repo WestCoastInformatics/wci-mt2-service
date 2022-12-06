@@ -49,6 +49,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import javax.persistence.Query;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
@@ -77,6 +78,8 @@ import org.ihtsdo.refsetservice.util.StringUtility;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -186,6 +189,9 @@ public class RefsetMemberService {
     public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
 
     private static boolean returnEmptyCache = true;
+
+    /** Snomed code for prefrered term in English **/
+    private static final String PREFERRED_TERM_EN = "900000000000509007PT";
 
     private static final Map<String, List<Date>> refsetToPublishedVersionMap = new HashMap<>();
 
@@ -696,6 +702,70 @@ public class RefsetMemberService {
     }
 
     /**
+     * Export latest version of published all refsets for a project.
+     *
+     * @param service the service
+     * @param user the user
+     * @param projectId the project id
+     * @param type the type
+     * @param languageId the language id
+     * @param fileNameDate the file name date
+     * @param exportMetadata the export metadata
+     * @param withNames the with names
+     * @return the string
+     * @throws Exception the exception
+     */
+    public static String exportAllRefsetsRf2ForProject(final TerminologyService service, final User user, final String projectId, final String type, final String languageId, final String fileNameDate,
+        final boolean exportMetadata, final boolean withNames) throws Exception {
+
+        final List<String> refsetFiles = new ArrayList<>();
+        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        final Query query =
+            service.getEntityManager().createNativeQuery("SELECT refsetId, MAX(versionDate) FROM refsets WHERE project_Id = :projectId AND versionStatus = 'PUBLISHED' GROUP BY project_id, refsetId")
+                .setParameter("projectId", projectId);
+        final List<Object[]> queryResults = query.getResultList();
+
+        if (queryResults == null || queryResults.isEmpty()) {
+
+            throw new Exception("Found no published refsets for project id " + projectId + " to export.");
+        }
+
+        try {
+
+            for (final Object[] o : queryResults) {
+
+                final SearchParameters searchParameters = new SearchParameters();
+                final String versionDate = simpleDateFormat.format(o[1]);
+                searchParameters.setQuery("refsetId:" + o[0].toString() + " AND versionDate:" + versionDate + " AND versionStatus:PUBLISHED");
+                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false);
+
+                if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
+
+                    for (final Refset refset : refsetList.getItems()) {
+
+                        final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, versionDate.replace("-", ""), exportMetadata, withNames);
+                        refsetFiles.add(EXPORT_FILE_DIR + fileName);
+                    }
+
+                }
+
+            }
+
+            // add all files into a zip file
+            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyymmdd-hhmmss");
+            final String zipFileName = String.format("RT2-Downloaded-refsets-%s.zip", dateFormat.format(new Date()));
+            zipFiles(refsetFiles, EXPORT_FILE_DIR + zipFileName);
+            return EXPORT_DOWNLOAD_URL + zipFileName;
+
+        } catch (Exception ex) {
+
+            throw new Exception("Failed to export zip file name " + ex.getMessage(), ex);
+        }
+
+    }
+
+    /**
      * Get the refset member concepts in RF2 format.
      *
      * @param service the Terminology Service
@@ -713,6 +783,29 @@ public class RefsetMemberService {
         "null", "unused"
     })
     public static String exportRefsetRf2(final TerminologyService service, final String refsetInternalId, final String type, final String languageId, final String fileNameDate,
+        final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames) throws Exception {
+
+        return EXPORT_DOWNLOAD_URL + exportRefsetRf2File(service, refsetInternalId, type, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+    }
+
+    /**
+     * Get the refset member concepts in RF2 format.
+     *
+     * @param service the Terminology Service
+     * @param refsetInternalId the internal refset ID
+     * @param type the type
+     * @param languageId the language to display names in
+     * @param fileNameDate the file name date
+     * @param startEffectiveTime the start effective time
+     * @param transientEffectiveTime the transient effective time
+     * @param exportMetadata should refset metadata be included in the export
+     * @return the refset member concepts
+     * @throws Exception the exception
+     */
+    @SuppressWarnings({
+        "null", "unused"
+    })
+    private static String exportRefsetRf2File(final TerminologyService service, final String refsetInternalId, final String type, final String languageId, final String fileNameDate,
         final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames) throws Exception {
 
         final Set<String> dates = new HashSet<>();
@@ -812,9 +905,8 @@ public class RefsetMemberService {
             logger.debug("Final Export File Path: " + EXPORT_FILE_DIR + rt2VersionFileName);
 
             // if download is from RT2 server
-            ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-            return EXPORT_DOWNLOAD_URL + rt2VersionFileName; // builder.build().toString()
-                                                             // +
+            // ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
+            return rt2VersionFileName;
 
         } catch (Exception ex) {
 
@@ -1164,10 +1256,6 @@ public class RefsetMemberService {
         return EXPORT_FILE_DIR;
     }
 
-    private static void addEmptyFileToZip() throws Exception {
-
-    }
-
     private static void appendNamesToRf2(final Refset refset, final String origFilePath, String newFileWithNamesPath, final String languageId) throws Exception {
 
         // Move rf2 file to a tmp (as we create new one below). Update sourceFiles accordingly
@@ -1264,7 +1352,7 @@ public class RefsetMemberService {
                     if (description == null || !languageId.equals(description.get(LANGUAGE_ID))) {
 
                         // If this is the English PT add it as a fallback to use if the language we want isn't on this concept
-                        if (description != null && description.get(LANGUAGE_ID).equals("900000000000509007PT")) {
+                        if (description != null && description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
 
                             fallbackDescription = extractedLine + "\t" + description.get(DESCRIPTION_TERM);
                         }
@@ -1903,7 +1991,7 @@ public class RefsetMemberService {
                             continue;
                         }
 
-                        if (description.get(LANGUAGE_ID).equals("900000000000509007PT")) {
+                        if (description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
 
                             concept.setName(description.get(DESCRIPTION_TERM));
                             break;
@@ -4104,25 +4192,22 @@ public class RefsetMemberService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @param conceptIds a list of concept IDs to make members
      * @return A list of concepts that were unable to be added
      * @throws Exception the exception
      */
-    public static List<String> addRefsetMembers(final TerminologyService service, final User user, final String refsetInternalId, List<String> conceptIds) throws Exception {
+    public static List<String> addRefsetMembers(final TerminologyService service, final User user, final Refset refset, List<String> conceptIds) throws Exception {
 
         List<String> unaddedConcepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
-
-        final Refset refset = getRefset(user, service, refsetInternalId);
-        WorkflowService.canUserEditRefset(user, refset);
 
         final String branchPath = RefsetService.getBranchPath(refset);
         final String url = SnowstormConnection.BASE_URL + branchPath + "/" + "members";
 
         if (refset == null) {
 
-            throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+            throw new Exception("Refset Internal Id: " + refset.getId() + " does not exist in the RT2 database");
         }
 
         if (conceptIds.size() == 0) {
@@ -4134,14 +4219,17 @@ public class RefsetMemberService {
 
         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
         final String conceptSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/concepts/search";
+        final String memberSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/members/search?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
         final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
+        final String memberSearchBodyBase = "{\"active\":true, \"referenceSet\":\"" + refsetId + "\", \"referencedComponentIds\":[";
         final List<String> permanentFullConceptList = new ArrayList<>(conceptIds);
-        final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
+        final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refset.getId());
         final List<String> validatedConcepts = new ArrayList<>();
         boolean searchAgain = true;
         int searchIndex = 0;
         int loopNumber = 1;
-        logger.debug("addRefsetMembers concept search/verification URL: " + conceptSearchUrl);
+        logger.debug("addRefsetMembers concept search URL: " + conceptSearchUrl);
+        logger.debug("addRefsetMembers concept member verification URL: " + memberSearchUrl);
 
         while (searchAgain) {
 
@@ -4241,20 +4329,20 @@ public class RefsetMemberService {
 
             if (conceptBatch.size() > 0) {
 
-                bodyConceptIds = "\"conceptIds\":[";
+                bodyConceptIds = "";
 
                 // generate the body list for the check for concepts that are already members
                 for (final String conceptId : conceptBatch) {
 
-                    bodyConceptIds += "\"" + conceptId + "\",";
+                    bodyConceptIds += conceptId + ",";
                 }
 
-                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
-                final String memberSearchBody = bodyBase + bodyConceptIds + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\"}";
+                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+                final String memberSearchBody = memberSearchBodyBase + bodyConceptIds + "]}";
                 logger.debug("addRefsetMembers member search body: " + memberSearchBody);
                 logger.debug("addRefsetMembers conceptIds: " + conceptIds);
 
-                try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
+                try (final Response response = SnowstormConnection.postResponse(memberSearchUrl, memberSearchBody)) {
 
                     final String resultString = response.readEntity(String.class);
 
@@ -4271,7 +4359,7 @@ public class RefsetMemberService {
                     while (iterator != null && iterator.hasNext()) {
 
                         final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("conceptId").asText();
+                        final String conceptId = conceptNode.get("referencedComponentId").asText();
                         logger.debug("addRefsetMembers removing already member conceptId: " + conceptId);
                         conceptIds.remove(conceptId);
 
@@ -4468,24 +4556,21 @@ public class RefsetMemberService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @param conceptIds a list of concept IDs to make members
      * @return A list of concepts that were unable to have membership removed
      * @throws Exception the exception
      */
-    public static List<String> removeRefsetMembers(final TerminologyService service, final User user, final String refsetInternalId, String conceptIds) throws Exception {
+    public static List<String> removeRefsetMembers(final TerminologyService service, final User user, final Refset refset, String conceptIds) throws Exception {
 
         List<String> unremovedConcepts = new ArrayList<>();
         final ObjectMapper mapper = new ObjectMapper();
-        final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refsetInternalId);
+        final Map<String, Map<String, String>> conceptsStatus = refsetsUpdatedMembers.get(refset.getId());
 
         if (conceptIds.isEmpty()) {
 
             return unremovedConcepts;
         }
-
-        final Refset refset = getRefset(user, service, refsetInternalId);
-        WorkflowService.canUserEditRefset(user, refset);
 
         final String refsetId = refset.getRefsetId();
         final String branchPath = RefsetService.getBranchPath(refset);
@@ -4884,6 +4969,8 @@ public class RefsetMemberService {
         String status = "Upgrade data compiled";
         Refset tempRefset = RefsetService.getRefset(service, user, refsetInternalId);
 
+        WorkflowService.canUserPerformWorkflowAction(user, tempRefset, WorkflowService.UPGRADE);
+
         if (tempRefset.getWorkflowStatus().equals(WorkflowService.PUBLISHED) && tempRefset.getAvailableActions().contains(WorkflowService.UPGRADE)) {
 
             final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, tempRefset.getId(), false);
@@ -4892,19 +4979,19 @@ public class RefsetMemberService {
 
         if (!tempRefset.getWorkflowStatus().equals(WorkflowService.READY_FOR_EDIT)) {
 
-            throw new Exception("Refset is in the wrong status to be Upgraded");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Refset is in the wrong status to be Upgraded");
         }
 
-        final Refset refset = tempRefset;
+        final Refset upgradeRefset = tempRefset;
 
         // set the refset into IN_UPGRADE status
-        WorkflowService.setWorkflowStatusByAction(service, user, WorkflowService.UPGRADE, refset, "");
+        WorkflowService.setWorkflowStatusByAction(service, user, WorkflowService.UPGRADE, upgradeRefset, "");
 
         List<Concept> inactiveMemberList = new ArrayList<>();
         List<String> activeMemberList = new ArrayList<>();
         LinkedHashMap<String, UpgradeInactiveConcept> inactiveData = new LinkedHashMap<>();
-        final String branchPath = getBranchPath(refset);
-        final String refsetId = refset.getRefsetId();
+        final String branchPath = getBranchPath(upgradeRefset);
+        final String refsetId = upgradeRefset.getRefsetId();
         ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
         lookupParameters.setGetMembershipInformation(true);
         String searchAfter = "";
@@ -4915,10 +5002,10 @@ public class RefsetMemberService {
         boolean memberTotalKnown = false;
         String inactiveConceptIds = "";
         final ObjectMapper mapper = new ObjectMapper();
-        final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(refset.getEdition());
+        final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(upgradeRefset.getEdition());
         int replacementCount = 0;
         final String conceptSearchUrl = SnowstormConnection.BASE_URL + branchPath + "/concepts/search";
-        final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", \"eclFilter\": \"^" + refset.getRefsetId() + "\", ";
+        final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", \"eclFilter\": \"^" + upgradeRefset.getRefsetId() + "\", ";
 
         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
         final String url = SnowstormConnection.BASE_URL + branchPath + "/members?referenceSet=" + refsetId + "&active=true&offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
@@ -4964,7 +5051,7 @@ public class RefsetMemberService {
                     hasMorePages = false;
                 }
 
-                final ConceptResultList currentMemberBatch = populateConcepts(root, refset, lookupParameters);
+                final ConceptResultList currentMemberBatch = populateConcepts(root, upgradeRefset, lookupParameters);
 
                 // filter for inactive concepts
                 for (final Concept concept : currentMemberBatch.getItems()) {
@@ -5052,7 +5139,7 @@ public class RefsetMemberService {
 
                     if (conceptNode.get("descriptions") != null) {
 
-                        final List<Map<String, String>> descriptions = populateDescriptions(inactiveConcept.getCode(), conceptNode.get("descriptions"), refset, nonDefaultPreferredTerms);
+                        final List<Map<String, String>> descriptions = populateDescriptions(inactiveConcept.getCode(), conceptNode.get("descriptions"), upgradeRefset, nonDefaultPreferredTerms);
                         inactiveConcept.setDescriptions(ModelUtility.toJson(descriptions));
                     }
 
@@ -5139,7 +5226,7 @@ public class RefsetMemberService {
                                         }
 
                                         // logger.debug("compileUpgradeData IN THREAD ID: " + Thread.currentThread().getId());
-                                        populateAllLanguageDescriptions(refset, replacementConceptsToLookup);
+                                        populateAllLanguageDescriptions(upgradeRefset, replacementConceptsToLookup);
 
                                         for (final Concept replacementConcept : replacementConceptsToLookup) {
 
@@ -5197,18 +5284,16 @@ public class RefsetMemberService {
      * get the stored the data to upgrade a refset.
      *
      * @param service the Terminology Service
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @return The upgrade data
      * @throws Exception the exception
      */
-    public static ResultList<UpgradeInactiveConcept> getUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+    public static ResultList<UpgradeInactiveConcept> getUpgradeData(final TerminologyService service, final User user, final Refset refset) throws Exception {
 
-        final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-        final String refsetId = refset.getRefsetId();
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("code");
 
-        ResultList<UpgradeInactiveConcept> results = service.find("refsetId: " + refsetId, pfs, UpgradeInactiveConcept.class, null);
+        ResultList<UpgradeInactiveConcept> results = service.find("refsetId: " + refset.getRefsetId(), pfs, UpgradeInactiveConcept.class, null);
         results.setTotal(results.getItems().size());
         results.setTotalKnown(true);
         results.setMiscCountA(refset.getMemberCount() - results.getItems().size());
@@ -5221,17 +5306,14 @@ public class RefsetMemberService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @param inactiveConceptId the code of the inactive upgrade concept to get
      * @return The upgrade data
      * @throws Exception the exception
      */
-    public static UpgradeInactiveConcept getUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final String inactiveConceptId) throws Exception {
+    public static UpgradeInactiveConcept getUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId) throws Exception {
 
-        final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-        final String refsetId = refset.getRefsetId();
-
-        UpgradeInactiveConcept upgradeInactiveConcept = service.findSingle("refsetId: " + refsetId + " AND code:" + inactiveConceptId, UpgradeInactiveConcept.class, null);
+        UpgradeInactiveConcept upgradeInactiveConcept = service.findSingle("refsetId: " + refset.getRefsetId() + " AND code:" + inactiveConceptId, UpgradeInactiveConcept.class, null);
         return upgradeInactiveConcept;
     }
 
@@ -5262,7 +5344,7 @@ public class RefsetMemberService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @param inactiveConceptId the concept ID of the inactive concept to be upgraded
      * @param replacementConceptId the concept ID of the replacement concept to be updated
      * @param manualReplacementConcept the manual upgrade replacement concept that to be added
@@ -5270,12 +5352,12 @@ public class RefsetMemberService {
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String modifyUpgradeConcept(final TerminologyService service, final User user, final String refsetInternalId, final String inactiveConceptId, final String replacementConceptId,
+    public static String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId, final String replacementConceptId,
         final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception {
 
         try {
 
-            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsBeingUpdated.add(refset.getId());
 
             List<String> unchangedConcepts = new ArrayList<>();
             final List<String> replacementChangeStatuses = Arrays.asList(REPLACEMENT_REMOVED, REPLACEMENT_ADDED, REMOVED_MANUAL_REPLACEMENT);
@@ -5283,7 +5365,7 @@ public class RefsetMemberService {
             String changeText = "added";
             boolean memberChange = true;
             boolean removeInactiveAlso = false;
-            final UpgradeInactiveConcept upgradeInactiveConcept = getUpgradeConcept(service, user, refsetInternalId, inactiveConceptId);
+            final UpgradeInactiveConcept upgradeInactiveConcept = getUpgradeConcept(service, user, refset, inactiveConceptId);
             UpgradeReplacementConcept upgradeReplacementConcept = null;
             String conceptIdToChange = inactiveConceptId;
 
@@ -5332,11 +5414,11 @@ public class RefsetMemberService {
             // add or remove the concept as a member to the refset
             if (memberChange) {
 
-                RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+                RefsetMemberService.refsetsUpdatedMembers.put(refset.getId(), new HashMap<>());
 
                 if (add) {
 
-                    unchangedConcepts = RefsetMemberService.addRefsetMembers(service, user, refsetInternalId, new ArrayList<>(Arrays.asList(conceptIdToChange)));
+                    unchangedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, new ArrayList<>(Arrays.asList(conceptIdToChange)));
 
                     if (removeInactiveAlso && !unchangedConcepts.isEmpty()) {
 
@@ -5344,12 +5426,12 @@ public class RefsetMemberService {
 
                     } else if (removeInactiveAlso && unchangedConcepts.isEmpty()) {
 
-                        unchangedConcepts.addAll(RefsetMemberService.removeRefsetMembers(service, user, refsetInternalId, inactiveConceptId));
+                        unchangedConcepts.addAll(RefsetMemberService.removeRefsetMembers(service, user, refset, inactiveConceptId));
                     }
 
                 } else {
 
-                    unchangedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refsetInternalId, conceptIdToChange);
+                    unchangedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdToChange);
                 }
 
                 // see if there the concept was unable to be changed and craft the error message
@@ -5410,8 +5492,6 @@ public class RefsetMemberService {
 
                     // If a replacement was successfully added for the first time then populate the member ID
                     if (changed.equals(REPLACEMENT_ADDED) && unchangedConcepts.size() == 0) {
-
-                        final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
                         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
                         final String url =
@@ -5482,7 +5562,7 @@ public class RefsetMemberService {
             // if this is adding or removing a replacement concept make the same changes to any duplicate concepts in the upgrade data
             if (Arrays.asList(REPLACEMENT_REMOVED, REPLACEMENT_ADDED).contains(changed)) {
 
-                final ResultList<UpgradeInactiveConcept> upgradeData = getUpgradeData(service, user, refsetInternalId);
+                final ResultList<UpgradeInactiveConcept> upgradeData = getUpgradeData(service, user, refset);
 
                 for (final UpgradeInactiveConcept inactiveData : upgradeData.getItems()) {
 
@@ -5544,7 +5624,7 @@ public class RefsetMemberService {
 
         finally {
 
-            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+            RefsetMemberService.refsetsBeingUpdated.remove(refset.getId());
         }
 
     }
@@ -5554,23 +5634,20 @@ public class RefsetMemberService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String removeAllUpgradeInactiveConcepts(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+    public static String removeAllUpgradeInactiveConcepts(final TerminologyService service, final User user, final Refset refset) throws Exception {
 
         try {
 
-            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
-
             List<String> unchangedConcepts;
             String conceptIdsToChange = "";
-            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-            final String refsetId = refset.getRefsetId();
-            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+            WorkflowService.canUserEditRefset(user, refset);
+            RefsetMemberService.refsetsUpdatedMembers.put(refset.getId(), new HashMap<>());
 
-            final ResultList<UpgradeInactiveConcept> inactiveConceptList = service.find("refsetId: " + refsetId + " AND stillMember: true", null, UpgradeInactiveConcept.class, null);
+            final ResultList<UpgradeInactiveConcept> inactiveConceptList = service.find("refsetId: " + refset.getRefsetId() + " AND stillMember: true", null, UpgradeInactiveConcept.class, null);
 
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
@@ -5580,7 +5657,7 @@ public class RefsetMemberService {
             conceptIdsToChange = StringUtils.removeEnd(conceptIdsToChange, ",");
 
             // remove the concepts as members from the refset
-            unchangedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refsetInternalId, conceptIdsToChange);
+            unchangedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToChange);
 
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
@@ -5612,7 +5689,7 @@ public class RefsetMemberService {
 
         finally {
 
-            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+            RefsetMemberService.refsetsBeingUpdated.remove(refset.getId());
         }
 
     }
@@ -5622,23 +5699,21 @@ public class RefsetMemberService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String addAllUpgradeReplacementConcepts(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+    public static String addAllUpgradeReplacementConcepts(final TerminologyService service, final User user, final Refset refset) throws Exception {
 
         try {
 
-            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsBeingUpdated.add(refset.getId());
 
             List<String> unchangedConcepts;
             List<String> conceptIdsToChange = new ArrayList<>();
-            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-            final String refsetId = refset.getRefsetId();
-            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+            RefsetMemberService.refsetsUpdatedMembers.put(refset.getId(), new HashMap<>());
 
-            final ResultList<UpgradeInactiveConcept> inactiveConceptList = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcept.class, null);
+            final ResultList<UpgradeInactiveConcept> inactiveConceptList = service.find("refsetId: " + refset.getRefsetId(), null, UpgradeInactiveConcept.class, null);
 
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
@@ -5658,7 +5733,7 @@ public class RefsetMemberService {
             }
 
             // add the concepts as members to the refset
-            unchangedConcepts = RefsetMemberService.addRefsetMembers(service, user, refsetInternalId, conceptIdsToChange);
+            unchangedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdsToChange);
 
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
@@ -5702,7 +5777,7 @@ public class RefsetMemberService {
 
         finally {
 
-            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+            RefsetMemberService.refsetsBeingUpdated.remove(refset.getId());
         }
 
     }
@@ -5873,7 +5948,7 @@ public class RefsetMemberService {
         refsetMemberComparison.setActiveRefsetMemberTotal(activeRefsetMembers.size());
         refsetMemberComparison.setComparisonRefsetMemberTotal(comparisonRefsetMembers.size());
 
-        for (Map.Entry<String, Concept> activeMemberEntry : activeRefsetMembers.entrySet()) {
+        for (final Map.Entry<String, Concept> activeMemberEntry : activeRefsetMembers.entrySet()) {
 
             final String activeConceptId = activeMemberEntry.getKey();
             final Concept activeConcept = activeMemberEntry.getValue();
@@ -5883,7 +5958,8 @@ public class RefsetMemberService {
             returnMap.put("memberOfRefset", "true");
             returnMap.put("definitionExceptionType", activeConcept.getDefinitionExceptionType());
             returnMap.put("hasChildren", "false"); // activeConcept.getHasChildren() + "");
-            returnMap.put("name", activeConcept.getName().strip());
+            final Map<String, String> preferedTermEnglish = activeConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
+            returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : activeConcept.getName().strip());
 
             // check to see if this member is also a member of the comparison refset
             if (comparisonRefsetMembers.containsKey(activeConceptId)) {
@@ -5901,7 +5977,7 @@ public class RefsetMemberService {
         // since the members of the active or both refsets are handled, remove all but the unique comparison refset members
         comparisonRefsetMembers.keySet().removeAll(activeRefsetMembers.keySet());
 
-        for (Map.Entry<String, Concept> comparisonMemberEntry : comparisonRefsetMembers.entrySet()) {
+        for (final Map.Entry<String, Concept> comparisonMemberEntry : comparisonRefsetMembers.entrySet()) {
 
             final String comparisonConceptId = comparisonMemberEntry.getKey();
             final Concept comparisonConcept = comparisonMemberEntry.getValue();
@@ -5913,7 +5989,8 @@ public class RefsetMemberService {
             returnMap.put("hasChildren", "false"); // comparisonConcept.getHasChildren() + "");
             returnMap.put("membership", "Comparison Refset");
             refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
-            returnMap.put("name", comparisonConcept.getName().strip());
+            final Map<String, String> preferedTermEnglish = comparisonConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
+            returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : comparisonConcept.getName().strip());
 
             refsetMemberComparison.getItems().add(returnMap);
         }
