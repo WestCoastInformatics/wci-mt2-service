@@ -666,16 +666,16 @@ public class OrganizationController extends BaseController {
     @Hidden
     public @ResponseBody ResponseEntity<String> responseToInviteOrganization(
 
-        @PathVariable final String refsetId, @QueryParam(value = "acceptance") final boolean acceptance, @QueryParam(value = "requester") final String requester,
+        @PathVariable final String organizationId, @QueryParam(value = "acceptance") final boolean acceptance, @QueryParam(value = "requester") final String requester,
         @QueryParam(value = "recipientEmail") final String recipientEmail
 
     ) throws Exception {
 
         try {
 
-            logger.debug("responseToInviteOrganization: refsetId: " + refsetId + " and acceptance: " + acceptance + " and requester: " + requester + " recipientEmail: " + recipientEmail);
+            logger.debug("responseToInviteOrganization: organizationId: " + organizationId + " and acceptance: " + acceptance + " and requester: " + requester + " recipientEmail: " + recipientEmail);
 
-            OrganizationService.processOrganizationInvitation(refsetId, acceptance, requester, recipientEmail);
+            OrganizationService.processOrganizationInvitation(organizationId, acceptance, requester, recipientEmail);
 
             // Redirect here
             final HttpHeaders headers = new HttpHeaders();
@@ -685,7 +685,7 @@ public class OrganizationController extends BaseController {
 
         } catch (final Exception e) {
 
-            logger.error("Exception while processing response for refset invite", e);
+            logger.error("Exception while processing response for organizationId invite", e);
             return new ResponseEntity<>(HttpStatus.OK);
         }
     }
