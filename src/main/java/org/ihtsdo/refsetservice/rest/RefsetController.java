@@ -2247,55 +2247,66 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        try (final TerminologyService service = new TerminologyService()) {
+        final Thread t = new Thread(new Runnable() {
 
-            service.setModifiedBy(user.getUserName());
-            service.setModifiedFlag(true);
-            
-            String status = "";
-            
-            final String[] refsetInternalIdArray = refsetInternalIds.split(",");
-            boolean isBatch = false;
-            
-            if (refsetInternalIdArray.length > 1) {
-                
-                isBatch = true;
-                RefsetMemberService.refsetsBeingUpdated.add(refsetInternalIds);
-                logger.debug("compileUpgradeData: Batch upgrade started with refsetInternalIds: " + refsetInternalIds);
-            }
-            
-            for (final String internalId : refsetInternalIdArray) {
-                
-                RefsetMemberService.refsetsBeingUpdated.add(internalId);
-                logger.debug("compileUpgradeData: individual refsetInternalId: " + internalId);
+			@Override
+			public void run() {
+		        try (final TerminologyService service = new TerminologyService()) {
 
-                try {
-                    
-                    // add the list of concepts as members to the refset
-                    status = RefsetMemberService.compileUpgradeData(service, user, internalId);
-                    
-                } finally {
-                    RefsetMemberService.refsetsBeingUpdated.remove(internalId);
-                }
+		            service.setModifiedBy(user.getUserName());
+		            service.setModifiedFlag(true);
+		            
+		            String status = "";
+		            
+		            final String[] refsetInternalIdArray = refsetInternalIds.split(",");
+		            boolean isBatch = false;
+		            
+		            if (refsetInternalIdArray.length > 1) {
+		                
+		                isBatch = true;
+		                RefsetMemberService.refsetsBeingUpdated.add(refsetInternalIds);
+		                logger.debug("compileUpgradeData: Batch upgrade started with refsetInternalIds: " + refsetInternalIds);
+		            }
+		            
+		            for (final String internalId : refsetInternalIdArray) {
+		                
+		                RefsetMemberService.refsetsBeingUpdated.add(internalId);
+		                logger.debug("compileUpgradeData: individual refsetInternalId: " + internalId);
 
-                logger.debug("compileUpgradeData: individual refsetInternalId " + internalId + " finished with status " + status);
-            }
+		                try {
+		                    
+		                    // add the list of concepts as members to the refset
+		                    status = RefsetMemberService.compileUpgradeData(service, user, internalId);
+		                    
+		                } finally {
+		                    RefsetMemberService.refsetsBeingUpdated.remove(internalId);
+		                }
 
-            if (isBatch) {
-                logger.debug("compileUpgradeData: Batch upgrade finished");
-            }
+		                logger.debug("compileUpgradeData: individual refsetInternalId " + internalId + " finished with status " + status);
+		            }
 
-            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
+		            if (isBatch) {
+		                logger.debug("compileUpgradeData: Batch upgrade finished");
+		            }
 
-        } catch (final Exception e) {
 
-            return handleException(e);
-        }
+		        } catch (Exception e) {
+		        	try {
+						handleException(e);
+					} catch (Exception e1) {
+						// n/a - in thread
+					}
+		        }
 
-        finally {
+		        finally {
 
-            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalIds);
-        }
+		            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalIds);
+		        }
+				
+			}});
+        t.start();
+        return new ResponseEntity<>("{\"status\": \"started\"}", HttpStatus.OK);
+
 
     }
 
