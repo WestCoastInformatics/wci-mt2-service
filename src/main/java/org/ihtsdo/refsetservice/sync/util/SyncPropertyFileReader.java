@@ -61,7 +61,7 @@ public class SyncPropertyFileReader {
 
     private final Map<String, Set<String>> teamMembership = readTeamMembership();
 
-    private final List<String> codeSystemNames = new ArrayList<>();
+    private final List<String> codeSystemShortNames = new ArrayList<>();
 
     /** The refset internal id map. */
     private final Map<String, String> rttIdToRefsetJsonMap = new HashMap<>();
@@ -118,34 +118,34 @@ public class SyncPropertyFileReader {
         populateFromFile(refsetsResource, FileProcessType.REFSET);
     }
 
+    // Reread every time as can now update list without rebuilding. Not an issue as it's only used via sync (so not costly)
     public List<String> getCodeSystemsToIgnore() {
 
-        if (codeSystemNames == null || codeSystemNames.isEmpty()) {
+        try {
 
-            BufferedReader reader;
+            BufferedReader reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
 
-            try {
+            String line = reader.readLine();
 
-                reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
+            while (line != null) {
 
-                String line = reader.readLine();
+                if (!line.isBlank()) {
 
-                while (line != null) {
+                    String shortName = line.split("\t")[0];
 
-                    codeSystemNames.add(line);
-
-                    line = reader.readLine();
+                    codeSystemShortNames.add(shortName);
                 }
 
-                reader.close();
-            } catch (IOException e) {
-
-                e.printStackTrace();
+                line = reader.readLine();
             }
 
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
         }
 
-        return codeSystemNames;
+        return codeSystemShortNames;
     }
 
     public List<String> getRefsetsToIgnore() {
@@ -544,15 +544,15 @@ public class SyncPropertyFileReader {
         }
 
     }
-    
+
     public List<String> getTestQueries(final ClassPathResource classPathResource) throws Exception {
-        
+
         logger.info("NUNO TEST READ FILE {}", classPathResource.getPath());
-        
+
         final List<String> lines = FileUtils.readLines(new File(classPathResource.getPath()), "utf-8");
-        
+
         return lines;
-        
+
     }
 
     private String stripQuotes(String str) {

@@ -677,18 +677,19 @@ public class SyncCodeSystemAgent extends SyncService {
                 JsonNode codeSystem = codeSystems.next();
 
                 // Check for invalid or ignored code systems
-                if (!codeSystem.has("name")) {
+                if (!codeSystem.has("shortName")) {
 
-                    // Skipping odd code system without a name
+                    // Skipping odd code system without a name or shortName
                     continue;
-                } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(codeSystem.get("name").asText())) {
+                } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(codeSystem.get("shortName").asText())) {
 
-                    // Code System has been0 defined as to-be-ignored
+                    // Code System has been defined as to-be-ignored (either by specifying name or shortname)
+                    logger.info("Encountered, but ignoring " + codeSystem.get("shortName").asText() + " as listed in ignoredCodeSystems.txt");
                     continue;
                 }
 
                 // Testing
-                if (isEditionToProcess(codeSystem.get("name").asText())) {
+                if (isEditionToProcess(codeSystem.get("shortName").asText())) {
 
                     filteredCodeSystems.add(codeSystem);
                 }
