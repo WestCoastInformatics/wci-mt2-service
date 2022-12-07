@@ -1059,7 +1059,7 @@ public class RefsetController extends BaseController {
             
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             
-            if (!user.checkPermission(User.ROLE_ADMIN, refset.getEdition(), refset.getProject())) {
+            if (!user.checkPermission(User.ROLE_ADMIN, refset.getEdition(), refset.getProject().getCrowdProjectId())) {
                 return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
             }
 
