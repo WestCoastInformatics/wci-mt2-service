@@ -236,7 +236,10 @@ public class SyncCodeSystemAgent extends SyncService {
             // TODO: See if any persisted Editions or Orgs are not even in Snowstorm. If so, inactivate
 
             // Final steps whether initial or updating sync
-            postCodeSystemProcessing(syncedEdition);
+            if (syncedEdition != null) {
+
+                postCodeSystemProcessing(syncedEdition);
+            }
 
         } catch (Exception e) {
 

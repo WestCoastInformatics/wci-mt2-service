@@ -610,7 +610,6 @@ public class SecurityService implements AutoCloseable {
         try (final TerminologyService service = new TerminologyService()) {
 
             // Note: When testing POSTMAN, hard code userName to your userName and relaunch server
-            // userName = "jefron";
             user = service.findSingle("userName:" + userName, User.class, null);
         }
 

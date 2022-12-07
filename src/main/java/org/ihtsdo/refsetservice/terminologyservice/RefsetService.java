@@ -2536,8 +2536,7 @@ public class RefsetService {
 
         project = setProjectPermissions(user, project);
 
-        if (!project.getRoles().contains(User.ROLE_AUTHOR) || !project.getRoles().contains(User.ROLE_ADMIN)) {
-
+        if (!project.getRoles().contains(User.ROLE_AUTHOR) && !project.getRoles().contains(User.ROLE_ADMIN)) {
             throw new Exception("User does not have the permission to create a refset in this project " + project.getName());
         }
 
