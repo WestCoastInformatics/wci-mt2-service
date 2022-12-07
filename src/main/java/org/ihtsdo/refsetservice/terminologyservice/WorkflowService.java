@@ -309,9 +309,13 @@ public final class WorkflowService {
             }
 
             if (refset.isLocalSet()) {
-                logger.debug("Publication (non-snomed versioning) of localset refset: " + refset.getRefsetId());
+                
+                final String refsetBranchPath = RefsetService.getBranchPath(refset);
+                final String topLevelRefsetBranchPath = getLocalsetTopLevelRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
+                mergeBranch(refsetBranchPath, topLevelRefsetBranchPath, "Promoting versioned local set", false);
+                logger.info("Publication (non-snomed versioning) of localset refset: " + refset.getRefsetId());
             } else {
-                logger.debug("Publication of refset: " + refset.getRefsetId());
+                logger.info("Publication of refset: " + refset.getRefsetId());
             }
 
             refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(versionDate));
@@ -323,8 +327,7 @@ public final class WorkflowService {
             service.add(AuditEntryHelper.completeRefsetPublicationEntry(refset));
 
             if (!refset.getWorkflowStatus().equals(PUBLISHED)) {
-
-                throw new Exception("Refset was not able to have publication completed " + refset.getId());
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refset was not able to have publication completed " + refset.getId());
             }
 
             Refset oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestPublishedVersion: true", Refset.class, null);
@@ -498,7 +501,16 @@ public final class WorkflowService {
             String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getRefsetBranchId(), refset.isLocalSet());
 
             mergeBranch(refset.getEditionBranch(), projectBranchPath, "Updating branch to latest changes", true);
-            mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
+            
+            if (refset.isLocalSet()) {
+                
+                final String topLevelRefsetBranchPath = getLocalsetTopLevelRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
+                mergeBranch(projectBranchPath, topLevelRefsetBranchPath, "Updating branch to latest changes", true);
+                mergeBranch(topLevelRefsetBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
+            } else {
+                mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
+            }
+            
             createEditBranch(service, user, refset, branchId);
         }
 
@@ -799,12 +811,47 @@ public final class WorkflowService {
         String branchPath = getProjectBranchPath(editionBranchPath) + "/";
         
         if (localset) {
-            branchPath += REFSET_BRANCH_PREFIX + refsetId + "/";
+            branchPath += getLocalsetRefsetTopLevelBranchName(refsetId) + "/";
         }
         
-        branchPath += REFSET_BRANCH_PREFIX + refsetId + "-" + branchId;
+        branchPath += getRefsetBranchName(refsetId, branchId);
         
         return branchPath;
+    }
+    
+    /**
+     * Get the top level refset branch path for a localset refset.
+     *
+     * @param editionBranchPath the branch path of the edition the refset belongs to
+     * @param refsetId the refset ID
+     * @return the branch path of the refset branch
+     * @throws Exception the exception
+     */
+    public static String getLocalsetTopLevelRefsetBranchPath(final String editionBranchPath, final String refsetId) throws Exception {
+        return getProjectBranchPath(editionBranchPath) + "/" + getLocalsetRefsetTopLevelBranchName(refsetId);
+    }
+    
+    /**
+     * Get the refset branch name for a refset.
+     *
+     * @param refsetId the refset ID
+     * @param branchId the ID for the refset branch
+     * @return the branch path of the refset branch
+     * @throws Exception the exception
+     */
+    public static String getRefsetBranchName(final String refsetId, final String branchId) throws Exception {
+        return REFSET_BRANCH_PREFIX + refsetId + "-" + branchId;
+    }
+    
+    /**
+     * Get the top level refset branch name for a localset refset.
+     *
+     * @param refsetId the refset ID
+     * @return the branch path of the refset branch
+     * @throws Exception the exception
+     */
+    public static String getLocalsetRefsetTopLevelBranchName(final String refsetId) throws Exception {
+        return REFSET_BRANCH_PREFIX + refsetId;
     }
 
     /**
@@ -819,13 +866,13 @@ public final class WorkflowService {
      */
     public static String createRefsetBranch(final String editionBranchPath, final String refsetId, final String branchId, final boolean localset) throws Exception {
 
-        final String branchName = REFSET_BRANCH_PREFIX + refsetId + "-" + branchId;
         final String projectBranchPath = getProjectBranchPath(editionBranchPath);
         
         if (localset) {
-            createLocalsetRefsetBranch(editionBranchPath, refsetId);
+            return createLocalsetRefsetBranch(editionBranchPath, projectBranchPath, refsetId, branchId);
         }
         
+        final String branchName = getRefsetBranchName(refsetId, branchId);
         String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId, branchId, localset);
 
         if (doesBranchExist(refsetBranchPath)) {
@@ -850,28 +897,37 @@ public final class WorkflowService {
      * @return the branch path of the new refset branch
      * @throws Exception the exception
      */
-    public static String createLocalsetRefsetBranch(final String editionBranchPath, final String refsetId) throws Exception {
+    public static String createLocalsetRefsetBranch(final String editionBranchPath, final String projectBranchPath, final String refsetId, final String branchId) throws Exception {
 
-        final String branchName = REFSET_BRANCH_PREFIX + refsetId;
-        final String projectBranchPath = getProjectBranchPath(editionBranchPath);
-        String refsetBranchPath = projectBranchPath + "/" + branchName;
+        final String topLevelBranchName = getLocalsetRefsetTopLevelBranchName(refsetId);
+        String topLevelRefsetBranchPath = projectBranchPath + "/" + topLevelBranchName;
+
+        if (doesBranchExist(topLevelRefsetBranchPath)) {
+            mergeBranch(projectBranchPath, topLevelRefsetBranchPath, "Updating branch to latest changes", true);
+        } else {
+
+            createProjectBranch(editionBranchPath);
+            topLevelRefsetBranchPath = createBranch(projectBranchPath, topLevelBranchName);
+        }
+        
+        final String refsetBranchName = getRefsetBranchName(refsetId, branchId);
+        String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId, branchId, true);
 
         if (doesBranchExist(refsetBranchPath)) {
 
-            mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
+            mergeBranch(topLevelRefsetBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
             return refsetBranchPath;
 
         } else {
 
             createProjectBranch(editionBranchPath);
-            refsetBranchPath = createBranch(projectBranchPath, branchName);
+            refsetBranchPath = createBranch(topLevelRefsetBranchPath, refsetBranchName);
             return refsetBranchPath;
         }
-
     }
 
     /**
-     * Merge the refset branch into the project branch.
+     * Merge the refset branch into the project branch. Never for localsets
      *
      * @param editionBranchPath the branch path of the edition the refset belongs to
      * @param refsetId the refset ID

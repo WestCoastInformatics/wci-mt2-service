@@ -14,6 +14,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -1321,9 +1327,45 @@ public class RefsetService {
             refset.setTerminologyVersionDate(editionVersions.get(0));
             refset.setBasedOnLatestVersion(true);
         
-        } else if (editionVersions.indexOf(versionDate) == 0) {
+        } else if (editionVersions.indexOf(versionDate) >= 0) {
             
-            refset.setBasedOnLatestVersion(true);
+            if (editionVersions.indexOf(versionDate) == 0 || editionVersions.size() == 1) {
+                refset.setBasedOnLatestVersion(true);
+            }
+            
+        } else {
+            
+            if (editionVersions.size() == 1) {
+                
+                refset.setTerminologyVersionDate(editionVersions.get(0));
+                refset.setBasedOnLatestVersion(true);
+            } else {
+                
+                String lastEditionDate = "";
+                long lastDifference = 0;
+                final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd:HH:mm:ss");
+                final LocalDateTime dateOfVersion = LocalDateTime.parse(versionDate + ":00:00:00", formatter);
+                
+                for (final String editionVersion : editionVersions) {
+                    
+                    final LocalDateTime editionDate = LocalDateTime.parse(editionVersion + ":00:00:00", formatter);
+                    final long duration = Duration.between(editionDate, dateOfVersion).toDays();
+                        
+                    // if the duration is positive and larger than the previous then the previous is the answer
+                    if (!lastEditionDate.equals("") && duration > 0 && lastDifference > 0 && lastDifference < duration) {
+                        break;
+                    } 
+                    
+                    lastEditionDate = editionVersion;
+                    lastDifference = duration;
+                }
+                
+                if (editionVersions.indexOf(lastEditionDate) == 0) {
+                    refset.setBasedOnLatestVersion(true);
+                }
+                
+                refset.setTerminologyVersionDate(lastEditionDate);
+            }
         }
     }
 
