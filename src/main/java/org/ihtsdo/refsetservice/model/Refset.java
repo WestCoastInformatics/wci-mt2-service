@@ -138,10 +138,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Column(nullable = true, length = 256)
     private String refsetBranchId;
     
-    /** The branch for a published version of a localset. */
-    @Column(nullable = true, length = 256)
-    private String localsetVersionBranch;
-    
     /** The name for a published version of a localset. */
     @Column(nullable = true, length = 256)
     private String localsetVersionName;
@@ -325,7 +321,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         moduleId = other.getModuleId();
         editBranchId = other.getEditBranchId();
         refsetBranchId = other.getRefsetBranchId();
-        localsetVersionBranch = other.getLocalsetVersionBranch();
         localsetVersionName = other.getLocalsetVersionName();
         assignedUser = other.getAssignedUser();
         memberCount = other.getMemberCount();
@@ -946,26 +941,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
     
     /**
-     * Gets the branch for a published version of a localset.
-     *
-     * @return the localset version branch
-     */
-    public String getLocalsetVersionBranch() {
-        
-        return localsetVersionBranch;
-    }
-    
-    /**
-     * Sets the branch for a published version of a localset.
-     *
-     * @param localsetVersionBranch the localset version branch to set
-     */
-    public void setLocalsetVersionBranch(final String localsetVersionBranch) {
-        
-        this.localsetVersionBranch = localsetVersionBranch;
-    }
-    
-    /**
      * Gets the name for a published version of a localset.
      *
      * @return the localset version name
@@ -1443,7 +1418,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
         result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
         result = prime * result + ((editBranchId == null) ? 0 : editBranchId.hashCode());
         result = prime * result + ((refsetBranchId == null) ? 0 : refsetBranchId.hashCode());
-        result = prime * result + ((localsetVersionBranch == null) ? 0 : localsetVersionBranch.hashCode());
         result = prime * result + ((localsetVersionName == null) ? 0 : localsetVersionName.hashCode());
         result = prime * result + ((externalUrl == null) ? 0 : externalUrl.hashCode());
         result = prime * result + ((project == null) ? 0 : project.hashCode());
@@ -1685,18 +1659,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
             }
             
         } else if (!refsetBranchId.equals(other.refsetBranchId)) {
-            
-            return false;
-        }
-        
-        if (localsetVersionBranch == null) {
-            
-            if (other.localsetVersionBranch != null) {
-                
-                return false;
-            }
-            
-        } else if (!localsetVersionBranch.equals(other.localsetVersionBranch)) {
             
             return false;
         }

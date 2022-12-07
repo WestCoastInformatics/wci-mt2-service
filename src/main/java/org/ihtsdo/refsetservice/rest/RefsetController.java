@@ -1074,13 +1074,15 @@ public class RefsetController extends BaseController {
             }
 
             if (error.equals("")) {
+                
+                final Refset newVersionRefset = RefsetService.getLatestRefsetVersion(service, refset.getRefsetId());
 
                 String message = "Publication completed for local reference set " + refset.getRefsetId();
-                return new ResponseEntity<>("{\"status\": \"" + message + ".\"}", HttpStatus.OK);
+                return new ResponseEntity<>(ModelUtility.toJson(newVersionRefset), HttpStatus.OK);
 
             } else {
 
-                return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
+                return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
         } catch (final Exception e) {
