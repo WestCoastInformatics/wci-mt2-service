@@ -489,6 +489,12 @@ public class RefsetService {
      */
     public static void createRefsetEditHistory(final TerminologyService service, final User user, final Refset refset) throws Exception {
 
+        final RefsetEditHistory oldHistory = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + "", RefsetEditHistory.class, null);
+
+        if (oldHistory != null) {
+            return;
+        }
+        
         RefsetEditHistory history = new RefsetEditHistory();
         history.populateFrom(refset);
         history.setId(null);
