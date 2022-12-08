@@ -450,6 +450,13 @@ public class RefsetService {
         refset.setExternalUrl(refsetEditParameters.getExternalUrl());
         refset.setLocalSet(refsetEditParameters.isLocalSet());
 
+        // If module id is changed
+        if (!refset.getModuleId().equals(refsetEditParameters.getModuleId())) {
+            refset.setModuleId(refsetEditParameters.getModuleId());
+
+            // TODO: RT2-1513: I believe there's something that needs to change in snowstorm here also)
+        }
+        
         if (refset.getType().equals(Refset.EXTERNAL)) {
 
             refset.setName(refsetEditParameters.getName());
