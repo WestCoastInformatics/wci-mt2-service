@@ -2578,6 +2578,7 @@ public class RefsetService {
         newRefset.setWorkflowStatus(null);
         newRefset.setVersionNotes("");
         newRefset.setLatestPublishedVersion(false);
+        newRefset.setMemberCount(0);
 
         if (newRefsetConceptId == null || newRefsetConceptId.isEmpty()) {
 
