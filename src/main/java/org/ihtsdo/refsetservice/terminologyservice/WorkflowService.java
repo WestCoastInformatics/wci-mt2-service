@@ -1565,6 +1565,12 @@ public final class WorkflowService {
                     allowedActions.add(FINISH_UPGRADE);
                 }
 
+                // only the assigned user can upgrade
+                if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
+                    allowedActions.add(CANCEL_UPGRADE);
+                    allowedActions.add(FINISH_UPGRADE);
+                }
+
             }
 
             else if (currentStatus.equals(READY_FOR_REVIEW)) {
