@@ -1187,29 +1187,26 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Inactivate a refset.
+     * Change a refset status.
      *
      * @param refsetInternalId the internal refset ID
      * @return the status of the operation
      * @throws Exception the exception
      */
-    @DeleteMapping("/refset/{refsetInternalId}")
-    public @ResponseBody ResponseEntity<String> inactiveRefset(final @PathVariable String refsetInternalId) throws Exception {
+    @PutMapping("/refset/{refsetInternalId}/refsetStatus")
+    public @ResponseBody ResponseEntity<String> updateRefsetStatus(final @PathVariable String refsetInternalId, final boolean active) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            // logger.debug("inactiveRefset: refsetInternalId: " + refsetInternalId);
+            // logger.debug("updateRefsetStatus: refsetInternalId: " + refsetInternalId + " ; active: " + active);
             User user = SecurityService.getUserFromSession();
             
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
-            // service.setTransactionPerOperation(false);
-            // service.beginTransaction();
 
-            final String status = RefsetService.inactivateRefset(service, user, refset);
-            // service.commit();
+            final String status = RefsetService.updatedRefsetStatus(service, user, refset, active);
 
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 

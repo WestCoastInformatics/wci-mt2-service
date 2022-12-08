@@ -449,6 +449,12 @@ public class RefsetService {
         refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
         refset.setExternalUrl(refsetEditParameters.getExternalUrl());
         refset.setLocalSet(refsetEditParameters.isLocalSet());
+        
+        if (!StringUtility.isEmpty(refsetEditParameters.getModuleId()) && !refsetEditParameters.getModuleId().equals(refset.getModuleId())) {
+            
+            updateRefsetConcept(refset, refset.isActive(), refsetEditParameters.getModuleId());
+            refset.setModuleId(refsetEditParameters.getModuleId());
+        }
 
         if (refset.getType().equals(Refset.EXTERNAL)) {
 
@@ -462,7 +468,6 @@ public class RefsetService {
         if (refset.getType().equals(Refset.INTENSIONAL)) {
 
             AuditEntryHelper.updateRefsetMetadataEntry(refset, true);
-
             statusMessage = modifyRefsetDefinition(user, service, refset, refsetEditParameters.getDefinitionClauses());
         } else {
 
@@ -888,7 +893,7 @@ public class RefsetService {
     }
 
     /**
-     * Inactivate a refset.
+     * Update the status a refset.
      *
      * @param service the Terminology Service
      * @param user the user
@@ -896,32 +901,29 @@ public class RefsetService {
      * @return the status of the operation
      * @throws Exception the exception
      */
-    public static String inactivateRefset(final TerminologyService service, final User user, final Refset refset) throws Exception {
+    public static String updatedRefsetStatus(final TerminologyService service, final User user, final Refset refset, final boolean active) throws Exception {
 
         String status = "inactivated";
-        String refsetId = "";
-
-        if (refset == null) {
-
-            throw new Exception("Refset Internal Id: " + refset.getId() + " does not exist in the RT2 database");
+        
+        if (active) {
+            status = "reactivated";
         }
 
-        refsetId = refset.getRefsetId();
-
         // if the refset has never been versioned before then delete it
-        if (!doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
+        if (!active && !doesRefsetExist(refset.getRefsetId(), "AND (versionStatus: " + Refset.PUBLISHED + ")")) {
 
+            refset.setActive(active);
+            service.add(AuditEntryHelper.changeRefsetStatusEntry(refset));
             return deleteInDevelopmentVersion(service, user, refset, true);
         }
 
         // inactive the underlying refset concept
-        inactivateRefsetConcept(refsetId, getBranchPath(refset));
+        updateRefsetConcept(refset, active, refset.getModuleId());
 
-        // inactivate the refset object in the DB
-        refset.setActive(false);
+        // change the refset object in the DB
+        refset.setActive(active);
         service.update(refset);
-        service.add(AuditEntryHelper.inactivateRefsetEntry(refset));
-        logger.info("Inactivated refset in database: " + refset.getId());
+        service.add(AuditEntryHelper.changeRefsetStatusEntry(refset));
 
         return status;
     }
@@ -929,20 +931,23 @@ public class RefsetService {
     /**
      * Inactivate an underlying refset concept.
      *
-     * @param refsetId the refset ID
-     * @param branch the branch to inactivate the concept on
+     * @param refse the refset
+     * @param active the new active state
+     * @param moduleId the new module ID
      * @throws Exception the exception
      */
-    private static void inactivateRefsetConcept(final String refsetId, final String branch) throws Exception {
+    private static void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId) throws Exception {
 
         // first retrieve the concept so all fields will be present for the update
-        final String getUrl = SnowstormConnection.BASE_URL + "browser/" + branch + "/" + "concepts/" + refsetId;
+        final String refsetId = refset.getRefsetId();
+        final String branch = refset.getBranchPath();
+        final String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/" + "concepts/" + refsetId;
         final ObjectMapper mapper = new ObjectMapper();
         ObjectNode memberBody = null;
 
-        logger.debug("inactivateRefsetConcept inactivate concept search URL: " + getUrl);
+        logger.debug("updateRefsetConcept URL: " + url);
 
-        try (final Response response = SnowstormConnection.getResponse(getUrl)) {
+        try (final Response response = SnowstormConnection.getResponse(url)) {
 
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -955,44 +960,56 @@ public class RefsetService {
             memberBody = (ObjectNode) mapper.readTree(resultString.toString()).deepCopy();
         }
 
-        // set active to false
-        memberBody.put("active", "false");
+        if (active != refset.isActive()) {
+            
+            logger.info("Changing refset concept active status to: " + active);
+            
+            // set the concept status
+            memberBody.put("active", active);
+            
+            // set the concept inactivation indicator
+            if (!active) {
+                memberBody.put("inactivationIndicator", "OUTDATED");
+            } else {
+                memberBody.put("inactivationIndicator", "");
+            }
 
-        // set the inactivation indicator
-        memberBody.put("inactivationIndicator", "OUTDATED");
+            // loop thru the class axioms and set the status
+            final Iterator<JsonNode> axiomIterator = memberBody.get("classAxioms").iterator();
 
-        // loop thru the class axioms and set them as inactive
-        final Iterator<JsonNode> axiomIterator = memberBody.get("classAxioms").iterator();
+            while (axiomIterator.hasNext()) {
 
-        while (axiomIterator.hasNext()) {
+                final ObjectNode axiomNode = (ObjectNode) axiomIterator.next();
+                axiomNode.put("active", active);
+            }
 
-            final ObjectNode axiomNode = (ObjectNode) axiomIterator.next();
-            axiomNode.put("active", "false");
+            // loop thru the relationships and set the status
+            final Iterator<JsonNode> relationshipsIterator = memberBody.get("relationships").iterator();
+
+            while (relationshipsIterator.hasNext()) {
+
+                final ObjectNode relationshipsNode = (ObjectNode) relationshipsIterator.next();
+                relationshipsNode.put("active", active);
+            }
         }
-
-        // loop thru the relationships and set them as inactive
-        final Iterator<JsonNode> relationshipsIterator = memberBody.get("relationships").iterator();
-
-        while (relationshipsIterator.hasNext()) {
-
-            final ObjectNode relationshipsNode = (ObjectNode) relationshipsIterator.next();
-            relationshipsNode.put("active", "false");
+        
+        if (!moduleId.equals(refset.getModuleId())) {
+            
+            logger.info("Changing Refset Concept Module ID from: " + refset.getModuleId() + " to: " + moduleId);
+            memberBody.put("moduleId", moduleId);
         }
-
-        final String updateUrl = SnowstormConnection.BASE_URL + "browser/" + branch + "/" + "concepts/" + refsetId;
-
-        logger.debug("inactivateRefsetConcept inactivate URL: " + updateUrl);
+        
+        logger.debug("updateRefsetConcept update concept URL body: " + memberBody.toString());
 
         // update the concept with the new data
-        try (final Response response = SnowstormConnection.putResponse(updateUrl, memberBody.toString())) {
+        try (final Response response = SnowstormConnection.putResponse(url, memberBody.toString())) {
 
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                throw new Exception("Unable to inactivate refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                throw new Exception("Unable to update refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
             }
 
-            logger.info("Inactivated refset concept: " + refsetId);
+            logger.info("updateRefsetConcept refset concept: " + refsetId);
         }
 
     }
