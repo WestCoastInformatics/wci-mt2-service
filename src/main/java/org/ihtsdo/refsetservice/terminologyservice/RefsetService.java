@@ -1464,11 +1464,12 @@ public class RefsetService {
      * @param searchConcepts should refset members be searched
      * @param setPermissions should permissions and roles be set on the refsets
      * @param setVersions should the version list be set on the refsets
+     * @param showInDevelopment flag on whether to include IN_DEVELOPMENT refsets
      * @return the list of found refsets
      * @throws Exception the exception
      */
     public static ResultList<Refset> searchRefsets(final User user, final TerminologyService service, final SearchParameters searchParameters, final boolean searchConcepts,
-        final boolean setPermissions, final boolean setVersions) throws Exception {
+        final boolean setPermissions, final boolean setVersions, final boolean showInDevelopment) throws Exception {
 
         final long start = System.currentTimeMillis();
         ResultList<Refset> results = new ResultList<Refset>();
@@ -1603,7 +1604,12 @@ public class RefsetService {
                     projectFilter += " AND privateRefset: false AND latestPublishedVersion: true";
                 } else {
 
-                    projectFilter += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
+                    // if this is the directory then only show the latest published version, if it is the projects then show in development or the latest published version
+                    if (showInDevelopment) {
+                        projectFilter += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
+                    } else {
+                        projectFilter += " AND latestPublishedVersion: true";
+                    }
                 }
 
                 projectFilter += ") OR ";
@@ -2045,7 +2051,7 @@ public class RefsetService {
             searchParameters.setQuery("name:" + searchParameters.getQuery());
         }
 
-        final ResultList<Refset> refsets = searchRefsets(user, service, searchParameters, false, setPermissions, setVersions);
+        final ResultList<Refset> refsets = searchRefsets(user, service, searchParameters, false, setPermissions, setVersions, true);
 
         logger.debug("refsetDropdownSearch: results: " + ModelUtility.toJson(refsets));
 
