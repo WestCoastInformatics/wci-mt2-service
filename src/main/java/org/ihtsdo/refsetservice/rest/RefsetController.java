@@ -215,7 +215,7 @@ public class RefsetController extends BaseController {
             
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
-            RefsetService.setRefsetMemberCount(service, refset);
+            RefsetService.setRefsetMemberCount(service, refset, false);
 
             logger.debug("getRefsetMemberCount: refset: " + refset.getRefsetId() + " ; member count: " + refset.getMemberCount());
 
@@ -709,6 +709,52 @@ public class RefsetController extends BaseController {
             // service.beginTransaction();
 
             final String status = RefsetService.modifyRefset(service, user, refset, refsetParameters);
+            // service.commit();
+
+            if (!status.startsWith("Error")) {
+                return new ResponseEntity<>("{\"refsetInternalId\": \"" + refsetInternalId + "\"}", HttpStatus.OK);
+            } else {
+
+                return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+        finally {
+
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+        }
+
+    }
+    
+    /**
+     * Modify an existing refset that is in edit mode.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset internal ID or errors
+     * @throws Exception the exception
+     */
+    @PutMapping("/refset/{refsetInternalId}/recalculateDefinition")
+    public @ResponseBody ResponseEntity<String> recalculateRefsetDefinition(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            logger.debug("recalculateRefsetDefinition: refsetInternalId: " + ModelUtility.toJson(refsetInternalId));
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+            User user = SecurityService.getUserFromSession();
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
+            
+            service.setModifiedBy(user.getUserName());
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
+
+            final String status = RefsetService.modifyRefsetDefinition(user, service, refset, refset.getDefinitionClauses());
             // service.commit();
 
             if (!status.startsWith("Error")) {

@@ -1235,12 +1235,13 @@ public class RefsetService {
      *
      * @param service the Terminology Service
      * @param refset the refset
+     * @param force should the recount be forced
      * @return the if the refset needed the count set
      * @throws Exception the exception
      */
-    public static boolean setRefsetMemberCount(final TerminologyService service, final Refset refset) throws Exception {
+    public static boolean setRefsetMemberCount(final TerminologyService service, final Refset refset, final boolean force) throws Exception {
 
-        if (refset.getMemberCount() == -1) {
+        if (refset.getMemberCount() == -1 || force) {
 
             logger.debug("setRefsetMemberCount Setting the member count for refset: " + refset.getId());
             refset.setMemberCount(RefsetMemberService.getMemberCount(refset));
@@ -1333,7 +1334,7 @@ public class RefsetService {
         setRefsetPermissions(user, refset);
         refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
         refset.setBranchPath(getBranchPath(refset));
-        setRefsetMemberCount(service, refset);
+        setRefsetMemberCount(service, refset, false);
         
         final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
         String versionDate = null;
