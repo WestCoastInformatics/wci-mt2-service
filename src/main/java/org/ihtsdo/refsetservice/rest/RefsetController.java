@@ -215,7 +215,7 @@ public class RefsetController extends BaseController {
             
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
-            RefsetService.setRefsetMemberCount(service, refset);
+            RefsetService.setRefsetMemberCount(service, refset, false);
 
             logger.debug("getRefsetMemberCount: refset: " + refset.getRefsetId() + " ; member count: " + refset.getMemberCount());
 
@@ -729,6 +729,52 @@ public class RefsetController extends BaseController {
         }
 
     }
+    
+    /**
+     * Modify an existing refset that is in edit mode.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @return the refset internal ID or errors
+     * @throws Exception the exception
+     */
+    @PutMapping("/refset/{refsetInternalId}/recalculateDefinition")
+    public @ResponseBody ResponseEntity<String> recalculateRefsetDefinition(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            logger.debug("recalculateRefsetDefinition: refsetInternalId: " + ModelUtility.toJson(refsetInternalId));
+            RefsetMemberService.refsetsBeingUpdated.add(refsetInternalId);
+            RefsetMemberService.refsetsUpdatedMembers.put(refsetInternalId, new HashMap<>());
+            User user = SecurityService.getUserFromSession();
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserEditRefset(user, refset);
+            
+            service.setModifiedBy(user.getUserName());
+            // service.setTransactionPerOperation(false);
+            // service.beginTransaction();
+
+            final String status = RefsetService.modifyRefsetDefinition(user, service, refset, refset.getDefinitionClauses());
+            // service.commit();
+
+            if (!status.startsWith("Error")) {
+                return new ResponseEntity<>("{\"refsetInternalId\": \"" + refsetInternalId + "\"}", HttpStatus.OK);
+            } else {
+
+                return new ResponseEntity<>("{\"error\": \"" + status + "\"}", HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+        finally {
+
+            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalId);
+        }
+
+    }
 
     /**
      * Get Workflow history for a refset.
@@ -904,6 +950,12 @@ public class RefsetController extends BaseController {
         }
 
         try (TerminologyService service = new TerminologyService()) {
+            
+            final Edition edition = service.findSingle("shortName:"+ codeSystem, Edition.class, null);
+            
+            if (edition == null) {
+                return new ResponseEntity<>("The code system '" + codeSystem + "' could not be found", HttpStatus.EXPECTATION_FAILED);
+            }
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -948,46 +1000,68 @@ public class RefsetController extends BaseController {
      *
      * @param versionDate the publication date of the refset in YYYY/mm/dd format
      * @param codeSystem a code system to limit the refset to
+     * @param publishType if value is 'localset' this will publish (non-snomed versioning) only local sets. If not supplied or any other value this will published everything other than local sets. 
      * @return the status of the operation
      * @throws Exception the exception
      */
     @PutMapping("/admin/completeAllRefsetPublications")
-    public @ResponseBody ResponseEntity<String> completeAllRefsetPublications(@RequestParam(required = true) final String versionDate, @RequestParam(required = true) final String codeSystem)
-        throws Exception {
+    public @ResponseBody ResponseEntity<String> completeAllRefsetPublications(@RequestParam(required = true) final String versionDate, @RequestParam(required = true) final String codeSystem,
+            @RequestParam(required = false) final String publishType) throws Exception {
 
         final User user = SecurityService.getUserFromSession();
+        String typeToPublish = "regular";
         
-        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
-            return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
-        }
-
         if (StringUtility.isEmpty(codeSystem)) {
-
             throw new Exception("A Code System must be specified.");
         }
-
+        
         try (TerminologyService service = new TerminologyService()) {
+            
+            final Edition edition = service.findSingle("shortName:"+ codeSystem, Edition.class, null);
+            
+            if (edition == null) {
+                return new ResponseEntity<>("The code system '" + codeSystem + "' could not be found", HttpStatus.EXPECTATION_FAILED);
+            }
+            
+            if (!StringUtility.isEmpty(publishType) && publishType.equals("localset")) {
+                
+                typeToPublish = "localset";
+                
+                if (!user.checkPermission(User.ROLE_ADMIN, edition, null)) {
+                    return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+                }
+            } else {
+                
+                if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+                    return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+                }
+            }
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            logger.debug("completeAllRefsetPublications: versionDate: " + versionDate + " ; editionShortName (codeSystem): " + codeSystem);
+            logger.debug("completeAllRefsetPublications: versionDate: " + versionDate + " ; editionShortName (codeSystem): " + codeSystem + " ; typeToPublish: " + typeToPublish);
 
-            final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, codeSystem);
+            final List<String> refsetsNotUpdated = WorkflowService.completeAllRefsetPublications(service, versionDate, codeSystem, typeToPublish);
             String error = "";
+            String messageType = "";
+            
+            if (typeToPublish.equals("localset")) {
+                messageType = "local ";
+            }
 
             service.commit();
 
             // see if there are any refsets that were unable to be updated and craft the error message
             if (refsetsNotUpdated.size() > 0) {
 
-                error = "Unable to complete publication for refsets in code system " + codeSystem + ": ";
+                error = "Unable to complete publication for " + messageType + "reference sets in code system " + codeSystem + ": ";
 
-                for (final String unremovedConcept : refsetsNotUpdated) {
+                for (final String refsetNotUpdated : refsetsNotUpdated) {
 
-                    error += unremovedConcept + ", ";
+                    error += refsetNotUpdated + ", ";
                 }
 
                 error = StringUtils.removeEnd(error, ", ");
@@ -995,12 +1069,66 @@ public class RefsetController extends BaseController {
 
             if (error.equals("")) {
 
-                String message = "All refset publications completed in code system " + codeSystem;
+                String message = "All " + messageType + "reference set publications completed in code system " + codeSystem;
                 return new ResponseEntity<>("{\"status\": \"" + message + ".\"}", HttpStatus.OK);
 
             } else {
 
                 return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
+            }
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
+    
+    /**
+     * Publish a Ready for Publication local refsets in a code system.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param versionDate the publication date of the refset in YYYY/mm/dd format
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    @PutMapping("/admin/refset/{refsetInternalId}/publishLocalset")
+    public @ResponseBody ResponseEntity<String> publishLocalsetRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = true) final String versionDate) throws Exception {
+
+        final User user = SecurityService.getUserFromSession();
+        
+        
+        try (TerminologyService service = new TerminologyService()) {
+            
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            
+            if (!user.checkPermission(User.ROLE_ADMIN, refset.getEdition(), refset.getProject().getCrowdProjectId())) {
+                return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+            }
+
+            logger.debug("publishLocalsetRefset: refsetInternalId: " + refsetInternalId + " ; versionDate: " + versionDate);
+
+            final List<String> refsetsNotUpdated = WorkflowService.completeRefsetPublication(service, refset, versionDate);
+            String error = "";
+            
+            // see if there are any refsets that were unable to be updated and craft the error message
+            if (refsetsNotUpdated.size() > 0) {
+                error = "Unable to complete publication for local reference set " + refset.getRefsetId();
+            }
+
+            if (error.equals("")) {
+                
+                final Refset newVersionRefset = RefsetService.getLatestRefsetVersion(service, refset.getRefsetId());
+
+                String message = "Publication completed for local reference set " + refset.getRefsetId();
+                return new ResponseEntity<>(ModelUtility.toJson(newVersionRefset), HttpStatus.OK);
+
+            } else {
+
+                return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
         } catch (final Exception e) {
@@ -1105,29 +1233,26 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Inactivate a refset.
+     * Change a refset status.
      *
      * @param refsetInternalId the internal refset ID
      * @return the status of the operation
      * @throws Exception the exception
      */
-    @DeleteMapping("/refset/{refsetInternalId}")
-    public @ResponseBody ResponseEntity<String> inactiveRefset(final @PathVariable String refsetInternalId) throws Exception {
+    @PutMapping("/refset/{refsetInternalId}/refsetStatus")
+    public @ResponseBody ResponseEntity<String> updateRefsetStatus(final @PathVariable String refsetInternalId, final boolean active) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            // logger.debug("inactiveRefset: refsetInternalId: " + refsetInternalId);
+            // logger.debug("updateRefsetStatus: refsetInternalId: " + refsetInternalId + " ; active: " + active);
             User user = SecurityService.getUserFromSession();
             
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
-            // service.setTransactionPerOperation(false);
-            // service.beginTransaction();
 
-            final String status = RefsetService.inactivateRefset(service, user, refset);
-            // service.commit();
+            final String status = RefsetService.updatedRefsetStatus(service, user, refset, active);
 
             return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
@@ -2247,55 +2372,66 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        try (final TerminologyService service = new TerminologyService()) {
+        final Thread t = new Thread(new Runnable() {
 
-            service.setModifiedBy(user.getUserName());
-            service.setModifiedFlag(true);
-            
-            String status = "";
-            
-            final String[] refsetInternalIdArray = refsetInternalIds.split(",");
-            boolean isBatch = false;
-            
-            if (refsetInternalIdArray.length > 1) {
-                
-                isBatch = true;
-                RefsetMemberService.refsetsBeingUpdated.add(refsetInternalIds);
-                logger.debug("compileUpgradeData: Batch upgrade started with refsetInternalIds: " + refsetInternalIds);
-            }
-            
-            for (final String internalId : refsetInternalIdArray) {
-                
-                RefsetMemberService.refsetsBeingUpdated.add(internalId);
-                logger.debug("compileUpgradeData: individual refsetInternalId: " + internalId);
+			@Override
+			public void run() {
+		        try (final TerminologyService service = new TerminologyService()) {
 
-                try {
-                    
-                    // add the list of concepts as members to the refset
-                    status = RefsetMemberService.compileUpgradeData(service, user, internalId);
-                    
-                } finally {
-                    RefsetMemberService.refsetsBeingUpdated.remove(internalId);
-                }
+		            service.setModifiedBy(user.getUserName());
+		            service.setModifiedFlag(true);
+		            
+		            String status = "";
+		            
+		            final String[] refsetInternalIdArray = refsetInternalIds.split(",");
+		            boolean isBatch = false;
+		            
+		            if (refsetInternalIdArray.length > 1) {
+		                
+		                isBatch = true;
+		                RefsetMemberService.refsetsBeingUpdated.add(refsetInternalIds);
+		                logger.debug("compileUpgradeData: Batch upgrade started with refsetInternalIds: " + refsetInternalIds);
+		            }
+		            
+		            for (final String internalId : refsetInternalIdArray) {
+		                
+		                RefsetMemberService.refsetsBeingUpdated.add(internalId);
+		                logger.debug("compileUpgradeData: individual refsetInternalId: " + internalId);
 
-                logger.debug("compileUpgradeData: individual refsetInternalId " + internalId + " finished with status " + status);
-            }
+		                try {
+		                    
+		                    // add the list of concepts as members to the refset
+		                    status = RefsetMemberService.compileUpgradeData(service, user, internalId);
+		                    
+		                } finally {
+		                    RefsetMemberService.refsetsBeingUpdated.remove(internalId);
+		                }
 
-            if (isBatch) {
-                logger.debug("compileUpgradeData: Batch upgrade finished");
-            }
+		                logger.debug("compileUpgradeData: individual refsetInternalId " + internalId + " finished with status " + status);
+		            }
 
-            return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
+		            if (isBatch) {
+		                logger.debug("compileUpgradeData: Batch upgrade finished");
+		            }
 
-        } catch (final Exception e) {
 
-            return handleException(e);
-        }
+		        } catch (Exception e) {
+		        	try {
+						handleException(e);
+					} catch (Exception e1) {
+						// n/a - in thread
+					}
+		        }
 
-        finally {
+		        finally {
 
-            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalIds);
-        }
+		            RefsetMemberService.refsetsBeingUpdated.remove(refsetInternalIds);
+		        }
+				
+			}});
+        t.start();
+        return new ResponseEntity<>("{\"status\": \"started\"}", HttpStatus.OK);
+
 
     }
 

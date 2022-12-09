@@ -513,12 +513,18 @@ public class AuditEntryHelper {
      * @param refset the refset
      * @return the audit entry
      */
-    public static AuditEntry inactivateRefsetEntry(final Refset refset) {
+    public static AuditEntry changeRefsetStatusEntry(final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.REFSET.toString());
         entry.setEntityId(refset.getId());
-        entry.setMessage("INACTIVATE Refset");
+        
+        if (refset.isActive()) {
+            entry.setMessage("REACTIVATE Refset");
+        } else {
+            entry.setMessage("INACTIVATE Refset");
+        }
+        
         entry.setDetails(refset.getName());
         log(entry);
         return entry;

@@ -56,10 +56,6 @@ public class SyncUtilities {
 
     private static final SyncStatistics statistics = new SyncStatistics();
 
-    private static final String DEFAULT_SNOMED_CORE_MODULE = "900000000000445007";
-
-    private static final String ANCESTOR_MODULE = "900000000000443000";
-
     private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
     private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
@@ -340,21 +336,26 @@ public class SyncUtilities {
 
     }
 
-    public Set<String> identifyModules (String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
+    public Set<String> identifyModules(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
 
         Set<String> editionModules = new HashSet<>();
 
         if (isInternationalEdition(editionName)) {
 
             Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
-            while( moduleIterator.hasNext()) {
+
+            while (moduleIterator.hasNext()) {
+
                 JsonNode module = moduleIterator.next();
+
                 if (module.get("active").asBoolean()) {
+
                     internationalModules.add(module.get("conceptId").asText());
                     editionModules.add(module.get("conceptId").asText());
                 }
+
             }
-            
+
         } else {
 
             Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
@@ -374,15 +375,24 @@ public class SyncUtilities {
 
             if (editionModules.isEmpty()) {
 
-                // All non-core code systems must have a non-core module.
-                throw new Exception("Did not find any modules for code system " + editionName);
+                if (isDeveloperEdition(editionName)) {
+
+                    editionModules.addAll(internationalModules);
+                } else {
+
+                    // All non-core code systems must have a non-core module.
+                    throw new Exception("Did not find any modules for code system " + editionName);
+
+                }
 
             }
+
         }
 
         editionModulesMap.put(shortName, editionModules);
 
         return editionModules;
+
     }
 
     public String identifyDefaultLanguageCode(JsonNode codeSystem, String editionName) throws Exception {
