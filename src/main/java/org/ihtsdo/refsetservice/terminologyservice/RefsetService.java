@@ -178,28 +178,6 @@ public class RefsetService {
 
         edition = project.getEdition();
 
-        if (refsetEditParameters.getType().equals(Refset.INTENSIONAL)) {
-
-            try {
-
-                String ecl = getEclFromDefinition(refsetEditParameters.getDefinitionClauses());
-
-                // get the list of concepts from the ECL
-                conceptIdList = RefsetMemberService.getConceptIdsFromEcl(edition.getBranch(), ecl);
-
-                // if there are no concepts in the definition then stop the creation
-                if (conceptIdList.size() == 0) {
-
-                    return "Error - Definition returns no concepts.";
-                }
-
-            } catch (Exception e) {
-
-                return "Error - Invalid ECL Definition";
-            }
-
-        }
-
         // if a new refset concept needs to be created get the ID to use
         if (refsetConceptId == null) {
 
@@ -324,6 +302,27 @@ public class RefsetService {
         RefsetMemberService.refsetsUpdatedMembers.put(newInternalRefsetId, new HashMap<>());
 
         if (refset.getType().equals(Refset.INTENSIONAL)) {
+
+            refset.setBranchPath(getBranchPath(refset));
+            
+            try {
+
+                String ecl = getEclFromDefinition(refsetEditParameters.getDefinitionClauses());
+
+                // get the list of concepts from the ECL
+                conceptIdList = RefsetMemberService.getConceptIdsFromEcl(refset.getBranchPath(), ecl);
+
+                // if there are no concepts in the definition then stop the creation
+                if (conceptIdList.size() == 0) {
+
+                    return "Error - Definition returns no concepts.";
+                }
+
+            } catch (Exception e) {
+
+                return "Error - Invalid ECL Definition";
+            }
+
 
             // add the list of concepts as members to the refset
             final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdList);

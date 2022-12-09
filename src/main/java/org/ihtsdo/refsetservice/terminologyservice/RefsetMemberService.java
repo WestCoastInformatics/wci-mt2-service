@@ -2275,6 +2275,8 @@ public class RefsetMemberService {
         final ObjectMapper mapper = new ObjectMapper();
         final String encodedCaret = "%5E";
         final String encodedSpace = "%20";
+        final String encodedLeftBrace = "%7B";
+        final String encodedRightBrace = "%7D";
         boolean searchOnlyRefsetMembers = false;
         boolean limitToNonMembers = false;
         int limit = ELASTICSEARCH_MAX_RECORD_LENGTH - 1;
@@ -2323,6 +2325,11 @@ public class RefsetMemberService {
             }
 
         }
+        
+        final String membersEcl = encodedCaret + refset.getRefsetId();
+        final String activeConceptsEcl = encodedLeftBrace + encodedLeftBrace + "C" + encodedSpace + "active=1" + encodedRightBrace + encodedRightBrace;
+        final String inactiveConceptsEcl = encodedLeftBrace + encodedLeftBrace + "C" + encodedSpace + "active=0" + encodedRightBrace + encodedRightBrace;
+        final String activeAndInactiveMembersEcl = "(" + membersEcl + encodedSpace + activeConceptsEcl + encodedSpace + "OR" + encodedSpace + membersEcl + encodedSpace + inactiveConceptsEcl + ")";
 
         // set the appropriate way to search
         if (!searchEcl) {
@@ -2331,16 +2338,16 @@ public class RefsetMemberService {
 
             if (searchOnlyRefsetMembers) {
 
-                url += "&ecl=" + encodedCaret + refset.getRefsetId();
+                url += "&ecl=" + membersEcl;
             }
 
         } else {
 
-            url += "&ecl=" + StringUtility.encodeValue("(" + searchParameters.getQuery() + ")");
+            url += "&ecl=" + StringUtility.encodeValue(searchParameters.getQuery());
 
             if (searchOnlyRefsetMembers) {
 
-                url += encodedSpace + "AND" + encodedSpace + encodedCaret + refset.getRefsetId();
+                url += encodedSpace + "AND" + encodedSpace + "(" + membersEcl + ")";
             }
 
         }
@@ -2449,6 +2456,7 @@ public class RefsetMemberService {
 
                 logger.error("searchConcepts Could not retrieve concepts matching term: " + ex.getMessage());
                 ex.printStackTrace();
+                break;
             }
 
         }
