@@ -467,6 +467,7 @@ public class OrganizationService extends BaseService {
 
         organization.getMembers().add(userToAdd);
         service.add(AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd));
+
         service.update(organization);
 
         final Edition edition = EditionService.getEditionForOrganization(organizationId);
@@ -788,6 +789,8 @@ public class OrganizationService extends BaseService {
             if (requesterUser == null) {
                 logger.error("Requester not found: {}", requesterId);
             }
+            service.setModifiedBy(requesterUser.getUserName());
+
             logger.info("Requester is: {}", requesterUser);
             final Organization organization = getOrganization(service, requesterUser, organizationId, true);
 

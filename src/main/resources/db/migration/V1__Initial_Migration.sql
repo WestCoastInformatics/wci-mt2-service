@@ -101,7 +101,6 @@ CREATE TABLE `refsets` (
   `moduleId` varchar(256) NOT NULL,
   `editBranchId` varchar(256),
   `refsetBranchId` varchar(256),
-  `localsetVersionBranch` varchar(256),
   `localsetVersionName` varchar(256),
   `name` varchar(4000) NOT NULL,
   `narrative` longtext,

@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -127,8 +128,8 @@ public final class WorkflowService {
     /** The FAILS_RVF workflow action . */
     public static final String FAILS_RVF = "FAILS_RVF";
 
-    /** The REFSET_PUBLISHED workflow action . */
-    public static final String REFSET_PUBLISHED = "REFSET_PUBLISHED";
+    /** The PUBLISH_REFSET workflow action . */
+    public static final String PUBLISH_REFSET = "PUBLISH_REFSET";
 
     /** The order of workflow steps . */
     public static final List<String> WORKFLOW_STATUSES =
@@ -136,7 +137,7 @@ public final class WorkflowService {
 
     /** The order of workflow actions . */
     public static final List<String> WORKFLOW_ACTIONS = new ArrayList<>(Arrays.asList(EDIT, CANCEL_EDIT, FINISH_EDIT, UPGRADE, CANCEL_UPGRADE, FINISH_UPGRADE, REQUEST_REVIEW, REVIEW, REJECT_REVIEW,
-        ACCEPT_REVIEW, UNASSIGN, REQUEST_PUBLICATION, FAILS_RVF, REFSET_PUBLISHED));
+        ACCEPT_REVIEW, UNASSIGN, REQUEST_PUBLICATION, FAILS_RVF));
 
     /** The file that contains workflow actions by user and step. */
     private static final String WORKFLOW_PERMUTATIONS_FILE_NAME = "workflow/workflowPermutationsToFinalAction.txt";
@@ -148,11 +149,6 @@ public final class WorkflowService {
 
         try {
 
-            // WORKFLOW_ACTIONS =
-            // FileUtility.readFileToArray(WORKFLOW_ACTIONS_FILE_NAME);
-            // WORKFLOW_STATUSES =
-            // FileUtility.readFileToArray(WORKFLOW_STATUSES_FILE_NAME);
-            //
             // read in the actions by user and step
             ClassPathResource workflowPermutationsResource = new ClassPathResource(WORKFLOW_PERMUTATIONS_FILE_NAME);
 
@@ -220,7 +216,7 @@ public final class WorkflowService {
         final ResultList<Refset> results = service.find(query, null, Refset.class, null);
         
         if (results.getItems().size() == 0) {
-            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "There are no refsets in " + editionShortName + " that are ready to be published");
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "There are no Reference sets in " + editionShortName + " that are ready to be published");
         }
 
         // see if there is an "In Development" version as that should be the latest.
@@ -236,13 +232,13 @@ public final class WorkflowService {
     
                 if (!merged) {
     
-                    final String message = "Unable to merge refset into project branch for refset " + refset.getRefsetId() + " because the project branch doesn't exist.";
+                    final String message = "Unable to merge Reference set into project branch for refset " + refset.getRefsetId() + " because the project branch doesn't exist.";
                     logger.error(message);
                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message);
                 }
             } catch (Exception e) {
                 
-                logger.error("Unable to merge refset into project branch for refset " + refset.getRefsetId() + " because: " + e.getMessage(), e);
+                logger.error("Unable to merge refset into project branch for Reference set " + refset.getRefsetId() + " because: " + e.getMessage(), e);
                 refsetsNotUpdated.add(refset.getRefsetId());
             }
         }
@@ -269,7 +265,7 @@ public final class WorkflowService {
         if (publishType.equals("localset")) {
             
             query += " AND localSet: true";
-            messageType = "localset ";
+            messageType = "local ";
         } else {
             query += " AND localSet: false";
         }
@@ -277,7 +273,7 @@ public final class WorkflowService {
         final ResultList<Refset> results = service.find(query, null, Refset.class, null);
         
         if (results.getItems().size() == 0) {
-            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "There are no " + messageType + "refsets in " + editionShortName + " that are ready to be published");
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "There are no " + messageType + "Reference sets in " + editionShortName + " that are ready to be published");
         }
 
         // see if there is an "In Development" version as that should be the latest.
@@ -295,7 +291,7 @@ public final class WorkflowService {
      * @param service the Terminology Service
      * @param refset the refset
      * @param versionDate the publication date of the refset in YYYY/mm/dd format
-     * @return A list of concepts that were unable to have publication completed
+     * @return A list of refsets that were unable to have publication completed
      * @throws Exception the exception
      */
     public static List<String> completeRefsetPublication(final TerminologyService service, final Refset refset, final String versionDate) throws Exception {
@@ -305,13 +301,19 @@ public final class WorkflowService {
         try {
 
             if (!refset.getWorkflowStatus().equals(READY_FOR_PUBLICATION)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Refset is not in the proper status to have publication completed " + refset.getRefsetId());
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reference set is not in the proper status to have publication completed " + refset.getRefsetId());
             }
+            
+            Refset oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestPublishedVersion: true", Refset.class, null);
 
             if (refset.isLocalSet()) {
-                logger.debug("Publication (non-snomed versioning) of localset refset: " + refset.getRefsetId());
+                
+                final String refsetBranchPath = RefsetService.getBranchPath(refset);
+                final String topLevelRefsetBranchPath = getLocalsetTopLevelRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
+                mergeBranch(refsetBranchPath, topLevelRefsetBranchPath, "Promoting versioned local set", false);
+                logger.info("Publication (non-snomed versioning) of localset refset: " + refset.getRefsetId());
             } else {
-                logger.debug("Publication of refset: " + refset.getRefsetId());
+                logger.info("Publication of refset: " + refset.getRefsetId());
             }
 
             refset.setVersionDate(RefsetService.getRefsetDateFromFormattedString(versionDate));
@@ -323,11 +325,8 @@ public final class WorkflowService {
             service.add(AuditEntryHelper.completeRefsetPublicationEntry(refset));
 
             if (!refset.getWorkflowStatus().equals(PUBLISHED)) {
-
-                throw new Exception("Refset was not able to have publication completed " + refset.getId());
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Reference set was not able to have publication completed " + refset.getId());
             }
-
-            Refset oldLatestVersionRefset = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestPublishedVersion: true", Refset.class, null);
 
             if (oldLatestVersionRefset != null) {
 
@@ -339,7 +338,7 @@ public final class WorkflowService {
 
         } catch (Exception e) {
 
-            logger.error("Completing Refset Publication failed: " + e.getMessage());
+            logger.error("Completing Reference set Publication failed: " + e.getMessage());
             logger.debug("", e);
             refsetsNotUpdated.add(refset.getRefsetId());
         }
@@ -498,7 +497,16 @@ public final class WorkflowService {
             String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getRefsetBranchId(), refset.isLocalSet());
 
             mergeBranch(refset.getEditionBranch(), projectBranchPath, "Updating branch to latest changes", true);
-            mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
+            
+            if (refset.isLocalSet()) {
+                
+                final String topLevelRefsetBranchPath = getLocalsetTopLevelRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
+                mergeBranch(projectBranchPath, topLevelRefsetBranchPath, "Updating branch to latest changes", true);
+                mergeBranch(topLevelRefsetBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
+            } else {
+                mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
+            }
+            
             createEditBranch(service, user, refset, branchId);
         }
 
@@ -799,12 +807,47 @@ public final class WorkflowService {
         String branchPath = getProjectBranchPath(editionBranchPath) + "/";
         
         if (localset) {
-            branchPath += REFSET_BRANCH_PREFIX + refsetId + "/";
+            branchPath += getLocalsetRefsetTopLevelBranchName(refsetId) + "/";
         }
         
-        branchPath += REFSET_BRANCH_PREFIX + refsetId + "-" + branchId;
+        branchPath += getRefsetBranchName(refsetId, branchId);
         
         return branchPath;
+    }
+    
+    /**
+     * Get the top level refset branch path for a localset refset.
+     *
+     * @param editionBranchPath the branch path of the edition the refset belongs to
+     * @param refsetId the refset ID
+     * @return the branch path of the refset branch
+     * @throws Exception the exception
+     */
+    public static String getLocalsetTopLevelRefsetBranchPath(final String editionBranchPath, final String refsetId) throws Exception {
+        return getProjectBranchPath(editionBranchPath) + "/" + getLocalsetRefsetTopLevelBranchName(refsetId);
+    }
+    
+    /**
+     * Get the refset branch name for a refset.
+     *
+     * @param refsetId the refset ID
+     * @param branchId the ID for the refset branch
+     * @return the branch path of the refset branch
+     * @throws Exception the exception
+     */
+    public static String getRefsetBranchName(final String refsetId, final String branchId) throws Exception {
+        return REFSET_BRANCH_PREFIX + refsetId + "-" + branchId;
+    }
+    
+    /**
+     * Get the top level refset branch name for a localset refset.
+     *
+     * @param refsetId the refset ID
+     * @return the branch path of the refset branch
+     * @throws Exception the exception
+     */
+    public static String getLocalsetRefsetTopLevelBranchName(final String refsetId) throws Exception {
+        return REFSET_BRANCH_PREFIX + refsetId;
     }
 
     /**
@@ -819,13 +862,13 @@ public final class WorkflowService {
      */
     public static String createRefsetBranch(final String editionBranchPath, final String refsetId, final String branchId, final boolean localset) throws Exception {
 
-        final String branchName = REFSET_BRANCH_PREFIX + refsetId + "-" + branchId;
         final String projectBranchPath = getProjectBranchPath(editionBranchPath);
         
         if (localset) {
-            createLocalsetRefsetBranch(editionBranchPath, refsetId);
+            return createLocalsetRefsetBranch(editionBranchPath, projectBranchPath, refsetId, branchId);
         }
         
+        final String branchName = getRefsetBranchName(refsetId, branchId);
         String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId, branchId, localset);
 
         if (doesBranchExist(refsetBranchPath)) {
@@ -850,28 +893,37 @@ public final class WorkflowService {
      * @return the branch path of the new refset branch
      * @throws Exception the exception
      */
-    public static String createLocalsetRefsetBranch(final String editionBranchPath, final String refsetId) throws Exception {
+    public static String createLocalsetRefsetBranch(final String editionBranchPath, final String projectBranchPath, final String refsetId, final String branchId) throws Exception {
 
-        final String branchName = REFSET_BRANCH_PREFIX + refsetId;
-        final String projectBranchPath = getProjectBranchPath(editionBranchPath);
-        String refsetBranchPath = projectBranchPath + "/" + branchName;
+        final String topLevelBranchName = getLocalsetRefsetTopLevelBranchName(refsetId);
+        String topLevelRefsetBranchPath = projectBranchPath + "/" + topLevelBranchName;
+
+        if (doesBranchExist(topLevelRefsetBranchPath)) {
+            mergeBranch(projectBranchPath, topLevelRefsetBranchPath, "Updating branch to latest changes", true);
+        } else {
+
+            createProjectBranch(editionBranchPath);
+            topLevelRefsetBranchPath = createBranch(projectBranchPath, topLevelBranchName);
+        }
+        
+        final String refsetBranchName = getRefsetBranchName(refsetId, branchId);
+        String refsetBranchPath = getRefsetBranchPath(editionBranchPath, refsetId, branchId, true);
 
         if (doesBranchExist(refsetBranchPath)) {
 
-            mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
+            mergeBranch(topLevelRefsetBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
             return refsetBranchPath;
 
         } else {
 
             createProjectBranch(editionBranchPath);
-            refsetBranchPath = createBranch(projectBranchPath, branchName);
+            refsetBranchPath = createBranch(topLevelRefsetBranchPath, refsetBranchName);
             return refsetBranchPath;
         }
-
     }
 
     /**
-     * Merge the refset branch into the project branch.
+     * Merge the refset branch into the project branch. Never for localsets
      *
      * @param editionBranchPath the branch path of the edition the refset belongs to
      * @param refsetId the refset ID
@@ -1513,6 +1565,12 @@ public final class WorkflowService {
                     allowedActions.add(FINISH_UPGRADE);
                 }
 
+                // only the assigned user can upgrade
+                if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
+                    allowedActions.add(CANCEL_UPGRADE);
+                    allowedActions.add(FINISH_UPGRADE);
+                }
+
             }
 
             else if (currentStatus.equals(READY_FOR_REVIEW)) {
@@ -1561,6 +1619,10 @@ public final class WorkflowService {
                 if (user.doesUserHavePermission(User.ROLE_AUTHOR, project) || user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
 
                     allowedActions.add(FAILS_RVF);
+                }
+                
+                if (refset.isLocalSet() && user.checkPermission(User.ROLE_ADMIN, refset.getEdition(), null)) {
+                    allowedActions.add(PUBLISH_REFSET);
                 }
 
             }

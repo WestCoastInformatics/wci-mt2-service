@@ -314,9 +314,8 @@ public class ProjectService extends BaseService {
 
                     if (refset != null && !projRefsets.getItems().isEmpty()) {
 
-                        refset.setActive(false);
-                        service.update(refset);
-                        service.add(AuditEntryHelper.inactivateRefsetEntry(refset));
+                        refset.setBranchPath(RefsetService.getBranchPath(refset));
+                        RefsetService.updatedRefsetStatus(service, user, refset, false);
                     }
 
                 }
