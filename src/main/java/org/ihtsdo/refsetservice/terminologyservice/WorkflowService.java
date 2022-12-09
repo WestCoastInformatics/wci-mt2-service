@@ -507,6 +507,8 @@ public final class WorkflowService {
                 mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
             }
             
+            RefsetService.setRefsetMemberCount(service, refset, true);
+            
             createEditBranch(service, user, refset, branchId);
         }
 
@@ -1305,14 +1307,18 @@ public final class WorkflowService {
                     
                 } else {
                     
-                    if (!rebase) {
+                    if (rebase) {
+                        
+                        // in a rebase that has changes clear all the caches for the target branch
+                        RefsetService.clearAllRefsetCaches(targetBranchPath);
+                        RefsetMemberService.clearAllMemberCaches(targetBranchPath);
+                    } else {
                         
                         try {
 
                             logger.debug("Merge promotion sleep 1000ms to let snowstorm caches update.");
                             Thread.sleep(500);
                         } catch (InterruptedException ex) {
-
                             Thread.currentThread().interrupt();
                         }
                     }

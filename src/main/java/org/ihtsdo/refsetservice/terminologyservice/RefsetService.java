@@ -178,28 +178,6 @@ public class RefsetService {
 
         edition = project.getEdition();
 
-        if (refsetEditParameters.getType().equals(Refset.INTENSIONAL)) {
-
-            try {
-
-                String ecl = getEclFromDefinition(refsetEditParameters.getDefinitionClauses());
-
-                // get the list of concepts from the ECL
-                conceptIdList = RefsetMemberService.getConceptIdsFromEcl(edition.getBranch(), ecl);
-
-                // if there are no concepts in the definition then stop the creation
-                if (conceptIdList.size() == 0) {
-
-                    return "Error - Definition returns no concepts.";
-                }
-
-            } catch (Exception e) {
-
-                return "Error - Invalid ECL Definition";
-            }
-
-        }
-
         // if a new refset concept needs to be created get the ID to use
         if (refsetConceptId == null) {
 
@@ -324,6 +302,27 @@ public class RefsetService {
         RefsetMemberService.refsetsUpdatedMembers.put(newInternalRefsetId, new HashMap<>());
 
         if (refset.getType().equals(Refset.INTENSIONAL)) {
+
+            refset.setBranchPath(getBranchPath(refset));
+            
+            try {
+
+                String ecl = getEclFromDefinition(refsetEditParameters.getDefinitionClauses());
+
+                // get the list of concepts from the ECL
+                conceptIdList = RefsetMemberService.getConceptIdsFromEcl(refset.getBranchPath(), ecl);
+
+                // if there are no concepts in the definition then stop the creation
+                if (conceptIdList.size() == 0) {
+
+                    return "Error - Definition returns no concepts.";
+                }
+
+            } catch (Exception e) {
+
+                return "Error - Invalid ECL Definition";
+            }
+
 
             // add the list of concepts as members to the refset
             final List<String> unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdList);
@@ -1236,12 +1235,13 @@ public class RefsetService {
      *
      * @param service the Terminology Service
      * @param refset the refset
+     * @param force should the recount be forced
      * @return the if the refset needed the count set
      * @throws Exception the exception
      */
-    public static boolean setRefsetMemberCount(final TerminologyService service, final Refset refset) throws Exception {
+    public static boolean setRefsetMemberCount(final TerminologyService service, final Refset refset, final boolean force) throws Exception {
 
-        if (refset.getMemberCount() == -1) {
+        if (refset.getMemberCount() == -1 || force) {
 
             logger.debug("setRefsetMemberCount Setting the member count for refset: " + refset.getId());
             refset.setMemberCount(RefsetMemberService.getMemberCount(refset));
@@ -1334,7 +1334,7 @@ public class RefsetService {
         setRefsetPermissions(user, refset);
         refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
         refset.setBranchPath(getBranchPath(refset));
-        setRefsetMemberCount(service, refset);
+        setRefsetMemberCount(service, refset, false);
         
         final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
         String versionDate = null;
