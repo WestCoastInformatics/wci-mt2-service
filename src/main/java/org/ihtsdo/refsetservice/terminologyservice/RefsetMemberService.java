@@ -667,6 +667,8 @@ public class RefsetMemberService {
 
         String url = SnowstormConnection.BASE_URL + "multisearch/descriptions?active=true&offset=0&limit=10000" + "&ecl=" + StringUtility.encodeValue(ecl) + "&term="
             + StringUtility.encodeValue(snowstormQuery);
+        
+        logger.debug("searchMultisearchDescriptions: Search Refset Concepts descriptions URL: " + url);
 
         try (Response response = SnowstormConnection.getResponse(url)) {
 
@@ -738,7 +740,7 @@ public class RefsetMemberService {
                 final SearchParameters searchParameters = new SearchParameters();
                 final String versionDate = simpleDateFormat.format(o[1]);
                 searchParameters.setQuery("refsetId:" + o[0].toString() + " AND versionDate:" + versionDate + " AND versionStatus:PUBLISHED");
-                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false);
+                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false, true);
 
                 if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
 
