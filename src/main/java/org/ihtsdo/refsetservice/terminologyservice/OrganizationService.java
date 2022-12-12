@@ -444,13 +444,22 @@ public class OrganizationService extends BaseService {
      */
     public static void addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final String email) throws Exception {
 
-        final User userToAdd = service.findSingle("email:" + email, User.class, null);
+        User userToAdd = service.findSingle("email:" + email, User.class, null);
 
         if (userToAdd == null) {
 
-            final String message = "Unable to find user for email " + email + ".";
-            logger.error(message);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+            //find user in crowd
+            final User user = CrowdAPIClient.findUserByEmail(email);
+            service.add(user);
+            service.update(user);
+            
+            userToAdd = service.findSingle("email:" + email, User.class, null);
+            
+            if (userToAdd == null) {
+                final String message = "Unable to find user for email " + email + ".";
+                logger.error(message);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+            }
         }
 
         // must return members in order to add another member.
@@ -695,7 +704,7 @@ public class OrganizationService extends BaseService {
                 // Ensure not already members of the organization
                 if (organization.getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
                     throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: " + organization.getName());
-                }
+                }                
             }
 
             final String queryString = "requester=" + authUser.getId() + "&recipientEmail=" + URLEncoder.encode(recipientEmail, "UTF-8");
