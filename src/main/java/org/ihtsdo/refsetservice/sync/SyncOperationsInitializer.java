@@ -40,6 +40,8 @@ public class SyncOperationsInitializer {
 
     private static User superUser = null;
 
+    private static User rdaAdmimUser = null;
+
     private static final Set<String> allRoles = new HashSet<>();
 
     private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
@@ -47,6 +49,8 @@ public class SyncOperationsInitializer {
     private static final String WCI_TESTING_REFSET_NAME = "Default Single WCI Testing Refset";
 
     private static final String SUPER_USER_NAME = "refset-dev";
+
+    private static final String RDA_ADMIN_NAME = "Rory Davidson";
 
     private static final Set<User> adminUsers = new HashSet<>();
 
@@ -78,9 +82,11 @@ public class SyncOperationsInitializer {
 
             developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
+            rdaAdmimUser = utilities.getUser(RDA_ADMIN_NAME, RDA_ADMIN_NAME, "rda@snomed.org", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
 
             adminUsers.add(developerTestingAdmin);
             adminUsers.add(superUser);
+            adminUsers.add(rdaAdmimUser);
 
             // For Feedback Refset
             feedbackInitiatiorUser = utilities.getUser("feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));

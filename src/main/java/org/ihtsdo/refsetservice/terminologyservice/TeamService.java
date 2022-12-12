@@ -332,7 +332,7 @@ public class TeamService extends BaseService {
             for (final Team team : results.getItems()) {
                 
                 // if only the user's teams should be returned then make sure the user is an admin or a member of the team
-                if (onlyUsersTeams && !canUserViewTeam(user, team, false) || (hideOrganizationTeams && isOrganizationTeam(team))) {
+                if ((onlyUsersTeams && !canUserViewTeam(user, team, false)) || (hideOrganizationTeams && isOrganizationTeam(team))) {
                     continue;
                 }
                 

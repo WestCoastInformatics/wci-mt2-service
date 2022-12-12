@@ -1358,20 +1358,25 @@ public class RefsetController extends BaseController {
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = "application/json")
-    public @ResponseBody ResponseEntity<ResultList<Refset>> searchRefsets(final SearchParameters searchParameters, final boolean searchConcepts, final boolean showInDevelopment,
+    public @ResponseBody ResponseEntity<ResultList<Refset>> searchRefsets(final SearchParameters searchParameters, final boolean searchConcepts, @RequestParam(required = false) final Boolean showInDevelopment,
         @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
         User user = SecurityService.getUserFromSession();
+        boolean includeInDevelopment = true;
+        
+        if (showInDevelopment != null && showInDevelopment == false) {
+            includeInDevelopment = false;
+        }
 
         try (TerminologyService service = new TerminologyService()) {
 
-            logger.debug("searchRefsets searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + showInDevelopment
+            logger.debug("searchRefsets searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + includeInDevelopment
                 + " ; countComments: " + countComments);
 
-            ResultList<Refset> results = RefsetService.searchRefsets(user, service, searchParameters, searchConcepts, true, false);
+            ResultList<Refset> results = RefsetService.searchRefsets(user, service, searchParameters, searchConcepts, true, false, includeInDevelopment);
 
             if (countComments != null && countComments) {
 

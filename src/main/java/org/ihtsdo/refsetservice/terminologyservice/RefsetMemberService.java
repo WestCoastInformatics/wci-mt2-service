@@ -667,6 +667,8 @@ public class RefsetMemberService {
 
         String url = SnowstormConnection.BASE_URL + "multisearch/descriptions?active=true&offset=0&limit=10000" + "&ecl=" + StringUtility.encodeValue(ecl) + "&term="
             + StringUtility.encodeValue(snowstormQuery);
+        
+        logger.debug("searchMultisearchDescriptions: Search Refset Concepts descriptions URL: " + url);
 
         try (Response response = SnowstormConnection.getResponse(url)) {
 
@@ -738,7 +740,7 @@ public class RefsetMemberService {
                 final SearchParameters searchParameters = new SearchParameters();
                 final String versionDate = simpleDateFormat.format(o[1]);
                 searchParameters.setQuery("refsetId:" + o[0].toString() + " AND versionDate:" + versionDate + " AND versionStatus:PUBLISHED");
-                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false);
+                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false, true);
 
                 if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
 
@@ -5966,7 +5968,28 @@ public class RefsetMemberService {
             returnMap.put("memberOfRefset", "true");
             returnMap.put("definitionExceptionType", activeConcept.getDefinitionExceptionType());
             returnMap.put("hasChildren", "false"); // activeConcept.getHasChildren() + "");
-            final Map<String, String> preferedTermEnglish = activeConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
+            Map<String, String> preferedTermEnglish = null; //activeConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
+            
+            boolean foundDescription = false;
+            
+            for (final Map<String, String> description : activeConcept.getDescriptions()) {
+                
+                if (description == null) {
+                    continue;
+                }
+                
+                if (description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
+                    
+                    preferedTermEnglish = description;
+                    foundDescription = true;
+                    break;
+                }
+            }
+            
+            if (!foundDescription) {
+                logger.error("Could not get english description for concept ID: " + activeConceptId);
+            }
+            
             returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : activeConcept.getName().strip());
 
             // check to see if this member is also a member of the comparison refset
