@@ -450,6 +450,10 @@ public class OrganizationService extends BaseService {
 
             //find user in crowd
             final User user = CrowdAPIClient.findUserByEmail(email);
+            if (user == null) {
+                logger.error("Unable to find user for email " + email + ".");
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found in IMS. Please make sure you entered their email correctly. If the email address entered is correct, the user being added has never been added to IMS before. Instead of \"Add User\", click the \"Invite to Join\"");
+            }
             service.add(user);
             service.update(user);
             
