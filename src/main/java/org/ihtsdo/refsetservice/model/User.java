@@ -434,7 +434,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
             if (edition == null && projectCrowdId == null) {
                 editionName = "all";
             } else if (edition != null) {
-                editionName = CrowdGroupNameAlgorithm.getOrganizationString(edition.getShortName());
+                editionName = CrowdGroupNameAlgorithm.getEditionString(edition.getShortName());
             }           
 
             final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
