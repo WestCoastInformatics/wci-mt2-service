@@ -36,22 +36,22 @@ public class CrowdGroupNameAlgorithm {
     /**
      * Generate crowd group name.
      *
-     * @param organizationName the organization name
+     * @param editionName the edition name
      * @param projectName the project name
      * @param role the role
      * @param adminRole the admin role
      * @return the string
      * @throws Exception the exception
      */
-    public static String generateCrowdGroupName(final String organizationName, final String projectName, final String role, final boolean adminRole) throws Exception {
+    public static String generateCrowdGroupName(final String editionName, final String projectName, final String role, final boolean adminRole) throws Exception {
 
-        if (StringUtils.isAnyBlank(organizationName, projectName, role)) {
+        if (StringUtils.isAnyBlank(editionName, projectName, role)) {
             throw new Exception("Parameters cannot be empty or null");
         }
 
         final StringBuilder groupName = new StringBuilder();
         groupName.append("rt2-");
-        groupName.append(getOrganizationString(organizationName)).append("-");
+        groupName.append(getEditionString(editionName)).append("-");
 
         if (!adminRole) {
             groupName.append(getProjectString(projectName)).append("-");
@@ -67,21 +67,21 @@ public class CrowdGroupNameAlgorithm {
     /**
      * Builds the crowd group name.
      *
-     * @param organizationName the organization name
+     * @param editionName the edition name
      * @param crowdProjectId the crowd project id
      * @param role the role
      * @return the string
      * @throws Exception the exception
      */
-    public static String buildCrowdGroupName(final String organizationName, final String crowdProjectId, final String role) throws Exception {
+    public static String buildCrowdGroupName(final String editionName, final String crowdProjectId, final String role) throws Exception {
 
-        if (StringUtils.isAnyBlank(organizationName, crowdProjectId, role)) {
+        if (StringUtils.isAnyBlank(editionName, crowdProjectId, role)) {
             throw new Exception("Parameters cannot be empty or null");
         }
 
         final StringBuilder groupName = new StringBuilder();
         groupName.append("rt2-");
-        groupName.append(getOrganizationString(organizationName)).append("-");
+        groupName.append(getEditionString(editionName)).append("-");
         groupName.append(crowdProjectId).append("-");
         groupName.append(role.toLowerCase());
 
@@ -89,19 +89,19 @@ public class CrowdGroupNameAlgorithm {
     }
 
     /**
-     * Returns the organization string.
+     * Returns the edition string.
      *
-     * @param organizationName the organization name
+     * @param editionName the edition name
      * @return the organization string
      * @throws Exception the exception
      */
-    public static String getOrganizationString(final String organizationName) throws Exception {
+    public static String getEditionString(final String editionName) throws Exception {
 
-        if (StringUtils.isAnyBlank(organizationName)) {
-            throw new Exception("Organization name cannot be null or empty.");
+        if (StringUtils.isAnyBlank(editionName)) {
+            throw new Exception("Edition name cannot be null or empty.");
         }
 
-        return organizationName.replaceAll("[^a-zA-Z0-9]", "").toLowerCase().trim();
+        return editionName.replaceAll("[^a-zA-Z0-9]", "").toLowerCase().trim();
     }
 
     /**
