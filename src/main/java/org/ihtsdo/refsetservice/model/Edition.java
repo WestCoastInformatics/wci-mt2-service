@@ -393,8 +393,7 @@ public class Edition extends AbstractHasModified {
      *
      * @return the country
      */
-    @FullTextField(analyzer = "standard")
-    @GenericField(name = "shortNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getShortName() {
 
         return shortName;
