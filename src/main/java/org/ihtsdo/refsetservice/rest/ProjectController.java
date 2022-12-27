@@ -132,6 +132,46 @@ public class ProjectController extends BaseController {
         }
 
     }
+    
+    /**
+     * Returns the teams assigned to a project.
+     *
+     * @param projectId the project ID
+     * @return the project teams
+     * @throws Exception the exception
+     */
+
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Get the project for the specified ID", response = ResultList.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "projectId", value = "The ID of the project to return teams for.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/project/{projectId}/teams", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public @ResponseBody ResponseEntity getProjectTeams(@PathVariable(value = "projectId") final String projectId) throws Exception {
+
+        logger.info("Project: projectId: " + projectId);
+        final User authUser = SecurityService.getUserFromSession();
+
+        if (authUser == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
+        }
+
+        try {
+
+            final ResultList<Team> results = ProjectService.getProjectTeams(projectId);
+            return new ResponseEntity<>(results, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            return handleException(e);
+        }
+
+    }
 
     /**
      * Search Projects.

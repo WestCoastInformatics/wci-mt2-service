@@ -250,7 +250,7 @@ public final class WorkflowService {
      * Complete the publication of all Ready for Publication refsets.
      *
      * @param service the Terminology Service
-     * @param versionDate the publication date of the refset in YYYY/mm/dd format
+     * @param versionDate the publication date of the refset in yyyy-MM-dd format
      * @param editionShortName an code system to limit the refset to
      * @param publishType what type of refsets should this publish: regular, localset
      * @return A list of concepts that were unable to have publication completed
@@ -290,7 +290,7 @@ public final class WorkflowService {
      *
      * @param service the Terminology Service
      * @param refset the refset
-     * @param versionDate the publication date of the refset in YYYY/mm/dd format
+     * @param versionDate the publication date of the refset in yyyy-MM-dd format
      * @return A list of refsets that were unable to have publication completed
      * @throws Exception the exception
      */

@@ -155,6 +155,30 @@ public class ProjectService extends BaseService {
         }
 
     }
+    
+    /**
+     * Returns the team assigned to this project.
+     *
+     * @param projectId the project ID 
+     * @return the project teams
+     * @throws Exception the exception
+     */
+    public static ResultList<Team> getProjectTeams(final String projectId) throws Exception {
+
+        final Project project = getProject(projectId, false);
+        final ResultList<Team> teams = new ResultList<>();
+        
+        for (final String teamId : project.getTeams()) {
+
+            final Team team = TeamService.getTeam(teamId, true);
+            teams.getItems().add(team);
+        }
+        
+        teams.setTotal(teams.getItems().size());
+        teams.setTotalKnown(true);
+        
+        return teams;
+    }
 
     /**
      * Search Projects.
