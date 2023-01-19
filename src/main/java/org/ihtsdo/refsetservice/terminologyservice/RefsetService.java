@@ -162,6 +162,7 @@ public class RefsetService {
         Edition edition = null;
         Project project = null;
         List<String> conceptIdList = new ArrayList<>();
+        final String moduleId = refsetEditParameters.getModuleId();
 
         // get the edition and project for the new refset
         if (refsetConceptId != null && doesRefsetExist(refsetConceptId, null)) {
@@ -201,23 +202,23 @@ public class RefsetService {
 
             final ObjectNode descriptions = mapper.createObjectNode().set("descriptions",
                 mapper.createArrayNode()
-                    .add(mapper.createObjectNode().put("term", refsetEditParameters.getName()).put("typeId", "900000000000013009").put("caseSignificance", "CASE_INSENSITIVE").put("lang", "en")
+                    .add(mapper.createObjectNode().put("moduleId", moduleId).put("term", refsetEditParameters.getName()).put("typeId", "900000000000013009").put("caseSignificance", "CASE_INSENSITIVE").put("lang", "en")
                         .set("acceptabilityMap", mapper.createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED")))
-                    .add(mapper.createObjectNode().put("term", refsetEditParameters.getName() + " (foundation metadata concept)").put("typeId", "900000000000003001")
+                    .add(mapper.createObjectNode().put("moduleId", moduleId).put("term", refsetEditParameters.getName() + " (foundation metadata concept)").put("typeId", "900000000000003001")
                         .put("caseSignificance", "CASE_INSENSITIVE").put("lang", "en")
                         .set("acceptabilityMap", mapper.createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED"))));
 
             final ObjectNode relationships = mapper.createObjectNode().set("relationships",
                 mapper.createArrayNode()
-                    .add(mapper.createObjectNode().put("destinationId", parentConceptId).put("typeId", "116680003").put("groupId", 0).put("lang", "en").set("acceptabilityMap",
+                    .add(mapper.createObjectNode().put("moduleId", moduleId).put("destinationId", parentConceptId).put("typeId", "116680003").put("groupId", 0).put("lang", "en").set("acceptabilityMap",
                         mapper.createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED")))
                     .add(mapper.createObjectNode().put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)));
 
-            final ObjectNode classAxioms = mapper.createObjectNode().set("classAxioms", mapper.createArrayNode().add(mapper.createObjectNode().put("definitionStatusId", "900000000000074008")
-                .set("relationships", mapper.createArrayNode().add(mapper.createObjectNode().put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)))));
+            final ObjectNode classAxioms = mapper.createObjectNode().set("classAxioms", mapper.createArrayNode().add(mapper.createObjectNode().put("moduleId", moduleId).put("definitionStatusId", "900000000000074008")
+                .set("relationships", mapper.createArrayNode().add(mapper.createObjectNode().put("moduleId", moduleId).put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)))));
 
             final long start = System.currentTimeMillis();
-            final ObjectNode body = mapper.createObjectNode().put("conceptId", refsetConceptId).put("moduleId", "12345");
+            final ObjectNode body = mapper.createObjectNode().put("conceptId", refsetConceptId).put("moduleId", moduleId);
             body.setAll(relationships);
             body.setAll(classAxioms);
             body.setAll(descriptions);
@@ -1003,6 +1004,42 @@ public class RefsetService {
             
             logger.info("Changing Refset Concept Module ID from: " + refset.getModuleId() + " to: " + moduleId);
             memberBody.put("moduleId", moduleId);
+            
+         // loop thru the descriptions and set the moduleId
+            final Iterator<JsonNode> descriptionsIterator = memberBody.get("descriptions").iterator();
+
+            while (descriptionsIterator.hasNext()) {
+
+                final ObjectNode descriptionNode = (ObjectNode) descriptionsIterator.next();
+                descriptionNode.put("moduleId", moduleId);
+            }
+            
+            // loop thru the class axioms and set the moduleId
+            final Iterator<JsonNode> axiomIterator = memberBody.get("classAxioms").iterator();
+
+            while (axiomIterator.hasNext()) {
+
+                final ObjectNode axiomNode = (ObjectNode) axiomIterator.next();
+                axiomNode.put("moduleId", moduleId);
+                
+                // loop thru the axiom relationships and set the moduleId
+                final Iterator<JsonNode> relationshipsIterator = axiomNode.get("relationships").iterator();
+
+                while (relationshipsIterator.hasNext()) {
+
+                    final ObjectNode relationshipsNode = (ObjectNode) relationshipsIterator.next();
+                    relationshipsNode.put("moduleId", moduleId);
+                }
+            }
+
+            // loop thru the relationships and set the moduleId
+            final Iterator<JsonNode> relationshipsIterator = memberBody.get("relationships").iterator();
+
+            while (relationshipsIterator.hasNext()) {
+
+                final ObjectNode relationshipsNode = (ObjectNode) relationshipsIterator.next();
+                relationshipsNode.put("moduleId", moduleId);
+            }
         }
         
         logger.debug("updateRefsetConcept update concept URL body: " + memberBody.toString());

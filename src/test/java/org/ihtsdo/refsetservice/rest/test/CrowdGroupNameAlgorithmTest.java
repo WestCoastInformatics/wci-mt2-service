@@ -63,80 +63,80 @@ public class CrowdGroupNameAlgorithmTest {
      * @throws Exception the exception
      */
     @Test
-    public void testOrganization() throws Exception {
+    public void testEdition() throws Exception {
 
         String result = "";
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT");
         assertThat(result).isEqualTo("snomedct");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-AM");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-AM");
         assertThat(result).isEqualTo("snomedctam");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-AT");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-AT");
         assertThat(result).isEqualTo("snomedctat");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-BE");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-BE");
         assertThat(result).isEqualTo("snomedctbe");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-BEUPD");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-BEUPD");
         assertThat(result).isEqualTo("snomedctbeupd");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-CDE");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-CDE");
         assertThat(result).isEqualTo("snomedctcde");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-CH");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-CH");
         assertThat(result).isEqualTo("snomedctch");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-COMDE");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-COMDE");
         assertThat(result).isEqualTo("snomedctcomde");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-DK");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-DK");
         assertThat(result).isEqualTo("snomedctdk");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-EE");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-EE");
         assertThat(result).isEqualTo("snomedctee");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-ES");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-ES");
         assertThat(result).isEqualTo("snomedctes");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-IE");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-IE");
         assertThat(result).isEqualTo("snomedctie");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-KR");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-KR");
         assertThat(result).isEqualTo("snomedctkr");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-NO");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-NO");
         assertThat(result).isEqualTo("snomedctno");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-NZ");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-NZ");
         assertThat(result).isEqualTo("snomedctnz");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-SE");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-SE");
         assertThat(result).isEqualTo("snomedctse");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-TM");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-TM");
         assertThat(result).isEqualTo("snomedcttm");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-US");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-US");
         assertThat(result).isEqualTo("snomedctus");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-VN");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-VN");
         assertThat(result).isEqualTo("snomedctvn");
 
-        result = CrowdGroupNameAlgorithm.getOrganizationString("SNOMEDCT-WCI");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-WCI");
         assertThat(result).isEqualTo("snomedctwci");
 
         assertThrows(Exception.class, () -> {
-            CrowdGroupNameAlgorithm.getOrganizationString("");
+            CrowdGroupNameAlgorithm.getEditionString("");
         });
 
         assertThrows(Exception.class, () -> {
-            CrowdGroupNameAlgorithm.getOrganizationString(null);
+            CrowdGroupNameAlgorithm.getEditionString(null);
         });
 
         assertThrows(Exception.class, () -> {
-            CrowdGroupNameAlgorithm.getOrganizationString("    ");
+            CrowdGroupNameAlgorithm.getEditionString("    ");
         });
 
     }

@@ -11,6 +11,7 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +19,7 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
@@ -31,6 +33,7 @@ import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -420,10 +423,10 @@ public class OrganizationController extends BaseController {
     }
 
     /**
-     * Add the user to the organization.
+     * Add the user(s) to the organization by semi-colon delimited email address(es).
      *
      * @param organizationId the organization id
-     * @param email the email of the user to add
+     * @param emails the emails of the user(s) to add
      * @return the response entity
      * @throws Exception the exception
      */
@@ -435,23 +438,30 @@ public class OrganizationController extends BaseController {
     })
     @RecordMetric
     @PostMapping(value = "/organization/{organizationId}/user")
-    public @ResponseBody ResponseEntity<String> addUserToOrganization(@PathVariable final String organizationId, final String email) throws Exception {
+    public @ResponseBody ResponseEntity<String> addUserToOrganization(@PathVariable final String organizationId, final String emails) throws Exception {
 
-        logger.info("Add user: {} to organization: {}.", email, organizationId);
+        logger.info("Add user(s): {} to organization: {}.", emails, organizationId);
         final User authUser = SecurityService.getUserFromSession();
 
         if (authUser == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
+        if (StringUtils.isBlank(emails)) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(authUser.getUserName());
-            // service.setTransactionPerOperation(false);
-            // service.beginTransaction();
 
-            OrganizationService.addUserToOrganization(service, authUser, organizationId, email);
-            // service.commit();
+            if (emails.contains(";")) {
+                for (final String email : Arrays.asList(emails.split(";"))) {
+                    OrganizationService.addUserToOrganization(service, authUser, organizationId, email);
+                }
+            } else {
+                OrganizationService.addUserToOrganization(service, authUser, organizationId, emails);
+            }
 
             return new ResponseEntity<>(HttpStatus.CREATED);
 

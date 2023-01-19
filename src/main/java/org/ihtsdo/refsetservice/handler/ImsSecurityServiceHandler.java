@@ -50,14 +50,6 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             }
         }
 
-        // TODO remove before next UAT push. added 2/2/2022
-        if (user.getUserName().equals("twhalen") || user.getUserName().equals("jefron")) {
-
-            Set<String> timRoles = new HashSet<>();
-            timRoles.add("be-bep-all");
-            user.setRoles(timRoles);
-        }
-
         user.setModifiedBy(user.getUserName());
 
         logger.debug("!!!!!!!!!!!!! authenticate user is: " + user);

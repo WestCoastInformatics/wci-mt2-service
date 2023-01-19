@@ -9,13 +9,13 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.HashSet;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -444,13 +444,26 @@ public class OrganizationService extends BaseService {
      */
     public static void addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final String email) throws Exception {
 
-        final User userToAdd = service.findSingle("email:" + email, User.class, null);
+        User userToAdd = service.findSingle("email:" + email, User.class, null);
 
         if (userToAdd == null) {
 
-            final String message = "Unable to find user for email " + email + ".";
-            logger.error(message);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+            //find user in crowd
+            final User user = CrowdAPIClient.findUserByEmail(email);
+            if (user == null) {
+                logger.error("Unable to find user for email " + email + ".");
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found in IMS. Please make sure you entered their email correctly. If the email address entered is correct, the user being added has never been added to IMS before. Instead of \"Add User\", click the \"Invite to Join\"");
+            }
+            service.add(user);
+            service.update(user);
+            
+            userToAdd = service.findSingle("email:" + email, User.class, null);
+            
+            if (userToAdd == null) {
+                final String message = "Unable to find user for email " + email + ".";
+                logger.error(message);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+            }
         }
 
         // must return members in order to add another member.
@@ -490,7 +503,6 @@ public class OrganizationService extends BaseService {
 
         // Find the user
         final User userToRemove = service.get(userId, User.class);
-        final Organization organization = service.get(organizationId, Organization.class);
 
         if (userToRemove == null) {
 
@@ -499,6 +511,7 @@ public class OrganizationService extends BaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
+        final Organization organization = service.get(organizationId, Organization.class);
         if (organization == null) {
 
             final String message = "Unable to find organization for id " + organizationId + ".";
@@ -507,14 +520,23 @@ public class OrganizationService extends BaseService {
         }
 
         checkEditPermissions(authUser, organization);
+        
+        final Edition edition = EditionService.getEditionForOrganization(organizationId);
+        final String crowdOrgName = CrowdGroupNameAlgorithm.getEditionString(edition.getShortName());
+        final ResultList<Project> orgProjects = OrganizationService.getOrganizationProjects(service, organization.getId());
+        if (orgProjects != null && orgProjects.getItems() != null && !orgProjects.getItems().isEmpty()) {
+            for (final Project project : orgProjects.getItems()) {
+                userToRemove.getRoles().removeIf(u -> u.startsWith(crowdOrgName + "-" + project.getCrowdProjectId()));
+            }
+        }
+        userToRemove.getRoles().removeIf(u -> u.startsWith(crowdOrgName + "-all"));
 
-        organization.getMembers().remove(userToRemove);
+        service.update(userToRemove);
+        organization.getMembers().removeIf(orgUser ->  orgUser.getId().equals(userToRemove.getId()));
         service.update(organization);
         service.add(AuditEntryHelper.removeUserFromOrganizationEntry(organization, userToRemove));
 
         removeUserFromTeams(service, organizationId, userToRemove, authUser);
-
-        final Edition edition = EditionService.getEditionForOrganization(organizationId);
         final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
         CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName());
 
@@ -695,7 +717,7 @@ public class OrganizationService extends BaseService {
                 // Ensure not already members of the organization
                 if (organization.getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
                     throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: " + organization.getName());
-                }
+                }                
             }
 
             final String queryString = "requester=" + authUser.getId() + "&recipientEmail=" + URLEncoder.encode(recipientEmail, "UTF-8");
