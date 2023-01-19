@@ -5730,14 +5730,14 @@ public class RefsetMemberService {
 
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
                 
+                if (!conceptIdsToRemove.contains("," + inactiveConcept.getCode() + ",") && inactiveConcept.isStillMember()) {
+                    conceptIdsToRemove += inactiveConcept.getCode() + ",";
+                }
+                
                 for (UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
 
                     if (!replacementConcept.isAdded() && !replacementConcept.isExistingMember()) {
                         
-                        if (!conceptIdsToRemove.contains("," + inactiveConcept.getCode() + ",") && inactiveConcept.isStillMember()) {
-                            conceptIdsToRemove += inactiveConcept.getCode() + ",";
-                        }
-
                         if (!conceptIdsToAdd.contains(replacementConcept.getCode())) {
                             conceptIdsToAdd.add(replacementConcept.getCode());
                         }
@@ -5756,7 +5756,7 @@ public class RefsetMemberService {
             unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToRemove);
 
             // to make searching easier
-            final Set<String> removedConcepts = new HashSet<String>(Arrays.asList(conceptIdsToRemove));
+            final Set<String> removedConcepts = new HashSet<String>(Arrays.asList(conceptIdsToRemove.split(",")));
             removedConcepts.removeAll(unremovedConcepts);
             
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
@@ -5783,7 +5783,6 @@ public class RefsetMemberService {
                 
                 if (removedConcepts.contains(inactiveConcept.getCode())) {
                     
-                    inactiveConcept.setActive(false);
                     inactiveConcept.setStillMember(false);
                     changeInactive = true;
                 }
