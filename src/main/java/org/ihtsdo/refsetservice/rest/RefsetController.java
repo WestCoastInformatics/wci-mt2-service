@@ -2370,10 +2370,8 @@ public class RefsetController extends BaseController {
             logger.debug("getMemberAncestorConcepts: refsetInternalId: " + refsetInternalId + " ; conceptId: " + conceptId);
             final User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-            final Concept concept = new Concept();
-            concept.setCode(conceptId);
 
-            RefsetMemberService.getConceptAncestors(refset, Arrays.asList(concept));
+            final Concept concept = RefsetMemberService.getConceptAncestors(refset, conceptId);
 
             return new ResponseEntity<>(concept, HttpStatus.OK);
 
