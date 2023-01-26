@@ -679,7 +679,7 @@ public class SyncCodeSystemAgent extends SyncService {
                 // Check for invalid or ignored code systems
                 if (!codeSystem.has("shortName")) {
 
-                    // Skipping odd code system without a name or shortName
+                    // Skipping odd code system without a shortName
                     continue;
                 } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(codeSystem.get("shortName").asText())) {
 
@@ -757,6 +757,9 @@ public class SyncCodeSystemAgent extends SyncService {
                     while (moduleIterator.hasNext()) {
 
                         JsonNode module = moduleIterator.next();
+
+                        // TODO: Is this if-statement necessary?
+                        if (ignoreCoreRefsets && module.has("conceptId") && !module.get("conceptId").asText().equals("449080006"))
                         utilities.getInternationalModules().add(module.get("conceptId").asText());
                     }
 

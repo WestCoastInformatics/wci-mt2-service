@@ -327,6 +327,11 @@ public class SyncRefsetAgent extends SyncService {
 
         for (String editionShortName : branchesToProcess.keySet()) {
 
+            if (ignoreCoreRefsets && utilities.isInternationalEdition(editionShortName)) {
+
+                continue;
+            }
+
             List<Edition> editions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(editionShortName)).collect(Collectors.toList());
 
             if (editions == null || editions.size() != 1) {
@@ -494,7 +499,9 @@ public class SyncRefsetAgent extends SyncService {
 
                 if (refsetVersionDate.after(editionDate)) {
 
-                    throw new Exception("Don't expect to be here at createRefsetsFromSnowstorm()");
+                    logger.error("Ignoring this member as have bad content - Can't have refsets with a member that has an effectiveDate:  " + refsetVersionDate + " that is AFTER the editionDate: "
+                        + editionDate);
+                    continue;
                 }
 
                 if (earliestPublishedVersionDate == null || editionDate.before(earliestPublishedVersionDate)) {
@@ -506,7 +513,8 @@ public class SyncRefsetAgent extends SyncService {
 
             if (earliestPublishedVersionDate == null) {
 
-                throw new Exception("Shouldn't be here at createRefsetsFromSnowstorm()");
+                throw new Exception("Bad content likely brought us here as unable to find a valid earliest w/ refsetId: " + refsetId + " & branchVersion: " + branchVersion + " & versionDate: "
+                    + versionDate + " & branchPath: " + branchPath);
             }
 
             refsetVersionDate = earliestPublishedVersionDate;

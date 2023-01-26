@@ -46,6 +46,8 @@ public abstract class SyncService {
 
     private static Boolean isPerVersionSync = null;
 
+    protected static Boolean ignoreCoreRefsets = true;
+
     /** Testing options. */
     private static boolean testing = false;
 
@@ -111,14 +113,16 @@ public abstract class SyncService {
 
     public abstract void syncSnowstorm() throws Exception;
 
-    private static void initialize(boolean refsetPerVersionSync, boolean runForProduction) {
+    private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
 
         if (utilities == null) {
 
             utilities = new SyncUtilities();
+        }
 
             isPerVersionSync = refsetPerVersionSync;
             isProductionSystem = runForProduction;
+        ignoreCoreRefsets = ignoreCoreRefsets;
 
             try {
 
@@ -131,13 +135,11 @@ public abstract class SyncService {
 
         }
 
-    }
-
-    public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction) throws Exception {
+    public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
 
         if (isProductionSystem == null) {
 
-            initialize(refsetPerVersionSync, runForProduction);
+            initialize(refsetPerVersionSync, runForProduction, ignoreCoreRefsets);
         }
 
         sync(service);
@@ -148,7 +150,7 @@ public abstract class SyncService {
 
         if (isProductionSystem == null) {
 
-            initialize(false, false);
+            initialize(false, false, false);
         }
 
         logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
@@ -196,10 +198,9 @@ public abstract class SyncService {
         RefsetMemberService.clearAllMemberCaches(null);
         
         final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
-        final String emailSubject = PropertyUtility.getProperties().getProperty("refset.service.env") + " RT2 Post Sync Report";
 
         if (StringUtils.isNotBlank(emailReceipients)) {
-            EmailUtility.sendEmail(emailSubject.trim(), null, emailReceipients, queryResults);
+            EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, queryResults);
         }
         
         logger.info("Completed Syncing with Snowstorm");
@@ -336,6 +337,12 @@ public abstract class SyncService {
     public static boolean isTesting() {
 
         return testing;
+
+    }
+
+    public static boolean isIgnoreCoreRefsets() {
+
+        return ignoreCoreRefsets;
 
     }
 
