@@ -51,12 +51,11 @@ public abstract class SyncService {
     /** Testing options. */
     private static boolean testing = false;
 
-    protected static String testingEdition = "elgi";
-    // protected static String testingEdition = "wed";
+    protected static String testingEditionShortName = "SNOMEDCT-BE";
 
-    // protected static String testingRefset = null; // To test entire edition
-     protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
-//     protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
+    protected static String testingRefset = null; // To test entire edition
+    // protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
+    // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
     // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
     
@@ -211,11 +210,11 @@ public abstract class SyncService {
         return isProductionSystem == null ? false : isProductionSystem;
     }
 
-    public static void setRefsetToSync(final String refsetId, final String editionName) throws Exception {
+    public static void setRefsetToSync(final String refsetId, final String editionShortName) throws Exception {
 
         setTesting(true);
         testingRefset = refsetId;
-        testingEdition = editionName;
+        testingEditionShortName = editionShortName;
 
         RefsetMemberService.clearUniqueRefsetVersions(refsetId);
     }

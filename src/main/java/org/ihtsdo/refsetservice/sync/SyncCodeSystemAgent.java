@@ -805,7 +805,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
     private boolean isEditionToProcess(String codeSystem) {
 
-        return !isTesting() || (isTesting() && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.equalsIgnoreCase(testingEdition) || utilities.isInternationalEdition(codeSystem));
+        return !isTesting() || (isTesting() && (testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName) || utilities.isInternationalEdition(codeSystem));
 
     }
 }
