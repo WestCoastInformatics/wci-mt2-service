@@ -399,8 +399,6 @@ public class SyncRefsetAgent extends SyncService {
 
                             final String moduleId = refsetToModuleMap.get(refsetId);
 
-                            logger.debug("Found refsetId: " + refsetId);
-
                             if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
 
                                 logger.debug("Found refsetId: " + refsetId + ", but will not add it per prop file");

@@ -679,6 +679,7 @@ public class SyncCodeSystemAgent extends SyncService {
                 // Check for invalid or ignored code systems
                 if (!codeSystem.has("shortName")) {
 
+                    logger.error("Encountered codeSystem without a shortName: " + codeSystem);
                     // Skipping odd code system without a shortName
                     continue;
                 } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(codeSystem.get("shortName").asText())) {
@@ -690,8 +691,11 @@ public class SyncCodeSystemAgent extends SyncService {
 
                 // Testing
                 if (isEditionToProcess(codeSystem.get("shortName").asText())) {
+                    logger.info("Will process refsets in codeSystem: " + codeSystem.get("shortName").asText());
 
                     filteredCodeSystems.add(codeSystem);
+                } else {
+                    logger.info("CodeSystem: " + codeSystem.get("shortName").asText() + " will not be processed");
                 }
 
             }
@@ -801,7 +805,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
     private boolean isEditionToProcess(String codeSystem) {
 
-        return !isTesting() || (isTesting() && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.contains(testingEdition) || utilities.isInternationalEdition(codeSystem));
+        return !isTesting() || (isTesting() && (testingEdition == null || testingEdition.isEmpty()) || codeSystem.equalsIgnoreCase(testingEdition) || utilities.isInternationalEdition(codeSystem));
 
     }
 }
