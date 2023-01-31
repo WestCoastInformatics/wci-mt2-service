@@ -146,6 +146,7 @@ public class SyncCodeSystemAgent extends SyncService {
                     boolean childAdded = false;
 
                     if (childDate.matches(".*\\d{4}-\\d{2}-\\d{2}$")) {
+//                        if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
 
                         Date branchDate = branchDateFormatter.parse(childDate);
 
@@ -155,7 +156,10 @@ public class SyncCodeSystemAgent extends SyncService {
                             childAdded = true;
                         }
 
+                    } else {
+                        logger.info("Ignoring branch as doesn't comply with expected format (where final item in path is a date in format yyyy-mm-dd: " + childDate);
                     }
+
 
                     if (!childAdded) {
 
@@ -682,25 +686,38 @@ public class SyncCodeSystemAgent extends SyncService {
                     logger.error("Encountered codeSystem without a shortName: " + codeSystem);
                     // Skipping odd code system without a shortName
                     continue;
-                } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(codeSystem.get("shortName").asText())) {
+                }
+                
+                final String editionShortName = codeSystem.get("shortName").asText();
+                final String maintainerType = identifyMaintainerType(codeSystem, editionShortName);
+
+                if (!maintainerType.equalsIgnoreCase("Managed Service")) {
+
+                    //  For now, only supportCode Managed Service
+                    logger.info("Ignoring codesystem " + editionShortName + " as is of maintainerType: " + maintainerType);
+                    continue;
+
+                } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
 
                     // Code System has been defined as to-be-ignored (either by specifying name or shortname)
-                    logger.info("Encountered, but ignoring " + codeSystem.get("shortName").asText() + " as listed in ignoredCodeSystems.txt");
+                    logger.info("Ignoring codesystem " + editionShortName + " as it's listed in ignoredCodeSystems.txt");
                     continue;
                 }
 
                 // Testing
-                if (isEditionToProcess(codeSystem.get("shortName").asText())) {
-                    logger.info("Will process refsets in codeSystem: " + codeSystem.get("shortName").asText());
+                if (isEditionToProcess(editionShortName)) {
 
                     filteredCodeSystems.add(codeSystem);
                 } else {
-                    logger.info("CodeSystem: " + codeSystem.get("shortName").asText() + " will not be processed");
+                    logger.info("Ignoring codesystem " + editionShortName + " as it failed isEditionToProcess()");
                 }
 
             }
 
         }
+        
+        
+        filteredCodeSystems.stream().forEach(c -> logger.info("Will process codeSystem: " + c));
 
         return filteredCodeSystems;
     }
