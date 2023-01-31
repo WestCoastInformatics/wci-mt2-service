@@ -218,6 +218,12 @@ public final class WorkflowService {
         if (results.getItems().size() == 0) {
             throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "There are no Reference sets in " + editionShortName + " that are ready to be published");
         }
+        
+        final String editionBranch = results.getItems().get(0).getEditionBranch();
+        final String projectBranchPath = getProjectBranchPath(editionBranch);
+        
+        // rebase the project branch from the edition branch
+        mergeBranch(editionBranch, projectBranchPath, "Updating branch to latest changes", true);
 
         // see if there is an "In Development" version as that should be the latest.
         for (final Refset refset : results.getItems()) {
@@ -226,9 +232,9 @@ public final class WorkflowService {
                 
                 final String refsetBranchPath = getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getRefsetBranchId(), refset.isLocalSet());
                 
-                mergeBranch(getProjectBranchPath(refset.getEditionBranch()), refsetBranchPath, "Updating branch to latest changes", true);
+                mergeBranch(projectBranchPath, refsetBranchPath, "Updating branch to latest changes", true);
 
-                final boolean merged = mergeRefsetIntoProjectBranch(refset.getEditionBranch(), refset.getRefsetId(), refset.getRefsetBranchId(), "Preparing for publication");
+                final boolean merged = mergeRefsetIntoProjectBranch(editionBranch, refset.getRefsetId(), refset.getRefsetBranchId(), "Preparing for publication");
     
                 if (!merged) {
     
@@ -1194,6 +1200,7 @@ public final class WorkflowService {
         final String mergeUrl = SnowstormConnection.BASE_URL + "merges";
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
+        boolean jobDone = false;
 
         if (comment != null) {
 
@@ -1202,69 +1209,8 @@ public final class WorkflowService {
 
         if (rebase) {
             
-            String jobStatusUrl = null;
-            boolean jobDone = false;
-            final String reviewUrl = SnowstormConnection.BASE_URL + "merge-reviews";
-            logger.debug("mergeBranch reviewUrl: " + reviewUrl + " ; body: " + body.toString());
-
-            try (final Response response = SnowstormConnection.postResponse(reviewUrl, body.toString())) {
-
-                // Only process payload if Rest call is successful
-                if (response.getStatus() != Response.Status.OK.getStatusCode() && response.getStatus() != Response.Status.CREATED.getStatusCode()) {
-
-                    final String error = "Could not review merge branch " + sourceBranchPath + " into branch " + targetBranchPath;
-                    logger.error(error);
-                    throw new Exception(error);
-                }
-                
-                jobStatusUrl = response.getHeaderString("Location");
-                final String[] location = jobStatusUrl.split("/");
-                final String reviewId = location[location.length - 1];
-                body.put("reviewId", reviewId);
-            }
-            
-            logger.debug("mergeBranch review job status URL: " + jobStatusUrl);
-
-            while (!jobDone) {
-
-                try (final Response response = SnowstormConnection.getResponse(jobStatusUrl)) {
-                    
-                    final String error = "Could not review merge branch " + sourceBranchPath + " into branch " + targetBranchPath + ". ";
-
-                    // Only process payload if Rest call is successful
-                    if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                        logger.error(error + response.toString());
-                    }
-
-                    final String resultString = response.readEntity(String.class);
-                    final JsonNode root = mapper.readTree(resultString.toString());
-
-                    // logger.debug("addRefsetMembers job status response: " + root);
-                    final String status = root.get("status").asText();
-                    logger.debug("merge review status: " + status);
-                    
-                    if (status.equalsIgnoreCase("PENDING")) {
-
-                        logger.debug("merge review hasn't finished yet...");
-
-                        try {
-
-                            Thread.sleep(300);
-                        } catch (InterruptedException ex) {
-
-                            Thread.currentThread().interrupt();
-                        }
-
-                    } else if (status.equalsIgnoreCase("failed")) {
-
-                        jobDone = true;
-                        logger.error(error + root.get("message").asText());
-                    } else {
-                        jobDone = true;
-                    }
-                }
-            }
+            String reviewId = mergeRebaseReview(sourceBranchPath, targetBranchPath);
+            body.put("reviewId", reviewId);
         }
         
         logger.debug("mergeBranch URL: " + mergeUrl + " ; body: " + body.toString());
@@ -1285,48 +1231,178 @@ public final class WorkflowService {
             
             logger.debug("Merge status info at " + jobStatusUrl);
 
-            try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
+            while (!jobDone) {
+            
+                try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
 
-                final String resultString = mergeInfoResponse.readEntity(String.class);
+                    final String resultString = mergeInfoResponse.readEntity(String.class);
+                    final JsonNode root = mapper.readTree(resultString.toString());
+                    final String status = root.get("status").asText();
+                    
+                    logger.info("Merge status is: " + status);
+                    
+                    if (status.equals("FAILED")) {
+                        
+                        final String message = root.get("message").asText();
+                        jobDone = true;
+                        
+                        if (!message.contains("is not meaningful")) {
+                            
+                            final String error = "Could not merge branch " + sourceBranchPath + " into branch " + targetBranchPath + ". Error: " + message;
+                            logger.error(error);
+                            throw new Exception(error);
+                            
+                        } else {
+                            logger.debug("Merge did not occurr. " + message);
+                        }
+                        
+                    } else if (status.equals("PENDING") || status.equals("IN_PROGRESS") || status.equals("SCHEDULED")) {
+
+                            logger.debug("Merge hasn't finished yet...");
+
+                            try {
+                                Thread.sleep(300);
+                            } catch (InterruptedException ex) {
+                                Thread.currentThread().interrupt();
+                            }
+                            
+                    } else {
+                        
+                        jobDone = true;
+                        
+                        if (rebase) {
+                            
+                            // in a rebase that has changes clear all the caches for the target branch
+                            RefsetService.clearAllRefsetCaches(targetBranchPath);
+                            RefsetMemberService.clearAllMemberCaches(targetBranchPath);
+                        } else {
+                            
+                            try {
+    
+                                logger.debug("Merge promotion sleep 1000ms to let snowstorm caches update.");
+                                Thread.sleep(1000);
+                            } catch (InterruptedException ex) {
+                                Thread.currentThread().interrupt();
+                            }
+                            
+                            // final check that the promotion has finished.
+                            boolean stateGood = false;
+                            final String stateUrl = SnowstormConnection.BASE_URL + "branches/" + targetBranchPath;
+                            logger.debug("Promoted branch state info at " + stateUrl);
+                            
+                            while (!stateGood) {
+                                
+                                try (final Response stateResponse = SnowstormConnection.getResponse(stateUrl)) {
+    
+                                    final String stateResultString = stateResponse.readEntity(String.class);
+                                    final JsonNode stateRoot = mapper.readTree(stateResultString.toString());
+                                    final String state = stateRoot.get("state").asText();
+                                    
+                                    logger.info("Promoted branch state is: " + state);
+                                    
+                                    if (state.equals("FORWARD") || state.equals("CURRENT") || state.equals("UP_TO_DATE")) {
+                                        stateGood = true;
+                                        
+                                    } else {
+                                        
+                                        try {
+    
+                                            logger.debug("Merge promotion sleep 300ms to let snowstorm caches update.");
+                                            Thread.sleep(300);
+                                        } catch (InterruptedException ex) {
+                                            Thread.currentThread().interrupt();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        logger.info("Merged branch " + sourceBranchPath + " into branch " + targetBranchPath + ". Time: " + (System.currentTimeMillis() - start));
+                    }
+                }
+            }
+        }       
+    }
+    
+    /**
+     * Perform a merge rebase review.
+     *
+     * @param sourceBranchPath the branch path with the content to merge
+     * @param targetBranchPath the branch path to merge content into
+     * @return the review ID
+     * @throws Exception the exception
+     */
+    public static String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath) throws Exception {
+        
+        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
+        final String reviewUrl = SnowstormConnection.BASE_URL + "merge-reviews";
+        String jobStatusUrl = null;
+        boolean jobDone = false;
+        String reviewId = "";
+        logger.debug("mergeRebaseReview review URL: " + reviewUrl + " ; body: " + body.toString());
+
+        try (final Response response = SnowstormConnection.postResponse(reviewUrl, body.toString())) {
+
+            // Only process payload if Rest call is successful
+            if (response.getStatus() != Response.Status.OK.getStatusCode() && response.getStatus() != Response.Status.CREATED.getStatusCode()) {
+
+                final String error = "Could not review branch rebase of " + sourceBranchPath + " into branch " + targetBranchPath;
+                logger.error(error);
+                throw new Exception(error);
+            }
+            
+            jobStatusUrl = response.getHeaderString("Location");
+            final String[] location = jobStatusUrl.split("/");
+            reviewId = location[location.length - 1];
+        }
+        
+        logger.debug("mergeRebaseReview review job status URL: " + jobStatusUrl);
+
+        while (!jobDone) {
+
+            try (final Response response = SnowstormConnection.getResponse(jobStatusUrl)) {
+                
+                String error = "Could not review merge branch " + sourceBranchPath + " into branch " + targetBranchPath + ". ";
+
+                // Only process payload if Rest call is successful
+                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                    logger.error(error + response.toString());
+                }
+
+                final String resultString = response.readEntity(String.class);
                 final JsonNode root = mapper.readTree(resultString.toString());
                 final String status = root.get("status").asText();
+                logger.debug("merge review status: " + status);
                 
-                if (status.equals("FAILED")) {
+                if (status.equalsIgnoreCase("PENDING")) {
+
+                    logger.debug("Merge review hasn't finished yet...");
+
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }  
                     
-                    final String message = root.get("message").asText();
+                } else if (status.equalsIgnoreCase("failed")) {
+
+                    error += "Job failed with: " + root.get("message").asText();
+                    logger.error(error);
+                    throw new Exception(error);
                     
-                    if (!message.contains("is not meaningful")) {
-                        
-                        final String error = "Could not merge branch " + sourceBranchPath + " into branch " + targetBranchPath + ". Error: " + message;
-                        logger.error(error);
-                        throw new Exception(error);
-                        
-                    } else {
-                        logger.debug("Merge did not occurr. " + message);
-                    }
+                } else if (status.equalsIgnoreCase("stale")) {
+                    
+                    reviewId = mergeRebaseReview(sourceBranchPath, targetBranchPath);
+                    jobDone = true;
                     
                 } else {
-                    
-                    if (rebase) {
-                        
-                        // in a rebase that has changes clear all the caches for the target branch
-                        RefsetService.clearAllRefsetCaches(targetBranchPath);
-                        RefsetMemberService.clearAllMemberCaches(targetBranchPath);
-                    } else {
-                        
-                        try {
-
-                            logger.debug("Merge promotion sleep 1000ms to let snowstorm caches update.");
-                            Thread.sleep(500);
-                        } catch (InterruptedException ex) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                    
-                    logger.info("Merged branch " + sourceBranchPath + " into branch " + targetBranchPath + ". Time: " + (System.currentTimeMillis() - start));
+                    jobDone = true;
                 }
             }
         }
+        
+        return reviewId;
     }
 
     /**
