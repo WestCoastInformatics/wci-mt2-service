@@ -145,8 +145,7 @@ public class SyncCodeSystemAgent extends SyncService {
                     // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
                     boolean childAdded = false;
 
-                    if (childDate.matches(".*\\d{4}-\\d{2}-\\d{2}$")) {
-//                        if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+                    if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
 
                         Date branchDate = branchDateFormatter.parse(childDate);
 
