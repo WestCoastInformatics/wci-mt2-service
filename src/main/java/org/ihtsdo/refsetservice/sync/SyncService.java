@@ -46,7 +46,7 @@ public abstract class SyncService {
 
     private static Boolean isPerVersionSync = null;
 
-    protected static Boolean ignoreCoreRefsets = true;
+    protected static Boolean isIgnoreCoreRefsets = true;
 
     /** Testing options. */
     private static boolean testing = false;
@@ -121,7 +121,7 @@ public abstract class SyncService {
 
             isPerVersionSync = refsetPerVersionSync;
             isProductionSystem = runForProduction;
-        ignoreCoreRefsets = ignoreCoreRefsets;
+            isIgnoreCoreRefsets = ignoreCoreRefsets;
 
             try {
 
@@ -341,7 +341,7 @@ public abstract class SyncService {
 
     public static boolean isIgnoreCoreRefsets() {
 
-        return ignoreCoreRefsets;
+        return isIgnoreCoreRefsets;
 
     }
 

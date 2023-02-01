@@ -327,8 +327,9 @@ public class SyncRefsetAgent extends SyncService {
 
         for (String editionShortName : branchesToProcess.keySet()) {
 
-            if (ignoreCoreRefsets && utilities.isInternationalEdition(editionShortName)) {
-
+            if (isIgnoreCoreRefsets && utilities.isInternationalEdition(editionShortName)) {
+                
+                logger.info("Processing CORE with ignoreCoreRefsets: " + isIgnoreCoreRefsets);
                 continue;
             }
 

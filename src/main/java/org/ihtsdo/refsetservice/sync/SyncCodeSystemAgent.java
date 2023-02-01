@@ -779,7 +779,6 @@ public class SyncCodeSystemAgent extends SyncService {
                         JsonNode module = moduleIterator.next();
 
                         // TODO: Is this if-statement necessary?
-                        if (ignoreCoreRefsets && module.has("conceptId") && !module.get("conceptId").asText().equals("449080006"))
                         utilities.getInternationalModules().add(module.get("conceptId").asText());
                     }
 
