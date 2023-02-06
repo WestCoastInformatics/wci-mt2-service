@@ -55,6 +55,7 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -996,9 +997,9 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Complete the publication of all Ready for Publication refsetsin a code system.
+     * Complete the publication of all Ready for Publication refsets in a code system.
      *
-     * @param versionDate the publication date of the refset in YYYY/mm/dd format
+     * @param versionDate the publication date of the refset in yyyy-MM-dd format
      * @param codeSystem a code system to limit the refset to
      * @param publishType if value is 'localset' this will publish (non-snomed versioning) only local sets. If not supplied or any other value this will published everything other than local sets. 
      * @return the status of the operation
@@ -1012,7 +1013,26 @@ public class RefsetController extends BaseController {
         String typeToPublish = "regular";
         
         if (StringUtility.isEmpty(codeSystem)) {
-            throw new Exception("A Code System must be specified.");
+            return new ResponseEntity<>("A Code System must be specified.", HttpStatus.EXPECTATION_FAILED);
+        }
+        
+        try {
+            new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE).parse(versionDate);
+            
+        } catch (Exception e) {
+            return new ResponseEntity<>("The version date must be specified in this format: " + DateUtility.DATE_FORMAT_REVERSE, HttpStatus.EXPECTATION_FAILED);
+        }
+        
+        String branchPath = "MAIN/";
+        
+        if (!codeSystem.equals("SNOMEDCT")) {
+            branchPath += codeSystem + "/"; 
+        }
+        
+        branchPath += versionDate;
+        
+        if (!WorkflowService.doesBranchExist(branchPath)) {
+            return new ResponseEntity<>("The version branch '" + branchPath + "' does not exist. This must be created and populated with the reference sets to be versioned outside of this tool before this publication completion process can be run.", HttpStatus.EXPECTATION_FAILED);
         }
         
         try (TerminologyService service = new TerminologyService()) {
@@ -1088,7 +1108,7 @@ public class RefsetController extends BaseController {
      * Publish a Ready for Publication local refsets in a code system.
      *
      * @param refsetInternalId the internal refset ID
-     * @param versionDate the publication date of the refset in YYYY/mm/dd format
+     * @param versionDate the publication date of the refset in yyyy-MM-dd format
      * @return the status of the operation
      * @throws Exception the exception
      */
@@ -2350,10 +2370,8 @@ public class RefsetController extends BaseController {
             logger.debug("getMemberAncestorConcepts: refsetInternalId: " + refsetInternalId + " ; conceptId: " + conceptId);
             final User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-            final Concept concept = new Concept();
-            concept.setCode(conceptId);
 
-            RefsetMemberService.getConceptAncestors(refset, Arrays.asList(concept));
+            final Concept concept = RefsetMemberService.getConceptAncestors(refset, conceptId);
 
             return new ResponseEntity<>(concept, HttpStatus.OK);
 

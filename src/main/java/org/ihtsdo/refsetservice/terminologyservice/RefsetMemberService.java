@@ -165,7 +165,7 @@ public class RefsetMemberService {
     private static final Map<String, Map<String, Concept>> conceptDetailsCache = new HashMap<>();
 
     /** A cache of the taxonomy ancestor path for concepts. */
-    private static final Map<String, Map<String, List<Concept>>> taxonomySearchAncestorsCache = new HashMap<>();
+    private static final Map<String, Map<String, Concept>> taxonomySearchAncestorsCache = new HashMap<>();
 
     /** A cache of the children for each tree node. */
     private static final Map<String, Map<String, ConceptResultList>> treeCache = new HashMap<>();
@@ -740,7 +740,7 @@ public class RefsetMemberService {
                 final SearchParameters searchParameters = new SearchParameters();
                 final String versionDate = simpleDateFormat.format(o[1]);
                 searchParameters.setQuery("refsetId:" + o[0].toString() + " AND versionDate:" + versionDate + " AND versionStatus:PUBLISHED");
-                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false, true);
+                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false, false);
 
                 if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
 
@@ -2162,20 +2162,20 @@ public class RefsetMemberService {
      * Get the ancestor path for a list of conceptIDs.
      *
      * @param refset the refset
-     * @param concepts the list of concepts ancestor paths are being generated for
+     * @param conceptId the concept ID paths are being generated for
      * @return the concept result list
      * @throws Exception the exception
      */
-    public static List<Concept> getConceptAncestors(final Refset refset, final List<Concept> concepts) throws Exception {
+    public static Concept getConceptAncestors(final Refset refset, final String conceptId) throws Exception {
 
-        String conceptIds = "";
         final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
         lookupParameters.setNonDefaultPreferredTerms(identifyNonDefaultPreferredTerms(refset.getEdition()));
         lookupParameters.setGetDescriptions(true);
         final String branchPath = getBranchPath(refset);
-        final List<Concept> inactiveConcepts = new ArrayList<>();
-        final String cacheString = refset.getRefsetId() + concepts.toString();
-        final Map<String, List<Concept>> branchCache = getCacheForTaxonomySearchAncestors(branchPath);
+        final String cacheString = refset.getRefsetId() + "-" + conceptId;
+        final Map<String, Concept> branchCache = getCacheForTaxonomySearchAncestors(branchPath);
+        Concept concept = new Concept();
+        concept.setCode(conceptId);
 
         // check if the members call has been cached
         if (branchCache.containsKey(cacheString)) {
@@ -2184,31 +2184,8 @@ public class RefsetMemberService {
             return branchCache.get(cacheString);
         }
 
-        for (Concept concept : concepts) {
-
-            // snowstorm does not allow searching for inactive concepts so
-            // remove them from the results.
-            if (!concept.isActive()) {
-
-                logger.debug("Inactive concept in taxonomy search: " + concept.getCode());
-                inactiveConcepts.add(concept);
-                continue;
-            } else {
-
-                conceptIds += concept.getCode() + ",";
-            }
-
-        }
-
-        for (Concept inactiveConcept : inactiveConcepts) {
-
-            concepts.remove(inactiveConcept);
-        }
-
-        conceptIds = StringUtils.removeEnd(conceptIds, ",");
-
         // Create Snowstorm URL
-        final String url = SnowstormConnection.BASE_URL + "browser/" + branchPath + "/concepts/ancestor-paths?conceptIds=" + conceptIds;
+        final String url = SnowstormConnection.BASE_URL + "browser/" + branchPath + "/concepts/ancestor-paths?conceptIds=" + conceptId;
 
         // Call Snowstorm
         logger.debug("Get Concept Ancestors URL: " + url);
@@ -2239,26 +2216,14 @@ public class RefsetMemberService {
                 final List<Concept> parents = ancestorList.getItems();
                 Collections.reverse(parents);
 
-                // pick out the concept that we are going to load the ancestors into
-                final Concept concept = concepts.stream().filter(filterConcept -> nodeConceptId.equals(filterConcept.getCode())).findFirst().orElse(null);
-
-                // load the ancestors into the concept
-                if (concept != null) {
-
-                    concept.setParents(parents);
-                } else {
-
-                    logger.info("Couldn't find concept " + nodeConceptId + " to load ancestors into.");
-                }
-
+                concept.setParents(parents);
             }
-
         }
 
-        branchCache.put(cacheString, concepts);
+        branchCache.put(cacheString, concept);
         taxonomySearchAncestorsCache.put(branchPath, branchCache);
 
-        return concepts;
+        return concept;
     }
 
     /**
@@ -2602,7 +2567,7 @@ public class RefsetMemberService {
      * @return the cache collection
      * @throws Exception the exception
      */
-    public static Map<String, List<Concept>> getCacheForTaxonomySearchAncestors(final String branchPath) throws Exception {
+    public static Map<String, Concept> getCacheForTaxonomySearchAncestors(final String branchPath) throws Exception {
 
         if (taxonomySearchAncestorsCache.containsKey(branchPath)) {
 
@@ -5719,21 +5684,27 @@ public class RefsetMemberService {
 
             RefsetMemberService.refsetsBeingUpdated.add(refset.getId());
 
-            List<String> unchangedConcepts;
-            List<String> conceptIdsToChange = new ArrayList<>();
+            String message = "";
+            List<String> unaddedConcepts;
+            List<String> unremovedConcepts;
+            List<String> conceptIdsToAdd = new ArrayList<>();
+            String conceptIdsToRemove = "";
             RefsetMemberService.refsetsUpdatedMembers.put(refset.getId(), new HashMap<>());
 
             final ResultList<UpgradeInactiveConcept> inactiveConceptList = service.find("refsetId: " + refset.getRefsetId(), null, UpgradeInactiveConcept.class, null);
 
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
-
+                
+                if (!conceptIdsToRemove.contains("," + inactiveConcept.getCode() + ",") && inactiveConcept.isStillMember()) {
+                    conceptIdsToRemove += inactiveConcept.getCode() + ",";
+                }
+                
                 for (UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
 
                     if (!replacementConcept.isAdded() && !replacementConcept.isExistingMember()) {
-
-                        if (!conceptIdsToChange.contains(replacementConcept.getCode())) {
-
-                            conceptIdsToChange.add(replacementConcept.getCode());
+                        
+                        if (!conceptIdsToAdd.contains(replacementConcept.getCode())) {
+                            conceptIdsToAdd.add(replacementConcept.getCode());
                         }
 
                     }
@@ -5743,42 +5714,67 @@ public class RefsetMemberService {
             }
 
             // add the concepts as members to the refset
-            unchangedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdsToChange);
+            unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdsToAdd);
+            
+            // remove the inactive concepts from the refset
+            conceptIdsToRemove = StringUtils.removeEnd(conceptIdsToRemove, ",");
+            unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToRemove);
 
+            // to make searching easier
+            final Set<String> removedConcepts = new HashSet<String>(Arrays.asList(conceptIdsToRemove.split(",")));
+            removedConcepts.removeAll(unremovedConcepts);
+            
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
-                boolean hadReplacementsAdded = false;
+                boolean changeInactive = false;
 
                 for (UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
 
                     // don't process concepts that couldn't be added or that weren't attempted to be added
-                    if (unchangedConcepts.contains(replacementConcept.getCode()) || !conceptIdsToChange.contains(replacementConcept.getCode())) {
+                    if (unaddedConcepts.contains(replacementConcept.getCode()) || !conceptIdsToAdd.contains(replacementConcept.getCode())) {
 
                         continue;
                     }
 
-                    hadReplacementsAdded = true;
+                    changeInactive = true;
                     replacementConcept.setAdded(true);
                     service.update(replacementConcept);
                     logger.debug("addAllUpgradeReplacementConcepts: replacement added as member: " + replacementConcept.getCode());
                 }
 
-                if (hadReplacementsAdded) {
-
+                if (changeInactive) {
                     inactiveConcept.setReplaced(true);
+                }
+                
+                if (removedConcepts.contains(inactiveConcept.getCode())) {
+                    
+                    inactiveConcept.setStillMember(false);
+                    changeInactive = true;
+                }
+                
+                if (changeInactive) {
+                    
                     service.update(inactiveConcept);
                     logger.debug("addAllUpgradeReplacementConcepts: inactive concept updated: " + inactiveConcept.getCode());
                 }
-
             }
 
             // see if there the concept was unable to be changed and craft the error message
-            if (unchangedConcepts.size() > 0) {
+            if (unaddedConcepts.size() > 0 || unremovedConcepts.size() > 0) {
 
-                return "The concepts " + unchangedConcepts + " were unable to be added.";
+                if (unaddedConcepts.size() > 0) {
+                    message = "The concepts " + unaddedConcepts + " were unable to be added. ";
+                }
+                
+                if (unremovedConcepts.size() > 0) {
+                    message += "The inactive concepts " + unremovedConcepts + " were unable to be removed.";
+                }
+                
+            } else {
+                message = "All changes made successfully";
             }
 
-            return "All changes made successfully";
+            return message;
 
         } catch (final Exception e) {
 

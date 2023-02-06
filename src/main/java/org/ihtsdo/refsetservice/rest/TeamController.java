@@ -9,13 +9,19 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.ResultListUser;
@@ -319,17 +325,17 @@ public class TeamController extends BaseController {
     }
 
     /**
-     * Adds the user to the team.
+     * Add the user(s) to the team by semi-colon delimited email address(es).
      *
      * @param teamId the team id
-     * @param email the user email
+     * @param email(s) the emails of the user(s) to add
      * @return the response entity
      * @throws Exception the exception
      */
     @PostMapping("/team/{teamId}/member")
-    public @ResponseBody ResponseEntity<String> addUserToTeam(@PathVariable final String teamId, final String email) throws Exception {
+    public @ResponseBody ResponseEntity<String> addUsersToTeam(@PathVariable final String teamId, final String emails) throws Exception {
 
-        logger.info("Add user {} to team: {}", email, teamId);
+        logger.info("Add user(s) {} to team: {}", emails, teamId);
         // TODO check permissions, fail if not authorized.
         final User authUser = SecurityService.getUserFromSession();
 
@@ -338,9 +344,18 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
-        try {
+        if (StringUtils.isBlank(emails)) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
-            final Team team = TeamService.addUserToTeam(authUser, teamId, email);
+        try {
+            if (emails.contains(";")) {
+                for (final String email : Arrays.asList(emails.split(";"))) {
+                    TeamService.addUserToTeam(authUser, teamId, email);
+                }
+            } else {
+                TeamService.addUserToTeam(authUser, teamId, emails);
+            }
 
             return new ResponseEntity<>(HttpStatus.CREATED);
 
@@ -350,7 +365,7 @@ public class TeamController extends BaseController {
 
         } catch (final Exception e) {
 
-            logger.error("Error adding user: {} to team: {}", email, teamId);
+            logger.error("Error adding user(s): {} to team: {}", emails, teamId);
             return handleException(e);
         }
 

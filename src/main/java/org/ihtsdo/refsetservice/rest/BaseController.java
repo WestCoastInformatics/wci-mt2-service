@@ -42,7 +42,7 @@ public class BaseController {
         if (exception instanceof ResponseStatusException) {
             
             final ResponseStatusException responseStatusException = (ResponseStatusException)exception;
-            return ResponseEntity.status(responseStatusException.getRawStatusCode()).body(responseStatusException.getMessage());
+            return ResponseEntity.status(responseStatusException.getRawStatusCode()).body(responseStatusException.getReason());
             
         } else if (exception instanceof RestException) {
             

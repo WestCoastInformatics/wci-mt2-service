@@ -196,9 +196,10 @@ public abstract class SyncService {
         RefsetMemberService.clearAllMemberCaches(null);
         
         final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
+        final String emailSubject = PropertyUtility.getProperties().getProperty("refset.service.env") + " RT2 Post Sync Report";
 
         if (StringUtils.isNotBlank(emailReceipients)) {
-            EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, queryResults);
+            EmailUtility.sendEmail(emailSubject.trim(), null, emailReceipients, queryResults);
         }
         
         logger.info("Completed Syncing with Snowstorm");
