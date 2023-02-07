@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -74,7 +75,7 @@ public class SyncUtilities {
             // Persist
             final Organization o = service.add(org);
 
-            statistics.getOrganizationsProcessed().add(o);
+            statistics.getOrganizationsAdded().put(orgName, o);
 
             logger.info("Adding new Organziation: " + o.getId() + " (" + o.getName() + ") " + o);
 
@@ -96,6 +97,7 @@ public class SyncUtilities {
 
         return newEdition;
     }
+
 
     private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, Organization organization)
         throws Exception {
@@ -119,7 +121,7 @@ public class SyncUtilities {
 
             Edition e = service.add(edition);
 
-            statistics.getEditionsProcessed().add(e);
+            statistics.getEditionsAdded().add(e);
 
             logger.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
 
@@ -127,9 +129,23 @@ public class SyncUtilities {
         }
 
     }
+    
+    public void removeEdition(Edition edition) throws Exception {
 
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+        
+            logger.info("Removing existing RT2 Edition: " + edition.getId() + " (" + edition.getName() + ")" + edition);
+
+            service.remove(edition);
+
+        }
+        
+        statistics.getEditionsRemoved().add(edition);
+    }
+    
     public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
-
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
@@ -150,7 +166,7 @@ public class SyncUtilities {
             // Persist
             final Refset r = service.add(refset);
 
-            statistics.getRefsetVersionsProcessed().add(r);
+            statistics.getRefsetVersionsAdded().add(r);
 
             logger.info("Adding new Refset and/or Version for : " + r.getId() + " (" + r.getName() + ") on: " + r.getVersionDate());
 
@@ -187,7 +203,7 @@ public class SyncUtilities {
 
     public Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String narrative, Project project) throws Exception {
 
-        logger.debug("Adding WCI Testing Org's single project: " + project);
+        logger.info("Adding WCI Testing Org's single project: " + project);
 
         final Refset refsetParameters = new Refset();
 
@@ -223,7 +239,7 @@ public class SyncUtilities {
 
                 Refset updatedRefset = initializeWorkflowStatus(refset);
 
-                statistics.getRefsetVersionsProcessed().add(updatedRefset);
+                statistics.getRefsetVersionsAdded().add(updatedRefset);
 
                 logger.info(" and then updated the new WCI refset's Workflow Status - " + updatedRefset);
 
@@ -544,5 +560,4 @@ public class SyncUtilities {
 
         return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
     }
-
 }
