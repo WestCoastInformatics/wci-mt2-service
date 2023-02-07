@@ -103,7 +103,7 @@ public class SyncOperationsInitializer {
         // Only run this once on DEV and UAT (but never prod). If developerTestingEdition is set, we know that this has already been run
         if (developerTestingEdition != null) {
 
-            logger.debug("Creating testing support and content");
+            logger.info("Creating testing support and content");
 
             if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(FEEDBACK_INITIAL_REFSET_ID))) {
 
@@ -114,7 +114,7 @@ public class SyncOperationsInitializer {
 
         } else {
 
-            logger.debug("Failed to create testing support and content as develeperTestingEdition is null");
+            logger.error("Failed to create testing support and content as develeperTestingEdition is null");
         }
 
     }
