@@ -60,7 +60,6 @@ public class SyncCodeSystemAgent extends SyncService {
         Set<JsonNode> filteredCodeSystemsToProcess = filterCodeSystems(organizationJsonRootNode);
         logger.info("Will be processing only these " + filteredCodeSystemsToProcess.size() + " Code Systems: " + organizationJsonRootNode);
 
-
         // Identify new, removed, and existing codeSystems (Based on shortName)
         allDatabaseEditions.stream().forEach(e -> dbShortNames.add(e.getShortName()));
         filteredCodeSystemsToProcess.stream().filter(c -> (c.has("active") && c.get("active").asBoolean()) || !c.has("active")).forEach(cs -> activeSnowstormShortNames.add(cs.get("shortName").asText()));
@@ -90,7 +89,7 @@ public class SyncCodeSystemAgent extends SyncService {
         filteredCodeSystemsToProcess.stream().filter(cs -> newShortNames.contains(cs.get("shortName").asText())).forEach(matching -> addCodeSystem(matching));
 
         // TODO: For now, ignore this, but shouldn't ever throw exception at this point
-        if (developerTestingEdition == null && !forProduction) {
+        if (developerTestingEdition == null && !getIsProductionSystem()) {
             // throw new Exception("Must have a WCI Organization on a non-Prod instance");
         }
 
@@ -522,7 +521,7 @@ public class SyncCodeSystemAgent extends SyncService {
         if (DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(syncedEdition.getShortName())) {
 
             // Support Developer Edition
-            if (forProduction) {
+            if (getIsProductionSystem()) {
 
                 throw new Exception("Can't have a WCI Edition on a Prod instance");
             }
@@ -553,7 +552,6 @@ public class SyncCodeSystemAgent extends SyncService {
         }
 
     }
-
 
     private boolean isEditionToProcess(String codeSystem) {
 

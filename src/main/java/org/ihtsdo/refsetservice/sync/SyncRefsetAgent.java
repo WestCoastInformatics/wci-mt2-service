@@ -324,9 +324,9 @@ public class SyncRefsetAgent extends SyncService {
 
         for (String editionShortName : branchesToProcess.keySet()) {
 
-            if (isIgnoreCoreRefsets && utilities.isInternationalEdition(editionShortName)) {
+            if (getIsIgnoreCoreRefsets() && utilities.isInternationalEdition(editionShortName)) {
                 
-                logger.info("Processing CORE with ignoreCoreRefsets: " + isIgnoreCoreRefsets);
+                logger.info("Processing CORE with ignoreCoreRefsets: " + getIsIgnoreCoreRefsets());
                 continue;
             }
 
@@ -412,7 +412,7 @@ public class SyncRefsetAgent extends SyncService {
                                  */
                                 if (utilities.isInternationalEdition(edition.getName()) || !utilities.getInternationalModules().contains(moduleId)) {
     
-                                    if (persistVersion(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), branchesToProcess.get(edition.getShortName()).keySet())) {
+                                    if (isVersionToPersist(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), branchesToProcess.get(edition.getShortName()).keySet())) {
     
                                         SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, branchesToProcess.get(edition.getShortName()).keySet(), branchVersion, branchPath);
     
@@ -454,9 +454,9 @@ public class SyncRefsetAgent extends SyncService {
 
     }
 
-    private boolean persistVersion(String refsetId, Date branchVersion, Date versionDate, String branchPath, String editionName, Set<Date> editionVersions) throws Exception {
+    private boolean isVersionToPersist(String refsetId, Date branchVersion, Date versionDate, String branchPath, String editionName, Set<Date> editionVersions) throws Exception {
 
-        if (refsetPerVersionSync) {
+        if (getIsPerVersionSync()) {
 
             // In this scenario, each version is persisted regardless if change found
             return true;

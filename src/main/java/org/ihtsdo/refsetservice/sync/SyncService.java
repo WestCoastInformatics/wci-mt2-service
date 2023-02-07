@@ -39,7 +39,7 @@ public abstract class SyncService {
 
     private static Boolean isPerVersionSync = null;
 
-    protected static Boolean isIgnoreCoreRefsets = false;
+    private static Boolean isIgnoreCoreRefsets = false;
 
     /** Testing options. */
     private static boolean testing = false;
@@ -99,10 +99,6 @@ public abstract class SyncService {
 
     protected static Organization develeperTestingOranization = null;
 
-    protected boolean refsetPerVersionSync;
-
-    protected boolean forProduction;
-
     public abstract void syncSnowstorm() throws Exception;
 
     private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
@@ -112,20 +108,20 @@ public abstract class SyncService {
             utilities = new SyncUtilities();
         }
 
-            isPerVersionSync = refsetPerVersionSync;
-            isProductionSystem = runForProduction;
-            isIgnoreCoreRefsets = ignoreCoreRefsets;
+        isPerVersionSync = refsetPerVersionSync;
+        isProductionSystem = runForProduction;
+        isIgnoreCoreRefsets = ignoreCoreRefsets;
 
-            try {
+        try {
 
-                updateDatabaseCache();
+            updateDatabaseCache();
 
-            } catch (Exception e) {
+        } catch (Exception e) {
 
-                e.printStackTrace();
-            }
-
+            e.printStackTrace();
         }
+
+    }
 
     // TODO: Define when called vs normal one
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
@@ -177,13 +173,8 @@ public abstract class SyncService {
 
         final String queryResults = getPostSyncResults();
         utilities.emailImportResults(queryResults);
-        
-        logger.info("Completed Syncing with Snowstorm");
-    }
-    
-    public static Boolean getIsProductionSystem() {
 
-        return isProductionSystem == null ? false : isProductionSystem;
+        logger.info("Completed Syncing with Snowstorm");
     }
 
     public static void setRefsetToSync(final String refsetId, final String editionShortName) throws Exception {
@@ -233,7 +224,7 @@ public abstract class SyncService {
             logger.debug(" Edition Owner Map: " + editionOwnerMap);
 
             List<Project> defaultProjects =
-                allDatabaseProjects.stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default"))).collect(Collectors.toList());
+                    allDatabaseProjects.stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default"))).collect(Collectors.toList());
             defaultProjects.stream().forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
             logger.debug(" defaultEditionProjects: " + defaultEditionProjects);
         }
@@ -249,7 +240,7 @@ public abstract class SyncService {
             // Both not null with identical value, no difference
             return false;
         }
-        
+
         // values are different. List them
         if (databaseAttribute instanceof Long) {
 
@@ -257,7 +248,7 @@ public abstract class SyncService {
                 + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
         } else {
 
-            logger.error(" inconsistency found in " + shortName +  " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
+            logger.error(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
         }
 
         return true;
@@ -300,10 +291,19 @@ public abstract class SyncService {
 
     }
 
-    public static boolean isIgnoreCoreRefsets() {
+    public static Boolean getIsIgnoreCoreRefsets() {
 
-        return isIgnoreCoreRefsets;
+        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+    }
 
+    public static Boolean getIsProductionSystem() {
+
+        return isProductionSystem == null ? false : isProductionSystem;
+    }
+
+    public static Boolean getIsPerVersionSync() {
+
+        return isPerVersionSync == null ? false : isPerVersionSync;
     }
 
     public static void setTesting(boolean testing) {
