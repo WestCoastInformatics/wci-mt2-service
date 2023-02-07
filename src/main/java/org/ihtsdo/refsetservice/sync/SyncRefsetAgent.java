@@ -323,9 +323,9 @@ public class SyncRefsetAgent extends SyncService {
 
         for (String editionShortName : branchesToProcess.keySet()) {
 
-            if (!utilities.isInternationalEdition(editionShortName)) {
-                continue;
-            }
+//            if (!utilities.isInternationalEdition(editionShortName)) {
+//                continue;
+//            }
 
             if (getIsIgnoreCoreRefsets() && utilities.isInternationalEdition(editionShortName)) {
 
