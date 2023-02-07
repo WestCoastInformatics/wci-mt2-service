@@ -51,7 +51,7 @@ public abstract class SyncService {
     // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
     // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
-    
+
     protected static final SyncStatistics statistics = new SyncStatistics();
 
     /** Cache for all DB values used during sync **/
@@ -244,8 +244,8 @@ public abstract class SyncService {
         // values are different. List them
         if (databaseAttribute instanceof Long) {
 
-            logger.error(" inconsistency found in " + shortName +  " having " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute + ") and Snowstorm value '"
-                + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
+            logger.error(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute
+                    + ") and Snowstorm value '" + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
         } else {
 
             logger.error(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
@@ -311,7 +311,7 @@ public abstract class SyncService {
         SyncService.testing = testing;
 
     }
-    
+
     private static String getPostSyncResults() throws Exception {
 
         final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
@@ -355,13 +355,13 @@ public abstract class SyncService {
                     result.append("\r\n");
                 }
             }
-            
+
             logger.info("DONE POST SYNC DATA QUERIES");
-                        
+
         } catch (Exception e) {
             logger.error("ERROR getting db results", e);
         }
-        
+
         return result.toString();
     }
 

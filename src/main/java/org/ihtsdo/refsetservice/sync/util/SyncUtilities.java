@@ -106,7 +106,6 @@ public class SyncUtilities {
         return newEdition;
     }
 
-
     private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, Organization organization)
         throws Exception {
 
@@ -137,22 +136,22 @@ public class SyncUtilities {
         }
 
     }
-    
+
     public void removeEdition(Edition edition) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
-        
+
             logger.info("Removing existing RT2 Edition: " + edition.getId() + " (" + edition.getName() + ")" + edition);
 
             service.remove(edition);
 
         }
-        
+
         statistics.getEditionsRemoved().add(edition);
     }
-    
+
     public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -522,7 +521,7 @@ public class SyncUtilities {
         }
 
     }
-    
+
     public void emailImportResults(String queryResults) throws Exception {
 
         try {
@@ -538,16 +537,15 @@ public class SyncUtilities {
 
         RefsetService.clearAllRefsetCaches(null);
         RefsetMemberService.clearAllMemberCaches(null);
-        
+
         final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
 
         if (StringUtils.isNotBlank(emailReceipients)) {
             EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, queryResults);
         }
-        
+
         logger.info("Completed Syncing with Snowstorm");
     }
-    
 
     public void initializeService(TerminologyService service) {
 
