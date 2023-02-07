@@ -3,10 +3,6 @@ package org.ihtsdo.refsetservice.sync;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,10 +23,7 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
-import org.ihtsdo.refsetservice.util.EmailUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -134,6 +127,7 @@ public abstract class SyncService {
 
         }
 
+    // TODO: Define when called vs normal one
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
 
         if (isProductionSystem == null) {
@@ -176,31 +170,13 @@ public abstract class SyncService {
             initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets());
         }
 
+        // Post processing
         logger.info(agent.printStatistics());
 
         service.add(AuditEntryHelper.syncEntry(new Date()));
 
         final String queryResults = getPostSyncResults();
-
-        try {
-            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
-            final Path path = Paths.get(fileName);
-            byte[] queryResultsToBytes = queryResults.getBytes();
-
-            Files.write(path, queryResultsToBytes);
-        } catch (IOException e) {
-            logger.error("Error occured writing post sync report to file", e);
-        }
-
-        RefsetService.clearAllRefsetCaches(null);
-        RefsetMemberService.clearAllMemberCaches(null);
-        
-        final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
-
-        if (StringUtils.isNotBlank(emailReceipients)) {
-            EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, queryResults);
-        }
+        utilities.emailImportResults(queryResults);
         
         logger.info("Completed Syncing with Snowstorm");
     }
@@ -245,16 +221,12 @@ public abstract class SyncService {
             defaultEditionProjects.clear();
 
             allDatabaseEditions.addAll(service.getAll(Edition.class));
-            // logger.debug(" All Editions: " + allDatabaseEditions);
 
             allDatabaseOrganizations.addAll(service.getAll(Organization.class));
-            // logger.debug(" All Organizations: " + allDatabaseOrganizations);
 
             allDatabaseRefsets.addAll(service.getAll(Refset.class));
-            // logger.debug(" All Refsets: " + allDatabaseRefsets);
 
             allDatabaseProjects.addAll(service.getAll(Project.class));
-            // logger.debug(" All Projects: " + allDatabaseProjects);
 
             /** Process supporting collections **/
             allDatabaseEditions.stream().forEach(e -> editionOwnerMap.put(e.getShortName(), e.getOrganization().getName()));
@@ -268,38 +240,27 @@ public abstract class SyncService {
 
     }
 
-    protected boolean updateAttribute(String attributeName, Object databaseAttribute, Object snowstormAttribute) {
+    protected boolean isDifferentAttribute(String shortName, String attributeName, Object databaseAttribute, Object snowstormAttribute) {
 
-        if (snowstormAttribute == null) {
-
-            // Nothing to update if snowstorm is null
+        if (snowstormAttribute == null && databaseAttribute == null) {
+            // Both null, no difference
             return false;
-        } else if (databaseAttribute == null) {
-
-            // Handle inconsistent NULL
-            logger.info(" inconsistent " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
-
-            return true;
-
+        } else if (snowstormAttribute != null && databaseAttribute != null && databaseAttribute.equals(snowstormAttribute)) {
+            // Both not null with identical value, no difference
+            return false;
         }
+        
+        // values are different. List them
+        if (databaseAttribute instanceof Long) {
 
-        // Both have values, so compare
-        if (databaseAttribute.equals(snowstormAttribute)) {
-
-            return false;
+            logger.error(" inconsistency found in " + shortName +  " having " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute + ") and Snowstorm value '"
+                + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
         } else {
 
-            if (databaseAttribute instanceof Long) {
-
-                logger.info(" inconsistent " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute + ") and Snowstorm value '"
-                    + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
-            } else {
-
-                logger.info(" inconsistent " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
-            }
-
-            return true;
+            logger.error(" inconsistency found in " + shortName +  " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
         }
+
+        return true;
 
     }
 

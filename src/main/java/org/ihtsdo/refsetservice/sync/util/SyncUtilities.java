@@ -1,5 +1,10 @@
 package org.ihtsdo.refsetservice.sync.util;
 
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -8,8 +13,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
@@ -22,10 +27,13 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -514,6 +522,32 @@ public class SyncUtilities {
         }
 
     }
+    
+    public void emailImportResults(String queryResults) throws Exception {
+
+        try {
+            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
+            final Path path = Paths.get(fileName);
+            byte[] queryResultsToBytes = queryResults.getBytes();
+
+            Files.write(path, queryResultsToBytes);
+        } catch (IOException e) {
+            logger.error("Error occured writing post sync report to file", e);
+        }
+
+        RefsetService.clearAllRefsetCaches(null);
+        RefsetMemberService.clearAllMemberCaches(null);
+        
+        final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
+
+        if (StringUtils.isNotBlank(emailReceipients)) {
+            EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, queryResults);
+        }
+        
+        logger.info("Completed Syncing with Snowstorm");
+    }
+    
 
     public void initializeService(TerminologyService service) {
 
