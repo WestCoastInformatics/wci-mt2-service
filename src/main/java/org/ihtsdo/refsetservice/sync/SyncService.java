@@ -39,7 +39,7 @@ public abstract class SyncService {
 
     private static Boolean isPerVersionSync = null;
 
-    protected static Boolean isIgnoreCoreRefsets = true;
+    protected static Boolean isIgnoreCoreRefsets = false;
 
     /** Testing options. */
     private static boolean testing = false;
