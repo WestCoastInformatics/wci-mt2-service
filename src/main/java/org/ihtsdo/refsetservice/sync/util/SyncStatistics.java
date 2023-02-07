@@ -1,48 +1,43 @@
 package org.ihtsdo.refsetservice.sync.util;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
-import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 
 public class SyncStatistics {
 
     // orgName to Organization Map
-    private final Map<String, Organization> organizationsAdded = new HashMap<>();
+    private int organizationsAdded = 0;
 
-    private final Set<Organization> organizationsRemoved = new HashSet<>();
+    private int organizationsRemoved = 0;
 
-    private final Set<Organization> organizationsUnchanged = new HashSet<>();
+    private int organizationsUnchanged = 0;
 
-    private final Set<Organization> organizationsRecreated = new HashSet<>();
-
-    // Editions
-    private final Set<Edition> editionsAdded = new HashSet<>();
-
-    private final Set<Edition> editionsRemoved = new HashSet<>();;
-
-    private final Set<Edition> editionsUnchanged = new HashSet<>();
-
-    private final Set<Edition> editionsRecreated = new HashSet<>();;
-
-    // Refsets
-    private final Set<Refset> refsetVersionsAdded = new HashSet<>();
-
-    private final Set<Refset> refsetVersionsRemoved = new HashSet<>();;
-
-    private final Set<Refset> refsetVersionsUnchanged = new HashSet<>();
-
-    private final Set<Refset> refsetVersionsRecreated = new HashSet<>();;
+    private int organizationsRecreated = 0;
 
     private int organizationsSynced = 0;
 
+    // Editions
+    private int editionsAdded = 0;
+
+    private int editionsRemoved = 0;;
+
+    private int editionsUnchanged = 0;
+
+    private int editionsRecreated = 0;;
+
     private int editionsSynced = 0;
+
+    // Refsets
+    private int refsetVersionsAdded = 0;
+
+    private int refsetVersionsRemoved = 0;;
+
+    private int refsetVersionsUnchanged = 0;
+
+    private int refsetVersionsRecreated = 0;;
 
     private int refsetVersionsSynced = 0;
 
@@ -57,13 +52,13 @@ public class SyncStatistics {
 
         buf.append("*********    Syncing Results (Added/Removed/Recreated/Unchanged from the total Synced)    *************" + System.getProperty("line.separator"));
 
-        buf.append("Out of Organizations " + organizationsSynced + " Processed: " + organizationsAdded.size() + "/" + organizationsRemoved.size() + " / " + organizationsRecreated.size() + " / "
-                + organizationsUnchanged.size() + System.getProperty("line.separator"));
-
-        buf.append("Out of Editions " + editionsSynced + " Processed: " + editionsAdded.size() + " / " + editionsRemoved.size() + " / " + editionsRecreated.size() + " / " + editionsUnchanged.size()
+        buf.append("Out of Organizations " + organizationsSynced + " Processed: " + organizationsAdded + "/" + organizationsRemoved + " / " + organizationsRecreated + " / " + organizationsUnchanged
                 + System.getProperty("line.separator"));
-        buf.append("Out of Refset Version Pairs " + refsetVersionsSynced + " Processed: " + refsetVersionsAdded.size() + " / " + refsetVersionsRemoved.size() + " / " + refsetVersionsRecreated.size()
-                + " / " + refsetVersionsUnchanged.size() + System.getProperty("line.separator"));
+
+        buf.append("Out of Editions " + editionsSynced + " Processed: " + editionsAdded + " / " + editionsRemoved + " / " + editionsRecreated + " / " + editionsUnchanged
+                + System.getProperty("line.separator"));
+        buf.append("Out of Refset Version Pairs " + refsetVersionsSynced + " Processed: " + refsetVersionsAdded + " / " + refsetVersionsRemoved + " / " + refsetVersionsRecreated + " / "
+                + refsetVersionsUnchanged + System.getProperty("line.separator"));
         buf.append("Out of Projects " + projectsProcessed.size() + " Processed " + System.getProperty("line.separator"));
         buf.append("Out of Teams " + teamsProcessed.size() + " Processed");
 
@@ -72,19 +67,24 @@ public class SyncStatistics {
 
     public void clearStatistics() {
 
-        organizationsAdded.clear();
-        organizationsUnchanged.clear();
-        organizationsRemoved.clear();
-
-        editionsAdded.clear();
-        editionsUnchanged.clear();
-        editionsRemoved.clear();
-
-        refsetVersionsAdded.clear();
-        refsetVersionsUnchanged.clear();
-        refsetVersionsRemoved.clear();
-
+        organizationsAdded = 0;
+        organizationsRemoved = 0;
+        organizationsUnchanged = 0;
+        organizationsRecreated = 0;
         organizationsSynced = 0;
+
+        editionsAdded = 0;
+        editionsRemoved = 0;
+        editionsUnchanged = 0;
+        editionsRecreated = 0;
+        editionsSynced = 0;
+
+        refsetVersionsAdded = 0;
+        refsetVersionsRemoved = 0;
+        refsetVersionsUnchanged = 0;
+        refsetVersionsRecreated = 0;
+        refsetVersionsSynced = 0;
+
         editionsSynced = 0;
         refsetVersionsSynced = 0;
 
@@ -93,64 +93,138 @@ public class SyncStatistics {
 
     }
 
-    public Map<String, Organization> getOrganizationsAdded() {
+    public int getOrganizationsAdded() {
 
         return organizationsAdded;
     }
 
-    public Set<Organization> getOrganizationsRemoved() {
+    public int getOrganizationsRemoved() {
 
         return organizationsRemoved;
     }
 
-    public Set<Organization> getOrganizationsUnchanged() {
+    public int getOrganizationsUnchanged() {
 
         return organizationsUnchanged;
     }
 
-    public Set<Organization> getOrganizationsRecreated() {
+    public int getOrganizationsRecreated() {
 
         return organizationsRecreated;
     }
 
-    public Set<Edition> getEditionsAdded() {
+    public int getOrganizationsSynced() {
+        return organizationsSynced;
+    }
+
+    public int getEditionsAdded() {
 
         return editionsAdded;
     }
 
-    public Set<Edition> getEditionsRemoved() {
+    public int getEditionsRemoved() {
 
         return editionsRemoved;
     }
 
-    public Set<Edition> getEditionsUnchanged() {
+    public int getEditionsUnchanged() {
 
         return editionsUnchanged;
     }
 
-    public Set<Edition> getEditionsRecreated() {
+    public int getEditionsRecreated() {
 
         return editionsRecreated;
     }
 
-    public Set<Refset> getRefsetVersionsAdded() {
+    public int getEditionsSynced() {
+        return editionsSynced;
+    }
+
+    public int getRefsetVersionsAdded() {
 
         return refsetVersionsAdded;
     }
 
-    public Set<Refset> getRefsetVersionsRemoved() {
+    public int getRefsetVersionsRemoved() {
 
         return refsetVersionsRemoved;
     }
 
-    public Set<Refset> getRefsetVersionsUnchanged() {
+    public int getRefsetVersionsUnchanged() {
 
         return refsetVersionsUnchanged;
     }
 
-    public Set<Refset> getRefsetVersionsRecreated() {
+    public int getRefsetVersionsRecreated() {
 
         return refsetVersionsRecreated;
+    }
+
+    public int getRefsetVersionsSynced() {
+        return refsetVersionsSynced;
+    }
+
+    // Increments
+
+    public void incrementOrganizationsAdded() {
+        organizationsAdded++;
+    }
+
+    public void incrementOrganizationsRemoved() {
+        organizationsRemoved++;
+    }
+
+    public void incrementOrganizationsUnchanged() {
+        organizationsUnchanged++;
+    }
+
+    public void incrementOrganizationsRecreated() {
+        organizationsRecreated++;
+    }
+
+    public void incrementOrganizationsSynced() {
+        organizationsSynced++;
+    }
+
+    public void incrementEditionsAdded() {
+        editionsAdded++;
+    }
+
+    public void incrementEditionsRemoved() {
+        editionsRemoved++;
+    }
+
+    public void incrementEditionsUnchanged() {
+        editionsUnchanged++;
+    }
+
+    public void incrementEditionsRecreated() {
+        editionsRecreated++;
+    }
+
+    public void incrementEditionsSynced() {
+        editionsSynced++;
+    }
+
+    public void incrementRefsetVersionsAdded() {
+        refsetVersionsAdded++;
+    }
+
+    public void incrementRefsetVersionsRemoved() {
+        refsetVersionsRemoved++;
+    }
+
+    public void incrementRefsetVersionsUnchanged() {
+        refsetVersionsUnchanged++;
+    }
+
+    public void incrementRefsetVersionsRecreated() {
+        refsetVersionsRecreated++;
+    }
+
+    public void incrementRefsetVersionsSynced() {
+        refsetVersionsSynced++;
     }
 
     public Set<Project> getProjectsProcessed() {
@@ -161,29 +235,5 @@ public class SyncStatistics {
     public Set<Team> getTeamsProcessed() {
 
         return teamsProcessed;
-    }
-
-    public int getOrganizationsSynced() {
-        return organizationsSynced;
-    }
-
-    public int getEditionsSynced() {
-        return editionsSynced;
-    }
-
-    public int getRefsetVersionsSynced() {
-        return refsetVersionsSynced;
-    }
-
-    public void incrementOrganizationsSynced() {
-        organizationsSynced++;
-    }
-
-    public void incrementEditionsSynced() {
-        editionsSynced++;
-    }
-
-    public void incrementRefsetVersionsSynced() {
-        refsetVersionsSynced++;
     }
 }

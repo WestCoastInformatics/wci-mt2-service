@@ -112,7 +112,7 @@ public class SyncRefsetAgent extends SyncService {
 
         if (syncedRefset == null) {
 
-            statistics.getRefsetVersionsUnchanged().add(refset);
+            statistics.incrementRefsetVersionsUnchanged();
             syncedRefset = refset;
         } else {
 
@@ -306,7 +306,7 @@ public class SyncRefsetAgent extends SyncService {
             snowstormRefsets.add(refset);
             allDatabaseRefsets.add(refset);
 
-            statistics.getRefsetVersionsAdded().add(refset);
+            statistics.incrementRefsetVersionsAdded();
 
             if (!uniqueRefsetIds.contains(refset.getRefsetId())) {
 
