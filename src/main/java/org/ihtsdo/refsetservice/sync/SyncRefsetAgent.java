@@ -325,12 +325,6 @@ public class SyncRefsetAgent extends SyncService {
 //                continue;
 //            }
 
-            if (getIsIgnoreCoreRefsets() && utilities.isInternationalEdition(editionShortName)) {
-
-                logger.info("Processing CORE with ignoreCoreRefsets: " + getIsIgnoreCoreRefsets());
-                continue;
-            }
-
             List<Edition> editions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(editionShortName)).collect(Collectors.toList());
 
             if (editions == null || editions.size() != 1) {

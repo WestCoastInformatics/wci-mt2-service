@@ -387,6 +387,13 @@ public class SyncCodeSystemAgent extends SyncService {
 
                 final String editionShortName = codeSystem.get("shortName").asText();
 
+                if (getIsIgnoreCoreRefsets() && utilities.isInternationalEdition(editionShortName)) {
+
+                    logger.info("Not processing CORE based on flag: ignoreCoreRefsets = " + getIsIgnoreCoreRefsets());
+                    continue;
+                }
+
+
                 // Testing
                 if (isEditionToProcess(editionShortName)) {
                     final String maintainerType = identifyMaintainerType(codeSystem, editionShortName);
