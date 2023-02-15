@@ -90,6 +90,7 @@ public class SyncRefsetAgent extends SyncService {
     private Refset syncRefsetVersion(Date version, SyncRefsetMetadata snowstormRefsetVersionData, Map<Date, Refset> databaseRefsetVersionPairs) throws Exception {
 
         Refset syncedRefset = null;
+        statistics.setRefsetVersionsSynced(statistics.getRefsetVersionsSynced() + 1);
 
         if (databaseRefsetVersionPairs == null || !databaseRefsetVersionPairs.containsKey(version)) {
 
@@ -112,7 +113,6 @@ public class SyncRefsetAgent extends SyncService {
 
         if (syncedRefset == null) {
 
-            statistics.incrementRefsetVersionsUnchanged();
             syncedRefset = refset;
         } else {
 
@@ -305,8 +305,6 @@ public class SyncRefsetAgent extends SyncService {
 
             snowstormRefsets.add(refset);
             allDatabaseRefsets.add(refset);
-
-            statistics.incrementRefsetVersionsAdded();
 
             if (!uniqueRefsetIds.contains(refset.getRefsetId())) {
 

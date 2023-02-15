@@ -740,7 +740,6 @@ public class SyncPropertyFileReader {
 
         if (line.toLowerCase().contains(SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
-            logger.debug("Ignoring project line that has the word '" + SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD + "' in it: " + line);
             projectsToIgnore.add(line.split(SPLIT_CHARACTER)[0]);
         }
 

@@ -125,6 +125,7 @@ public abstract class SyncService {
 
     // TODO: Define when called vs normal one
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
+        clearPreviousRun();
 
         if (isProductionSystem == null) {
 
@@ -137,6 +138,8 @@ public abstract class SyncService {
 
     public static void sync(TerminologyService service) throws Exception {
 
+        clearPreviousRun();
+        
         if (isProductionSystem == null) {
 
             initialize(false, false, false);
@@ -186,7 +189,7 @@ public abstract class SyncService {
         RefsetMemberService.clearUniqueRefsetVersions(refsetId);
     }
 
-    protected void clearPreviousRun() {
+    protected static void clearPreviousRun() {
 
         developerTestingEdition = null;
 
@@ -221,12 +224,12 @@ public abstract class SyncService {
 
             /** Process supporting collections **/
             allDatabaseEditions.stream().forEach(e -> editionOwnerMap.put(e.getShortName(), e.getOrganization().getName()));
-            logger.debug(" Edition Owner Map: " + editionOwnerMap);
+            logger.info(" Edition Owner Map: " + editionOwnerMap);
 
             List<Project> defaultProjects =
                     allDatabaseProjects.stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default"))).collect(Collectors.toList());
             defaultProjects.stream().forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
-            logger.debug(" defaultEditionProjects: " + defaultEditionProjects);
+            logger.info(" defaultEditionProjects: " + defaultEditionProjects);
         }
 
     }

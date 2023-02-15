@@ -39,14 +39,8 @@ public class SyncCodeSystemAgent extends SyncService {
         codeSystemsNewAndInactive.clear();
     }
 
-    protected Edition getDeveloperTestingEdition() {
-
-        return developerTestingEdition;
-    }
-
     public void syncSnowstorm() throws Exception {
 
-        clearPreviousRun();
         updateDatabaseCache();
 
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
@@ -55,10 +49,13 @@ public class SyncCodeSystemAgent extends SyncService {
 
         // Count and filter code systems (filtering based on ignoredCS list and bad data)
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-        logger.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
+        int codeSystemsReturned = countCodeSystems(organizationIterator);
+        logger.info("Found " + codeSystemsReturned + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
 
         Set<JsonNode> filteredCodeSystemsToProcess = filterCodeSystems(organizationJsonRootNode);
         logger.info("Will be processing only these " + filteredCodeSystemsToProcess.size() + " Code Systems: " + organizationJsonRootNode);
+        statistics.setCodeSystemsSynced(codeSystemsReturned);
+        statistics.setCodeSystemsFiltered(filteredCodeSystemsToProcess.size());
 
         // Identify new, removed, and existing codeSystems (Based on shortName)
         allDatabaseEditions.stream().forEach(e -> dbShortNames.add(e.getShortName()));
@@ -67,15 +64,19 @@ public class SyncCodeSystemAgent extends SyncService {
 
         List<String> newShortNames = activeSnowstormShortNames.stream().filter(c -> !dbShortNames.contains(c)).collect(Collectors.toList());
         List<String> removedShortNames = dbShortNames.stream().filter(c -> !activeSnowstormShortNames.contains(c)).collect(Collectors.toList());
-        List<String> existingShortNames = dbShortNames.stream().filter(c -> activeSnowstormShortNames.contains(c)).collect(Collectors.toList());
+        statistics.setEditionsAdded(newShortNames.size());
+        statistics.setEditionsRemoved(removedShortNames.size());
 
         // Process each type of code system. First review existing so that anything changed will be deleted and recreated
+        List<String> existingShortNames = dbShortNames.stream().filter(c -> activeSnowstormShortNames.contains(c)).collect(Collectors.toList());
         List<String> changedShortNames = reviewExistingCodeSystems(filteredCodeSystemsToProcess, existingShortNames);
+        statistics.setEditionsUnchanged(existingShortNames.size() - changedShortNames.size());
+        statistics.setEditionsRecreated(changedShortNames.size());
 
         newShortNames.addAll(changedShortNames);
         removedShortNames.addAll(changedShortNames);
 
-        // Remove existing Code Systems
+        // Remove existing organization
         filteredCodeSystemsToProcess.stream().filter(cs -> removedShortNames.contains(cs.get("shortName").asText())).forEach(matching -> {
             try {
                 Edition edition = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(matching)).collect(Collectors.toList()).iterator().next();
@@ -86,7 +87,7 @@ public class SyncCodeSystemAgent extends SyncService {
             }
         });
 
-        // Add new Code Systems
+        // Add new organization
         filteredCodeSystemsToProcess.stream().filter(cs -> newShortNames.contains(cs.get("shortName").asText())).forEach(matching -> addCodeSystem(matching));
 
         // TODO: For now, ignore this, but shouldn't ever throw exception at this point
@@ -183,7 +184,7 @@ public class SyncCodeSystemAgent extends SyncService {
                         }
 
                     } else {
-                        logger.info("Ignoring branch as doesn't comply with expected format (where final item in path is a date in format yyyy-mm-dd: " + childDate);
+                        logger.info("Ignoring branch " + childDate + " as it doesn't comply with expected format (where final item in path is a date in format yyyy-mm-dd");
                     }
 
                     if (!childAdded) {
@@ -271,8 +272,10 @@ public class SyncCodeSystemAgent extends SyncService {
             setSnowstormEditionOwner(shortName, editionName, codeSystem);
 
             Organization organization = identifyMatchingOrganization(shortName);
-
-            if (organization == null) {
+            if (organization != null) {
+                statistics.incrementOrganizationsUnchanged();
+            } else {
+                statistics.incrementOrganizationsAdded();
 
                 organization = createOrganization(shortName, maintainerType);
             }
@@ -305,6 +308,7 @@ public class SyncCodeSystemAgent extends SyncService {
         List<Organization> organizations = allDatabaseOrganizations.stream().filter(o -> o.getName().equals(editionOwnerMap.get(editionShortName))).collect(Collectors.toList());
 
         if (organizations.isEmpty()) {
+            // TODO: If was once there but not, do we remove owner?
 
             // First time seeing owner
             return null;
@@ -314,6 +318,7 @@ public class SyncCodeSystemAgent extends SyncService {
         }
 
         // Found existing owner
+        statistics.incrementOrganizationsUnchanged();
         return organizations.iterator().next();
     }
 
@@ -546,6 +551,11 @@ public class SyncCodeSystemAgent extends SyncService {
 
         }
 
+    }
+
+    protected Edition getDeveloperTestingEdition() {
+
+        return developerTestingEdition;
     }
 
     private boolean isEditionToProcess(String codeSystem) {

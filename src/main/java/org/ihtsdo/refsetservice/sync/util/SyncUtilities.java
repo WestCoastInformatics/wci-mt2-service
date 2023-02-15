@@ -127,8 +127,6 @@ public class SyncUtilities {
 
             Edition e = service.add(edition);
 
-            statistics.incrementEditionsAdded();
-
             logger.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
 
             return e;
@@ -147,8 +145,6 @@ public class SyncUtilities {
             service.remove(edition);
 
         }
-
-        statistics.incrementEditionsRemoved();
     }
 
     public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
@@ -171,8 +167,6 @@ public class SyncUtilities {
 
             // Persist
             final Refset r = service.add(refset);
-
-            statistics.incrementRefsetVersionsAdded();
 
             logger.info("Adding new Refset and/or Version for : " + r.getId() + " (" + r.getName() + ") on: " + r.getVersionDate());
 
@@ -244,8 +238,6 @@ public class SyncUtilities {
                 logger.info("Added new WCI Refset - " + refset.getId() + " (" + refset.getName() + ")" + refset);
 
                 Refset updatedRefset = initializeWorkflowStatus(refset);
-
-                statistics.incrementRefsetVersionsAdded();
 
                 logger.info(" and then updated the new WCI refset's Workflow Status - " + updatedRefset);
 
