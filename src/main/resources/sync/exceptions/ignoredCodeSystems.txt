@@ -5,14 +5,6 @@ SNOMEDCT-CSR	Cancer Synoptic Community Content
 SNOMEDCT-CVCC	COVID-19 Vaccines Community Content
 SNOMEDCT-CDE	Common German Translation - OLD
 SNOMEDCT-BEUPD	Belgian Edition Upgrade
-SNOMEDCT-WCI-MS	WCI Edition Managed Service
-SNOMEDCT-WCI-MS2	WCI Edition Managed Service2
-SNOMEDCT-WCI-MS3	WCI Edition Managed Service3
-SNOMEDCT-WCI-MS4	WCI Edition Managed Service4
-SNOMEDCT-WCIa	WCI Editiona
-SNOMEDCT-AM	Armenian Extension
-SNOMEDCT-AT	Austrian Extension
-SNOMEDCT-KR	Korean Extension
 SNOMEDCT-ES	Spanish Edition
 SNOMEDCT-TM	Traditional Medicine
 SNOMEDCT-COMDE	Common German Translation

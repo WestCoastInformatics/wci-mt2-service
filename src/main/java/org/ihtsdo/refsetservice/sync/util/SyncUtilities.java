@@ -147,6 +147,18 @@ public class SyncUtilities {
         }
     }
 
+    public void removeRefsetVersionPair(Refset refset) throws Exception {
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            logger.info("Removing existing refset: " + refset.getId() + " (" + refset.getRefsetId() + ")" + refset.getVersionDate());
+
+            service.remove(refset);
+
+        }
+    }
+
     public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
         try (final TerminologyService service = new TerminologyService()) {
 
