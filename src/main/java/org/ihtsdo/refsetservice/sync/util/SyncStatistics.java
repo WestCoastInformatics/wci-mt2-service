@@ -43,6 +43,10 @@ public class SyncStatistics {
 
     private static final Set<Team> teamsProcessed = new HashSet<>();
 
+    public static final String CHANGED = "Changed";
+
+    public static final String UNCHANGED = "Unchanged";
+
     public String printStatistics() {
 
         StringBuffer buf = new StringBuffer();
@@ -155,6 +159,15 @@ public class SyncStatistics {
         organizationsUnchanged++;
     }
 
+    public void incrementRefsetVersionsAdded() {
+        refsetVersionsAdded++;
+    }
+
+    public void incrementRefsetVersionsRemoved() {
+        refsetVersionsRemoved++;
+    }
+
+    // SETTERS
     public void setEditionsAdded(int val) {
         editionsAdded = val;
     }
@@ -171,24 +184,25 @@ public class SyncStatistics {
         editionsRecreated = val;
     }
 
-    public void setRefsetVersionsAdded(int val) {
-        refsetVersionsAdded = val;
-    }
-
     public void setRefsetVersionsRemoved(int val) {
         refsetVersionsRemoved = val;
     }
 
-    public void setRefsetVersionsUnchanged(int val) {
-        refsetVersionsUnchanged = val;
+    public void incrementRefsetVersionsUnchanged() {
+        refsetVersionsUnchanged++;
+
     }
 
-    public void setRefsetVersionsRecreated(int val) {
-        refsetVersionsRecreated = val;
+    public void incrementRefsetVersionsRecreated() {
+        refsetVersionsRecreated++;
     }
 
     public void setRefsetVersionsSynced(int val) {
         refsetVersionsSynced = val;
+    }
+
+    public void setRefsetVersionsAdded(int val) {
+        refsetVersionsAdded = val;
     }
 
     public Set<Project> getProjectsProcessed() {

@@ -18,6 +18,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncRefsetMetadata;
+import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
@@ -49,53 +50,204 @@ public class SyncRefsetAgent extends SyncService {
         Set<SyncRefsetMetadata> filteredRefsets = filterRefsetsToProcess();
 
         // Map each refsetId/version pair's SyncRefsetMetadata
-        Map<String, Map<Date, SyncRefsetMetadata>> allSnowstormRefsetVersionPairs = parseSnowstormRefsetVersionPairs(filteredRefsets);
+        Map<String, Map<Date, SyncRefsetMetadata>> sortedPublishedSnowstormRefsetVersionPairs = sortPublishedSnowstormRefsetVersionPairs(filteredRefsets);
+        Map<String, Map<Date, Refset>> sortedDatabaseRefsetVersionPairs = sortDatabaseRefsetVersionPairs();
+        Map<String, Map<Date, Refset>> publishedDatabaseRefsetVersionPairs = identifyPublishedDatabaseRefsetVersionPairs(sortedDatabaseRefsetVersionPairs);
 
-        Map<String, Map<Date, Refset>> allDatabaseRefsetVersionPairs = parseDatabaseRefsetVersionPairs();
+        logger.info(" syncSnowstormRefsets: Examining if there are any new or changes to the  " + statistics.getRefsetVersionsSynced() + " refset/version pairs found on Snowstorm");
+        Map<String, Set<Date>> newPairs = identifyNewSnowstormRefsetVersionPairs(sortedPublishedSnowstormRefsetVersionPairs, publishedDatabaseRefsetVersionPairs);
+        Map<String, Set<Date>> missingPairs = identifyMissingSnowstormRefsetVersionPairs(sortedPublishedSnowstormRefsetVersionPairs, publishedDatabaseRefsetVersionPairs);
+        Map<String, Map<String, Set<Date>>> changedPairs = identifyChangedVersionPairs(sortedPublishedSnowstormRefsetVersionPairs, publishedDatabaseRefsetVersionPairs, newPairs, missingPairs);
 
-        int counter = 0;
+        List<String> newNeedsRefsetKey = changedPairs.get(SyncStatistics.CHANGED).keySet().stream().filter(refsetId -> !newPairs.containsKey(refsetId)).collect(Collectors.toList());
+        List<String> missingNeedsRefsetKey = changedPairs.get(SyncStatistics.CHANGED).keySet().stream().filter(refsetId -> !missingPairs.containsKey(refsetId)).collect(Collectors.toList());
 
-        for (String refsetId : allSnowstormRefsetVersionPairs.keySet()) {
+        newNeedsRefsetKey.stream().forEach(refsetId -> newPairs.put(refsetId, new HashSet<>()));
+        missingNeedsRefsetKey.stream().forEach(refsetId -> missingPairs.put(refsetId, new HashSet<>()));
 
-            counter += allSnowstormRefsetVersionPairs.get(refsetId).keySet().size();
-        }
+        // TODO: Changed should be version/based, not all refsets entirely
+        changedPairs.get(SyncStatistics.CHANGED).keySet().stream().forEach(refsetId -> newPairs.put(refsetId, changedPairs.get(SyncStatistics.CHANGED).get(refsetId)));
+        changedPairs.get(SyncStatistics.CHANGED).keySet().stream().forEach(refsetId -> missingPairs.put(refsetId, changedPairs.get(SyncStatistics.CHANGED).get(refsetId)));
 
-        logger.info(" syncSnowstormRefsets: Examining if there are any new or changes to the  " + counter + " refset/version pairs found on Snowstorm");
+        statistics.setRefsetVersionsAdded(newPairs.size());
+        statistics.setRefsetVersionsRemoved(missingPairs.size());
 
-        counter = 0;
+        // Remove existing refsets
+        missingPairs.keySet().stream().forEach(refsetId -> missingPairs.get(refsetId).stream().forEach(version -> {
+            try {
+                utilities.removeRefsetVersionPair(publishedDatabaseRefsetVersionPairs.get(refsetId).get(version));
+            } catch (Exception e) {
+                logger.error("Failed in removing exiting refset version " + refsetId + " / " + version);
+            }
+        }));
 
-        final Set<Refset> syncedRefsets = new HashSet<>();
-        for (String refsetId : allSnowstormRefsetVersionPairs.keySet()) {
+        // Add new refsets
+        Set<Refset> newlyCreatedAndUnchangedRefsetVersionPairs = new HashSet<>();
 
-            for (Date version : allSnowstormRefsetVersionPairs.get(refsetId).keySet()) {
+        newPairs.keySet().stream().forEach(refsetId -> newPairs.get(refsetId).stream().forEach(version -> {
 
-                Refset syncedRefset = syncRefsetVersion(version, allSnowstormRefsetVersionPairs.get(refsetId).get(version), allDatabaseRefsetVersionPairs.get(refsetId));
-                syncedRefsets.add(syncedRefset);
+            try {
+                Refset newRefset = processNewRefsetVersionPair(sortedPublishedSnowstormRefsetVersionPairs.get(refsetId).get(version));
+                newlyCreatedAndUnchangedRefsetVersionPairs.add(newRefset);
+            } catch (Exception e) {
+                logger.error("Failed in processing refset version " + refsetId + " / " + version);
+            }
+            // Collect newly created refsets
+        }));
 
-                if (++counter % 100 == 0) {
+        // Collect unchanged refsets
+        changedPairs.get(SyncStatistics.UNCHANGED).keySet().stream().forEach(refsetId -> changedPairs.get(SyncStatistics.UNCHANGED).get(refsetId).stream().forEach(version -> {
+            newlyCreatedAndUnchangedRefsetVersionPairs.add(publishedDatabaseRefsetVersionPairs.get(refsetId).get(version));
+        }));
 
-                    logger.info("... processed " + counter);
+        // Final step
+        finalizeNewOrChangedRefsets(newlyCreatedAndUnchangedRefsetVersionPairs);
+    }
+
+    private Map<String, Map<String, Set<Date>>> identifyChangedVersionPairs(Map<String, Map<Date, SyncRefsetMetadata>> snowstormPairs, Map<String, Map<Date, Refset>> databasePairs,
+        Map<String, Set<Date>> newInSnowstormPairs, Map<String, Set<Date>> missingPairs) throws Exception {
+
+        final Map<String, Map<String, Set<Date>>> existingRefsetVersionPairs = new HashMap<>();
+
+        existingRefsetVersionPairs.put(SyncStatistics.CHANGED, new HashMap<>());
+        existingRefsetVersionPairs.put(SyncStatistics.UNCHANGED, new HashMap<>());
+
+        for (String refsetId : snowstormPairs.keySet()) {
+
+            Refset syncedRefsetVersionPair = null;
+            for (Date version : snowstormPairs.get(refsetId).keySet()) {
+
+                if (newInSnowstormPairs.containsKey(refsetId) && newInSnowstormPairs.get(refsetId).contains(version)) {
+                    continue;
+                } else if (missingPairs.containsKey(refsetId) && missingPairs.get(refsetId).contains(version)) {
+                    continue;
                 }
+
+                try {
+                    Refset databaseRefsetVersion = databasePairs.get(refsetId).get(version);
+                    SyncRefsetMetadata snowstormRefsetVersionData = snowstormPairs.get(refsetId).get(version);
+
+                    syncedRefsetVersionPair = syncExistingRefsetVersionPairs(snowstormRefsetVersionData, databaseRefsetVersion);
+                } catch (NullPointerException e) {
+                    logger.error(
+                            "Failed getting the matching pairs in identifyChanged`VersionPairs for " + refsetId + " / " + version + " / " + snowstormPairs.get(refsetId).get(version).getBranchPath());
+                    continue;
+                }
+
+                String analysisFinding;
+                if (syncedRefsetVersionPair == null) {
+                    // DB & Snowstorm are identical
+                    analysisFinding = SyncStatistics.UNCHANGED;
+                    statistics.incrementRefsetVersionsUnchanged();
+                } else {
+                    // Difference found... process
+                    analysisFinding = SyncStatistics.CHANGED;
+                    statistics.incrementRefsetVersionsRecreated();
+                }
+
+                // No differences found
+                if (!existingRefsetVersionPairs.get(analysisFinding).containsKey(refsetId)) {
+
+                    existingRefsetVersionPairs.get(analysisFinding).put(refsetId, new HashSet<>());
+                }
+                existingRefsetVersionPairs.get(analysisFinding).get(refsetId).add(version);
 
             }
 
         }
 
-        logger.info("Finished having processed " + counter);
+        return existingRefsetVersionPairs;
+    }
 
-        finalizeRefsets(syncedRefsets);
+    private Map<String, Set<Date>> identifyMissingSnowstormRefsetVersionPairs(Map<String, Map<Date, SyncRefsetMetadata>> snowstormPairs, Map<String, Map<Date, Refset>> databasePairs) {
+        Map<String, Set<Date>> missingPairs = new HashMap<>();
 
+        // Identify missing refsets and add them to return map
+        List<String> missingRefsets = databasePairs.keySet().stream().filter(refsetId -> !snowstormPairs.keySet().contains(refsetId)).collect(Collectors.toList());
+        for (String refsetId : missingRefsets) {
+
+            missingPairs.put(refsetId, databasePairs.get(refsetId).keySet());
+
+            statistics.setRefsetVersionsRemoved(statistics.getRefsetVersionsRemoved() + databasePairs.get(refsetId).keySet().size());
+        }
+
+        // Identify missing refset versions and add them to return map
+        for (String refsetId : databasePairs.keySet()) {
+            if (!missingRefsets.contains(refsetId)) {
+                for (Date version : databasePairs.get(refsetId).keySet()) {
+                    if (!snowstormPairs.get(refsetId).containsKey(version)) {
+
+                        statistics.incrementRefsetVersionsRemoved();
+                        missingPairs.get(refsetId).add(version);
+                    }
+                }
+            }
+        }
+
+        return missingPairs;
+    }
+
+    private Map<String, Set<Date>> identifyNewSnowstormRefsetVersionPairs(Map<String, Map<Date, SyncRefsetMetadata>> snowstormPairs, Map<String, Map<Date, Refset>> databasePairs) {
+        Map<String, Set<Date>> newPairs = new HashMap<>();
+
+        // Identify brand new refsets and add them to return map
+        List<String> newRefsets = snowstormPairs.keySet().stream().filter(refsetId -> !databasePairs.keySet().contains(refsetId)).collect(Collectors.toList());
+        for (String refsetId : newRefsets) {
+            newPairs.put(refsetId, snowstormPairs.get(refsetId).keySet());
+
+            statistics.setRefsetVersionsAdded(statistics.getRefsetVersionsAdded() + snowstormPairs.get(refsetId).keySet().size());
+        }
+
+        // Identify new refset versions and add them to return map
+        for (String refsetId : snowstormPairs.keySet()) {
+
+            if (!newRefsets.contains(refsetId)) {
+
+                for (Date version : snowstormPairs.get(refsetId).keySet()) {
+
+                    if (!databasePairs.get(refsetId).containsKey(version)) {
+
+                        statistics.incrementRefsetVersionsAdded();
+                        newPairs.get(refsetId).add(version);
+                    }
+                }
+            }
+        }
+
+        return newPairs;
+    }
+
+    private Map<String, Map<Date, Refset>> identifyPublishedDatabaseRefsetVersionPairs(Map<String, Map<Date, Refset>> sortedDatabaseRefsetVersionPairs) {
+        HashMap<String, Map<Date, Refset>> publishedDatabaseRefsetVersionPairs = new HashMap<>();
+
+        for (String refsetId : sortedDatabaseRefsetVersionPairs.keySet()) {
+
+            for (Date version : sortedDatabaseRefsetVersionPairs.get(refsetId).keySet()) {
+
+                // Those published get added
+                if (sortedDatabaseRefsetVersionPairs.get(refsetId).get(version).getVersionStatus().equals(Refset.PUBLISHED)) {
+                    if (!publishedDatabaseRefsetVersionPairs.containsKey(refsetId)) {
+
+                        publishedDatabaseRefsetVersionPairs.put(refsetId, new HashMap<>());
+                    }
+
+                    publishedDatabaseRefsetVersionPairs.get(refsetId).put(version, sortedDatabaseRefsetVersionPairs.get(refsetId).get(version));
+
+                }
+            }
+        }
+
+        return publishedDatabaseRefsetVersionPairs;
     }
 
     private Refset syncRefsetVersion(Date version, SyncRefsetMetadata snowstormRefsetVersionData, Map<Date, Refset> databaseRefsetVersionPairs) throws Exception {
 
         Refset syncedRefset = null;
-        statistics.setRefsetVersionsSynced(statistics.getRefsetVersionsSynced() + 1);
 
         if (databaseRefsetVersionPairs == null || !databaseRefsetVersionPairs.containsKey(version)) {
 
             // First time seeing refset version pair from snowstorm
-            syncedRefset = syncNewRefsetVersionPair(snowstormRefsetVersionData);
+            syncedRefset = processNewRefsetVersionPair(snowstormRefsetVersionData);
 
         } else {
 
@@ -111,18 +263,15 @@ public class SyncRefsetAgent extends SyncService {
 
         Refset syncedRefset = compareAndUpdateRefsetDifferences(refset, snowstormRefsetData);
 
-        if (syncedRefset == null) {
-
-            syncedRefset = refset;
-        } else {
-
+        if (syncedRefset != null) {
+            // TODO: Remove?
             postRefsetProcessing(syncedRefset, snowstormRefsetData.getEdition());
         }
 
         return syncedRefset;
     }
 
-    private Refset syncNewRefsetVersionPair(SyncRefsetMetadata refsetData) throws Exception {
+    private Refset processNewRefsetVersionPair(SyncRefsetMetadata refsetData) throws Exception {
 
         final String refsetId = refsetData.getRefsetNode().get("conceptId").asText();
         final String moduleId = refsetToModuleMap.get(refsetId);
@@ -136,70 +285,57 @@ public class SyncRefsetAgent extends SyncService {
 
     }
 
-    private Map<String, Map<Date, Refset>> parseDatabaseRefsetVersionPairs() {
+    private Map<String, Map<Date, Refset>> sortDatabaseRefsetVersionPairs() {
 
-        Map<String, Map<Date, Refset>> retMap = new HashMap<>();
+        Map<String, Map<Date, Refset>> sortedDatabaseRefsetVersionPairs = new HashMap<>();
 
         for (Refset dbRefset : allDatabaseRefsets) {
 
-            if (!retMap.containsKey(dbRefset.getRefsetId())) {
+            if (!sortedDatabaseRefsetVersionPairs.containsKey(dbRefset.getRefsetId())) {
 
-                retMap.put(dbRefset.getRefsetId(), new HashMap<>());
+                sortedDatabaseRefsetVersionPairs.put(dbRefset.getRefsetId(), new HashMap<>());
             }
 
-            retMap.get(dbRefset.getRefsetId()).put(dbRefset.getVersionDate(), dbRefset);
+            sortedDatabaseRefsetVersionPairs.get(dbRefset.getRefsetId()).put(dbRefset.getVersionDate(), dbRefset);
         }
 
-        return retMap;
+        return sortedDatabaseRefsetVersionPairs;
     }
 
-    private Map<String, Map<Date, SyncRefsetMetadata>> parseSnowstormRefsetVersionPairs(Set<SyncRefsetMetadata> refsetsToProcess) {
+    private Map<String, Map<Date, SyncRefsetMetadata>> sortPublishedSnowstormRefsetVersionPairs(Set<SyncRefsetMetadata> refsetsToProcess) {
+        statistics.setRefsetVersionsSynced(refsetsToProcess.size());
 
-        Map<String, Map<Date, SyncRefsetMetadata>> retMap = new HashMap<>();
+        Map<String, Map<Date, SyncRefsetMetadata>> sortedPublishedSnowstormRefsetVersionPairs = new HashMap<>();
 
         for (SyncRefsetMetadata snowstormRefsetData : refsetsToProcess) {
 
             final String refsetId = snowstormRefsetData.getRefsetNode().get("conceptId").asText();
 
-            if (!retMap.containsKey(refsetId)) {
+            if (!sortedPublishedSnowstormRefsetVersionPairs.containsKey(refsetId)) {
 
-                retMap.put(refsetId, new HashMap<>());
+                sortedPublishedSnowstormRefsetVersionPairs.put(refsetId, new HashMap<>());
             }
 
-            retMap.get(refsetId).put(snowstormRefsetData.getVersion(), snowstormRefsetData);
+            sortedPublishedSnowstormRefsetVersionPairs.get(refsetId).put(snowstormRefsetData.getVersion(), snowstormRefsetData);
         }
 
-        return retMap;
+        return sortedPublishedSnowstormRefsetVersionPairs;
     }
 
-    private void finalizeRefsets(Set<Refset> syncedRefsets) throws Exception {
+    private void finalizeNewOrChangedRefsets(Set<Refset> updatedRefsets) throws Exception {
 
-        int count = 0;
-
-        updateRefsetsWithRttMetadata(syncedRefsets);
+        updateRefsetsWithRttMetadata(updatedRefsets);
 
         try (final TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
 
             // Adding refsets identified on snowstorm
-            for (Refset addedRefset : syncedRefsets) {
+            for (Refset refset : updatedRefsets) {
 
-                finailzeRefset(service, addedRefset, ++count);
+                service.update(refset);
             }
 
-        }
-
-    }
-
-    private void finailzeRefset(TerminologyService service, Refset refset, int count) throws Exception {
-
-        // Final Persistence of refset object
-        service.update(refset);
-
-        if (count % 250 == 0) {
-
-            logger.info("Imported + " + count + " refsets thus far");
         }
 
     }
@@ -321,9 +457,11 @@ public class SyncRefsetAgent extends SyncService {
 
         for (String editionShortName : branchesToProcess.keySet()) {
 
-//            if (!utilities.isInternationalEdition(editionShortName)) {
-//                continue;
-//            }
+            if (getIsIgnoreCoreRefsets() && utilities.isInternationalEdition(editionShortName)) {
+
+                logger.info("Not processing CORE refsets per ignoreCoreRefsets = " + getIsIgnoreCoreRefsets());
+                continue;
+            }
 
             List<Edition> editions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(editionShortName)).collect(Collectors.toList());
 
@@ -668,6 +806,7 @@ public class SyncRefsetAgent extends SyncService {
      */
     private void updateRefsetsWithRttMetadata(Set<Refset> refsetsUpdated) throws Exception {
 
+        // TODO: Determine if need to initialize latestRefsetCache (with unchanged) prior
         Map<String, Date> latestRefsetCache = new HashMap<>();
 
         for (Refset refset : refsetsUpdated) {
