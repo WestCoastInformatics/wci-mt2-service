@@ -54,11 +54,20 @@ public class SyncRefsetAgent extends SyncService {
         Map<String, Map<Date, Refset>> sortedDatabaseRefsetVersionPairs = sortDatabaseRefsetVersionPairs();
         Map<String, Map<Date, Refset>> publishedDatabaseRefsetVersionPairs = identifyPublishedDatabaseRefsetVersionPairs(sortedDatabaseRefsetVersionPairs);
 
-        logger.info(" syncSnowstormRefsets: Examining if there are any new or changes to the  " + statistics.getRefsetVersionsSynced() + " refset/version pairs found on Snowstorm");
+        logger.debug("sortedPublishedSnowstormRefsetVersionPairs: " + sortedPublishedSnowstormRefsetVersionPairs);
+        logger.debug("publishedDatabaseRefsetVersionPairs: " + publishedDatabaseRefsetVersionPairs);
+        // Identify new and missing pairs
+        logger.info(
+                " syncSnowstormRefsets: Examining if there are any new or missing refset version pairs in the  " + statistics.getRefsetVersionsSynced() + " refset/version pairs found on Snowstorm");
         Map<String, Set<Date>> newPairs = identifyNewSnowstormRefsetVersionPairs(sortedPublishedSnowstormRefsetVersionPairs, publishedDatabaseRefsetVersionPairs);
         Map<String, Set<Date>> missingPairs = identifyMissingSnowstormRefsetVersionPairs(sortedPublishedSnowstormRefsetVersionPairs, publishedDatabaseRefsetVersionPairs);
-        Map<String, Map<String, Set<Date>>> changedPairs = identifyChangedVersionPairs(sortedPublishedSnowstormRefsetVersionPairs, publishedDatabaseRefsetVersionPairs, newPairs, missingPairs);
+        statistics.setRefsetVersionsAdded(countPairs(newPairs));
+        statistics.setRefsetVersionsRemoved(countPairs(missingPairs));
+        logger.debug("New Pairs: " + newPairs);
+        logger.debug("New refsetId Pairs size: " + newPairs.size());
 
+        // Identify existing pairs that have been modified
+        Map<String, Map<String, Set<Date>>> changedPairs = identifyChangedVersionPairs(sortedPublishedSnowstormRefsetVersionPairs, publishedDatabaseRefsetVersionPairs, newPairs, missingPairs);
         List<String> newNeedsRefsetKey = changedPairs.get(SyncStatistics.CHANGED).keySet().stream().filter(refsetId -> !newPairs.containsKey(refsetId)).collect(Collectors.toList());
         List<String> missingNeedsRefsetKey = changedPairs.get(SyncStatistics.CHANGED).keySet().stream().filter(refsetId -> !missingPairs.containsKey(refsetId)).collect(Collectors.toList());
 
@@ -69,11 +78,9 @@ public class SyncRefsetAgent extends SyncService {
         changedPairs.get(SyncStatistics.CHANGED).keySet().stream().forEach(refsetId -> newPairs.put(refsetId, changedPairs.get(SyncStatistics.CHANGED).get(refsetId)));
         changedPairs.get(SyncStatistics.CHANGED).keySet().stream().forEach(refsetId -> missingPairs.put(refsetId, changedPairs.get(SyncStatistics.CHANGED).get(refsetId)));
 
-        statistics.setRefsetVersionsAdded(newPairs.size());
-        statistics.setRefsetVersionsRemoved(missingPairs.size());
-
         // Remove existing refsets
         missingPairs.keySet().stream().forEach(refsetId -> missingPairs.get(refsetId).stream().forEach(version -> {
+
             try {
                 utilities.removeRefsetVersionPair(publishedDatabaseRefsetVersionPairs.get(refsetId).get(version));
             } catch (Exception e) {
@@ -83,7 +90,6 @@ public class SyncRefsetAgent extends SyncService {
 
         // Add new refsets
         Set<Refset> newlyCreatedAndUnchangedRefsetVersionPairs = new HashSet<>();
-
         newPairs.keySet().stream().forEach(refsetId -> newPairs.get(refsetId).stream().forEach(version -> {
 
             try {
@@ -92,6 +98,7 @@ public class SyncRefsetAgent extends SyncService {
             } catch (Exception e) {
                 logger.error("Failed in processing refset version " + refsetId + " / " + version);
             }
+
             // Collect newly created refsets
         }));
 
@@ -100,8 +107,16 @@ public class SyncRefsetAgent extends SyncService {
             newlyCreatedAndUnchangedRefsetVersionPairs.add(publishedDatabaseRefsetVersionPairs.get(refsetId).get(version));
         }));
 
-        // Final step
-        finalizeNewOrChangedRefsets(newlyCreatedAndUnchangedRefsetVersionPairs);
+        // Final step finalizeNewOrChangedRefsets(newlyCreatedAndUnchangedRefsetVersionPairs);
+
+    }
+
+    private int countPairs(Map<String, Set<Date>> newPairs) {
+        int counter = 0;
+        for (String refsetId : newPairs.keySet()) {
+            counter += newPairs.get(refsetId).size();
+        }
+        return counter;
     }
 
     private Map<String, Map<String, Set<Date>>> identifyChangedVersionPairs(Map<String, Map<Date, SyncRefsetMetadata>> snowstormPairs, Map<String, Map<Date, Refset>> databasePairs,
@@ -190,25 +205,33 @@ public class SyncRefsetAgent extends SyncService {
     private Map<String, Set<Date>> identifyNewSnowstormRefsetVersionPairs(Map<String, Map<Date, SyncRefsetMetadata>> snowstormPairs, Map<String, Map<Date, Refset>> databasePairs) {
         Map<String, Set<Date>> newPairs = new HashMap<>();
 
+        logger.debug("AAA1 snowstormPairs = " + snowstormPairs.size());
         // Identify brand new refsets and add them to return map
         List<String> newRefsets = snowstormPairs.keySet().stream().filter(refsetId -> !databasePairs.keySet().contains(refsetId)).collect(Collectors.toList());
+        logger.debug("AAA2 newRefsets = " + newRefsets.size());
         for (String refsetId : newRefsets) {
             newPairs.put(refsetId, snowstormPairs.get(refsetId).keySet());
+            logger.debug("AAA3 snowstormPairs.get(refsetId).keySet().size() = " + snowstormPairs.get(refsetId).keySet().size());
 
             statistics.setRefsetVersionsAdded(statistics.getRefsetVersionsAdded() + snowstormPairs.get(refsetId).keySet().size());
         }
+        logger.debug("AAA4 statistics.getRefsetVersionsAdded(): " + statistics.getRefsetVersionsAdded());
 
         // Identify new refset versions and add them to return map
         for (String refsetId : snowstormPairs.keySet()) {
+            logger.debug("AAA5 refsetId: " + refsetId);
 
             if (!newRefsets.contains(refsetId)) {
+                logger.debug("AAA6");
 
                 for (Date version : snowstormPairs.get(refsetId).keySet()) {
+                    logger.debug("AAA7 version: " + version);
 
                     if (!databasePairs.get(refsetId).containsKey(version)) {
 
                         statistics.incrementRefsetVersionsAdded();
                         newPairs.get(refsetId).add(version);
+                        logger.debug("AAA8 statistics.getRefsetVersionsAdded(): " + statistics.getRefsetVersionsAdded());
                     }
                 }
             }
@@ -305,8 +328,10 @@ public class SyncRefsetAgent extends SyncService {
     private Map<String, Map<Date, SyncRefsetMetadata>> sortPublishedSnowstormRefsetVersionPairs(Set<SyncRefsetMetadata> refsetsToProcess) {
         statistics.setRefsetVersionsSynced(refsetsToProcess.size());
 
+        logger.debug("Here with: " + refsetsToProcess.size());
         Map<String, Map<Date, SyncRefsetMetadata>> sortedPublishedSnowstormRefsetVersionPairs = new HashMap<>();
 
+        int counter = 0;
         for (SyncRefsetMetadata snowstormRefsetData : refsetsToProcess) {
 
             final String refsetId = snowstormRefsetData.getRefsetNode().get("conceptId").asText();
@@ -316,8 +341,11 @@ public class SyncRefsetAgent extends SyncService {
                 sortedPublishedSnowstormRefsetVersionPairs.put(refsetId, new HashMap<>());
             }
 
+            counter++;
             sortedPublishedSnowstormRefsetVersionPairs.get(refsetId).put(snowstormRefsetData.getVersion(), snowstormRefsetData);
         }
+
+        logger.debug("Here2 with: " + counter);
 
         return sortedPublishedSnowstormRefsetVersionPairs;
     }
@@ -452,6 +480,7 @@ public class SyncRefsetAgent extends SyncService {
     }
 
     private Set<SyncRefsetMetadata> filterRefsetsToProcess() throws Exception {
+        int counter = 0;
 
         logger.info("About to process these branches: " + branchesToProcess.keySet());
 
@@ -512,6 +541,7 @@ public class SyncRefsetAgent extends SyncService {
                         logger.info("Processing all refsets on " + edition.getName() + " on release date: " + branchVersion + " via url: " + url.replace("{branch}", branchPath));
 
                         while (refsetIterator.hasNext()) {
+                            counter++;
 
                             final JsonNode refsetNode = refsetIterator.next();
 
@@ -560,6 +590,8 @@ public class SyncRefsetAgent extends SyncService {
                 }
             }
         }
+
+        logger.debug("Reviewed " + counter + " refset version pairs");
 
         return refsetsToProcess;
     }

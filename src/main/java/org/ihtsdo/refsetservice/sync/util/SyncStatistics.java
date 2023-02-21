@@ -108,6 +108,11 @@ public class SyncStatistics {
         return codeSystemsFiltered;
     }
 
+    public int getEditionsAdded() {
+
+        return editionsAdded;
+    }
+
     public int getEditionsUnchanged() {
 
         return editionsUnchanged;

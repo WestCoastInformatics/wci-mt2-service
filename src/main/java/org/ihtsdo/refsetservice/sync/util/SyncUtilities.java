@@ -130,6 +130,11 @@ public class SyncUtilities {
             logger.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
 
             return e;
+        } catch (Exception e) { 
+            logger.error("Failed to add edition: " + shortName);
+            statistics.setEditionsAdded(statistics.getEditionsAdded() - 1);
+            
+            throw e;
         }
 
     }

@@ -82,8 +82,7 @@ public class SyncCodeSystemAgent extends SyncService {
                 Edition edition = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(matching)).collect(Collectors.toList()).iterator().next();
                 utilities.removeEdition(edition);
             } catch (Exception e1) {
-                // TODO Auto-generated catch block
-                e1.printStackTrace();
+                logger.error("Failed to remove edition: " + matching);
             }
         });
 
