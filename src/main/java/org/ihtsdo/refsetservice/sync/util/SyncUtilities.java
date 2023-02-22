@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
+
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -29,6 +32,7 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.EmailUtility;
@@ -39,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SyncUtilities {
 
@@ -46,9 +51,9 @@ public class SyncUtilities {
 
     private static final SyncPropertyFileReader propertyReader = new SyncPropertyFileReader();
 
-    private static final Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
+    private static Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
 
-    protected static final Set<String> internationalModules = new HashSet<>();
+    protected static final Set<String> coreModules = new HashSet<>();
 
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
@@ -63,9 +68,11 @@ public class SyncUtilities {
 
     private static SyncPersistenceMetadata metadata = new SyncPersistenceMetadata(new Date(), UNDEFINED_USER_NAME);
 
-    private static final SyncStatistics statistics = new SyncStatistics();
+    private static SyncStatistics statistics = null;
 
     private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
+
+    private static final String CORE_MODULE_PARENT = "900000000000443000";
 
     private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
 
@@ -82,7 +89,6 @@ public class SyncUtilities {
 
             // Persist
             final Organization o = service.add(org);
-            statistics.incrementOrganizationsAdded();
 
             logger.info("Adding new Organziation: " + o.getId() + " (" + o.getName() + ") " + o);
 
@@ -130,10 +136,11 @@ public class SyncUtilities {
             logger.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
 
             return e;
-        } catch (Exception e) { 
+        } catch (Exception e) {
             logger.error("Failed to add edition: " + shortName);
+            // TODO: Review
             statistics.setEditionsAdded(statistics.getEditionsAdded() - 1);
-            
+
             throw e;
         }
 
@@ -367,6 +374,44 @@ public class SyncUtilities {
 
     }
 
+    public Set<String> getCoreModules() throws Exception {
+
+        if (coreModules != null && !coreModules.isEmpty()) {
+            return coreModules;
+        }
+
+        // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/900000000000443000/descendants?stated=false&offset=0&limit=50
+        String url = SnowstormConnection.BASE_URL + "MAIN/concepts/" + CORE_MODULE_PARENT + "/descendants?stated=false&offset=0&limit=50";
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception("Failed calling concept-descendents on CORE MModule Parent in MAIN (to identify international modules)");
+            }
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+
+            // get RefSets from edition as long as a) active & b) within edition's module
+            final Iterator<JsonNode> moduleIterator = root.get("items").iterator();
+
+            while (moduleIterator.hasNext()) {
+                final JsonNode module = moduleIterator.next();
+
+                if (!module.has("conceptId")) {
+                    logger.error("Module must have conceptId: " + module);
+                } else {
+                    coreModules.add(module.get("conceptId").asText());
+                }
+            }
+        } catch (Exception e) {
+            throw new Exception("Failed finding descendents of CORE MModule Parent in MAIN to identify international modules");
+        }
+
+        return coreModules;
+    }
+
     public Set<String> identifyModules(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
 
         Set<String> editionModules = new HashSet<>();
@@ -381,7 +426,7 @@ public class SyncUtilities {
 
                 if (module.get("active").asBoolean()) {
 
-                    internationalModules.add(module.get("conceptId").asText());
+                    getCoreModules().add(module.get("conceptId").asText());
                     editionModules.add(module.get("conceptId").asText());
                 }
 
@@ -396,7 +441,7 @@ public class SyncUtilities {
 
                 JsonNode module = moduleIterator.next();
 
-                if (module.get("active").asBoolean() && !internationalModules.contains(module.get("conceptId").asText())) {
+                if (module.get("active").asBoolean() && !getCoreModules().contains(module.get("conceptId").asText())) {
 
                     editionModules.add(module.get("conceptId").asText());
 
@@ -408,7 +453,7 @@ public class SyncUtilities {
 
                 if (isDeveloperEdition(editionName)) {
 
-                    editionModules.addAll(internationalModules);
+                    editionModules.addAll(getCoreModules());
                 } else {
 
                     // All non-core code systems must have a non-core module.
@@ -572,11 +617,6 @@ public class SyncUtilities {
         return propertyReader;
     }
 
-    public Set<String> getInternationalModules() {
-
-        return internationalModules;
-    }
-
     public Map<String, Set<String>> getEditionModulesMap() {
 
         return editionModulesMap;
@@ -599,5 +639,15 @@ public class SyncUtilities {
     public boolean isDeveloperEdition(String editionName) {
 
         return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
+    }
+
+    public void clearPreviousRun() {
+        editionModulesMap.clear();
+        coreModules.clear();
+        undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
+    }
+
+    public SyncStatistics setStatistics(SyncStatistics statistics) {
+        return this.statistics = statistics;
     }
 }

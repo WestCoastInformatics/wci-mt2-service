@@ -107,7 +107,8 @@ public class SyncRefsetAgent extends SyncService {
             newlyCreatedAndUnchangedRefsetVersionPairs.add(publishedDatabaseRefsetVersionPairs.get(refsetId).get(version));
         }));
 
-        // Final step finalizeNewOrChangedRefsets(newlyCreatedAndUnchangedRefsetVersionPairs);
+        // Final step
+        finalizeNewOrChangedRefsets(newlyCreatedAndUnchangedRefsetVersionPairs);
 
     }
 
@@ -482,10 +483,11 @@ public class SyncRefsetAgent extends SyncService {
     private Set<SyncRefsetMetadata> filterRefsetsToProcess() throws Exception {
         int counter = 0;
 
-        logger.info("About to process these branches: " + branchesToProcess.keySet());
+        logger.info("About to process these branches: " + editionsToProcess.keySet());
 
-        for (String editionShortName : branchesToProcess.keySet()) {
-
+        for (String editionShortName : editionsToProcess.keySet()) {
+            logger.debug("BBB1 getIsIgnoreCoreRefsets() : " + getIsIgnoreCoreRefsets());
+            logger.debug("BBB2 utilities.isInternationalEdition(editionShortName) : " + utilities.isInternationalEdition(editionShortName));
             if (getIsIgnoreCoreRefsets() && utilities.isInternationalEdition(editionShortName)) {
 
                 logger.info("Not processing CORE refsets per ignoreCoreRefsets = " + getIsIgnoreCoreRefsets());
@@ -501,21 +503,26 @@ public class SyncRefsetAgent extends SyncService {
 
             }
 
+            // Matching edition
             final Edition edition = editions.iterator().next();
 
+            // Search for refsets under each module in the edition
             for (String module : utilities.getEditionModulesMap().get(edition.getShortName())) {
 
-                if (!utilities.isInternationalEdition(edition.getName()) && utilities.getInternationalModules().contains(module)) {
+                if (!utilities.isInternationalEdition(edition.getShortName()) && utilities.getCoreModules().contains(module)) {
 
                     // Ignore non-international editions inheriting refsets from the int'l edition
                     continue;
                 }
 
-                String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + RefsetService.SIMPLE_TYPE_REFERENCE_SET + "&module=%3C%3C" + module;
+                String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + RefsetService.SIMPLE_TYPE_REFERENCE_SET;
+                if (!utilities.isInternationalEdition(edition.getShortName())) {
+                    url += "&module=%3C%3C" + module;
+                }
 
-                for (Date branchVersion : branchesToProcess.get(editionShortName).keySet()) {
+                for (Date branchVersion : editionsToProcess.get(editionShortName).keySet()) {
 
-                    final String branchPath = branchesToProcess.get(editionShortName).get(branchVersion);
+                    final String branchPath = editionsToProcess.get(editionShortName).get(branchVersion);
 
                     try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", branchPath))) {
 
@@ -573,12 +580,12 @@ public class SyncRefsetAgent extends SyncService {
                                  *  a) Listed in international edition or 
                                  *  b) In a non-international module
                                  */
-                                if (utilities.isInternationalEdition(edition.getName()) || !utilities.getInternationalModules().contains(moduleId)) {
+                                if (utilities.isInternationalEdition(edition.getShortName()) || !utilities.getCoreModules().contains(moduleId)) {
 
-                                    if (isVersionToPersist(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), branchesToProcess.get(edition.getShortName()).keySet())) {
+                                    if (isVersionToPersist(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), editionsToProcess.get(edition.getShortName()).keySet())) {
 
                                         SyncRefsetMetadata refsetMetadata =
-                                                new SyncRefsetMetadata(refsetNode, edition, branchesToProcess.get(edition.getShortName()).keySet(), branchVersion, branchPath);
+                                                new SyncRefsetMetadata(refsetNode, edition, editionsToProcess.get(edition.getShortName()).keySet(), branchVersion, branchPath);
 
                                         refsetsToProcess.add(refsetMetadata);
 
@@ -587,6 +594,11 @@ public class SyncRefsetAgent extends SyncService {
                             }
                         }
                     }
+                }
+
+                if (utilities.isInternationalEdition(edition.getShortName())) {
+                    // Calling all modules at once for international module
+                    continue;
                 }
             }
         }

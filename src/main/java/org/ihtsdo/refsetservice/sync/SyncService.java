@@ -35,6 +35,8 @@ public abstract class SyncService {
 
     protected static SyncUtilities utilities = null;
 
+    protected static final SyncStatistics statistics = new SyncStatistics();
+
     private static Boolean isProductionSystem = null;
 
     private static Boolean isPerVersionSync = null;
@@ -51,8 +53,6 @@ public abstract class SyncService {
     // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
     // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
-
-    protected static final SyncStatistics statistics = new SyncStatistics();
 
     /** Cache for all DB values used during sync **/
     protected static final List<Edition> allDatabaseEditions = new ArrayList<>();
@@ -75,7 +75,7 @@ public abstract class SyncService {
     protected static final Map<String, String> ownerDescriptionMap = new HashMap<>();
 
     // Edition Short Name to map of dates to branch paths
-    protected static final Map<String, SortedMap<Date, String>> branchesToProcess = new HashMap<>();
+    protected static final Map<String, SortedMap<Date, String>> editionsToProcess = new HashMap<>();
 
     /** Do not clear per run **/
 
@@ -93,8 +93,6 @@ public abstract class SyncService {
 
     protected static final Set<Refset> snowstormRefsets = new HashSet<>();
 
-    protected static final Set<String> internationalModuleRefsets = new HashSet<>();
-
     protected static Edition developerTestingEdition = null;
 
     protected static Organization develeperTestingOranization = null;
@@ -106,6 +104,7 @@ public abstract class SyncService {
         if (utilities == null) {
 
             utilities = new SyncUtilities();
+            utilities.setStatistics(statistics);
         }
 
         isPerVersionSync = refsetPerVersionSync;
@@ -127,7 +126,7 @@ public abstract class SyncService {
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
         clearPreviousRun();
 
-        if (isProductionSystem == null) {
+        if (isProductionSystem == null || !isProductionSystem) {
 
             initialize(refsetPerVersionSync, runForProduction, ignoreCoreRefsets);
         }
@@ -139,7 +138,7 @@ public abstract class SyncService {
     public static void sync(TerminologyService service) throws Exception {
 
         clearPreviousRun();
-        
+
         if (isProductionSystem == null) {
 
             initialize(false, false, false);
@@ -164,7 +163,7 @@ public abstract class SyncService {
         // Update imported refsets with RTT-based metadata (as defined in parseRttData())
         if (!isProductionSystem) {
 
-            SyncOperationsInitializer initializer = new SyncOperationsInitializer();
+            SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
 
             initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets());
         }
@@ -198,9 +197,13 @@ public abstract class SyncService {
         refsetEditions.clear();
 
         uniqueRefsetIds.clear();
-        branchesToProcess.clear();
+        editionsToProcess.clear();
 
         statistics.clearStatistics();
+
+        if (utilities != null) {
+            utilities.clearPreviousRun();
+        }
     }
 
     protected static void updateDatabaseCache() throws Exception {

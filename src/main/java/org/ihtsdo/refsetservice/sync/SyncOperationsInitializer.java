@@ -19,6 +19,7 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
@@ -76,10 +77,22 @@ public class SyncOperationsInitializer {
 
     public SyncOperationsInitializer() {
 
+        // Support one-off usages for specific testing cases i.e. adding an intensional refset
+        utilities = new SyncUtilities();
+        SyncStatistics statstics = new SyncStatistics();
+        utilities.setStatistics(statstics);
+
+        initializeSync();
+    }
+
+    public SyncOperationsInitializer(SyncUtilities utilities) {
+
+        this.utilities = utilities;
+        initializeSync();
+    }
+
+    private void initializeSync() {
         try {
-
-            this.utilities = new SyncUtilities();
-
             developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
             rdaAdmimUser = utilities.getUser(RDA_ADMIN_NAME, RDA_ADMIN_NAME, "rda@snomed.org", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));

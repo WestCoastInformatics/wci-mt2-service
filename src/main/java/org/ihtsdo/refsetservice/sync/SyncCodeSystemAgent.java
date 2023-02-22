@@ -32,8 +32,6 @@ public class SyncCodeSystemAgent extends SyncService {
 
     private static final Set<String> codeSystemsNewAndInactive = new HashSet<>();
 
-    private static final SyncOperationsInitializer initializer = new SyncOperationsInitializer();
-
     public SyncCodeSystemAgent() throws Exception {
 
         codeSystemsNewAndInactive.clear();
@@ -76,7 +74,7 @@ public class SyncCodeSystemAgent extends SyncService {
         newShortNames.addAll(changedShortNames);
         removedShortNames.addAll(changedShortNames);
 
-        // Remove existing organization
+        // Remove existing organizations
         filteredCodeSystemsToProcess.stream().filter(cs -> removedShortNames.contains(cs.get("shortName").asText())).forEach(matching -> {
             try {
                 Edition edition = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(matching)).collect(Collectors.toList()).iterator().next();
@@ -86,7 +84,7 @@ public class SyncCodeSystemAgent extends SyncService {
             }
         });
 
-        // Add new organization
+        // Add new organizations via addCodeSystem()
         filteredCodeSystemsToProcess.stream().filter(cs -> newShortNames.contains(cs.get("shortName").asText())).forEach(matching -> addCodeSystem(matching));
 
         // TODO: For now, ignore this, but shouldn't ever throw exception at this point
@@ -99,9 +97,9 @@ public class SyncCodeSystemAgent extends SyncService {
 
         // Only identify branches on filtered code systems and on runShortSync value
         Map<String, SortedMap<Date, String>> editionBranchesToProcess = identifyEditionBranches(filteredCodeSystemsToProcess);
-        branchesToProcess.putAll(editionBranchesToProcess);
+        editionsToProcess.putAll(editionBranchesToProcess);
 
-        logger.info("Will be processing these " + branchesToProcess.keySet() + " edition-branches for refsets: " + branchesToProcess);
+        logger.info("Will be processing these " + editionsToProcess.keySet() + " edition-branches for refsets: " + editionsToProcess);
     }
 
     private int countCodeSystems(Iterator<JsonNode> organizationIterator) {
@@ -280,6 +278,7 @@ public class SyncCodeSystemAgent extends SyncService {
             }
 
             // Create a single Admin team per Edition when we first discover it
+            final SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
             initializer.createAdminOrganizationTeam(organization);
 
             final Edition newEdition = utilities.addEdition(shortName, editionName, branch, organization, codeSystem);
@@ -441,55 +440,7 @@ public class SyncCodeSystemAgent extends SyncService {
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
 
-            identifyInternationalModules(organizationJsonRootNode);
-
             return organizationJsonRootNode;
-        }
-
-    }
-
-    private static void identifyInternationalModules(JsonNode root) throws Exception {
-
-        final Iterator<JsonNode> responseIterator = root.iterator();
-
-        while (responseIterator.hasNext()) {
-
-            final Iterator<JsonNode> codeSystems = responseIterator.next().iterator();
-
-            while (codeSystems.hasNext()) {
-
-                JsonNode codeSystem = codeSystems.next();
-
-                if (!codeSystem.has("name")) {
-
-                    continue;
-                }
-
-                if (utilities.isInternationalEdition(codeSystem.get("name").asText())) {
-
-                    // At international Edition
-                    Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
-
-                    while (moduleIterator.hasNext()) {
-
-                        JsonNode module = moduleIterator.next();
-
-                        // TODO: Is this if-statement necessary?
-                        utilities.getInternationalModules().add(module.get("conceptId").asText());
-                    }
-
-                }
-
-            }
-
-        }
-
-        logger.info("Identified " + utilities.getInternationalModules().size() + " international modules");
-
-        if (utilities.getInternationalModules().isEmpty()) {
-
-            throw new Exception("Didn't find the international modules as anticipated");
-
         }
 
     }
