@@ -4778,7 +4778,7 @@ public class RefsetMemberService {
 
         String jobStatusUrl = null;
         boolean jobDone = false;
-        String errorMessage = "Inactive Refset Member bulk call to url '" + url + "' for refset '" + refsetId + " wasn't successful. ";
+        String errorMessage = "Inactive Reference Set Member bulk call to url '" + url + "' for refset '" + refsetId + " wasn't successful. ";
 
         try (final Response response = SnowstormConnection.postResponse(url, memberBodies.toString())) {
 
@@ -5994,7 +5994,7 @@ public class RefsetMemberService {
                 returnMap.put("membership", "Both");
             } else {
 
-                returnMap.put("membership", "Active Refset");
+                returnMap.put("membership", "Active Reference Set");
                 refsetMemberComparison.getActiveRefsetDistinctMembers().add(activeConceptId);
             }
 
@@ -6014,7 +6014,7 @@ public class RefsetMemberService {
             returnMap.put("memberOfRefset", "false");
             returnMap.put("definitionExceptionType", comparisonConcept.getDefinitionExceptionType());
             returnMap.put("hasChildren", "false"); // comparisonConcept.getHasChildren() + "");
-            returnMap.put("membership", "Comparison Refset");
+            returnMap.put("membership", "Comparison Reference Set");
             refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
             final Map<String, String> preferedTermEnglish = comparisonConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
             returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : comparisonConcept.getName().strip());
