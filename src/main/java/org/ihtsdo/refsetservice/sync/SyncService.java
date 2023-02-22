@@ -3,10 +3,6 @@ package org.ihtsdo.refsetservice.sync;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,10 +23,7 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
-import org.ihtsdo.refsetservice.util.EmailUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -42,23 +35,24 @@ public abstract class SyncService {
 
     protected static SyncUtilities utilities = null;
 
+    protected static final SyncStatistics statistics = new SyncStatistics();
+
     private static Boolean isProductionSystem = null;
 
     private static Boolean isPerVersionSync = null;
 
+    private static Boolean isIgnoreCoreRefsets = false;
+
     /** Testing options. */
     private static boolean testing = false;
 
-    protected static String testingEdition = "elgi";
-    // protected static String testingEdition = "wed";
+    protected static String testingEditionShortName = "SNOMEDCT-BE";
 
-    // protected static String testingRefset = null; // To test entire edition
-     protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
-//     protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
+    protected static String testingRefset = null; // To test entire edition
+    // protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
+    // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
     // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
-    
-    protected static final SyncStatistics statistics = new SyncStatistics();
 
     /** Cache for all DB values used during sync **/
     protected static final List<Edition> allDatabaseEditions = new ArrayList<>();
@@ -81,7 +75,7 @@ public abstract class SyncService {
     protected static final Map<String, String> ownerDescriptionMap = new HashMap<>();
 
     // Edition Short Name to map of dates to branch paths
-    protected static final Map<String, SortedMap<Date, String>> branchesToProcess = new HashMap<>();
+    protected static final Map<String, SortedMap<Date, String>> editionsToProcess = new HashMap<>();
 
     /** Do not clear per run **/
 
@@ -99,45 +93,42 @@ public abstract class SyncService {
 
     protected static final Set<Refset> snowstormRefsets = new HashSet<>();
 
-    protected static final Set<String> internationalModuleRefsets = new HashSet<>();
-
     protected static Edition developerTestingEdition = null;
 
     protected static Organization develeperTestingOranization = null;
 
-    protected boolean refsetPerVersionSync;
-
-    protected boolean forProduction;
-
     public abstract void syncSnowstorm() throws Exception;
 
-    private static void initialize(boolean refsetPerVersionSync, boolean runForProduction) {
+    private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
 
         if (utilities == null) {
 
             utilities = new SyncUtilities();
+            utilities.setStatistics(statistics);
+        }
 
-            isPerVersionSync = refsetPerVersionSync;
-            isProductionSystem = runForProduction;
+        isPerVersionSync = refsetPerVersionSync;
+        isProductionSystem = runForProduction;
+        isIgnoreCoreRefsets = ignoreCoreRefsets;
 
-            try {
+        try {
 
-                updateDatabaseCache();
+            updateDatabaseCache();
 
-            } catch (Exception e) {
+        } catch (Exception e) {
 
-                e.printStackTrace();
-            }
-
+            e.printStackTrace();
         }
 
     }
 
-    public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction) throws Exception {
+    // TODO: Define when called vs normal one
+    public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
+        clearPreviousRun();
 
-        if (isProductionSystem == null) {
+        if (isProductionSystem == null || !isProductionSystem) {
 
-            initialize(refsetPerVersionSync, runForProduction);
+            initialize(refsetPerVersionSync, runForProduction, ignoreCoreRefsets);
         }
 
         sync(service);
@@ -146,9 +137,11 @@ public abstract class SyncService {
 
     public static void sync(TerminologyService service) throws Exception {
 
+        clearPreviousRun();
+
         if (isProductionSystem == null) {
 
-            initialize(false, false);
+            initialize(false, false, false);
         }
 
         logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
@@ -170,56 +163,32 @@ public abstract class SyncService {
         // Update imported refsets with RTT-based metadata (as defined in parseRttData())
         if (!isProductionSystem) {
 
-            SyncOperationsInitializer initializer = new SyncOperationsInitializer();
+            SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
 
             initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets());
         }
 
+        // Post processing
         logger.info(agent.printStatistics());
 
         service.add(AuditEntryHelper.syncEntry(new Date()));
 
         final String queryResults = getPostSyncResults();
+        utilities.emailImportResults(queryResults);
 
-        try {
-            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
-            final Path path = Paths.get(fileName);
-            byte[] queryResultsToBytes = queryResults.getBytes();
-
-            Files.write(path, queryResultsToBytes);
-        } catch (IOException e) {
-            logger.error("Error occured writing post sync report to file", e);
-        }
-
-        RefsetService.clearAllRefsetCaches(null);
-        RefsetMemberService.clearAllMemberCaches(null);
-        
-        final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
-        final String emailSubject = PropertyUtility.getProperties().getProperty("refset.service.env") + " RT2 Post Sync Report";
-
-        if (StringUtils.isNotBlank(emailReceipients)) {
-            EmailUtility.sendEmail(emailSubject.trim(), null, emailReceipients, queryResults);
-        }
-        
         logger.info("Completed Syncing with Snowstorm");
     }
-    
-    public static Boolean getIsProductionSystem() {
 
-        return isProductionSystem == null ? false : isProductionSystem;
-    }
-
-    public static void setRefsetToSync(final String refsetId, final String editionName) throws Exception {
+    public static void setRefsetToSync(final String refsetId, final String editionShortName) throws Exception {
 
         setTesting(true);
         testingRefset = refsetId;
-        testingEdition = editionName;
+        testingEditionShortName = editionShortName;
 
         RefsetMemberService.clearUniqueRefsetVersions(refsetId);
     }
 
-    protected void clearPreviousRun() {
+    protected static void clearPreviousRun() {
 
         developerTestingEdition = null;
 
@@ -228,9 +197,13 @@ public abstract class SyncService {
         refsetEditions.clear();
 
         uniqueRefsetIds.clear();
-        branchesToProcess.clear();
+        editionsToProcess.clear();
 
         statistics.clearStatistics();
+
+        if (utilities != null) {
+            utilities.clearPreviousRun();
+        }
     }
 
     protected static void updateDatabaseCache() throws Exception {
@@ -245,61 +218,46 @@ public abstract class SyncService {
             defaultEditionProjects.clear();
 
             allDatabaseEditions.addAll(service.getAll(Edition.class));
-            // logger.debug(" All Editions: " + allDatabaseEditions);
 
             allDatabaseOrganizations.addAll(service.getAll(Organization.class));
-            // logger.debug(" All Organizations: " + allDatabaseOrganizations);
 
             allDatabaseRefsets.addAll(service.getAll(Refset.class));
-            // logger.debug(" All Refsets: " + allDatabaseRefsets);
 
             allDatabaseProjects.addAll(service.getAll(Project.class));
-            // logger.debug(" All Projects: " + allDatabaseProjects);
 
             /** Process supporting collections **/
             allDatabaseEditions.stream().forEach(e -> editionOwnerMap.put(e.getShortName(), e.getOrganization().getName()));
-            logger.debug(" Edition Owner Map: " + editionOwnerMap);
+            logger.info(" Edition Owner Map: " + editionOwnerMap);
 
             List<Project> defaultProjects =
-                allDatabaseProjects.stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default"))).collect(Collectors.toList());
+                    allDatabaseProjects.stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default"))).collect(Collectors.toList());
             defaultProjects.stream().forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
-            logger.debug(" defaultEditionProjects: " + defaultEditionProjects);
+            logger.info(" defaultEditionProjects: " + defaultEditionProjects);
         }
 
     }
 
-    protected boolean updateAttribute(String attributeName, Object databaseAttribute, Object snowstormAttribute) {
+    protected boolean isDifferentAttribute(String shortName, String attributeName, Object databaseAttribute, Object snowstormAttribute) {
 
-        if (snowstormAttribute == null) {
-
-            // Nothing to update if snowstorm is null
+        if (snowstormAttribute == null && databaseAttribute == null) {
+            // Both null, no difference
             return false;
-        } else if (databaseAttribute == null) {
-
-            // Handle inconsistent NULL
-            logger.info(" inconsistent " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
-
-            return true;
-
+        } else if (snowstormAttribute != null && databaseAttribute != null && databaseAttribute.equals(snowstormAttribute)) {
+            // Both not null with identical value, no difference
+            return false;
         }
 
-        // Both have values, so compare
-        if (databaseAttribute.equals(snowstormAttribute)) {
+        // values are different. List them
+        if (databaseAttribute instanceof Long) {
 
-            return false;
+            logger.error(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute
+                    + ") and Snowstorm value '" + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
         } else {
 
-            if (databaseAttribute instanceof Long) {
-
-                logger.info(" inconsistent " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute + ") and Snowstorm value '"
-                    + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
-            } else {
-
-                logger.info(" inconsistent " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
-            }
-
-            return true;
+            logger.error(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
         }
+
+        return true;
 
     }
 
@@ -339,12 +297,27 @@ public abstract class SyncService {
 
     }
 
+    public static Boolean getIsIgnoreCoreRefsets() {
+
+        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+    }
+
+    public static Boolean getIsProductionSystem() {
+
+        return isProductionSystem == null ? false : isProductionSystem;
+    }
+
+    public static Boolean getIsPerVersionSync() {
+
+        return isPerVersionSync == null ? false : isPerVersionSync;
+    }
+
     public static void setTesting(boolean testing) {
 
         SyncService.testing = testing;
 
     }
-    
+
     private static String getPostSyncResults() throws Exception {
 
         final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
@@ -388,13 +361,13 @@ public abstract class SyncService {
                     result.append("\r\n");
                 }
             }
-            
+
             logger.info("DONE POST SYNC DATA QUERIES");
-                        
+
         } catch (Exception e) {
             logger.error("ERROR getting db results", e);
         }
-        
+
         return result.toString();
     }
 

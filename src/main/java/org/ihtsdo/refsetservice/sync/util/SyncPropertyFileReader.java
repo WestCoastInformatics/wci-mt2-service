@@ -32,7 +32,9 @@ public class SyncPropertyFileReader {
 
     private ClassPathResource refsetToDescriptionResource = new ClassPathResource("sync/rtt-migration/refsetToDescription.txt");
 
-    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("sync/exceptions/ignoredCodeSystems.txt");
+    private static final String IGNORED_CODE_SYSTEMS_PATH = "sync/exceptions/ignoredCodeSystems.txt";
+
+    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
 
     private ClassPathResource ignoredRefsetsResource = new ClassPathResource("sync/exceptions/ignoredRefsets.txt");
 
@@ -122,6 +124,8 @@ public class SyncPropertyFileReader {
     public List<String> getCodeSystemsToIgnore() {
 
         try {
+
+            ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
 
@@ -736,7 +740,6 @@ public class SyncPropertyFileReader {
 
         if (line.toLowerCase().contains(SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
-            logger.debug("Ignoring project line that has the word '" + SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD + "' in it: " + line);
             projectsToIgnore.add(line.split(SPLIT_CHARACTER)[0]);
         }
 
