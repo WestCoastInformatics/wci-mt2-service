@@ -598,7 +598,7 @@ public class SyncRefsetAgent extends SyncService {
 
                 if (utilities.isInternationalEdition(edition.getShortName())) {
                     // Calling all modules at once for international module
-                    continue;
+                    break;
                 }
             }
         }
