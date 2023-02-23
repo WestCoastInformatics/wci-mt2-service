@@ -1875,10 +1875,10 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/rtt", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> syncRttData(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction)
+    public @ResponseBody ResponseEntity<String> syncRttData(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction, @RequestParam(required = false) final Boolean ignoreCoreRefsets)
         throws Exception {
 
-        return syncSnowstorm(perVersionCreation, forProduction);
+        return syncSnowstorm(perVersionCreation, forProduction, ignoreCoreRefsets);
     }
 
     /**
@@ -1893,7 +1893,7 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
-    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction)
+    public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction, @RequestParam(required = false) final Boolean ignoreCoreRefsets)
         throws Exception {
 
         String message = "";
@@ -1902,7 +1902,8 @@ public class RefsetController extends BaseController {
 
             boolean refsetPerVersionSync = false;
             boolean runForProduction = false;
-
+            boolean isIgnoreCoreRefsets = false;
+            
             if (perVersionCreation != null && perVersionCreation.booleanValue()) {
 
                 logger.info("!!!!! syncSnowstorm RUNNING QUICK SYNC - WILL HAVE MORE THAN ONLY PUBLISHED REFSET VERSIONS");
@@ -1915,9 +1916,15 @@ public class RefsetController extends BaseController {
                 runForProduction = true;
             }
 
+            if (ignoreCoreRefsets != null && ignoreCoreRefsets.booleanValue()) {
+
+                logger.info("!!!!! syncSnowstorm IGNORING SNOMED INTERNATIONAL Refsets");
+                isIgnoreCoreRefsets = true;
+            }
+
             try (TerminologyService service = new TerminologyService()) {
 
-                SyncService.sync(service, refsetPerVersionSync, runForProduction);
+                SyncService.sync(service, refsetPerVersionSync, runForProduction, isIgnoreCoreRefsets);
 
                 return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
             }

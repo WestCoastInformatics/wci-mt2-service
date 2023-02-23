@@ -32,7 +32,9 @@ public class SyncPropertyFileReader {
 
     private ClassPathResource refsetToDescriptionResource = new ClassPathResource("sync/rtt-migration/refsetToDescription.txt");
 
-    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource("sync/exceptions/ignoredCodeSystems.txt");
+    private static final String IGNORED_CODE_SYSTEMS_PATH = "sync/exceptions/ignoredCodeSystems.txt";
+
+    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
 
     private ClassPathResource ignoredRefsetsResource = new ClassPathResource("sync/exceptions/ignoredRefsets.txt");
 
@@ -61,7 +63,7 @@ public class SyncPropertyFileReader {
 
     private final Map<String, Set<String>> teamMembership = readTeamMembership();
 
-    private final List<String> codeSystemNames = new ArrayList<>();
+    private final List<String> codeSystemShortNames = new ArrayList<>();
 
     /** The refset internal id map. */
     private final Map<String, String> rttIdToRefsetJsonMap = new HashMap<>();
@@ -118,34 +120,36 @@ public class SyncPropertyFileReader {
         populateFromFile(refsetsResource, FileProcessType.REFSET);
     }
 
+    // Reread every time as can now update list without rebuilding. Not an issue as it's only used via sync (so not costly)
     public List<String> getCodeSystemsToIgnore() {
 
-        if (codeSystemNames == null || codeSystemNames.isEmpty()) {
+        try {
 
-            BufferedReader reader;
+            ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
 
-            try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
 
-                reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
+            String line = reader.readLine();
 
-                String line = reader.readLine();
+            while (line != null) {
 
-                while (line != null) {
+                if (!line.isBlank()) {
 
-                    codeSystemNames.add(line);
+                    String shortName = line.split("\t")[0];
 
-                    line = reader.readLine();
+                    codeSystemShortNames.add(shortName);
                 }
 
-                reader.close();
-            } catch (IOException e) {
-
-                e.printStackTrace();
+                line = reader.readLine();
             }
 
+            reader.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
         }
 
-        return codeSystemNames;
+        return codeSystemShortNames;
     }
 
     public List<String> getRefsetsToIgnore() {
@@ -544,15 +548,15 @@ public class SyncPropertyFileReader {
         }
 
     }
-    
+
     public List<String> getTestQueries(final ClassPathResource classPathResource) throws Exception {
-        
+
         logger.info("NUNO TEST READ FILE {}", classPathResource.getPath());
-        
+
         final List<String> lines = FileUtils.readLines(new File(classPathResource.getPath()), "utf-8");
-        
+
         return lines;
-        
+
     }
 
     private String stripQuotes(String str) {
@@ -736,7 +740,6 @@ public class SyncPropertyFileReader {
 
         if (line.toLowerCase().contains(SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
-            logger.debug("Ignoring project line that has the word '" + SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD + "' in it: " + line);
             projectsToIgnore.add(line.split(SPLIT_CHARACTER)[0]);
         }
 

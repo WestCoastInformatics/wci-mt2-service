@@ -2763,7 +2763,6 @@ public class RefsetService {
 
         Refset latestVersion = RefsetService.getLatestRefsetVersion(service, refsetId);
 
-        final String editionName = latestVersion.getEditionName();
 
         // if the refset has never been versioned before then delete it
         if (!RefsetService.doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
@@ -2784,7 +2783,7 @@ public class RefsetService {
         /** Now that refset deleted, resync **/
         boolean testingStatus = SyncService.isTesting();
 
-        SyncService.setRefsetToSync(refsetId, editionName);
+        SyncService.setRefsetToSync(refsetId, latestVersion.getEditionShortName());
         SyncService.sync(service);
         SyncService.setTesting(testingStatus);
 
