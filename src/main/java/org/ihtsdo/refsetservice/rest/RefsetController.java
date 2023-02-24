@@ -1360,6 +1360,7 @@ public class RefsetController extends BaseController {
      *
      * @param searchParameters the search parameters
      * @param showInDevelopment flag on whether to include IN_DEVELOPMENT refsets
+     * @param showOnlyPermitted flag on whether to only show refsets user has specific permission to and not general public refsets
      * @param bindingResult the binding result
      * @return the string
      * @throws Exception the exception
@@ -1379,16 +1380,21 @@ public class RefsetController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = "application/json")
     public @ResponseBody ResponseEntity<ResultList<Refset>> searchRefsets(final SearchParameters searchParameters, final boolean searchConcepts, @RequestParam(required = false) final Boolean showInDevelopment,
-        @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception {
+        @RequestParam(required = false) final Boolean countComments, @RequestParam(required = false) final Boolean showOnlyPermitted, final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
         User user = SecurityService.getUserFromSession();
         boolean includeInDevelopment = true;
+        boolean onlyShowPermitted = false;
         
         if (showInDevelopment != null && showInDevelopment == false) {
             includeInDevelopment = false;
+        }
+        
+        if (showOnlyPermitted != null && showOnlyPermitted == true) {
+            onlyShowPermitted = true;
         }
 
         try (TerminologyService service = new TerminologyService()) {
@@ -1396,7 +1402,7 @@ public class RefsetController extends BaseController {
             logger.debug("searchRefsets searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + includeInDevelopment
                 + " ; countComments: " + countComments);
 
-            ResultList<Refset> results = RefsetService.searchRefsets(user, service, searchParameters, searchConcepts, true, false, includeInDevelopment);
+            ResultList<Refset> results = RefsetService.searchRefsets(user, service, searchParameters, searchConcepts, true, false, includeInDevelopment, onlyShowPermitted);
 
             if (countComments != null && countComments) {
 

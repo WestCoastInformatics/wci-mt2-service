@@ -740,7 +740,7 @@ public class RefsetMemberService {
                 final SearchParameters searchParameters = new SearchParameters();
                 final String versionDate = simpleDateFormat.format(o[1]);
                 searchParameters.setQuery("refsetId:" + o[0].toString() + " AND versionDate:" + versionDate + " AND versionStatus:PUBLISHED");
-                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false, false);
+                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false, false, false);
 
                 if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
 
