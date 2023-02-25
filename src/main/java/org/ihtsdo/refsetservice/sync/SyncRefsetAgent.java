@@ -34,14 +34,14 @@ public class SyncRefsetAgent extends SyncService {
 
     private final Set<Refset> snowstormRefsets = new HashSet<>();
 
-    private final Set<SyncRefsetMetadata> refsetsToProcess = new HashSet<>();
+    private final Set<SyncRefsetMetadata> filteredRefsets = new HashSet<>();
 
     private final Map<String, String> refsetToModuleMap = new HashMap<String, String>();
 
     public SyncRefsetAgent() throws Exception {
 
         snowstormRefsets.clear();
-        refsetsToProcess.clear();
+        filteredRefsets.clear();
         refsetToModuleMap.clear();
     }
 
@@ -329,7 +329,6 @@ public class SyncRefsetAgent extends SyncService {
     private Map<String, Map<Date, SyncRefsetMetadata>> sortPublishedSnowstormRefsetVersionPairs(Set<SyncRefsetMetadata> refsetsToProcess) {
         statistics.setRefsetVersionsSynced(refsetsToProcess.size());
 
-        logger.debug("Here with: " + refsetsToProcess.size());
         Map<String, Map<Date, SyncRefsetMetadata>> sortedPublishedSnowstormRefsetVersionPairs = new HashMap<>();
 
         int counter = 0;
@@ -345,8 +344,6 @@ public class SyncRefsetAgent extends SyncService {
             counter++;
             sortedPublishedSnowstormRefsetVersionPairs.get(refsetId).put(snowstormRefsetData.getVersion(), snowstormRefsetData);
         }
-
-        logger.debug("Here2 with: " + counter);
 
         return sortedPublishedSnowstormRefsetVersionPairs;
     }
@@ -486,126 +483,91 @@ public class SyncRefsetAgent extends SyncService {
         logger.info("About to process these branches: " + editionsToProcess.keySet());
 
         for (String editionShortName : editionsToProcess.keySet()) {
-            logger.debug("BBB1 getIsIgnoreCoreRefsets() : " + getIsIgnoreCoreRefsets());
-            logger.debug("BBB2 utilities.isInternationalEdition(editionShortName) : " + utilities.isInternationalEdition(editionShortName));
-            if (getIsIgnoreCoreRefsets() && utilities.isInternationalEdition(editionShortName)) {
+            Edition edition;
 
-                logger.info("Not processing CORE refsets per ignoreCoreRefsets = " + getIsIgnoreCoreRefsets());
+            // Check if should process Edition
+            if ((edition = getEdition(editionShortName)) == null) {
                 continue;
             }
 
-            List<Edition> editions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(editionShortName)).collect(Collectors.toList());
+            // Process edition
+            String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + RefsetService.SIMPLE_TYPE_REFERENCE_SET;
 
-            if (editions == null || editions.size() != 1) {
+            for (Date branchVersion : editionsToProcess.get(editionShortName).keySet()) {
 
-                logger.error("Unable to find  editions associated with Code System: " + editionShortName);
-                continue;
+                final String branchPath = editionsToProcess.get(editionShortName).get(branchVersion);
 
-            }
+                try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", branchPath))) {
 
-            // Matching edition
-            final Edition edition = editions.iterator().next();
+                    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-            // Search for refsets under each module in the edition
-            for (String module : utilities.getEditionModulesMap().get(edition.getShortName())) {
+                        if (edition.getBranch().startsWith("MAIN")) {
 
-                if (!utilities.isInternationalEdition(edition.getShortName()) && utilities.getCoreModules().contains(module)) {
+                            throw new Exception("Unable to process edition called with: " + url.replace("{branch}", branchPath));
+                        } else {
 
-                    // Ignore non-international editions inheriting refsets from the int'l edition
-                    continue;
-                }
-
-                String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + RefsetService.SIMPLE_TYPE_REFERENCE_SET;
-                if (!utilities.isInternationalEdition(edition.getShortName())) {
-                    url += "&module=%3C%3C" + module;
-                }
-
-                for (Date branchVersion : editionsToProcess.get(editionShortName).keySet()) {
-
-                    final String branchPath = editionsToProcess.get(editionShortName).get(branchVersion);
-
-                    try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", branchPath))) {
-
-                        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-
-                            if (edition.getBranch().startsWith("MAIN")) {
-
-                                throw new Exception("Unable to process edition called with: " + url.replace("{branch}", branchPath));
-                            } else {
-
-                                continue;
-                            }
-
+                            continue;
                         }
 
-                        final String resultString = response.readEntity(String.class);
-                        final ObjectMapper mapper = new ObjectMapper();
-                        final JsonNode root = mapper.readTree(resultString.toString());
+                    }
 
-                        // get RefSets from edition as long as a) active & b)
-                        // within edition's moduleˇ
-                        final Iterator<JsonNode> refsetIterator = root.get("referenceSets").iterator();
-                        logger.info("Processing all refsets on " + edition.getName() + " on release date: " + branchVersion + " via url: " + url.replace("{branch}", branchPath));
+                    // get RefSets from edition as long as a) active & b) not a core refset
+                    final String resultString = response.readEntity(String.class);
+                    final ObjectMapper mapper = new ObjectMapper();
+                    final JsonNode root = mapper.readTree(resultString.toString());
 
-                        while (refsetIterator.hasNext()) {
-                            counter++;
+                    final Iterator<JsonNode> refsetIterator = root.get("referenceSets").iterator();
+                    logger.info("Listing refsets in " + edition.getName() + " for version date: " + branchVersion + " via url: " + url.replace("{branch}", branchPath));
 
-                            final JsonNode refsetNode = refsetIterator.next();
+                    while (refsetIterator.hasNext()) {
+                        counter++;
 
-                            if (!refsetNode.has("conceptId") || !refsetNode.has("active")) {
+                        JsonNode refsetNode;
 
-                                throw new Exception("Getting unexpected Refset info from node: " + refsetNode.toString());
-                            }
-
+                        // Check if should process Refset
+                        if ((refsetNode = isRefsetToProcess(refsetIterator, editionShortName)) != null) {
                             final String refsetId = refsetNode.get("conceptId").asText();
 
-                            if (isRefsetToProcess(refsetId)) {
-                                if (!refsetToModuleMap.containsKey(refsetId)) {
+                            if (!refsetToModuleMap.containsKey(refsetId)) {
 
-                                    String moduleId = identifyConceptModuleId(refsetId, edition.getBranch());
-                                    refsetToModuleMap.put(refsetId, moduleId);
-                                }
+                                String moduleId = identifyConceptModuleId(refsetId, edition.getBranch());
+                                refsetToModuleMap.put(refsetId, moduleId);
+                            }
 
-                                final String moduleId = refsetToModuleMap.get(refsetId);
+                            if (isVersionToPersist(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), editionsToProcess.get(edition.getShortName()).keySet())) {
 
-                                if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
+                                SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, editionsToProcess.get(edition.getShortName()).keySet(), branchVersion, branchPath);
 
-                                    logger.info("Found refsetId: " + refsetId + ", but will not add it per prop file");
+                                filteredRefsets.add(refsetMetadata);
 
-                                    continue;
-                                }
-
-                                /*-
-                                 *  Only process refset are either
-                                 *  a) Listed in international edition or 
-                                 *  b) In a non-international module
-                                 */
-                                if (utilities.isInternationalEdition(edition.getShortName()) || !utilities.getCoreModules().contains(moduleId)) {
-
-                                    if (isVersionToPersist(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), editionsToProcess.get(edition.getShortName()).keySet())) {
-
-                                        SyncRefsetMetadata refsetMetadata =
-                                                new SyncRefsetMetadata(refsetNode, edition, editionsToProcess.get(edition.getShortName()).keySet(), branchVersion, branchPath);
-
-                                        refsetsToProcess.add(refsetMetadata);
-
-                                    }
-                                }
                             }
                         }
                     }
                 }
-
-                if (utilities.isInternationalEdition(edition.getShortName())) {
-                    // Calling all modules at once for international module
-                    break;
-                }
             }
         }
 
-        logger.debug("Reviewed " + counter + " refset version pairs");
+        return filteredRefsets;
+    }
 
-        return refsetsToProcess;
+    private Edition getEdition(String shortName) {
+        if (getIsIgnoreCoreRefsets() && utilities.isInternationalEdition(shortName)) {
+
+            logger.info("Not processing CORE refsets per ignoreCoreRefsets = " + getIsIgnoreCoreRefsets());
+            return null;
+        }
+
+        List<Edition> editions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
+
+        if (editions == null || editions.size() != 1) {
+
+            logger.error("Unable to find  editions associated with Code System: " + shortName);
+            return null;
+
+        }
+
+        // Matching edition
+        return editions.iterator().next();
     }
 
     private String identifyConceptModuleId(String refsetId, String branch) throws Exception {
@@ -948,9 +910,33 @@ public class SyncRefsetAgent extends SyncService {
 
     }
 
-    protected boolean isRefsetToProcess(String refsetId) {
+    protected JsonNode isRefsetToProcess(Iterator<JsonNode> refsetIterator, String shortName) throws Exception {
+        final JsonNode refsetNode = refsetIterator.next();
 
-        return !isTesting() || (isTesting() && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset));
+        if (!refsetNode.has("conceptId") || !refsetNode.has("active")) {
 
+            throw new Exception("Getting unexpected Refset info from node: " + refsetNode.toString());
+        }
+
+        String refsetId = refsetNode.get("conceptId").asText();
+
+        if (!utilities.isInternationalEdition(shortName) && utilities.getCoreRefsets().contains(refsetId)) {
+
+            return null;
+        }
+
+        if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
+
+            logger.info("Found refsetId: " + refsetId + ", but will not add it per prop file");
+
+            return null;
+        }
+
+        if (!isTesting() || (isTesting() && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset))) {
+            return refsetNode;
+        }
+
+        // Testing, but current refset not one needed
+        return null;
     }
 }

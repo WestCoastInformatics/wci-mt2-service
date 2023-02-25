@@ -53,6 +53,8 @@ public class SyncUtilities {
 
     private static Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
 
+    protected static final Set<String> coreRefsets = new HashSet<>();
+
     protected static final Set<String> coreModules = new HashSet<>();
 
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
@@ -74,7 +76,7 @@ public class SyncUtilities {
 
     private static final String CORE_MODULE_PARENT = "900000000000443000";
 
-    private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
+    private static final String SIMPLE_REFSET_TYPE_CONCEPT = "446609009";
 
     public Organization addOrganziation(final String orgName, String orgDesc, String orgMaintainerType) throws Exception {
 
@@ -241,7 +243,7 @@ public class SyncUtilities {
         refsetParameters.setVersionNotes("");
         refsetParameters.setType(Refset.EXTENSIONAL);
         refsetParameters.setNarrative(narrative);
-        refsetParameters.setParentConceptId(DEFAULT_WCI_REFSET_PARENT_CONCEPT);
+        refsetParameters.setParentConceptId(SIMPLE_REFSET_TYPE_CONCEPT);
         refsetParameters.setProject(project);
         refsetParameters.setLatestPublishedVersion(false);
 
@@ -374,6 +376,44 @@ public class SyncUtilities {
 
     }
 
+    public Set<String> getCoreRefsets() throws Exception {
+
+        if (coreRefsets != null && !coreRefsets.isEmpty()) {
+            return coreRefsets;
+        }
+
+        // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/446609009/descendants?stated=false&offset=0&limit=50
+        String url = SnowstormConnection.BASE_URL + "MAIN/concepts/" + SIMPLE_REFSET_TYPE_CONCEPT + "/descendants?stated=false&offset=0&limit=50";
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception("Failed calling concept-descendents on Simple Refset Concept in SI-CORE (to identify international refsets)");
+            }
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+
+            // get RefSets from CORE as long as active
+            final Iterator<JsonNode> refsetIterator = root.get("items").iterator();
+
+            while (refsetIterator.hasNext()) {
+                final JsonNode refset = refsetIterator.next();
+
+                if (!refset.has("conceptId")) {
+                    logger.error("Refset must have conceptId: " + refset);
+                } else {
+                    coreRefsets.add(refset.get("conceptId").asText());
+                }
+            }
+        } catch (Exception e) {
+            throw new Exception("Failed finding descendents on Simple Refset Concept in SI-CORE to identify international refsets");
+        }
+
+        return coreRefsets;
+    }
+
     public Set<String> getCoreModules() throws Exception {
 
         if (coreModules != null && !coreModules.isEmpty()) {
@@ -451,16 +491,13 @@ public class SyncUtilities {
 
             if (editionModules.isEmpty()) {
 
-                if (isDeveloperEdition(editionName)) {
-
-                    editionModules.addAll(getCoreModules());
-                } else {
-
+                if (!isDeveloperEdition(editionName)) {
                     // All non-core code systems must have a non-core module.
-                    throw new Exception("Did not find any modules for code system " + editionName);
-
+                    // throw new Exception("Did not find any modules for code system " + editionName);
+                    logger.error("Did not find any edition-specific modules for code system: " + editionName + ". Will default to CORE modules");
                 }
 
+                editionModules.addAll(getCoreModules());
             }
 
         }
@@ -644,10 +681,11 @@ public class SyncUtilities {
     public void clearPreviousRun() {
         editionModulesMap.clear();
         coreModules.clear();
+        coreRefsets.clear();
         undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
     }
 
     public SyncStatistics setStatistics(SyncStatistics statistics) {
-        return this.statistics = statistics;
+        return SyncUtilities.statistics = statistics;
     }
 }
