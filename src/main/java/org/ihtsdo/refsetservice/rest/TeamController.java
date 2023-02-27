@@ -9,12 +9,8 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
@@ -393,7 +389,7 @@ public class TeamController extends BaseController {
 
         try {
 
-            final Team team = TeamService.removeUserFromTeam(authUser, teamId, userId);
+            TeamService.removeUserFromTeam(authUser, teamId, userId);
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
