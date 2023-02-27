@@ -58,6 +58,10 @@ public class Edition extends AbstractHasModified {
     @Column(nullable = true, length = 256)
     private String namespace;
 
+    /** the type of code system. */
+    @Column(nullable = false, length = 255)
+    private String maintainerType;
+
     /** The short name. */
     @Column(nullable = true, length = 256)
     private String shortName;
@@ -135,6 +139,7 @@ public class Edition extends AbstractHasModified {
         iconUri = other.getIconUri();
         shortName = other.getShortName();
         organization = other.getOrganization();
+        maintainerType = other.getMaintainerType();
     }
 
     /**
@@ -279,6 +284,26 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
+     * Returns the type of code system.
+     *
+     * @return the code system type
+     */
+    public String getMaintainerType() {
+
+        return maintainerType;
+    }
+
+    /**
+     * Sets the type of code system.
+     *
+     * @param maintainerType the type of code system to set
+     */
+    public void setMaintainerType(final String maintainerType) {
+
+        this.maintainerType = maintainerType;
+    }
+
+    /**
      * Gets the default language refsets.
      *
      * @return the default language refsets
@@ -334,7 +359,7 @@ public class Edition extends AbstractHasModified {
                 if (languageCode.equals("en")) {
 
                     qualifiedLanguageList.add(1, Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset", languageRefsetCode + "FSN",
-                        "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"));
+                            "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"));
                 }
 
             } else {
@@ -439,7 +464,7 @@ public class Edition extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "organization")
+            @PropertyValue(propertyName = "organization")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationId() throws Exception {
@@ -476,7 +501,7 @@ public class Edition extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "organization")
+            @PropertyValue(propertyName = "organization")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationName() throws Exception {
@@ -524,6 +549,7 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
         result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
         result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + ((maintainerType == null) ? 0 : maintainerType.hashCode());
         return result;
     }
 
@@ -657,6 +683,18 @@ public class Edition extends AbstractHasModified {
             }
 
         } else if (!organization.equals(other.organization)) {
+
+            return false;
+        }
+
+        if (maintainerType == null) {
+
+            if (other.maintainerType != null) {
+
+                return false;
+            }
+
+        } else if (!maintainerType.equals(other.maintainerType)) {
 
             return false;
         }
