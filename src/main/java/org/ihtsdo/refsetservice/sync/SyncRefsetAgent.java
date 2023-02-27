@@ -45,7 +45,7 @@ public class SyncRefsetAgent extends SyncAgent {
         refsetToModuleMap.clear();
     }
 
-    public void syncSnowstorm() throws Exception {
+    public void sync() throws Exception {
 
         Set<SyncRefsetMetadata> filteredRefsets = filterRefsetsToProcess();
 

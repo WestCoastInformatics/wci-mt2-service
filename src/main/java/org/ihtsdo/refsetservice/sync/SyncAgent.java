@@ -81,7 +81,6 @@ public abstract class SyncAgent {
     protected static final Map<String, Project> defaultEditionProjects = new HashMap<>();
 
     /** General class fields **/
-
     protected static final Set<String> uniqueRefsetIds = new HashSet<>();
 
     protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -92,7 +91,8 @@ public abstract class SyncAgent {
 
     protected static Organization develeperTestingOranization = null;
 
-    public abstract void syncSnowstorm() throws Exception;
+    /** Abstract Method **/
+    public abstract void sync() throws Exception;
 
     private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
 
@@ -145,11 +145,11 @@ public abstract class SyncAgent {
 
         // Only identify branches on filtered code systems and on runShortSync value
         SyncAgent agent = new SyncCodeSystemAgent();
-        agent.syncSnowstorm();
+        agent.sync();
 
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
-        agent.syncSnowstorm();
+        agent.sync();
 
         // Update imported refsets with RTT-based metadata (as defined in parseRttData())
         if (!isProductionSystem) {

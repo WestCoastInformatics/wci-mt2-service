@@ -37,7 +37,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         codeSystemsNewAndInactive.clear();
     }
 
-    public void syncSnowstorm() throws Exception {
+    public void sync() throws Exception {
 
         updateDatabaseCache();
 
