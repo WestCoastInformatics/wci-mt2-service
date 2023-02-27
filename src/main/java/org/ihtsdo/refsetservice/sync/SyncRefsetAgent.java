@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class SyncRefsetAgent extends SyncService {
+public class SyncRefsetAgent extends SyncAgent {
 
     private final Logger logger = LoggerFactory.getLogger(SyncRefsetAgent.class);
 

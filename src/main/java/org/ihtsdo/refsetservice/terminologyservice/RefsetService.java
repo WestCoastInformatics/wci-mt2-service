@@ -59,7 +59,7 @@ import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncService;
+import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -2781,11 +2781,11 @@ public class RefsetService {
         }
 
         /** Now that refset deleted, resync **/
-        boolean testingStatus = SyncService.isTesting();
+        boolean testingStatus = SyncAgent.isTesting();
 
-        SyncService.setRefsetToSync(refsetId, latestVersion.getEditionShortName());
-        SyncService.sync(service);
-        SyncService.setTesting(testingStatus);
+        SyncAgent.setRefsetToSync(refsetId, latestVersion.getEditionShortName());
+        SyncAgent.sync(service);
+        SyncAgent.setTesting(testingStatus);
 
         logger.info("Successfully reset all versions in database of refsetId: " + refsetId);
 

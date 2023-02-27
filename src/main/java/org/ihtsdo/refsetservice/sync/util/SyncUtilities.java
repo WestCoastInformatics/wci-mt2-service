@@ -1,11 +1,14 @@
 package org.ihtsdo.refsetservice.sync.util;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +44,7 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -612,31 +616,6 @@ public class SyncUtilities {
 
     }
 
-    public void emailImportResults(String queryResults) throws Exception {
-
-        try {
-            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
-            final Path path = Paths.get(fileName);
-            byte[] queryResultsToBytes = queryResults.getBytes();
-
-            Files.write(path, queryResultsToBytes);
-        } catch (IOException e) {
-            logger.error("Error occured writing post sync report to file", e);
-        }
-
-        RefsetService.clearAllRefsetCaches(null);
-        RefsetMemberService.clearAllMemberCaches(null);
-
-        final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
-
-        if (StringUtils.isNotBlank(emailReceipients)) {
-            EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, queryResults);
-        }
-
-        logger.info("Completed Syncing with Snowstorm");
-    }
-
     public void initializeService(TerminologyService service) {
 
         service.setModifiedBy("Sync");
@@ -659,6 +638,59 @@ public class SyncUtilities {
         return editionModulesMap;
     }
 
+    private String getSyncResults() throws Exception {
+
+        final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
+
+        final List<String> sqlQueries = new ArrayList<>();
+
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(syncTestQueries.getInputStream()));) {
+
+            String line = reader.readLine();
+
+            while (line != null) {
+                if (StringUtils.isNoneBlank(line)) {
+                    sqlQueries.add(line);
+                }
+                line = reader.readLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        final StringBuilder result = new StringBuilder();
+
+        // Collect results
+        try (final TerminologyService service = new TerminologyService()) {
+
+            for (final String query : sqlQueries) {
+                if (query != null && !query.contains("--") && query.contains("select ")) {
+
+                    @SuppressWarnings("unchecked")
+                    final List<Object[]> rows = service.getEntityManager().createNativeQuery(query).getResultList();
+                    result.append(query).append("\r\n");
+
+                    if (rows != null) {
+                        for (final Object[] row : rows) {
+                            for (final Object field : row) {
+                                result.append(field).append("|");
+                            }
+                            result.append("\r\n");
+                        }
+                    }
+                    result.append("\r\n");
+                }
+            }
+
+            logger.info("DONE POST SYNC DATA QUERIES");
+
+        } catch (Exception e) {
+            logger.error("ERROR getting db results", e);
+        }
+
+        return result.toString();
+    }
+
     public void parseRttData() throws Exception {
 
         // Identify all refset metadata, any refsets' ECL definitions, and project metadata from RTT files manually sync'd over
@@ -668,6 +700,33 @@ public class SyncUtilities {
 
     }
 
+    public void emailSyncResults() throws Exception {
+        String results = getSyncResults();
+
+        try {
+            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
+            final Path path = Paths.get(fileName);
+            byte[] queryResultsToBytes = results.getBytes();
+
+            Files.write(path, queryResultsToBytes);
+        } catch (IOException e) {
+            logger.error("Error occured writing post sync report to file", e);
+        }
+
+        RefsetService.clearAllRefsetCaches(null);
+        RefsetMemberService.clearAllMemberCaches(null);
+
+        final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
+
+        if (StringUtils.isNotBlank(emailReceipients)) {
+            EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, results);
+        }
+
+        logger.info("Completed Syncing with Snowstorm");
+
+    }
+    
     public boolean isInternationalEdition(String matchingString) {
 
         return "international edition".equals(matchingString.toLowerCase()) || "snomedct".equals(matchingString.toLowerCase());

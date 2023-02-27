@@ -1,8 +1,5 @@
 package org.ihtsdo.refsetservice.sync;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -14,7 +11,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
@@ -26,12 +22,11 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
-public abstract class SyncService {
+public abstract class SyncAgent {
 
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(SyncService.class);
+    private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
 
     protected static SyncUtilities utilities = null;
 
@@ -148,13 +143,9 @@ public abstract class SyncService {
 
         utilities.initializeService(service);
 
-        SyncService agent = new SyncCodeSystemAgent();
-
         // Only identify branches on filtered code systems and on runShortSync value
+        SyncAgent agent = new SyncCodeSystemAgent();
         agent.syncSnowstorm();
-
-        SyncUtilities syncUtilities = new SyncUtilities();
-        syncUtilities.parseRttData();
 
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
@@ -169,13 +160,10 @@ public abstract class SyncService {
         }
 
         // Post processing
-        logger.info(agent.printStatistics());
-
         service.add(AuditEntryHelper.syncEntry(new Date()));
+        utilities.emailSyncResults();
 
-        final String queryResults = getPostSyncResults();
-        utilities.emailImportResults(queryResults);
-
+        logger.info(agent.printStatistics());
         logger.info("Completed Syncing with Snowstorm");
     }
 
@@ -314,61 +302,8 @@ public abstract class SyncService {
 
     public static void setTesting(boolean testing) {
 
-        SyncService.testing = testing;
+        SyncAgent.testing = testing;
 
-    }
-
-    private static String getPostSyncResults() throws Exception {
-
-        final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
-
-        final List<String> sqlQueries = new ArrayList<>();
-
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(syncTestQueries.getInputStream()));) {
-
-            String line = reader.readLine();
-
-            while (line != null) {
-                if (StringUtils.isNoneBlank(line)) {
-                    sqlQueries.add(line);
-                }
-                line = reader.readLine();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        final StringBuilder result = new StringBuilder();
-
-        // Collect results
-        try (final TerminologyService service = new TerminologyService()) {
-
-            for (final String query : sqlQueries) {
-                if (query != null && !query.contains("--") && query.contains("select ")) {
-
-                    @SuppressWarnings("unchecked")
-                    final List<Object[]> rows = service.getEntityManager().createNativeQuery(query).getResultList();
-                    result.append(query).append("\r\n");
-
-                    if (rows != null) {
-                        for (final Object[] row : rows) {
-                            for (final Object field : row) {
-                                result.append(field).append("|");
-                            }
-                            result.append("\r\n");
-                        }
-                    }
-                    result.append("\r\n");
-                }
-            }
-
-            logger.info("DONE POST SYNC DATA QUERIES");
-
-        } catch (Exception e) {
-            logger.error("ERROR getting db results", e);
-        }
-
-        return result.toString();
     }
 
 }
