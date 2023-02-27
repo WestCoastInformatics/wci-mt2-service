@@ -47,6 +47,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
     public void sync() throws Exception {
 
+        updateDatabaseCache();
+
         Set<SyncRefsetMetadata> filteredRefsets = filterRefsetsToProcess();
 
         // Map each refsetId/version pair's SyncRefsetMetadata

@@ -106,20 +106,10 @@ public abstract class SyncAgent {
         isProductionSystem = runForProduction;
         isIgnoreCoreRefsets = ignoreCoreRefsets;
 
-        try {
-
-            updateDatabaseCache();
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-        }
-
     }
 
     // TODO: Define when called vs normal one
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
-        clearPreviousRun();
 
         if (isProductionSystem == null || !isProductionSystem) {
 
@@ -131,8 +121,6 @@ public abstract class SyncAgent {
     }
 
     public static void sync(TerminologyService service) throws Exception {
-
-        clearPreviousRun();
 
         if (isProductionSystem == null) {
 

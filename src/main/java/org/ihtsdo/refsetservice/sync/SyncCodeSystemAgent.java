@@ -41,32 +41,30 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         updateDatabaseCache();
 
-        final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
-        final Set<String> dbShortNames = new HashSet<>();
-        final Set<String> activeSnowstormShortNames = new HashSet<>();
+        final Set<String> dbEditionShortNames = new HashSet<>();
+        final Set<String> activeSnowstormEditionShortNames = new HashSet<>();
 
-        // Count and filter code systems (filtering based on ignoredCS list and bad data)
-        final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-        int codeSystemsReturned = countCodeSystems(organizationIterator);
-        logger.info("Found " + codeSystemsReturned + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
+        // Get all code systems from Snowstorm
+        final JsonNode codeSystemsRootNode = getSnowstormCodeSystems();
+        final Iterator<JsonNode> organizationIterator = codeSystemsRootNode.iterator();
+        logger.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on Snowstorm: " + codeSystemsRootNode);
 
-        Set<JsonNode> filteredCodeSystemsToProcess = filterCodeSystems(organizationJsonRootNode);
-        logger.info("Will be processing only these " + filteredCodeSystemsToProcess.size() + " Code Systems: " + organizationJsonRootNode);
-        statistics.setCodeSystemsSynced(codeSystemsReturned);
-        statistics.setCodeSystemsFiltered(filteredCodeSystemsToProcess.size());
+        // Filter code systems (filtering based on ignoredCS list and bad data)
+        Set<JsonNode> filteredCodeSystemsToProcess = filterCodeSystems(codeSystemsRootNode);
+        logger.info("Will be processing these " + filteredCodeSystemsToProcess.size() + " Code Systems: " + codeSystemsRootNode);
 
-        // Identify new, removed, and existing codeSystems (Based on shortName)
-        allDatabaseEditions.stream().forEach(e -> dbShortNames.add(e.getShortName()));
+        // Identify new, removed, and existing codeSystems (Based on Edition's shortName)
+        allDatabaseEditions.stream().forEach(e -> dbEditionShortNames.add(e.getShortName()));
         filteredCodeSystemsToProcess.stream().filter(c -> (c.has("active") && c.get("active").asBoolean()) || !c.has("active"))
-                .forEach(cs -> activeSnowstormShortNames.add(cs.get("shortName").asText()));
+                .forEach(cs -> activeSnowstormEditionShortNames.add(cs.get("shortName").asText()));
 
-        List<String> newShortNames = activeSnowstormShortNames.stream().filter(c -> !dbShortNames.contains(c)).collect(Collectors.toList());
-        List<String> removedShortNames = dbShortNames.stream().filter(c -> !activeSnowstormShortNames.contains(c)).collect(Collectors.toList());
+        List<String> newShortNames = activeSnowstormEditionShortNames.stream().filter(c -> !dbEditionShortNames.contains(c)).collect(Collectors.toList());
+        List<String> removedShortNames = dbEditionShortNames.stream().filter(c -> !activeSnowstormEditionShortNames.contains(c)).collect(Collectors.toList());
         statistics.setEditionsAdded(newShortNames.size());
         statistics.setEditionsRemoved(removedShortNames.size());
 
         // Process each type of code system. First review existing so that anything changed will be deleted and recreated
-        List<String> existingShortNames = dbShortNames.stream().filter(c -> activeSnowstormShortNames.contains(c)).collect(Collectors.toList());
+        List<String> existingShortNames = dbEditionShortNames.stream().filter(c -> activeSnowstormEditionShortNames.contains(c)).collect(Collectors.toList());
         List<String> changedShortNames = reviewExistingCodeSystems(filteredCodeSystemsToProcess, existingShortNames);
         statistics.setEditionsUnchanged(existingShortNames.size() - changedShortNames.size());
         statistics.setEditionsRecreated(changedShortNames.size());
@@ -412,6 +410,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
 
         filteredCodeSystems.stream().forEach(c -> logger.info("Will process codeSystem: " + c));
+
+        statistics.setCodeSystemsSynced(countCodeSystems(organizationIterator));
+        statistics.setCodeSystemsFiltered(filteredCodeSystems.size());
 
         return filteredCodeSystems;
     }
