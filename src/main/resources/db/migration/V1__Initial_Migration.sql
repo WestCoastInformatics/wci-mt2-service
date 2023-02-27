@@ -32,7 +32,6 @@ CREATE TABLE `organizations` (
   `modifiedBy` varchar(256) NOT NULL,
   `description` varchar(4000) DEFAULT NULL,
   `name` varchar(255) NOT NULL,
-  `codeSystemType` varchar(255),
   `primaryContactEmail` varchar(255) DEFAULT NULL,
   `iconUri` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -50,6 +49,7 @@ CREATE TABLE `editions` (
   `name` varchar(4000) NOT NULL,
   `namespace` varchar(256) DEFAULT NULL,
   `shortName` varchar(256) DEFAULT NULL,
+  `maintainerType` varchar(255) NOT NULL,
   `organization_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );

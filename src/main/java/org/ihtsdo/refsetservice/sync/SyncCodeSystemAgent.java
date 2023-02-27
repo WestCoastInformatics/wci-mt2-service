@@ -226,7 +226,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), editionName)
                         || isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), branch)
                         || isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), editionModules)
-                        || isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getOrganization().getCodeSystemType(), maintainerType) || isDifferentAttribute(
+                        || isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getMaintainerType(), maintainerType) || isDifferentAttribute(
                                 dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(), utilities.identifyDefaultLanguageCode(codeSystem, editionName))) {
                     modifiedShortNames.add(shortName);
                     continue;
@@ -279,7 +279,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             final SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
             initializer.createAdminOrganizationTeam(organization);
 
-            final Edition newEdition = utilities.addEdition(shortName, editionName, branch, organization, codeSystem);
+            final Edition newEdition = utilities.addEdition(shortName, editionName, branch, organization, maintainerType, codeSystem);
             utilities.printEditionValues(newEdition);
 
             postCodeSystemProcessing(newEdition);

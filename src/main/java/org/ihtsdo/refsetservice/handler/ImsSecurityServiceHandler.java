@@ -49,10 +49,18 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                 user.getRoles().add(role.substring(rt2RolePrefix.length()));
             }
         }
+        
+        if (userName.equals("twhalen")) {
+            
+            user.getRoles().clear();
+            user.getRoles().add("snomedctus-all-viewer");
+            user.getRoles().add("snomedctse-inrp-reviewer");
+            user.getRoles().add("snomedctse-inrp-author");
+        }
 
         user.setModifiedBy(user.getUserName());
 
-        logger.debug("!!!!!!!!!!!!! authenticate user is: " + user);
+        logger.debug("authenticate user is: " + user);
         return user;
     }
 

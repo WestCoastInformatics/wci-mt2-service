@@ -91,7 +91,6 @@ public class SyncUtilities {
             final Organization org = new Organization();
             org.setName(orgName);
             org.setDescription(orgDesc);
-            org.setCodeSystemType(orgMaintainerType);
 
             // Persist
             final Organization o = service.add(org);
@@ -103,7 +102,7 @@ public class SyncUtilities {
 
     }
 
-    public Edition addEdition(String shortName, String editionName, String editionBranch, final Organization organization, JsonNode codeSystem) throws Exception {
+    public Edition addEdition(String shortName, String editionName, String editionBranch, final Organization organization, String maintainerType, JsonNode codeSystem) throws Exception {
 
         final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -112,13 +111,13 @@ public class SyncUtilities {
         // Case of no modules handled downstream
         final Set<String> editionModules = identifyModules(shortName, editionName, editionBranch, codeSystem);
 
-        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionModules, defaultLanguageCode, organization);
+        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionModules, defaultLanguageCode, maintainerType, organization);
 
         return newEdition;
     }
 
-    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, Organization organization)
-        throws Exception {
+    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, String maintainerType,
+        Organization organization) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -133,6 +132,7 @@ public class SyncUtilities {
             edition.setModules(modules);
             edition.setDefaultLanguageCode(defaultLanguageCode);
             edition.setOrganization(organization);
+            edition.setMaintainerType(maintainerType);
 
             // New ones only created as new
             edition.setActive(true);

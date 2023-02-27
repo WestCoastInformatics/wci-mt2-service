@@ -22,7 +22,6 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -36,8 +35,6 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextFi
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -70,10 +67,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
     
-    /** the type of code system. */
-    @Column(nullable = true, length = 255)
-    private String codeSystemType;
-
     /** The members. */
     @ManyToMany(fetch = FetchType.LAZY, cascade = {
         CascadeType.ALL
@@ -136,7 +129,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         iconUri = other.iconUri;
         members = other.getMembers();
         roles = other.getRoles();
-        codeSystemType = other.getCodeSystemType();
     }
 
     /**
@@ -151,7 +143,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         description = other.getDescription();
         primaryContactEmail = other.getPrimaryContactEmail();
         roles = other.getRoles();
-        codeSystemType = other.getCodeSystemType();
     }
 
     /**
@@ -196,26 +187,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         this.description = description;
     }
     
-    /**
-     * Returns the type of code system.
-     *
-     * @return the code system type
-     */
-    public String getCodeSystemType() {
-        
-        return codeSystemType;
-    }
-    
-    /**
-     * Sets the type of code system.
-     *
-     * @param codeSystemType the type of code system to set
-     */
-    public void setCodeSystemType(final String codeSystemType) {
-        
-        this.codeSystemType = codeSystemType;
-    }
-
     /**
      * Returns the primary contact email.
      *
@@ -323,7 +294,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
-        result = prime * result + ((codeSystemType == null) ? 0 : codeSystemType.hashCode());
         return result;
     }
 
@@ -355,18 +325,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
             return false;
         }
         
-        if (codeSystemType == null) {
-            
-            if (other.codeSystemType != null) {
-                
-                return false;
-            }
-            
-        } else if (!codeSystemType.equals(other.codeSystemType)) {
-            
-            return false;
-        }
-
         if (iconUri == null) {
 
             if (other.iconUri != null) {
