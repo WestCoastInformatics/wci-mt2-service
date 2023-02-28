@@ -1,14 +1,12 @@
 package org.ihtsdo.refsetservice.sync;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.Edition;
@@ -23,20 +21,25 @@ import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public abstract class SyncAgent {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
 
+    protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+
     protected static SyncUtilities utilities = null;
 
     protected static final SyncStatistics statistics = new SyncStatistics();
 
+    /** Execution options. */
     private static Boolean isProductionSystem = null;
 
     private static Boolean isPerVersionSync = null;
 
-    private static Boolean isIgnoreCoreRefsets = false;
+    private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
     private static boolean testing = false;
@@ -49,64 +52,19 @@ public abstract class SyncAgent {
     // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
 
-    /** Cache for all DB values used during sync **/
-    protected static final List<Edition> allDatabaseEditions = new ArrayList<>();
-
-    protected static final List<Organization> allDatabaseOrganizations = new ArrayList<>();
-
-    protected static final List<Refset> allDatabaseRefsets = new ArrayList<>();
-
-    protected static final List<Project> allDatabaseProjects = new ArrayList<>();
-
-    /** Maps to help assoicate across sync **/
-
-    // RefsetId to Edition
-    protected static final Map<String, Edition> refsetEditions = new HashMap<>();
-
-    // Edition ShortName to Organization Name
-    protected static final Map<String, String> editionOwnerMap = new HashMap<>();
-
-    // Owner Name to Organization Description
-    protected static final Map<String, String> ownerDescriptionMap = new HashMap<>();
-
-    // Edition Short Name to map of dates to branch paths
-    protected static final Map<String, SortedMap<Date, String>> editionsToProcess = new HashMap<>();
-
-    /** Do not clear per run **/
-
-    // rttProject Id to Rt2Project
-    protected final static Map<String, Project> rttProjects = new HashMap<>();
-
-    // ShortName to Project
-    protected static final Map<String, Project> defaultEditionProjects = new HashMap<>();
-
-    /** General class fields **/
-    protected static final Set<String> uniqueRefsetIds = new HashSet<>();
-
-    protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
-
-    protected static final Set<Refset> snowstormRefsets = new HashSet<>();
-
     protected static Edition developerTestingEdition = null;
 
     protected static Organization develeperTestingOranization = null;
 
+    /** Other process fields **/
+    // Owner Name to Organization Description
+    protected static Set<JsonNode> filteredCodeSystems = new HashSet<>();
+
+    // ShortName to Project
+    protected static final Map<String, Project> defaultEditionProjects = new HashMap<>();
+
     /** Abstract Method **/
     public abstract void sync() throws Exception;
-
-    private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
-
-        if (utilities == null) {
-
-            utilities = new SyncUtilities();
-            utilities.setStatistics(statistics);
-        }
-
-        isPerVersionSync = refsetPerVersionSync;
-        isProductionSystem = runForProduction;
-        isIgnoreCoreRefsets = ignoreCoreRefsets;
-
-    }
 
     // TODO: Define when called vs normal one
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
@@ -144,7 +102,7 @@ public abstract class SyncAgent {
 
             SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
 
-            initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets());
+            initializer.initialize(getDeveleperTestingEdition(), service.getAll(Edition.class), service.getAll(Refset.class));
         }
 
         // Post processing
@@ -153,6 +111,20 @@ public abstract class SyncAgent {
 
         logger.info(agent.printStatistics());
         logger.info("Completed Syncing with Snowstorm");
+    }
+
+    private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
+
+        if (utilities == null) {
+
+            utilities = new SyncUtilities();
+            utilities.setStatistics(statistics);
+        }
+
+        isPerVersionSync = refsetPerVersionSync;
+        isProductionSystem = runForProduction;
+        isIgnoreCoreRefsets = ignoreCoreRefsets;
+
     }
 
     public static void setRefsetToSync(final String refsetId, final String editionShortName) throws Exception {
@@ -168,12 +140,7 @@ public abstract class SyncAgent {
 
         developerTestingEdition = null;
 
-        ownerDescriptionMap.clear();
-        editionOwnerMap.clear();
-        refsetEditions.clear();
-
-        uniqueRefsetIds.clear();
-        editionsToProcess.clear();
+        filteredCodeSystems.clear();
 
         statistics.clearStatistics();
 
@@ -186,29 +153,13 @@ public abstract class SyncAgent {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            allDatabaseEditions.clear();
-            allDatabaseOrganizations.clear();
-            allDatabaseProjects.clear();
-            allDatabaseRefsets.clear();
-            editionOwnerMap.clear();
             defaultEditionProjects.clear();
 
-            allDatabaseEditions.addAll(service.getAll(Edition.class));
-
-            allDatabaseOrganizations.addAll(service.getAll(Organization.class));
-
-            allDatabaseRefsets.addAll(service.getAll(Refset.class));
-
-            allDatabaseProjects.addAll(service.getAll(Project.class));
-
             /** Process supporting collections **/
-            allDatabaseEditions.stream().forEach(e -> editionOwnerMap.put(e.getShortName(), e.getOrganization().getName()));
-            logger.info(" Edition Owner Map: " + editionOwnerMap);
 
-            List<Project> defaultProjects =
-                    allDatabaseProjects.stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default"))).collect(Collectors.toList());
+            List<Project> defaultProjects = service.getAll(Project.class).stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default")))
+                    .collect(Collectors.toList());
             defaultProjects.stream().forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
-            logger.info(" defaultEditionProjects: " + defaultEditionProjects);
         }
 
     }
@@ -242,24 +193,9 @@ public abstract class SyncAgent {
         return statistics.printStatistics();
     }
 
-    public Edition getDeveleperTestingEdition() {
+    public static Edition getDeveleperTestingEdition() {
 
         return developerTestingEdition;
-    }
-
-    public List<Edition> getAllDatabaseEditions() {
-
-        return allDatabaseEditions;
-    }
-
-    public List<Refset> getAllDatabaseRefsets() {
-
-        return allDatabaseRefsets;
-    }
-
-    public List<Project> getAllDatabaseProjects() {
-
-        return allDatabaseProjects;
     }
 
     public Map<String, Project> getDefaultEditionProjects() {

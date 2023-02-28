@@ -132,7 +132,7 @@ public class SyncOperationsInitializer {
 
     }
 
-    void createAdminOrganizationTeam(Organization organization) throws Exception {
+    public void createAdminOrganizationTeam(Organization organization) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 

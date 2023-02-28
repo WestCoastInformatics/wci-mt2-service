@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
@@ -38,18 +40,17 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private final Map<String, String> refsetToModuleMap = new HashMap<String, String>();
 
-    public SyncRefsetAgent() throws Exception {
+    private final Map<String, Edition> refsetEditions = new HashMap<>();
 
-        snowstormRefsets.clear();
-        filteredRefsets.clear();
-        refsetToModuleMap.clear();
-    }
+    // rttProject Id to Rt2Project
+    private final static Map<String, Project> rttProjects = new HashMap<>();
 
     public void sync() throws Exception {
 
-        updateDatabaseCache();
+        initializeSync();
 
-        Set<SyncRefsetMetadata> filteredRefsets = filterRefsetsToProcess();
+        // Only identify branches on filtered code systems and on runShortSync value
+        Set<SyncRefsetMetadata> filteredRefsets = filterRefsetVerionPairsToProcess();
 
         // Map each refsetId/version pair's SyncRefsetMetadata
         Map<String, Map<Date, SyncRefsetMetadata>> sortedPublishedSnowstormRefsetVersionPairs = sortPublishedSnowstormRefsetVersionPairs(filteredRefsets);
@@ -64,7 +65,7 @@ public class SyncRefsetAgent extends SyncAgent {
         Map<String, Set<Date>> newPairs = identifyNewSnowstormRefsetVersionPairs(sortedPublishedSnowstormRefsetVersionPairs, publishedDatabaseRefsetVersionPairs);
         Map<String, Set<Date>> missingPairs = identifyMissingSnowstormRefsetVersionPairs(sortedPublishedSnowstormRefsetVersionPairs, publishedDatabaseRefsetVersionPairs);
         statistics.setRefsetVersionsAdded(countPairs(newPairs));
-        statistics.setRefsetVersionsRemoved(countPairs(missingPairs));
+        statistics.setRefsetVersionsInactivated(countPairs(missingPairs));
         logger.debug("New Pairs: " + newPairs);
         logger.debug("New refsetId Pairs size: " + newPairs.size());
 
@@ -84,7 +85,7 @@ public class SyncRefsetAgent extends SyncAgent {
         missingPairs.keySet().stream().forEach(refsetId -> missingPairs.get(refsetId).stream().forEach(version -> {
 
             try {
-                utilities.removeRefsetVersionPair(publishedDatabaseRefsetVersionPairs.get(refsetId).get(version));
+                utilities.removeExistingRefsetVersionPair(publishedDatabaseRefsetVersionPairs.get(refsetId).get(version));
             } catch (Exception e) {
                 logger.error("Failed in removing exiting refset version " + refsetId + " / " + version);
             }
@@ -112,6 +113,17 @@ public class SyncRefsetAgent extends SyncAgent {
         // Final step
         finalizeNewOrChangedRefsets(newlyCreatedAndUnchangedRefsetVersionPairs);
 
+    }
+
+    private void initializeSync() throws Exception {
+
+        snowstormRefsets.clear();
+        filteredRefsets.clear();
+        refsetToModuleMap.clear();
+        refsetEditions.clear();
+        rttProjects.clear();
+
+        updateDatabaseCache();
     }
 
     private int countPairs(Map<String, Set<Date>> newPairs) {
@@ -186,7 +198,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             missingPairs.put(refsetId, databasePairs.get(refsetId).keySet());
 
-            statistics.setRefsetVersionsRemoved(statistics.getRefsetVersionsRemoved() + databasePairs.get(refsetId).keySet().size());
+            statistics.setRefsetVersionsInactivated(statistics.getRefsetVersionsInactivated() + databasePairs.get(refsetId).keySet().size());
         }
 
         // Identify missing refset versions and add them to return map
@@ -195,7 +207,7 @@ public class SyncRefsetAgent extends SyncAgent {
                 for (Date version : databasePairs.get(refsetId).keySet()) {
                     if (!snowstormPairs.get(refsetId).containsKey(version)) {
 
-                        statistics.incrementRefsetVersionsRemoved();
+                        statistics.incrementRefsetVersionsInactivated();
                         missingPairs.get(refsetId).add(version);
                     }
                 }
@@ -311,21 +323,25 @@ public class SyncRefsetAgent extends SyncAgent {
 
     }
 
-    private Map<String, Map<Date, Refset>> sortDatabaseRefsetVersionPairs() {
+    private Map<String, Map<Date, Refset>> sortDatabaseRefsetVersionPairs() throws Exception {
 
         Map<String, Map<Date, Refset>> sortedDatabaseRefsetVersionPairs = new HashMap<>();
 
-        for (Refset dbRefset : allDatabaseRefsets) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            if (!sortedDatabaseRefsetVersionPairs.containsKey(dbRefset.getRefsetId())) {
+            List<Refset> allDatabaseRefsets = service.getAll(Refset.class);
+            for (Refset dbRefset : allDatabaseRefsets) {
 
-                sortedDatabaseRefsetVersionPairs.put(dbRefset.getRefsetId(), new HashMap<>());
+                if (!sortedDatabaseRefsetVersionPairs.containsKey(dbRefset.getRefsetId())) {
+
+                    sortedDatabaseRefsetVersionPairs.put(dbRefset.getRefsetId(), new HashMap<>());
+                }
+
+                sortedDatabaseRefsetVersionPairs.get(dbRefset.getRefsetId()).put(dbRefset.getVersionDate(), dbRefset);
             }
 
-            sortedDatabaseRefsetVersionPairs.get(dbRefset.getRefsetId()).put(dbRefset.getVersionDate(), dbRefset);
+            return sortedDatabaseRefsetVersionPairs;
         }
-
-        return sortedDatabaseRefsetVersionPairs;
     }
 
     private Map<String, Map<Date, SyncRefsetMetadata>> sortPublishedSnowstormRefsetVersionPairs(Set<SyncRefsetMetadata> refsetsToProcess) {
@@ -468,23 +484,20 @@ public class SyncRefsetAgent extends SyncAgent {
             refsetEditions.put(refset.getRefsetId(), edition);
 
             snowstormRefsets.add(refset);
-            allDatabaseRefsets.add(refset);
-
-            if (!uniqueRefsetIds.contains(refset.getRefsetId())) {
-
-                uniqueRefsetIds.add(refset.getRefsetId());
-            }
-
         }
 
     }
 
-    private Set<SyncRefsetMetadata> filterRefsetsToProcess() throws Exception {
+    private Set<SyncRefsetMetadata> filterRefsetVerionPairsToProcess() throws Exception {
         int counter = 0;
 
-        logger.info("About to process these branches: " + editionsToProcess.keySet());
+        Map<String, SortedMap<Date, String>> branchesToProcess = identifyEditionBranches(filteredCodeSystems);
 
-        for (String editionShortName : editionsToProcess.keySet()) {
+        logger.info("Will be processing these " + branchesToProcess.keySet() + " edition-branches for refsets: " + branchesToProcess);
+
+        logger.info("About to process these branches: " + branchesToProcess.keySet());
+
+        for (String editionShortName : branchesToProcess.keySet()) {
             Edition edition;
 
             // Check if should process Edition
@@ -495,9 +508,9 @@ public class SyncRefsetAgent extends SyncAgent {
             // Process edition
             String url = SnowstormConnection.BASE_URL + "browser/{branch}/members?active=true&referenceSet=%3C" + RefsetService.SIMPLE_TYPE_REFERENCE_SET;
 
-            for (Date branchVersion : editionsToProcess.get(editionShortName).keySet()) {
+            for (Date branchVersion : branchesToProcess.get(editionShortName).keySet()) {
 
-                final String branchPath = editionsToProcess.get(editionShortName).get(branchVersion);
+                final String branchPath = branchesToProcess.get(editionShortName).get(branchVersion);
 
                 try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", branchPath))) {
 
@@ -536,9 +549,9 @@ public class SyncRefsetAgent extends SyncAgent {
                                 refsetToModuleMap.put(refsetId, moduleId);
                             }
 
-                            if (isVersionToPersist(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), editionsToProcess.get(edition.getShortName()).keySet())) {
+                            if (isVersionToPersist(refsetId, branchVersion, branchVersion, branchPath, edition.getName(), branchesToProcess.get(edition.getShortName()).keySet())) {
 
-                                SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, editionsToProcess.get(edition.getShortName()).keySet(), branchVersion, branchPath);
+                                SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, branchesToProcess.get(edition.getShortName()).keySet(), branchVersion, branchPath);
 
                                 filteredRefsets.add(refsetMetadata);
 
@@ -552,24 +565,27 @@ public class SyncRefsetAgent extends SyncAgent {
         return filteredRefsets;
     }
 
-    private Edition getEdition(String shortName) {
+    private Edition getEdition(String shortName) throws Exception {
         if (getIsIgnoreCoreRefsets() && utilities.isInternationalEdition(shortName)) {
 
             logger.info("Not processing CORE refsets per ignoreCoreRefsets = " + getIsIgnoreCoreRefsets());
             return null;
         }
 
-        List<Edition> editions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
+        try (final TerminologyService service = new TerminologyService()) {
 
-        if (editions == null || editions.size() != 1) {
+            List<Edition> editions = service.getAll(Edition.class).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
 
-            logger.error("Unable to find  editions associated with Code System: " + shortName);
-            return null;
+            if (editions == null || editions.size() != 1) {
 
+                logger.error("Unable to find  editions associated with Code System: " + shortName);
+                return null;
+
+            }
+
+            // Matching edition
+            return editions.iterator().next();
         }
-
-        // Matching edition
-        return editions.iterator().next();
     }
 
     private String identifyConceptModuleId(String refsetId, String branch) throws Exception {
@@ -940,5 +956,96 @@ public class SyncRefsetAgent extends SyncAgent {
 
         // Testing, but current refset not one needed
         return null;
+    }
+
+    /**
+     * Identify branches.
+     *
+     * @return the map
+     * @throws Exception the exception
+     */
+    private Map<String, SortedMap<Date, String>> identifyEditionBranches(Set<JsonNode> codeSystems) throws Exception {
+
+        Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
+        logger.info("Database editions already in DB at start of sync in identifyEditionBranches() are: ");
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.getAll(Edition.class).stream().forEach(e -> logger.info(e.getName()));
+
+            for (JsonNode codeSystem : codeSystems) {
+
+                final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
+                final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
+                final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
+
+                logger.info("Identifying CodeSystem branches for: " + editionName);
+
+                final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
+
+                SortedMap<Date, String> children = new TreeMap<>();
+                logger.info(" genericUrl: " + genericUrl.replace("{branch}", branch));
+
+                try (final Response response = SnowstormConnection.getResponse(genericUrl.replace("{branch}", branch))) {
+
+                    final String resultString = response.readEntity(String.class);
+                    final ObjectMapper mapper = new ObjectMapper();
+                    final JsonNode root = mapper.readTree(resultString.toString());
+
+                    // get RefSets from edition as long as a) active & b) within
+                    // edition's module
+                    final Iterator<JsonNode> branchIterator = root.iterator();
+
+                    while (branchIterator.hasNext()) {
+
+                        JsonNode child = branchIterator.next();
+                        final String childBranch = child.get("path").asText();
+                        String childDate = childBranch.replace(branch, "");
+
+                        if (childDate.startsWith("/")) {
+
+                            childDate = childDate.substring(1);
+                        }
+
+                        // Since grabbing all children branches, avoid
+                        // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
+                        boolean childAdded = false;
+
+                        if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+
+                            Date branchDate = branchDateFormatter.parse(childDate);
+
+                            if (branchDate.before(new Date())) {
+
+                                children.put(branchDate, childBranch);
+                                childAdded = true;
+                            }
+
+                        } else {
+                            logger.info("Ignoring branch " + childDate + " as it doesn't comply with expected format (where final item in path is a date in format yyyy-mm-dd");
+                        }
+
+                        if (!childAdded) {
+
+                            // logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official release
+                            // branch");
+                        }
+
+                    }
+
+                    logger.info("Branch Dates for edition: " + editionName);
+
+                    for (Date child : children.keySet()) {
+
+                        logger.info("Child: " + child.toString() + " with branch: " + children.get(child));
+                    }
+
+                }
+
+                retMap.put(shortName, children);
+            }
+
+            return retMap;
+        }
     }
 }

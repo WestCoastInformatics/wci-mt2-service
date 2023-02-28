@@ -1,15 +1,12 @@
 package org.ihtsdo.refsetservice.sync;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
@@ -17,6 +14,7 @@ import javax.ws.rs.core.Response;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,72 +30,270 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private static final Set<String> codeSystemsNewAndInactive = new HashSet<>();
 
-    public SyncCodeSystemAgent() throws Exception {
+    private static final String DEFAULT_ORGANIZATION_PREFACE = "Owner of ";
 
-        codeSystemsNewAndInactive.clear();
-    }
+    private static final Map<String, String> editionShortNameOrganizationNameMap = new HashMap<>();
+
+    private HashMap<String, String> snowstormEditionShortNameToOrganizationNameMap;
 
     public void sync() throws Exception {
 
-        updateDatabaseCache();
-
-        final Set<String> dbEditionShortNames = new HashSet<>();
-        final Set<String> activeSnowstormEditionShortNames = new HashSet<>();
+        initializeSync();
 
         // Get all code systems from Snowstorm
-        final JsonNode codeSystemsRootNode = getSnowstormCodeSystems();
-        final Iterator<JsonNode> organizationIterator = codeSystemsRootNode.iterator();
-        logger.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on Snowstorm: " + codeSystemsRootNode);
+        final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
 
-        // Filter code systems (filtering based on ignoredCS list and bad data)
-        Set<JsonNode> filteredCodeSystemsToProcess = filterCodeSystems(codeSystemsRootNode);
-        logger.info("Will be processing these " + filteredCodeSystemsToProcess.size() + " Code Systems: " + codeSystemsRootNode);
+        // Identify code systems to sync
+        analyzeCodeSystems(organizationJsonRootNode);
 
-        // Identify new, removed, and existing codeSystems (Based on Edition's shortName)
-        allDatabaseEditions.stream().forEach(e -> dbEditionShortNames.add(e.getShortName()));
-        filteredCodeSystemsToProcess.stream().filter(c -> (c.has("active") && c.get("active").asBoolean()) || !c.has("active"))
-                .forEach(cs -> activeSnowstormEditionShortNames.add(cs.get("shortName").asText()));
+        // Sync Organizations reviewing which are new (creating them), missing (removing them), and unchanged.
+        analyzeOrganizations();
 
-        List<String> newShortNames = activeSnowstormEditionShortNames.stream().filter(c -> !dbEditionShortNames.contains(c)).collect(Collectors.toList());
-        List<String> removedShortNames = dbEditionShortNames.stream().filter(c -> !activeSnowstormEditionShortNames.contains(c)).collect(Collectors.toList());
-        statistics.setEditionsAdded(newShortNames.size());
-        statistics.setEditionsRemoved(removedShortNames.size());
+        // Sync Editions reviewing which are new (creating them), missing (removing them), modified (removing them and then creating them), and unchanged.
+        List<String> existingShortNames = analyzeEditions();
+        int a = 0;
+        if (a < 1) {
+            printStatistics();
+            throw new Exception("Failed on purpose");
+        }
 
-        // Process each type of code system. First review existing so that anything changed will be deleted and recreated
-        List<String> existingShortNames = dbEditionShortNames.stream().filter(c -> activeSnowstormEditionShortNames.contains(c)).collect(Collectors.toList());
-        List<String> changedShortNames = reviewExistingCodeSystems(filteredCodeSystemsToProcess, existingShortNames);
-        statistics.setEditionsUnchanged(existingShortNames.size() - changedShortNames.size());
-        statistics.setEditionsRecreated(changedShortNames.size());
-
-        newShortNames.addAll(changedShortNames);
-        removedShortNames.addAll(changedShortNames);
-
-        // Remove existing organizations
-        filteredCodeSystemsToProcess.stream().filter(cs -> removedShortNames.contains(cs.get("shortName").asText())).forEach(matching -> {
-            try {
-                Edition edition = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(matching)).collect(Collectors.toList()).iterator().next();
-                utilities.removeEdition(edition);
-            } catch (Exception e1) {
-                logger.error("Failed to remove edition: " + matching);
-            }
-        });
-
-        // Add new organizations via addCodeSystem()
-        filteredCodeSystemsToProcess.stream().filter(cs -> newShortNames.contains(cs.get("shortName").asText())).forEach(matching -> addCodeSystem(matching));
+        compareEditionOrganizationMaps(existingShortNames);
 
         // TODO: For now, ignore this, but shouldn't ever throw exception at this point
         if (developerTestingEdition == null && !getIsProductionSystem()) {
             // throw new Exception("Must have a WCI Organization on a non-Prod instance");
         }
+    }
 
-        // PostProcessing
+    private void compareEditionOrganizationMaps(List<String> existingShortNames) throws Exception {
+        try (TerminologyService service = new TerminologyService()) {
+            List<Edition> dbEditions = service.getAll(Edition.class);
+            List<Organization> dbOrganizations = service.getAll(Organization.class);
+
+            for (String shortName : existingShortNames) {
+
+                // Prepare DB edition for analysis
+                List<Edition> matchingDbEditions = dbEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
+                utilities.validateMatches(matchingDbEditions, shortName);
+                Edition dbEdition = matchingDbEditions.iterator().next();
+                String dbOrganizationName = dbEdition.getOrganizationName();
+
+                // Prepare snowstorm edition for analysis
+                List<JsonNode> matchingSnowstormEditions = filteredCodeSystems.stream().filter(cs -> cs.get("shortName").asText().equals(shortName)).collect(Collectors.toList());
+                utilities.validateMatches(matchingSnowstormEditions, shortName);
+                JsonNode snowstormEdition = matchingSnowstormEditions.iterator().next();
+                String snowstormOrganizationName = identifyOrganizationName(snowstormEdition);
+
+                // compare
+                if (!dbOrganizationName.equals(snowstormOrganizationName)) {
+
+                    List<Organization> matchedOrganizations = dbOrganizations.stream().filter(o -> o.getName().equals(snowstormOrganizationName)).collect(Collectors.toList());
+                    utilities.validateMatches(matchedOrganizations, snowstormOrganizationName);
+
+                    dbEdition.setOrganization(matchedOrganizations.iterator().next());
+                    service.update(dbEdition);
+
+                    logger.info("Updated edition's Organization: " + dbEdition.getId() + " (" + dbEdition.getName() + ") " + dbEdition);
+                }
+            }
+        }
+    }
+
+    private void initializeSync() throws Exception {
+
         updateDatabaseCache();
 
-        // Only identify branches on filtered code systems and on runShortSync value
-        Map<String, SortedMap<Date, String>> editionBranchesToProcess = identifyEditionBranches(filteredCodeSystemsToProcess);
-        editionsToProcess.putAll(editionBranchesToProcess);
+        codeSystemsNewAndInactive.clear();
+        editionShortNameOrganizationNameMap.clear();
 
-        logger.info("Will be processing these " + editionsToProcess.keySet() + " edition-branches for refsets: " + editionsToProcess);
+        try (TerminologyService service = new TerminologyService()) {
+
+            service.getAll(Edition.class).stream().forEach(e -> editionShortNameOrganizationNameMap.put(e.getShortName(), e.getOrganization().getName()));
+        }
+    }
+
+    private List<String> analyzeEditions() throws Exception {
+        final Set<String> dbInactiveEditionShortNames = new HashSet<>();
+        final Set<String> dbActiveEditionShortNames = new HashSet<>();
+        final Map<String, JsonNode> snowstormShortNameCodeSystemMap = new HashMap<>();
+
+        try (TerminologyService service = new TerminologyService()) {
+            // Identify new, inactivated, and existing codeSystems (Based on shortName)
+            List<Edition> allEditions = service.getAll(Edition.class);
+            allEditions.stream().filter(e -> e.isActive()).forEach(ea -> dbActiveEditionShortNames.add(ea.getShortName()));
+            allEditions.stream().filter(e -> !e.isActive()).forEach(ea -> dbInactiveEditionShortNames.add(ea.getShortName()));
+
+            // Based on filteredCodeSystems which already filtered for active code systems
+            filteredCodeSystems.stream().forEach(cs -> snowstormShortNameCodeSystemMap.put(cs.get("shortName").asText(), cs));
+
+            // Identify and create new editions (not in active nor in inactive DB editions)
+            List<String> newShortNames =
+                    snowstormShortNameCodeSystemMap.keySet().stream().filter(c -> !dbActiveEditionShortNames.contains(c) && !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
+            statistics.setEditionsAdded(newShortNames.size());
+            logger.debug("ccc New Editions: " + newShortNames);
+            for (String shortName : newShortNames) {
+                Edition newEdition = utilities.addNewEdition(snowstormShortNameCodeSystemMap.get(shortName), snowstormEditionShortNameToOrganizationNameMap.get(shortName));
+                postCodeSystemProcessing(newEdition);
+            }
+
+            // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
+            // TODO: Define solution although for now simply activating
+            List<String> activatedShortNames = snowstormShortNameCodeSystemMap.keySet().stream().filter(c -> dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
+            logger.debug("ccc activating Editions: : " + activatedShortNames);
+            activatedShortNames.stream().forEach(n -> utilities.updateEditionStatus(n, true));
+
+            // Inactivate active DB editions that are not in snowstorm
+            // TODO: Define solution although for now simply inactivating
+            List<String> inactivatedShortNames = dbActiveEditionShortNames.stream().filter(c -> !snowstormShortNameCodeSystemMap.keySet().contains(c)).collect(Collectors.toList());
+            statistics.setEditionsInactivated(inactivatedShortNames.size());
+            logger.debug("ccc Inactivated Editions: : " + inactivatedShortNames);
+            inactivatedShortNames.stream().forEach(n -> utilities.updateEditionStatus(n, false));
+
+            // Identify refsets that are active in DB and found in snowstorm and compare for changes
+            List<String> existingShortNames = dbActiveEditionShortNames.stream().filter(c -> snowstormShortNameCodeSystemMap.keySet().contains(c)).collect(Collectors.toList());
+            List<String> modifiedShortNames = compareAndModifyEditions(existingShortNames, snowstormShortNameCodeSystemMap);
+            List<String> unchangedShortNames = existingShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
+            statistics.setEditionsUnchanged(unchangedShortNames.size());
+            statistics.setEditionsModified(modifiedShortNames.size());
+            logger.debug("ccc Unchanged Editions: : " + unchangedShortNames);
+            logger.debug("ccc Modified Editions: " + modifiedShortNames);
+
+            // Identify refsets that were just actived to see if there are any other changes necessary
+            List<String> activatedAndModifiedShortNames = compareAndModifyEditions(activatedShortNames, snowstormShortNameCodeSystemMap);
+            statistics.setEditionsActivatedAndModified(activatedAndModifiedShortNames.size());
+            logger.debug("ccc ActivatedAndModified Editions: " + activatedAndModifiedShortNames);
+
+            // Finalize those editions that were only activated (and not further modified)
+            activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
+            statistics.setEditionsActivated(activatedShortNames.size());
+            logger.debug("ccc Activated Editions: " + activatedShortNames);
+
+            return existingShortNames;
+        }
+
+    }
+
+    private void analyzeOrganizations() throws Exception {
+        HashMap<String, Set<String>> dbOrganizationNameToEditionsShortNameMap = new HashMap<>();
+        HashMap<String, Set<String>> snowstormOrganizationNameToEditionsShortNameMap = new HashMap<>();
+        HashMap<String, String> dbEditionShortNameToOrganizationNameMap = new HashMap<>();
+
+        snowstormEditionShortNameToOrganizationNameMap = new HashMap<>();
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final List<Edition> dbEditions = service.getAll(Edition.class);
+
+            // Identify DB edition-to-orgName bi-directional maps
+            for (Edition edition : dbEditions) {
+                dbEditionShortNameToOrganizationNameMap.put(edition.getShortName(), edition.getOrganizationName());
+
+                if (!dbOrganizationNameToEditionsShortNameMap.keySet().contains(edition.getOrganizationName())) {
+                    dbOrganizationNameToEditionsShortNameMap.put(edition.getOrganizationName(), new HashSet<String>());
+                }
+
+                dbOrganizationNameToEditionsShortNameMap.get(edition.getOrganizationName()).add(edition.getShortName());
+            }
+
+            // logger.debug("aaa with dbEditionShortNameToOrganizationNameMap: " + dbEditionShortNameToOrganizationNameMap);
+            // logger.debug("aaa with dbOrganizationNameToEditionsShortNameMap: " + dbOrganizationNameToEditionsShortNameMap);
+            // Identify Snow edition-to-orgName bi-directional maps
+            for (JsonNode codeSystem : filteredCodeSystems) {
+                String organizationName = identifyOrganizationName(codeSystem);
+
+                snowstormEditionShortNameToOrganizationNameMap.put(codeSystem.get("shortName").asText(), organizationName);
+
+                if (!snowstormOrganizationNameToEditionsShortNameMap.keySet().contains(organizationName)) {
+                    snowstormOrganizationNameToEditionsShortNameMap.put(organizationName, new HashSet<String>());
+                }
+
+                snowstormOrganizationNameToEditionsShortNameMap.get(organizationName).add(codeSystem.get("shortName").asText());
+            }
+
+            // logger.debug("aaa with snowstormEditionShortNameToOrganizationNameMap: " + snowstormEditionShortNameToOrganizationNameMap);
+            // logger.debug("aaa with snowstormOrganizationNameToEditionsShortNameMap: " + snowstormOrganizationNameToEditionsShortNameMap);
+
+            // See if any snowstorm organizations are new
+            List<String> newOrganizations =
+                    snowstormOrganizationNameToEditionsShortNameMap.keySet().stream().filter(o -> !dbOrganizationNameToEditionsShortNameMap.keySet().contains(o)).collect(Collectors.toList());
+            statistics.setOrganizationsAdded(newOrganizations.size());
+            logger.debug("ccc New Organizations: " + newOrganizations);
+
+            for (String organizationName : newOrganizations) {
+                utilities.addOrganziation(organizationName, identifyOrganizationDescription(organizationName));
+            }
+
+            // See if any db organizations are missing
+            List<String> inactivatedShortNames =
+                    dbOrganizationNameToEditionsShortNameMap.keySet().stream().filter(c -> !snowstormOrganizationNameToEditionsShortNameMap.keySet().contains(c)).collect(Collectors.toList());
+            statistics.setOrganizationsInactivated(inactivatedShortNames.size());
+            logger.debug("ccc Inactivated Organizations: " + inactivatedShortNames);
+
+            // TODO: Define solution although for now simply inactivating
+            for (String organizationName : inactivatedShortNames) {
+                utilities.updateOrganziationStatus(organizationName, false);
+            }
+        }
+    }
+
+    private void finalizeOrganizations() {
+
+        /*-
+         * 
+         * Compare Organizations found in both DB & Snowstorm. 
+         * a) If they are the same, nothing to do. 
+         * b) If they are different, See if consistent (a name change across all editions that point to same org)
+         * 
+         * TODO: See if one-offs... in which case... Do we (Rory decide)? 
+         * 1) Can we copy an org and update name? 
+         * 2) Create new Org
+         */
+        /*-
+         *         List<String> existingShortNames =
+         *                      dbOrganizationNameToEditionsShortNameMap.keySet().stream().filter(c -> snowstormOrganizationNameToEditionsShortNameMap.keySet().contains(c)).collect(Collectors.toList());
+         */
+
+        // JESSE
+        // List<String> modifiedShortNames = reviewExistingOrganizations(filteredCodeSystems, existingShortNames);
+        // statistics.setEditionsUnchanged(existingShortNames.size() - modifiedShortNames.size());
+        // statistics.setEditionsModified(modifiedShortNames.size());
+
+    }
+
+    private String identifyOrganizationDescription(String organizationName) {
+
+        if (organizationName.startsWith(DEFAULT_ORGANIZATION_PREFACE)) {
+
+            return "Organizational administrators can update this edition's default description.";
+        } else {
+
+            return "Two things to change." + System.lineSeparator()
+                    + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name." + System.lineSeparator()
+                    + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
+                    + "2) Organizational administrator(s) can update this default description at any time";
+        }
+    }
+
+    private String identifyOrganizationName(JsonNode codeSystem) {
+
+        // If owner defined, return it as organization name
+        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
+            return codeSystem.get("owner").asText();
+        }
+
+        // Create generic organization name
+        final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
+        return DEFAULT_ORGANIZATION_PREFACE + editionName;
+    }
+
+    private void analyzeCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
+
+        final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
+        logger.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
+
+        // Filter code systems (based on active-setting, ignoredCS list, testing situation, and bad data)
+        filterCodeSystems(organizationJsonRootNode);
+        logger.info("Will be processing only these " + filteredCodeSystems.size() + " Code Systems: " + filteredCodeSystems);
     }
 
     private int countCodeSystems(Iterator<JsonNode> organizationIterator) {
@@ -118,250 +314,86 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return counter;
     }
 
-    /**
-     * Identify branches.
-     *
-     * @return the map
-     * @throws Exception the exception
-     */
-    private Map<String, SortedMap<Date, String>> identifyEditionBranches(Set<JsonNode> codeSystems) throws Exception {
-
-        Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
-        logger.info("Database editions already in DB at start of sync in identifyEditionBranches() are: ");
-        allDatabaseEditions.stream().forEach(e -> logger.info(e.getName()));
-
-        for (JsonNode codeSystem : codeSystems) {
-
-            final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-            final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
-            final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
-
-            logger.info("Identifying CodeSystem branches for: " + editionName);
-
-            final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
-
-            SortedMap<Date, String> children = new TreeMap<>();
-            logger.info(" genericUrl: " + genericUrl.replace("{branch}", branch));
-
-            try (final Response response = SnowstormConnection.getResponse(genericUrl.replace("{branch}", branch))) {
-
-                final String resultString = response.readEntity(String.class);
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
-
-                // get RefSets from edition as long as a) active & b) within
-                // edition's module
-                final Iterator<JsonNode> branchIterator = root.iterator();
-
-                while (branchIterator.hasNext()) {
-
-                    JsonNode child = branchIterator.next();
-                    final String childBranch = child.get("path").asText();
-                    String childDate = childBranch.replace(branch, "");
-
-                    if (childDate.startsWith("/")) {
-
-                        childDate = childDate.substring(1);
-                    }
-
-                    // Since grabbing all children branches, avoid
-                    // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
-                    boolean childAdded = false;
-
-                    if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
-
-                        Date branchDate = branchDateFormatter.parse(childDate);
-
-                        if (branchDate.before(new Date())) {
-
-                            children.put(branchDate, childBranch);
-                            childAdded = true;
-                        }
-
-                    } else {
-                        logger.info("Ignoring branch " + childDate + " as it doesn't comply with expected format (where final item in path is a date in format yyyy-mm-dd");
-                    }
-
-                    if (!childAdded) {
-
-                        // logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official release
-                        // branch");
-                    }
-
-                }
-
-                logger.info("Branch Dates for edition: " + editionName);
-
-                for (Date child : children.keySet()) {
-
-                    logger.info("Child: " + child.toString() + " with branch: " + children.get(child));
-                }
-
-            }
-
-            retMap.put(shortName, children);
-        }
-
-        return retMap;
-    }
-
-    private List<String> reviewExistingCodeSystems(Set<JsonNode> filteredCodeSystemsToProcess, List<String> newShortNames) throws Exception {
+    private List<String> compareAndModifyEditions(List<String> matchingEditionShortNames, Map<String, JsonNode> snowstormShortNameCodeSystemMap) throws Exception {
         List<String> modifiedShortNames = new ArrayList<>();
 
-        // syncedEdition = handleExistingCodeSystem(correspondingDbEdition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition,
-        // codeSystem);
+        try (final TerminologyService service = new TerminologyService()) {
 
-        // Process one Organization per Edition.
-        for (JsonNode codeSystem : filteredCodeSystemsToProcess) {
-            if (newShortNames.contains(codeSystem.get("shortName").asText())) {
+            List<Edition> allDatabaseEditions = service.getAll(Edition.class);
 
-                final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
+            // Process one Organization per Edition.
+            for (String shortName : matchingEditionShortNames) {
+
+                // Find associated DB edition
+                List<Edition> matchingEditions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
+                utilities.validateMatches(matchingEditions, shortName);
+                Edition dbEdition = matchingEditions.iterator().next();
+                Edition newEdition = new Edition(dbEdition);
+
+                // Find values for Snowstorm Edition
+                JsonNode codeSystem = snowstormShortNameCodeSystemMap.get(shortName);
                 final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
                 final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
-                final String maintainerType = identifyMaintainerType(codeSystem, editionName);
+                final String maintainerType = utilities.identifyMaintainerType(codeSystem, editionName);
                 final Set<String> editionModules = utilities.identifyModules(shortName, editionName, branch, codeSystem);
 
-                Edition dbEdition = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(codeSystem.get("shortName").asText())).collect(Collectors.toList()).iterator().next();
+                boolean modificationMade = false;
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), editionName)
-                        || isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), branch)
-                        || isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), editionModules)
-                        || isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getMaintainerType(), maintainerType) || isDifferentAttribute(
-                                dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(), utilities.identifyDefaultLanguageCode(codeSystem, editionName))) {
-                    modifiedShortNames.add(shortName);
-                    continue;
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), editionName)) {
+                    logger.info(" inconsistent editionName with DB having '" + dbEdition.getName() + "' and snowstorm with'" + editionName + "'");
+                    newEdition.setName(editionName);
+                    modificationMade = true;
                 }
 
-                final Set<String> editionDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName);
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), branch)) {
+                    logger.info(" inconsistent branch with DB having '" + dbEdition.getBranch() + "' and snowstorm with'" + branch + "'");
+                    newEdition.setBranch(branch);
+                    modificationMade = true;
+                }
 
-                if (!dbEdition.getDefaultLanguageRefsets().equals(editionDefaultLanguageRefsets)) {
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), editionModules)) {
+                    logger.info(" inconsistent editionModules with DB having '" + dbEdition.getModules() + "' and snowstorm with'" + editionModules + "'");
+                    newEdition.setModules(editionModules);
+                    modificationMade = true;
+                }
 
-                    if (!dbEdition.getDefaultLanguageRefsets().isEmpty() && editionDefaultLanguageRefsets.isEmpty()) {
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getMaintainerType(), maintainerType)) {
+                    logger.info(" inconsistent maintainerType with DB having '" + dbEdition.getMaintainerType() + "' and snowstorm with'" + maintainerType + "'");
+                    newEdition.setMaintainerType(maintainerType);
+                    modificationMade = true;
+                }
 
-                        logger.info(" False-Positive inconsistent Edition defaultLanguageRefsets with '" + dbEdition.getDefaultLanguageRefsets() + "' and '" + editionDefaultLanguageRefsets + "'");
-                    } else {
+                final String snowstormDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(),
+                        utilities.identifyDefaultLanguageCode(codeSystem, editionName))) {
+                    logger.info(" inconsistent defaultLanguageCode with DB having '" + dbEdition.getDefaultLanguageCode() + "' and snowstorm with'" + snowstormDefaultLanguageCode + "'");
 
-                        logger.info(" inconsistent Edition defaultLanguageRefsets with '" + dbEdition.getDefaultLanguageRefsets() + "' and '" + editionDefaultLanguageRefsets + "'");
+                    newEdition.setDefaultLanguageCode(snowstormDefaultLanguageCode);
+                    modificationMade = true;
+                }
 
-                        modifiedShortNames.add(shortName);
-                        continue;
-                    }
+                final Set<String> snowstormDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName);
+                if (!dbEdition.getDefaultLanguageRefsets().equals(snowstormDefaultLanguageRefsets)) {
 
+                    logger.info(" inconsistent defaultLanguageRefsets with DB having '" + dbEdition.getDefaultLanguageRefsets() + "' and snowstorm with'" + snowstormDefaultLanguageRefsets + "'");
+
+                    newEdition.setDefaultLanguageRefsets(snowstormDefaultLanguageRefsets);
+                    modificationMade = true;
+                }
+
+                if (modificationMade) {
+                    service.update(newEdition);
+                    logger.info("Updated edition: " + newEdition.getId() + " (" + newEdition.getName() + ") " + newEdition);
+
+                    modifiedShortNames.add(newEdition.getShortName());
                 }
             }
         }
-
-        modifiedShortNames.stream().forEach(n -> logger.info("Removing and re-adding edition: " + n));
 
         return modifiedShortNames;
     }
 
-    private Edition addCodeSystem(JsonNode codeSystem) {
-        try {
-            final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
-            final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-            final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
-            final String maintainerType = identifyMaintainerType(codeSystem, editionName);
-
-            // If organization doesn't already exist (based on name), create it
-            setSnowstormEditionOwner(shortName, editionName, codeSystem);
-
-            Organization organization = identifyMatchingOrganization(shortName);
-            if (organization != null) {
-                statistics.incrementOrganizationsUnchanged();
-            } else {
-                statistics.incrementOrganizationsAdded();
-
-                organization = createOrganization(shortName, maintainerType);
-            }
-
-            // Create a single Admin team per Edition when we first discover it
-            final SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
-            initializer.createAdminOrganizationTeam(organization);
-
-            final Edition newEdition = utilities.addEdition(shortName, editionName, branch, organization, maintainerType, codeSystem);
-            utilities.printEditionValues(newEdition);
-
-            postCodeSystemProcessing(newEdition);
-
-            return newEdition;
-        } catch (Exception e) {
-
-            logger.error("Failed in syncing New Snowstorm Code System: " + codeSystem);
-            e.printStackTrace();
-
-            return null;
-        }
-
-    }
-
-    /*
-     * See if organization with the name provided already exists. If so, return it. If not, create and then return.
-     */
-    private Organization identifyMatchingOrganization(String editionShortName) throws Exception {
-
-        // Determine Owner
-        List<Organization> organizations = allDatabaseOrganizations.stream().filter(o -> o.getName().equals(editionOwnerMap.get(editionShortName))).collect(Collectors.toList());
-
-        if (organizations.isEmpty()) {
-            // TODO: If was once there but not, do we remove owner?
-
-            // First time seeing owner
-            return null;
-        } else if (organizations.size() > 1) {
-
-            throw new Exception("Cannot have multiple orgs with same name: " + editionOwnerMap.get(editionShortName));
-        }
-
-        // Found existing owner
-        statistics.incrementOrganizationsUnchanged();
-        return organizations.iterator().next();
-    }
-
-    private Organization createOrganization(String editionShortName, String organizationMaintainerType) throws Exception {
-
-        // Create new organization
-        // TODO: 1 - Add a description default value or update snowstorm with value per codesystem
-        final String organizationName = editionOwnerMap.get(editionShortName);
-        final String organizationDescription = ownerDescriptionMap.get(organizationName);
-
-        Organization organization = utilities.addOrganziation(organizationName, organizationDescription, organizationMaintainerType);
-
-        allDatabaseOrganizations.add(organization);
-
-        logger.info("Created Organization: " + organization.getName());
-
-        return organization;
-    }
-
-    private void setSnowstormEditionOwner(String editionShortName, String editionName, JsonNode codeSystem) {
-        String description;
-        String owner;
-
-        // Identify Code System Owner
-        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
-            owner = codeSystem.get("owner").asText();
-            description = "Organizational administrators can update this edition's default description.";
-        } else {
-            owner = "Owner of " + editionName;
-            description = "Two things to change." + System.lineSeparator()
-                    + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name." + System.lineSeparator()
-                    + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
-                    + "2) Organizational administrator(s) can update this default description at any time";
-        }
-
-        editionOwnerMap.put(editionShortName, owner);
-
-        if (!ownerDescriptionMap.containsKey(owner)) {
-
-            ownerDescriptionMap.put(owner, description);
-        }
-
-    }
-
     private Set<JsonNode> filterCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
-
-        final Set<JsonNode> filteredCodeSystems = new HashSet<>();
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
 
@@ -376,33 +408,35 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 // Check for invalid or ignored code systems
                 if (!codeSystem.has("shortName")) {
 
-                    logger.error("Encountered codeSystem without a shortName: " + codeSystem);
                     // Skipping odd code system without a shortName
+                    logger.error("Skipping codeSystem without a shortName: " + codeSystem);
                     continue;
                 }
 
                 final String editionShortName = codeSystem.get("shortName").asText();
+                final String maintainerType = utilities.identifyMaintainerType(codeSystem, editionShortName);
 
-                // Testing
-                if (isEditionToProcess(editionShortName)) {
-                    final String maintainerType = identifyMaintainerType(codeSystem, editionShortName);
+                // If not testing, process all editions. Otherwise, check if edition to test
+                if (isTesting() && !isTestingEditionToProcess(editionShortName)) {
+                    logger.info("In testing, but ignoring, codesystem " + editionShortName + " as not defined as the testing edition");
 
-                    if (!maintainerType.equalsIgnoreCase("Managed Service")) {
+                } else if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
+                    // Skipping inactive code system
+                    logger.info("Skipping inactive codeSystem: " + codeSystem);
 
-                        // For now, only supportCode Managed Service
-                        logger.info("Ignoring codesystem " + editionShortName + " as is of maintainerType: " + maintainerType);
-                        continue;
+                } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
 
-                    } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
+                    // Code System has been defined as to-be-ignored (either by specifying name or shortname).
+                    logger.info("Skipping codesystem " + editionShortName + " as it's listed in ignoredCodeSystems.txt");
 
-                        // Code System has been defined as to-be-ignored (either by specifying name or shortname)
-                        logger.info("Ignoring codesystem " + editionShortName + " as it's listed in ignoredCodeSystems.txt");
-                        continue;
-                    }
+                } else if (!maintainerType.equalsIgnoreCase("Managed Service")) {
 
-                    filteredCodeSystems.add(codeSystem);
+                    // TODO: Remove once have handled more than Managed Service only
+                    // Ensure only processing Managed Service editions
+                    logger.info("Skipping codesystem " + editionShortName + " as is of maintainerType: " + maintainerType);
+
                 } else {
-                    logger.info("Ignoring codesystem " + editionShortName + " as it failed isEditionToProcess()");
+                    filteredCodeSystems.add(codeSystem);
                 }
 
             }
@@ -446,28 +480,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private String identifyMaintainerType(JsonNode codeSystem, String editionShortName) throws Exception {
-
-        String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
-
-        // SNOMED Core Edition are blank in Snowstorm, but we treat them identically to the Managed Service maintainerType
-        if (codeSystemType.isBlank()) {
-
-            if (utilities.isInternationalEdition(editionShortName)) {
-
-                codeSystemType = "Managed Service";
-            } else {
-
-                throw new Exception("Encountered non-CORE edition without a maintainerType specified in the corresponding Code System");
-            }
-
-        }
-
-        return codeSystemType;
-    }
-
     // Organization is done at this point. Check if Developer Edition. If not, create a default UAT project
     private void postCodeSystemProcessing(Edition syncedEdition) throws Exception {
+
+        int a = 0;
+        if (a < 1) {
+            return;
+        }
 
         if (DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(syncedEdition.getShortName())) {
 
@@ -509,10 +528,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return developerTestingEdition;
     }
 
-    private boolean isEditionToProcess(String codeSystem) {
+    private boolean isTestingEditionToProcess(String codeSystem) {
 
-        return !isTesting() || (isTesting() && (testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName)
-                || utilities.isInternationalEdition(codeSystem));
+        return ((testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName) || utilities.isInternationalEdition(codeSystem));
 
     }
 }

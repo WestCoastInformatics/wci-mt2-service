@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -82,7 +83,7 @@ public class SyncUtilities {
 
     private static final String SIMPLE_REFSET_TYPE_CONCEPT = "446609009";
 
-    public Organization addOrganziation(final String orgName, String orgDesc, String orgMaintainerType) throws Exception {
+    public Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -102,21 +103,7 @@ public class SyncUtilities {
 
     }
 
-    public Edition addEdition(String shortName, String editionName, String editionBranch, final Organization organization, String maintainerType, JsonNode codeSystem) throws Exception {
-
-        final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
-
-        final Set<String> defaultLanguageRefsets = identifyDefaultLanguageRefsets(codeSystem, shortName);
-
-        // Case of no modules handled downstream
-        final Set<String> editionModules = identifyModules(shortName, editionName, editionBranch, codeSystem);
-
-        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionModules, defaultLanguageCode, maintainerType, organization);
-
-        return newEdition;
-    }
-
-    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, String maintainerType,
+    private Edition addNewEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, String maintainerType,
         Organization organization) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -142,30 +129,113 @@ public class SyncUtilities {
             logger.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
 
             return e;
-        } catch (Exception e) {
-            logger.error("Failed to add edition: " + shortName);
-            // TODO: Review
-            statistics.setEditionsAdded(statistics.getEditionsAdded() - 1);
-
-            throw e;
         }
 
     }
 
-    public void removeEdition(Edition edition) throws Exception {
+    public Edition addNewEdition(JsonNode codeSystem, String organizationName) {
+        try {
+            final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
+            final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
+            final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
+            final String maintainerType = identifyMaintainerType(codeSystem, shortName);
 
+            // Identify Matching Organization
+            logger.debug("bbb shortName: " + shortName);
+            logger.debug("bbb organizationName: " + organizationName);
+            try (TerminologyService service = new TerminologyService()) {
+
+                List<Organization> organizations = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(organizationName)).collect(Collectors.toList());
+                logger.debug("bbb organizations: " + organizations);
+
+                validateMatches(organizations, organizationName);
+
+                Organization organization = organizations.iterator().next();
+
+                // Create a single Admin team per Edition when we first discover it
+                final SyncOperationsInitializer initializer = new SyncOperationsInitializer(this);
+                initializer.createAdminOrganizationTeam(organization);
+
+                final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
+
+                final Set<String> defaultLanguageRefsets = identifyDefaultLanguageRefsets(codeSystem, shortName);
+
+                // Case of no modules handled downstream
+                final Set<String> editionModules = identifyModules(shortName, editionName, branch, codeSystem);
+
+                Edition newEdition = addNewEdition(shortName, editionName, branch, defaultLanguageRefsets, editionModules, defaultLanguageCode, maintainerType, organization);
+
+                printEditionValues(newEdition);
+
+                return newEdition;
+            }
+        } catch (Exception e) {
+            logger.error("Failed to add edition associated with codeSystem: " + codeSystem);
+
+            e.printStackTrace();
+
+            return null;
+        }
+
+    }
+
+    public Edition updateEditionStatus(String shortName, boolean isActive) {
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
 
-            logger.info("Removing existing RT2 Edition: " + edition.getId() + " (" + edition.getName() + ")" + edition);
+            logger.debug("zzz1");
+            List<Edition> matchingEditions = service.getAll(Edition.class).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
+            logger.debug("zzz2");
+            validateMatches(matchingEditions, shortName);
+            logger.debug("zzz3");
 
-            service.remove(edition);
+            final Edition edition = matchingEditions.iterator().next();
+            logger.debug("zzz4");
+            edition.setActive(isActive);
+            logger.debug("zzz5");
+
+            // Persist
+            final Edition e = service.update(edition);
+
+            logger.info("Inactivated edition: " + e.getId() + " (" + e.getName() + ") " + e);
+
+            return e;
+        } catch (Exception e) {
+            logger.error("Failed to update status of edition: " + shortName + " to " + isActive);
+
+            e.printStackTrace();
+
+            return null;
+        }
+    }
+
+    public void updateOrganziationStatus(String organizationName, boolean isActive) {
+        try (final TerminologyService service = new TerminologyService()) {
+
+            initializeService(service);
+
+            final List<Organization> allOrganizations = service.getAll(Organization.class);
+
+            List<Organization> matchingOrganizations = allOrganizations.stream().filter(o -> o.getName().equals(organizationName)).collect(Collectors.toList());
+            validateMatches(matchingOrganizations, organizationName);
+
+            final Organization org = matchingOrganizations.iterator().next();
+            org.setActive(isActive);
+
+            // Persist
+            final Organization o = service.update(org);
+
+            logger.info("Inactivated organziation: " + o.getId() + " (" + o.getName() + ") " + o);
+        } catch (Exception e) {
+            logger.error("Failed to update status of organziation: " + organizationName + " to " + isActive);
+
+            e.printStackTrace();
 
         }
     }
 
-    public void removeRefsetVersionPair(Refset refset) throws Exception {
+    public void removeExistingRefsetVersionPair(Refset refset) throws Exception {
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
@@ -726,7 +796,7 @@ public class SyncUtilities {
         logger.info("Completed Syncing with Snowstorm");
 
     }
-    
+
     public boolean isInternationalEdition(String matchingString) {
 
         return "international edition".equals(matchingString.toLowerCase()) || "snomedct".equals(matchingString.toLowerCase());
@@ -747,4 +817,36 @@ public class SyncUtilities {
     public SyncStatistics setStatistics(SyncStatistics statistics) {
         return SyncUtilities.statistics = statistics;
     }
+
+    public String identifyMaintainerType(JsonNode codeSystem, String editionShortName) throws Exception {
+
+        String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
+
+        // SNOMED Core Edition are blank in Snowstorm, but we treat them identically to the Managed Service maintainerType
+        if (codeSystemType.isBlank()) {
+
+            if (isInternationalEdition(editionShortName)) {
+
+                codeSystemType = "Managed Service";
+            } else {
+
+                throw new Exception("Encountered non-CORE edition without a maintainerType specified in the corresponding Code System");
+            }
+
+        }
+
+        return codeSystemType;
+    }
+
+    public void validateMatches(List<?> list, String matchingValue) throws Exception {
+        logger.debug("LOoking for matchingValue: " + matchingValue + " in " + list);
+
+        if (list.isEmpty()) {
+            throw new Exception("Cannot find an element to matching value: " + matchingValue);
+        } else if (list.size() > 1) {
+            throw new Exception("Found multiple elements with same matching value: " + matchingValue);
+        }
+
+    }
+
 }
