@@ -576,7 +576,7 @@ public class TeamService extends BaseService {
         // "The user being removed has at least one reference set “In Edit” or “In Review” assigned to them.
         // As the admin, you are able to un-assign the reference set(s) first before inactivating user.
         final List<Project> projectsForTeam = getTeamProjects(team);
-        if (projectsForTeam == null || !projectsForTeam.isEmpty()) {
+        if (projectsForTeam != null && !projectsForTeam.isEmpty()) {
 
             final SearchParameters sp = new SearchParameters();
             final String projectIds = "(" + projectsForTeam.stream().map(Project::getId).collect(Collectors.joining(" OR ", "projectId: ", "")) + ")";
