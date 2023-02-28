@@ -67,6 +67,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private void compareEditionOrganizationMaps(List<String> existingShortNames) throws Exception {
         try (TerminologyService service = new TerminologyService()) {
+
+            utilities.initializeService(service);
+
             List<Edition> dbEditions = service.getAll(Edition.class);
             List<Organization> dbOrganizations = service.getAll(Organization.class);
 
@@ -139,7 +142,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
             // TODO: Define solution although for now simply activating
             List<String> activatedShortNames = snowstormShortNameCodeSystemMap.keySet().stream().filter(c -> dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
-            logger.debug("ccc activating Editions: : " + activatedShortNames);
             activatedShortNames.stream().forEach(n -> utilities.updateEditionStatus(n, true));
 
             // Inactivate active DB editions that are not in snowstorm
@@ -149,7 +151,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             logger.debug("ccc Inactivated Editions: : " + inactivatedShortNames);
             inactivatedShortNames.stream().forEach(n -> utilities.updateEditionStatus(n, false));
 
-            // Identify refsets that are active in DB and found in snowstorm and compare for changes
+            // Identify editions that are active in DB and found in snowstorm and compare for changes
             List<String> existingShortNames = dbActiveEditionShortNames.stream().filter(c -> snowstormShortNameCodeSystemMap.keySet().contains(c)).collect(Collectors.toList());
             List<String> modifiedShortNames = compareAndModifyEditions(existingShortNames, snowstormShortNameCodeSystemMap);
             List<String> unchangedShortNames = existingShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
@@ -158,7 +160,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             logger.debug("ccc Unchanged Editions: : " + unchangedShortNames);
             logger.debug("ccc Modified Editions: " + modifiedShortNames);
 
-            // Identify refsets that were just actived to see if there are any other changes necessary
+            // Identify editions that were just actived to see if there are any other changes necessary
             List<String> activatedAndModifiedShortNames = compareAndModifyEditions(activatedShortNames, snowstormShortNameCodeSystemMap);
             statistics.setEditionsActivatedAndModified(activatedAndModifiedShortNames.size());
             logger.debug("ccc ActivatedAndModified Editions: " + activatedAndModifiedShortNames);
@@ -173,10 +175,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private void analyzeOrganizations() throws Exception {
-        HashMap<String, Set<String>> dbOrganizationNameToEditionsShortNameMap = new HashMap<>();
+    private List<String> analyzeOrganizations() throws Exception {
+        List<String> existingShortNames = new ArrayList<>();
+
+        HashMap<String, Set<String>> dbActiveOrganizationNameToEditionsShortNameMap = new HashMap<>();
+        HashMap<String, Set<String>> dbInactiveOrganizationNameToEditionsShortNameMap = new HashMap<>();
         HashMap<String, Set<String>> snowstormOrganizationNameToEditionsShortNameMap = new HashMap<>();
-        HashMap<String, String> dbEditionShortNameToOrganizationNameMap = new HashMap<>();
+        HashMap<String, String> dbActiveEditionShortNameToOrganizationNameMap = new HashMap<>();
 
         snowstormEditionShortNameToOrganizationNameMap = new HashMap<>();
 
@@ -184,17 +189,28 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             final List<Edition> dbEditions = service.getAll(Edition.class);
 
-            // Identify DB edition-to-orgName bi-directional maps
+            // Identify DB edition-to-orgName bi-directional maps (separated by active/inactive editions)
             for (Edition edition : dbEditions) {
-                dbEditionShortNameToOrganizationNameMap.put(edition.getShortName(), edition.getOrganizationName());
+                dbActiveEditionShortNameToOrganizationNameMap.put(edition.getShortName(), edition.getOrganizationName());
 
-                if (!dbOrganizationNameToEditionsShortNameMap.keySet().contains(edition.getOrganizationName())) {
-                    dbOrganizationNameToEditionsShortNameMap.put(edition.getOrganizationName(), new HashSet<String>());
+                if (edition.isActive()) {
+
+                    if (!dbActiveOrganizationNameToEditionsShortNameMap.keySet().contains(edition.getOrganizationName())) {
+                        dbActiveOrganizationNameToEditionsShortNameMap.put(edition.getOrganizationName(), new HashSet<String>());
+                    }
+
+                    dbActiveOrganizationNameToEditionsShortNameMap.get(edition.getOrganizationName()).add(edition.getShortName());
+
+                } else {
+
+                    if (!dbInactiveOrganizationNameToEditionsShortNameMap.keySet().contains(edition.getOrganizationName())) {
+                        dbInactiveOrganizationNameToEditionsShortNameMap.put(edition.getOrganizationName(), new HashSet<String>());
+                    }
+
+                    dbInactiveOrganizationNameToEditionsShortNameMap.get(edition.getOrganizationName()).add(edition.getShortName());
+
                 }
-
-                dbOrganizationNameToEditionsShortNameMap.get(edition.getOrganizationName()).add(edition.getShortName());
             }
-
             // logger.debug("aaa with dbEditionShortNameToOrganizationNameMap: " + dbEditionShortNameToOrganizationNameMap);
             // logger.debug("aaa with dbOrganizationNameToEditionsShortNameMap: " + dbOrganizationNameToEditionsShortNameMap);
             // Identify Snow edition-to-orgName bi-directional maps
@@ -213,9 +229,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // logger.debug("aaa with snowstormEditionShortNameToOrganizationNameMap: " + snowstormEditionShortNameToOrganizationNameMap);
             // logger.debug("aaa with snowstormOrganizationNameToEditionsShortNameMap: " + snowstormOrganizationNameToEditionsShortNameMap);
 
+            logger.debug("ccc --- Begin execution ---");
             // See if any snowstorm organizations are new
-            List<String> newOrganizations =
-                    snowstormOrganizationNameToEditionsShortNameMap.keySet().stream().filter(o -> !dbOrganizationNameToEditionsShortNameMap.keySet().contains(o)).collect(Collectors.toList());
+            List<String> newOrganizations = snowstormOrganizationNameToEditionsShortNameMap.keySet().stream()
+                    .filter(o -> !dbActiveOrganizationNameToEditionsShortNameMap.keySet().contains(o) && !dbInactiveOrganizationNameToEditionsShortNameMap.keySet().contains(o))
+                    .collect(Collectors.toList());
             statistics.setOrganizationsAdded(newOrganizations.size());
             logger.debug("ccc New Organizations: " + newOrganizations);
 
@@ -223,41 +241,101 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 utilities.addOrganziation(organizationName, identifyOrganizationDescription(organizationName));
             }
 
-            // See if any db organizations are missing
-            List<String> inactivatedShortNames =
-                    dbOrganizationNameToEditionsShortNameMap.keySet().stream().filter(c -> !snowstormOrganizationNameToEditionsShortNameMap.keySet().contains(c)).collect(Collectors.toList());
-            statistics.setOrganizationsInactivated(inactivatedShortNames.size());
-            logger.debug("ccc Inactivated Organizations: " + inactivatedShortNames);
+            // Activate previously inactivated organizations. Note: Will log and update stats after remove those that were activatedAndModified
+            // TODO: Define solution although for now simply activating
+            List<String> activatedShortNames =
+                    snowstormOrganizationNameToEditionsShortNameMap.keySet().stream().filter(c -> dbInactiveOrganizationNameToEditionsShortNameMap.keySet().contains(c)).collect(Collectors.toList());
+            activatedShortNames.stream().forEach(n -> utilities.updateOrganizationStatus(n, true));
 
+            // Inactivate active DB organizations that are not in snowstorm
             // TODO: Define solution although for now simply inactivating
-            for (String organizationName : inactivatedShortNames) {
-                utilities.updateOrganziationStatus(organizationName, false);
-            }
+            List<String> inactivatedShortNames =
+                    dbActiveOrganizationNameToEditionsShortNameMap.keySet().stream().filter(c -> !snowstormOrganizationNameToEditionsShortNameMap.keySet().contains(c)).collect(Collectors.toList());
+            statistics.setOrganizationsInactivated(inactivatedShortNames.size());
+            logger.debug("ccc Inactivated Organizations: : " + inactivatedShortNames);
+            inactivatedShortNames.stream().forEach(n -> utilities.updateOrganizationStatus(n, false));
+            logger.debug("ccc1 dbActiveOrganizationNameToEditionsShortNameMap: " + dbActiveOrganizationNameToEditionsShortNameMap);
+
+            // Identify organizations that are active in DB and found in snowstorm and compare for changes
+            dbActiveEditionShortNameToOrganizationNameMap.keySet().stream().forEach(c -> existingShortNames.add(c));
+            List<String> existingShortNamesAsList = new ArrayList<>(existingShortNames);
+
+            logger.debug("ccc2 existingShortNamesAsList: " + existingShortNamesAsList);
+            List<String> modifiedShortNames = compareAndModifyOrganizations(existingShortNamesAsList);
+            logger.debug("ccc3");
+            List<String> unchangedShortNames = existingShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
+            logger.debug("ccc4");
+            statistics.setOrganizationsUnchanged(unchangedShortNames.size());
+            logger.debug("ccc5");
+            statistics.setOrganizationsModified(modifiedShortNames.size());
+            logger.debug("ccc Unchanged Organizations: : " + unchangedShortNames);
+            logger.debug("ccc Modified Organizations: " + modifiedShortNames);
+
+            // Identify organizations that were just actived to see if there are any other changes necessary
+            List<String> activatedAndModifiedShortNames = compareAndModifyOrganizations(activatedShortNames);
+            statistics.setOrganizationsActivatedAndModified(activatedAndModifiedShortNames.size());
+            logger.debug("ccc ActivatedAndModified Organizations: " + activatedAndModifiedShortNames);
+
+            // Finalize those organizations that were only activated (and not further modified)
+            activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
+            statistics.setOrganizationsActivated(activatedShortNames.size());
+            logger.debug("ccc Activated Organizations: " + activatedShortNames);
+
+            return existingShortNames;
+
         }
     }
 
-    private void finalizeOrganizations() {
+    /*
+     * Note -> ignore description as that is strictly defined in RT2 whereas the other organization attributes are defined on snowstorm (only name for now)
+     */
+    private List<String> compareAndModifyOrganizations(List<String> matchingShortNames) throws Exception {
+        List<String> modifiedShortNames = new ArrayList<>();
 
-        /*-
-         * 
-         * Compare Organizations found in both DB & Snowstorm. 
-         * a) If they are the same, nothing to do. 
-         * b) If they are different, See if consistent (a name change across all editions that point to same org)
-         * 
-         * TODO: See if one-offs... in which case... Do we (Rory decide)? 
-         * 1) Can we copy an org and update name? 
-         * 2) Create new Org
-         */
-        /*-
-         *         List<String> existingShortNames =
-         *                      dbOrganizationNameToEditionsShortNameMap.keySet().stream().filter(c -> snowstormOrganizationNameToEditionsShortNameMap.keySet().contains(c)).collect(Collectors.toList());
-         */
+        try (final TerminologyService service = new TerminologyService()) {
 
-        // JESSE
-        // List<String> modifiedShortNames = reviewExistingOrganizations(filteredCodeSystems, existingShortNames);
-        // statistics.setEditionsUnchanged(existingShortNames.size() - modifiedShortNames.size());
-        // statistics.setEditionsModified(modifiedShortNames.size());
+            utilities.initializeService(service);
 
+            List<Edition> allDatabaseEditions = service.getAll(Edition.class);
+
+            // Process one Organization per Edition.
+            for (String shortName : matchingShortNames) {
+
+                if (!snowstormEditionShortNameToOrganizationNameMap.containsKey(shortName)) {
+                    logger.debug(shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
+                    continue;
+                }
+
+                // Find associated DB edition and get org name
+                List<Edition> matchingEditions = allDatabaseEditions.stream().filter(e -> e.isActive() && e.getShortName().equals(shortName)).collect(Collectors.toList());
+                utilities.validateMatches(matchingEditions, shortName);
+                Organization dbOrganization = matchingEditions.iterator().next().getOrganization();
+
+                // Grab snowstorm org name
+                String snowstormOrganizationName = snowstormEditionShortNameToOrganizationNameMap.get(shortName);
+                logger.debug("ddd shortName: " + shortName);
+                logger.debug("ddd snowstormEditionShortNameToOrganizationNameMap: " + snowstormEditionShortNameToOrganizationNameMap);
+                logger.debug("ddd snowstormOrganizationName: " + snowstormOrganizationName);
+
+                boolean modificationMade = false;
+                Organization newOrganization = new Organization(dbOrganization);
+
+                if (isDifferentAttribute(shortName, "Organization name ", dbOrganization.getName(), snowstormOrganizationName)) {
+                    logger.info(" inconsistent editionName with DB having '" + dbOrganization.getName() + "' and snowstorm with'" + snowstormOrganizationName + "'");
+                    newOrganization.setName(snowstormOrganizationName);
+                    modificationMade = true;
+                }
+
+                if (modificationMade) {
+                    service.update(newOrganization);
+                    logger.info("Updated edition: " + newOrganization.getId() + " (" + newOrganization.getName() + ") " + newOrganization);
+
+                    modifiedShortNames.add(shortName);
+                }
+            }
+        }
+
+        return modifiedShortNames;
     }
 
     private String identifyOrganizationDescription(String organizationName) {
@@ -324,8 +402,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // Process one Organization per Edition.
             for (String shortName : matchingEditionShortNames) {
 
+                if (!snowstormShortNameCodeSystemMap.containsKey(shortName)) {
+                    logger.debug(shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
+                    continue;
+                }
+
                 // Find associated DB edition
-                List<Edition> matchingEditions = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
+                List<Edition> matchingEditions = allDatabaseEditions.stream().filter(e -> e.isActive() && e.getShortName().equals(shortName)).collect(Collectors.toList());
                 utilities.validateMatches(matchingEditions, shortName);
                 Edition dbEdition = matchingEditions.iterator().next();
                 Edition newEdition = new Edition(dbEdition);

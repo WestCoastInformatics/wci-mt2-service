@@ -210,7 +210,7 @@ public class SyncUtilities {
         }
     }
 
-    public void updateOrganziationStatus(String organizationName, boolean isActive) {
+    public void updateOrganizationStatus(String organizationName, boolean isActive) {
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
@@ -839,7 +839,7 @@ public class SyncUtilities {
     }
 
     public void validateMatches(List<?> list, String matchingValue) throws Exception {
-        logger.debug("LOoking for matchingValue: " + matchingValue + " in " + list);
+        logger.debug("Looking for matchingValue: " + matchingValue + " in " + list);
 
         if (list.isEmpty()) {
             throw new Exception("Cannot find an element to matching value: " + matchingValue);

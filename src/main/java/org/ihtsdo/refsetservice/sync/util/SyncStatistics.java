@@ -18,7 +18,13 @@ public class SyncStatistics {
 
     private int organizationsInactivated = 0;
 
+    private int organizationsActivated = 0;
+
     private int organizationsUnchanged = 0;
+
+    private int organizationsModified = 0;;
+
+    private int organizationsActivatedAndModified = 0;;
 
     // Editions
     private int editionsAdded = 0;
@@ -38,9 +44,13 @@ public class SyncStatistics {
 
     private int refsetVersionsInactivated = 0;;
 
+    private int refsetVersionsActivated = 0;
+
     private int refsetVersionsUnchanged = 0;
 
-    private int refsetVersionsModified = 0;;
+    private int refsetVersionsModified = 0;
+
+    private int refsetVersionsActivatedAndModified;
 
     private int refsetVersionsSynced = 0;
 
@@ -80,8 +90,11 @@ public class SyncStatistics {
         codeSystemsFiltered = 0;
 
         organizationsAdded = 0;
+        organizationsActivated = 0;
         organizationsInactivated = 0;
         organizationsUnchanged = 0;
+        organizationsModified = 0;
+        organizationsActivatedAndModified = 0;
 
         editionsAdded = 0;
         editionsInactivated = 0;
@@ -92,8 +105,10 @@ public class SyncStatistics {
 
         refsetVersionsAdded = 0;
         refsetVersionsInactivated = 0;
+        refsetVersionsActivated = 0;
         refsetVersionsUnchanged = 0;
         refsetVersionsModified = 0;
+        refsetVersionsActivatedAndModified = 0;
         refsetVersionsSynced = 0;
 
         projectsProcessed.clear();
@@ -101,18 +116,8 @@ public class SyncStatistics {
 
     }
 
-    public int getOrganizationsAdded() {
-        return organizationsAdded;
-    }
-
-    public int getOrganizationsInactivated() {
-        return organizationsInactivated;
-    }
-
-    public int getOrganizationsUnchanged() {
-        return organizationsUnchanged;
-    }
-
+    /** Getters **/
+    // Code Systems
     public int getCodeSystemsSynced() {
         return codeSystemsSynced;
     }
@@ -121,9 +126,44 @@ public class SyncStatistics {
         return codeSystemsFiltered;
     }
 
+    // Organizations
+    public int getOrganizationsAdded() {
+        return organizationsAdded;
+    }
+
+    public int getOrganizationsInactivated() {
+        return organizationsInactivated;
+    }
+
+    public int getOrganizationsActivated() {
+        return organizationsActivated;
+    }
+
+    public int getOrganizationsUnchanged() {
+        return organizationsUnchanged;
+    }
+
+    public int getOrganizationsModified() {
+
+        return organizationsModified;
+    }
+
+    public int getOrganizationsActivatedAndModified() {
+        return organizationsActivatedAndModified;
+    }
+
+    // Editions
     public int getEditionsAdded() {
 
         return editionsAdded;
+    }
+
+    public int getEditionsInactivated() {
+        return editionsInactivated;
+    }
+
+    public int getEditionsActivated() {
+        return editionsActivated;
     }
 
     public int getEditionsUnchanged() {
@@ -131,19 +171,16 @@ public class SyncStatistics {
         return editionsUnchanged;
     }
 
-    public int getEditionsRecreated() {
+    public int getEditionsModified() {
 
         return editionsModified;
-    }
-
-    public int getEditionsActivated() {
-        return editionsActivated;
     }
 
     public int getEditionsActivatedAndModified() {
         return editionsActivatedAndModified;
     }
 
+    // Refsets
     public int getRefsetVersionsAdded() {
 
         return refsetVersionsAdded;
@@ -154,30 +191,33 @@ public class SyncStatistics {
         return refsetVersionsInactivated;
     }
 
+    public int getRefsetVersionsActivated() {
+
+        return refsetVersionsActivated;
+    }
+
     public int getRefsetVersionsUnchanged() {
 
         return refsetVersionsUnchanged;
     }
 
-    public int getRefsetVersionsRecreated() {
+    public int getRefsetVersionsModified() {
 
         return refsetVersionsModified;
     }
 
+    public int getRefsetVersionsActivatedAndModified() {
+
+        return refsetVersionsActivatedAndModified;
+    }
+
     public int getRefsetVersionsSynced() {
+
         return refsetVersionsSynced;
     }
 
-    // Increments
-    public void incrementRefsetVersionsAdded() {
-        refsetVersionsAdded++;
-    }
-
-    public void incrementRefsetVersionsInactivated() {
-        refsetVersionsInactivated++;
-    }
-
-    // SETTERS
+    /** Setters **/
+    // Code Systems
     public void setCodeSystemsSynced(int val) {
         codeSystemsSynced = val;
     }
@@ -186,6 +226,7 @@ public class SyncStatistics {
         codeSystemsFiltered = val;
     }
 
+    // Organizations
     public void setOrganizationsAdded(int val) {
         organizationsAdded = val;
 
@@ -196,22 +237,35 @@ public class SyncStatistics {
 
     }
 
+    public void setOrganizationsActivated(int organizationsActivated) {
+        this.organizationsActivated = organizationsActivated;
+    }
+
     public void setOrganizationsUnchanged(int val) {
         organizationsUnchanged = val;
 
     }
 
+    public void setOrganizationsModified(int organizationsModified) {
+        this.organizationsModified = organizationsModified;
+    }
+
+    public void setOrganizationsActivatedAndModified(int organizationsActivatedAndModified) {
+        this.organizationsActivatedAndModified = organizationsActivatedAndModified;
+    }
+
+    // Editions
     public void setEditionsAdded(int val) {
         editionsAdded = val;
+    }
+
+    public void setEditionsInactivated(int val) {
+        editionsInactivated = val;
     }
 
     public void setEditionsActivated(int val) {
         editionsActivated = val;
 
-    }
-
-    public void setEditionsInactivated(int val) {
-        editionsInactivated = val;
     }
 
     public void setEditionsUnchanged(int val) {
@@ -227,25 +281,51 @@ public class SyncStatistics {
 
     }
 
+    // Refset Version Pairs
+    public void setRefsetVersionsAdded(int val) {
+        refsetVersionsAdded = val;
+    }
+
     public void setRefsetVersionsInactivated(int val) {
         refsetVersionsInactivated = val;
     }
 
-    public void incrementRefsetVersionsUnchanged() {
-        refsetVersionsUnchanged++;
-
+    public void setRefsetVersionsActivated(int refsetVersionsActivated) {
+        this.refsetVersionsActivated = refsetVersionsActivated;
     }
 
-    public void incrementRefsetVersionsRecreated() {
-        refsetVersionsModified++;
+    public void setRefsetVersionsUnchanged(int refsetVersionsUnchanged) {
+        this.refsetVersionsUnchanged = refsetVersionsUnchanged;
+    }
+
+    public void setRefsetVersionsModified(int refsetVersionsModified) {
+        this.refsetVersionsModified = refsetVersionsModified;
+    }
+
+    public void setRefsetVersionsActivatedAndModified(int refsetVersionsActivatedAndModified) {
+        this.refsetVersionsActivatedAndModified = refsetVersionsActivatedAndModified;
     }
 
     public void setRefsetVersionsSynced(int val) {
         refsetVersionsSynced = val;
     }
 
-    public void setRefsetVersionsAdded(int val) {
-        refsetVersionsAdded = val;
+    // Increments
+    public void incrementRefsetVersionsUnchanged() {
+        refsetVersionsUnchanged++;
+
+    }
+
+    public void incrementRefsetVersionsModified() {
+        refsetVersionsModified++;
+    }
+
+    public void incrementRefsetVersionsAdded() {
+        refsetVersionsAdded++;
+    }
+
+    public void incrementRefsetVersionsInactivated() {
+        refsetVersionsInactivated++;
     }
 
     public Set<Project> getProjectsProcessed() {

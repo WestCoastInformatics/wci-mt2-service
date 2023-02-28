@@ -172,7 +172,7 @@ public class SyncRefsetAgent extends SyncAgent {
                 } else {
                     // Difference found... process
                     analysisFinding = SyncStatistics.CHANGED;
-                    statistics.incrementRefsetVersionsRecreated();
+                    statistics.incrementRefsetVersionsModified();
                 }
 
                 // No differences found
