@@ -141,12 +141,9 @@ public class SyncUtilities {
             final String maintainerType = identifyMaintainerType(codeSystem, shortName);
 
             // Identify Matching Organization
-            logger.debug("bbb shortName: " + shortName);
-            logger.debug("bbb organizationName: " + organizationName);
             try (TerminologyService service = new TerminologyService()) {
 
                 List<Organization> organizations = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(organizationName)).collect(Collectors.toList());
-                logger.debug("bbb organizations: " + organizations);
 
                 validateMatches(organizations, organizationName);
 
@@ -184,16 +181,11 @@ public class SyncUtilities {
 
             initializeService(service);
 
-            logger.debug("zzz1");
             List<Edition> matchingEditions = service.getAll(Edition.class).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
-            logger.debug("zzz2");
             validateMatches(matchingEditions, shortName);
-            logger.debug("zzz3");
 
             final Edition edition = matchingEditions.iterator().next();
-            logger.debug("zzz4");
             edition.setActive(isActive);
-            logger.debug("zzz5");
 
             // Persist
             final Edition e = service.update(edition);
@@ -839,7 +831,6 @@ public class SyncUtilities {
     }
 
     public void validateMatches(List<?> list, String matchingValue) throws Exception {
-        logger.debug("Looking for matchingValue: " + matchingValue + " in " + list);
 
         if (list.isEmpty()) {
             throw new Exception("Cannot find an element to matching value: " + matchingValue);

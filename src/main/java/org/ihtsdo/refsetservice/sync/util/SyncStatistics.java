@@ -39,6 +39,8 @@ public class SyncStatistics {
 
     private int editionsActivatedAndModified = 0;;
 
+    private int editionOrganizationMapChanged = 0;
+    
     // Refsets
     private int refsetVersionsAdded = 0;
 
@@ -103,6 +105,8 @@ public class SyncStatistics {
         editionsModified = 0;
         editionsActivatedAndModified = 0;
 
+        editionOrganizationMapChanged = 0;
+        
         refsetVersionsAdded = 0;
         refsetVersionsInactivated = 0;
         refsetVersionsActivated = 0;
@@ -178,6 +182,10 @@ public class SyncStatistics {
 
     public int getEditionsActivatedAndModified() {
         return editionsActivatedAndModified;
+    }
+    
+    public int getEditionOrganizationMapChanged() {
+        return editionOrganizationMapChanged;
     }
 
     // Refsets
@@ -311,6 +319,11 @@ public class SyncStatistics {
     }
 
     // Increments
+    public void incrementEditionOrganizationMapChanged() {
+        editionOrganizationMapChanged++;
+        
+    }
+    
     public void incrementRefsetVersionsUnchanged() {
         refsetVersionsUnchanged++;
 

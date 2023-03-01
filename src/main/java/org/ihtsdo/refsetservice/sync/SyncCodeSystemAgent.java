@@ -51,13 +51,16 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         // Sync Editions reviewing which are new (creating them), missing (removing them), modified (removing them and then creating them), and unchanged.
         List<String> existingShortNames = analyzeEditions();
+
+        // Review both DB & Snowstorm editon-to-org map to ensure consistency
+        compareEditionOrganizationMaps(existingShortNames);
+
         int a = 0;
         if (a < 1) {
             printStatistics();
             throw new Exception("Failed on purpose");
         }
 
-        compareEditionOrganizationMaps(existingShortNames);
 
         // TODO: For now, ignore this, but shouldn't ever throw exception at this point
         if (developerTestingEdition == null && !getIsProductionSystem()) {
@@ -66,6 +69,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
     }
 
     private void compareEditionOrganizationMaps(List<String> existingShortNames) throws Exception {
+        List<String> updatedEditionOrganizationMaps = new ArrayList<>();
+        
         try (TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
@@ -95,11 +100,15 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                     dbEdition.setOrganization(matchedOrganizations.iterator().next());
                     service.update(dbEdition);
-
                     logger.info("Updated edition's Organization: " + dbEdition.getId() + " (" + dbEdition.getName() + ") " + dbEdition);
+                    
+                    updatedEditionOrganizationMaps.add(shortName);
+                    statistics.incrementEditionOrganizationMapChanged();
                 }
             }
         }
+        
+        logger.debug("ccc EditionOrganizationMaps Updated: " + updatedEditionOrganizationMaps);
     }
 
     private void initializeSync() throws Exception {
@@ -255,19 +264,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
             statistics.setOrganizationsInactivated(inactivatedShortNames.size());
             logger.debug("ccc Inactivated Organizations: : " + inactivatedShortNames);
             inactivatedShortNames.stream().forEach(n -> utilities.updateOrganizationStatus(n, false));
-            logger.debug("ccc1");
 
             // Identify organizations that are active in DB and found in snowstorm and compare for changes
             dbActiveEditionShortNameToOrganizationNameMap.keySet().stream().forEach(c -> existingShortNames.add(c));
             List<String> existingShortNamesAsList = new ArrayList<>(existingShortNames);
 
-            logger.debug("ccc2 existingShortNamesAsList: " + existingShortNamesAsList);
             List<String> modifiedShortNames = compareAndModifyOrganizations(existingShortNamesAsList);
-            logger.debug("ccc3");
             List<String> unchangedShortNames = existingShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
-            logger.debug("ccc4");
             statistics.setOrganizationsUnchanged(unchangedShortNames.size());
-            logger.debug("ccc5");
             statistics.setOrganizationsModified(modifiedShortNames.size());
             logger.debug("ccc Unchanged Organizations: : " + unchangedShortNames);
             logger.debug("ccc Modified Organizations: " + modifiedShortNames);
@@ -303,7 +307,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             for (String shortName : matchingShortNames) {
 
                 if (!snowstormEditionShortNameToOrganizationNameMap.containsKey(shortName)) {
-                    logger.debug(shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
+                    logger.debug("bbb " + shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
                     continue;
                 }
 
@@ -314,9 +318,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 // Grab snowstorm org name
                 String snowstormOrganizationName = snowstormEditionShortNameToOrganizationNameMap.get(shortName);
-                logger.debug("ddd shortName: " + shortName);
-                logger.debug("ddd snowstormEditionShortNameToOrganizationNameMap: " + snowstormEditionShortNameToOrganizationNameMap);
-                logger.debug("ddd snowstormOrganizationName: " + snowstormOrganizationName);
 
                 boolean modificationMade = false;
                 Organization newOrganization = new Organization(dbOrganization);
@@ -404,7 +405,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             for (String shortName : matchingEditionShortNames) {
 
                 if (!snowstormShortNameCodeSystemMap.containsKey(shortName)) {
-                    logger.debug(shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
+                    logger.info(shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
                     continue;
                 }
 
