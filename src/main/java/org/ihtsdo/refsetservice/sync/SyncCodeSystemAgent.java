@@ -123,21 +123,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 snowstormOrganizationNameToEditionsShortNameMap.get(organizationName).add(codeSystem.get("shortName").asText());
             }
 
-            /*
-             * logger.debug("aaa with dbActiveEditionShortNameToOrganizationNameMap: " + dbActiveEditionShortNameToOrganizationNameMap);
-             * logger.debug("aaa with dbActiveOrganizationNameToEditionsShortNameMap: " + dbActiveOrganizationNameToEditionsShortNameMap);
-             * logger.debug("aaa with dbInactiveOrganizationNameToEditionsShortNameMap: " + dbInactiveOrganizationNameToEditionsShortNameMap);
-             * logger.debug("aaa with snowstormEditionShortNameToOrganizationNameMap: " + snowstormEditionShortNameToOrganizationNameMap);
-             * logger.debug("aaa with snowstormOrganizationNameToEditionsShortNameMap: " + snowstormOrganizationNameToEditionsShortNameMap);
-             */
-
-            logger.debug("ccc --- Begin execution ---");
             // See if any snowstorm organizations are new
             List<String> newOrganizations = snowstormOrganizationNameToEditionsShortNameMap.keySet().stream()
                     .filter(o -> !dbActiveOrganizationNameToEditionsShortNameMap.keySet().contains(o) && !dbInactiveOrganizationNameToEditionsShortNameMap.keySet().contains(o))
                     .collect(Collectors.toList());
             statistics.setOrganizationsAdded(newOrganizations.size());
-            logger.debug("ccc New Organizations: " + newOrganizations);
 
             for (String organizationName : newOrganizations) {
                 utilities.addOrganziation(organizationName, identifyOrganizationDescription(organizationName));
@@ -154,7 +144,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
             List<String> inactivatedShortNames =
                     dbActiveOrganizationNameToEditionsShortNameMap.keySet().stream().filter(c -> !snowstormOrganizationNameToEditionsShortNameMap.keySet().contains(c)).collect(Collectors.toList());
             statistics.setOrganizationsInactivated(inactivatedShortNames.size());
-            logger.debug("ccc Inactivated Organizations: : " + inactivatedShortNames);
             inactivatedShortNames.stream().forEach(n -> utilities.updateOrganizationStatus(n, false));
 
             // Identify organizations that are active in DB and found in snowstorm and compare for changes
@@ -165,18 +154,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
             List<String> unchangedShortNames = existingShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
             statistics.setOrganizationsUnchanged(unchangedShortNames.size());
             statistics.setOrganizationsModified(modifiedShortNames.size());
-            logger.debug("ccc Unchanged Organizations: : " + unchangedShortNames);
-            logger.debug("ccc Modified Organizations: " + modifiedShortNames);
 
             // Identify organizations that were just actived to see if there are any other changes necessary
             List<String> activatedAndModifiedShortNames = compareAndModifyOrganizations(activatedShortNames);
             statistics.setOrganizationsActivatedAndModified(activatedAndModifiedShortNames.size());
-            logger.debug("ccc ActivatedAndModified Organizations: " + activatedAndModifiedShortNames);
 
             // Finalize those organizations that were only activated (and not further modified)
             activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
             statistics.setOrganizationsActivated(activatedShortNames.size());
-            logger.debug("ccc Activated Organizations: " + activatedShortNames);
 
             return existingShortNames;
 
@@ -201,7 +186,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
             List<String> newShortNames =
                     snowstormShortNameCodeSystemMap.keySet().stream().filter(c -> !dbActiveEditionShortNames.contains(c) && !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
             statistics.setEditionsAdded(newShortNames.size());
-            logger.debug("ccc New Editions: " + newShortNames);
             newShortNames.stream().forEach(shortName -> utilities.addNewEdition(snowstormShortNameCodeSystemMap.get(shortName), snowstormEditionShortNameToOrganizationNameMap.get(shortName)));
 
             // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
@@ -213,7 +197,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // TODO: Define solution although for now simply inactivating
             List<String> inactivatedShortNames = dbActiveEditionShortNames.stream().filter(c -> !snowstormShortNameCodeSystemMap.keySet().contains(c)).collect(Collectors.toList());
             statistics.setEditionsInactivated(inactivatedShortNames.size());
-            logger.debug("ccc Inactivated Editions: : " + inactivatedShortNames);
             inactivatedShortNames.stream().forEach(n -> utilities.updateEditionStatus(n, false));
 
             // Identify editions that are active in DB and found in snowstorm and compare for changes
@@ -223,18 +206,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
             List<String> unchangedShortNames = existingShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
             statistics.setEditionsUnchanged(unchangedShortNames.size());
             statistics.setEditionsModified(modifiedShortNames.size());
-            logger.debug("ccc Unchanged Editions: : " + unchangedShortNames);
-            logger.debug("ccc Modified Editions: " + modifiedShortNames);
 
             // Identify editions that were just actived to see if there are any other changes necessary
             List<String> activatedAndModifiedShortNames = compareAndModifyEditions(activatedShortNames, snowstormShortNameCodeSystemMap);
             statistics.setEditionsActivatedAndModified(activatedAndModifiedShortNames.size());
-            logger.debug("ccc ActivatedAndModified Editions: " + activatedAndModifiedShortNames);
 
             // Finalize those editions that were only activated (and not further modified)
             activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
             statistics.setEditionsActivated(activatedShortNames.size());
-            logger.debug("ccc Activated Editions: " + activatedShortNames);
 
             return existingShortNames;
         }
@@ -281,7 +260,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
             }
         }
 
-        logger.debug("ccc EditionOrganizationMaps Updated: " + updatedEditionOrganizationMaps);
     }
 
     private List<String> compareAndModifyEditions(List<String> matchingEditionShortNames, Map<String, JsonNode> snowstormShortNameCodeSystemMap) throws Exception {
