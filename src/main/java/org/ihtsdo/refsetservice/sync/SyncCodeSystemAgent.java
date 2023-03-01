@@ -1,7 +1,5 @@
 package org.ihtsdo.refsetservice.sync;
 
-import static org.ihtsdo.refsetservice.sync.SyncAgent.postCodeSystemProcessing;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -221,6 +219,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // Identify editions that are active in DB and found in snowstorm and compare for changes
             List<String> existingShortNames = dbActiveEditionShortNames.stream().filter(c -> snowstormShortNameCodeSystemMap.keySet().contains(c)).collect(Collectors.toList());
             List<String> modifiedShortNames = compareAndModifyEditions(existingShortNames, snowstormShortNameCodeSystemMap);
+
             List<String> unchangedShortNames = existingShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
             statistics.setEditionsUnchanged(unchangedShortNames.size());
             statistics.setEditionsModified(modifiedShortNames.size());
@@ -290,6 +289,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         try (final TerminologyService service = new TerminologyService()) {
 
+            utilities.initializeService(service);
+
             List<Edition> allDatabaseEditions = service.getAll(Edition.class);
 
             // Process one Organization per Edition.
@@ -307,42 +308,36 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 Edition newEdition = new Edition(dbEdition);
 
                 // Find values for Snowstorm Edition
-                JsonNode codeSystem = snowstormShortNameCodeSystemMap.get(shortName);
-                final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-                final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
-                final String maintainerType = utilities.identifyMaintainerType(codeSystem, editionName);
-                final Set<String> editionModules = utilities.identifyModules(shortName, editionName, branch, codeSystem);
+                final JsonNode codeSystem = snowstormShortNameCodeSystemMap.get(shortName);
+                final String snowStormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
+                final String snowStormBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
+                final String snowStormMaintainerType = utilities.identifyMaintainerType(codeSystem, snowStormEditionName);
+                final Set<String> snowStormEditionModules = utilities.identifyModules(shortName, snowStormEditionName, snowStormBranch, codeSystem);
 
                 boolean modificationMade = false;
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), editionName)) {
-                    logger.info(" inconsistent editionName with DB having '" + dbEdition.getName() + "' and snowstorm with'" + editionName + "'");
-                    newEdition.setName(editionName);
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), snowStormEditionName)) {
+                    newEdition.setName(snowStormEditionName);
                     modificationMade = true;
                 }
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), branch)) {
-                    logger.info(" inconsistent branch with DB having '" + dbEdition.getBranch() + "' and snowstorm with'" + branch + "'");
-                    newEdition.setBranch(branch);
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), snowStormBranch)) {
+                    newEdition.setBranch(snowStormBranch);
                     modificationMade = true;
                 }
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), editionModules)) {
-                    logger.info(" inconsistent editionModules with DB having '" + dbEdition.getModules() + "' and snowstorm with'" + editionModules + "'");
-                    newEdition.setModules(editionModules);
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), snowStormEditionModules)) {
+                    newEdition.setModules(snowStormEditionModules);
                     modificationMade = true;
                 }
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getMaintainerType(), maintainerType)) {
-                    logger.info(" inconsistent maintainerType with DB having '" + dbEdition.getMaintainerType() + "' and snowstorm with'" + maintainerType + "'");
-                    newEdition.setMaintainerType(maintainerType);
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getMaintainerType(), snowStormMaintainerType)) {
+                    newEdition.setMaintainerType(snowStormMaintainerType);
                     modificationMade = true;
                 }
 
-                final String snowstormDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(),
-                        utilities.identifyDefaultLanguageCode(codeSystem, editionName))) {
-                    logger.info(" inconsistent defaultLanguageCode with DB having '" + dbEdition.getDefaultLanguageCode() + "' and snowstorm with'" + snowstormDefaultLanguageCode + "'");
+                final String snowstormDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, snowStormEditionName);
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(), snowstormDefaultLanguageCode)) {
 
                     newEdition.setDefaultLanguageCode(snowstormDefaultLanguageCode);
                     modificationMade = true;
@@ -351,15 +346,12 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 final Set<String> snowstormDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName);
                 if (!dbEdition.getDefaultLanguageRefsets().equals(snowstormDefaultLanguageRefsets)) {
 
-                    logger.info(" inconsistent defaultLanguageRefsets with DB having '" + dbEdition.getDefaultLanguageRefsets() + "' and snowstorm with'" + snowstormDefaultLanguageRefsets + "'");
-
                     newEdition.setDefaultLanguageRefsets(snowstormDefaultLanguageRefsets);
                     modificationMade = true;
                 }
 
                 if (modificationMade) {
                     service.update(newEdition);
-                    logger.info("Updated edition: " + newEdition.getId() + " (" + newEdition.getName() + ") ");
 
                     modifiedShortNames.add(newEdition.getShortName());
                 }
