@@ -57,10 +57,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         int a = 0;
         if (a < 1) {
-            printStatistics();
-            throw new Exception("Failed on purpose");
+            statistics.printStatistics();
+            return;
         }
-
 
         // TODO: For now, ignore this, but shouldn't ever throw exception at this point
         if (developerTestingEdition == null && !getIsProductionSystem()) {
@@ -70,7 +69,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private void compareEditionOrganizationMaps(List<String> existingShortNames) throws Exception {
         List<String> updatedEditionOrganizationMaps = new ArrayList<>();
-        
+
         try (TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
@@ -100,14 +99,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                     dbEdition.setOrganization(matchedOrganizations.iterator().next());
                     service.update(dbEdition);
-                    logger.info("Updated edition's Organization: " + dbEdition.getId() + " (" + dbEdition.getName() + ") " + dbEdition);
-                    
+                    logger.info("Updated edition's Organization: " + dbEdition.getId() + " (" + dbEdition.getName() + ") ");
+
                     updatedEditionOrganizationMaps.add(shortName);
                     statistics.incrementEditionOrganizationMapChanged();
                 }
             }
         }
-        
+
         logger.debug("ccc EditionOrganizationMaps Updated: " + updatedEditionOrganizationMaps);
     }
 
@@ -233,12 +232,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 snowstormOrganizationNameToEditionsShortNameMap.get(organizationName).add(codeSystem.get("shortName").asText());
             }
 
+            /*
             logger.debug("aaa with dbActiveEditionShortNameToOrganizationNameMap: " + dbActiveEditionShortNameToOrganizationNameMap);
             logger.debug("aaa with dbActiveOrganizationNameToEditionsShortNameMap: " + dbActiveOrganizationNameToEditionsShortNameMap);
             logger.debug("aaa with dbInactiveOrganizationNameToEditionsShortNameMap: " + dbInactiveOrganizationNameToEditionsShortNameMap);
             logger.debug("aaa with snowstormEditionShortNameToOrganizationNameMap: " + snowstormEditionShortNameToOrganizationNameMap);
             logger.debug("aaa with snowstormOrganizationNameToEditionsShortNameMap: " + snowstormOrganizationNameToEditionsShortNameMap);
-
+            */
+            
             logger.debug("ccc --- Begin execution ---");
             // See if any snowstorm organizations are new
             List<String> newOrganizations = snowstormOrganizationNameToEditionsShortNameMap.keySet().stream()
@@ -330,7 +331,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 if (modificationMade) {
                     service.update(newOrganization);
-                    logger.info("Updated edition: " + newOrganization.getId() + " (" + newOrganization.getName() + ") " + newOrganization);
+                    logger.info("Updated edition: " + newOrganization.getId() + " (" + newOrganization.getName() + ") ");
 
                     modifiedShortNames.add(shortName);
                 }
@@ -369,11 +370,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
     private void analyzeCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-        logger.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
+        logger.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on Snowstorm: ");
 
         // Filter code systems (based on active-setting, ignoredCS list, testing situation, and bad data)
         filterCodeSystems(organizationJsonRootNode);
-        logger.info("Will be processing only these " + filteredCodeSystems.size() + " Code Systems: " + filteredCodeSystems);
+        logger.info("Will be processing only these " + filteredCodeSystems.size() + " Code Systems: ");
     }
 
     private int countCodeSystems(Iterator<JsonNode> organizationIterator) {
@@ -468,7 +469,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 if (modificationMade) {
                     service.update(newEdition);
-                    logger.info("Updated edition: " + newEdition.getId() + " (" + newEdition.getName() + ") " + newEdition);
+                    logger.info("Updated edition: " + newEdition.getId() + " (" + newEdition.getName() + ") ");
 
                     modifiedShortNames.add(newEdition.getShortName());
                 }
@@ -507,7 +508,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 } else if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
                     // Skipping inactive code system
-                    logger.info("Skipping inactive codeSystem: " + codeSystem);
+                    logger.info("Skipping inactive codeSystem: " + editionShortName);
 
                 } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
 
@@ -528,7 +529,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         }
 
-        filteredCodeSystems.stream().forEach(c -> logger.info("Will process codeSystem: " + c));
+        filteredCodeSystems.stream().forEach(c -> logger.info("Will process codeSystem: " + c.get("shortName").asText()));
 
         statistics.setCodeSystemsSynced(countCodeSystems(organizationIterator));
         statistics.setCodeSystemsFiltered(filteredCodeSystems.size());

@@ -40,7 +40,7 @@ public class SyncStatistics {
     private int editionsActivatedAndModified = 0;;
 
     private int editionOrganizationMapChanged = 0;
-    
+
     // Refsets
     private int refsetVersionsAdded = 0;
 
@@ -73,10 +73,13 @@ public class SyncStatistics {
 
         buf.append("Code systems encountered: " + codeSystemsSynced + ". Syncing " + codeSystemsFiltered + " after filtered them" + System.getProperty("line.separator"));
 
-        buf.append("ORGANIZATIONS Added: " + organizationsAdded + " / Unchanged: " + organizationsUnchanged + System.getProperty("line.separator"));
+        buf.append("ORGANIZATIONS Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: " + organizationsActivated + " / Unchanged: " + organizationsUnchanged
+                + " / Modified: " + organizationsModified + " / ActivatedAndModified: " + organizationsActivatedAndModified + System.getProperty("line.separator"));
 
-        buf.append("EDITIONS Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Modified: " + editionsModified + " / Unchanged: " + editionsUnchanged
-                + System.getProperty("line.separator"));
+        buf.append("EDITIONS Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: " + editionsActivated + " / Unchanged: " + editionsUnchanged + " / Modified: "
+                + editionsModified + " / ActivatedAndModified: " + editionsActivatedAndModified + System.getProperty("line.separator"));
+
+        buf.append("EDITIONS to ORGANIZATION MAP CHanges: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
 
         buf.append("REFSET VERSION PAIRs Synced " + refsetVersionsSynced + " Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: " + refsetVersionsModified
                 + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
@@ -106,7 +109,7 @@ public class SyncStatistics {
         editionsActivatedAndModified = 0;
 
         editionOrganizationMapChanged = 0;
-        
+
         refsetVersionsAdded = 0;
         refsetVersionsInactivated = 0;
         refsetVersionsActivated = 0;
@@ -183,7 +186,7 @@ public class SyncStatistics {
     public int getEditionsActivatedAndModified() {
         return editionsActivatedAndModified;
     }
-    
+
     public int getEditionOrganizationMapChanged() {
         return editionOrganizationMapChanged;
     }
@@ -321,9 +324,9 @@ public class SyncStatistics {
     // Increments
     public void incrementEditionOrganizationMapChanged() {
         editionOrganizationMapChanged++;
-        
+
     }
-    
+
     public void incrementRefsetVersionsUnchanged() {
         refsetVersionsUnchanged++;
 

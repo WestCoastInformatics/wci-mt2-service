@@ -93,6 +93,13 @@ public abstract class SyncAgent {
         SyncAgent agent = new SyncCodeSystemAgent();
         agent.sync();
 
+        int a = 0;
+        if (a < 1) {
+            logger.info(statistics.printStatistics());
+            logger.error("Stopping here on purpose");
+            return;
+        }
+
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
         agent.sync();
@@ -109,7 +116,7 @@ public abstract class SyncAgent {
         service.add(AuditEntryHelper.syncEntry(new Date()));
         utilities.emailSyncResults();
 
-        logger.info(agent.printStatistics());
+        logger.info(statistics.printStatistics());
         logger.info("Completed Syncing with Snowstorm");
     }
 
@@ -186,11 +193,6 @@ public abstract class SyncAgent {
 
         return true;
 
-    }
-
-    public String printStatistics() {
-
-        return statistics.printStatistics();
     }
 
     public static Edition getDeveleperTestingEdition() {
