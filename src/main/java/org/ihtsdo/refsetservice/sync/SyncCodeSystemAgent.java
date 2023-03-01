@@ -178,10 +178,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
     private List<String> analyzeOrganizations() throws Exception {
         List<String> existingShortNames = new ArrayList<>();
 
+        HashMap<String, String> dbActiveEditionShortNameToOrganizationNameMap = new HashMap<>();
         HashMap<String, Set<String>> dbActiveOrganizationNameToEditionsShortNameMap = new HashMap<>();
         HashMap<String, Set<String>> dbInactiveOrganizationNameToEditionsShortNameMap = new HashMap<>();
         HashMap<String, Set<String>> snowstormOrganizationNameToEditionsShortNameMap = new HashMap<>();
-        HashMap<String, String> dbActiveEditionShortNameToOrganizationNameMap = new HashMap<>();
 
         snowstormEditionShortNameToOrganizationNameMap = new HashMap<>();
 
@@ -191,9 +191,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             // Identify DB edition-to-orgName bi-directional maps (separated by active/inactive editions)
             for (Edition edition : dbEditions) {
-                dbActiveEditionShortNameToOrganizationNameMap.put(edition.getShortName(), edition.getOrganizationName());
 
                 if (edition.isActive()) {
+                    dbActiveEditionShortNameToOrganizationNameMap.put(edition.getShortName(), edition.getOrganizationName());
 
                     if (!dbActiveOrganizationNameToEditionsShortNameMap.keySet().contains(edition.getOrganizationName())) {
                         dbActiveOrganizationNameToEditionsShortNameMap.put(edition.getOrganizationName(), new HashSet<String>());
@@ -211,8 +211,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 }
             }
-            // logger.debug("aaa with dbEditionShortNameToOrganizationNameMap: " + dbEditionShortNameToOrganizationNameMap);
-            // logger.debug("aaa with dbOrganizationNameToEditionsShortNameMap: " + dbOrganizationNameToEditionsShortNameMap);
             // Identify Snow edition-to-orgName bi-directional maps
             for (JsonNode codeSystem : filteredCodeSystems) {
                 String organizationName = identifyOrganizationName(codeSystem);
@@ -226,8 +224,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 snowstormOrganizationNameToEditionsShortNameMap.get(organizationName).add(codeSystem.get("shortName").asText());
             }
 
-            // logger.debug("aaa with snowstormEditionShortNameToOrganizationNameMap: " + snowstormEditionShortNameToOrganizationNameMap);
-            // logger.debug("aaa with snowstormOrganizationNameToEditionsShortNameMap: " + snowstormOrganizationNameToEditionsShortNameMap);
+            logger.debug("aaa with dbActiveEditionShortNameToOrganizationNameMap: " + dbActiveEditionShortNameToOrganizationNameMap);
+            logger.debug("aaa with dbActiveOrganizationNameToEditionsShortNameMap: " + dbActiveOrganizationNameToEditionsShortNameMap);
+            logger.debug("aaa with dbInactiveOrganizationNameToEditionsShortNameMap: " + dbInactiveOrganizationNameToEditionsShortNameMap);
+            logger.debug("aaa with snowstormEditionShortNameToOrganizationNameMap: " + snowstormEditionShortNameToOrganizationNameMap);
+            logger.debug("aaa with snowstormOrganizationNameToEditionsShortNameMap: " + snowstormOrganizationNameToEditionsShortNameMap);
 
             logger.debug("ccc --- Begin execution ---");
             // See if any snowstorm organizations are new
@@ -254,7 +255,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             statistics.setOrganizationsInactivated(inactivatedShortNames.size());
             logger.debug("ccc Inactivated Organizations: : " + inactivatedShortNames);
             inactivatedShortNames.stream().forEach(n -> utilities.updateOrganizationStatus(n, false));
-            logger.debug("ccc1 dbActiveOrganizationNameToEditionsShortNameMap: " + dbActiveOrganizationNameToEditionsShortNameMap);
+            logger.debug("ccc1");
 
             // Identify organizations that are active in DB and found in snowstorm and compare for changes
             dbActiveEditionShortNameToOrganizationNameMap.keySet().stream().forEach(c -> existingShortNames.add(c));
