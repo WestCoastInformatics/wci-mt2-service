@@ -95,13 +95,6 @@ public abstract class SyncAgent {
         SyncAgent agent = new SyncCodeSystemAgent();
         agent.sync();
 
-        int a = 0;
-        if (a < 1) {
-            logger.info(statistics.printStatistics());
-            logger.error("Stopping here on purpose");
-            return;
-        }
-
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
         agent.sync();
@@ -218,6 +211,11 @@ public abstract class SyncAgent {
                     }
                 }
             }
+        }
+
+        // TODO: For now, ignore this, but shouldn't ever throw exception at this point
+        if (developerTestingEdition == null && !getIsProductionSystem()) {
+            // throw new Exception("Must have a WCI Organization on a non-Prod instance");
         }
 
     }

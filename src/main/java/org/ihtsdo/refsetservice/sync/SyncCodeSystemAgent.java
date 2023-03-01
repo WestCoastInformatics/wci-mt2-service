@@ -51,17 +51,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         // Review both DB & Snowstorm editon-to-org map to ensure consistency
         compareEditionOrganizationMaps(existingShortNames);
-
-        int a = 0;
-        if (a < 1) {
-            statistics.printStatistics();
-            return;
-        }
-
-        // TODO: For now, ignore this, but shouldn't ever throw exception at this point
-        if (developerTestingEdition == null && !getIsProductionSystem()) {
-            // throw new Exception("Must have a WCI Organization on a non-Prod instance");
-        }
     }
 
     private void analyzeCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
