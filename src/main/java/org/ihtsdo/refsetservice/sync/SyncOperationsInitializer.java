@@ -19,7 +19,7 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
+import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
@@ -30,6 +30,8 @@ public class SyncOperationsInitializer {
     private final Logger logger = LoggerFactory.getLogger(SyncOperationsInitializer.class);
 
     private SyncUtilities utilities;
+
+    private SyncDatabaseHandler dbHandler;
 
     private static User syncUser = null;
 
@@ -78,9 +80,16 @@ public class SyncOperationsInitializer {
     public SyncOperationsInitializer() {
 
         // Support one-off usages for specific testing cases i.e. adding an intensional refset
-        utilities = new SyncUtilities();
-        SyncStatistics statstics = new SyncStatistics();
-        utilities.setStatistics(statstics);
+
+        if (dbHandler == null) {
+            dbHandler = new SyncDatabaseHandler(null);
+        }
+        if (utilities == null) {
+
+            utilities = new SyncUtilities(dbHandler);
+        }
+
+        dbHandler.setUtilities(utilities);
 
         initializeSync();
     }
@@ -136,18 +145,16 @@ public class SyncOperationsInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            utilities.initializeService(service);
-
             Set<String> memberIds = new HashSet<>();
 
             memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
 
-            utilities.addTeam(TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
+            dbHandler.addTeam(TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
                     new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
 
             // Finally, add the users to the organization
             organization.getMembers().addAll(adminUsers);
-            service.update(organization);
+            dbHandler.updateOrganization(organization);
 
         }
 
@@ -159,11 +166,9 @@ public class SyncOperationsInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            utilities.initializeService(service);
+            testingProject = dbHandler.addProject(WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, developerTestingEdition);
 
-            testingProject = utilities.addProject(WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, developerTestingEdition);
-
-            utilities.addWCIRefset(getSyncUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getModules().iterator().next(),
+            dbHandler.addWCIRefset(getSyncUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getModules().iterator().next(),
                     utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
 
             // Create wci testing refsets(for DEV only)
@@ -183,11 +188,11 @@ public class SyncOperationsInitializer {
         logger.info(" Create Feedback & Intensional refsets for testing (for DEV only)");
 
         // create new refset with name = Feedback/Intensional Testing Version 1 with July 31 2022 version off International Edition
-        Refset intensionalRefset = utilities.addWCIRefset(getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
+        Refset intensionalRefset = dbHandler.addWCIRefset(getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
                 utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
         addIntensionalContent(intensionalRefset);
 
-        Refset feedbackRefset = utilities.addWCIRefset(getSyncUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
+        Refset feedbackRefset = dbHandler.addWCIRefset(getSyncUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
                 utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
 
         addFeedbackContent(feedbackRefset);
@@ -221,11 +226,9 @@ public class SyncOperationsInitializer {
     private Refset createTestingRefset(String testingRefsetName, String testingRefsetId) throws Exception {
 
         final Project developerTestingProject = getDeveloperTestingProject();
-        final Edition developerTestingEdition = getDeveloperTestingEdition();
 
         try (TerminologyService service = new TerminologyService()) {
 
-            utilities.initializeService(service);
             final List<Refset> projectRefsets = service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
 
             int latestVersion = 0;
@@ -252,7 +255,7 @@ public class SyncOperationsInitializer {
 
             if (latestVersion == 0) {
 
-                newTestingRefset = utilities.addWCIRefset(getSyncUser(), testingRefsetName + "1", testingRefsetId + "01", getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "",
+                newTestingRefset = dbHandler.addWCIRefset(getSyncUser(), testingRefsetName + "1", testingRefsetId + "01", getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "",
                         getDeveloperTestingProject());
             } else {
 
@@ -260,7 +263,7 @@ public class SyncOperationsInitializer {
                 String tensValue = Integer.toString(latestVersion / 10);
                 String onesValue = Integer.toString(latestVersion % 10);
 
-                newTestingRefset = utilities.addWCIRefset(getSyncUser(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
+                newTestingRefset = dbHandler.addWCIRefset(getSyncUser(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
                         getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "", getDeveloperTestingProject());
             }
 
@@ -273,23 +276,18 @@ public class SyncOperationsInitializer {
 
     private void addIntensionalContent(Refset refset) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        // Create ecl clause
+        final String testClause = "<<716186003 |No known allergy (situation)|";
+        final DefinitionClause clause = new DefinitionClause();
+        clause.setNegated(false);
+        clause.setValue(testClause);
+        final DefinitionClause persistedClause = dbHandler.addDefinitionClause(clause);
 
-            utilities.initializeService(service);
+        // Set Intensional Refset Infromation
+        refset.setType(Refset.INTENSIONAL);
+        refset.getDefinitionClauses().add(persistedClause);
 
-            // Create ecl clause
-            final String testClause = "<<716186003 |No known allergy (situation)|";
-            final DefinitionClause clause = new DefinitionClause();
-            clause.setNegated(false);
-            clause.setValue(testClause);
-            final DefinitionClause persistedClause = service.add(clause);
-
-            // Set Intensional Refset Infromation
-            refset.setType(Refset.INTENSIONAL);
-            refset.getDefinitionClauses().add(persistedClause);
-
-            final Refset updatedRefset = service.update(refset);
-        }
+        dbHandler.updateRefset(refset);
 
     }
 
@@ -297,7 +295,7 @@ public class SyncOperationsInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            utilities.initializeService(service);
+            dbHandler.initializeService(service);
 
             // add feedback
             DiscussionThread thread = new DiscussionThread();
@@ -345,28 +343,23 @@ public class SyncOperationsInitializer {
         }
 
         // Create users for testing initial feedback
-        try (TerminologyService service = new TerminologyService()) {
+        // Create users and teams, then add to org/project
+        Set<String> userRole = new HashSet<>();
+        userRole.add(User.ROLE_AUTHOR);
+        Set<String> memberIds = new HashSet<>();
+        memberIds.add(feedbackInitiatiorUser.getId());
+        memberIds.add(userResponderUser.getId());
+        adminUsers.stream().forEach(user -> memberIds.add(user.getId()));
 
-            utilities.initializeService(service);
+        final Team singleFeedbackTeam =
+                dbHandler.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", getDeveloperTestingEdition().getOrganization(), allRoles, memberIds);
 
-            // Create users and teams, then add to org/project
-            Set<String> userRole = new HashSet<>();
-            userRole.add(User.ROLE_AUTHOR);
-            Set<String> memberIds = new HashSet<>();
-            memberIds.add(feedbackInitiatiorUser.getId());
-            memberIds.add(userResponderUser.getId());
-            adminUsers.stream().forEach(user -> memberIds.add(user.getId()));
+        testingProject.getTeams().add(singleFeedbackTeam.getId());
+        testingProject = dbHandler.updateProject(testingProject);
 
-            final Team singleFeedbackTeam =
-                    utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", getDeveloperTestingEdition().getOrganization(), allRoles, memberIds);
-
-            testingProject.getTeams().add(singleFeedbackTeam.getId());
-            testingProject = service.update(testingProject);
-
-            getDeveloperTestingEdition().getOrganization().getMembers().add(feedbackInitiatiorUser);
-            getDeveloperTestingEdition().getOrganization().getMembers().add(userResponderUser);
-            service.update(getDeveloperTestingEdition().getOrganization());
-        }
+        getDeveloperTestingEdition().getOrganization().getMembers().add(feedbackInitiatiorUser);
+        getDeveloperTestingEdition().getOrganization().getMembers().add(userResponderUser);
+        dbHandler.updateOrganization(getDeveloperTestingEdition().getOrganization());
 
     }
 

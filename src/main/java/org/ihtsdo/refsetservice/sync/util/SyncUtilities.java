@@ -16,16 +16,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
-import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.HasModified;
-import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
@@ -38,9 +34,7 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
-import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.EmailUtility;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
@@ -53,6 +47,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class SyncUtilities {
 
     private final Logger logger = LoggerFactory.getLogger(SyncUtilities.class);
+
+    private SyncDatabaseHandler dbHandler;
 
     private static final SyncPropertyFileReader propertyReader = new SyncPropertyFileReader();
 
@@ -75,343 +71,14 @@ public class SyncUtilities {
 
     private static SyncPersistenceMetadata metadata = new SyncPersistenceMetadata(new Date(), UNDEFINED_USER_NAME);
 
-    private static SyncStatistics statistics = null;
-
     private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
     private static final String CORE_MODULE_PARENT = "900000000000443000";
 
-    private static final String SIMPLE_REFSET_TYPE_CONCEPT = "446609009";
+    static final String SIMPLE_REFSET_TYPE_CONCEPT = "446609009";
 
-    public Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            final Organization org = new Organization();
-            org.setName(orgName);
-            org.setDescription(orgDesc);
-
-            // Persist
-            final Organization o = service.add(org);
-
-            logger.info("Adding new Organziation: " + o.getId() + " (" + o.getName() + ") " + o);
-
-            return o;
-        }
-
-    }
-
-    private Edition addNewEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, String maintainerType,
-        Organization organization) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            Edition edition = new Edition();
-
-            edition.setShortName(shortName);
-            edition.setName(name);
-            edition.setBranch(branch);
-            edition.setDefaultLanguageRefsets(defaultLanguageRefsets);
-            edition.setModules(modules);
-            edition.setDefaultLanguageCode(defaultLanguageCode);
-            edition.setOrganization(organization);
-            edition.setMaintainerType(maintainerType);
-
-            // New ones only created as new
-            edition.setActive(true);
-
-            Edition e = service.add(edition);
-
-            logger.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
-
-            return e;
-        }
-
-    }
-
-    public Edition addNewEdition(JsonNode codeSystem, String organizationName) {
-        try {
-            final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
-            final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-            final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
-            final String maintainerType = identifyMaintainerType(codeSystem, shortName);
-
-            // Identify Matching Organization
-            try (TerminologyService service = new TerminologyService()) {
-
-                List<Organization> organizations = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(organizationName)).collect(Collectors.toList());
-
-                validateMatches(organizations, organizationName);
-
-                Organization organization = organizations.iterator().next();
-
-                // Create a single Admin team per Edition when we first discover it
-                final SyncOperationsInitializer initializer = new SyncOperationsInitializer(this);
-                initializer.createAdminOrganizationTeam(organization);
-
-                final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
-
-                final Set<String> defaultLanguageRefsets = identifyDefaultLanguageRefsets(codeSystem, shortName);
-
-                // Case of no modules handled downstream
-                final Set<String> editionModules = identifyModules(shortName, editionName, branch, codeSystem);
-
-                Edition newEdition = addNewEdition(shortName, editionName, branch, defaultLanguageRefsets, editionModules, defaultLanguageCode, maintainerType, organization);
-
-                printEditionValues(newEdition);
-
-                return newEdition;
-            }
-        } catch (Exception e) {
-            logger.error("Failed to add edition associated with codeSystem: " + codeSystem);
-
-            e.printStackTrace();
-
-            return null;
-        }
-
-    }
-
-    public Edition updateEditionStatus(String shortName, boolean isActive) {
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            List<Edition> matchingEditions = service.getAll(Edition.class).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
-            validateMatches(matchingEditions, shortName);
-
-            final Edition edition = matchingEditions.iterator().next();
-            edition.setActive(isActive);
-
-            // Persist
-            final Edition e = service.update(edition);
-
-            logger.info("Inactivated edition: " + e.getId() + " (" + e.getName() + ") " + e);
-
-            return e;
-        } catch (Exception e) {
-            logger.error("Failed to update status of edition: " + shortName + " to " + isActive);
-
-            e.printStackTrace();
-
-            return null;
-        }
-    }
-
-    public void updateOrganizationStatus(String organizationName, boolean isActive) {
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            final List<Organization> allOrganizations = service.getAll(Organization.class);
-
-            List<Organization> matchingOrganizations = allOrganizations.stream().filter(o -> o.getName().equals(organizationName)).collect(Collectors.toList());
-            validateMatches(matchingOrganizations, organizationName);
-
-            final Organization org = matchingOrganizations.iterator().next();
-            org.setActive(isActive);
-
-            // Persist
-            final Organization o = service.update(org);
-
-            logger.info("Inactivated organziation: " + o.getId() + " (" + o.getName() + ") " + o);
-        } catch (Exception e) {
-            logger.error("Failed to update status of organziation: " + organizationName + " to " + isActive);
-
-            e.printStackTrace();
-
-        }
-    }
-
-    public void removeExistingRefsetVersionPair(Refset refset) throws Exception {
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            logger.info("Removing existing refset: " + refset.getId() + " (" + refset.getRefsetId() + ")" + refset.getVersionDate());
-
-            service.remove(refset);
-
-        }
-    }
-
-    public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            final Refset refset = new Refset();
-
-            refset.setName(name);
-            refset.setRefsetId(refsetId);
-            refset.setModuleId(moduleId);
-            refset.setVersionStatus("PUBLISHED");
-            refset.setWorkflowStatus("PUBLISHED");
-            refset.setActive(true);
-            refset.setVersionDate(versionDate);
-            refset.setType(type);
-            refset.setNarrative(narrative);
-            refset.setLatestPublishedVersion(false);
-
-            // Persist
-            final Refset r = service.add(refset);
-
-            logger.info("Adding new Refset and/or Version for : " + r.getId() + " (" + r.getName() + ") on: " + r.getVersionDate());
-
-            return r;
-        }
-
-    }
-
-    public Project addProject(String projectName, String projectDescription, Edition edition) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            final Project project = new Project();
-            project.setName(projectName);
-            project.setDescription(projectDescription);
-            project.setPrivateProject(false);
-            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
-            project.setEdition(edition);
-
-            // Persist
-            final Project p = service.add(project);
-
-            statistics.getProjectsProcessed().add(p);
-
-            logger.info("Adding new Project: " + p.getId() + " (" + p.getName() + ") " + p);
-
-            return p;
-
-        }
-
-    }
-
-    public Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String narrative, Project project) throws Exception {
-
-        logger.info("Adding WCI Testing Org's single project: " + project);
-
-        final Refset refsetParameters = new Refset();
-
-        refsetParameters.setName(name);
-        refsetParameters.setRefsetId(refsetId);
-        refsetParameters.setModuleId(moduleId);
-        refsetParameters.setVersionStatus("PUBLISHED");
-        refsetParameters.setWorkflowStatus("PUBLISHED");
-        refsetParameters.setActive(true);
-        refsetParameters.setVersionDate(versionDate);
-        refsetParameters.setVersionNotes("");
-        refsetParameters.setType(Refset.EXTENSIONAL);
-        refsetParameters.setNarrative(narrative);
-        refsetParameters.setParentConceptId(SIMPLE_REFSET_TYPE_CONCEPT);
-        refsetParameters.setProject(project);
-        refsetParameters.setLatestPublishedVersion(false);
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            // Sets up completely different than normal addRefset routine
-            final Object returned = RefsetService.createRefset(service, u, refsetParameters);
-
-            if (returned instanceof String) {
-
-                throw new Exception((String) returned);
-            } else {
-
-                final Refset refset = (Refset) returned;
-
-                logger.info("Added new WCI Refset - " + refset.getId() + " (" + refset.getName() + ")" + refset);
-
-                Refset updatedRefset = initializeWorkflowStatus(refset);
-
-                logger.info(" and then updated the new WCI refset's Workflow Status - " + updatedRefset);
-
-                return updatedRefset;
-            }
-
-        }
-
-    }
-
-    public Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberIds) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            Team team = new Team();
-            team.setName(teamName);
-            team.setDescription(teamDescription);
-            team.setOrganization(organization);
-            team.setPrimaryContactEmail("support-rt2@westcoastinformatics.com");
-            team.setRoles(roles);
-            team.setMembers(memberIds);
-
-            // Persist
-            final Team t = service.add(team);
-
-            statistics.getTeamsProcessed().add(t);
-
-            logger.info("Adding new Team: " + t.getId() + " (" + t.getName() + ") " + t);
-
-            return t;
-        }
-
-    }
-
-    public User addUser(String name, String userName, String email, Set<String> roles) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            final User user = new User();
-
-            user.setName(name);
-            user.setUserName(userName);
-            user.setActive(true);
-            user.setEmail(email);
-            user.setRoles(roles);
-
-            // Persist
-            final User u = service.add(user);
-
-            logger.info("Adding new User: " + u.getId() + " (" + u.getName() + ") " + u);
-
-            return u;
-        }
-
-    }
-
-    public Set<DefinitionClause> getRefsetClauses(String rttId) throws Exception {
-
-        Set<DefinitionClause> refsetClauses = new HashSet<>();
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            for (String clauseJson : propertyReader.getRttRefsetToClausesMap().get(rttId)) {
-
-                final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
-
-                setMetadata(clause, propertyReader.getMetadataMap().get("refset-" + rttId));
-
-                DefinitionClause persistedClause = service.add(clause);
-
-                refsetClauses.add(persistedClause);
-            }
-
-            return refsetClauses;
-        }
-
+    public SyncUtilities(SyncDatabaseHandler dbHandler) {
+        this.dbHandler = dbHandler;
     }
 
     public User getUser(String name, String userName, String email, Set<String> roles) throws Exception {
@@ -433,7 +100,7 @@ public class SyncUtilities {
             } else {
 
                 // Need to create user
-                user = addUser(name, userName, email, roles);
+                user = dbHandler.addUser(name, userName, email, roles);
             }
 
         }
@@ -614,44 +281,6 @@ public class SyncUtilities {
         return retSet;
     }
 
-    void setMetadata(final HasModified object) {
-
-        object.setModified(metadata.getModified());
-        object.setCreated(metadata.getModified());
-        object.setModifiedBy(metadata.getModifiedBy());
-    }
-
-    private void setMetadata(final HasModified object, final SyncPersistenceMetadata metadata) {
-
-        object.setModified(metadata.getModified());
-        object.setCreated(metadata.getModified());
-        object.setModifiedBy(metadata.getModifiedBy());
-    }
-
-    private Refset initializeWorkflowStatus(Refset refset) throws Exception {
-
-        final String currentStatus = refset.getWorkflowStatus();
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
-            // if the status is Published then create a new version of the refset that is ready to be edited
-            refset = WorkflowService.setWorkflowStatusByAction(service, SyncOperationsInitializer.getSyncUser(), WorkflowService.FINISH_EDIT, refset, "");
-
-            // if the status changed return the updated refset else return null
-            if (!currentStatus.equals(refset.getWorkflowStatus())) {
-
-                return refset;
-            } else {
-
-                return null;
-            }
-
-        }
-
-    }
-
     public void printEditionValues(Edition edition) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
@@ -675,13 +304,6 @@ public class SyncUtilities {
             }
 
         }
-
-    }
-
-    public void initializeService(TerminologyService service) {
-
-        service.setModifiedBy("Sync");
-        service.setModifiedFlag(true);
 
     }
 
@@ -794,6 +416,7 @@ public class SyncUtilities {
         return "international edition".equals(matchingString.toLowerCase()) || "snomedct".equals(matchingString.toLowerCase());
     }
 
+    // In WCI case, accepts either name or shortName
     public boolean isDeveloperEdition(String editionName) {
 
         return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
@@ -806,11 +429,18 @@ public class SyncUtilities {
         undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
     }
 
-    public SyncStatistics setStatistics(SyncStatistics statistics) {
-        return SyncUtilities.statistics = statistics;
+    public Object validateMatches(List<?> list, String matchingValue) throws Exception {
+
+        if (list.isEmpty()) {
+            throw new Exception("Cannot find an element to matching value: " + matchingValue);
+        } else if (list.size() > 1) {
+            throw new Exception("Found multiple elements with same matching value: " + matchingValue);
+        }
+
+        return list.iterator().next();
     }
 
-    public String identifyMaintainerType(JsonNode codeSystem, String editionShortName) throws Exception {
+    public String determineMaintainerType(JsonNode codeSystem, String editionShortName) throws Exception {
 
         String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
 
@@ -830,12 +460,35 @@ public class SyncUtilities {
         return codeSystemType;
     }
 
-    public void validateMatches(List<?> list, String matchingValue) throws Exception {
+    Refset initializeWorkflowStatus(Refset refset) throws Exception {
 
-        if (list.isEmpty()) {
-            throw new Exception("Cannot find an element to matching value: " + matchingValue);
-        } else if (list.size() > 1) {
-            throw new Exception("Found multiple elements with same matching value: " + matchingValue);
+        if (!isDeveloperEdition(refset.getEdition().getShortName())) {
+            throw new Exception("Cannot modify the workflow status of anything other than the developer org");
+        }
+
+        final String currentStatus = refset.getWorkflowStatus();
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            // if the status is Published then create a new version of the refset that is ready to be edited
+            dbHandler.initializeService(service);
+            refset = WorkflowService.setWorkflowStatusByAction(service, SyncOperationsInitializer.getSyncUser(), WorkflowService.FINISH_EDIT, refset, "");
+
+            // if the status changed return the updated refset else return null
+            if (!currentStatus.equals(refset.getWorkflowStatus())) {
+
+                return refset;
+            } else {
+
+                return null;
+            }
+
+        } catch (Exception e) {
+            logger.error("Failed to initialize workflow on developer refset: " + refset + " with Exception --> " + e.getMessage());
+
+            e.printStackTrace();
+
+            return null;
         }
 
     }

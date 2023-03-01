@@ -14,6 +14,7 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
@@ -30,7 +31,9 @@ public abstract class SyncAgent {
 
     protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
-    protected static SyncUtilities utilities = null;
+    protected static SyncUtilities utilities;
+
+    protected static SyncDatabaseHandler dbHandler;
 
     protected static final SyncStatistics statistics = new SyncStatistics();
 
@@ -42,7 +45,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
     protected static String testingEditionShortName = "SNOMEDCT-BE";
 
@@ -82,14 +85,14 @@ public abstract class SyncAgent {
 
     public static void sync(TerminologyService service) throws Exception {
 
+        final Date startDate = new Date();
+
         if (isProductionSystem == null) {
 
             initialize(false, false, false);
         }
 
         logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
-
-        utilities.initializeService(service);
 
         // Only identify branches on filtered code systems and on runShortSync value
         SyncAgent agent = new SyncCodeSystemAgent();
@@ -98,6 +101,13 @@ public abstract class SyncAgent {
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
         agent.sync();
+
+        int a = 0;
+        if (a < 1) {
+            logger.info(statistics.printStatistics());
+            logger.error("Stopping here on purpose");
+            return;
+        }
 
         postCodeSystemProcessing();
 
@@ -110,7 +120,8 @@ public abstract class SyncAgent {
         }
 
         // Post processing
-        service.add(AuditEntryHelper.syncEntry(new Date()));
+        AuditEntryHelper.syncEntry(startDate);
+
         utilities.emailSyncResults();
 
         logger.info(statistics.printStatistics());
@@ -119,11 +130,15 @@ public abstract class SyncAgent {
 
     private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
 
+        if (dbHandler == null) {
+            dbHandler = new SyncDatabaseHandler(null);
+        }
         if (utilities == null) {
 
-            utilities = new SyncUtilities();
-            utilities.setStatistics(statistics);
+            utilities = new SyncUtilities(dbHandler);
         }
+
+        dbHandler.setUtilities(utilities);
 
         isPerVersionSync = refsetPerVersionSync;
         isProductionSystem = runForProduction;
@@ -206,7 +221,7 @@ public abstract class SyncAgent {
                                 "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
 
                         // Create default project
-                        final Project project = utilities.addProject(projectName, projectDescription, syncedEdition);
+                        final Project project = dbHandler.addProject(projectName, projectDescription, syncedEdition);
                         defaultEditionProjects.put(syncedEdition.getShortName(), project);
                     }
                 }
@@ -262,7 +277,7 @@ public abstract class SyncAgent {
 
     public static Boolean getIsIgnoreCoreRefsets() {
 
-        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+        return isIgnoreCoreRefsets == null ? true : isIgnoreCoreRefsets;
     }
 
     public static Boolean getIsProductionSystem() {
