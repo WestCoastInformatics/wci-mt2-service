@@ -68,7 +68,7 @@ public class ProjectService extends BaseService {
             service.beginTransaction();
 
             service.add(project);
-            service.add(AuditEntryHelper.newProjectEntry(project));
+            service.add(AuditEntryHelper.addProjectEntry(project));
             service.commit();
 
             // Return the response

@@ -49,7 +49,7 @@ public class EditionService extends BaseService {
             service.beginTransaction();
 
             service.add(newEdition);
-            service.add(AuditEntryHelper.newEditionEntry(newEdition));
+            service.add(AuditEntryHelper.addEditionEntry(newEdition));
             service.commit();
 
             return newEdition;

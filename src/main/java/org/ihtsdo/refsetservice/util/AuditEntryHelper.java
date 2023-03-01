@@ -53,7 +53,7 @@ public class AuditEntryHelper {
      * @return the audit entry
      */
     // Edition
-    public static AuditEntry newEditionEntry(final Edition edition) {
+    public static AuditEntry addEditionEntry(final Edition edition) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.EDITION.toString());
@@ -105,7 +105,7 @@ public class AuditEntryHelper {
      * @return the audit entry
      */
     // Organization
-    public static AuditEntry newOrganizationEntry(final Organization organization) {
+    public static AuditEntry addOrganizationEntry(final Organization organization) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
@@ -140,6 +140,23 @@ public class AuditEntryHelper {
      * @return the audit entry
      */
     public static AuditEntry inactivateOrganizationEntry(final Organization organization) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
+        entry.setEntityId(organization.getId());
+        entry.setMessage("INACTIVATE Organization");
+        entry.setDetails(organization.getName());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Inactivate organization entry.
+     *
+     * @param organization the organization
+     * @return the audit entry
+     */
+    public static AuditEntry activateOrganizationEntry(final Organization organization) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
@@ -203,7 +220,7 @@ public class AuditEntryHelper {
         log(entry);
         return entry;
     }
-    
+
     /**
      * Send organization invite.
      *
@@ -238,7 +255,7 @@ public class AuditEntryHelper {
         entry.setEntityId(organization.getId());
         entry.setMessage("INVITE Organization Response");
         entry.setDetails(
-            "Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName() + " request to join organization " + organization.getId());
+                "Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName() + " request to join organization " + organization.getId());
         log(entry);
         return entry;
     }
@@ -268,7 +285,7 @@ public class AuditEntryHelper {
      * @return the audit entry
      */
     // Project
-    public static AuditEntry newProjectEntry(final Project project) {
+    public static AuditEntry addProjectEntry(final Project project) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.PROJECT.toString());
@@ -320,7 +337,7 @@ public class AuditEntryHelper {
      * @return the audit entry
      */
     // Team
-    public static AuditEntry newTeamEntry(final Team team) {
+    public static AuditEntry addTeamEntry(final Team team) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.TEAM.toString());
@@ -444,7 +461,7 @@ public class AuditEntryHelper {
      * @return the audit entry
      */
     // User
-    public static AuditEntry newUserEntry(final User user) {
+    public static AuditEntry addUserEntry(final User user) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.USER.toString());
@@ -496,7 +513,7 @@ public class AuditEntryHelper {
      * @return the audit entry
      */
     // Refset
-    public static AuditEntry newRefsetEntry(final Refset refset) {
+    public static AuditEntry addRefsetVersionEntry(final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.REFSET.toString());
@@ -518,13 +535,13 @@ public class AuditEntryHelper {
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.REFSET.toString());
         entry.setEntityId(refset.getId());
-        
+
         if (refset.isActive()) {
             entry.setMessage("REACTIVATE Refset");
         } else {
             entry.setMessage("INACTIVATE Refset");
         }
-        
+
         entry.setDetails(refset.getName());
         log(entry);
         return entry;
