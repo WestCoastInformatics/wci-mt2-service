@@ -73,7 +73,7 @@ public class SyncDatabaseHandler {
             return newEdition;
         } catch (Exception e) {
             String codeSystemData = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : codeSystem.toPrettyString();
-            logger.error("Failed to add edition associated with codeSystem: " + codeSystemData + " with Exception --> " + e.getMessage());
+            logger.error("Failed to add edition associated with codeSystem: " + codeSystemData + " with Exception --> " + e);
 
             e.printStackTrace();
 

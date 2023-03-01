@@ -80,17 +80,6 @@ public class SyncOperationsInitializer {
     public SyncOperationsInitializer() {
 
         // Support one-off usages for specific testing cases i.e. adding an intensional refset
-
-        if (dbHandler == null) {
-            dbHandler = new SyncDatabaseHandler(null);
-        }
-        if (utilities == null) {
-
-            utilities = new SyncUtilities(dbHandler);
-        }
-
-        dbHandler.setUtilities(utilities);
-
         initializeSync();
     }
 
@@ -101,6 +90,16 @@ public class SyncOperationsInitializer {
     }
 
     private void initializeSync() {
+        if (dbHandler == null) {
+            dbHandler = new SyncDatabaseHandler(null);
+        }
+        if (utilities == null) {
+
+            utilities = new SyncUtilities(dbHandler);
+        }
+
+        dbHandler.setUtilities(utilities);
+
         try {
             developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
