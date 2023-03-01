@@ -66,6 +66,8 @@ public abstract class SyncAgent {
     /** Abstract Method **/
     public abstract void sync() throws Exception;
 
+    private static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
+
     // TODO: Define when called vs normal one
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
 
@@ -103,6 +105,8 @@ public abstract class SyncAgent {
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
         agent.sync();
+
+        postCodeSystemProcessing();
 
         // Update imported refsets with RTT-based metadata (as defined in parseRttData())
         if (!isProductionSystem) {
@@ -167,6 +171,53 @@ public abstract class SyncAgent {
             List<Project> defaultProjects = service.getAll(Project.class).stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default")))
                     .collect(Collectors.toList());
             defaultProjects.stream().forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
+        }
+
+    }
+
+    // Organization is done at this point. Check if Developer Edition. If not, create a default UAT project
+    private static void postCodeSystemProcessing() throws Exception {
+        try (final TerminologyService service = new TerminologyService()) {
+
+            List<Edition> allEditions = service.getAll(Edition.class);
+            int a = 0;
+            if (a < 1) {
+                return;
+            }
+
+            for (Edition syncedEdition : allEditions) {
+                if (DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(syncedEdition.getShortName())) {
+
+                    // Support Developer Edition
+                    if (getIsProductionSystem()) {
+
+                        throw new Exception("Can't have a WCI Edition on a Prod instance");
+                    }
+
+                    if (developerTestingEdition != null) {
+
+                        throw new Exception("Can't have two WCI Editions with new one having shortName: " + syncedEdition.getShortName());
+                    } else {
+
+                        // identified WCI Edition
+                        developerTestingEdition = syncedEdition;
+                    }
+
+                } else {
+
+                    // Create a Default Project for the edition
+                    if (!defaultEditionProjects.containsKey(syncedEdition.getShortName())) {
+
+                        final String projectName = syncedEdition.getName() + " Default Project";
+                        final String projectDescription =
+                                "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
+
+                        // Create default project
+                        final Project project = utilities.addProject(projectName, projectDescription, syncedEdition);
+                        defaultEditionProjects.put(syncedEdition.getShortName(), project);
+                    }
+                }
+            }
         }
 
     }
