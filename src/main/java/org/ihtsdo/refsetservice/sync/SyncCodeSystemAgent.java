@@ -369,51 +369,15 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return modifiedShortNames;
     }
 
-    /*
-     * Note -> ignore description as that is strictly defined in RT2 whereas the other organization attributes are defined on snowstorm (only name for now)
+    /*-
+     * Note -> Currently only sync-based attribute is organizationName. Yet, this is also the primary key for organizations. Thus nothing to do as:
+     * 1) name being changed is found with previous organization add/activate/inactive analysis. 
+     * 2) Description is defined on RT2, not on Snowstorm (as is primaryEmail & iconUrl)
+     * 
+     * If new values ever provided, then this method should be updated
      */
     private List<String> compareAndModifyOrganizations(List<String> matchingShortNames) throws Exception {
         List<String> modifiedShortNames = new ArrayList<>();
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            utilities.initializeService(service);
-
-            List<Edition> allDatabaseEditions = service.getAll(Edition.class);
-
-            // Process one Organization per Edition.
-            for (String shortName : matchingShortNames) {
-
-                if (!snowstormEditionShortNameToOrganizationNameMap.containsKey(shortName)) {
-                    logger.debug("bbb " + shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
-                    continue;
-                }
-
-                // Find associated DB edition and get org name
-                List<Edition> matchingEditions = allDatabaseEditions.stream().filter(e -> e.isActive() && e.getShortName().equals(shortName)).collect(Collectors.toList());
-                utilities.validateMatches(matchingEditions, shortName);
-                Organization dbOrganization = matchingEditions.iterator().next().getOrganization();
-
-                // Grab snowstorm org name
-                String snowstormOrganizationName = snowstormEditionShortNameToOrganizationNameMap.get(shortName);
-
-                boolean modificationMade = false;
-                Organization newOrganization = new Organization(dbOrganization);
-
-                if (isDifferentAttribute(shortName, "Organization name ", dbOrganization.getName(), snowstormOrganizationName)) {
-                    logger.info(" inconsistent editionName with DB having '" + dbOrganization.getName() + "' and snowstorm with'" + snowstormOrganizationName + "'");
-                    newOrganization.setName(snowstormOrganizationName);
-                    modificationMade = true;
-                }
-
-                if (modificationMade) {
-                    service.update(newOrganization);
-                    logger.info("Updated edition: " + newOrganization.getId() + " (" + newOrganization.getName() + ") ");
-
-                    modifiedShortNames.add(shortName);
-                }
-            }
-        }
 
         return modifiedShortNames;
     }
