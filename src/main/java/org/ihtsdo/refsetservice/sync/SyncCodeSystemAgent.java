@@ -61,6 +61,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // Filter code systems (based on active-setting, ignoredCS list, testing situation, and bad data)
         filterCodeSystems(organizationJsonRootNode);
         logger.info("Will be processing only these " + filteredCodeSystems.size() + " Code Systems: ");
+
+        filteredCodeSystems.stream().forEach(c -> logger.info("Will process codeSystem: " + c.get("shortName").asText()));
+
+        statistics.setCodeSystemsSynced(countCodeSystems(organizationIterator));
+        statistics.setCodeSystemsFiltered(filteredCodeSystems.size());
     }
 
     private List<String> analyzeOrganizations() throws Exception {
@@ -412,11 +417,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
             }
 
         }
-
-        filteredCodeSystems.stream().forEach(c -> logger.info("Will process codeSystem: " + c.get("shortName").asText()));
-
-        statistics.setCodeSystemsSynced(countCodeSystems(organizationIterator));
-        statistics.setCodeSystemsFiltered(filteredCodeSystems.size());
 
         return filteredCodeSystems;
     }

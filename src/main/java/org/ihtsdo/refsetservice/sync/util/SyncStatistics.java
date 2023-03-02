@@ -42,6 +42,16 @@ public class SyncStatistics {
     private int editionOrganizationMapChanged = 0;
 
     // Refsets
+    private int refsetIdsAdded = 0;
+
+    private int refsetIdsInactivated = 0;;
+
+    private int refsetIdsActivated = 0;
+
+    private int refsetIdsSynced = 0;
+
+    private int refsetIdsActivatedAndModified = 0;
+
     private int refsetVersionsAdded = 0;
 
     private int refsetVersionsInactivated = 0;;
@@ -52,7 +62,7 @@ public class SyncStatistics {
 
     private int refsetVersionsModified = 0;
 
-    private int refsetVersionsActivatedAndModified;
+    private int refsetVersionsActivatedAndModified = 0;
 
     private int refsetVersionsSynced = 0;
 
@@ -80,6 +90,9 @@ public class SyncStatistics {
                 + editionsModified + " / ActivatedAndModified: " + editionsActivatedAndModified + System.getProperty("line.separator"));
 
         buf.append("EDITIONS to ORGANIZATION MAP CHanges: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
+
+        buf.append("REFSET IDs Synced " + refsetIdsSynced + " Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated + " / ActivatedAndModified: " + refsetIdsActivatedAndModified
+                + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
 
         buf.append("REFSET VERSION PAIRs Synced " + refsetVersionsSynced + " Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: " + refsetVersionsModified
                 + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
@@ -109,6 +122,12 @@ public class SyncStatistics {
         editionsActivatedAndModified = 0;
 
         editionOrganizationMapChanged = 0;
+
+        refsetIdsAdded = 0;
+        refsetIdsInactivated = 0;
+        refsetIdsActivated = 0;
+        refsetIdsActivatedAndModified = 0;
+        refsetIdsSynced = 0;
 
         refsetVersionsAdded = 0;
         refsetVersionsInactivated = 0;
@@ -192,6 +211,30 @@ public class SyncStatistics {
     }
 
     // Refsets
+    public int getRefsetIdsAdded() {
+
+        return refsetIdsAdded;
+    }
+
+    public int getRefsetIdsInactivated() {
+
+        return refsetIdsInactivated;
+    }
+
+    public int getRefsetIdsActivated() {
+
+        return refsetIdsActivated;
+    }
+
+    public int getRefsetIdsActivatedAndModified() {
+
+        return refsetIdsActivatedAndModified;
+    }
+
+    public int getRefsetIdsSynced() {
+        return refsetIdsSynced;
+    }
+
     public int getRefsetVersionsAdded() {
 
         return refsetVersionsAdded;
@@ -292,6 +335,27 @@ public class SyncStatistics {
 
     }
 
+    // Refset Ids
+    public void setRefsetIdsAdded(int val) {
+        refsetIdsAdded = val;
+    }
+
+    public void setRefsetIdsInactivated(int val) {
+        refsetIdsInactivated = val;
+    }
+
+    public void setRefsetIdsActivated(int val) {
+        this.refsetIdsActivated = val;
+    }
+
+    public void setRefsetIdsActivatedAndModified(int val) {
+        this.refsetIdsActivatedAndModified = val;
+    }
+
+    public void setRefsetIdsSynced(int val) {
+        this.refsetIdsSynced = val;
+    }
+
     // Refset Version Pairs
     public void setRefsetVersionsAdded(int val) {
         refsetVersionsAdded = val;
@@ -301,20 +365,20 @@ public class SyncStatistics {
         refsetVersionsInactivated = val;
     }
 
-    public void setRefsetVersionsActivated(int refsetVersionsActivated) {
-        this.refsetVersionsActivated = refsetVersionsActivated;
+    public void setRefsetVersionsActivated(int val) {
+        this.refsetVersionsActivated = val;
     }
 
-    public void setRefsetVersionsUnchanged(int refsetVersionsUnchanged) {
-        this.refsetVersionsUnchanged = refsetVersionsUnchanged;
+    public void setRefsetVersionsUnchanged(int val) {
+        this.refsetVersionsUnchanged = val;
     }
 
-    public void setRefsetVersionsModified(int refsetVersionsModified) {
-        this.refsetVersionsModified = refsetVersionsModified;
+    public void setRefsetVersionsModified(int val) {
+        this.refsetVersionsModified = val;
     }
 
-    public void setRefsetVersionsActivatedAndModified(int refsetVersionsActivatedAndModified) {
-        this.refsetVersionsActivatedAndModified = refsetVersionsActivatedAndModified;
+    public void setRefsetVersionsActivatedAndModified(int val) {
+        this.refsetVersionsActivatedAndModified = val;
     }
 
     public void setRefsetVersionsSynced(int val) {

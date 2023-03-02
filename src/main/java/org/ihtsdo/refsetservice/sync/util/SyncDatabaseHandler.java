@@ -82,7 +82,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Organization addOrganziation(final String orgName, String orgDesc) throws Exception {
+    public Organization addOrganziation(final String orgName, String orgDesc) {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -149,7 +149,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
+    public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type) {
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
@@ -164,7 +164,6 @@ public class SyncDatabaseHandler {
             refset.setActive(true);
             refset.setVersionDate(versionDate);
             refset.setType(type);
-            refset.setNarrative(narrative);
             refset.setLatestPublishedVersion(false);
 
             // Persist
@@ -183,7 +182,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Project addProject(String projectName, String projectDescription, Edition edition) throws Exception {
+    public Project addProject(String projectName, String projectDescription, Edition edition) {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -211,7 +210,7 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String narrative, Project project) throws Exception {
+    public Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String narrative, Project project) {
 
         try (TerminologyService service = new TerminologyService()) {
 
@@ -270,7 +269,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberIds) throws Exception {
+    public Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberIds) {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -300,7 +299,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public User addUser(String name, String userName, String email, Set<String> roles) throws Exception {
+    public User addUser(String name, String userName, String email, Set<String> roles) {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -477,7 +476,27 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Set<DefinitionClause> addDefinitionClauses(String rttId) throws Exception {
+    public Refset updateRefsetVersionStatus(String refsetId, Date versionDate, boolean isActive) {
+
+        try (final TerminologyService service = new TerminologyService()) {
+        
+            List<Refset> allRefsets = service.getAll(Refset.class);
+            List<Refset> matchingRefsets = allRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().equals(versionDate)).collect(Collectors.toList());
+            utilities.validateMatches(matchingRefsets, refsetId + " / " + versionDate);
+
+            Refset matchingRefset = matchingRefsets.iterator().next();
+            return updateRefsetVersionStatus(matchingRefset, isActive);
+        } catch (Exception e) {
+            logger.error("Failed to update status of refset: " + refsetId + " (" + versionDate + ") to " + isActive);
+
+            e.printStackTrace();
+
+            // TODO: Determine how to handle Updates
+            return null;
+        }
+    }
+
+    public Set<DefinitionClause> addDefinitionClauses(String rttId) {
 
         Set<DefinitionClause> refsetClauses = new HashSet<>();
 
@@ -566,6 +585,38 @@ public class SyncDatabaseHandler {
 
             return null;
         }
+    }
+
+    public Set<Refset> updateRefsetIdsStatus(String refsetId, boolean isActive) {
+
+        Set<Refset> updatedRefsetVersions = new HashSet<>();
+        ;
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            List<Refset> matchingRefsetVersions = service.getAll(Refset.class).stream().filter(r -> r.getRefsetId().equals(refsetId)).collect(Collectors.toList());
+
+            for (Refset refsetVersion : matchingRefsetVersions) {
+                refsetVersion.setActive(isActive);
+
+                Refset updatedRefsetVersion = updateRefset(refsetVersion);
+
+                logger.info("Updated edition: " + updatedRefsetVersion.getId() + " to " + isActive + "  (" + updatedRefsetVersion.getRefsetId() + " / " + updatedRefsetVersion.getVersionDate() + ") ");
+
+                updatedRefsetVersions.add(updatedRefsetVersion);
+            }
+            return updatedRefsetVersions;
+        } catch (Exception e) {
+            logger.error("Failed to update status of all resfsets with refsetId: " + refsetId + " to " + isActive);
+
+            return null;
+        }
+
+    }
+
+    public Refset addRefset(String refsetId, String moduleId, String refsetName) {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }
