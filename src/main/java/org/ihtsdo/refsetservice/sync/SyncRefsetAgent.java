@@ -943,7 +943,7 @@ public class SyncRefsetAgent extends SyncAgent {
             final String refsetType = Refset.EXTENSIONAL; // All from Snowstorm are strictly extension
             final Date version = syncRefsetMetadata.getVersion();
 
-            Refset newRefset = dbHandler.addRefset(refsetId, moduleId, refsetName, version, refsetType);
+            Refset newRefset = dbHandler.addRefset(refsetName, refsetId, moduleId, version, refsetType);
 
             // TODO: Still need to post-process?
             postRefsetProcessing(newRefset, syncRefsetMetadata.getEdition());
