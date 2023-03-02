@@ -265,9 +265,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
         for (String shortName : matchingEditionShortNames) {
 
             // Find associated DB edition
-            List<Edition> matchingEditions = dbEditions.stream().filter(e -> e.isActive() && e.getShortName().equals(shortName)).collect(Collectors.toList());
+            List<Edition> matchingEditions = dbEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
             Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
-            Edition addedEdition = new Edition(dbEdition);
+            Edition modifyingEdition = new Edition(dbEdition);
 
             // Find values for Snowstorm Edition
             final JsonNode codeSystem = snowstormShortNameCodeSystemMap.get(shortName);
@@ -280,43 +280,43 @@ public class SyncCodeSystemAgent extends SyncAgent {
             boolean modificationMade = false;
 
             if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), snowStormEditionName)) {
-                addedEdition.setName(snowStormEditionName);
+                modifyingEdition.setName(snowStormEditionName);
                 modificationMade = true;
             }
 
             if (isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), snowStormBranch)) {
-                addedEdition.setBranch(snowStormBranch);
+                modifyingEdition.setBranch(snowStormBranch);
                 modificationMade = true;
             }
 
             if (isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), snowStormEditionModules)) {
-                addedEdition.setModules(snowStormEditionModules);
+                modifyingEdition.setModules(snowStormEditionModules);
                 modificationMade = true;
             }
 
             if (isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getMaintainerType(), snowStormMaintainerType)) {
-                addedEdition.setMaintainerType(snowStormMaintainerType);
+                modifyingEdition.setMaintainerType(snowStormMaintainerType);
                 modificationMade = true;
             }
 
             final String snowstormDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, snowStormEditionName);
             if (isDifferentAttribute(dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(), snowstormDefaultLanguageCode)) {
 
-                addedEdition.setDefaultLanguageCode(snowstormDefaultLanguageCode);
+                modifyingEdition.setDefaultLanguageCode(snowstormDefaultLanguageCode);
                 modificationMade = true;
             }
 
             final Set<String> snowstormDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName);
             if (!dbEdition.getDefaultLanguageRefsets().equals(snowstormDefaultLanguageRefsets)) {
 
-                addedEdition.setDefaultLanguageRefsets(snowstormDefaultLanguageRefsets);
+                modifyingEdition.setDefaultLanguageRefsets(snowstormDefaultLanguageRefsets);
                 modificationMade = true;
             }
 
             if (modificationMade) {
-                dbHandler.updateEdition(addedEdition);
+                dbHandler.updateEdition(modifyingEdition);
 
-                modifiedShortNames.add(addedEdition.getShortName());
+                modifiedShortNames.add(modifyingEdition.getShortName());
             }
         }
 

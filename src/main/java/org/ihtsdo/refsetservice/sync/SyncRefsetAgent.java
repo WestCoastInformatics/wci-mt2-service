@@ -1,6 +1,7 @@
 package org.ihtsdo.refsetservice.sync;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,11 +43,11 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private final Map<String, Edition> refsetEditions = new HashMap<>();
 
-    private Map<String, Map<Date, SyncRefsetMetadata>> snowstormRefsetIdToRefsetVersionsMap;
+    private Map<String, Map<Date, SyncRefsetMetadata>> termServerRefsetIdToRefsetVersionsDataMap;
 
-    private Map<String, Map<Date, Refset>> databaseRefsetIdToActiveRefsetVersionsMap;
+    private Map<String, Map<Date, Refset>> dbRefsetIdToActiveRefsetVersionsMap;
 
-    private Map<String, Map<Date, Refset>> databaseRefsetIdToInactiveRefsetVersionsMap;
+    private Map<String, Map<Date, Refset>> dbRefsetIdToInactiveRefsetVersionsMap;
 
     private Map<String, Set<Date>> newlyCreatedAndUnchangedRefsetVersionsMap = new HashMap<>();
 
@@ -85,36 +86,54 @@ public class SyncRefsetAgent extends SyncAgent {
             dbRefsets.stream().filter(r -> !r.isActive()).forEach(ir -> dbInactiveRefsets.add(ir));
 
             // Based on filteredCodeSystems which already filtered for active code systems
-            snowstormRefsetIdToRefsetVersionsMap = generateSnowstormRefsetIdtoRefsetVersionsMap();
-            databaseRefsetIdToActiveRefsetVersionsMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets);
-            databaseRefsetIdToInactiveRefsetVersionsMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbInactiveRefsets);
+            termServerRefsetIdToRefsetVersionsDataMap = generateSnowstormRefsetIdtoRefsetVersionsMap();
+            dbRefsetIdToActiveRefsetVersionsMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets);
+            dbRefsetIdToInactiveRefsetVersionsMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbInactiveRefsets);
 
             // Map each refsetId/version pair's SyncRefsetMetadata
 
-            logger.debug("aaa snowstormRefsetIdToRefsetVersionsMap: " + snowstormRefsetIdToRefsetVersionsMap);
-            logger.debug("aaa databaseRefsetIdToActiveRefsetVersionsMap: " + databaseRefsetIdToActiveRefsetVersionsMap);
-            logger.debug("aaa databaseRefsetIdToInactiveRefsetVersionsMap: " + databaseRefsetIdToInactiveRefsetVersionsMap);
+            logger.debug("aaa snowstormRefsetIdToRefsetVersionsMap: " + termServerRefsetIdToRefsetVersionsDataMap.keySet());
+            logger.debug("aaa databaseRefsetIdToActiveRefsetVersionsMap: " + dbRefsetIdToActiveRefsetVersionsMap.keySet());
+            logger.debug("aaa databaseRefsetIdToInactiveRefsetVersionsMap: " + dbRefsetIdToInactiveRefsetVersionsMap.keySet());
 
             // Determine and create new refsets (where db versions are needed). These are identified by those not in active nor in inactive DB refsets)
-            List<String> addedRefsetIds = snowstormRefsetIdToRefsetVersionsMap.keySet().stream()
-                    .filter(refsetId -> !databaseRefsetIdToActiveRefsetVersionsMap.containsKey(refsetId) && !databaseRefsetIdToInactiveRefsetVersionsMap.containsKey(refsetId))
-                    .collect(Collectors.toList());
-            addedRefsetIds.stream().forEach(
-                    refsetId -> snowstormRefsetIdToRefsetVersionsMap.get(refsetId).keySet().stream().forEach(version -> addRefset(snowstormRefsetIdToRefsetVersionsMap.get(refsetId).get(version))));
-            addedRefsetIds.stream().forEach(refsetId -> newlyCreatedAndUnchangedRefsetVersionsMap.put(refsetId, snowstormRefsetIdToRefsetVersionsMap.get(refsetId).keySet()));
+            List<String> addedRefsetIds = termServerRefsetIdToRefsetVersionsDataMap.keySet().stream()
+                    .filter(refsetId -> !dbRefsetIdToActiveRefsetVersionsMap.containsKey(refsetId) && !dbRefsetIdToInactiveRefsetVersionsMap.containsKey(refsetId)).collect(Collectors.toList());
+            addedRefsetIds.stream().forEach(refsetId -> termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream()
+                    .forEach(version -> addRefset(termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).get(version))));
+            addedRefsetIds.stream().forEach(refsetId -> newlyCreatedAndUnchangedRefsetVersionsMap.put(refsetId, termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet()));
             logger.debug("ccc New RefsetIds: " + addedRefsetIds);
             statistics.setRefsetIdsAdded(addedRefsetIds.size());
 
             // Activate previously inactivated refsets. Note: Will log and update stats after remove those that were activatedAndModified
             // TODO: Define solution although for now simply activating
-            List<String> activatedRefsetIds =
-                    snowstormRefsetIdToRefsetVersionsMap.keySet().stream().filter(c -> databaseRefsetIdToInactiveRefsetVersionsMap.containsKey(c)).collect(Collectors.toList());
+            List<String> activatedRefsetIds = termServerRefsetIdToRefsetVersionsDataMap.keySet().stream()
+                    .filter(refsetId -> dbRefsetIdToInactiveRefsetVersionsMap.containsKey(refsetId)
+                            && dbRefsetIdToInactiveRefsetVersionsMap.get(refsetId).keySet().stream().noneMatch(version -> dbRefsetIdToInactiveRefsetVersionsMap.get(refsetId).get(version).isActive()))
+                    .collect(Collectors.toList());
             activatedRefsetIds.stream().forEach(refsetId -> dbHandler.updateRefsetIdsStatus(refsetId, true));
+            logger.debug("ccc activatedRefsetIds v1 RefsetIds: " + activatedRefsetIds);
 
             // Inactivate active DB refsets that are not in snowstorm
             // TODO: Define solution although for now simply inactivating
-            List<String> inactivatedRefsetIds =
-                    databaseRefsetIdToActiveRefsetVersionsMap.keySet().stream().filter(c -> !snowstormRefsetIdToRefsetVersionsMap.keySet().contains(c)).collect(Collectors.toList());
+            List<String> inactivatedRefsetIds = new ArrayList<>();
+            logger.debug("ddd");
+            for (String refsetId : dbRefsetIdToActiveRefsetVersionsMap.keySet()) {
+                logger.debug("ddd refsetId " + refsetId);
+
+                for (Date version : dbRefsetIdToActiveRefsetVersionsMap.get(refsetId).keySet()) {
+                    logger.debug("ddd version " + version);
+
+                    if (!termServerRefsetIdToRefsetVersionsDataMap.containsKey(refsetId) || !termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).containsKey(version)) {
+                        logger.debug("ddd termServerRefsetIdToRefsetVersionsDataMap.keySet(): " + termServerRefsetIdToRefsetVersionsDataMap.keySet());
+                        logger.debug("ddd termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet(): " + termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet());
+                        logger.debug("ddd termServerRefsetIdToRefsetVersionsDataMap.containsKey(refsetId): " + termServerRefsetIdToRefsetVersionsDataMap.containsKey(refsetId));
+                        logger.debug("ddd termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).containsKey(version): " + termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).containsKey(version));
+                        inactivatedRefsetIds.add(refsetId);
+                    }
+                }
+            }
+
             inactivatedRefsetIds.stream().forEach(refsetId -> dbHandler.updateRefsetIdsStatus(refsetId, false));
             logger.debug("ccc Inactivated RefsetIds: " + inactivatedRefsetIds);
             statistics.setRefsetIdsInactivated(inactivatedRefsetIds.size());
@@ -122,22 +141,24 @@ public class SyncRefsetAgent extends SyncAgent {
             // Determine refsetIds that were just activated to see if there are any other changes necessary
             List<String> activatedAndModifiedRefsetIds = new ArrayList<>();
             for (String refsetId : activatedRefsetIds) {
-                List<Date> activatedVersionDates = new ArrayList<>(snowstormRefsetIdToRefsetVersionsMap.get(refsetId).keySet());
+                List<Date> activatedVersionDates = new ArrayList<>(termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet());
                 java.util.Collections.sort(activatedVersionDates);
 
-                List<Date> activatedAndModifiedVersionDates = compareAndModifyRefsetVersions(refsetId, activatedVersionDates, snowstormRefsetIdToRefsetVersionsMap.get(refsetId));
+                List<Date> activatedAndModifiedVersionDates = compareAndModifyRefsetVersions(refsetId, activatedVersionDates, termServerRefsetIdToRefsetVersionsDataMap.get(refsetId));
 
                 if (!activatedAndModifiedVersionDates.isEmpty()) {
 
                     activatedAndModifiedRefsetIds.add(refsetId);
                 }
             }
+            logger.debug("ccc ActivatedAndModified RefsetIds: " + activatedAndModifiedRefsetIds);
 
             statistics.setRefsetIdsActivatedAndModified(activatedAndModifiedRefsetIds.size());
 
             // Finalize those refset versions that were only activated (and not further modified)
             activatedAndModifiedRefsetIds.stream().forEach(n -> activatedRefsetIds.remove(n));
             statistics.setRefsetIdsActivated(activatedRefsetIds.size());
+            logger.debug("ccc Activated RefsetIds: " + activatedRefsetIds);
 
             newAndInactivatedRefsetIds.addAll(addedRefsetIds);
             newAndInactivatedRefsetIds.addAll(inactivatedRefsetIds);
@@ -151,7 +172,7 @@ public class SyncRefsetAgent extends SyncAgent {
         // versions.
         // At end, also see with making newlyActivated versions as something to compare 1:1.
         // Perform analysis on one version at a time.
-        for (String refsetId : snowstormRefsetIdToRefsetVersionsMap.keySet()) {
+        for (String refsetId : termServerRefsetIdToRefsetVersionsDataMap.keySet()) {
 
             // Ignore those that are listed in the new or inactivated refsetId list (activated will be processed for changes)
             if (addedInactivaedRefsetIds.contains(refsetId)) {
@@ -159,32 +180,32 @@ public class SyncRefsetAgent extends SyncAgent {
             }
 
             // Determine and create new refsetVersions (not in active nor in inactive DB refsetVersions)
-            List<Date> addedRefsetVersionDates = snowstormRefsetIdToRefsetVersionsMap.get(refsetId).keySet().stream()
-                    .filter(date -> !databaseRefsetIdToActiveRefsetVersionsMap.get(refsetId).containsKey(date) && !databaseRefsetIdToInactiveRefsetVersionsMap.get(refsetId).containsKey(date))
+            List<Date> addedRefsetVersionDates = termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream()
+                    .filter(date -> !dbRefsetIdToActiveRefsetVersionsMap.get(refsetId).containsKey(date) && !dbRefsetIdToInactiveRefsetVersionsMap.get(refsetId).containsKey(date))
                     .collect(Collectors.toList());
-            addedRefsetVersionDates.stream().forEach(version -> addRefset(snowstormRefsetIdToRefsetVersionsMap.get(refsetId).get(version)));
+            addedRefsetVersionDates.stream().forEach(version -> addRefset(termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).get(version)));
             logger.debug("ccc New RefsetVersions size: " + addedRefsetVersionDates.size());
             statistics.incrementRefsetVersionsAdded(addedRefsetVersionDates.size());
 
             // Activate previously inactivated refsetVersions. Note: Will log and update stats after remove those that were activatedAndModified
             // TODO: Define solution although for now simply activating
-            List<Date> activatedRefsetVersionDates = snowstormRefsetIdToRefsetVersionsMap.get(refsetId).keySet().stream()
-                    .filter(c -> databaseRefsetIdToInactiveRefsetVersionsMap.get(refsetId).containsKey(c)).collect(Collectors.toList());
+            List<Date> activatedRefsetVersionDates = termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream()
+                    .filter(c -> dbRefsetIdToInactiveRefsetVersionsMap.get(refsetId).containsKey(c)).collect(Collectors.toList());
             activatedRefsetVersionDates.stream().forEach(version -> dbHandler.updateRefsetVersionStatus(refsetId, version, true));
 
             // Inactivate active DB refsetVersions that are not in snowstorm // TODO: Define solution although for now simply inactivating
-            List<Date> inactivatedRefsetVersionDates = databaseRefsetIdToActiveRefsetVersionsMap.get(refsetId).keySet().stream()
-                    .filter(c -> !snowstormRefsetIdToRefsetVersionsMap.get(refsetId).keySet().contains(c)).collect(Collectors.toList());
+            List<Date> inactivatedRefsetVersionDates = dbRefsetIdToActiveRefsetVersionsMap.get(refsetId).keySet().stream()
+                    .filter(c -> !termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().contains(c)).collect(Collectors.toList());
             inactivatedRefsetVersionDates.stream().forEach(version -> dbHandler.updateRefsetVersionStatus(refsetId, version, false));
             logger.debug("ccc Inactivated RefsetVersionDates size: " + inactivatedRefsetVersionDates.size());
             statistics.incrementRefsetVersionsInactivated(inactivatedRefsetVersionDates.size());
 
             // Determine RefsetVersionDates that are active in DB and found in snowstorm and compare for changes
-            List<Date> existingInBothRefsetVersionDates = databaseRefsetIdToActiveRefsetVersionsMap.get(refsetId).keySet().stream()
-                    .filter(c -> snowstormRefsetIdToRefsetVersionsMap.get(refsetId).containsKey(c)).collect(Collectors.toList());
+            List<Date> existingInBothRefsetVersionDates = dbRefsetIdToActiveRefsetVersionsMap.get(refsetId).keySet().stream()
+                    .filter(c -> termServerRefsetIdToRefsetVersionsDataMap.get(refsetId).containsKey(c)).collect(Collectors.toList());
 
             // Compare refsets (based on existing list of refsetId)
-            List<Date> modifiedDBRefsetVersionDates = compareAndModifyRefsetVersions(refsetId, existingInBothRefsetVersionDates, snowstormRefsetIdToRefsetVersionsMap.get(refsetId));
+            List<Date> modifiedDBRefsetVersionDates = compareAndModifyRefsetVersions(refsetId, existingInBothRefsetVersionDates, termServerRefsetIdToRefsetVersionsDataMap.get(refsetId));
             List<Date> unchangedRefsetVersionDates = existingInBothRefsetVersionDates.stream().filter(e -> !modifiedDBRefsetVersionDates.contains(e)).collect(Collectors.toList());
 
             logger.debug("ccc existing RefsetVersionDates size: " + existingInBothRefsetVersionDates.size());
@@ -194,7 +215,7 @@ public class SyncRefsetAgent extends SyncAgent {
             statistics.incrementRefsetVersionsUnchanged(unchangedRefsetVersionDates.size());
 
             // Determine refsetVersions that were just activated to see if there are any other changes necessary
-            List<Date> activatedAndModifiedRefsetVersionDates = compareAndModifyRefsetVersions(refsetId, activatedRefsetVersionDates, snowstormRefsetIdToRefsetVersionsMap.get(refsetId));
+            List<Date> activatedAndModifiedRefsetVersionDates = compareAndModifyRefsetVersions(refsetId, activatedRefsetVersionDates, termServerRefsetIdToRefsetVersionsDataMap.get(refsetId));
             statistics.incrementRefsetVersionsActivatedAndModified(activatedAndModifiedRefsetVersionDates.size());
 
             // Finalize those refset versions that were only activated (and not further modified)
@@ -315,49 +336,54 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     private List<Date> compareAndModifyRefsetVersions(String refsetId, List<Date> versionDatesToCompare, Map<Date, SyncRefsetMetadata> snowstormRefsetVersionDataMap) throws Exception {
-        List<Date> modifiedVersions = new ArrayList<>();
+        final List<Date> modifiedVersions = new ArrayList<>();
+        logger.debug("bbb with versionDatesToCompare: " + versionDatesToCompare);
+
+        final List<Refset> dbVersions = dbRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId)).collect(Collectors.toList());
+        logger.debug("bbb with  dbVersions.size(): " + dbVersions.size());
 
         // Process one version at a time
-        for (Date versionDate  : versionDatesToCompare) {
+        for (Date versionDate : versionDatesToCompare) {
+            logger.debug("bbb versionDate: " + versionDate);
 
             // Find associated DB refset
-            List<Refset> matchingRefsets = dbRefsets.stream().filter(r -> r.isActive() && r.getRefsetId().equals(refsetId)  && r.getVersionDate().equals(versionDate)).collect(Collectors.toList());
-            Refset dbRefset = (Refset) utilities.validateMatches(matchingRefsets, refsetId + " / " + versionDate);
-            Refset addedRefset = new Refset(dbRefset);
+            List<Refset> matchingVersions = dbVersions.stream().filter(r -> r.getVersionDate().equals(versionDate)).collect(Collectors.toList());
+            Refset dbVersion = (Refset) utilities.validateMatches(matchingVersions, refsetId + " / " + versionDate);
+            Refset modifyingVersion = new Refset(dbVersion);
 
             // Find values for Snowstorm Refset
             final SyncRefsetMetadata snowstormRefsetVersionData = snowstormRefsetVersionDataMap.get(versionDate);
-            
+
             final String snowStormRefsetName = determineRefsetName(snowstormRefsetVersionData);
             final String snowStormRefsetBranch = snowstormRefsetVersionData.getBranchPath();
-            final Edition snowStormRefsetEdition= snowstormRefsetVersionData.getEdition();
+            final Edition snowStormRefsetEdition = snowstormRefsetVersionData.getEdition();
             final String snowStormRefsetModuleId = refsetToModuleMap.get(refsetId);
 
             // Start comparison
             boolean modificationMade = false;
 
-            if (isDifferentAttribute(refsetId + " / " + versionDate, "Refset name ", dbRefset.getName(), snowStormRefsetName)) {
-                addedRefset.setName(snowStormRefsetName);
+            if (isDifferentAttribute(refsetId + " / " + versionDate, "Refset name ", dbVersion.getName(), snowStormRefsetName)) {
+                modifyingVersion.setName(snowStormRefsetName);
                 modificationMade = true;
             }
 
-            if (isDifferentAttribute(refsetId + " / " + versionDate, "Refset branch ", dbRefset.getBranchPath(), snowStormRefsetBranch)) {
-                addedRefset.setBranchPath(snowStormRefsetBranch);
+            if (isDifferentAttribute(refsetId + " / " + versionDate, "Refset branch ", dbVersion.getBranchPath(), snowStormRefsetBranch)) {
+                modifyingVersion.setBranchPath(snowStormRefsetBranch);
                 modificationMade = true;
             }
 
-            if (isDifferentAttribute(refsetId + " / " + versionDate, "Refset moduleId ", dbRefset.getModuleId(), snowStormRefsetModuleId)) {
-                addedRefset.setModuleId(snowStormRefsetModuleId);
+            if (isDifferentAttribute(refsetId + " / " + versionDate, "Refset moduleId ", dbVersion.getModuleId(), snowStormRefsetModuleId)) {
+                modifyingVersion.setModuleId(snowStormRefsetModuleId);
                 modificationMade = true;
             }
 
             if (modificationMade) {
-                dbHandler.updateRefset(addedRefset);
+                dbHandler.updateRefset(modifyingVersion);
 
-                modifiedVersions.add(addedRefset.getVersionDate());
-                
+                modifiedVersions.add(modifyingVersion.getVersionDate());
+
                 // TODO: Still need to post-process?
-                postRefsetProcessing(addedRefset, snowstormRefsetVersionData.getEdition());
+                postRefsetProcessing(modifyingVersion, snowstormRefsetVersionData.getEdition());
 
             }
         }
@@ -365,7 +391,7 @@ public class SyncRefsetAgent extends SyncAgent {
         return modifiedVersions;
     }
 
-   private String determineRefsetName(SyncRefsetMetadata refsetSnowstormData) throws Exception {
+    private String determineRefsetName(SyncRefsetMetadata refsetSnowstormData) throws Exception {
 
         String refsetName;
 
@@ -692,7 +718,7 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     /**
-     * Update refsets with values from json and with identifying latestVersion, but do not persist at this point.
+     * Update refsets with values from json and also identify latestVersion, but do not persist at this point.
      * @param dbRefsets the db refsets
      * @throws Exception
      */

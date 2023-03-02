@@ -614,9 +614,4 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Refset addRefset(String refsetId, String moduleId, String refsetName) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
 }
