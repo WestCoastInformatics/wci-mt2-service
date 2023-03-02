@@ -33,6 +33,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private HashMap<String, String> snowstormEditionShortNameToOrganizationNameMap;
 
+    private List<Edition> dbEditions;
+
+    private List<Organization> dbOrganizations;
+
     public void sync() throws Exception {
 
         initializeSync();
@@ -40,7 +44,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // Get all code systems from Snowstorm
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
 
-        // Identify code systems to sync
+        // Determine code systems to sync
         analyzeCodeSystems(organizationJsonRootNode);
 
         // Sync Organizations reviewing which are new (creating them), missing (removing them), and unchanged.
@@ -69,7 +73,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
     }
 
     private List<String> analyzeOrganizations() throws Exception {
-        List<String> existingShortNames = new ArrayList<>();
+        List<String> existingInBothShortNames = new ArrayList<>();
 
         HashMap<String, String> dbActiveEditionShortNameToOrganizationNameMap = new HashMap<>();
         HashMap<String, Set<String>> dbActiveOrganizationNameToEditionsShortNameMap = new HashMap<>();
@@ -80,9 +84,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final List<Edition> dbEditions = service.getAll(Edition.class);
-
-            // Identify DB edition-to-orgName bi-directional maps (separated by active/inactive editions)
+            // Determine DB edition-to-orgName bi-directional maps (separated by active/inactive editions)
             for (Edition edition : dbEditions) {
 
                 if (edition.isActive()) {
@@ -104,7 +106,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 }
             }
-            // Identify Snow edition-to-orgName bi-directional maps
+            // Determine Snow edition-to-orgName bi-directional maps
             for (JsonNode codeSystem : filteredCodeSystems) {
                 String organizationName = determineOrganizationName(codeSystem);
 
@@ -118,12 +120,12 @@ public class SyncCodeSystemAgent extends SyncAgent {
             }
 
             // See if any snowstorm organizations are new
-            List<String> newOrganizations = snowstormOrganizationNameToEditionsShortNameMap.keySet().stream()
+            List<String> addedOrganizations = snowstormOrganizationNameToEditionsShortNameMap.keySet().stream()
                     .filter(o -> !dbActiveOrganizationNameToEditionsShortNameMap.keySet().contains(o) && !dbInactiveOrganizationNameToEditionsShortNameMap.keySet().contains(o))
                     .collect(Collectors.toList());
-            statistics.setOrganizationsAdded(newOrganizations.size());
+            statistics.setOrganizationsAdded(addedOrganizations.size());
 
-            for (String organizationName : newOrganizations) {
+            for (String organizationName : addedOrganizations) {
                 dbHandler.addOrganziation(organizationName, determineOrganizationDescription(organizationName));
             }
 
@@ -140,16 +142,18 @@ public class SyncCodeSystemAgent extends SyncAgent {
             statistics.setOrganizationsInactivated(inactivatedShortNames.size());
             inactivatedShortNames.stream().forEach(n -> dbHandler.updateOrganizationStatus(n, false));
 
-            // Identify organizations that are active in DB and found in snowstorm and compare for changes
-            dbActiveEditionShortNameToOrganizationNameMap.keySet().stream().forEach(c -> existingShortNames.add(c));
-            List<String> existingShortNamesAsList = new ArrayList<>(existingShortNames);
+            // Determine organizations that are active in DB and found in snowstorm and compare for changes
+            dbActiveEditionShortNameToOrganizationNameMap.keySet().stream().forEach(c -> existingInBothShortNames.add(c));
 
-            List<String> modifiedShortNames = compareAndModifyOrganizations(existingShortNamesAsList);
-            List<String> unchangedShortNames = existingShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
+            // Compare Orgs
+            List<String> modifiedShortNames = compareAndModifyOrganizations(new ArrayList<>(existingInBothShortNames));
+            List<String> unchangedShortNames = existingInBothShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
+
+            // Have modified... now revisit acivated to see if they too are modified
             statistics.setOrganizationsUnchanged(unchangedShortNames.size());
             statistics.setOrganizationsModified(modifiedShortNames.size());
 
-            // Identify organizations that were just actived to see if there are any other changes necessary
+            // Determine organizations that were just activated to see if there are any other changes necessary
             List<String> activatedAndModifiedShortNames = compareAndModifyOrganizations(activatedShortNames);
             statistics.setOrganizationsActivatedAndModified(activatedAndModifiedShortNames.size());
 
@@ -157,7 +161,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
             statistics.setOrganizationsActivated(activatedShortNames.size());
 
-            return existingShortNames;
+            return existingInBothShortNames;
 
         }
     }
@@ -169,15 +173,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            // Identify new, inactivated, and existing codeSystems (Based on shortName)
-            List<Edition> allEditions = service.getAll(Edition.class);
-            allEditions.stream().filter(e -> e.isActive()).forEach(ea -> dbActiveEditionShortNames.add(ea.getShortName()));
-            allEditions.stream().filter(e -> !e.isActive()).forEach(ea -> dbInactiveEditionShortNames.add(ea.getShortName()));
+            // Determine new, inactivated, and existing codeSystems (Based on shortName)
+            dbEditions.stream().filter(e -> e.isActive()).forEach(ea -> dbActiveEditionShortNames.add(ea.getShortName()));
+            dbEditions.stream().filter(e -> !e.isActive()).forEach(ea -> dbInactiveEditionShortNames.add(ea.getShortName()));
 
             // Based on filteredCodeSystems which already filtered for active code systems
             filteredCodeSystems.stream().forEach(cs -> snowstormShortNameCodeSystemMap.put(cs.get("shortName").asText(), cs));
 
-            // Identify and create new editions (not in active nor in inactive DB editions)
+            // Determine and create new editions (not in active nor in inactive DB editions)
             List<String> newShortNames =
                     snowstormShortNameCodeSystemMap.keySet().stream().filter(c -> !dbActiveEditionShortNames.contains(c) && !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
             statistics.setEditionsAdded(newShortNames.size());
@@ -194,15 +197,18 @@ public class SyncCodeSystemAgent extends SyncAgent {
             statistics.setEditionsInactivated(inactivatedShortNames.size());
             inactivatedShortNames.stream().forEach(n -> dbHandler.updateEditionStatus(n, false));
 
-            // Identify editions that are active in DB and found in snowstorm and compare for changes
-            List<String> existingShortNames = dbActiveEditionShortNames.stream().filter(c -> snowstormShortNameCodeSystemMap.keySet().contains(c)).collect(Collectors.toList());
-            List<String> modifiedShortNames = compareAndModifyEditions(existingShortNames, snowstormShortNameCodeSystemMap);
+            // Determine editions that are active in DB and found in snowstorm and compare for changes
+            List<String> existingInBothShortNames = dbActiveEditionShortNames.stream().filter(c -> snowstormShortNameCodeSystemMap.keySet().contains(c)).collect(Collectors.toList());
 
-            List<String> unchangedShortNames = existingShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
+            // Compare editions
+            List<String> modifiedShortNames = compareAndModifyEditions(existingInBothShortNames, snowstormShortNameCodeSystemMap);
+            List<String> unchangedShortNames = existingInBothShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
+
+            // Have modified... now revisit acivated to see if they too are modified
             statistics.setEditionsUnchanged(unchangedShortNames.size());
             statistics.setEditionsModified(modifiedShortNames.size());
 
-            // Identify editions that were just actived to see if there are any other changes necessary
+            // Determine editions that were just activated to see if there are any other changes necessary
             List<String> activatedAndModifiedShortNames = compareAndModifyEditions(activatedShortNames, snowstormShortNameCodeSystemMap);
             statistics.setEditionsActivatedAndModified(activatedAndModifiedShortNames.size());
 
@@ -210,7 +216,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
             statistics.setEditionsActivated(activatedShortNames.size());
 
-            return existingShortNames;
+            return existingInBothShortNames;
         }
 
     }
@@ -219,9 +225,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
         List<String> updatedEditionOrganizationMaps = new ArrayList<>();
 
         try (TerminologyService service = new TerminologyService()) {
-
-            List<Edition> dbEditions = service.getAll(Edition.class);
-            List<Organization> dbOrganizations = service.getAll(Organization.class);
 
             for (String shortName : existingShortNames) {
 
@@ -258,71 +261,66 @@ public class SyncCodeSystemAgent extends SyncAgent {
     private List<String> compareAndModifyEditions(List<String> matchingEditionShortNames, Map<String, JsonNode> snowstormShortNameCodeSystemMap) throws Exception {
         List<String> modifiedShortNames = new ArrayList<>();
 
-        try (final TerminologyService service = new TerminologyService()) {
+        // Process one Organization per Edition.
+        for (String shortName : matchingEditionShortNames) {
 
-            List<Edition> allDatabaseEditions = service.getAll(Edition.class);
+            if (!snowstormShortNameCodeSystemMap.containsKey(shortName)) {
+                logger.info(shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
+                continue;
+            }
 
-            // Process one Organization per Edition.
-            for (String shortName : matchingEditionShortNames) {
+            // Find associated DB edition
+            List<Edition> matchingEditions = dbEditions.stream().filter(e -> e.isActive() && e.getShortName().equals(shortName)).collect(Collectors.toList());
+            Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
+            Edition addedEdition = new Edition(dbEdition);
 
-                if (!snowstormShortNameCodeSystemMap.containsKey(shortName)) {
-                    logger.info(shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
-                    continue;
-                }
+            // Find values for Snowstorm Edition
+            final JsonNode codeSystem = snowstormShortNameCodeSystemMap.get(shortName);
+            final String snowStormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
+            final String snowStormBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
+            final String snowStormMaintainerType = utilities.determineMaintainerType(codeSystem, snowStormEditionName);
+            final Set<String> snowStormEditionModules = utilities.identifyModules(shortName, snowStormEditionName, snowStormBranch, codeSystem);
 
-                // Find associated DB edition
-                List<Edition> matchingEditions = allDatabaseEditions.stream().filter(e -> e.isActive() && e.getShortName().equals(shortName)).collect(Collectors.toList());
-                Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
-                Edition newEdition = new Edition(dbEdition);
+            boolean modificationMade = false;
 
-                // Find values for Snowstorm Edition
-                final JsonNode codeSystem = snowstormShortNameCodeSystemMap.get(shortName);
-                final String snowStormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-                final String snowStormBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
-                final String snowStormMaintainerType = utilities.determineMaintainerType(codeSystem, snowStormEditionName);
-                final Set<String> snowStormEditionModules = utilities.identifyModules(shortName, snowStormEditionName, snowStormBranch, codeSystem);
+            if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), snowStormEditionName)) {
+                addedEdition.setName(snowStormEditionName);
+                modificationMade = true;
+            }
 
-                boolean modificationMade = false;
+            if (isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), snowStormBranch)) {
+                addedEdition.setBranch(snowStormBranch);
+                modificationMade = true;
+            }
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), snowStormEditionName)) {
-                    newEdition.setName(snowStormEditionName);
-                    modificationMade = true;
-                }
+            if (isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), snowStormEditionModules)) {
+                addedEdition.setModules(snowStormEditionModules);
+                modificationMade = true;
+            }
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), snowStormBranch)) {
-                    newEdition.setBranch(snowStormBranch);
-                    modificationMade = true;
-                }
+            if (isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getMaintainerType(), snowStormMaintainerType)) {
+                addedEdition.setMaintainerType(snowStormMaintainerType);
+                modificationMade = true;
+            }
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), snowStormEditionModules)) {
-                    newEdition.setModules(snowStormEditionModules);
-                    modificationMade = true;
-                }
+            final String snowstormDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, snowStormEditionName);
+            if (isDifferentAttribute(dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(), snowstormDefaultLanguageCode)) {
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getMaintainerType(), snowStormMaintainerType)) {
-                    newEdition.setMaintainerType(snowStormMaintainerType);
-                    modificationMade = true;
-                }
+                addedEdition.setDefaultLanguageCode(snowstormDefaultLanguageCode);
+                modificationMade = true;
+            }
 
-                final String snowstormDefaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, snowStormEditionName);
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(), snowstormDefaultLanguageCode)) {
+            final Set<String> snowstormDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName);
+            if (!dbEdition.getDefaultLanguageRefsets().equals(snowstormDefaultLanguageRefsets)) {
 
-                    newEdition.setDefaultLanguageCode(snowstormDefaultLanguageCode);
-                    modificationMade = true;
-                }
+                addedEdition.setDefaultLanguageRefsets(snowstormDefaultLanguageRefsets);
+                modificationMade = true;
+            }
 
-                final Set<String> snowstormDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName);
-                if (!dbEdition.getDefaultLanguageRefsets().equals(snowstormDefaultLanguageRefsets)) {
+            if (modificationMade) {
+                dbHandler.updateEdition(addedEdition);
 
-                    newEdition.setDefaultLanguageRefsets(snowstormDefaultLanguageRefsets);
-                    modificationMade = true;
-                }
-
-                if (modificationMade) {
-                    dbHandler.updateEdition(newEdition);
-
-                    modifiedShortNames.add(newEdition.getShortName());
-                }
+                modifiedShortNames.add(addedEdition.getShortName());
             }
         }
 
@@ -429,8 +427,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
         editionShortNameOrganizationNameMap.clear();
 
         try (TerminologyService service = new TerminologyService()) {
+            dbEditions = service.getAll(Edition.class);
+            dbOrganizations = service.getAll(Organization.class);
 
-            service.getAll(Edition.class).stream().forEach(e -> editionShortNameOrganizationNameMap.put(e.getShortName(), e.getOrganization().getName()));
+            dbEditions.stream().forEach(e -> editionShortNameOrganizationNameMap.put(e.getShortName(), e.getOrganization().getName()));
         }
     }
 

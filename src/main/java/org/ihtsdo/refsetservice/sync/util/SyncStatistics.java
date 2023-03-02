@@ -82,23 +82,31 @@ public class SyncStatistics {
         buf.append(System.getProperty("line.separator") + "*********    Syncing Results    *************" + System.getProperty("line.separator"));
 
         buf.append("Code systems encountered: " + codeSystemsSynced + ". Syncing " + codeSystemsFiltered + " after filtered them" + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("ORGANIZATIONS Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: " + organizationsActivated + " / Unchanged: " + organizationsUnchanged
-                + " / Modified: " + organizationsModified + " / ActivatedAndModified: " + organizationsActivatedAndModified + System.getProperty("line.separator"));
+        // Organizations
+        buf.append("*** Organizations --> Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: " + organizationsActivated + " / Unchanged: "
+                + organizationsUnchanged + " / Modified: " + organizationsModified + " / ActivatedAndModified: " + organizationsActivatedAndModified + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("EDITIONS Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: " + editionsActivated + " / Unchanged: " + editionsUnchanged + " / Modified: "
+        // Editions
+        buf.append("*** EDITIONS --> Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: " + editionsActivated + " / Unchanged: " + editionsUnchanged + " / Modified: "
                 + editionsModified + " / ActivatedAndModified: " + editionsActivatedAndModified + System.getProperty("line.separator"));
 
-        buf.append("EDITIONS to ORGANIZATION MAP CHanges: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
+        buf.append("*** EDITIONS to ORGANIZATION MAP --> Changes: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("REFSET IDs Synced " + refsetIdsSynced + " Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated + " / ActivatedAndModified: " + refsetIdsActivatedAndModified
-                + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
+        // Refsets
+        buf.append("*** REFSET IDs --> Synced " + refsetIdsSynced + " Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated + " / ActivatedAndModified: "
+                + refsetIdsActivatedAndModified + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
 
-        buf.append("REFSET VERSION PAIRs Synced " + refsetVersionsSynced + " Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: " + refsetVersionsModified
-                + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
+        buf.append("*** REFSET VERSIONs --> Synced " + refsetVersionsSynced + " Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: "
+                + refsetVersionsModified + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("Projects " + projectsProcessed.size() + " Processed " + System.getProperty("line.separator"));
-        buf.append("Teams " + teamsProcessed.size() + " Processed" + System.getProperty("line.separator"));
+        // Othera
+        buf.append("*** Projects --> " + projectsProcessed.size() + " Processed " + System.getProperty("line.separator"));
+        buf.append("*** Teams --> " + teamsProcessed.size() + " Processed" + System.getProperty("line.separator"));
 
         return buf.toString();
     }
@@ -357,32 +365,32 @@ public class SyncStatistics {
     }
 
     // Refset Version Pairs
-    public void setRefsetVersionsAdded(int val) {
-        refsetVersionsAdded = val;
+    public void incrementRefsetVersionsAdded(int val) {
+        refsetVersionsAdded += val;
     }
 
-    public void setRefsetVersionsInactivated(int val) {
-        refsetVersionsInactivated = val;
+    public void incrementRefsetVersionsInactivated(int val) {
+        refsetVersionsInactivated += val;
     }
 
-    public void setRefsetVersionsActivated(int val) {
-        this.refsetVersionsActivated = val;
+    public void incrementRefsetVersionsActivated(int val) {
+        this.refsetVersionsActivated += val;
     }
 
-    public void setRefsetVersionsUnchanged(int val) {
-        this.refsetVersionsUnchanged = val;
+    public void incrementRefsetVersionsUnchanged(int val) {
+        this.refsetVersionsUnchanged = +val;
     }
 
-    public void setRefsetVersionsModified(int val) {
-        this.refsetVersionsModified = val;
+    public void incrementRefsetVersionsModified(int val) {
+        this.refsetVersionsModified = +val;
     }
 
-    public void setRefsetVersionsActivatedAndModified(int val) {
-        this.refsetVersionsActivatedAndModified = val;
+    public void incrementRefsetVersionsActivatedAndModified(int val) {
+        this.refsetVersionsActivatedAndModified += val;
     }
 
-    public void setRefsetVersionsSynced(int val) {
-        refsetVersionsSynced = val;
+    public void incrementRefsetVersionsSynced(int val) {
+        refsetVersionsSynced += val;
     }
 
     // Increments
