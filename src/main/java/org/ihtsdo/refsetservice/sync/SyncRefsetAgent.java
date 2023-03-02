@@ -125,7 +125,7 @@ public class SyncRefsetAgent extends SyncAgent {
                 List<Date> activatedVersionDates = new ArrayList<>(snowstormRefsetIdToRefsetVersionsMap.get(refsetId).keySet());
                 java.util.Collections.sort(activatedVersionDates);
 
-                List<Date> activatedAndModifiedVersionDates = compareAndModifyRefsetVersions(refsetId, activatedVersionDates);
+                List<Date> activatedAndModifiedVersionDates = compareAndModifyRefsetVersions(refsetId, activatedVersionDates, snowstormRefsetIdToRefsetVersionsMap.get(refsetId));
 
                 if (!activatedAndModifiedVersionDates.isEmpty()) {
 
@@ -184,7 +184,7 @@ public class SyncRefsetAgent extends SyncAgent {
                     .filter(c -> snowstormRefsetIdToRefsetVersionsMap.get(refsetId).containsKey(c)).collect(Collectors.toList());
 
             // Compare refsets (based on existing list of refsetId)
-            List<Date> modifiedDBRefsetVersionDates = compareAndModifyRefsetVersions(refsetId, existingInBothRefsetVersionDates);
+            List<Date> modifiedDBRefsetVersionDates = compareAndModifyRefsetVersions(refsetId, existingInBothRefsetVersionDates, snowstormRefsetIdToRefsetVersionsMap.get(refsetId));
             List<Date> unchangedRefsetVersionDates = existingInBothRefsetVersionDates.stream().filter(e -> !modifiedDBRefsetVersionDates.contains(e)).collect(Collectors.toList());
 
             logger.debug("ccc existing RefsetVersionDates size: " + existingInBothRefsetVersionDates.size());
@@ -194,28 +194,12 @@ public class SyncRefsetAgent extends SyncAgent {
             statistics.incrementRefsetVersionsUnchanged(unchangedRefsetVersionDates.size());
 
             // Determine refsetVersions that were just activated to see if there are any other changes necessary
-            List<Date> activatedAndModifiedRefsetVersionDates = compareAndModifyRefsetVersions(refsetId, activatedRefsetVersionDates);
-            compareAndModifyRefsetVersions(refsetId, activatedRefsetVersionDates);
+            List<Date> activatedAndModifiedRefsetVersionDates = compareAndModifyRefsetVersions(refsetId, activatedRefsetVersionDates, snowstormRefsetIdToRefsetVersionsMap.get(refsetId));
             statistics.incrementRefsetVersionsActivatedAndModified(activatedAndModifiedRefsetVersionDates.size());
 
             // Finalize those refset versions that were only activated (and not further modified)
             activatedAndModifiedRefsetVersionDates.stream().forEach(n -> activatedRefsetVersionDates.remove(n));
             statistics.incrementRefsetVersionsActivated(activatedRefsetVersionDates.size());
-
-            // TODO: ccc here is wrong until we distinguish where tgings came from as a last step
-            /*-
-            logger.debug("ccc ActivatedAndModified RefsetIds size: " + activatedAndModifiedRefsetIds.size());
-            logger.debug("ccc ActivatedAndModified RefsetVersionDates size: " + activatedAndModifiedRefsetVersionDates.size());
-            newlyCreatedAndUnchangedRefsetVersionDatesMap.get(refsetId).addAll(modifiedRefsetVersionDates);
-            
-            // Finalize those RefsetVersionDates that were only activated (and not further modified)
-            activatedAndModifiedRefsetIds.stream().forEach(r -> activatedRefsetIds.remove(r));
-            activatedAndModifiedRefsetVersionDates.stream().forEach(r -> activatedRefsetVersionDates.remove(r));
-            
-            // add beloew
-            allActivatedAndModifiedRefsetIds.addAll(activatedAndModifiedRefsetIds);
-            
-             */
 
             // populate newly CreatedAndUnchagned map to handle finalization
             if ((!addedRefsetVersionDates.isEmpty() || !unchangedRefsetVersionDates.isEmpty()) && !newlyCreatedAndUnchangedRefsetVersionsMap.containsKey(refsetId)) {
@@ -330,75 +314,58 @@ public class SyncRefsetAgent extends SyncAgent {
         return generatedMap;
     }
 
-    private List<Date> compareAndModifyRefsetVersions(String refsetId, List<Date> existingDBRefsetVersionDates) {
-        // TODO Auto-generated method stub
-        return null;
+    private List<Date> compareAndModifyRefsetVersions(String refsetId, List<Date> versionDatesToCompare, Map<Date, SyncRefsetMetadata> snowstormRefsetVersionDataMap) throws Exception {
+        List<Date> modifiedVersions = new ArrayList<>();
+
+        // Process one version at a time
+        for (Date versionDate  : versionDatesToCompare) {
+
+            // Find associated DB refset
+            List<Refset> matchingRefsets = dbRefsets.stream().filter(r -> r.isActive() && r.getRefsetId().equals(refsetId)  && r.getVersionDate().equals(versionDate)).collect(Collectors.toList());
+            Refset dbRefset = (Refset) utilities.validateMatches(matchingRefsets, refsetId + " / " + versionDate);
+            Refset addedRefset = new Refset(dbRefset);
+
+            // Find values for Snowstorm Refset
+            final SyncRefsetMetadata snowstormRefsetVersionData = snowstormRefsetVersionDataMap.get(versionDate);
+            
+            final String snowStormRefsetName = determineRefsetName(snowstormRefsetVersionData);
+            final String snowStormRefsetBranch = snowstormRefsetVersionData.getBranchPath();
+            final Edition snowStormRefsetEdition= snowstormRefsetVersionData.getEdition();
+            final String snowStormRefsetModuleId = refsetToModuleMap.get(refsetId);
+
+            // Start comparison
+            boolean modificationMade = false;
+
+            if (isDifferentAttribute(refsetId + " / " + versionDate, "Refset name ", dbRefset.getName(), snowStormRefsetName)) {
+                addedRefset.setName(snowStormRefsetName);
+                modificationMade = true;
+            }
+
+            if (isDifferentAttribute(refsetId + " / " + versionDate, "Refset branch ", dbRefset.getBranchPath(), snowStormRefsetBranch)) {
+                addedRefset.setBranchPath(snowStormRefsetBranch);
+                modificationMade = true;
+            }
+
+            if (isDifferentAttribute(refsetId + " / " + versionDate, "Refset moduleId ", dbRefset.getModuleId(), snowStormRefsetModuleId)) {
+                addedRefset.setModuleId(snowStormRefsetModuleId);
+                modificationMade = true;
+            }
+
+            if (modificationMade) {
+                dbHandler.updateRefset(addedRefset);
+
+                modifiedVersions.add(addedRefset.getVersionDate());
+                
+                // TODO: Still need to post-process?
+                postRefsetProcessing(addedRefset, snowstormRefsetVersionData.getEdition());
+
+            }
+        }
+
+        return modifiedVersions;
     }
 
-    private Refset compareAndUpdateRefsetDifferences(Refset existingRefset, SyncRefsetMetadata refsetSnowstormData) throws Exception {
-
-        /* Found existing Edition. Compare the values to determine if something changed, and if so, update the edition accordingly */
-        boolean modificationMade = false;
-
-        final boolean isActiveSnowstormRefset = refsetSnowstormData.getRefsetNode().get("active").asBoolean();
-        final String snowstormRefsetNarrative = refsetSnowstormData.getRefsetNode().has("narrative") ? refsetSnowstormData.getRefsetNode().get("narrative").asText() : "";
-
-        // TODO: This is immutable, so nothing to check?
-        /*-
-        final String snowstormRefsetName = determineRefsetName(refsetSnowstormData);
-        if (updateAttribute("Refset name", existingRefset.getName(), snowstormRefsetName)) {
-        
-            existingRefset.setName(snowstormRefsetName);
-            modificationMade = true;
-        }
-        */
-
-        // TODO: This is immutable, so nothing to check?
-        /*-
-        final String snowstormModuleId = refsetSnowstormData.getRefsetNode().get("moduleId").asText();
-        if (updateAttribute("Refset moduleId", existingRefset.getModuleId(), snowstormModuleId)) {
-        
-            existingRefset.setModuleId(snowstormModuleId);
-            modificationMade = true;
-        }
-        */
-
-        if (isDifferentAttribute(existingRefset.getEditionShortName(), "Refset active", existingRefset.isActive(), isActiveSnowstormRefset)) {
-
-            existingRefset.setActive(isActiveSnowstormRefset);
-            modificationMade = true;
-        }
-
-        // TODO: This gets populated from branch, so nothing to check?
-        if (isDifferentAttribute(existingRefset.getEditionShortName(), "Refset version", existingRefset.getVersionDate().getTime(), refsetSnowstormData.getVersion().getTime())) {
-
-            existingRefset.setVersionDate(refsetSnowstormData.getVersion());
-            modificationMade = true;
-        }
-
-        // TODO: This comes from RTT, so nothing to check?
-        // Value may come from project.txt file (Rtt), so don't overwrite if what is on Snowstorm is empty.
-        if (!snowstormRefsetNarrative.isBlank() && isDifferentAttribute(existingRefset.getEditionShortName(), "Refset narrative", existingRefset.getNarrative(), snowstormRefsetNarrative)) {
-
-            existingRefset.setNarrative(snowstormRefsetNarrative);
-            modificationMade = true;
-        }
-
-        // TODO: Determine if need to review Type given managed from RT2... and if managed here, need update on Snow?
-        if (modificationMade) {
-
-            Refset updatedRefset = dbHandler.updateRefset(existingRefset);
-
-            return updatedRefset;
-
-        } else {
-
-            return null;
-        }
-
-    }
-
-    private String determineRefsetName(SyncRefsetMetadata refsetSnowstormData) throws Exception {
+   private String determineRefsetName(SyncRefsetMetadata refsetSnowstormData) throws Exception {
 
         String refsetName;
 

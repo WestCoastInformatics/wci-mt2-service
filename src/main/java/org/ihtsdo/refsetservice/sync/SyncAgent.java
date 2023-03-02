@@ -47,7 +47,7 @@ public abstract class SyncAgent {
     /** Testing options. */
     private static boolean testing = true;
 
-    protected static String testingEditionShortName = "SNOMEDCT-BE";
+    protected static String testingEditionShortName = "SNOMEDCT-US";
 
     protected static String testingRefset = null; // To test entire edition
     // protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
@@ -110,14 +110,6 @@ public abstract class SyncAgent {
         }
 
         postCodeSystemProcessing();
-
-        // Update imported refsets with RTT-based metadata (as defined in parseRttData())
-        if (!isProductionSystem) {
-
-            SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
-
-            initializer.initialize(getDeveleperTestingEdition(), service.getAll(Edition.class), service.getAll(Refset.class));
-        }
 
         // Post processing
         AuditEntryHelper.syncEntry(startDate);
@@ -183,6 +175,7 @@ public abstract class SyncAgent {
 
     }
 
+    // TODO: Determine if needed
     // Organization is done at this point. Check if Developer Edition. If not, create a default UAT project
     private static void postCodeSystemProcessing() throws Exception {
         try (final TerminologyService service = new TerminologyService()) {
@@ -277,7 +270,7 @@ public abstract class SyncAgent {
 
     public static Boolean getIsIgnoreCoreRefsets() {
 
-        return isIgnoreCoreRefsets == null ? true : isIgnoreCoreRefsets;
+        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
     }
 
     public static Boolean getIsProductionSystem() {

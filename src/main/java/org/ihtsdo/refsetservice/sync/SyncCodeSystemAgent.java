@@ -264,11 +264,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // Process one Organization per Edition.
         for (String shortName : matchingEditionShortNames) {
 
-            if (!snowstormShortNameCodeSystemMap.containsKey(shortName)) {
-                logger.info(shortName + " is not being compared for changes in Edition as not filtered in snowstorm");
-                continue;
-            }
-
             // Find associated DB edition
             List<Edition> matchingEditions = dbEditions.stream().filter(e -> e.isActive() && e.getShortName().equals(shortName)).collect(Collectors.toList());
             Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
@@ -281,6 +276,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             final String snowStormMaintainerType = utilities.determineMaintainerType(codeSystem, snowStormEditionName);
             final Set<String> snowStormEditionModules = utilities.identifyModules(shortName, snowStormEditionName, snowStormBranch, codeSystem);
 
+            // start comparison
             boolean modificationMade = false;
 
             if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), snowStormEditionName)) {
