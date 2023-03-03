@@ -45,7 +45,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = true;
+    private static boolean testing = false;
 
     protected static String testingEditionShortName = "SNOMEDCT-US";
 
@@ -85,7 +85,7 @@ public abstract class SyncAgent {
 
     public static void sync(TerminologyService service) throws Exception {
 
-        final Date startDate = new Date();
+        final long startOperationStartTime = new Date().getTime();
 
         if (isProductionSystem == null) {
 
@@ -112,12 +112,13 @@ public abstract class SyncAgent {
         postCodeSystemProcessing();
 
         // Post processing
-        AuditEntryHelper.syncEntry(startDate);
-
+        AuditEntryHelper.syncEntry(new Date(startOperationStartTime));
         utilities.emailSyncResults();
 
         logger.info(statistics.printStatistics());
         logger.info("Completed Syncing with Snowstorm");
+
+        utilities.logProcessingTime("FULL", startOperationStartTime);
     }
 
     private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
@@ -144,7 +145,7 @@ public abstract class SyncAgent {
         testingRefset = refsetId;
         testingEditionShortName = editionShortName;
 
-        RefsetMemberService.clearUniqueRefsetVersions(refsetId);
+        RefsetMemberService.clearRefsetVersionsWithChanges(refsetId);
     }
 
     protected static void clearPreviousRun() {
@@ -229,7 +230,12 @@ public abstract class SyncAgent {
     }
 
     protected boolean isDifferentAttribute(String shortName, String attributeName, Object databaseAttribute, Object snowstormAttribute) {
-
+        logger.debug("ppp DB: " + databaseAttribute);
+        logger.debug("ppp Sn: " + snowstormAttribute);
+        logger.debug("ppp databaseAttribute.equals(snowstormAttribute: " +  databaseAttribute.equals(snowstormAttribute));
+        logger.debug("ppp snowstormAttribute.equals(databaseAttribute: " +  snowstormAttribute.equals(databaseAttribute));
+        
+        
         if (snowstormAttribute == null && databaseAttribute == null) {
             // Both null, no difference
             return false;
@@ -271,6 +277,7 @@ public abstract class SyncAgent {
     public static Boolean getIsIgnoreCoreRefsets() {
 
         return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+        // return true; 
     }
 
     public static Boolean getIsProductionSystem() {

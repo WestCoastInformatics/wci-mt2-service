@@ -294,7 +294,7 @@ public class RefsetMemberService {
         }
 
         final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?ecl=%5E%20" + refset.getRefsetId() + "&offset=0&limit=10000"
-            + (searchAfter.contentEquals("") ? "" : "&searchAfter=" + searchAfter);
+                + (searchAfter.contentEquals("") ? "" : "&searchAfter=" + searchAfter);
 
         ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
         lookupParameters.setGetMembershipInformation(true);
@@ -666,8 +666,8 @@ public class RefsetMemberService {
         snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
 
         String url = SnowstormConnection.BASE_URL + "multisearch/descriptions?active=true&offset=0&limit=10000" + "&ecl=" + StringUtility.encodeValue(ecl) + "&term="
-            + StringUtility.encodeValue(snowstormQuery);
-        
+                + StringUtility.encodeValue(snowstormQuery);
+
         logger.debug("searchMultisearchDescriptions: Search Refset Concepts descriptions URL: " + url);
 
         try (Response response = SnowstormConnection.getResponse(url)) {
@@ -723,8 +723,8 @@ public class RefsetMemberService {
         final List<String> refsetFiles = new ArrayList<>();
         final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-        final Query query =
-            service.getEntityManager().createNativeQuery("SELECT refsetId, MAX(versionDate) FROM refsets WHERE project_Id = :projectId AND versionStatus = 'PUBLISHED' GROUP BY project_id, refsetId")
+        final Query query = service.getEntityManager()
+                .createNativeQuery("SELECT refsetId, MAX(versionDate) FROM refsets WHERE project_Id = :projectId AND versionStatus = 'PUBLISHED' GROUP BY project_id, refsetId")
                 .setParameter("projectId", projectId);
         final List<Object[]> queryResults = query.getResultList();
 
@@ -782,7 +782,7 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     @SuppressWarnings({
-        "null", "unused"
+            "null", "unused"
     })
     public static String exportRefsetRf2(final TerminologyService service, final String refsetInternalId, final String type, final String languageId, final String fileNameDate,
         final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames) throws Exception {
@@ -805,7 +805,7 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     @SuppressWarnings({
-        "null", "unused"
+            "null", "unused"
     })
     private static String exportRefsetRf2File(final TerminologyService service, final String refsetInternalId, final String type, final String languageId, final String fileNameDate,
         final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames) throws Exception {
@@ -861,9 +861,9 @@ public class RefsetMemberService {
                     // after downloading it, store it on S3
 
                     // Generate file on SnowS
-                    final String entityString =
-                        "{\"refsetIds\": [\"" + refset.getRefsetId() + "\"],  \"branchPath\": \"" + getBranchPath(refset) + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
-                            + fileNameDate + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
+                    final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId() + "\"],  \"branchPath\": \"" + getBranchPath(refset)
+                            + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"" + fileNameDate
+                            + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
                             + (startEffectiveTime == null ? "" : ",  \"startEffectiveTime\": \"" + startEffectiveTime + "\"")
                             + (transientEffectiveTime == null ? "" : ",  \"transientEffectiveTime\": \"" + transientEffectiveTime + "\"") + "}";
 
@@ -932,7 +932,7 @@ public class RefsetMemberService {
      * @throws Exception the exception
      */
     @SuppressWarnings({
-        "null", "unused"
+            "null", "unused"
     })
     public static String exportRefsetRf2Delta(final TerminologyService service, final User user, final String refsetInternalId, final String type, final String languageId, final String fileNameDate,
         final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata, boolean withNames) throws Exception {
@@ -978,7 +978,7 @@ public class RefsetMemberService {
                     String candidateVersion = entry.get("date");
 
                     if (candidateVersion != null && candidateVersion.replaceAll("-", "").compareTo(startEffectiveTime) > 0
-                        && candidateVersion.replaceAll("-", "").compareTo(transientEffectiveTime) <= 0) {
+                            && candidateVersion.replaceAll("-", "").compareTo(transientEffectiveTime) <= 0) {
 
                         versionsInScope.add(candidateVersion);
                         versionToRefsetInternalId.put(candidateVersion, entry.get("refsetInternalId"));
@@ -1026,10 +1026,10 @@ public class RefsetMemberService {
 
                         // Base-SnowVersion file is not on S3, so generate it, and after downloading it, store it on S3
                         final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId() + "\"],  \"branchPath\": \"" + refsetVersion.getBranchPath()
-                            + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"" + versionInScope.replaceAll("-", "")
-                            + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
-                            + (versionInScope == null ? "" : ",  \"startEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"")
-                            + (versionInScope == null ? "" : ",  \"transientEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"") + "}";
+                                + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"" + versionInScope.replaceAll("-", "")
+                                + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
+                                + (versionInScope == null ? "" : ",  \"startEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"")
+                                + (versionInScope == null ? "" : ",  \"transientEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"") + "}";
 
                         logger.info("generating file from snowstorm" + entityString);
 
@@ -1053,7 +1053,7 @@ public class RefsetMemberService {
                     // append the contents of this snapshot file to the fileContentsArray
                     FileUtility.unzip(localSnowGeneratedFilePath, localSnowGeneratedFilePath.replace(".zip", ""));
                     String fileNamePath = localSnowGeneratedFilePath.replace(".zip", "") + File.separator + "SnomedCT_Export" + File.separator + "Snapshot" + File.separator + "Refset" + File.separator
-                        + "Content" + File.separator;
+                            + "Content" + File.separator;
                     String[] files = new File(fileNamePath).list();
 
                     if (files != null) {
@@ -1512,8 +1512,8 @@ public class RefsetMemberService {
         // print the sctids file
         try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsFilePath);
 
-            final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
-            final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
+                final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
+                final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
 
             sctidsWriter.print(fileLines);
 
@@ -1621,8 +1621,8 @@ public class RefsetMemberService {
 
             // print the sctids file
             try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
-                final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
-                final PrintWriter freesetWriter = new PrintWriter(sctidsOutputStreamWriter);) {
+                    final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
+                    final PrintWriter freesetWriter = new PrintWriter(sctidsOutputStreamWriter);) {
 
                 freesetWriter.print(fileLines);
             }
@@ -1837,8 +1837,8 @@ public class RefsetMemberService {
 
         // print the sctids file
         try (final FileOutputStream fileOutputStream = new FileOutputStream(outputPath);
-            final OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
-            final PrintWriter printWriter = new PrintWriter(outputStreamWriter);) {
+                final OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+                final PrintWriter printWriter = new PrintWriter(outputStreamWriter);) {
 
             printWriter.print(fileLines);
             return outputPath;
@@ -2292,7 +2292,7 @@ public class RefsetMemberService {
             }
 
         }
-        
+
         final String membersEcl = encodedCaret + refset.getRefsetId();
         final String activeConceptsEcl = encodedLeftBrace + encodedLeftBrace + "C" + encodedSpace + "active=1" + encodedRightBrace + encodedRightBrace;
         final String inactiveConceptsEcl = encodedLeftBrace + encodedLeftBrace + "C" + encodedSpace + "active=0" + encodedRightBrace + encodedRightBrace;
@@ -3584,7 +3584,7 @@ public class RefsetMemberService {
     private static void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
 
         final String baseUrl = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&active=true&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
-            + "&offset=0&referencedComponentId=";
+                + "&offset=0&referencedComponentId=";
         final List<Concept> conceptsToProcess = new ArrayList<>();
         String conceptIds = "";
         int snowstormCallCount = 0;
@@ -3709,7 +3709,10 @@ public class RefsetMemberService {
         boolean hasMorePages = true;
         final String acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
 
+        logger.debug("kkk with " + branch + " and " + refsetId);
+
         while (hasMorePages) {
+            logger.debug("kkk1");
 
             String url = SnowstormConnection.BASE_URL + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
             logger.debug("getRefsetMembers URL: " + url);
@@ -3723,6 +3726,7 @@ public class RefsetMemberService {
                 }
 
                 final String resultString = response.readEntity(String.class);
+                logger.debug("kkk2");
 
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -3733,6 +3737,7 @@ public class RefsetMemberService {
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString.toString());
                 JsonNode conceptNodeBatch = root.get("items");
+                logger.debug("kkk3");
 
                 searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asText() : "");
 
@@ -3752,6 +3757,8 @@ public class RefsetMemberService {
 
                 Date versionLatestDate = null;
 
+                logger.debug("kkk4");
+
                 while (iterator.hasNext()) {
 
                     memberNode = iterator.next();
@@ -3768,40 +3775,80 @@ public class RefsetMemberService {
                     }
 
                 }
+                logger.debug("kkk versionLatestDate: " + versionLatestDate);
+                logger.debug("kkk versionLatestDate: " + versionLatestDate);
 
                 if (refsetLatestDate == null || refsetLatestDate.before(versionLatestDate)) {
 
                     refsetLatestDate = versionLatestDate;
                 }
+                logger.debug("kkk5 with refsetLatestDate: " + refsetLatestDate);
 
             } catch (Exception e) {
 
                 throw new Exception("Caught during defining refset version on: " + refsetId + " --- " + branch + "\n" + e.getStackTrace().toString());
             }
+            logger.debug("kkk6 with refsetLatestDate: " + refsetLatestDate);
 
         }
+        logger.debug("kkk7 with refsetLatestDate: " + refsetLatestDate);
 
         // No members with release dates, so use release date of refset concept itself.
         if (refsetLatestDate == null) {
 
             refsetLatestDate = getRefsetConceptReleaseDate(refsetId, branch);
         }
+        logger.debug("kkk8 with refsetLatestDate: " + refsetLatestDate);
 
         // See if version already exists.
         if (!refsetToPublishedVersionMap.containsKey(refsetId)) {
+            logger.debug("kkk9 with refsetToPublishedVersionMap: " + refsetLatestDate);
 
             refsetToPublishedVersionMap.put(refsetId, new ArrayList<Date>());
         }
+        logger.debug("kkk0 with refsetToPublishedVersionMap: " + refsetLatestDate);
+        /*-
+         * ORIG
+         * 
+         * 
+         if (refsetToPublishedVersionMap.get(refsetId).contains(refsetLatestDate)) {
+        
+            return null;
+        } else {
+        
+            refsetToPublishedVersionMap.get(refsetId).add(refsetLatestDate);
+            return refsetLatestDate;
+        }
+        
+         */
 
         if (refsetToPublishedVersionMap.get(refsetId).contains(refsetLatestDate)) {
-
+            logger.debug("kkk return null");
             return null;
         } else {
 
             refsetToPublishedVersionMap.get(refsetId).add(refsetLatestDate);
+            logger.debug("kkk return " + refsetLatestDate);
             return refsetLatestDate;
         }
 
+        /*-
+         * REPLACEMENT
+         *
+         *
+        if (!refsetToPublishedVersionMap.get(refsetId).contains(refsetLatestDate)) {
+            refsetToPublishedVersionMap.get(refsetId).add(refsetLatestDate);
+        }
+        
+        List<Date> versionList = refsetToPublishedVersionMap.get(refsetId);
+        
+        if (refsetLatestDate.getTime() != versionList.get(versionList.size() - 1).getTime()) {
+            throw new Exception("This shouldn't be so and if is, need to resolve low level");
+        }
+        logger.debug("kkk return refsetToPublishedVersionMap.get(refsetId).get(refsetToPublishedVersionMap.get(refsetId).size() - 1))"
+                + refsetToPublishedVersionMap.get(refsetId).get(refsetToPublishedVersionMap.get(refsetId).size() - 1));
+        return refsetToPublishedVersionMap.get(refsetId).get(refsetToPublishedVersionMap.get(refsetId).size() - 1);
+        */
     }
 
     private static Date getRefsetConceptReleaseDate(String refsetId, String branch) throws Exception {
@@ -4553,7 +4600,7 @@ public class RefsetMemberService {
 
         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
         final String memberSearchUrlBase =
-            SnowstormConnection.BASE_URL + branchPath + "/members?referenceSet=" + refset.getRefsetId() + "&offset=0&active=true" + "&limit=" + URL_MAX_CHAR_LENGTH + "&referencedComponentId=";
+                SnowstormConnection.BASE_URL + branchPath + "/members?referenceSet=" + refset.getRefsetId() + "&offset=0&active=true" + "&limit=" + URL_MAX_CHAR_LENGTH + "&referencedComponentId=";
         final ArrayNode memberDeleteArray = mapper.createArrayNode();
         final ArrayNode memberUpdateArray = mapper.createArrayNode();
         final List<String> permanentFullConceptList = Arrays.asList(conceptIds.split(","));
@@ -4624,9 +4671,9 @@ public class RefsetMemberService {
                 else {
 
                     final ObjectNode memberBody = mapper.createObjectNode().put("active", false).put("effectiveTime", conceptNode.get("effectiveTime").asText()).put("memberId", membershipId)
-                        .put("moduleId", conceptNode.get("moduleId").asText()).put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
-                        .put("refsetId", conceptNode.get("refsetId").asText()).put("released", released).put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
-                        .set("additionalFields", conceptNode.get("additionalFields"));
+                            .put("moduleId", conceptNode.get("moduleId").asText()).put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
+                            .put("refsetId", conceptNode.get("refsetId").asText()).put("released", released).put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
+                            .set("additionalFields", conceptNode.get("additionalFields"));
 
                     memberUpdateArray.add(memberBody);
                 }
@@ -4750,7 +4797,7 @@ public class RefsetMemberService {
                 final String conceptId = memberBody.get("referencedComponentId").asText();
 
                 logger.error("Inactivate Refset Member call to url '" + url + "' for refset '" + refsetId + "' and concept '" + conceptId + "' and member '" + memberId + "' wasn't successful. "
-                    + response.toString());
+                        + response.toString());
                 unchangedConcepts.add(memberId);
             }
 
@@ -5470,7 +5517,7 @@ public class RefsetMemberService {
 
                         // when searching for members we only want concepts whose membership is active (though the concept itself can be inactive)
                         final String url =
-                            SnowstormConnection.BASE_URL + refset.getBranchPath() + "/members?referenceSet=" + refset.getRefsetId() + "&active=true&referencedComponentId=" + conceptIdToChange;
+                                SnowstormConnection.BASE_URL + refset.getBranchPath() + "/members?referenceSet=" + refset.getRefsetId() + "&active=true&referencedComponentId=" + conceptIdToChange;
 
                         logger.debug("modifyUpgradeConcept Member list URL: " + url);
 
@@ -5694,15 +5741,15 @@ public class RefsetMemberService {
             final ResultList<UpgradeInactiveConcept> inactiveConceptList = service.find("refsetId: " + refset.getRefsetId(), null, UpgradeInactiveConcept.class, null);
 
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
-                
+
                 if (!conceptIdsToRemove.contains("," + inactiveConcept.getCode() + ",") && inactiveConcept.isStillMember()) {
                     conceptIdsToRemove += inactiveConcept.getCode() + ",";
                 }
-                
+
                 for (UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
 
                     if (!replacementConcept.isAdded() && !replacementConcept.isExistingMember()) {
-                        
+
                         if (!conceptIdsToAdd.contains(replacementConcept.getCode())) {
                             conceptIdsToAdd.add(replacementConcept.getCode());
                         }
@@ -5715,7 +5762,7 @@ public class RefsetMemberService {
 
             // add the concepts as members to the refset
             unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdsToAdd);
-            
+
             // remove the inactive concepts from the refset
             conceptIdsToRemove = StringUtils.removeEnd(conceptIdsToRemove, ",");
             unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToRemove);
@@ -5723,7 +5770,7 @@ public class RefsetMemberService {
             // to make searching easier
             final Set<String> removedConcepts = new HashSet<String>(Arrays.asList(conceptIdsToRemove.split(",")));
             removedConcepts.removeAll(unremovedConcepts);
-            
+
             for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
                 boolean changeInactive = false;
@@ -5745,15 +5792,15 @@ public class RefsetMemberService {
                 if (changeInactive) {
                     inactiveConcept.setReplaced(true);
                 }
-                
+
                 if (removedConcepts.contains(inactiveConcept.getCode())) {
-                    
+
                     inactiveConcept.setStillMember(false);
                     changeInactive = true;
                 }
-                
+
                 if (changeInactive) {
-                    
+
                     service.update(inactiveConcept);
                     logger.debug("addAllUpgradeReplacementConcepts: inactive concept updated: " + inactiveConcept.getCode());
                 }
@@ -5765,11 +5812,11 @@ public class RefsetMemberService {
                 if (unaddedConcepts.size() > 0) {
                     message = "The concepts " + unaddedConcepts + " were unable to be added. ";
                 }
-                
+
                 if (unremovedConcepts.size() > 0) {
                     message += "The inactive concepts " + unremovedConcepts + " were unable to be removed.";
                 }
-                
+
             } else {
                 message = "All changes made successfully";
             }
@@ -5964,28 +6011,29 @@ public class RefsetMemberService {
             returnMap.put("memberOfRefset", "true");
             returnMap.put("definitionExceptionType", activeConcept.getDefinitionExceptionType());
             returnMap.put("hasChildren", "false"); // activeConcept.getHasChildren() + "");
-            Map<String, String> preferedTermEnglish = null; //activeConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
-            
+            Map<String, String> preferedTermEnglish = null; // activeConcept.getDescriptions().stream().filter(f ->
+                                                            // f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
+
             boolean foundDescription = false;
-            
+
             for (final Map<String, String> description : activeConcept.getDescriptions()) {
-                
+
                 if (description == null) {
                     continue;
                 }
-                
+
                 if (description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
-                    
+
                     preferedTermEnglish = description;
                     foundDescription = true;
                     break;
                 }
             }
-            
+
             if (!foundDescription) {
                 logger.error("Could not get english description for concept ID: " + activeConceptId);
             }
-            
+
             returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : activeConcept.getName().strip());
 
             // check to see if this member is also a member of the comparison refset
@@ -6034,12 +6082,16 @@ public class RefsetMemberService {
         return status;
     }
 
-    public static void clearUniqueRefsetVersions(String refsetId) {
+    public static void clearRefsetVersionsWithChanges(String refsetId) {
 
         if (refsetToPublishedVersionMap.containsKey(refsetId)) {
 
             refsetToPublishedVersionMap.get(refsetId).clear();
         }
 
+    }
+
+    public static void clearVersionsWithChanges() {
+        refsetToPublishedVersionMap.clear();
     }
 }

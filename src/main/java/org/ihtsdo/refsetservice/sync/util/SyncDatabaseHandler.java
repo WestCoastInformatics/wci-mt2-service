@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class SyncDatabaseHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(SyncUtilities.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncDatabaseHandler.class);
 
     private SyncUtilities utilities;
 
