@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -36,6 +35,8 @@ public abstract class SyncAgent {
 
     protected static final SyncStatistics statistics = new SyncStatistics();
 
+    protected abstract void sync() throws Exception;
+
     /** Execution options. */
     private static Boolean isProductionSystem = null;
 
@@ -54,7 +55,7 @@ public abstract class SyncAgent {
     // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
 
-    protected static Edition developerTestingEdition = null;
+    protected static String developerTestingEditionShortName = null;
 
     protected static Organization develeperTestingOranization = null;
 
@@ -65,10 +66,7 @@ public abstract class SyncAgent {
     // ShortName to Project
     protected static final Map<String, Project> defaultEditionProjects = new HashMap<>();
 
-    /** Abstract Method **/
-    public abstract void sync() throws Exception;
-
-    private static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
+    protected static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
 
     // TODO: Define when called vs normal one
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
@@ -100,19 +98,6 @@ public abstract class SyncAgent {
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
         agent.sync();
-
-        logger.info(statistics.printStatistics());
-        logger.info("Completed Syncing with Snowstorm");
-
-
-        int a = 0;
-        if (a < 1) {
-            logger.info(statistics.printStatistics());
-            logger.error("Stopping here on purpose");
-            return;
-        }
-
-        postCodeSystemProcessing();
 
         // Post processing
         AuditEntryHelper.syncEntry(new Date(startOperationStartTime));
@@ -153,7 +138,7 @@ public abstract class SyncAgent {
 
     protected static void clearPreviousRun() {
 
-        developerTestingEdition = null;
+        developerTestingEditionShortName = null;
 
         filteredCodeSystems.clear();
 
@@ -175,59 +160,6 @@ public abstract class SyncAgent {
             List<Project> defaultProjects = service.getAll(Project.class).stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default")))
                     .collect(Collectors.toList());
             defaultProjects.stream().forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
-        }
-
-    }
-
-    // TODO: Determine if needed
-    // Organization is done at this point. Check if Developer Edition. If not, create a default UAT project
-    private static void postCodeSystemProcessing() throws Exception {
-        try (final TerminologyService service = new TerminologyService()) {
-
-            List<Edition> allEditions = service.getAll(Edition.class);
-            int a = 0;
-            if (a < 1) {
-                return;
-            }
-
-            for (Edition syncedEdition : allEditions) {
-                if (DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(syncedEdition.getShortName())) {
-
-                    // Support Developer Edition
-                    if (getIsProductionSystem()) {
-
-                        throw new Exception("Can't have a WCI Edition on a Prod instance");
-                    }
-
-                    if (developerTestingEdition != null) {
-
-                        throw new Exception("Can't have two WCI Editions with new one having shortName: " + syncedEdition.getShortName());
-                    } else {
-
-                        // identified WCI Edition
-                        developerTestingEdition = syncedEdition;
-                    }
-
-                } else {
-
-                    // Create a Default Project for the edition
-                    if (!defaultEditionProjects.containsKey(syncedEdition.getShortName())) {
-
-                        final String projectName = syncedEdition.getName() + " Default Project";
-                        final String projectDescription =
-                                "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
-
-                        // Create default project
-                        final Project project = dbHandler.addProject(projectName, projectDescription, syncedEdition);
-                        defaultEditionProjects.put(syncedEdition.getShortName(), project);
-                    }
-                }
-            }
-        }
-
-        // TODO: For now, ignore this, but shouldn't ever throw exception at this point
-        if (developerTestingEdition == null && !getIsProductionSystem()) {
-            // throw new Exception("Must have a WCI Organization on a non-Prod instance");
         }
 
     }
@@ -260,9 +192,9 @@ public abstract class SyncAgent {
 
     }
 
-    public static Edition getDeveleperTestingEdition() {
+    public static String getDeveleperTestingEditionShortName() {
 
-        return developerTestingEdition;
+        return developerTestingEditionShortName;
     }
 
     public Map<String, Project> getDefaultEditionProjects() {

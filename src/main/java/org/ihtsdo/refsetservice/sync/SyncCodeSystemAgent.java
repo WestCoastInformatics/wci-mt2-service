@@ -13,6 +13,7 @@ import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
@@ -48,13 +49,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
         analyzeCodeSystems(organizationJsonRootNode);
 
         // Sync Organizations reviewing which are new (creating them), missing (removing them), and unchanged.
-        analyzeOrganizations();
+        analyzeOrganizationsAndEditions();
 
         // Sync Editions reviewing which are new (creating them), missing (removing them), modified (removing them and then creating them), and unchanged.
-        List<String> existingShortNames = analyzeEditions();
+        List<String> existingInBothShortNames = analyzeEditions();
 
         // Review both DB & Snowstorm editon-to-org map to ensure consistency
-        compareEditionOrganizationMaps(existingShortNames);
+        compareEditionOrganizationMaps(existingInBothShortNames);
     }
 
     private void analyzeCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
@@ -72,7 +73,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         statistics.setCodeSystemsFiltered(filteredCodeSystems.size());
     }
 
-    private List<String> analyzeOrganizations() throws Exception {
+    private List<String> analyzeOrganizationsAndEditions() throws Exception {
         List<String> existingInBothShortNames = new ArrayList<>();
 
         final Map<String, String> dbActiveEditionShortNameToOrganizationNameMap = new HashMap<>();
@@ -99,6 +100,18 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                     activeDbOrganizationNameToEditionsShortNameMap.get(dbEdition.getOrganizationName()).add(dbEdition.getShortName());
 
+                    // Create a Default Project for the edition if doesnt' already exist
+                    if (!defaultEditionProjects.containsKey(dbEdition.getShortName())) {
+
+                        final String projectName = dbEdition.getName() + " Default Project";
+                        final String projectDescription =
+                                "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + dbEdition.getName() + ".";
+
+                        // Create default project
+                        final Project project = dbHandler.addProject(projectName, projectDescription, dbEdition);
+                        defaultEditionProjects.put(dbEdition.getShortName(), project);
+                    }
+
                 } else {
 
                     if (!inactiveDbOrganizationNameToEditionsShortNameMap.keySet().contains(dbEdition.getOrganizationName())) {
@@ -108,6 +121,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                     inactiveDbOrganizationNameToEditionsShortNameMap.get(dbEdition.getOrganizationName()).add(dbEdition.getShortName());
 
                 }
+
             }
             // Determine Snow edition-to-orgName bi-directional maps
             for (JsonNode codeSystem : filteredCodeSystems) {
@@ -194,6 +208,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // Based on filteredCodeSystems which already filtered for active code systems
             filteredCodeSystems.stream().forEach(cs -> termserverShortNameCodeSystemMap.put(cs.get("shortName").asText(), cs));
             termserverShortNames.addAll(termserverShortNameCodeSystemMap.keySet());
+            termserverShortNames.stream().filter(shortName -> DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(shortName)).forEach(shortName -> developerTestingEditionShortName = shortName);
 
             // Determine and create new editions (not in active nor in inactive DB editions)
             List<String> newShortNames = termserverShortNames.stream().filter(c -> !activeDbEditionShortNames.contains(c) && !inactiveDbEditionShortNames.contains(c)).collect(Collectors.toList());
@@ -470,11 +485,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return counter;
     }
 
-    protected Edition getDeveloperTestingEdition() {
-
-        return developerTestingEdition;
-    }
-
     /**
      * Populate editions.
      * 
@@ -509,4 +519,5 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return ((testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName) || utilities.isInternationalEdition(codeSystem));
 
     }
+
 }

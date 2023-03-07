@@ -779,7 +779,7 @@ public class SyncPropertyFileReader {
 
     }
 
-    public Map<String, String> getRefsetToProjectsInfoMap() {
+    public Map<String, String> getRefsetSctIdToProjectsInfoMap() {
 
         return refsetToProjectsInfoMap;
     }
