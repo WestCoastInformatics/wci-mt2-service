@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
-import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
@@ -45,7 +44,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
     protected static String testingEditionShortName = "SNOMEDCT-US";
 
@@ -101,6 +100,10 @@ public abstract class SyncAgent {
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
         agent.sync();
+
+        logger.info(statistics.printStatistics());
+        logger.info("Completed Syncing with Snowstorm");
+
 
         int a = 0;
         if (a < 1) {
@@ -232,10 +235,9 @@ public abstract class SyncAgent {
     protected boolean isDifferentAttribute(String shortName, String attributeName, Object databaseAttribute, Object snowstormAttribute) {
         logger.debug("ppp DB: " + databaseAttribute);
         logger.debug("ppp Sn: " + snowstormAttribute);
-        logger.debug("ppp databaseAttribute.equals(snowstormAttribute: " +  databaseAttribute.equals(snowstormAttribute));
-        logger.debug("ppp snowstormAttribute.equals(databaseAttribute: " +  snowstormAttribute.equals(databaseAttribute));
-        
-        
+        logger.debug("ppp databaseAttribute.equals(snowstormAttribute: " + databaseAttribute.equals(snowstormAttribute));
+        logger.debug("ppp snowstormAttribute.equals(databaseAttribute: " + snowstormAttribute.equals(databaseAttribute));
+
         if (snowstormAttribute == null && databaseAttribute == null) {
             // Both null, no difference
             return false;
@@ -276,8 +278,8 @@ public abstract class SyncAgent {
 
     public static Boolean getIsIgnoreCoreRefsets() {
 
-        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
-        // return true; 
+        // return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+        return true;
     }
 
     public static Boolean getIsProductionSystem() {

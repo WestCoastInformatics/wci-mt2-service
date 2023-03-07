@@ -149,7 +149,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type) {
+    public Refset addRefset(String name, String refsetId, String moduleId, long versionDate, String type) {
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
@@ -162,7 +162,7 @@ public class SyncDatabaseHandler {
             refset.setVersionStatus("PUBLISHED");
             refset.setWorkflowStatus("PUBLISHED");
             refset.setActive(true);
-            refset.setVersionDate(versionDate);
+            refset.setVersionDate(new Date(versionDate));
             refset.setType(type);
             refset.setLatestPublishedVersion(false);
 
@@ -476,10 +476,10 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Refset updateRefsetVersionStatus(String refsetId, Date versionDate, boolean isActive) {
+    public Refset updateRefsetVersionStatus(String refsetId, long versionDate, boolean isActive) {
 
         try (final TerminologyService service = new TerminologyService()) {
-        
+
             List<Refset> allRefsets = service.getAll(Refset.class);
             List<Refset> matchingRefsets = allRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().equals(versionDate)).collect(Collectors.toList());
             utilities.validateMatches(matchingRefsets, refsetId + " / " + versionDate);
@@ -601,7 +601,7 @@ public class SyncDatabaseHandler {
 
                 Refset updatedRefsetVersion = updateRefset(refsetVersion);
 
-                logger.info("Updated edition: " + updatedRefsetVersion.getId() + " to " + isActive + "  (" + updatedRefsetVersion.getRefsetId() + " / " + updatedRefsetVersion.getVersionDate() + ") ");
+                logger.info("Updated refset version status: " + updatedRefsetVersion.getId() + " to " + isActive + "  (" + updatedRefsetVersion.getRefsetId() + " / " + updatedRefsetVersion.getVersionDate() + ") ");
 
                 updatedRefsetVersions.add(updatedRefsetVersion);
             }

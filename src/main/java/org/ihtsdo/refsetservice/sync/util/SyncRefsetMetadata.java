@@ -1,6 +1,5 @@
 package org.ihtsdo.refsetservice.sync.util;
 
-import java.util.Date;
 import java.util.Set;
 
 import org.ihtsdo.refsetservice.model.Edition;
@@ -13,13 +12,13 @@ public class SyncRefsetMetadata {
 
     private Edition edition;
 
-    private Set<Date> allRefsetVersions;
+    private Set<Long> allRefsetVersions;
 
-    private Date version;
+    private long version;
 
     private String branchPath;
 
-    public SyncRefsetMetadata(JsonNode refsetNode, Edition edition, Set<Date> allRefsetVersions, Date version, String branchPath) {
+    public SyncRefsetMetadata(JsonNode refsetNode, Edition edition, Set<Long> allRefsetVersions, long version, String branchPath) {
 
         this.refsetNode = refsetNode;
         this.edition = edition;
@@ -48,22 +47,22 @@ public class SyncRefsetMetadata {
         this.edition = edition;
     }
 
-    protected Set<Date> getAllRefsetVersions() {
+    protected Set<Long> getAllRefsetVersions() {
 
         return allRefsetVersions;
     }
 
-    protected void setAllRefsetVersions(Set<Date> allRefsetVersions) {
+    protected void setAllRefsetVersions(Set<Long> allRefsetVersions) {
 
         this.allRefsetVersions = allRefsetVersions;
     }
 
-    public Date getVersion() {
+    public long getVersion() {
 
         return version;
     }
 
-    protected void setVersion(Date version) {
+    protected void setVersion(long version) {
 
         this.version = version;
     }

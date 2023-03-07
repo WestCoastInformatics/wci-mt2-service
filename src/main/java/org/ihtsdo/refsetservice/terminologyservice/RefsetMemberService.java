@@ -193,7 +193,7 @@ public class RefsetMemberService {
     /** Snomed code for prefrered term in English **/
     private static final String PREFERRED_TERM_EN = "900000000000509007PT";
 
-    private static final Map<String, List<Date>> refsetToPublishedVersionMap = new HashMap<>();
+    private static final Map<String, List<Long>> refsetToPublishedVersionMap = new HashMap<>();
 
     static {
 
@@ -3695,24 +3695,22 @@ public class RefsetMemberService {
         return conceptExceptionType;
     }
 
-    public static Date getLatestChangedVersionDate(String branch, String refsetId) throws Exception {
+    public static Long getLatestChangedVersionDate(String branch, String refsetId) throws Exception {
 
         // Get all members
         // EG: https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/SNOMEDCT-BE/members?referenceSet=1235&offset=0&limit=10
         // EG: https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/SNOMEDCT-BE/members?referenceSet=1235&offset=0&limit=10
+        logger.debug("bbb inside getLatestChangedVersionDate()");
 
         int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
         String searchAfter = "";
 
-        Date refsetLatestDate = null;
+        long refsetLatestDate = -1;
         final long start = System.currentTimeMillis();
         boolean hasMorePages = true;
         final String acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
 
-        logger.debug("kkk with " + branch + " and " + refsetId);
-
         while (hasMorePages) {
-            logger.debug("kkk1");
 
             String url = SnowstormConnection.BASE_URL + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
             logger.debug("getRefsetMembers URL: " + url);
@@ -3726,7 +3724,6 @@ public class RefsetMemberService {
                 }
 
                 final String resultString = response.readEntity(String.class);
-                logger.debug("kkk2");
 
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -3737,7 +3734,6 @@ public class RefsetMemberService {
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString.toString());
                 JsonNode conceptNodeBatch = root.get("items");
-                logger.debug("kkk3");
 
                 searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asText() : "");
 
@@ -3755,9 +3751,7 @@ public class RefsetMemberService {
 
                 JsonNode memberNode = null;
 
-                Date versionLatestDate = null;
-
-                logger.debug("kkk4");
+                long versionLatestVersion = -1;
 
                 while (iterator.hasNext()) {
 
@@ -3765,48 +3759,40 @@ public class RefsetMemberService {
 
                     if (memberNode.has("releasedEffectiveTime")) {
 
-                        Date memberEffectiveTime = SIMPLE_DATE_FORMAT.parse(memberNode.get("releasedEffectiveTime").asText());
+                        long memberEffectiveTime = SIMPLE_DATE_FORMAT.parse(memberNode.get("releasedEffectiveTime").asText()).getTime();
 
-                        if (versionLatestDate == null || versionLatestDate.before(memberEffectiveTime)) {
+                        if (versionLatestVersion < memberEffectiveTime) {
 
-                            versionLatestDate = memberEffectiveTime;
+                            versionLatestVersion = memberEffectiveTime;
                         }
 
                     }
 
                 }
-                logger.debug("kkk versionLatestDate: " + versionLatestDate);
-                logger.debug("kkk versionLatestDate: " + versionLatestDate);
 
-                if (refsetLatestDate == null || refsetLatestDate.before(versionLatestDate)) {
+                if (refsetLatestDate < versionLatestVersion) {
 
-                    refsetLatestDate = versionLatestDate;
+                    refsetLatestDate = versionLatestVersion;
                 }
-                logger.debug("kkk5 with refsetLatestDate: " + refsetLatestDate);
 
             } catch (Exception e) {
 
                 throw new Exception("Caught during defining refset version on: " + refsetId + " --- " + branch + "\n" + e.getStackTrace().toString());
             }
-            logger.debug("kkk6 with refsetLatestDate: " + refsetLatestDate);
 
         }
-        logger.debug("kkk7 with refsetLatestDate: " + refsetLatestDate);
 
         // No members with release dates, so use release date of refset concept itself.
-        if (refsetLatestDate == null) {
+        if (refsetLatestDate < 0) {
 
             refsetLatestDate = getRefsetConceptReleaseDate(refsetId, branch);
         }
-        logger.debug("kkk8 with refsetLatestDate: " + refsetLatestDate);
 
         // See if version already exists.
         if (!refsetToPublishedVersionMap.containsKey(refsetId)) {
-            logger.debug("kkk9 with refsetToPublishedVersionMap: " + refsetLatestDate);
 
-            refsetToPublishedVersionMap.put(refsetId, new ArrayList<Date>());
+            refsetToPublishedVersionMap.put(refsetId, new ArrayList<Long>());
         }
-        logger.debug("kkk0 with refsetToPublishedVersionMap: " + refsetLatestDate);
         /*-
          * ORIG
          * 
@@ -3840,7 +3826,7 @@ public class RefsetMemberService {
             refsetToPublishedVersionMap.get(refsetId).add(refsetLatestDate);
         }
         
-        List<Date> versionList = refsetToPublishedVersionMap.get(refsetId);
+        List<Long> versionList = refsetToPublishedVersionMap.get(refsetId);
         
         if (refsetLatestDate.getTime() != versionList.get(versionList.size() - 1).getTime()) {
             throw new Exception("This shouldn't be so and if is, need to resolve low level");
@@ -3851,7 +3837,7 @@ public class RefsetMemberService {
         */
     }
 
-    private static Date getRefsetConceptReleaseDate(String refsetId, String branch) throws Exception {
+    private static Long getRefsetConceptReleaseDate(String refsetId, String branch) throws Exception {
 
         final String url = SnowstormConnection.BASE_URL + "browser/" + branch + "/" + "concepts/" + refsetId;
 
@@ -3882,7 +3868,7 @@ public class RefsetMemberService {
 
             if (conceptNode.has("releasedEffectiveTime")) {
 
-                return SIMPLE_DATE_FORMAT.parse(conceptNode.get("releasedEffectiveTime").asText());
+                return SIMPLE_DATE_FORMAT.parse(conceptNode.get("releasedEffectiveTime").asText()).getTime();
             }
 
             return null;
