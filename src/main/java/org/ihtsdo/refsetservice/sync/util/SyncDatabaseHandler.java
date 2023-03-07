@@ -234,7 +234,7 @@ public class SyncDatabaseHandler {
             refsetParameters.setVersionNotes("");
             refsetParameters.setType(Refset.EXTENSIONAL);
             refsetParameters.setNarrative(narrative);
-            refsetParameters.setParentConceptId(utilities.SIMPLE_REFSET_TYPE_CONCEPT);
+            refsetParameters.setParentConceptId(SyncUtilities.SIMPLE_REFSET_TYPE_CONCEPT);
             refsetParameters.setProject(project);
             refsetParameters.setLatestPublishedVersion(false);
 

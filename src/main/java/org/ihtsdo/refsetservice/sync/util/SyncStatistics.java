@@ -97,10 +97,10 @@ public class SyncStatistics {
         buf.append(System.getProperty("line.separator"));
 
         // Refsets
-        buf.append("*** REFSET IDs --> Synced " + refsetIdsSynced + " Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated + " / ActivatedAndModified: "
+        buf.append("*** REFSET IDs (" +  refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated + " / ActivatedAndModified: "
                 + refsetIdsActivatedAndModified + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
 
-        buf.append("*** REFSET VERSIONs --> Synced " + refsetVersionsSynced + " Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: "
+        buf.append("*** REFSET VERSIONs (" +  refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: "
                 + refsetVersionsModified + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
@@ -365,8 +365,13 @@ public class SyncStatistics {
     }
 
     // Refset Version Pairs
-    public void incrementRefsetVersionsAdded(int val) {
-        refsetVersionsAdded += val;
+    public void setRefsetVersionsAdded(int val) {
+        refsetVersionsAdded = val;
+    }
+
+    public void incrementRefsetVersionsAdded() {
+        refsetVersionsAdded++;
+
     }
 
     public void incrementRefsetVersionsInactivated(int val) {
@@ -389,8 +394,8 @@ public class SyncStatistics {
         this.refsetVersionsActivatedAndModified += val;
     }
 
-    public void incrementRefsetVersionsSynced(int val) {
-        refsetVersionsSynced += val;
+    public void incrementRefsetVersionsSynced() {
+        refsetVersionsSynced += 1;
     }
 
     // Increments
@@ -406,10 +411,6 @@ public class SyncStatistics {
 
     public void incrementRefsetVersionsModified() {
         refsetVersionsModified++;
-    }
-
-    public void incrementRefsetVersionsAdded() {
-        refsetVersionsAdded++;
     }
 
     public void incrementRefsetVersionsInactivated() {
