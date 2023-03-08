@@ -4,10 +4,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
@@ -45,7 +43,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = true;
+    private static boolean testing = false;
 
     protected static String testingEditionShortName = "SNOMEDCT-US";
 
@@ -141,27 +139,13 @@ public abstract class SyncAgent {
         developerTestingEditionShortName = null;
 
         filteredCodeSystems.clear();
+        defaultEditionProjects.clear();
 
         statistics.clearStatistics();
 
         if (utilities != null) {
             utilities.clearPreviousRun();
         }
-    }
-
-    protected static void updateDatabaseCache() throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            defaultEditionProjects.clear();
-
-            /** Process supporting collections **/
-
-            List<Project> defaultProjects = service.getAll(Project.class).stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default")))
-                    .collect(Collectors.toList());
-            defaultProjects.stream().forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
-        }
-
     }
 
     protected boolean isDifferentAttribute(String shortName, String attributeName, Object databaseAttribute, Object snowstormAttribute) {

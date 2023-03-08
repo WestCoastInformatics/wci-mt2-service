@@ -1,11 +1,5 @@
 package org.ihtsdo.refsetservice.sync.util;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.ihtsdo.refsetservice.model.Project;
-import org.ihtsdo.refsetservice.model.Team;
-
 public class SyncStatistics {
 
     // Code Systems
@@ -66,10 +60,9 @@ public class SyncStatistics {
 
     private int refsetVersionsSynced = 0;
 
-    // Processing Only as we don't sync these with Snowstorm
-    private final Set<Project> projectsProcessed = new HashSet<>();;
+    private int projectsAdded = 0;
 
-    private final Set<Team> teamsProcessed = new HashSet<>();
+    private int teamsAdded = 0;
 
     public static final String CHANGED = "Changed";
 
@@ -97,16 +90,16 @@ public class SyncStatistics {
         buf.append(System.getProperty("line.separator"));
 
         // Refsets
-        buf.append("*** REFSET FULLY NEW, INACTIVATED, or (RE)ACTIVATED ON ALL VERSIONS (" +  refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated + " / ActivatedAndModified: "
-                + refsetIdsActivatedAndModified + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
+        buf.append("*** REFSET FULLY NEW, INACTIVATED, or (RE)ACTIVATED ON ALL VERSIONS (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated
+                + " / ActivatedAndModified: " + refsetIdsActivatedAndModified + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
 
-        buf.append("*** REFSET VERSIONs (" +  refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: "
+        buf.append("*** REFSET VERSIONs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: "
                 + refsetVersionsModified + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Othera
-        buf.append("*** Projects --> " + projectsProcessed.size() + " Processed " + System.getProperty("line.separator"));
-        buf.append("*** Teams --> " + teamsProcessed.size() + " Processed" + System.getProperty("line.separator"));
+        buf.append("*** Projects --> " + projectsAdded + " Processed " + System.getProperty("line.separator"));
+        buf.append("*** Teams --> " + teamsAdded + " Processed" + System.getProperty("line.separator"));
 
         return buf.toString();
     }
@@ -145,8 +138,8 @@ public class SyncStatistics {
         refsetVersionsActivatedAndModified = 0;
         refsetVersionsSynced = 0;
 
-        projectsProcessed.clear();
-        teamsProcessed.clear();
+        projectsAdded = 0;
+        teamsAdded = 0;
 
     }
 
@@ -417,14 +410,24 @@ public class SyncStatistics {
         refsetVersionsInactivated++;
     }
 
-    public Set<Project> getProjectsProcessed() {
+    public int getProjectsAdded() {
 
-        return projectsProcessed;
+        return projectsAdded;
     }
 
-    public Set<Team> getTeamsProcessed() {
+    public int getTeamsProcessed() {
 
-        return teamsProcessed;
+        return teamsAdded;
+    }
+
+    public void setTeamsAdded(int val) {
+        teamsAdded = val;
+
+    }
+
+    public void incrementProjectsAdded() {
+        projectsAdded++;
+
     }
 
 }

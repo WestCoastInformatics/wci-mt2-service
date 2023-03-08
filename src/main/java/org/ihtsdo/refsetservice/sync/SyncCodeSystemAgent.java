@@ -109,6 +109,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                         // Create default project
                         final Project project = dbHandler.addProject(projectName, projectDescription, dbEdition);
+                        statistics.incrementProjectsAdded();
                         defaultEditionProjects.put(dbEdition.getShortName(), project);
                     }
 
@@ -214,6 +215,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             List<String> newShortNames = termserverShortNames.stream().filter(c -> !activeDbEditionShortNames.contains(c) && !inactiveDbEditionShortNames.contains(c)).collect(Collectors.toList());
             statistics.setEditionsAdded(newShortNames.size());
             newShortNames.stream().forEach(shortName -> dbHandler.addEdition(termserverShortNameCodeSystemMap.get(shortName), termserverEditionShortNameToOrganizationNameMap.get(shortName)));
+            statistics.setTeamsAdded(newShortNames.size());
 
             // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
             // TODO: Define solution although for now simply activating
@@ -454,16 +456,19 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private void initializeSync() throws Exception {
 
-        updateDatabaseCache();
-
         codeSystemsNewAndInactive.clear();
         editionShortNameOrganizationNameMap.clear();
+        defaultEditionProjects.clear();
 
         try (TerminologyService service = new TerminologyService()) {
             dbEditions = service.getAll(Edition.class);
             dbOrganizations = service.getAll(Organization.class);
 
             dbEditions.stream().forEach(e -> editionShortNameOrganizationNameMap.put(e.getShortName(), e.getOrganization().getName()));
+
+            // Initialize defaultEditionProjects already defined in RT2 DB
+            service.getAll(Project.class).stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default")))
+                    .forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
         }
     }
 

@@ -15,6 +15,7 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
@@ -149,7 +150,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Refset addRefset(String name, String refsetId, String moduleId, long versionDate, String type) {
+    public Refset addRefset(String name, String refsetId, String moduleId, long versionDate, String type, Project project) {
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
@@ -165,6 +166,7 @@ public class SyncDatabaseHandler {
             refset.setVersionDate(new Date(versionDate));
             refset.setType(type);
             refset.setLatestPublishedVersion(false);
+            refset.setProject(project);
 
             // Persist
             final Refset r = service.add(refset);
@@ -194,6 +196,7 @@ public class SyncDatabaseHandler {
             project.setPrivateProject(false);
             project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
             project.setEdition(edition);
+            project.getTeams().add(OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()).getId());
 
             // Persist
             final Project p = service.add(project);
@@ -601,7 +604,8 @@ public class SyncDatabaseHandler {
 
                 Refset updatedRefsetVersion = updateRefset(refsetVersion);
 
-                logger.info("Updated refset version status: " + updatedRefsetVersion.getId() + " to " + isActive + "  (" + updatedRefsetVersion.getRefsetId() + " / " + updatedRefsetVersion.getVersionDate() + ") ");
+                logger.info("Updated refset version status: " + updatedRefsetVersion.getId() + " to " + isActive + "  (" + updatedRefsetVersion.getRefsetId() + " / "
+                        + updatedRefsetVersion.getVersionDate() + ") ");
 
                 updatedRefsetVersions.add(updatedRefsetVersion);
             }

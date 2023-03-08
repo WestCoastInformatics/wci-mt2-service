@@ -19,7 +19,6 @@ public class SyncRefsetMetadata {
     private String branchPath;
 
     public SyncRefsetMetadata(JsonNode refsetNode, Edition edition, Set<Long> allRefsetVersions, long version, String branchPath) {
-
         this.refsetNode = refsetNode;
         this.edition = edition;
         this.allRefsetVersions = allRefsetVersions;
@@ -30,6 +29,11 @@ public class SyncRefsetMetadata {
     public JsonNode getRefsetNode() {
 
         return refsetNode;
+    }
+
+    public String getRefsetId() {
+
+        return refsetNode.get("conceptId").asText();
     }
 
     protected void setRefsetNode(JsonNode refsetNode) {
