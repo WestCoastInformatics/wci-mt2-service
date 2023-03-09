@@ -63,6 +63,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private Map<String, Project> refsetProjectMap = new HashMap<>();
 
+    private List<Project> dbProjects = new ArrayList<>();
+
     public void sync() throws Exception {
 
         initializeSync();
@@ -414,6 +416,7 @@ public class SyncRefsetAgent extends SyncAgent {
         try (TerminologyService service = new TerminologyService()) {
             dbRefsets = service.getAll(Refset.class);
             dbEditions = service.getAll(Edition.class);
+            dbProjects = service.getAll(Project.class);
         }
 
         // Map each refsetId/version pair's SyncRefsetMetadata
@@ -637,6 +640,8 @@ public class SyncRefsetAgent extends SyncAgent {
          * b) thus no need to create  new version.
          * c) Move onto nex refset
          */
+        logger.debug("TEST: refsetId " + refsetId);
+        logger.debug("TEST: termserverRefsetBranchPath " + termserverRefsetBranchPath);
         Long refsetVersionDate = RefsetMemberService.getLatestChangedVersionDate(termserverRefsetBranchPath, refsetId);
 
         if (refsetVersionDate == null) {
@@ -834,13 +839,14 @@ public class SyncRefsetAgent extends SyncAgent {
 
         try (final TerminologyService service = new TerminologyService()) {
 
+            // Refresh DB cache with additions just made
+            dbRefsets = service.getAll(Refset.class);
             for (String refsetId : newlyCreatedAndUnchangedRefsetToVersionsMap.keySet()) {
 
                 for (long version : newlyCreatedAndUnchangedRefsetToVersionsMap.get(refsetId)) {
 
                     try {
 
-                        dbRefsets.stream().forEach(r -> logger.debug("sss: " + r.getRefsetId() + " / " + r.getVersionDate().getTime()));
                         List<Refset> matchingRefsets = dbRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().getTime() == version).collect(Collectors.toList());
 
                         Refset refset = (Refset) utilities.validateMatches(matchingRefsets, refsetId + " / " + version);

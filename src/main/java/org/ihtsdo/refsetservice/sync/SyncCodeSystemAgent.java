@@ -100,19 +100,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                     activeDbOrganizationNameToEditionsShortNameMap.get(dbEdition.getOrganizationName()).add(dbEdition.getShortName());
 
-                    // Create a Default Project for the edition if doesnt' already exist
-                    if (!defaultEditionProjects.containsKey(dbEdition.getShortName())) {
-
-                        final String projectName = dbEdition.getName() + " Default Project";
-                        final String projectDescription =
-                                "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + dbEdition.getName() + ".";
-
-                        // Create default project
-                        final Project project = dbHandler.addProject(projectName, projectDescription, dbEdition);
-                        statistics.incrementProjectsAdded();
-                        defaultEditionProjects.put(dbEdition.getShortName(), project);
-                    }
-
                 } else {
 
                     if (!inactiveDbOrganizationNameToEditionsShortNameMap.keySet().contains(dbEdition.getOrganizationName())) {
@@ -126,15 +113,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
             }
             // Determine Snow edition-to-orgName bi-directional maps
             for (JsonNode codeSystem : filteredCodeSystems) {
+                String shortName = codeSystem.get("shortName").asText();
                 String organizationName = determineOrganizationName(codeSystem);
 
-                termserverEditionShortNameToOrganizationNameMap.put(codeSystem.get("shortName").asText(), organizationName);
+                termserverEditionShortNameToOrganizationNameMap.put(shortName, organizationName);
 
                 if (!termserverOrganizationNameToEditionsShortNameMap.keySet().contains(organizationName)) {
                     termserverOrganizationNameToEditionsShortNameMap.put(organizationName, new HashSet<String>());
                 }
 
-                termserverOrganizationNameToEditionsShortNameMap.get(organizationName).add(codeSystem.get("shortName").asText());
+                termserverOrganizationNameToEditionsShortNameMap.get(organizationName).add(shortName);
+
             }
 
             // To simplify, create meaningfully named collections
@@ -193,6 +182,20 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
     }
 
+    private Project createDefaultEditionProject(Edition dbEdition) {
+        logger.debug("zzz2");
+        final String projectName = dbEdition.getName() + " Default Project";
+        final String projectDescription = "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + dbEdition.getName() + ".";
+
+        logger.debug("zzz3");
+
+        // Create default project
+        final Project project = dbHandler.addProject(projectName, projectDescription, dbEdition);
+        statistics.incrementProjectsAdded();
+
+        return project;
+    }
+
     private List<String> analyzeEditions() throws Exception {
         final Map<String, JsonNode> termserverShortNameCodeSystemMap = new HashMap<>();
         final List<String> existingInBothShortNames = new ArrayList<>();
@@ -215,7 +218,30 @@ public class SyncCodeSystemAgent extends SyncAgent {
             List<String> newShortNames = termserverShortNames.stream().filter(c -> !activeDbEditionShortNames.contains(c) && !inactiveDbEditionShortNames.contains(c)).collect(Collectors.toList());
             statistics.setEditionsAdded(newShortNames.size());
             newShortNames.stream().forEach(shortName -> dbHandler.addEdition(termserverShortNameCodeSystemMap.get(shortName), termserverEditionShortNameToOrganizationNameMap.get(shortName)));
+            
+            // Create a Default Project for the edition if doesnt' already exist
+            dbEditions = service.getAll(Edition.class);
+            logger.debug("zzz1 with defaultEditionProjects: " + defaultEditionProjects);
             statistics.setTeamsAdded(newShortNames.size());
+            newShortNames.stream().filter(shortName -> !defaultEditionProjects.containsKey(shortName)).forEach(shortName -> {
+                try {
+                    logger.debug("zzz2 with shortName: " + shortName);
+
+                    List<Edition> matchingEditions = dbEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
+                    Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
+    
+                    Project project = createDefaultEditionProject(dbEdition);
+    
+                    defaultEditionProjects.put(shortName, project);
+    
+                    logger.debug("zzz4 with defaultEditionProjects: " + defaultEditionProjects);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    logger.debug("failed creating default edition project for shortName: " + shortName);
+                }
+            });
+
+            logger.debug("zzz11 with defaultEditionProjects: " + defaultEditionProjects);
 
             // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
             // TODO: Define solution although for now simply activating
@@ -465,10 +491,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
             dbOrganizations = service.getAll(Organization.class);
 
             dbEditions.stream().forEach(e -> editionShortNameOrganizationNameMap.put(e.getShortName(), e.getOrganization().getName()));
+            List<Project> dbProjects = service.getAll(Project.class);
 
             // Initialize defaultEditionProjects already defined in RT2 DB
-            service.getAll(Project.class).stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default")))
-                    .forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
+            dbProjects.stream().filter(project -> project.getName().endsWith(" Default Project")).forEach(project -> defaultEditionProjects.put(project.getEdition().getShortName(), project));
+            logger.debug("zzz Starting sync with defaultEditionProjects containing: " + defaultEditionProjects);
         }
     }
 

@@ -45,7 +45,7 @@ public abstract class SyncAgent {
     /** Testing options. */
     private static boolean testing = false;
 
-    protected static String testingEditionShortName = "SNOMEDCT-US";
+    protected static String testingEditionShortName = "SNOMEDCT-NL";
 
     protected static String testingRefset = null; // To test entire edition
     // protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
@@ -194,8 +194,8 @@ public abstract class SyncAgent {
 
     public static Boolean getIsIgnoreCoreRefsets() {
 
-        // return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
-        return true;
+        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+        // return true;
     }
 
     public static Boolean getIsProductionSystem() {
