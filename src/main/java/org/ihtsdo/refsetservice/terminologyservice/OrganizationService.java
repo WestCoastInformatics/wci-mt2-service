@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -518,6 +519,24 @@ public class OrganizationService extends BaseService {
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
+        
+        // "The user being removed has at least one reference set “In Edit” or “In Review” assigned to them.
+        // As the admin, you are able to un-assign the reference set(s) first before inactivating user.
+        final ResultList<Project> projectsForOrganization = getOrganizationProjects(service, organizationId);
+        if (projectsForOrganization != null && projectsForOrganization.getItems() != null && !projectsForOrganization.getItems().isEmpty()) {
+
+            final SearchParameters sp = new SearchParameters();
+            final String projectIds = "(" + projectsForOrganization.getItems().stream().map(Project::getId).collect(Collectors.joining(" OR ", "projectId: ", "")) + ")";
+            sp.setQuery("assignedUser: " + userToRemove.getUserName() + " AND versionStatus:IN DEVELOPMENT AND (workflowStatus: IN_EDIT OR workflowStatus: IN_REVIEW) AND " + projectIds);
+            final ResultList<Refset> refsets = service.find(sp.getQuery(), null, Refset.class, null);
+
+            if (!refsets.getItems().isEmpty()) {
+                final String message = "User " + userToRemove.getName()
+                    + " has a reference set \"In Edit\" or \"In Review\" assigned to them. As the admin, you are able to un-assign the reference set(s) first before inactivating user.";
+                logger.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
+        }  
 
         checkEditPermissions(authUser, organization);
         
