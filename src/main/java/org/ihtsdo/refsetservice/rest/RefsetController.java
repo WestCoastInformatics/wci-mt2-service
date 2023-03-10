@@ -90,12 +90,13 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import io.swagger.v3.oas.annotations.Hidden;
+import springfox.documentation.annotations.ApiIgnore;
 
 /**
  * Controller for /concept endpoints.
  */
 @RestController
-@Api(tags = "Refset endpoints")
+@Api(tags = "refset", description = "Endpoints for refsets and refset member managment")
 @SuppressWarnings("javadoc")
 public class RefsetController extends BaseController {
 
@@ -130,13 +131,15 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
 
-    @ApiOperation(value = "Get the refset for the specified ID", response = Refset.class)
+    @ApiOperation(value = "Get the refset for the specified ID and version date. To see certain results this call requires authentication with the correct role.", response = Refset.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path")
+        @ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "versionDate", value = "The date of the refset version (YYYY-MM-DD) or IN DEVELOPMENT.", required = true, dataTypeClass = String.class, paramType = "path"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = "application/json")
@@ -146,6 +149,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("getRefset: refsetId: " + refsetId + " ; versionDate: " + versionDate);
 
+            // no auth required
             User user = SecurityService.getUserFromSession();
             final Refset refset = RefsetService.getRefset(service, user, refsetId, versionDate);
             
@@ -191,9 +195,10 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
 
-    @ApiOperation(value = "Returns the refset member count", response = Refset.class)
+    @ApiOperation(value = "Returns the refset member count. To see certain results this call requires authentication with the correct role.", response = String.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
@@ -207,6 +212,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("getRefsetMemberCount: refsetInternalId: " + refsetInternalId);
 
+            // no auth required
             final User user = SecurityService.getUserFromSession();
             final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
 
@@ -235,9 +241,9 @@ public class RefsetController extends BaseController {
      * @throws Exception the exception
      */
 
-    @ApiOperation(value = "Returns if the refset is locked", response = Refset.class)
+    @ApiOperation(value = "Returns if the refset is locked and the status of any member changes", response = String.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information. Payload may include member update statuses"), @ApiResponse(code = 400, message = "Bad request"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
@@ -249,6 +255,7 @@ public class RefsetController extends BaseController {
 
         try {
 
+            // no auth required
             User user = SecurityService.getUserFromSession();
             final boolean isLocked = RefsetMemberService.refsetsBeingUpdated.contains(refsetInternalId);
             String returnString = isLocked + "";
@@ -272,38 +279,6 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * update active status.
-     *
-     * @param active the active status
-     * @param refsetId The refset ID
-     * @return the updated refset
-     * @throws Exception the exception
-     */
-    @PutMapping("/refset/{refsetInternalId}/changeStatus")
-    public ResponseEntity<Refset> updateActive(final @RequestBody boolean active, final @PathVariable String refsetInternalId) throws Exception {
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            // logger.debug("updateActive: active: " + active + " ; refsetId: " + refsetInternalId);
-            User user = SecurityService.getUserFromSession();
-            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-            WorkflowService.canUserEditRefset(user, refset);
-            refset.setActive(active);
-            service.setModifiedBy("restApi");
-            service.update(refset);
-
-            // logger.debug("updateActive: refset: " + ModelUtility.toJson(refset));
-
-            return new ResponseEntity<>(refset, HttpStatus.OK);
-
-        } catch (final Exception e) {
-
-            return handleException(e);
-        }
-
-    }
-
-    /**
      * Add new refset members.
      *
      * @param active the active status
@@ -315,6 +290,19 @@ public class RefsetController extends BaseController {
      * @return the new internal refset ID
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Add new refset members. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully added the members. payload contains the status of the operation. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "conceptIds", value = "A comma separated list of concept IDs to add", required = false, dataTypeClass = String.class, paramType = "body"),
+        @ApiImplicitParam(name = "ecl", value = "An ECL query to identify concepts to add", required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "conceptFile", value = "A file containing concept IDs to add", required = false, dataTypeClass = MultipartFile.class, paramType = "query"),
+        @ApiImplicitParam(name = "fileType", value = "The type of file uploaded (list or rf2)", required = false, dataTypeClass = String.class, paramType = "query"),
+    })
     @PostMapping("/refset/{refsetInternalId}/members")
     public @ResponseBody ResponseEntity<String> addRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
         @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType) throws Exception {
@@ -414,6 +402,19 @@ public class RefsetController extends BaseController {
      * @return the status of the operation
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Remove or inactivate refset membership for a group of concepts. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully removed the members. payload contains the status of the operation. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "conceptIds", value = "A comma separated list of concept IDs to remove", required = false, dataTypeClass = String.class, paramType = "body"),
+        @ApiImplicitParam(name = "ecl", value = "An ECL query to identify concepts to remove", required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "conceptFile", value = "A file containing concept IDs to remove", required = false, dataTypeClass = MultipartFile.class, paramType = "query"),
+        @ApiImplicitParam(name = "fileType", value = "The type of file uploaded (list or rf2)", required = false, dataTypeClass = String.class, paramType = "query"),
+    })
     @PostMapping("/refset/{refsetInternalId}/removeMembers")
     public @ResponseBody ResponseEntity<String> removeRefsetMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestBody(required = false) final String conceptIds,
         @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile, @RequestParam(required = false) final String fileType) throws Exception {
@@ -511,6 +512,19 @@ public class RefsetController extends BaseController {
      * @return the status or error message
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Add new intensional refset definition exceptions. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully added the exceptions. payload contains the status of the operation. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "conceptIds", value = "A comma separated list of concept IDs to add", required = false, dataTypeClass = String.class, paramType = "body"),
+        @ApiImplicitParam(name = "ecl", value = "An ECL query to identify concepts to add", required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "conceptFile", value = "A file containing concept IDs to add", required = false, dataTypeClass = MultipartFile.class, paramType = "query"),
+        @ApiImplicitParam(name = "fileType", value = "The type of file uploaded (list or rf2)", required = false, dataTypeClass = String.class, paramType = "query"),
+    })
     @PostMapping("/refset/{refsetInternalId}/definitionExceptions")
     public @ResponseBody ResponseEntity<String> addRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         @RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl, @RequestParam(required = false) final MultipartFile conceptFile,
@@ -577,10 +591,20 @@ public class RefsetController extends BaseController {
      * Remove an intensional refset definition exception.
      *
      * @param refsetInternalId the internal refset ID
-     * @param @param definitionExceptionId the exception ID
+     * @param definitionExceptionId the exception ID
      * @return the status or error message
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Remove an intensional refset definition exception. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully removed the exception. payload contains the status of the operation. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "definitionExceptionId", value = "The internal definition ID", required = true, dataTypeClass = String.class, paramType = "path"),
+    })
     @PostMapping("/refset/{refsetInternalId}/removeDefinitionException/{definitionExceptionId}")
     public @ResponseBody ResponseEntity<String> removeRefsetDefinitionExceptions(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         @PathVariable(value = "definitionExceptionId") final String definitionExceptionId) throws Exception {
@@ -629,6 +653,15 @@ public class RefsetController extends BaseController {
      * @return the new internal refset ID
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Add a new refset. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully added the refset. payload contains the new refset ID."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetParameters", value = "The required fields of the refset to add.", required = true, dataTypeClass = Refset.class, paramType = "body")
+    })
     @PostMapping("/refset")
     public @ResponseBody ResponseEntity<String> createRefset(final @RequestBody Refset refsetParameters, final BindingResult bindingResult) throws Exception {
 
@@ -688,6 +721,16 @@ public class RefsetController extends BaseController {
      * @return the refset internal ID or errors
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Modify an existing refset that is in edit mode. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully modified the refset."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "refsetParameters", value = "The refset to modify.", required = true, dataTypeClass = Refset.class, paramType = "body")
+    })
     @PutMapping("/refset/{refsetInternalId}")
     public @ResponseBody ResponseEntity<String> modifyRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, final @RequestBody Refset refsetParameters,
         final BindingResult bindingResult) throws Exception {
@@ -732,12 +775,21 @@ public class RefsetController extends BaseController {
     }
     
     /**
-     * Modify an existing refset that is in edit mode.
+     * Recalculate the definition of an intensional refset, updating the members.
      *
      * @param refsetInternalId the internal refset ID
      * @return the refset internal ID or errors
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Recalculate the definition of an intensional refset, updating the members. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully modified the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
     @PutMapping("/refset/{refsetInternalId}/recalculateDefinition")
     public @ResponseBody ResponseEntity<String> recalculateRefsetDefinition(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
@@ -785,17 +837,17 @@ public class RefsetController extends BaseController {
      * @return the workflow history
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get Workflow history search results", response = ResultList.class, notes = API_NOTES)
+    @ApiOperation(value = "Get Workflow history search results. This call requires authentication with the correct role.", response = ResultList.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-        // TODO: activeOnly, sort, sortAscending
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query")
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/workflowHistory", produces = "application/json")
@@ -823,12 +875,25 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Modify an existing refset that is in edit mode.
+     * Change the workflow status of a refset.
      *
      * @param refsetInternalId the internal refset ID
+     * @param action the action triggering the status change
+     * @param notes Notes about the status change
      * @return the refset internal ID or errors
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Change the workflow status of a refset. This call requires authentication with the correct role.", response = Refset.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully changed the refset status. The payload contains the updated refset"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "action", value = "The action triggering the status change", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "notes", value = "Notes about the status change", required = false, dataTypeClass = String.class, paramType = "query"),
+    })
     @PostMapping("/refset/{refsetInternalId}/workflowStatus")
     public @ResponseBody ResponseEntity<Refset> setWorkflowStatus(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam final String action,
         @RequestParam(required = false) final String notes) throws Exception {
@@ -897,6 +962,16 @@ public class RefsetController extends BaseController {
      * @return the refset internal ID or errors
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Modify a refset workflow status note. This call requires authentication with the correct role.", response = ResultList.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully changed the status note. The payload contains the full updated workflow history"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "notes", value = "The updated note", required = true, dataTypeClass = String.class, paramType = "body"),
+    })
     @PutMapping("/refset/{refsetInternalId}/workflowNote")
     public @ResponseBody ResponseEntity<ResultList<WorkflowHistory>> updateWorkflowNote(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         @RequestBody(required = true) final String notes) throws Exception {
@@ -929,12 +1004,23 @@ public class RefsetController extends BaseController {
     
     /**
      * Start the publication of all Ready for Publication refsets in a code system by promoting them to the REFSETS branch.
+     * This call requires authentication with the correct role.
      * ** IMPORTANT ** Once this step is taken it will be very hard to reverse
      *
-     * @param codeSystem a code system to limit the refset to
+     * @param codeSystem a code system to limit the publication to
      * @return the status of the operation
      * @throws Exception the exception
      */
+    @ApiIgnore
+    @ApiOperation(value = "Start the publication of all Ready for Publication refsets in a code system by promoting them to the REFSETS branch. ** IMPORTANT ** Once this step is taken it will be very hard to reverse. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully began the publication process. The payload contains the status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "codeSystem", value = "A code system to limit the publication to", required = true, dataTypeClass = String.class, paramType = "query"),
+    })
     @PutMapping("/admin/startAllRefsetPublications")
     public @ResponseBody ResponseEntity<String> startAllRefsetPublications(@RequestParam(required = true) final String codeSystem)
         throws Exception {
@@ -997,7 +1083,7 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Complete the publication of all Ready for Publication refsets in a code system.
+     * Complete the publication of all Ready for Publication refsets in a code system. This call requires authentication with the correct role.
      *
      * @param versionDate the publication date of the refset in yyyy-MM-dd format
      * @param codeSystem a code system to limit the refset to
@@ -1005,6 +1091,18 @@ public class RefsetController extends BaseController {
      * @return the status of the operation
      * @throws Exception the exception
      */
+    @ApiIgnore
+    @ApiOperation(value = "Complete the publication of all Ready for Publication refsets in a code system. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully published the refsets. The payload contains the status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "versionDate", value = "the publication date of the refsets (YYYY-MM-DD)", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "codeSystem", value = "A code system to limit the publication to", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "publishType", value = "If value is 'localset' this will publish (non-snomed versioning) only local sets. If not supplied or any other value this will published everything other than local sets.", required = false, dataTypeClass = String.class, paramType = "query"),
+    })
     @PutMapping("/admin/completeAllRefsetPublications")
     public @ResponseBody ResponseEntity<String> completeAllRefsetPublications(@RequestParam(required = true) final String versionDate, @RequestParam(required = true) final String codeSystem,
             @RequestParam(required = false) final String publishType) throws Exception {
@@ -1105,13 +1203,24 @@ public class RefsetController extends BaseController {
     }
     
     /**
-     * Publish a Ready for Publication local refsets in a code system.
+     * Publish a Ready for Publication local refset in a code system. This call requires authentication with the correct role.
      *
      * @param refsetInternalId the internal refset ID
      * @param versionDate the publication date of the refset in yyyy-MM-dd format
      * @return the status of the operation
      * @throws Exception the exception
      */
+    @ApiIgnore
+    @ApiOperation(value = "Publish a Ready for Publication local refset in a code system. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully published the refset. The payload contains the status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "versionDate", value = "the publication date of the refset (YYYY-MM-DD)", required = true, dataTypeClass = String.class, paramType = "query")
+    })
     @PutMapping("/admin/refset/{refsetInternalId}/publishLocalset")
     public @ResponseBody ResponseEntity<String> publishLocalsetRefset(@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam(required = true) final String versionDate) throws Exception {
 
@@ -1159,13 +1268,24 @@ public class RefsetController extends BaseController {
     }
     
     /**
-     * Set refsets that failed publication back to 'Ready For Edit' status.
+     * Set refsets that failed publication back to 'Ready For Edit' status. This call requires authentication with the correct role.
      *
      * @param refsetIds a comma separated list of refset IDs
      * @param notes the reason why the refsets failed
      * @return the status of the operation
      * @throws Exception the exception
      */
+    @ApiIgnore
+    @ApiOperation(value = "Set refsets that failed publication back to 'Ready For Edit' status. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully changed the refset statuses. The payload contains the status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetIds", value = "A comma separated list of refset IDs", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "notes", value = "The reason why the refsets failed", required = true, dataTypeClass = String.class, paramType = "query")
+    })
     @PutMapping("/admin/failRefsetPublications")
     public @ResponseBody ResponseEntity<String> failRefsetPublications(@RequestParam(required = true) final String refsetIds, @RequestParam(required = true) final String notes) throws Exception {
 
@@ -1220,6 +1340,15 @@ public class RefsetController extends BaseController {
      * @return the new refset internal ID or errors
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Create a new In Development version of an existing refset in edit mode. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully created the new refset version. payload contains the internal ID of the new version."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
     @PostMapping("/refset/{refsetInternalId}/newVersion")
     public @ResponseBody ResponseEntity<String> createNewRefsetVersion(@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
@@ -1256,9 +1385,20 @@ public class RefsetController extends BaseController {
      * Change a refset status.
      *
      * @param refsetInternalId the internal refset ID
+     * @param active is the refset active
      * @return the status of the operation
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Change a refset status. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully changed the refset status. payload contains the new status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "active", value = "Is the refset active", required = true, dataTypeClass = boolean.class, paramType = "query")
+    })
     @PutMapping("/refset/{refsetInternalId}/refsetStatus")
     public @ResponseBody ResponseEntity<String> updateRefsetStatus(final @PathVariable String refsetInternalId, final boolean active) throws Exception {
 
@@ -1290,6 +1430,15 @@ public class RefsetController extends BaseController {
      * @return the status of the operation
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Convert intensional refset to extensional. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully converted the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status. Payload contains the status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+    })
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/convert", produces = "application/json")
     public @ResponseBody ResponseEntity<String> convertToExtensional(final @PathVariable String refsetInternalId) throws Exception {
 
@@ -1329,6 +1478,15 @@ public class RefsetController extends BaseController {
      * @return the status of the operation
      * @throws Exception the exception
      */
+    @ApiOperation(value = "Delete the edit version of a refset. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully deleted the refset edit version. payload contains the status."), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
+    })
     @DeleteMapping("/refset/{refsetInternalId}/editVersion")
     public @ResponseBody ResponseEntity<String> deleteRefsetEditVersion(final @PathVariable String refsetInternalId) throws Exception {
 
@@ -1365,16 +1523,18 @@ public class RefsetController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get refset search results", response = ResultList.class, notes = API_NOTES)
+    @ApiOperation(value = "Get refset search results. To see certain results this call requires authentication with the correct role.", response = ResultList.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
         @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query"),
+        @ApiImplicitParam(name = "showInDevelopment", value = " A flag on whether to include IN_DEVELOPMENT refsets", required = false, dataTypeClass = boolean.class, paramType = "query"),
+        @ApiImplicitParam(name = "showOnlyPermitted", value = " A flag on whether to only show refsets user has specific permission to and not general public refsets", required = false, dataTypeClass = boolean.class, paramType = "query")
         // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -1385,6 +1545,7 @@ public class RefsetController extends BaseController {
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
+        // no auth required
         User user = SecurityService.getUserFromSession();
         boolean includeInDevelopment = true;
         boolean onlyShowPermitted = false;
@@ -1428,16 +1589,17 @@ public class RefsetController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Search the taxonomy for refset members", response = ResultList.class, notes = API_NOTES)
+    @ApiOperation(value = "Search the taxonomy for refset members. To see certain results this call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
+        @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "path"),
         @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query")
         // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -1450,6 +1612,7 @@ public class RefsetController extends BaseController {
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
+        // no auth required
         User user = SecurityService.getUserFromSession();
         boolean searchRefsetMembers = false;
         final String uri = request.getRequestURI();
@@ -1481,7 +1644,7 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Refset Members.
+     * Search for refset members.
      *
      * @param refsetInternalId the internal refset ID
      * @param searchParameters the search parameters
@@ -1491,21 +1654,21 @@ public class RefsetController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get refset search results", response = ResultList.class, notes = API_NOTES)
+    @ApiOperation(value = "Search for refset members. To see certain results this call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "terminology", value = "Terminologies to search, e.g. 'SNOMEDCT_US'", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
         @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = true, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = true, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = true, dataTypeClass = Integer.class, paramType = "query"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = true, dataTypeClass = Integer.class, paramType = "query"),
         @ApiImplicitParam(name = "displayType", value = "Should results be a list or taxonomy", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "list"),
         @ApiImplicitParam(name = "startingConceptId", value = "For taxonomy calls the starting concept ID (exclusive - get the children of this concept not the concept itself)", required = false,
             dataTypeClass = String.class, paramType = "query", defaultValue = ""),
         @ApiImplicitParam(name = "depth", value = "For taxonomy calls the depth - how many levels of children or parents to retrieve", required = false, dataTypeClass = Integer.class,
-            paramType = "query", defaultValue = "1"),
+            paramType = "query"),
         @ApiImplicitParam(name = "returnChildren", value = "For taxonomy calls should children be returned. If false then parents will be returned", required = false, dataType = "boolean",
             paramType = "query", defaultValue = "true"),
         // TODO: activeOnly, sort, sortAscending
@@ -1517,6 +1680,7 @@ public class RefsetController extends BaseController {
 
         checkBinding(bindingResult);
 
+        // no auth required
         final long start = System.currentTimeMillis();
         ConceptResultList results = new ConceptResultList();
         User user = SecurityService.getUserFromSession();
@@ -1554,13 +1718,15 @@ public class RefsetController extends BaseController {
      * @return the success/failure
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Cache the ancestors of the refset members for the specified refset ID", response = Refset.class)
+    @ApiOperation(value = "Cache the ancestors of the refset members for the specified refset ID. To see certain results this call requires authentication with the correct role.", response = String.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully populated the refset's ancestor cache"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 200, message = "Successfully populated the refset's ancestor cache. Payload contains the status"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "refsetId", value = "The ID of the refset for which ancestors are to be identified.", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "versionDate", value = "The date of the refset version (YYYY-MM-DD) or IN DEVELOPMENT.", required = true, dataTypeClass = String.class, paramType = "path"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetId}/versionDate/{versionDate}", produces = "application/json")
@@ -1569,6 +1735,7 @@ public class RefsetController extends BaseController {
 
         try (TerminologyService service = new TerminologyService()) {
 
+            // no auth required
             User user = SecurityService.getUserFromSession();
             logger.debug("cacheMemberAncestors: refsetId: " + refsetId + " ; versionDate: " + versionDate);
 
@@ -1609,9 +1776,10 @@ public class RefsetController extends BaseController {
      * @return the uri
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Export the refset for the specified ID", response = Refset.class)
+    @ApiOperation(value = "Export the refset for the specified ID. Payload contains the URL to download the export file. To see certain results this call requires authentication with the correct role.", response = String.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information. Payload contains the URL to download the export file"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
@@ -1633,6 +1801,7 @@ public class RefsetController extends BaseController {
 
         try (TerminologyService service = new TerminologyService()) {
 
+            // no auth required
             User user = SecurityService.getUserFromSession();
             logger.debug("exportRefset: refsetInternalId: " + refsetInternalId + " ; format: " + format + " ; type: " + exportType + " ; fileNameDate: " + fileNameDate + " ; startEffectiveTime: "
                 + startEffectiveTime + " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: " + exportMetadata);
@@ -1690,9 +1859,10 @@ public class RefsetController extends BaseController {
      * @return the uri
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Export the all latest version of all published refsets for the project.")
+    @ApiOperation(value = "Export the all latest version of all published refsets for the project. Payload contains the URL to download the export file. To see certain results this call requires authentication with the correct role.", response = String.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information. Payload contains the URL to download the export file"), @ApiResponse(code = 400, message = "Bad request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
@@ -1709,6 +1879,7 @@ public class RefsetController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
 
+            // no auth required
             final User user = SecurityService.getUserFromSession();
             logger.debug("exportAllRefsetsForProject: projectId: " + projectId + " ; fileNameDate: " + fileNameDate);
             final boolean withNames = ("rf2_with_names".equalsIgnoreCase(format));
@@ -1732,7 +1903,7 @@ public class RefsetController extends BaseController {
      * @return the file
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Download the specified refset export file", response = Refset.class)
+    @ApiOperation(value = "Download the specified refset export file", response = Resource.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
         @ApiResponse(code = 404, message = "Resource not found")
@@ -1748,6 +1919,7 @@ public class RefsetController extends BaseController {
 
             logger.debug("downloadExport: fileName: " + fileName);
 
+            // no auth required
             User user = SecurityService.getUserFromSession();
             Path filePath = Paths.get(EXPORT_FILE_DIR + fileName);
             Resource file = new UrlResource(filePath.toUri());
@@ -1873,13 +2045,14 @@ public class RefsetController extends BaseController {
     }
 
     /**
-     * Syncs RTT data into the database but only if the database is empty.
+     * Syncs RTT data into the database but only if the database is empty. This call requires authentication with the correct role.
      *
      * @param quickSync Should the sync be run adding a refset version for each branch version, which is faster than checking each refset for publication. Default is false
      * @param perVersionCreation If true, create a refset for every version created. If false, only when changes are observed.
      * @return the status of the sync
      * @throws Exception the exception
      */
+    @ApiIgnore
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/rtt", produces = "application/json")
     public @ResponseBody ResponseEntity<String> syncRttData(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction, @RequestParam(required = false) final Boolean ignoreCoreRefsets)
         throws Exception {
@@ -1889,7 +2062,7 @@ public class RefsetController extends BaseController {
 
     /**
      * Sync against snowstorm still relying upon latest RTT data files to sync. Compares against all of a given refets's versions on snowstorm, so no need for a quickSync
-     * option
+     * option. This call requires authentication with the correct role.
      * 
      * TODO: Determine if can do a nightly update of data files programmatically
      *
@@ -1898,10 +2071,17 @@ public class RefsetController extends BaseController {
      * @return the status of the sync
      * @throws Exception the exception
      */
+    @ApiIgnore
     @RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
     public @ResponseBody ResponseEntity<String> syncSnowstorm(@RequestParam(required = false) final Boolean perVersionCreation, @RequestParam(required = false) final Boolean forProduction, @RequestParam(required = false) final Boolean ignoreCoreRefsets)
         throws Exception {
 
+        final User user = SecurityService.getUserFromSession();
+        
+        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+        }
+        
         String message = "";
 
         try {
@@ -2637,10 +2817,10 @@ public class RefsetController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query")
         // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -2692,10 +2872,10 @@ public class RefsetController extends BaseController {
         @ApiResponse(code = 404, message = "Resource not found")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = "ncit"),
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+        @ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query"),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query")
         // TODO: activeOnly, sort, sortAscending
     })
     @RecordMetric
@@ -2950,7 +3130,8 @@ public class RefsetController extends BaseController {
 
     }
 
-    @ApiOperation(value = "Reset a refset to contain the contents of Snowstorm. Note only works if refset has not been upgraded during edit cycle.", response = Refset.class)
+    @ApiIgnore
+    @ApiOperation(value = "Reset a refset to contain the contents of Snowstorm. Note only works if refset has not been upgraded during edit cycle. This call requires authentication with the correct role.", response = Refset.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully reset the refset"), @ApiResponse(code = 403, message = "May not reset refset on a production system"),
         @ApiResponse(code = 404, message = "Resource not found")
@@ -2959,13 +3140,18 @@ public class RefsetController extends BaseController {
     @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/reset", produces = "application/json")
     public @ResponseBody ResponseEntity<String> resetRefset(@PathVariable final String refsetId) throws Exception {
 
+        final User user = SecurityService.getUserFromSession();
+        
+        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.FORBIDDEN);
+        }
+        
         try (TerminologyService service = new TerminologyService()) {
 
             logger.debug("resetRefset: refsetId: " + refsetId);
 
             if (!SyncService.getIsProductionSystem()) {
 
-                User user = SecurityService.getUserFromSession();
                 service.setModifiedBy(user.getUserName());
 
                 final String result = RefsetService.resetRefset(service, user, refsetId);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -12,7 +12,6 @@ package org.ihtsdo.refsetservice.rest;
 import java.io.File;
 import java.nio.file.Files;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
@@ -21,7 +20,6 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.terminologyservice.UserService;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -30,13 +28,13 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -59,8 +57,7 @@ import io.swagger.annotations.ApiResponses;
  * Controller for /user endpoints.
  */
 @RestController
-@Api(tags = "User endpoints")
-@SuppressWarnings("javadoc")
+@Api(tags = "users", description = "Endpoints for retrieving and updating users.")
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class UserController extends BaseController {
 
@@ -73,10 +70,6 @@ public class UserController extends BaseController {
     /** The local icon file directory. */
     private static final String ICON_URL_PREFIX = "user/icon/";
 
-    /** The request. */
-    @Autowired
-    private HttpServletRequest request;
-
     /**
      * Returns the user.
      *
@@ -86,13 +79,16 @@ public class UserController extends BaseController {
      * @return the user
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get the user for the specified identifier", response = User.class)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Get user. This call requires authentication with the correct role.", response = User.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "User identifier, e.g. '43ca2010-5db8-414e-b62b-dd3ea1354b54'", required = true, dataTypeClass = String.class, paramType = "path") // ,
+        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "includeOrganizations", value = "Include user's organizations", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "includeTeams", value = "Include user's teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
     })
     @RecordMetric
     @RequestMapping(value = "/user/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
@@ -100,11 +96,7 @@ public class UserController extends BaseController {
         @QueryParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
         logger.info("Get user: {}", id);
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        authorizeUser();
 
         try {
 
@@ -128,22 +120,23 @@ public class UserController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Update User", response = User.class)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Update user. This call requires authentication with the correct role.", response = User.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "User successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 201, message = "Successfully updated user"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 415, message = "Unsupported Media Type"),
         @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "user", value = "User object", required = true, dataTypeClass = User.class, paramType = "body")
     })
     @RecordMetric
     @PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id, @RequestBody final User user) throws Exception {
 
         logger.info("Update user: {}", user);
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        final User authUser = authorizeUser();
 
         if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
             logger.info("User is null or user id does not match id in URL.");
@@ -152,8 +145,8 @@ public class UserController extends BaseController {
 
         try {
 
-            final User original = UserService.updateUser(authUser, user);
-            return new ResponseEntity<>(original, HttpStatus.OK);
+            final User updatedUser = UserService.updateUser(authUser, user);
+            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
 
         } catch (final NotFoundException nfe) {
             logger.error("Error getting user. Id {} not found.", id);
@@ -164,8 +157,7 @@ public class UserController extends BaseController {
             return handleException(e);
         }
     }
-    
-    
+
     /**
      * Delete user icon.
      *
@@ -173,22 +165,22 @@ public class UserController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Remove User icon", response = User.class)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Delete icon for the user. This call requires authentication with the correct role.", response = User.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "User successfully updated"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 200, message = "Successfully removed icon for user"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 415, message = "Unsupported Media Type"),
         @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
     })
     @RecordMetric
     @DeleteMapping(value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id) throws Exception {
 
         logger.info("Delete user icon: {}", id);
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        final User authUser = authorizeUser();
 
         final User user = UserService.getUser(id, false);
         if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
@@ -222,27 +214,26 @@ public class UserController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @ApiOperation(value = "Get users search results", response = ResultList.class, notes = API_NOTES)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Find users. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-        @ApiResponse(code = 404, message = "Resource not found")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "includeOrganizations", value = "Include user's organizations", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "includeTeams", value = "Include user's teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "query", value = "The value to be searched'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "10"),
         @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<ResultList<User>> getUsers(@QueryParam(value = "includeOrganizations") final boolean includeOrganizations,
-        @QueryParam(value = "includeTeams") final boolean includeTeams, final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+        @QueryParam(value = "includeTeams") final boolean includeTeams, @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         logger.info("Search users: {}", ModelUtility.toJson(searchParameters));
-        // TODO check permissions, fail if not authorized.
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        authorizeUser();
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -278,6 +269,15 @@ public class UserController extends BaseController {
      * @return the user icon
      * @throws Exception the exception
      */
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Icon file for the user", response = Resource.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully added icon for user"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "filename", value = "File name for user icon.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
     @RequestMapping(value = "/user/icon/{fileName}", method = RequestMethod.GET)
     public @ResponseBody ResponseEntity<Resource> getUserIcon(@PathVariable("fileName") final String fileName) throws Exception {
 
@@ -299,31 +299,33 @@ public class UserController extends BaseController {
     /**
      * Edit the user icon.
      *
-     * @param userId the user id
+     * @param id the user id
      * @param inputFile the input file
      * @return the response entity with the icon URI
      * @throws Exception the exception
      */
-    @ApiOperation(value = "edit icon for user")
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Update icon for user. This call requires authentication with the correct role.", response = String.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Saved icon for user"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 202, message = "Successfully updated icon for user"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
         @ApiResponse(code = 500, message = "Internal server error")
     })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "file", value = "Icon file", required = true, dataTypeClass = MultipartFile.class, paramType = "form")
+    })
     @RecordMetric
-    @PostMapping(value = "/user/{userId}/icon")
-    public ResponseEntity<String> editUserIcon(@PathVariable("userId") final String userId, @RequestParam("file") MultipartFile inputFile) throws Exception {
+    @PostMapping(value = "/user/{id}/icon")
+    public ResponseEntity<String> editUserIcon(@PathVariable("id") final String id, @RequestParam("file") MultipartFile inputFile) throws Exception {
 
-        logger.info("Edit icon for user: {}.", userId);
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        logger.info("Edit icon for user: {}.", id);
+        final User authUser = authorizeUser();
 
         try {
-            final User user = UserService.getUser(userId, false);
+            final User user = UserService.getUser(id, false);
             if (user == null) {
-                throw new RestException(false, 404, "Not found", "Unable to find user for " + userId);
+                throw new RestException(false, 404, "Not found", "Unable to find user for " + id);
             }
 
             String fileToDelete = "";
@@ -332,7 +334,7 @@ public class UserController extends BaseController {
                 fileToDelete = user.getIconUri().replace(ICON_URL_PREFIX, "");
             }
 
-            final File file = FileUtility.saveIconFile(inputFile, userId, fileToDelete);
+            final File file = FileUtility.saveIconFile(inputFile, id, fileToDelete);
             user.setIconUri(ICON_URL_PREFIX + file.getName());
             UserService.updateUser(authUser, user);
 
@@ -340,7 +342,7 @@ public class UserController extends BaseController {
 
         } catch (final Exception e) {
 
-            logger.error("Trying to edit user icon for user " + userId, e);
+            logger.error("Trying to edit user icon for user " + id, e);
             return handleException(e);
         }
     }

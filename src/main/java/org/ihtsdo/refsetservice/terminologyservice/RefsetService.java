@@ -1966,9 +1966,26 @@ public class RefsetService {
 
         final Project project = refset.getProject();
         final List<String> roles = refset.getRoles();
+        boolean userCanView = true;
 
         setRoles(user, project, roles);
         project.setRoles(roles);
+        
+        // make sure the user is allowed to view this refset
+        if (project.isPrivateProject() && !project.getRoles().contains(User.ROLE_VIEWER)) {
+            userCanView = false;
+            
+        } else if (!project.getRoles().contains(User.ROLE_VIEWER) && refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+            userCanView = false;
+        }
+
+        if (!userCanView) {
+            
+            final String message = "User does not have permission to view this refset.";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
+        }
+
 
         return refset;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -8,15 +8,6 @@
  * or reproduction of this material is strictly forbidden.
  */
 package org.ihtsdo.refsetservice.rest.client;
-/*
- * Copyright 2022 SNOMED International - All Rights Reserved.
- *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
- * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
- * and are protected by trade secret or copyright law.  Dissemination of this information
- * or reproduction of this material is strictly forbidden.
- */
 
 import java.util.HashSet;
 import java.util.Set;
@@ -48,6 +39,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 	/** Get user GET. */
 	private static final String GET_USER = "/rest/usermanagement/1/user";
 
+	/**  The Constant FIND_USER. */
 	private static final String FIND_USER = "/rest/usermanagement/1/search?entity-type=user&restriction=email=";
 
 	/** Get avatar for user EXPERIMENTAL GET. */
@@ -71,9 +63,9 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 	private static final String REMOVE_USER_FROM_GROUP = "/rest/usermanagement/1/user/group/direct";
 
 	/**
-	 * Returns the user from Crowd
+	 * Returns the user from Crowd.
 	 *
-	 * @param username the username
+	 * @param userName the user name
 	 * @return the user
 	 * @throws Exception the exception
 	 */
@@ -120,6 +112,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 	 * @param organization       the organization
 	 * @param projectName        the project name
 	 * @param projectDescription the project description
+	 * @param generateProjectName the generate project name
 	 * @throws Exception the exception
 	 */
 	public static void addGroup(final String organization, final String projectName, final String projectDescription,
@@ -183,8 +176,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 	 * Add admin group for an organization.
 	 *
 	 * @param organization       the organization
-	 * @param projectName        the project name
-	 * @param projectDescription the project description
+	 * @param description the description
+	 * @return the string
 	 * @throws Exception the exception
 	 */
 	public static String addAdminGroup(final String organization, final String description) throws Exception {

@@ -9,7 +9,6 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
@@ -31,7 +30,6 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -53,183 +51,200 @@ import io.swagger.annotations.ApiResponses;
  * Controller for /audit endpoints.
  */
 @RestController
-@Api(tags = "Audit endpoints")
-@SuppressWarnings("javadoc")
+@Api(tags = "audit", description = "Endpoints for searching and retrieving audit entries")
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class AuditController extends BaseController {
 
-    /** Logger. */
-    private static Logger logger = LoggerFactory.getLogger(AuditController.class);
+	/** Logger. */
+	private static Logger logger = LoggerFactory.getLogger(AuditController.class);
 
-    /** The request. */
-    @Autowired
-    private HttpServletRequest request;
+	/**
+	 * Returns the auditEntryImpl.
+	 *
+	 * @param id the id of the auditEntryImpl
+	 * @return the auditEntryImpl
+	 * @throws Exception the exception
+	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/audit/{id}")
+	@ApiOperation(value = "Get audit entry.", response = AuditEntry.class)
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+			@ApiResponse(code = 500, message = "Internal server error") })
+	@ApiImplicitParams({
+			@ApiImplicitParam(name = "id", value = "Audit entry id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
+	@RecordMetric
+	public @ResponseBody ResponseEntity<AuditEntry> getAuditEntry(@PathVariable(value = "id") final String id)
+			throws Exception {
 
-    /**
-     * Returns the auditEntryImpl.
-     *
-     * @param id the id of the auditEntryImpl
-     * @return the auditEntryImpl
-     * @throws Exception the exception
-     */
-    @RequestMapping(method = RequestMethod.GET, value = "/audit/{id}")
-    public @ResponseBody ResponseEntity<AuditEntry> getAuditEntry(@PathVariable(value = "id") final String id) throws Exception {
+		logger.info("Get audit entry: {}", id);
+		// no auth required
 
-        logger.info("Get audit entry: {}", id);
+		final SearchParameters searchParameters = new SearchParameters();
+		searchParameters.setQuery("id: " + id);
+		ResultList<AuditEntry> result = AuditService.findAuditEntries(searchParameters);
 
-        final SearchParameters searchParameters = new SearchParameters();
-        searchParameters.setQuery("id: " + id);
-        ResultList<AuditEntry> result = AuditService.findAuditEntries(searchParameters);
+		return ResponseEntity.status(HttpStatus.OK).body(result.getItems().get(0));
 
-        return ResponseEntity.status(HttpStatus.OK).body(result.getItems().get(0));
+	}
 
-    }
+	/**
+	 * Search audit entries.
+	 *
+	 * @param searchParameters the search parameters
+	 * @param bindingResult    the binding result
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(method = RequestMethod.GET, value = "/audit", produces = MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Find audit entries. This call requires authentication with the correct role.", response = ResultList.class)
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+			@ApiResponse(code = 500, message = "Internal server error") })
+	@ApiImplicitParams({
+			@ApiImplicitParam(name = "query", value = "The value to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+			@ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+			@ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0") })
+	@RecordMetric
+	public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntries(
+			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
+			throws Exception {
 
-    /**
-     * Search audit entries.
-     *
-     * @param searchParameters the search parameters
-     * @param bindingResult the binding result
-     * @return the string
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Get audit entries search results", response = ResultList.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-        @ApiResponse(code = 404, message = "Resource not found")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-    })
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/audit", produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntries(@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+		final User authUser = SecurityService.getUserFromSession();
+		if (authUser == null) {
+			return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+		}
 
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+		// Check to make sure parameters were properly bound to variables.
+		checkBinding(bindingResult);
 
-        // Check to make sure parameters were properly bound to variables.
-        checkBinding(bindingResult);
+		logger.info("Search audit entry search parameters: {}", ModelUtility.toJson(searchParameters));
 
-        logger.info("Search audit entry search parameters: {}", ModelUtility.toJson(searchParameters));
+		try {
 
-        try {
+			final ResultList<AuditEntry> results = AuditService.findAuditEntries(searchParameters);
+			return ResponseEntity.status(HttpStatus.OK).body(results);
 
-            final ResultList<AuditEntry> results = AuditService.findAuditEntries(searchParameters);
-            return ResponseEntity.status(HttpStatus.OK).body(results);
+		} catch (final Exception e) {
+			logger.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
+			return handleException(e);
+		}
+	}
 
-        } catch (final Exception e) {
-            logger.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
-            return handleException(e);
-        }
-    }
+	/**
+	 * Search audit entries.
+	 *
+	 * @param searchParameters the search parameters
+	 * @param bindingResult    the binding result
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("unchecked")
+	@ApiOperation(value = "Find audit entries for entity. This call requires authentication with the correct role.", response = ResultList.class)
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+			@ApiResponse(code = 403, message = "Forbidden"),
+			@ApiResponse(code = 500, message = "Internal server error") })
+	@ApiImplicitParams({
+			@ApiImplicitParam(name = "entityType", value = "The entity type, e.g. 'REFSET'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
+			@ApiImplicitParam(name = "entityId", value = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
+			@ApiImplicitParam(name = "expand", value = "Will expand the result to include related entries.  e.g include project and teams for an organization ", required = false, dataTypeClass = Boolean.class, paramType = "path", defaultValue = "false"),
+			@ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+			@ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+			@ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0") })
+	@RecordMetric
+	@RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId}", produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntriesForEntity(
+			@PathVariable final String entityType, @PathVariable final String entityId,
+			@QueryParam(value = "expand") final Boolean expand, @ModelAttribute final SearchParameters searchParameters,
+			final BindingResult bindingResult) throws Exception {
 
-    /**
-     * Search audit entries.
-     *
-     * @param searchParameters the search parameters
-     * @param bindingResult the binding result
-     * @return the string
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Get audit entries search results", response = ResultList.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-        @ApiResponse(code = 404, message = "Resource not found")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "entityType", value = "The entity type, e.g. 'REFSET'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
-        @ApiImplicitParam(name = "entityId", value = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true, dataTypeClass = String.class, paramType = "path",
-            defaultValue = ""),
-        @ApiImplicitParam(name = "expand", value = "Will expand the result to include related entries.  e.g include project and teams for an organization ", required = false,
-            dataTypeClass = Boolean.class, paramType = "path", defaultValue = "false"),
-        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-    })
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId}", produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntriesForUser(@PathVariable final String entityType, @PathVariable final String entityId,
-        @QueryParam(value = "expand") final Boolean expand, @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+		final User authUser = SecurityService.getUserFromSession();
+		if (authUser == null) {
+			return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+		}
 
-        final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+		if (StringUtils.isBlank(entityType)) {
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
 
-        if (StringUtils.isBlank(entityType)) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+		if (StringUtils.isBlank(entityId)) {
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
 
-        if (StringUtils.isBlank(entityId)) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+		// Check to make sure parameters were properly bound to variables.
+		checkBinding(bindingResult);
 
-        // Check to make sure parameters were properly bound to variables.
-        checkBinding(bindingResult);
+		try {
 
-        try {
+			logger.info("Search audit entry search parameters: {} : {} : {}", entityType, entityId,
+					ModelUtility.toJson(searchParameters));
 
-            logger.info("Search audit entry search parameters: {} : {} : {}", entityType, entityId, ModelUtility.toJson(searchParameters));
+			try (final TerminologyService service = new TerminologyService()) {
+				// is the user a member of the project? is yes return history, if not return
+				// null?? or error??
+				if ("REFSET".equalsIgnoreCase(entityType)) {
+					// check user's permission
+					final Refset refset = RefsetService.getRefset(service, authUser, entityId);
 
-            try (final TerminologyService service = new TerminologyService()) {
-                // is the user a member of the project? is yes return history, if not return null?? or error??
-                if ("REFSET".equalsIgnoreCase(entityType)) {
-                    // check user's permission
-                    final Refset refset = RefsetService.getRefset(service, authUser, entityId);
+					if (refset == null || refset.getRoles() == null || refset.getRoles().isEmpty()) {
+						// user has no permissions
+						return ResponseEntity.status(HttpStatus.OK).body(null);
+					}
+				}
 
-                    if (refset == null || refset.getRoles() == null || refset.getRoles().isEmpty()) {
-                        // user has no permissions
-                        return ResponseEntity.status(HttpStatus.OK).body(null);
-                    }
-                }
+				if ("ORGANIZATION".equalsIgnoreCase(entityType) && expand != null && expand) {
 
-                if ("ORGANIZATION".equalsIgnoreCase(entityType) && expand != null && expand) {
+					final Organization organization = OrganizationService.getOrganization(service, authUser, entityId,
+							false);
+					if (organization == null || organization.getRoles() == null || organization.getRoles().isEmpty()) {
+						// user has no permissions
+						logger.info("Audit Entry: User {} does not have permissions on organization {}.",
+								authUser.getUserName(), entityId);
+						return ResponseEntity.status(HttpStatus.OK).body(null);
+					}
 
-                    final Organization organization = OrganizationService.getOrganization(service, authUser, entityId, false);
-                    if (organization == null || organization.getRoles() == null || organization.getRoles().isEmpty()) {
-                        // user has no permissions
-                        logger.info("Audit Entry: User {} does not have permissions on organization {}.", authUser.getUserName(), entityId);
-                        return ResponseEntity.status(HttpStatus.OK).body(null);
-                    }
+					final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, entityId);
+					final ResultList<Project> orgProjects = OrganizationService.getOrganizationProjects(service,
+							entityId);
 
-                    final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, entityId);
-                    final ResultList<Project> orgProjects = OrganizationService.getOrganizationProjects(service, entityId);
+					final StringBuilder additionalQuery = new StringBuilder();
+					if (orgTeams != null && !orgTeams.getItems().isEmpty()) {
+						for (final Team team : orgTeams.getItems()) {
+							additionalQuery.append(" OR (entityType:TEAM AND entityId:").append(team.getId())
+									.append(")");
+						}
+					}
+					if (orgProjects != null && !orgProjects.getItems().isEmpty()) {
+						for (final Project project : orgProjects.getItems()) {
+							additionalQuery.append(" OR (entityType:PROJECT AND entityId:").append(project.getId())
+									.append(")");
+						}
+					}
 
-                    final StringBuilder additionalQuery = new StringBuilder();
-                    if (orgTeams != null && !orgTeams.getItems().isEmpty()) {
-                        for (final Team team : orgTeams.getItems()) {
-                            additionalQuery.append(" OR (entityType:TEAM AND entityId:").append(team.getId()).append(")");
-                        }
-                    }
-                    if (orgProjects != null && !orgProjects.getItems().isEmpty()) {
-                        for (final Project project : orgProjects.getItems()) {
-                            additionalQuery.append(" OR (entityType:PROJECT AND entityId:").append(project.getId()).append(")");
-                        }
-                    }
+					final String query = "(entityType:" + entityType + " AND entityId:" + entityId + ") "
+							+ (StringUtils.isNotEmpty(additionalQuery.toString()) ? additionalQuery.toString() : "")
+							+ (StringUtils.isNotEmpty(searchParameters.getQuery())
+									? " AND " + searchParameters.getQuery()
+									: "");
+					searchParameters.setQuery(query);
 
-                    final String query = "(entityType:" + entityType + " AND entityId:" + entityId + ") " + (StringUtils.isNotEmpty(additionalQuery.toString()) ? additionalQuery.toString() : "")
-                        + (StringUtils.isNotEmpty(searchParameters.getQuery()) ? " AND " + searchParameters.getQuery() : "");
-                    searchParameters.setQuery(query);
+				} else {
 
-                } else {
+					final String query = "entityType:" + entityType + " AND entityId:" + entityId
+							+ (StringUtils.isNotEmpty(searchParameters.getQuery())
+									? " AND " + searchParameters.getQuery()
+									: "");
+					searchParameters.setQuery(query);
 
-                    final String query = "entityType:" + entityType + " AND entityId:" + entityId + (StringUtils.isNotEmpty(searchParameters.getQuery()) ? " AND " + searchParameters.getQuery() : "");
-                    searchParameters.setQuery(query);
+				}
 
-                }
+				final ResultList<AuditEntry> results = AuditService.findAuditEntries(searchParameters);
+				return ResponseEntity.status(HttpStatus.OK).body(results);
+			}
 
-                final ResultList<AuditEntry> results = AuditService.findAuditEntries(searchParameters);
-                return ResponseEntity.status(HttpStatus.OK).body(results);
-            }
-
-        } catch (final Exception e) {
-            logger.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
-            return handleException(e);
-        }
-    }
+		} catch (final Exception e) {
+			logger.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
+			return handleException(e);
+		}
+	}
 }

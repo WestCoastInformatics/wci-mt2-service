@@ -745,6 +745,8 @@ public class RefsetMemberService {
                 if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
 
                     for (final Refset refset : refsetList.getItems()) {
+                        
+                        RefsetService.setRefsetPermissions(user, refset);
 
                         final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, versionDate.replace("-", ""), exportMetadata, withNames);
                         refsetFiles.add(EXPORT_FILE_DIR + fileName);
@@ -822,7 +824,7 @@ public class RefsetMemberService {
 
         try {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
+            final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(), refsetInternalId);
 
             if (refset == null) {
 
@@ -1446,7 +1448,7 @@ public class RefsetMemberService {
         // get the refset and member information
         try {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
+            final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(), refsetInternalId);
 
             if (refset == null) {
 
@@ -1555,7 +1557,7 @@ public class RefsetMemberService {
 
         try {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
+            final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(), refsetInternalId);
 
             if (refset == null) {
 

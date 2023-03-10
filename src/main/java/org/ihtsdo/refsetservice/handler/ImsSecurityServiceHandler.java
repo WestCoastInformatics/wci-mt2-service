@@ -6,12 +6,25 @@ import java.util.Set;
 
 import javax.servlet.http.Cookie;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.NewCookie;
+import javax.ws.rs.core.Response;
 
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Implements a security handler that authorizes via IHTSDO authentication.
@@ -30,13 +43,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
     /* see superclass */
     @Override
-    public User authenticate(final String userName, final String password) throws Exception {
+    public User authenticate(final String userName) throws Exception {
 
-        final Cookie imsCookie = SecurityService.getImsCookie();
-
-        // either need an IMS cookie or a password could be from a separate login page
-        if (userName == null || (password == null && imsCookie == null)) {
-            throw new WebApplicationException("IMS Authentication failed with invalid parameters.");
+        final boolean authenticated = checkImsLogin(userName);
+        
+        if (userName == null || !authenticated) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user is not authenticated with IMS.");
         }
 
         // This is for IMS login
@@ -62,6 +74,51 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
         logger.debug("authenticate user is: " + user);
         return user;
+    }
+    
+    /**
+     * Calls an IMS endpoint to make sure user is authenticated.
+     *
+     * @param userName The userName passed in to the authenticate call
+     * @return the response
+     * @throws Exception the exception
+     */
+    protected static boolean checkImsLogin(final String userName) throws Exception {
+
+        final String authUrlBase = PropertyUtility.getProperty("snowstorm.authUrl");
+        String url = authUrlBase + "account";
+        boolean authenticated = false;
+        final Cookie imsCookie = SecurityService.getImsCookie();
+        
+        if (imsCookie == null) {
+            return false;
+        }
+        
+        final Client client = ClientBuilder.newClient();
+        final WebTarget target = client.target(url);
+        final javax.ws.rs.core.Cookie newCookie = new javax.ws.rs.core.Cookie(imsCookie.getName(), imsCookie.getValue());
+        
+        try (Response response = target.request("application/json").cookie(newCookie).get()) {
+            
+            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+
+                final String resultString = response.readEntity(String.class);
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString.toString());
+                final String imsUserName = root.get("login").asText();
+                
+                // make sure that the passed in user name is the same as what IMS has authenticated
+                if (imsUserName.equals(userName)) {
+                    authenticated = true;
+                }
+            }
+
+        } catch (Exception e) {
+            logger.error("IMS Authentication error: {} ", url, e);
+            throw e;
+        }
+        
+        return authenticated;
     }
 
     /* see superclass */

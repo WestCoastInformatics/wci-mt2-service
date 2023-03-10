@@ -12,11 +12,10 @@ public interface SecurityServiceHandler extends Configurable {
 	 * Authenticate.
 	 *
 	 * @param user     the user
-	 * @param password the password
 	 * @return the user
 	 * @throws Exception
 	 */
-	public User authenticate(String user, String password) throws Exception;
+	public User authenticate(String user) throws Exception;
 
 	/**
 	 * Indicates whether or not the user should be timed out.

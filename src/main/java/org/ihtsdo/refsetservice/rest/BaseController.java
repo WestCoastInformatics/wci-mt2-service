@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.rest;
 
@@ -8,6 +17,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.ihtsdo.refsetservice.model.AuthContext;
 import org.ihtsdo.refsetservice.model.RestException;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -84,15 +95,20 @@ public class BaseController {
         }
     }
 
+    
     /**
      * Authorize.
      *
-     * @param request the request
-     * @return the auth context
+     * @return the user
      * @throws Exception the exception
      */
-    public AuthContext authorize(final HttpServletRequest request) throws Exception {
-        // TODO finish authorize logic
-        return null;
+    public User authorizeUser() throws Exception {
+        
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null || authUser.getId() == null ) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+        return authUser;
     }
+    
 }
