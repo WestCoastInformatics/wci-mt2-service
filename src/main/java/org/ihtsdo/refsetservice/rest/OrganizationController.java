@@ -144,8 +144,7 @@ public class OrganizationController extends BaseController {
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/organization/search", produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<ResultList<Organization>> getOrganizations(@QueryParam(value = "includeMembers") final boolean includeMembers,
-        @ModelAttribute final SearchParameters searchParameters,
-        final BindingResult bindingResult) throws Exception {
+        @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
         logger.info("Search organizations: {}", ModelUtility.toJson(searchParameters));
         final User authUser = authorizeUser();
@@ -688,8 +687,10 @@ public class OrganizationController extends BaseController {
      */
     @ApiOperation(value = "Process invitation response to join organization.")
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Organization icon deleted"), @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"),
-        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 302, message = "Response to invitation processed"),
+        @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), 
+        @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
@@ -699,7 +700,6 @@ public class OrganizationController extends BaseController {
     })
     @RecordMetric
     @GetMapping(value = "/organization/{id}/response")
-    // no auth - response is from email.
     public @ResponseBody ResponseEntity<String> responseToInviteOrganization(
 
         @PathVariable final String id, @QueryParam(value = "acceptance") final boolean acceptance, @QueryParam(value = "requester") final String requester,
@@ -707,22 +707,22 @@ public class OrganizationController extends BaseController {
 
     ) throws Exception {
 
+        // no auth - response is from email.
+
+        final HttpHeaders headers = new HttpHeaders();
+        headers.add("Location", PROPERTIES.getProperty("app.url.root"));
+
         try {
 
             logger.info("responseToInviteOrganization: id: " + id + " and acceptance: " + acceptance + " and requester: " + requester + " recipientEmail: " + recipientEmail);
-
             OrganizationService.processOrganizationInvitation(id, acceptance, requester, recipientEmail);
-
-            // Redirect here
-            final HttpHeaders headers = new HttpHeaders();
-            headers.add("Location", PROPERTIES.getProperty("app.url.root"));
 
             return new ResponseEntity<>(headers, HttpStatus.FOUND);
 
         } catch (final Exception e) {
 
             logger.error("Exception while processing response for organization id invite", e);
-            return new ResponseEntity<>(HttpStatus.OK);
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
         }
     }
 
