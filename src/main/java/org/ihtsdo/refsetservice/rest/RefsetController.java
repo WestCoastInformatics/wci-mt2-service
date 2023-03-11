@@ -916,6 +916,8 @@ public class RefsetController extends BaseController {
             } else if (action.equals(WorkflowService.CANCEL_EDIT)) {
 
                 AuditEntryHelper.addEditingCycleEntry(refset, false);
+            } else if (action.equals(WorkflowService.CANCEL_UPGRADE)) {
+                RefsetMemberService.refsetsUpdatedMembers.remove(refsetInternalId);
             }
 
             // if the status is Published then create a new version of the refset that is ready to be edited
@@ -932,7 +934,7 @@ public class RefsetController extends BaseController {
 
                 return new ResponseEntity<>(refset, HttpStatus.OK);
             }
-
+            
             refset = WorkflowService.setWorkflowStatusByAction(service, user, action, refset, notes);
             // service.commit();
 
