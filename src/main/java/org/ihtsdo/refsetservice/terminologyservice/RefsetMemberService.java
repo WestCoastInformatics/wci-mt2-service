@@ -177,7 +177,7 @@ public class RefsetMemberService {
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 386;
 
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
-    private static final int URL_MAX_CHAR_LENGTH = 6800;
+    private static final int URL_MAX_CHAR_LENGTH = 6200;
 
     /** The max number of record elasticsearch will return without erroring. */
     private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
@@ -4316,8 +4316,7 @@ public class RefsetMemberService {
 
                 bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
                 final String memberSearchBody = memberSearchBodyBase + bodyConceptIds + "]}";
-                logger.debug("addRefsetMembers member search body: " + memberSearchBody);
-                logger.debug("addRefsetMembers conceptIds: " + conceptIds);
+                //logger.debug("addRefsetMembers member search body: " + memberSearchBody);
 
                 try (final Response response = SnowstormConnection.postResponse(memberSearchUrl, memberSearchBody)) {
 
@@ -4407,7 +4406,7 @@ public class RefsetMemberService {
         final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId).put("moduleId", moduleId).put("referencedComponentId", conceptId);
 
         logger.debug("callAddMemberSingle URL: " + url);
-        logger.debug("callAddMemberSingle URL body: " + body.toString());
+        //logger.debug("callAddMemberSingle URL body: " + body.toString());
 
         try (final Response response = SnowstormConnection.postResponse(url, body.toString())) {
 
@@ -4448,7 +4447,7 @@ public class RefsetMemberService {
         }
 
         logger.debug("callAddMembersBulk URL: " + bulkUrl);
-        logger.debug("callAddMembersBulk URL body: " + body.toString());
+        //logger.debug("callAddMembersBulk URL body: " + body.toString());
 
         String jobStatusUrl = null;
         boolean jobDone = false;
@@ -4488,7 +4487,9 @@ public class RefsetMemberService {
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
+                        jobDone = true;
                         logger.error(errorMessage + response.toString());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + response.toString());
                     }
 
                     final String resultString = response.readEntity(String.class);
@@ -4504,7 +4505,8 @@ public class RefsetMemberService {
                     } else if (status.equalsIgnoreCase("failed")) {
 
                         jobDone = true;
-                        logger.error(errorMessage + root.get("message").asText());
+                        logger.error(errorMessage + response.toString());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
                     } else {
 
                         logger.debug("Bulk member add hasn't finished yet...");
@@ -4633,8 +4635,6 @@ public class RefsetMemberService {
                     memberUpdateArray.add(memberBody);
                 }
 
-                logger.debug("removeRefsetMembers conceptNode: " + ModelUtility.toJson(conceptNode));
-
                 final JsonNode referencedComponent = conceptNode.get("referencedComponent");
 
                 if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
@@ -4679,7 +4679,7 @@ public class RefsetMemberService {
                 String errorMessage = "Remove Refset Member bulk call to url '" + deleteUrl + "' for refset '" + refsetId + " wasn't successful. ";
 
                 logger.debug("removeRefsetMembers URL: " + deleteUrl);
-                logger.debug("removeRefsetMembers URL Body: " + deleteBody);
+                //logger.debug("removeRefsetMembers URL Body: " + deleteBody);
 
                 try (final Response response = SnowstormConnection.deleteResponse(deleteUrl, deleteBody)) {
 
@@ -4741,7 +4741,7 @@ public class RefsetMemberService {
         final ObjectMapper mapper = new ObjectMapper();
 
         logger.debug("callUpdateMemberSingle URL: " + url);
-        logger.debug("callUpdateMemberSingle URL body: " + memberBody.toString());
+        //logger.debug("callUpdateMemberSingle URL body: " + memberBody.toString());
 
         try (final Response response = SnowstormConnection.putResponse(url, memberBody.toString())) {
 
@@ -4780,7 +4780,7 @@ public class RefsetMemberService {
 
         String jobStatusUrl = null;
         boolean jobDone = false;
-        String errorMessage = "Inactive Reference Set Member bulk call to url '" + url + "' for refset '" + refsetId + " wasn't successful. ";
+        String errorMessage = "Inactivate Reference Set Member bulk call to url '" + url + "' for refset '" + refsetId + " wasn't successful. ";
 
         try (final Response response = SnowstormConnection.postResponse(url, memberBodies.toString())) {
 
@@ -4816,7 +4816,9 @@ public class RefsetMemberService {
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
+                        jobDone = true;
                         logger.error(errorMessage + response.toString());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + response.toString());
                     }
 
                     final String resultString = response.readEntity(String.class);
@@ -4831,7 +4833,10 @@ public class RefsetMemberService {
 
                     } else if (status.equalsIgnoreCase("failed")) {
 
+                        jobDone = true;
                         logger.error(errorMessage + root.get("message").asText());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
+                        
                     } else {
 
                         logger.debug("Bulk member inactivate hasn't finished yet...");
