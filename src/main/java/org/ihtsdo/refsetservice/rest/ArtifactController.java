@@ -72,7 +72,7 @@ public class ArtifactController extends BaseController {
 	 */
 	@SuppressWarnings("unchecked")
 	@RequestMapping(method = RequestMethod.GET, value = "/artifact/{id}")
-	@ApiOperation(value = "Get artifact. This call requires authentication with the correct role.", response = Artifact.class)
+	@ApiOperation(value = "Get artifact.", response = Artifact.class)
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
 			@ApiResponse(code = 500, message = "Internal server error") })
 	@ApiImplicitParams({
@@ -83,7 +83,7 @@ public class ArtifactController extends BaseController {
 
 		logger.info("Get artifact entry: {}", id);
 
-		authorizeUser();
+		// no auth required
 
 		try {
 
@@ -112,10 +112,7 @@ public class ArtifactController extends BaseController {
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
 			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
 			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "query", value = "The value to be searched'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-			@ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "10"),
-			@ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0") })
+	// @ModelAttribute API params documented in SearchParameter
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<Artifact>> findArtifacts(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
@@ -123,6 +120,8 @@ public class ArtifactController extends BaseController {
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
+
+		// no auth required
 
 		logger.info("Search artifact entry search parameters: {}", ModelUtility.toJson(searchParameters));
 
@@ -283,7 +282,7 @@ public class ArtifactController extends BaseController {
 	 */
 	@SuppressWarnings("unchecked")
 	@GetMapping(value = "/artifact/{id}/file")
-	@ApiOperation(value = "Download artifact. This call requires authentication with the correct role.", response = Resource.class)
+	@ApiOperation(value = "Download artifact.", response = Resource.class)
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Retrieved artifact"),
 			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
 			@ApiResponse(code = 404, message = "Not Found"),
@@ -294,7 +293,8 @@ public class ArtifactController extends BaseController {
 	public ResponseEntity<Resource> downloadArtifact(@PathVariable("id") final String id) throws Exception {
 
 		logger.info("Download artifact: " + id);
-		authorizeUser();
+
+		// no auth required
 
 		try {
 

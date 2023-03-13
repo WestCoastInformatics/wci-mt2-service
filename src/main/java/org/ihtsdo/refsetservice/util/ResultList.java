@@ -10,8 +10,6 @@ import javax.xml.bind.annotation.XmlTransient;
 
 import org.ihtsdo.refsetservice.model.Collection;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  * Represents a list of results. Aligns with "collection".
  *

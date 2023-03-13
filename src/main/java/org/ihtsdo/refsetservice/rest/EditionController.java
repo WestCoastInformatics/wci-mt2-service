@@ -122,11 +122,7 @@ public class EditionController extends BaseController {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 404, message = "Resource not found"),
         @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "query", value = "The value to be searched'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "10"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-    })
+	// @ModelAttribute API params documented in SearchParameter
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
     // no auth required

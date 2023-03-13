@@ -4,6 +4,7 @@ package org.ihtsdo.refsetservice.util;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import io.swagger.annotations.ApiModelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -62,7 +63,7 @@ public class SearchParameters {
 		activeOnly = other.getActiveOnly();
 		sort = other.getSort();
 		sortAscending = other.getSortAscending();
-		editing = other.isEditing();
+		editing = other.getEditing();
 	}
 
 	/**
@@ -70,7 +71,7 @@ public class SearchParameters {
 	 *
 	 * @return the query
 	 */
-	@Schema(description = "The search query")
+	@ApiModelProperty(value = "The search query")
 	public String getQuery() {
 		return query;
 	}
@@ -89,7 +90,7 @@ public class SearchParameters {
 	 *
 	 * @return the limit
 	 */
-	@Schema(description = "Indicates the maximum number of search results.")
+	@ApiModelProperty(value = "Indicates the maximum number of search results.")
 	public Integer getLimit() {
 		return limit;
 	}
@@ -108,7 +109,7 @@ public class SearchParameters {
 	 *
 	 * @return the offset
 	 */
-	@Schema(description = "Indicates the start index of the search results")
+	@ApiModelProperty(value = "Indicates the start index of the search results")
 	public Integer getOffset() {
 		return offset;
 	}
@@ -127,7 +128,7 @@ public class SearchParameters {
 	 *
 	 * @return the active only
 	 */
-	@Schema(description = "Indicates that only active content should be searched.")
+	@ApiModelProperty(value = "Indicates that only active content should be searched.")
 	public Boolean getActiveOnly() {
 		return activeOnly;
 	}
@@ -146,7 +147,7 @@ public class SearchParameters {
 	 *
 	 * @return the sort
 	 */
-	@Schema(description = "Indicates the sort field for search results")
+	@ApiModelProperty(value = "Indicates the sort field for search results")
 	public String getSort() {
 		return sort;
 	}
@@ -165,7 +166,8 @@ public class SearchParameters {
 	 *
 	 * @return the sort ascending
 	 */
-	@Schema(description = "Indicates whether sort is ascending (<code>true</code>) or descending (<code>false</code>).")
+	@ApiModelProperty(value = "Indicates whether sort is ascending (<code>true</code>) "
+			+ "or descending (<code>false</code>).")
 	public Boolean getSortAscending() {
 		return sortAscending;
 	}
@@ -184,7 +186,9 @@ public class SearchParameters {
 	 *
 	 * @return the editing flag
 	 */
-	public Boolean isEditing() {
+	@ApiModelProperty(value = "Only used when getting members or concepts for members "
+			+ "and indicates inferred form should be used an leaf flags included.")
+	public Boolean getEditing() {
 		return editing;
 	}
 
@@ -201,6 +205,7 @@ public class SearchParameters {
 	 * Sets the sort ascending.
 	 *
 	 * @param obj the obj
+	 * @return true, if successful
 	 */
 	@Override
 	public boolean equals(final Object obj) {

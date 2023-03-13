@@ -59,333 +59,331 @@ import io.swagger.annotations.ApiResponses;
 @Api(tags = "projects", description = "Endpoints for creating, retrieving, updating, and deleting projects.")
 public class ProjectController extends BaseController {
 
-    /** Logger. */
-    private static Logger logger = LoggerFactory.getLogger(ProjectController.class);
-
-    /** Search projects API note. */
-    private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
-
-    /** The config properties. */
-    private static final Properties PROPERTIES = PropertyUtility.getProperties();
-
-    /**
-     * Returns a specific project.
-     *
-     * @param id the project ID
-     * @param includeMembers the include members
-     * @return the project
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("rawtypes")
-    @ApiOperation(value = "Get project.  This call requires authentication with the correct role.", response = Project.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
-    })
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity getProject(@PathVariable(value = "id") final String id, @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
-
-        logger.info("Project: id: " + id);
-        authorizeUser();
-
-        try {
-
-            final Project project = ProjectService.getProject(id, includeMembers);
-            return new ResponseEntity<>(project, HttpStatus.OK);
-
-        } catch (final NotFoundException npe) {
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(npe.getMessage());
-
-        } catch (final Exception e) {
-
-            logger.error("Error fetching project.  Id: {}", id, e);
-            return handleException(e);
-        }
-
-    }
-
-    /**
-     * Returns the teams assigned to a project.
-     *
-     * @param id the project ID
-     * @return the project teams
-     * @throws Exception the exception
-     */
-
-    @SuppressWarnings("rawtypes")
-    @ApiOperation(value = "Get teams for project.  This call requires authentication with the correct role.", response = ResultList.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/project/{id}/teams", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity getProjectTeams(@PathVariable(value = "id") final String id) throws Exception {
-
-        logger.info("Project: id: " + id);
-        authorizeUser();
-
-        try {
-
-            final ResultList<Team> results = ProjectService.getProjectTeams(id);
-            return new ResponseEntity<>(results, HttpStatus.OK);
-
-        } catch (final Exception e) {
-
-            return handleException(e);
-        }
-
-    }
-
-    /**
-     * Search Projects.
-     *
-     * @param searchParameters the search parameters
-     * @param bindingResult the binding result
-     * @param includeMembers the include members
-     * @return the string
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("unchecked")
-    @ApiOperation(value = "Find projects. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
-        @ApiImplicitParam(name = "query", value = "The value to be searched'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "10"),
-        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
-    })
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult,
-        @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
+	/** Logger. */
+	private static Logger logger = LoggerFactory.getLogger(ProjectController.class);
+
+	/** Search projects API note. */
+	private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
+
+	/** The config properties. */
+	private static final Properties PROPERTIES = PropertyUtility.getProperties();
+
+	/**
+	 * Returns a specific project.
+	 *
+	 * @param id             the project ID
+	 * @param includeMembers the include members
+	 * @return the project
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("rawtypes")
+	@ApiOperation(value = "Get project.  This call requires authentication with the correct role.", response = Project.class)
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
+			@ApiResponse(code = 500, message = "Internal server error") })
+	@ApiImplicitParams({
+			@ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+			@ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false") })
+	@RecordMetric
+	@RequestMapping(method = RequestMethod.GET, value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity getProject(@PathVariable(value = "id") final String id,
+			@QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
+
+		logger.info("Project: id: " + id);
+		authorizeUser();
+
+		try {
+
+			final Project project = ProjectService.getProject(id, includeMembers);
+			return new ResponseEntity<>(project, HttpStatus.OK);
+
+		} catch (final NotFoundException npe) {
+
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(npe.getMessage());
+
+		} catch (final Exception e) {
+
+			logger.error("Error fetching project.  Id: {}", id, e);
+			return handleException(e);
+		}
 
-        authorizeUser();
+	}
+
+	/**
+	 * Returns the teams assigned to a project.
+	 *
+	 * @param id the project ID
+	 * @return the project teams
+	 * @throws Exception the exception
+	 */
+
+	@SuppressWarnings("rawtypes")
+	@ApiOperation(value = "Get teams for project.  This call requires authentication with the correct role.", response = ResultList.class)
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
+			@ApiResponse(code = 500, message = "Internal server error") })
+	@ApiImplicitParams({
+			@ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
+	@RecordMetric
+	@RequestMapping(method = RequestMethod.GET, value = "/project/{id}/teams", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity getProjectTeams(@PathVariable(value = "id") final String id) throws Exception {
+
+		logger.info("Project: id: " + id);
+		authorizeUser();
+
+		try {
+
+			final ResultList<Team> results = ProjectService.getProjectTeams(id);
+			return new ResponseEntity<>(results, HttpStatus.OK);
+
+		} catch (final Exception e) {
+
+			return handleException(e);
+		}
+
+	}
+
+	/**
+	 * Search Projects.
+	 *
+	 * @param searchParameters the search parameters
+	 * @param bindingResult    the binding result
+	 * @param includeMembers   the include members
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("unchecked")
+	@ApiOperation(value = "Find projects. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
+			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
+			@ApiResponse(code = 500, message = "Internal server error") })
+	// @ModelAttribute API params documented in SearchParameter
+	@ApiImplicitParams({
+			@ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false") })
+	@RecordMetric
+	@RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(
+			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult,
+			@QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
-        // Check to make sure parameters were properly bound to variables.
-        checkBinding(bindingResult);
+		authorizeUser();
 
-        try {
+		// Check to make sure parameters were properly bound to variables.
+		checkBinding(bindingResult);
 
-            logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
+		try {
 
-            final User user = SecurityService.getUserFromSession();
-            final ResultList<Project> results = ProjectService.searchProjects(user, searchParameters);
+			logger.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
 
-            if (includeMembers && results != null && results.getItems() != null) {
+			final User user = SecurityService.getUserFromSession();
+			final ResultList<Project> results = ProjectService.searchProjects(user, searchParameters);
 
-                for (final Project project : results.getItems()) {
+			if (includeMembers && results != null && results.getItems() != null) {
 
-                    final Set<User> members = new HashSet<>();
+				for (final Project project : results.getItems()) {
 
-                    for (final String teamId : project.getTeams()) {
+					final Set<User> members = new HashSet<>();
 
-                        final Team team = TeamService.getTeam(teamId, includeMembers);
-                        members.addAll(team.getMemberList());
-                    }
+					for (final String teamId : project.getTeams()) {
 
-                    project.getMemberList().addAll(members);
-                }
+						final Team team = TeamService.getTeam(teamId, includeMembers);
+						members.addAll(team.getMemberList());
+					}
 
-            }
+					project.getMemberList().addAll(members);
+				}
 
-            return new ResponseEntity<>(results, HttpStatus.OK);
+			}
 
-        } catch (final Exception e) {
+			return new ResponseEntity<>(results, HttpStatus.OK);
 
-            return handleException(e);
-        }
+		} catch (final Exception e) {
 
-    }
+			return handleException(e);
+		}
 
-    /**
-     * Add the project.
-     *
-     * @param project the project
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("rawtypes")
-    @ApiOperation(value = "Add project.  This call requires authentication with the correct role.", response = Project.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "Successfully create project"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
-        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "project", value = "Project object", required = true, dataTypeClass = Project.class, paramType = "body")
-    })
-    @RecordMetric
-    @PostMapping(value = "/project", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity addProject(@RequestBody final Project project) throws Exception {
+	}
 
-        logger.info("Add project: {}", project);
-        final User authUser = authorizeUser();
+	/**
+	 * Add the project.
+	 *
+	 * @param project the project
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("rawtypes")
+	@ApiOperation(value = "Add project.  This call requires authentication with the correct role.", response = Project.class)
+	@ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully create project"),
+			@ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
+			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"),
+			@ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+			@ApiResponse(code = 500, message = "Internal server error") })
+	@ApiImplicitParams({
+			@ApiImplicitParam(name = "project", value = "Project object", required = true, dataTypeClass = Project.class, paramType = "body") })
+	@RecordMetric
+	@PostMapping(value = "/project", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity addProject(@RequestBody final Project project) throws Exception {
 
-        try {
+		logger.info("Add project: {}", project);
+		final User authUser = authorizeUser();
 
-            if (project == null) {
+		try {
 
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing project");
-            }
+			if (project == null) {
 
-            final Set<String> projectNames = ProjectService.getProjectNamesForEdition(project.getEdition().getId());
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing project");
+			}
 
-            if (projectNames.contains(project.getName())) {
+			final Set<String> projectNames = ProjectService.getProjectNamesForEdition(project.getEdition().getId());
 
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("A project with the name " + project.getName() + " already exists for this edition.");
-            }
+			if (projectNames.contains(project.getName())) {
 
-            try {
+				return ResponseEntity.status(HttpStatus.CONFLICT)
+						.body("A project with the name " + project.getName() + " already exists for this edition.");
+			}
 
-                project.validateAdd();
-            } catch (final Exception e) {
+			try {
 
-                final String errorMessage = "Project validation failed for add. Message: " + e.getMessage();
-                logger.error(errorMessage, e);
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
-            }
+				project.validateAdd();
+			} catch (final Exception e) {
 
-            final Project localProject = ProjectService.addProject(authUser, project);
+				final String errorMessage = "Project validation failed for add. Message: " + e.getMessage();
+				logger.error(errorMessage, e);
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+			}
 
-            if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+			final Project localProject = ProjectService.addProject(authUser, project);
 
-                logger.info("CALLING CROWD API");
+			if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
+					|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
 
-                try {
+				logger.info("CALLING CROWD API");
 
-                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), localProject.getName(), localProject.getDescription(), true);
+				try {
 
-                } catch (Exception e) {
+					CrowdAPIClient.addGroup(project.getEdition().getShortName(), localProject.getName(),
+							localProject.getDescription(), true);
 
-                    final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
-                    logger.error(errorMessage, e);
-                    return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("");
-                }
+				} catch (Exception e) {
 
-            } else {
+					final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
+					logger.error(errorMessage, e);
+					return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("");
+				}
 
-                logger.info("SKIP CALLING CROWD API");
-            }
+			} else {
 
-            // Return the response
-            return ResponseEntity.status(HttpStatus.CREATED).body(localProject);
+				logger.info("SKIP CALLING CROWD API");
+			}
 
-        } catch (final Exception e) {
+			// Return the response
+			return ResponseEntity.status(HttpStatus.CREATED).body(localProject);
 
-            logger.error("Error adding project. {}", project.toString(), e);
-            return handleException(e);
-        }
+		} catch (final Exception e) {
 
-    }
+			logger.error("Error adding project. {}", project == null ? null : project.toString(), e);
+			return handleException(e);
+		}
 
-    /**
-     * Update project.
-     *
-     * @param id the id
-     * @param project the project
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("rawtypes")
-    @ApiOperation(value = "Update project.  This call requires authentication with the correct role.", response = Project.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Update specified project"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "project", value = "Project object", required = true, dataTypeClass = Project.class, paramType = "body")
-    })
-    @RecordMetric
-    @PutMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity updateProject(@PathVariable(value = "id") final String id, @RequestBody final Project project) throws Exception {
+	}
 
-        logger.info("Update project: {}", project);
-        final User authUser = authorizeUser();
+	/**
+	 * Update project.
+	 *
+	 * @param id      the id
+	 * @param project the project
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("rawtypes")
+	@ApiOperation(value = "Update project.  This call requires authentication with the correct role.", response = Project.class)
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Update specified project"),
+			@ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
+			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"),
+			@ApiResponse(code = 417, message = "Failed Expectation"),
+			@ApiResponse(code = 500, message = "Internal server error") })
+	@ApiImplicitParams({
+			@ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+			@ApiImplicitParam(name = "project", value = "Project object", required = true, dataTypeClass = Project.class, paramType = "body") })
+	@RecordMetric
+	@PutMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity updateProject(@PathVariable(value = "id") final String id,
+			@RequestBody final Project project) throws Exception {
 
-        if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
+		logger.info("Update project: {}", project);
+		final User authUser = authorizeUser();
 
-            final String errorMessage = "Project is null or project id does not match id in URL.";
-            logger.error(errorMessage);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
-        }
+		if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
 
-        try {
+			final String errorMessage = "Project is null or project id does not match id in URL.";
+			logger.error(errorMessage);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+		}
 
-            project.validateUpdate(null);
-        } catch (final Exception e) {
+		try {
 
-            logger.error("Bad request for project update.", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+			project.validateUpdate(null);
+		} catch (final Exception e) {
 
-        try {
+			logger.error("Bad request for project update.", e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+		}
 
-            final Project proj = ProjectService.updateProjects(authUser, id, project);
-            return ResponseEntity.status(HttpStatus.OK).body(proj);
+		try {
 
-        } catch (final Exception e) {
+			final Project proj = ProjectService.updateProjects(authUser, id, project);
+			return ResponseEntity.status(HttpStatus.OK).body(proj);
 
-            logger.error("Error updating project.  Id: {}", id, e);
-            return handleException(e);
-        }
+		} catch (final Exception e) {
 
-    }
+			logger.error("Error updating project.  Id: {}", id, e);
+			return handleException(e);
+		}
 
-    /**
-     * Logical delete (inactivate) the project.
-     *
-     * @param id the id
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("rawtypes")
-    @ApiOperation(value = "Inactivate project.  This call requires authentication with the correct role.")
-    @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Successfully inactivated project"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    @DeleteMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)
-    public ResponseEntity deleteProject(@PathVariable("id") final String id) throws Exception {
+	}
 
-        logger.info("Inactivate project: {}", id);
-        final User authUser = authorizeUser();
+	/**
+	 * Logical delete (inactivate) the project.
+	 *
+	 * @param id the id
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("rawtypes")
+	@ApiOperation(value = "Inactivate project.  This call requires authentication with the correct role.")
+	@ApiResponses(value = { @ApiResponse(code = 202, message = "Successfully inactivated project"),
+			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+			@ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
+			@ApiResponse(code = 500, message = "Internal server error") })
+	@ApiImplicitParams({
+			@ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
+	@RecordMetric
+	@DeleteMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)
+	public ResponseEntity deleteProject(@PathVariable("id") final String id) throws Exception {
 
-        ProjectService.getProject(id, false);
+		logger.info("Inactivate project: {}", id);
+		final User authUser = authorizeUser();
 
-        try {
+		ProjectService.getProject(id, false);
 
-            ProjectService.inactivateProject(authUser, id);
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+		try {
 
-        } catch (final NotFoundException nfe) {
+			ProjectService.inactivateProject(authUser, id);
+			return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
-            logger.error("Error getting team. Id {} not found", id);
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+		} catch (final NotFoundException nfe) {
 
-        } catch (final Exception e) {
+			logger.error("Error getting team. Id {} not found", id);
+			return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
 
-            logger.error("Error inactivating project.  Id: {}", id, e);
-            return handleException(e);
-        }
+		} catch (final Exception e) {
 
-    }
+			logger.error("Error inactivating project.  Id: {}", id, e);
+			return handleException(e);
+		}
+
+	}
 }

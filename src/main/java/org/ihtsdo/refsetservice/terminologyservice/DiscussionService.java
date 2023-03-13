@@ -120,6 +120,9 @@ public class DiscussionService {
     public static DiscussionThread getDiscussion(final TerminologyService service, final User user, final String id) throws Exception {
 
         final DiscussionThread discussionThread = service.get(id, DiscussionThread.class);
+        
+        // make sure the user can access this thread
+        final Refset refset = RefsetService.getRefset(service, user, discussionThread.getRefsetInternalId());
 
         return discussionThread;
     }

@@ -2268,7 +2268,7 @@ public class RefsetMemberService {
         String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset=0&limit=" + limit;
 
         // if this search is for editing then get the concept leaf information
-        if (searchParameters.isEditing()) {
+        if (searchParameters.getEditing()) {
 
             url += "&includeLeafFlag=true&form=inferred";
         }
@@ -2413,7 +2413,7 @@ public class RefsetMemberService {
                         conceptBatch.add(concept);
                     }
 
-                    if (searchParameters.isEditing() || limitToNonMembers) {
+                    if (searchParameters.getEditing() || limitToNonMembers) {
 
                         populateMembershipInformation(refset, conceptBatch);
                     }
@@ -2914,7 +2914,7 @@ public class RefsetMemberService {
                                 populateAllLanguageDescriptions(refset, threadConcepts);
 
                                 // if not searching and editing then get the concept leaf information
-                                if (doNotSearch && searchParameters.isEditing()) {
+                                if (doNotSearch && searchParameters.getEditing()) {
 
                                     populateConceptLeafStatus(refset, threadConcepts);
                                 }

@@ -12,17 +12,12 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -74,6 +69,7 @@ import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -2838,6 +2834,10 @@ public class RefsetService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = getRefset(service, authUser, refsetInternalId);
+            
+            if (!authUser.checkPermission(User.ROLE_VIEWER, refset.getEdition(), null)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
+            }
 
             final User crowdUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
             final boolean isCrowdMember = (crowdUser != null);
@@ -2946,6 +2946,10 @@ public class RefsetService {
             }
             logger.info("Requester is: {}", requesterUser);
             final Refset refset = getRefset(service, requesterUser, refsetId);
+            
+            if (!requesterUser.checkPermission(User.ROLE_VIEWER, refset.getEdition(), null)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
+            }
 
             // if rejected, send notification to requester
             if (!acceptance) {
