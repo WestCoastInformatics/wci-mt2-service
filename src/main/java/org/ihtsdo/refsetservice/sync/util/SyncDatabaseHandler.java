@@ -196,10 +196,6 @@ public class SyncDatabaseHandler {
             project.setPrivateProject(false);
             project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
             project.setEdition(edition);
-            logger.debug("sss 111a: " + edition);
-            logger.debug("sss 111b: " + edition.getOrganizationId());
-            logger.debug("sss 111c: " + OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()));
-            logger.debug("sss 111d: " + project.getTeams());
             project.getTeams().add(OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()).getId());
 
             // Persist

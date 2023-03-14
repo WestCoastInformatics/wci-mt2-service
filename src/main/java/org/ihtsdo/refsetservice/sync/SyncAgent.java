@@ -38,19 +38,19 @@ public abstract class SyncAgent {
     /** Execution options. */
     private static Boolean isProductionSystem = null;
 
-    private static Boolean isPerVersionSync = null;
+    private static Boolean isPerVersionSync = true;
 
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
     private static boolean testing = false;
 
-    protected static String testingEditionShortName = "SNOMEDCT-NL";
+    protected static String testingEditionShortName = "SNOMEDCT";
 
-    protected static String testingRefset = null; // To test entire edition
-    // protected static String testingRefset = "561000172108"; // Default refset created upon Default Project
+    protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
+    // protected static String testingRefset = null; // To test entire edition
+    // protected static String testingRefset = "771000202103"; // 771000202103 is from Managed Service and has rtt content.  (NO - Norwegian) 
     // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
-    // protected static String testingRefset = "741000172102"; // Refset with project defined in RTT
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
 
     protected static String developerTestingEditionShortName = null;
@@ -195,7 +195,7 @@ public abstract class SyncAgent {
     public static Boolean getIsIgnoreCoreRefsets() {
 
         return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
-        // return true;
+//        return true;
     }
 
     public static Boolean getIsProductionSystem() {

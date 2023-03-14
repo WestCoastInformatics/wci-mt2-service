@@ -1,0 +1,1073 @@
+terminologyId,negated,value
+12345001,0,"<<387293003 | Anthralin (substance)|"
+12345001,0,"<<406473004 |  Contact allergen (substance)|"
+TMP-ykhjle,0,"<< 405729008 | Afgang af blodig afføring |"
+TMP-w2h334,0,<<281239006
+TMP-w2h334,0,"<56018004
+<<281239006"
+TMP-w2h334,0,"*:408731000= <<56018004"
+TMP-w2h334,0,"(*:408731000=<<56018004) AND (*:408731000=<<56018004)"
+TMP-w2h334,0,"(*:408731000=<<56018004),(*:408731000=<<195967001)"
+TMP-w2h334,0,"(<<281239006,(*:260507000=195967001),(*:255234002=195967001),(*:47429007=195967001),(*:263502005=195967001),(*:363699004=195967001),(*:363700003=195967001),(*:363701004=195967001),(*:42752001=195967001),(*:408729009=195967001),(*:419066007=195967001),(*:418775008=195967001),(*:363705008=195967001),(*:411116001=195967001),(*:363703001=195967001),(*:363713009=195967001),(*:116686009=195967001),(*:363710007=195967001),(*:363709002=195967001),(*:272741003=195967001),(*:370129005=195967001),(*:260686004=195967001),(*:246454002=195967001),(*:370135005=195967001),(*:260870009=195967001),(*:408730004=195967001),(*:405815000=195967001),(*:405816004=195967001),(*:363704007=195967001),(*:370130000=195967001),(*:370131001=195967001),(*:246513007=195967001),(*:410675002=195967001),(*:370132008=195967001),(*:118171006=195967001),(*:118170007=195967001),(*:118168003=195967001),(*:118169006=195967001),(*:370133003=195967001),(*:408732007=195967001),(*:424876005=195967001),(*:408731000=195967001),(*:425391005=195967001),(*:424226004=195967001),(*:424244007=195967001),(*:424361007=195967001),(*:260507000=<<56018004),(*:255234002=<<56018004),(*:47429007=<<56018004),(*:263502005=<<56018004),(*:363699004=<<56018004),(*:363700003=<<56018004),(*:363701004=<<56018004),(*:42752001=<<56018004),(*:408729009=<<56018004),(*:419066007=<<56018004),(*:418775008=<<56018004),(*:363705008=<<56018004),(*:411116001=<<56018004),(*:363703001=<<56018004),(*:363713009=<<56018004),(*:116686009=<<56018004),(*:363710007=<<56018004),(*:363709002=<<56018004),(*:272741003=<<56018004),(*:370129005=<<56018004),(*:260686004=<<56018004),(*:246454002=<<56018004),(*:370135005=<<56018004),(*:260870009=<<56018004),(*:408730004=<<56018004),(*:405815000=<<56018004),(*:405816004=<<56018004),(*:363704007=<<56018004),(*:370130000=<<56018004),(*:370131001=<<56018004),(*:246513007=<<56018004),(*:410675002=<<56018004),(*:370132008=<<56018004),(*:118171006=<<56018004),(*:118170007=<<56018004),(*:118168003=<<56018004),(*:118169006=<<56018004),(*:370133003=<<56018004),(*:408732007=<<56018004),(*:424876005=<<56018004),(*:408731000=<<56018004),(*:425391005=<<56018004),(*:424226004=<<56018004),(*:424244007=<<56018004),(*:424361007=<<56018004),<56018004) MINUS (<<31387002,<<370220003)"
+TMP-m3thw9,0,"<<106063007 | Cardiovascular finding (finding) |"
+TMP-m3thw9,0,"<<244259008 | Right dominant posterior descending artery (body structure) |"
+TMP-kyo4d1,0,"<<40733004 |Infectious disease (disorder)|"
+TMP-5ev02m,0,"<<65094009 |Multiple malformation syndrome with facial defects as major feature (disorder)|"
+TMP-5ev02m,0,"<<77701002 |Multiple malformation syndrome, moderate short stature, facial (disorder)|"
+TMP-5ev02m,0,"<<205258009 |Acrocephalosyndactyly type I (disorder)|"
+TMP-5ev02m,0,"<<52616002 |Freeman-Sheldon syndrome (disorder)|"
+TMP-5ev02m,0,"<<715216008 |Distal arthrogryposis type 2B (disorder)|"
+TMP-5ev02m,0,"<<81780002 |Beckwith-Wiedemann syndrome (disorder)|"
+TMP-5ev02m,0,"<<47535005 |Coloboma, heart malformation, choanal atresia, retardation of growth and development, genital abnormalities, and ear malformations association (disorder)|"
+TMP-5ev02m,0,"<<715215007 |Chromosome 11p13 deletion syndrome (disorder)|"
+TMP-biazc1,0,<<410607006
+TMP-o412dw,0,<<404684003
+TMP-wufo14,0,<<123037004
+TMP-sdr2h9,0,"<<40733004|Infectious disease(disorder)|"
+3,0,"<<404684003 | Clinical finding (finding) |"
+TMP-pbud2t,0,<<414545008
+TMP-pbud2t,0,<<53741008
+TMP-pbud2t,0,<<118806004
+TMP-pbud2t,0,<<41801008
+1731000189101,0,"<<473011001 | Allergic condition (disorder) |"
+1731000189101,0,"<<160469004 | Family history: Allergy (situation) |"
+1731000189101,0,"<<160268005 | No family history: Allergy (situation) |"
+1731000189101,0,"<<702814002 | Allergy clinic (environment) |"
+1731000189101,0,"<<709078005 | Allergen product (product) |"
+1731000189101,0,"<<716186003 | No known allergy (situation) |"
+1731000189101,0,"<<165007007 | Allergy testing done (situation) |"
+1731000189101,0,"<<161611007 | History of non-drug allergy (situation) |"
+1731000189101,0,"<<762616007 | History of food allergy (situation) |"
+1731000189101,0,"<<165008002 | Allergy testing not done (situation) |"
+1731000189101,0,"<<170841002 | Allergy treatment changed (situation) |"
+1731000189101,0,"<<12481000132103 | History of biological substance allergy (situation) |"
+1731000189101,0,"<<428448003 | History of atopy (situation) |"
+1731000189101,0,"<<735933002 | History of allergy to drug (situation) |"
+1731000189101,0,"<<309913004 | Clinical allergy department (environment) |"
+1731000189101,0,"<<32193000 | Free-standing immunology clinic (environment) |"
+1731000189101,0,"<<360957003 | Hospital-based outpatient allergy clinic (environment) |"
+1731000189101,0,"<<73239008 | Nogier auricular allergy (body structure) |"
+1731000189101,0,"<<722446000 | Allergy record (record artifact) |"
+1731000189101,0,"<<21943002 | Clinical immunology and allergy specialist (occupation) |"
+TMP-9yl9u5,0,"<< 264395009|Microorganism|"
+TMP-zg9722,0,"<<272379006 | Event (event) |"
+TMP-ms1r98,0,"<<223496003|Geographical and/or political region of the world (geographic location)|"
+100,0,"<<91723000 |Anatomical structure| : 363698007 |Finding site| = <<125605004 |Fracture of bone|"
+TMP-hxps9v,0,"<<285201006|Hospital environment (environment)|"
+2018001,0,"<< 64572001 |Disease (disorder)| :
+        370135005 |Pathological process| = 442614005 |Parasitic process (qualifier value)|"
+TMP-ebd6wo,0,"<< 410662002|Concept model attribute|"
+TMP-203i74,0,"20078004
+224690008
+224701009
+225728007
+261904005
+274516006
+309901009
+309902002
+309903007
+309904001
+309905000
+309906004
+309907008
+309909006
+309910001
+309912009
+309915006
+309916007
+309919000
+309923008
+309924002
+309925001
+309926000
+309927009
+309933000
+309934006
+309936008
+309937004
+309938009
+309939001
+309940004
+309941000
+309942007
+309943002
+309944008
+309945009
+309946005
+309948006
+309949003
+309954007
+309958005
+309959002
+309961006
+309964003
+309966001
+309967005
+309969008
+309970009
+309971008
+309972001
+309974000
+309978002
+309980008
+309984004
+309986002
+309987006
+309988001
+309989009
+309990000
+309991001
+309992008
+309993003
+309994009
+309995005
+309996006
+309998007
+310203004
+33022008
+34304006
+35971002
+36125001
+397784001
+398161000
+405269005
+405606005
+418433008
+418518002
+420223003
+42665001
+427695007
+441548002
+441662001
+441994008
+443621004
+702827003
+702828008
+702877000
+702878005
+80522000"
+TMP-6zxhpl,0,"<<223366009|Healthcare professional|"
+TMP-25ciim,0,"<<138875005|SNOMED CT Concept|"
+TMP-58juxe,0,"<<138875005|SNOMED CT Concept|"
+TMP-dvgbh4,0,"<< 264395009|Microorganism|"
+TMP-fx8yt3,0,"<< 394658006|Clinical specialty (qualifier value)|"
+61000057105,0,<442389001
+TMP-h7yqyr,0,"<<127465007 | Specimen from gastrointestinal tract |"
+TMP-hjd7u0,0,<<258415003
+67,0,"<54597004 | Chronic colitis (disorder) |"
+67,0,"<235748008 | Fulminant amebic colitis (disorder) |"
+67,0,"<<55023005 | Amebic nondysenteric colitis (disorder) |"
+67,0,"<<111910009 | Amebic infection (disorder) |"
+TMP-ckevu4,0,"<<64572001 | Disease (disorder) |"
+TMP-snkyqu,0,"<<105590001 | Substance (substance) |"
+TMP-1nrmfb,0,"<<410942007 | Drug or medicament (substance) |"
+TMP-i2drd7,0,"<<373873005 | Pharmaceutical / biologic product (product) |"
+TMP-1mdnik,0,"<<226465004 | Drinks (substance) |"
+100000,0,"<<71388002 | Procedure (procedure) |"
+TMP-j0jfhm,0,<<7389001
+TMP-5mjt4a,0,"<<373873005 | Pharmaceutical / biologic product (product) |"
+1041000003106,0,"<<223369002 |Country (geographic location)|"
+1041000003106,0,"<<223369002 |Country (geographic location)|"
+1061000003107,0,<<735924004
+1061000003107,0,"<<385910005 | Cataract care education (procedure) | AND <<385908008 | Cataract care assessment (procedure) |"
+TMP-6xrlab,0,"<< 410942007|Drug or medicament|"
+TMP-bpi7jy,0,<<410662002
+391000210104,0,"<<264395009 | Microorganism (organism) |"
+198907,0,"<<473011001 | Allergic condition (disorder) |"
+198907,0,"<<160469004 | Family history: Allergy (situation) |"
+198907,0,"<<160268005 | No family history: Allergy (situation) |"
+198907,0,"<<702814002 | Allergy clinic (environment) |"
+198907,0,"<<709078005 | Allergen product (product) |"
+198907,0,"<<716186003 | No known allergy (situation) |"
+198907,0,"<<165007007 | Allergy testing done (situation) |"
+198907,0,"<<161611007 | History of non-drug allergy (situation) |"
+198907,0,"<<762616007 | History of food allergy (situation) |"
+198907,0,"<<165008002 | Allergy testing not done (situation) |"
+198907,0,"<<170841002 | Allergy treatment changed (situation) |"
+198907,0,"<<12481000132103 | History of biological substance allergy (situation) |"
+198907,0,"<<428448003 | History of atopy (situation) |"
+198907,0,"<<735933002 | History of allergy to drug (situation) |"
+198907,0,"<<309913004 | Clinical allergy department (environment) |"
+198907,0,"<<32193000 | Free-standing immunology clinic (environment) |"
+198907,0,"<<360957003 | Hospital-based outpatient allergy clinic (environment) |"
+198907,0,"<<73239008 | Nogier auricular allergy (body structure) |"
+198907,0,"<<722446000 | Allergy record (record artifact) |"
+198907,0,"<<21943002 | Clinical immunology and allergy specialist (occupation) |"
+900,0,"<< 396232000 |Inguinal hernia (disorder)|"
+TMP-v8dtkk,0,<284009009
+TMP-remqbo,0,<442083009
+TMP-50zbhk,0,<272394005
+TMP-ht17kd,0,<49755003
+TMP-730obt,0,<434711009
+TMP-2yb5vs,0,<105590001
+TMP-8cqscb,0,<71388002
+TMP-f2s0o6,0,<129264002
+TMP-zkjl47,0,<<32712000
+23646867,0,"<< 49062001 | Device (physical object) |"
+23646867,1,"<< 705178002 | Physical therapy device (physical object) |"
+TMP-emlgjg,0,"<< 405944004"
+391000210104,0,"<<264395009 | Microorganism (organism) |"
+TMP-evp7dh,0,"<< 429040005 |Ulcer (disorder)|"
+TMP-ezyhzr,0,"<< 95345008"
+TMP-xq6xfn,0,"<< 71388002"
+TMP-49ff8r,0,"<<71388002 |Procedure (procedure)|"
+TMP-uq5m51,0,"71388002 |Procedure (procedure)|"
+TMP-tzjhah,0,<71388002
+TMP-91v3nj,0,"<  404684003 |Clinical finding|"
+TMP-w9fpbj,0,"<< 404684003 |Clinical finding|"
+TMP-nwujn9,0,"<<95345008 |Ulcer of foot (disorder)|"
+TMP-aoiaao,0,"<<301021005 |Ulcer of toe (disorder)|"
+TMP-ftynwd,0,"<<95345008 |Ulcer of foot (disorder)|"
+TMP-7w9h41,0,"<<95345008 |Ulcer of foot (disorder)|"
+TMP-5bmk30,0,"<<64572001 | Disease (disorder) |"
+TMP-vw6bvj,0,<71388002
+TMP-bjnwn8,0,<53527002
+TMP-37v6gr,0,"<<444677008 |Report type|"
+TMP-s528r7,0,"<< 252741004"
+TMP-vge4k4,0,"<<  73211009 |Diabetes mellitus|"
+TMP-wu9ks6,0,">  40541001 |Acute pulmonary edema|"
+TMP-kfxmdg,0,<<105590001
+TMP-ks1yjq,0,<<272673000
+TMP-1ypokc,0,<<284548004
+TMP-sq8wjo,0,<<368208006
+TMP-ndytm6,0,<<410607006
+TMP-usjrea,0,<<405944004
+8271000003100,0,<<118817003
+8271000003100,0,<<706389006
+391000210104,0,"<<264395009 | Microorganism (organism) |"
+1,0,<<38341003
+FDB1,0,<<38341003
+FDB2,0,"<<37372002, >>85539001, >>8765009, >>430349003"
+FDB3,0,"<<37372002;minus<<85539001;minus<<8765009; minus<<430349003"
+TMP-alto4s,0,"<< 429040005 |Ulcer (disorder)|"
+TMP-alto4s,0,"<< 416462003 |Wound (disorder)|"
+TMP-alto4s,1,"<< 416462003 |Wound (disorder)|: 363698007 |Finding site| = << 38866009 |Body part structure (body structure)|"
+TMP-alto4s,1,"<< 429040005 |Ulcer (disorder)|: 363698007 |Finding site| = << 38866009 |Body part structure (body structure)|"
+TMP-alto4s,1,"<<40845000 | Gastrointestinal ulcer (disorder) |"
+TMP-alto4s,1,"<2622007 | Infected ulcer of skin (disorder) |"
+TMP-alto4s,1,"<2622007 | Infected ulcer of skin (disorder) |"
+TMP-alto4s,1,"<399912005 | Pressure ulcer (disorder) |"
+TMP-alto4s,1,"<262526004 | Wound of skin (disorder) |"
+TMP-alto4s,1,"<<82988003 | Open wound of trachea with complication (disorder) |"
+TMP-vbjowr,0,"<<394658006 | Clinical specialty (qualifier value) |"
+TMP-swtaub,0,"<<14669001 | Acute renal failure syndrome (disorder) |"
+TMP-swtaub,0,"<<609482001 | Induced termination of pregnancy complicated by renal tubular necrosis (disorder) |"
+TMP-swtaub,0,"<<236426006 | Postoperative acute tubular necrosis (disorder) |"
+TMP-swtaub,0,"<<236427002 | Post-traumatic acute tubular necrosis (disorder) |"
+TMP-swtaub,0,"<<57469000 | Miscarriage with acute renal failure (disorder) |"
+TMP-swtaub,0,"<<200118004 | Post-delivery acute renal failure with postnatal problem (disorder) |"
+TMP-swtaub,0,"<<129561000119108 | Pre-renal acute kidney injury (disorder) |"
+TMP-swtaub,1,"<<236432001 | Pulmonary renal syndrome (disorder) |"
+TMP-swtaub,0,"<<236574008 | Acute rejection of renal transplant (disorder) |"
+TMP-swtaub,1,"<<236573002 | Very mild acute rejection of renal transplant (disorder) |"
+TMP-swtaub,0,"<<723189000 | Acute renal insufficiency (disorder) |"
+TMP-swtaub,0,"<<716864001 | Hemorrhagic fever with renal syndrome (disorder) |"
+TMP-swtaub,0,"<<14669001 | Acute renal failure syndrome (disorder) |"
+TMP-swtaub,0,"<<609482001 | Induced termination of pregnancy complicated by renal tubular necrosis (disorder) |"
+TMP-swtaub,0,"<<236426006 | Postoperative acute tubular necrosis (disorder) |"
+TMP-swtaub,0,"<<236427002 | Post-traumatic acute tubular necrosis (disorder) |"
+TMP-swtaub,0,"<<57469000 | Miscarriage with acute renal failure (disorder) |"
+TMP-swtaub,0,"<<200118004 | Post-delivery acute renal failure with postnatal problem (disorder) |"
+TMP-swtaub,0,"<<129561000119108 | Pre-renal acute kidney injury (disorder) |"
+TMP-swtaub,1,"<<236432001 | Pulmonary renal syndrome (disorder) |"
+TMP-swtaub,0,"<<236574008 | Acute rejection of renal transplant (disorder) |"
+TMP-swtaub,1,"<<236573002 | Very mild acute rejection of renal transplant (disorder) |"
+TMP-swtaub,0,"<<723189000 | Acute renal insufficiency (disorder) |"
+TMP-swtaub,0,"<<716864001 | Hemorrhagic fever with renal syndrome (disorder) |"
+TMP-qoy8i7,0,"<<14669001 | Acute renal failure syndrome (disorder) |"
+TMP-qoy8i7,0,"<<609482001 | Induced termination of pregnancy complicated by renal tubular necrosis (disorder) |"
+TMP-qoy8i7,0,"<<236426006 | Postoperative acute tubular necrosis (disorder) |"
+TMP-qoy8i7,0,"<<236427002 | Post-traumatic acute tubular necrosis (disorder) |"
+TMP-qoy8i7,0,"<<57469000 | Miscarriage with acute renal failure (disorder) |"
+TMP-qoy8i7,0,"<<200118004 | Post-delivery acute renal failure with postnatal problem (disorder) |"
+TMP-qoy8i7,0,"<<129561000119108 | Pre-renal acute kidney injury (disorder) |"
+TMP-qoy8i7,0,"<<236574008 | Acute rejection of renal transplant (disorder) |"
+TMP-qoy8i7,0,"<<723189000 | Acute renal insufficiency (disorder) |"
+TMP-qoy8i7,0,"<<716864001 | Hemorrhagic fever with renal syndrome (disorder) |"
+TMP-qoy8i7,1,"<<236432001 | Pulmonary renal syndrome (disorder) |"
+TMP-qoy8i7,1,"<<236573002 | Very mild acute rejection of renal transplant (disorder) |"
+TMP-w7d69m,0,"<272123002 | Frequencies (qualifier value) |"
+TMP-shvzzo,0,"<<271737000 | Anemia (disorder) |"
+TMP-shvzzo,1,"<420543008 | Anemia associated with acquired immunodeficiency syndrome (disorder) |"
+TMP-coky1n,0,"<<441677009|Imaging of lung|"
+TMP-coky1n,1,"<258174001|Imaging guidance procedure|"
+TMP-coky1n,0,"16559261000119101 | Fine needle aspiration biopsy of pseudocyst of pancreas using computed tomography guidance (procedure) |"
+TMP-8gq0u1,0,"< 298306002 | Finding of standing balance (finding) |"
+TMP-84x2wv,0,"<232854009 | Pulmonary valve operation (procedure) |: 405813007 |Procedure site - Direct (attribute)| = 39057004 |Pulmonary valve structure (body structure)|, 
+              260686004 |Method (attribute)| = 257903006 |Repair - action (qualifier value)|"
+L_0002,0,"< 410720000 | Pain by sensation quality (finding) |"
+L_0003,0,"< 410720000"
+TMP-cn7el2,0,"< 19829001 |disorder of lung| MINUS < 301867009 |edema of trunk|"
+TMP-31mrlm,0,"< 410720000 | Pain by sensation quality (finding) | : [0..0] 363698007 |Finding site (attribute)| =*"
+TMP-31mrlm,1,"299375006 OR 301424008 OR 164426001 OR 225944008 OR 275895008 OR 37226004"
+TMP-ugvvuo,0,"<366110009 |Finding of form of nose (finding)| MINUS (162562004 |Concerned about shape of nose (finding)| OR << 366111008 |Finding of form of bridge of nose (finding)| OR 366113006 |Finding of form of nostril (finding)| OR 366112001 |Finding of form of tip of nose (finding)| OR 249338002 |Stenosis of nostrils (finding)|)"
+TMP-yuigq1,0,"<<71388002 |Procedure (procedure)|:[1..*]*=<<106181007 |Immunologic substance (substance)|,
+[1..*]*=39937001 <<|Skin structure (body structure)|"
+TMP-xuekuv,0,"<<71388002 |Procedure (procedure)|:[1..*]*=<<106181007 |Immunologic substance (substance)|,
+[1..*]*=<<398827000 |Vaccine (substance)|"
+TMP-uhvxnu,0,"<<71388002 |Procedure (procedure)|:[1..*]*=<<116003000 |Structure of immune system (body structure)|,
+[0..0]*=<<360029007 |Nonsurgical biopsy - action (qualifier value)|,
+[0..0]*=<<129284003 |Surgical action (qualifier value)|,
+[0..0]*=<<89457008 |Radioactive isotope (substance)|"
+TMP-oexphe,0,"<< 272379006 | Event (event) |"
+TMP-bny6ae,0,"<<123038009 | Specimen (specimen) |"
+TMP-vor4ly,0,"<<123038009 | Specimen (specimen) |"
+TMP-3w82i3,0,"<< 195967001 |Asthma (disorder)|"
+TMP-x9a8q9,0,"<<12738006 | Brain structure (body structure) |"
+500201000057102,0,"<63371000052103 | Address type (qualifier value) |"
+TMP-c4kzqo,0,"<<736542009 | Pharmaceutical dose form (dose form) |"
+test,0,"<< 303315009 |Spider venom (substance)|"
+TMP-e9c3a9,0,"<< 8230009 |Poultry (substance)|"
+TMP-jmo38q,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-1hq2mi,0,<<45913009|laryngitis|
+TMP-0ha6jv,0,"<< 198130006 |Female pelvic inflammatory disease (disorder)|
+MINUS
+<< 53277000 |Vulvovaginitis (disorder)|"
+TMP-o3ihvj,0,<<45913009|laryngitis|
+TMP-r47300,0,"<< 243796009 | Situation with explicit context (situation)|: 246090004 | Associated finding (attribute)| = <<386692008 | Menorrhagia (finding)|"
+123456768,0,"( << 198130006 |Female pelvic inflammatory disease (disorder)| MINUS << 53277000 |Vulvovaginitis (disorder)| )  OR 279055000|Obstetric pain|"
+1112234,0,<<36598100
+TMP-c95llx,0,"<<237836003 | Short stature disorder (disorder) |"
+TMP-p27e1r,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-9fut60,0,"< 301187008 |Finding of appearance of nose (finding)|"
+TMP-fn29yg,0,"<410720000: [0..0] 363698007 = *"
+TMP-obfttx,0,<301187008
+12345001,0,"<<387293003 | Anthralin (substance)|"
+12345001,0,"<<406473004 |  Contact allergen (substance)|"
+TMP-keizks,0,<<440545006
+TMP-aaf93f,0,"<<12738006 | Brain structure (body structure) |"
+TMP-eqb0tx,0,"<< 272379006"
+TMP-1mtxzm,0,<<113257007
+TMP-r9y2l9,0,"<  223366009 |Healthcare professional (occupation)|"
+TMP-ti5j43,0,"<  43741000 |Site of care (environment)|
+OR <<  224884006 |Location within hospital premises (environment)|
+OR <<  441480003 |Primary care department (environment)|
+OR <<  440654001 |Inpatient environment (environment)|
+OR <<  440655000 |Outpatient environment (environment)|
+OR <<  272497004 |Residential environment (environment)|"
+TMP-x8ncf4,0,"<  129843006 |Health management finding (finding)|"
+TMP-s00xcv,0,"<< 409526008 | Personal protective equipment (physical object) |
+OR << 6919005 | Protective clothing material, device (physical object) |
+OR << 706724001 | Face shield (physical object) |
+OR << 261382003 | Mask (physical object) |
+OR << 52291003 | Glove, device (physical object) |
+OR << 15922004 | Gown, device (physical object) |
+OR << 706154004 | Shoe cover (physical object) |
+OR << 465982004 | Surgical hood (physical object) |"
+TMP-bx98rh,0,"<  277973009 |Respiratory equipment (physical object)|  
+  OR <  336589003 |Oxygen equipment (physical object)|  
+  OR <  334943003 |Respiratory appliances (physical object)|  
+  OR <  304077006 |Respiratory system device (physical object)|  
+  OR <  706167001 |Anesthesia and respiratory device (physical object)|"
+TMP-6y0huk,0,"<  429019009 |Finding related to biological sex (finding)|  
+  MINUS <<  302081005 |Finding of sex of baby (finding)|"
+TMP-zvkjvs,0,"<  365873007 |Gender finding (finding)|"
+TMP-d2xbpc,0,"<  372148003 |Ethnic group (ethnic group)|"
+TMP-939gyb,0,"<  415229000 |Racial group (racial group)|"
+TMP-u7intn,0,"<  14679004 |Occupation (occupation)|"
+TMP-exa3hk,0,"<  223496003 |Geographical and/or political region of the world (geographic location)|
+  OR <  365457007 |Foreign travel history finding (finding)|
+  OR <  420008001 |Travel (event)|"
+TMP-cj63mn,0,"<  272497004 |Residential environment (environment)|"
+TMP-udl36l,0,"<  444148008 |Person in family of subject (person)|"
+TMP-9adyjd,0,"<  365481000 |Finding of household composition (finding)|"
+TMP-ek29mc,0,"<  365483002 |Finding related to care and support circumstances and networks (finding)|"
+TMP-zzbcuh,0,<<49601007
+TMP-t5aa70,0,"<<85562004 | Hand structure (body structure) |"
+TMP-kykvu3,0,"<<386725007 OR <<75367002 OR <<364075005 OR <<431314004 OR <<86290005 OR << 442476006 OR << 442349007 OR <<8499008 OR <<103228002 OR << 271626009 OR << 6942003 OR <<405161002  OR <<440398005 OR <<248592006 OR <<263731006 OR <<248598005 OR <<248565000 OR << 248582003 OR <<364533002 OR <<247433003 OR <<248750004 OR <<226379006 OR << 709017009 OR <<413384008"
+TMP-pqqd1o,0,"<< 20262006 OR <<77427003 OR <<288848001 OR <<371632003 OR <<193894004 OR <<443371007 OR <<126664009 OR <<442646005 OR <<419045004 OR <<274710003 OR <<91175000 OR <<271823003 OR <<288849009 OR << 58840004 OR << 9763007 OR << 386661006 OR << 75252003 OR << 3424008 OR <<70944005 OR <<67750007"
+TMP-ddplt4,0,"<< 138389411000119105 OR 
+<< 870590002 OR 
+<< 870589006 OR 
+<< 373895009 OR 
+<< 67782005 OR 
+<< 674814021000119106 OR 
+<< 64779008 OR 
+<< 119731000146105 OR 
+<< 62914000 OR 
+<< 1119304009 OR 
+<< 119741000146102 OR 
+<< 710027002 OR 
+<< 419099009 OR 
+<< 128053003 OR 
+<< 34095006 OR 
+<< 67406007 OR 
+<< 3006004 OR 
+<< 119981000146107 OR 
+<< 1240561000000108 OR 
+<< 119751000146104 OR 
+<< 25374005 OR 
+<< 56265001 OR 
+<< 80394007 OR 
+<< 389086002 OR 
+<< 70944005 OR 
+<< 1240541000000107 OR 
+<< 90708001 OR 
+<< 880529761000119102 OR 
+<< 866151004 OR 
+<< 59455009 OR 
+<< 57653000 OR 
+<< 1240531000000103 OR 
+<< 1240521000000100 OR 
+<< 183676005 OR 
+<< 882784691000119100 OR 
+<< 1119303003 OR 
+<< 870591003 OR 
+<< 302846007 OR 
+<< 308906005 OR 
+<< 91302008 OR 
+<< 870588003 OR 
+<< 76571007 OR 
+<< 415623008 OR 
+<< 238149007 OR 
+<< 866152006 OR 
+<< 429340002 OR 
+<< 75570004 OR 
+<< 1017214008"
+TMP-tdl0wg,0,"<<367336001 OR <<788751009 OR <<234336002 OR <<86553008 OR <<76334006 OR <<108290001 OR <<312235007 OR <<265764009 OR <<313039003"
+TMP-39jbld,0,"<<444077007 OR <<76978006 OR <<30662005 OR <<414464004 OR <<122435008 OR <<9718006 OR <<122433001 OR <<118147004 OR <<88667002 OR << 60170009 OR << 61911006 OR << 871555000 OR 
+<< 871559006 OR << 871556004 OR << 871557008 OR << 871558003 OR << 871560001 OR << 1240461000000109 OR << 1240471000000102"
+TMP-5bcx6f,0,"<<840535000 OR <<840536004 OR <<840533007 OR << 870361009 OR << 870362002 OR << 1240411000000107 OR <<1119343008 OR << 1155866009"
+TMP-vhxgf8,0,"<<1157196000  OR <<1144997007 OR <<1157197009 OR <<1157108008 OR <<1144998002 OR << 1162646009 OR << 1156257007 OR << 1157107003 OR <<840534001 OR <<1119350007 OR << 1162645008  OR <<409524006 OR <<422181004 OR <<449399005 OR <<386242000 OR <<225368008 OR <<409529001 OR <<409686004 OR <<449390009 OR <<122467006 OR <<77248004 OR <<370832005 OR <<361235007 OR <<170499009 OR <<170500000 OR <<40174006 OR <<225995005 OR <<275827007 OR <<38883000 OR <<29537000 OR <<736762004 OR <<409525007 OR <<410410006 OR <<409522005 OR <<409684001 OR <<409583003 OR <<243791004"
+TMP-jx5fdq,0,"<<698608004 OR <<385820004 OR << 736017006 OR << 223426009 OR 
+<< 868263005"
+TMP-imcxaj,0,"<<183452005 OR <<305376003 OR <<305351004 OR <<305360007 OR <<32485007 OR <<417005 OR << 107724000 OR << 397821002 OR << 710112000 OR << 429202003"
+TMP-swq8u1,0,"<<40617009 OR <<233573008 OR <<447996002 OR <<243141005 OR <<428311008 OR <<371908008 OR <<371907003 OR <<11140008 OR << 229301009 OR << 431182000 OR << 697984004 OR << 829831000000100 OR <<1156748002 OR <<1156747007"
+TMP-k8c44f,0,"<< 718447001 OR <<79031000119101 OR <<931000119107 OR <<444932008 OR <<763326004 OR <<419991009 OR <<405496006 OR <<22803001 OR <<718085007 OR <<128258000 OR << 371825009 OR << 371820004"
+TMP-a7eonx,0,"<< 21522001 OR << 84387000 OR << 131148009 OR << 29857009 OR << 43724002 OR << 9826008 OR << 49727002 OR << 62315008 OR << 3006004 OR << 267036007 OR << 271807003 OR << 84229001 OR << 103001002 OR << 386661006 OR << 25064002 OR << 66857006 OR << 248567008 OR << 57676002 OR << 79890006 OR << 44169009 OR << 36955009 OR << 30746006 OR << 367391008 OR << 68962001 OR << 68235000 OR << 64531003 OR << 422587007 OR << 162397003 OR << 38880002 OR << 91175000 OR << 46742003 OR << 282145008 OR << 422400008 OR << 56018004 OR << 3415004 OR << 82272006 OR <<• 23924001 OR << 44077006 OR << 26544005"
+TMP-wsbyub,0,"<<260373001 OR <<260415000 OR <<419984006 OR <<125154007 OR << 895231008 OR << 1240581000000104 OR << 1240591000000102 OR << 897035006 OR << 897034005"
+TMP-c9a4a7,0,"<<410605003 OR <<410592001 OR <<415684004"
+TMP-nbzyfi,0,"<  313333008 |Sample obtained (situation)|
+OR <  168123008 |Sample sent for examination (situation)|"
+672411000189107,0,"<<272123002 | Frequencies (qualifier value) |"
+672411000189107,0,"<<419492006 | Additional dosage instructions (qualifier value) |"
+672411000189107,0,"<<284009009 |Route of administration value (qualifier value)|"
+672411000189107,0,"<<272106006 | Temporal periods of day (qualifier value) |"
+672411000189107,0,"<<307157008 | Temporal periods relating to activities (qualifier value) |"
+672411000189107,0,"<<420247005 | Dosing instruction imperative (qualifier value) |"
+672411000189107,0,"<<408102007 | Unit dose (qualifier value) |"
+672411000189107,0,"<<736542009 | Pharmaceutical dose form (dose form) |"
+672411000189107,0,"<<732935002 | Unit of presentation (unit of presentation) |"
+TMP-ti23y3,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-3gfkk6,0,"<<410594000 OR 410593006"
+TMP-n04bmv,0,"<< 734427005 OR << 168137004 OR <<697989009 OR <<119297000 OR <<258607008 OR <<258606004 OR <<258500001 OR <<258411007 OR <<258412000 OR <<418564007 OR << 119342007 OR << 119364003 OR <<122610009 OR <<445447003 OR <<119334006 OR <<119339001 OR << 445297001 OR <<472901003 OR <<258529004 OR <<122877000 OR <<309164002 OR <<122575003 OR << 871810001 OR << 461911000124106"
+TMP-ly9x72,0,"161527007 |History of asthma (situation)| OR 160377001 |Family history: Asthma (situation)|"
+TMP-s9wujy,0,"<<198130006 |Female pelvic inflammatory disease (disorder)|"
+TMP-y866k4,0,"<  365581002 |Finding of marital or partnership status (finding)|"
+TMP-qgp542,0,"<  223369002 |Country (geographic location)|"
+VascularCHUPDiagnósticos,0,"< 64572001 |Disorder|: 
+	 363698007 |Finding site| = <<59820001 |Estrutura vascular|"
+37711000003109,0,"< 195967001 |Asthma (disorder)|"
+37711000003109,0,82272006
+37711000003109,0,76067001
+37711000003109,0,25064002
+TMP-eo6zqx,0,"< 301187008 |Finding of appearance of nose (finding)|"
+TMP-4y9rpi,0,"<< 16332841000119106 OR << 169069000 OR << 399208008 OR << 88628008"
+1234567,0,"<< 195967001"
+TMP-a4gxo3,0,"< 301187008 |Finding of appearance of nose (finding)|"
+TMP-a4gxo3,1,"<< 301188003 |Finding of size of nose (finding)|"
+TMP-j1d35y,0,"<<426465002 | Entire nucleus of brain (body structure)|"
+"Social Care regimes",0,"<< 183425000 |Social care (regime/therapy)|"
+TMP-g2arlj,0,<<405944004
+683861000189108,0,"<<272123002 | Frequencies (qualifier value) |"
+683861000189108,0,"<<419492006 | Additional dosage instructions (qualifier value) |"
+683861000189108,0,"<<284009009 |Route of administration value (qualifier value)|"
+683861000189108,0,"<<272106006 | Temporal periods of day (qualifier value) |"
+683861000189108,0,"<<307157008 | Temporal periods relating to activities (qualifier value) |"
+683861000189108,0,"<<420247005 | Dosing instruction imperative (qualifier value) |"
+683861000189108,0,"<<408102007 | Unit dose (qualifier value) |"
+TMP-9qyxrp,0,"<< 78648007 OR << 27624003 OR << 49601007 OR << 414029004 OR << 235856003 OR << 118940003 OR << 50043002 OR << 8517006 OR << 80141007 OR << 107921000119107 OR << 90708001 OR << 363346000 OR << 75934005 OR << 414825006 OR << 414915002 OR << 370388006 OR << 370391006 OR << 77386006 OR << 77176002"
+TMP-9qyxrp,0,"<< 78648007 OR << 27624003 OR << 49601007 OR << 414029004 OR << 235856003 OR << 118940003 OR << 50043002 OR << 8517006 OR << 80141007 OR << 107921000119107 OR << 90708001 OR << 363346000 OR << 75934005 OR << 414825006 OR << 414915002 OR << 370388006 OR << 370391006 OR << 77386006 OR << 77176002"
+TMP-nv3hfl,0,"<< 78648007 OR << 27624003 OR << 49601007 OR << 414029004 OR << 235856003 OR << 118940003 OR << 50043002 OR << 8517006 OR << 80141007 OR << 107921000119107 OR << 90708001 OR << 363346000 OR << 75934005 OR << 414825006 OR << 414915002 OR << 370388006 OR << 370391006 OR << 77386006 OR << 77176002"
+TMP-pcx3sl,0,"(
+  < 64572001|Disease| : 363698007|Finding site| != < 423857001|Structure of half of body lateral to midsagittal plane|
+) MINUS (
+  (<< 417746004|Traumatic injury| OR < 46635009|Type 1 diabetes mellitus| OR < 44054006|Type 2 diabetes mellitus| OR < 22298006|Myocardial infarction| OR < 199223000|Diabetes mellitus during pregnancy, childbirth and the puerperium| OR < 60168000|Osteomyelitis| OR < 396275006|Osteoarthritis| OR < 90560007|Gout| OR < 8619003|Infertile| OR < 418130002|Proctocolitis| OR < 80967001|Dental caries|)
+)"
+TMP-2yz7tk,0,<<386510005
+TMP-2yz7tk,0,<<406080008
+TMP-2yz7tk,0,<<408654003
+TMP-2yz7tk,0,<<12535006
+TMP-2yz7tk,0,<<263629008
+TMP-2yz7tk,0,<<280115004
+TMP-2yz7tk,0,<<127584007
+TMP-2yz7tk,0,<<70201003
+TMP-2yz7tk,0,<<370862004
+TMP-2yz7tk,0,<<423444004
+TMP-2yz7tk,0,<<385699009
+TMP-2yz7tk,0,<<274483006
+TMP-2yz7tk,0,<<439236000
+TMP-2yz7tk,0,<<31965002
+TMP-2yz7tk,0,<<362958002
+TMP-2yz7tk,0,<<25928001
+TMP-2yz7tk,0,<<229270007
+TMP-2yz7tk,0,<<106030000
+TMP-2yz7tk,0,<<298685005
+TMP-2yz7tk,0,<<263126002
+TMP-2yz7tk,0,<<106028002
+TMP-2yz7tk,0,<<167036008
+TMP-2yz7tk,0,<<303624006
+TMP-2yz7tk,0,<<1579007
+TMP-2yz7tk,0,<<463892005
+TMP-2yz7tk,0,<<702933008
+TMP-2yz7tk,0,<<463341009
+TMP-2yz7tk,0,<<22731001
+TMP-2yz7tk,0,<<463946006
+TMP-2yz7tk,0,<<118666003
+TMP-2yz7tk,0,<<310161006
+TMP-2yz7tk,0,<<183545006
+TMP-2yz7tk,0,<<463386007
+TMP-2yz7tk,0,<<83756009
+TMP-2yz7tk,0,<<394801008
+TMP-2yz7tk,0,<<463213007
+TMP-2yz7tk,0,<<4424002
+TMP-2yz7tk,0,<<423204009
+TMP-2yz7tk,0,<<59169001
+TMP-2yz7tk,0,<<309989009
+TMP-2yz7tk,0,<<463255003
+TMP-2yz7tk,0,<<463328005
+TMP-2yz7tk,0,<<266907002
+TMP-2yz7tk,0,<<463188001
+TMP-2yz7tk,0,<<185252009
+TMP-2yz7tk,0,<<463280003
+TMP-2yz7tk,0,<<463627008
+TMP-2yz7tk,0,<<700784006
+TMP-2yz7tk,0,<<308278001
+TMP-2yz7tk,0,<<183727009
+TMP-2yz7tk,0,<<701195002
+TMP-2yz7tk,0,<<164503006
+TMP-2yz7tk,0,<<463350006
+TMP-2yz7tk,0,<<305723005
+TMP-2yz7tk,0,<<305897005
+TMP-2yz7tk,0,<<185485004
+TMP-2yz7tk,0,<<717143009
+TMP-2yz7tk,0,<<705911003
+TMP-2yz7tk,0,<<761960006
+TMP-2yz7tk,0,<<463314004
+TMP-2yz7tk,0,<<702191008
+TMP-2yz7tk,0,<<463208008
+TMP-2yz7tk,0,<<705901005
+TMP-2yz7tk,0,<<303856001
+TMP-2yz7tk,0,<<128538000
+TMP-2yz7tk,0,<<66391000
+TMP-2yz7tk,0,<<302414003
+TMP-2yz7tk,0,<<416621003
+TMP-2yz7tk,0,<<304364007
+TMP-2yz7tk,0,<<183991005
+TMP-2yz7tk,0,<<414252009
+TMP-2yz7tk,0,<<26107004
+TMP-2yz7tk,0,<<66954000
+TMP-2yz7tk,0,<<416536005
+TMP-2yz7tk,0,<<467831004
+TMP-2yz7tk,0,<<309428008
+TMP-2yz7tk,0,<<228595003
+TMP-2yz7tk,0,<<705178002
+TMP-2yz7tk,0,<<266743001
+TMP-2yz7tk,0,<<702916001
+TMP-2yz7tk,0,<<310129007
+TMP-2yz7tk,0,<<80522000
+TMP-2yz7tk,0,<<309360001
+TMP-2yz7tk,0,<<736055001
+TMP-2yz7tk,0,<<423040001
+TMP-2yz7tk,0,"<< 64623003"
+TMP-2yz7tk,0,<<108305003
+TMP-2yz7tk,0,<<226050009
+TMP-2yz7tk,0,<<229594008
+TMP-2yz7tk,0,<<84478008
+TMP-2yz7tk,0,<<705196006
+TMP-2yz7tk,0,<<309940004
+TMP-2yz7tk,0,<<705201002
+TMP-2yz7tk,0,<<768822006
+TMP-2yz7tk,0,<<229064008
+TMP-2yz7tk,0,<<410088003
+TMP-2yz7tk,0,<<278414003
+TMP-2yz7tk,0,<<107658001
+TMP-2yz7tk,0,<<18867006
+TMP-rbjmnb,0,<<386510005
+TMP-rbjmnb,0,<<406080008
+TMP-rbjmnb,0,<<408654003
+TMP-rbjmnb,0,<<12535006
+TMP-rbjmnb,0,<<263629008
+TMP-rbjmnb,0,<<280115004
+TMP-rbjmnb,0,<<127584007
+TMP-rbjmnb,0,<<70201003
+TMP-rbjmnb,0,<<370862004
+TMP-rbjmnb,0,<<423444004
+TMP-rbjmnb,0,<<385699009
+TMP-rbjmnb,0,<<274483006
+TMP-rbjmnb,0,<<439236000
+TMP-rbjmnb,0,<<31965002
+TMP-rbjmnb,0,<<362958002
+TMP-rbjmnb,0,<<25928001
+TMP-rbjmnb,0,<<229270007
+TMP-rbjmnb,0,<<106030000
+TMP-rbjmnb,0,<<298685005
+TMP-rbjmnb,0,<<263126002
+TMP-rbjmnb,0,<<106028002
+TMP-rbjmnb,0,<<167036008
+TMP-rbjmnb,0,<<303624006
+TMP-rbjmnb,0,<<1579007
+TMP-rbjmnb,0,<<463892005
+TMP-rbjmnb,0,<<702933008
+TMP-rbjmnb,0,<<463341009
+TMP-rbjmnb,0,<<22731001
+TMP-rbjmnb,0,<<463946006
+TMP-rbjmnb,0,<<118666003
+TMP-rbjmnb,0,<<310161006
+TMP-rbjmnb,0,<<183545006
+TMP-rbjmnb,0,<<463386007
+TMP-rbjmnb,0,<<83756009
+TMP-rbjmnb,0,<<394801008
+TMP-rbjmnb,0,<<463213007
+TMP-rbjmnb,0,<<4424002
+TMP-rbjmnb,0,<<423204009
+TMP-rbjmnb,0,<<59169001
+TMP-rbjmnb,0,<<309989009
+TMP-rbjmnb,0,<<463255003
+TMP-rbjmnb,0,<<463328005
+TMP-rbjmnb,0,<<266907002
+TMP-rbjmnb,0,<<463188001
+TMP-rbjmnb,0,<<185252009
+TMP-rbjmnb,0,<<463280003
+TMP-rbjmnb,0,<<463627008
+TMP-rbjmnb,0,<<700784006
+TMP-rbjmnb,0,<<308278001
+TMP-rbjmnb,0,<<183727009
+TMP-rbjmnb,0,<<701195002
+TMP-rbjmnb,0,<<164503006
+TMP-rbjmnb,0,<<463350006
+TMP-rbjmnb,0,<<305723005
+TMP-rbjmnb,0,<<305897005
+TMP-rbjmnb,0,<<185485004
+TMP-rbjmnb,0,<<717143009
+TMP-rbjmnb,0,<<705911003
+TMP-rbjmnb,0,<<761960006
+TMP-rbjmnb,0,<<463314004
+TMP-rbjmnb,0,<<702191008
+TMP-rbjmnb,0,<<463208008
+TMP-rbjmnb,0,<<705901005
+TMP-rbjmnb,0,<<303856001
+TMP-rbjmnb,0,<<128538000
+TMP-rbjmnb,0,<<66391000
+TMP-rbjmnb,0,<<302414003
+TMP-rbjmnb,0,<<416621003
+TMP-rbjmnb,0,<<304364007
+TMP-rbjmnb,0,<<183991005
+TMP-rbjmnb,0,<<414252009
+TMP-rbjmnb,0,<<26107004
+TMP-rbjmnb,0,<<66954000
+TMP-rbjmnb,0,<<416536005
+TMP-rbjmnb,0,<<467831004
+TMP-rbjmnb,0,<<309428008
+TMP-rbjmnb,0,<<228595003
+TMP-rbjmnb,0,<<705178002
+TMP-rbjmnb,0,<<266743001
+TMP-rbjmnb,0,<<702916001
+TMP-rbjmnb,0,<<310129007
+TMP-rbjmnb,0,<<80522000
+TMP-rbjmnb,0,<<309360001
+TMP-rbjmnb,0,<<736055001
+TMP-rbjmnb,0,<<423040001
+TMP-rbjmnb,0,"<< 64623003"
+TMP-rbjmnb,0,<<108305003
+TMP-rbjmnb,0,<<226050009
+TMP-rbjmnb,0,<<229594008
+TMP-rbjmnb,0,<<84478008
+TMP-rbjmnb,0,<<705196006
+TMP-rbjmnb,0,<<309940004
+TMP-rbjmnb,0,<<705201002
+TMP-rbjmnb,0,<<768822006
+TMP-rbjmnb,0,<<229064008
+TMP-rbjmnb,0,<<410088003
+TMP-rbjmnb,0,<<278414003
+TMP-rbjmnb,0,<<107658001
+TMP-rbjmnb,0,<<18867006
+TMP-kunfn0,0,"<<247052002 | Cataract finding (finding) |"
+TMP-kunfn0,0,"<<13793006 | Extracapsular extraction of lens (procedure) |"
+TMP-kunfn0,0,"85785001 | Capsulotomy of lens (procedure) |"
+TMP-kunfn0,0,"<<308090007 | On examination - right cataract absent (situation) |"
+TMP-kunfn0,0,"<<308088006 | On examination - right cataract present (situation) |"
+TMP-kunfn0,0,"363960009 | Cataract feature (observable entity) |"
+TMP-kunfn0,0,"422349000 | Cataract surgery specialty (qualifier value) |"
+TMP-kunfn0,0,"<<735924004 | Cataract lens fragments in anterior chamber of eye due to and following cataract surgery (finding) |"
+TMP-kunfn0,0,"<<722439009 | Endothelial dystrophy, iris hypoplasia, congenital cataract, stromal thinning syndrome (disorder) |"
+TMP-kunfn0,0,"<<110473004 | Cataract surgery (procedure) |"
+TMP-kunfn0,0,"<< 171216005 | Cataract screening (procedure) |"
+TMP-kunfn0,0,"<<385910005 | Cataract care education (procedure) |"
+TMP-kunfn0,0,"<<385908008 | Cataract care assessment (procedure) |"
+TMP-kunfn0,0,"<<385911009 | Cataract care management (procedure) |"
+TMP-kunfn0,0,"<<45919008 | Excision of secondary membrane (procedure) |"
+TMP-kunfn0,0,"<<415266006 | Referral to cataract clinic (procedure) |"
+TMP-kunfn0,0,"<<408383005 | Referral for cataract extraction (procedure) |"
+TMP-kunfn0,0,"<< 410702009 | Pars plana lensectomy of cataract (procedure) |"
+TMP-kunfn0,0,"<< 231742002 | Combined operation with cataract extraction (procedure) |"
+TMP-kunfn0,0,"<<54305003 | Lens couching procedure (procedure) |"
+TMP-kunfn0,0,"<< 160348002 | Family history: Cataract (situation) |"
+TMP-kunfn0,0,"<<161489009 | History of cataract (situation) |"
+TMP-kunfn0,0,"<<95721006 | Unilateral cataract (situation) |"
+TMP-kunfn0,0,"<<162811006 | On examination - cataract present (situation) |"
+TMP-kunfn0,0,"<<308091006 | On examination - left cataract absent (situation) |"
+TMP-kunfn0,0,"<<434215004 | Operation on cataract planned (situation) |"
+TMP-kunfn0,0,"<<428535004 | History of cataract extraction (situation) |"
+TMP-kunfn0,0,"<<422349000 | Cataract surgery specialty (qualifier value) |"
+TMP-kunfn0,0,"<<439054007 | Surgical cataract aspiration - action (qualifier value) |"
+TMP-kunfn0,0,"<<128306009 | Cataract (morphologic abnormality) |"
+TMP-kunfn0,0,"<<385909000 | Cataract care (regime/therapy) |"
+TMP-ym4e9e,0,"< 19829001 |disorder of lung|"
+TMP-nwnfm4,0,"< 19829001 |disorder of lung|:
+116676008 |associated morphology| = << 79654002 |edema|"
+TMP-qtun8a,0,"<<12738006 | Brain structure (body structure) |"
+TMP-c7tcsl,0,"<< 71388002|Procedure| : << 405813007|Procedure site - Direct| = 66754008|Appendix structure|"
+311000210107,0,"<<449410007 |Tubulovillous adenoma of anorectum (disorder)|"
+68661000052109,0,"<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|"
+TMP-5xizsu,0,"<< 363349007 |Malignant tumor of stomach|"
+TMP-ycuxpp,0,<250373003
+45841000003106,0,"<< 363349007 |Cancer of stomach|"
+TMP-hhzuf3,0,"<< 363349007 | Malignant tumor of stomach (disorder) |"
+NZ-GPsets,0,^321000210102
+NZ-GPsets,0,^71000210108
+NZ-GPsets,0,^61000210102
+NZ-GPsets,0,^261000210101
+NZ-GPsets,0,^471000210108
+NZ-GPsets,0,^241000210102
+NZ-GPsets,0,^191000210102
+NZ-GPsets,0,^91000210107
+NZ-GPsets,0,^421000210109
+NZ-GPsets,0,^351000210106
+NZ-GPsets,0,^251000210104
+NZ-GPsets,0,^50931000210104
+NZ-GPsets,0,^391000210104
+NZ-GPsets,0,^501000210102
+NZ-GPsets,0,^461000210102
+NZ-GPsets,0,^451000210100
+NZ-GPsets,0,^101000210108
+NZ-GPsets,0,^131000210103
+NZ-GPsets,0,^181000210104
+NZ-GPsets,0,^141000210106
+NZ-GPsets,0,^50941000210107
+NZ-GPsets,0,^121000210100
+NZ-GPsets,0,^481000210105
+NZ-GPsets,0,^51000210100
+NZ-GPsets,0,^441000210103
+TMP-kr80l9,0,"^ 711112009 |ICNP diagnoses simple map reference set (foundation metadata concept)|"
+TMP-pn25uv,0,"<< 363358000 |Malignant tumor of lung (disorder)|"
+TMP-1j5sv5,0,"<< 363478007 |Malignant tumor of thyroid gland (disorder)|"
+TMP-jqwhsm,0,"<< 254837009 |Malignant neoplasm of breast (disorder)|"
+TMP-122a3o,0,"<< 254837009 |Malignant neoplasm of breast (disorder)|"
+TMP-ngaymq,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-ao02m1,0,"^ 733990004 |Nursing Activities Reference Set (foundation metadata concept)|
+^ 733991000 |Nursing Health Issues Reference Set (foundation metadata concept)|"
+TMP-ao02m1,1,"<709261005 | Assessment of breastfeeding |"
+TMP-xnup9b,0,"^ 711112009 |ICNP diagnoses simple map reference set (foundation metadata concept)|"
+TMP-xwf9ga,0,"<< 363349007 |Malignant tumor of stomach (disorder)|"
+TMP-17fpqa,0,"< 185823004"
+68661000052109,0,"<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|"
+TMP-86sgza,0,"<<404684003 |Clinical finding|:
+363698007 |Finding site| = <<80891009 |Heart structure|,
+116676008 |Associated morphology| = <<6574001 |Necrosis|"
+TMP-pn05o2,0,"< 366649008 OR < 297947008 OR < 276323006"
+TMP-af5kkj,1,1755008
+TMP-af5kkj,1,251061000
+TMP-af5kkj,0,"<<404684003 |Clinical finding|:
+363698007 |Finding site| = <<80891009 |Heart structure|,
+116676008 |Associated morphology| = <<6574001 |Necrosis|"
+5961000202107,0,^6001000202100
+TMP-c45h7m,0,<185823004
+TMP-c45h7m,1,366649008
+TMP-c45h7m,1,297947008
+TMP-c45h7m,1,274672009
+TMP-c45h7m,1,403197009
+TMP-0emwb4,0,"< 185823004 | Finding of skin texture (finding) |"
+TMP-x9a8q9,0,"<<12738006 | Brain structure (body structure) |"
+61000269105,0,"<< 50043002 | Disorder of respiratory system (disorder) |"
+61000269105,0,"<<118669005 | Procedure on respiratory system (procedure) |"
+61000269105,0,"<<183447000 | Admission to respiratory intensive care unit (procedure) |"
+61000269105,0,"<<410205005 | Respiratory care assessment (procedure) |"
+61000269105,0,"<<410207002 | Respiratory care management (procedure) |"
+61000269105,0,"<<408501008 | Emergency hospital admission for chronic obstructive pulmonary disease (procedure) |"
+61000269105,0,"<<410198006 | Respiratory function management (regime/therapy) |"
+61000269105,0,"<<409523000 | Standard respiratory precautions (procedure) |"
+61000269105,0,"<<183507005 | Non-urgent respiratory admission (procedure) |"
+61000269105,0,"<<363021009 | Complication of respiratory therapy procedure (disorder) |"
+61000269105,0,"<<23426006 | Measurement of respiratory function (procedure) |"
+TMP-pmmxvk,0,"^ 816080008 |International Patient Summary|"
+RM-LocaisAnatomicos,0,"<< 442083009 |Anatomical or acquired body structure (body structure)|:
+R 405813007 |Procedure site - Direct (attribute)|=   <113091000 | Magnetic resonance imaging (procedure) |"
+TMP-q3extc,0,"<<399912005 | Pressure ulcer (disorder) |"
+TMP-nrj155,0,<<105590001
+TMP-o09inv,0,"<  19829001 |Disorder of lung|  AND <  301867009 |Edema of trunk|"
+TMP-r88s65,0,"<  19829001 |Disorder of lung|  OR  <  301867009 |Edema of trunk|"
+TMP-pd6ct1,0,"<<  19829001 |Disorder of lung|  MINUS <<  301867009 |Edema of trunk|"
+TMP-rsy67r,0,"<< 19829001 |Disorder of lung| MINUS (<< 301867009 |Edema of trunk| OR 12240991000119102)"
+TMP-rsy67r,0,"<<12738006 | Brain structure (body structure) |"
+TMP-xswo2j,0,"<< 1142182006 OR << 1142181004 OR << 1145003007 OR << 1145035007 OR << 1145034006 OR << 1145023008 OR << 1145033000 OR << 1145030002 OR << 1145022003 OR << 1145032005 OR << 1145029007 OR <<1157195001 OR <<1157106007 OR <<1162644007 OR <<1157198004 OR <<1157200005 OR <<1157199007 OR <<1157201009 OR <<1157113007 OR <<1157120000 OR <<1162648005 OR <<1162650002 OR <<1157110005 OR <<1157118003 OR <<1162647000 OR <<1162649002 OR <<1156270003 OR <<1156746003 OR <<1156256003 OR <<1156267002 OR <<1156265005"
+741000172102,0,"<<716186003 |No known allergy (situation)|"
+741000172102,0,"<<716186003 |No known allergy (situation)|"
+TMP-qwtrk9,0,<<363346000
+TMP-0jjycs,0,"<< 12105461000119100 |Burn of dorsum of left hand (disorder)|"
+TMP-80v4i6,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-zkr0gt,0,"< 185823004 |Finding of skin texture (finding)|
+MINUS ( << 366649008 |Finding of thickness of skin (finding)| 
+OR << 297947008 |Finding of consistency of skin (finding)|
+OR << 248194004 |Wrinkled face (finding)| 
+OR << 275887009 |Scaly scalp (finding)| )"
+TMP-38bldn,0,"< 410720000 | Pain by sensation quality (finding) | : [0..0] 363698007 |Finding site| = << 123037004 |Body structure (body structure)|"
+TMP-35vm05,0,"(< 185823004 |Finding of skin texture (finding)| MINUS ( << 297947008 |Finding of consistency of skin (finding)| OR << 366649008 |Finding of thickness of skin (finding)| )) : [0..0] 363714003 |Interprets| = << 248167003 |Facial appearance|"
+TMP-u4qm72,0,"<<105480006 | Refusal of treatment by patient (situation) |"
+TMP-gxvn0d,0,"< 410720000:
+           [0..0] {363698007 |Finding site (attribute)| = *}"
+TMP-5fwe3y,1,"<< 297947008 |Finding of consistency of skin (finding)|"
+TMP-5fwe3y,1,"<< 366649008 |Finding of thickness of skin (finding)|"
+TMP-5fwe3y,0,"< 185823004 |Finding of skin texture (finding)|: {363698007 |Finding site (attribute)| = (20795001 |Structure of skin region (body structure)| OR 39937001 |Skin structure (body structure)|) }"
+TMP-uj1pwr,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-zv5seu,0,"< 185823004 |Finding of skin texture (finding)| MINUS (<< 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)|)"
+TMP-phbr34,0,"< 410720000 |Pain by sensation quality (finding)|"
+TMP-phbr34,0,"< 410720000 |Pain by sensation quality (finding)| MINUS < 301857004 |Finding of body region (finding)|"
+TMP-3cnbpp,0,"< 410720000 | Pain by sensation quality (finding) |:[0..0] 363698007 |Finding site (attribute)| =<<123037004 |Body structure (body structure)|"
+TMP-zj5gr1,0,"<185823004 |Finding of skin texture (finding)|"
+TMP-ucstfk,0,"(< 185823004 |Finding of skin texture|: 363698007 |Finding site (attribute)| = (39937001 |Skin structure (body structure)| OR 20795001 |Structure of skin region (body structure)|)) MINUS (<< 20795001 |Structure of skin region (body structure)| or << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)| OR << 276323006 |Finding of color of skin (finding)|)"
+TMP-6mvocs,0,"<185823004 |Finding of skin texture| MINUS (<<297947008 |Finding of consistency of skin (finding)| OR <<366649008 |Finding of thickness of skin (finding)|)"
+TMP-2iuazs,0,"<< 73211009 |Diabetes mellitus| OR (< 64572001 |Disorder| : * = << 73211009 |Diabetes mellitus|)"
+TMP-nxi4j1,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-adu0gi,0,"<< 185823004 |Finding of skin texture|"
+TMP-5npk1k,0,"< 410720000: [0..0] 363698007 = *"
+TMP-d0eudt,0,"(< 185823004 |Finding of skin texture (finding)|: 363698007 = 39937001) MINUS (<< 366649008 OR << 297947008 OR 403197009 OR 274672009)"
+TMP-ukpc2s,0,"<410720000 | Pain by sensation quality (finding)|"
+TMP-727ied,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-vjzaaz,0,"<185823004 |Finding of skin texture (finding)| or <<279002006 |Lichenification of skin (finding)|"
+TMP-i2m72d,0,"<410720000 |Pain by sensation quality (finding)|: [0..0]363698007 |Finding site (attribute)|=*"
+TMP-xnrkpf,0,"< 410720000 | Pain by sensation quality (finding) |:
+[0..0] 363698007 |Finding site (attribute)| = << 442083009 |Anatomical or acquired body structure (body structure)|"
+TMP-e0l5qe,0,"< 185823004 |Finding of skin texture (finding)|:
+363698007 |Finding site| = >> 20795001 |Structure of skin region (body structure)|"
+TMP-e0l5qe,1,"<< 297947008 |Finding of consistency of skin (finding)| OR << 366649008 |Finding of thickness of skin (finding)|"
+TMP-zjc7b9,0,"< 185823004 |Finding of skin texture (finding)|:
+363698007 |Finding site| = >> 20795001 |Structure of skin region (body structure)|"
+TMP-zjc7b9,1,"<< 297947008 |Finding of consistency of skin (finding)| OR << 366649008 |Finding of thickness of skin (finding)|"
+73171000052105,0,"(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)"
+TMP-tyjouz,0,"< 185823004 |Finding of skin texture (finding)| minus ( <<20795001 OR <<  366649008 OR <<297947008 OR <<276323006 OR <<297971001)"
+TMP-xpx4oz,0,"< 185823004 |Finding of skin texture (finding)| minus (< 20795001 or << 366649008 or << 297947008 or << 276323006 or << 297971001 or  < 247434009 or < 271761007)"
+62831000003103,0,"< 410720000 | Pain by sensation quality (finding) |:
+( [0..0] 363698007 |Finding site| = * )"
+62941000003103,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-fxqlts,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-4c65en,0,"((<185823004 |Finding of skin texture|:[0..0]363698007 |Finding site|=<20795001) MINUS <<366649008) MINUS <<297947008"
+TMP-ue7lgh,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-b9b339,0,"< 185823004 |Finding of skin texture (finding)|"
+TMP-9y2x4i,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-yf3sgm,0,"<410720000 |Pain by sensation quality (finding)|"
+TMP-yf3sgm,1,"<410720000 |Pain by sensation quality (finding)|:363698007 |Finding site|=*"
+TMP-ze0i2n,0,"<185823004 |Finding of skin texture|"
+TMP-ze0i2n,1,"<185823004 |Finding of skin texture| : 363698007 |Finding site| =<20795001 |Structure of skin region|"
+TMP-ze0i2n,1,"<< 366649008 |Finding of thickness of skin (finding)|"
+TMP-ze0i2n,1,"<< 297947008 |Finding of consistency of skin (finding)|"
+TMP-6cy8vf,0,"<< 410607006 |Organism (organism)|"
+TMP-8akvn7,0,"(816995008 |Rough skin (finding)| OR <185823004 |Finding of skin texture (finding)|) MINUS (<<366649008 |Finding of thickness of skin (finding)| OR <<297947008 |Finding of consistency of skin (finding)| OR <<95320005 |Disorder of skin (disorder)| OR <271761007 |Scaly skin (finding)| OR <247434009 |Wrinkled skin (finding)| OR <<827180003 |Dry skin of abdomen (finding)|)"
+TMP-z5wj04,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-9m33vh,0,"<185823004 |Finding of skin texture (finding)|"
+TMP-t62sv7,0,"<185823004 |Finding of skin texture| MINUS (<<366649008 |Thickness of skin - finding| OR <<297947008 |Finding of consistency of skin| OR <<406122000 |Head finding (finding)|)"
+TMP-5xw6rh,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-r7idmd,0,"< 185823004 |Finding of skin texture (finding)| MINUS (<< 366649008 |Finding of thickness of skin (finding)|OR << 297947008 |Finding of consistency of skin (finding)|)"
+TMP-v3fwzd,0,"<185823004 |Finding of skin texture (finding)| MINUS (<< 366649008 |Finding of thickness of skin (finding)| OR <<297947008 |Finding of consistency of skin (finding)| OR << 275887009 |Scaly scalp (finding)| OR <<248194004 |Wrinkled face (finding)|)"
+TMP-gkdkd8,0,"<<56265001 | Heart disease (disorder) |"
+TMP-aepo6v,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-gi38oa,0,"< 185823004 |Finding of skin texture (finding)| MINUS (< 185823004 |Finding of skin texture (finding)|: 363698007 |Finding site (attribute)| = < 20795001 |Structure of skin region (body structure)|)"
+TMP-gi38oa,1,"<<366649008 | Thickness of skin - finding |"
+TMP-gi38oa,1,"<<297948003 | Normal skin consistency |"
+TMP-gi38oa,1,"<<297947008 | Finding of consistency of skin |"
+TMP-gi38oa,1,"<<403197009 | Sun-induced wrinkles |"
+TMP-gi38oa,0,"<<403197009 | Sun-induced wrinkles (disorder) |"
+TMP-gi38oa,1,"<<247434009 | Wrinkled skin |"
+TMP-1yna9a,0,"<410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-xtk7h2,0,"< 185823004 |Finding of skin texture (finding)|"
+63341000003107,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-7v5lbi,0,"<185823004 |Finding of skin texture|"
+TMP-t6ptxs,0,"< 410720000 | Pain by sensation quality (finding) | : [0..0] {363698007 |Finding site (attribute)| = *}"
+TMP-slq2nk,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-slq2nk,1,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-mxuzvf,0,"<185823004 |Finding of skin texture|
+MINUS (<<366649008 |Thickness of skin - finding|
+OR <<297947008 |Finding of consistency of skin| 
+OR <<248194004 |Wrinkled face| 
+OR << 275887009 |Scaly scalp|)"
+TMP-m5sxem,0,"( < 185823004 |Finding of skin texture (finding)| :
+( 363698007 |Finding site| = 39937001 |Skin structure| 
+or 363698007 |Finding site| = 20795001 |Structure of skin region|
+) ) 
+MINUS 
+( 
+<< 366649008 |Finding of thickness of skin (finding)|
+or 
+<< 297947008 |Finding of consistency of skin (finding)|
+)"
+63621000003105,0,"< 185823004 |Finding of skin texture (finding)| MINUS ( << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)| OR <<248194004 |Wrinkled face (finding)| OR << 275887009 |Scaly scalp (finding)|)"
+TMP-7s2r9t,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-7s2r9t,0,"< 410720000"
+TMP-7s2r9t,1,"< 410720000: 363698007=*"
+TMP-5db6mb,0,<185823004
+TMP-5db6mb,1,<<297947008
+TMP-5db6mb,1,<<366649008
+TMP-bwmsr7,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-qqfrjk,0,"<185823004 |Finding of skin texture|"
+TMP-qqfrjk,1,"<<366649008 | Thickness of skin - finding |"
+TMP-qqfrjk,1,"<<297947008 | Finding of consistency of skin |"
+TMP-qqfrjk,1,"<<429193009 | Rhytide of forehead |"
+TMP-qqfrjk,1,"<<10360000 | Crow's feet |"
+TMP-qqfrjk,1,"<<9368001 | Circumoral rhytides |"
+TMP-qqfrjk,1,"<<248194004 | Wrinkled face |"
+TMP-qqfrjk,1,"<<403197009 | Sun-induced wrinkles |"
+TMP-qqfrjk,1,"<<275887009 | Scaly scalp |"
+63731000003103,0,"< 410720000 | Pain by sensation quality (finding) |"
+63761000003107,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+63851000003102,0,"< 106076001 |Skin finding (finding)| : [1..1]  363714003 |Interprets (attribute)| =<< 364530004 |Skin texture (observable entity)|"
+63881000003107,0,"< 106076001 |Skin finding (finding)| : [1..1]  363714003 |Interprets (attribute)| =<< 364530004 |Skin texture (observable entity)|"
+TMP-a74k3x,0,"< 185823004 |Finding of skin texture (finding)| 
+MINUS (
+          << 20795001 |Structure of skin region (body structure)| 
+    OR << 366649008 |Finding of thickness of skin (finding)| 
+    OR << 297947008 |Finding of consistency of skin (finding)|
+    OR << 276323006 |Finding of color of skin (finding)|
+    OR (* : 363698007 |Finding site (attribute)| = << 38866009 |Body part structure (body structure)|)
+)"
+TMP-ejsgfm,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-mxavd2,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+63981000003101,0,"< 61167004 |Thyroid stimulating hormone measurement (procedure)|"
+63981000003101,0,"117942008 |Measurement of thyroxine antibody (procedure)|"
+64131000003104,0,"(< 185823004 |Finding of skin texture (finding)| MINUS << 366649008 |Finding of thickness of skin (finding)|) MINUS << 297947008 |Finding of consistency of skin (finding)|"
+TMP-3tb5qb,0,"(< 185823004 |Finding of skin texture (finding)|) MINUS (429356007 OR 429193009  OR 275887009  OR 248194004  OR 248195003  OR 10360000 OR 9368001 OR 85345005 OR << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)|)"
+TMP-1skp36,0,"< 410720000 |Pain by sensation quality (finding)|"
+TMP-1skp36,1,"<< 29695002 |Throbbing pain (finding)|"
+TMP-2c1tbd,0,"<185823004 |Finding of skin texture (finding)| MINUS ( << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)| OR << 248194004 |Wrinkled face (finding)| OR << 275887009 |Scaly scalp (finding)| or 274672009 |Changes in skin texture (finding)| OR 403197009 |Sun-induced wrinkles (disorder)| )"
+68661000052109,0,"<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|"
+73171000052105,0,"(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)"
+TMP-v2up8s,0,"(<185823004 | Finding of skin texture (finding) | MINUS <366649008 |Finding of thickness of skin (finding)|) MINUS (<297947008 OR <276323006)"
+TMP-s66p7u,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-uby38x,0,"< 185823004 |Finding of skin texture (finding)|:  363698007 |Finding site (attribute)| != < 39937001 |Skin structure (body structure)|"
+TMP-uby38x,1,"<< 366649008 |Finding of thickness of skin (finding)|"
+TMP-uby38x,1,"<< 297947008 |Finding of consistency of skin (finding)|"
+TMP-uby38x,1,"<< 276323006 |Finding of color of skin (finding)|"
+TMP-uby38x,1,"<< 297971001 |Finding of sensation of skin (finding)|"
+TMP-pcsk6s,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-lxvc1p,0,"<185823004 |Finding of skin texture (finding)|"
+TMP-udg8m6,0,"< 80146002 |Excision of appendix (procedure)|: 260870009 |Priority (attribute)| != 416774000 |Scheduled - priority (qualifier value)|"
+TMP-voj6uv,0,<88937006
+TMP-sakk31,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-qmc8vt,0,"< 185823004 | Finding of skin texture (finding) | : [0..0] 363698007 | Finding site | = < 20795001 | Structure of skin region (body structure) |"
+TMP-qmc8vt,1,"<< 297947008 | Finding of consistency of skin (finding) |"
+TMP-qmc8vt,1,"<< 366649008 | Finding of thickness of skin (finding) |"
+TMP-mrky4p,0,"<106098005 |Urinary system finding (finding)|"
+TMP-mrky4p,0,"(<71388002 |Procedure (procedure)|:*=<<122489005 |Urinary system structure (body structure)|)"
+121000269108,0,"(<404684003 |Clinical finding (finding)|:*=<<122489005 |Urinary system structure (body structure)|) OR (<71388002 |Procedure (procedure)|:*=<<122489005 |Urinary system structure (body structure)|) OR (<<122489005 |Urinary system structure (body structure)|)"
+TMP-8megcb,0,"<128927009 AND <362958002"
+TMP-r3n1cs,0,"< 430925007 |Measurement of substance (procedure)|"
+TMP-q9t9dy,0,"< 185823004 |Finding of skin texture (finding)| MINUS ( << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)| OR << 248194004 |Wrinkled face (finding)| OR << 275887009 |Scaly scalp (finding)| )"
+TMP-2269kx,0,"< 118598001 |Property (qualifier value)|"
+TMP-bjufwm,0,"<767524001 |Unit of measure (qualifier value)|"
+TMP-xgf236,0,"< 105590001 |Substance|"
+TMP-xv3kbf,0,"< 105590001 |Substance|"
+TMP-aaf93f,0,"<<12738006 | Brain structure (body structure) |"
+TMP-9puhvi,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-60pfsf,0,"< 185823004 |Finding of skin texture (finding)|
+MINUS ( << 366649008 |Finding of thickness of skin (finding)| 
+OR << 297947008 |Finding of consistency of skin (finding)|
+OR << 248194004 |Wrinkled face (finding)| 
+OR << 275887009 |Scaly scalp (finding)| )"
+TMP-vmi33c,0,"<< 84757009 |Epilepsy|"
+TMP-qmc27x,0,"<< 414545008 |Ischemic heart disease|"
+TMP-tz78t3,0,"<<247441003 |Erythema (finding)|"
+TMP-gbeddl,0,"< 118733005"
+TMP-xswo2j,0,"<< 1142182006 OR
+<< 1142181004 OR
+<< 1142180003 OR
+<< 1145003007 OR
+<< 1145035007 OR
+<< 1145034006 OR
+<< 1145026000 OR
+<< 1145028004 OR
+<< 1145031003 OR
+<< 1145023008 OR
+<< 1145033000 OR
+<< 1145030002 OR
+<< 1145022003 OR
+<< 1145032005 OR
+<< 1145029007"
+TMP-xswo2j,0,"<< 1142182006 OR
+<< 1142181004 OR
+<< 1142180003 OR
+<< 1145003007 OR
+<< 1145035007 OR
+<< 1145034006 OR
+<< 1145026000 OR
+<< 1145028004 OR
+<< 1145031003 OR
+<< 1145023008 OR
+<< 1145033000 OR
+<< 1145030002 OR
+<< 1145022003 OR
+<< 1145032005 OR
+<< 1145029007"
+TMP-xswo2j,0,"<< 1142182006 OR << 1142181004 OR << 1145003007 OR << 1145035007 OR << 1145034006 OR << 1145031003 OR << 1145023008 OR << 1145033000 OR << 1145030002 OR << 1145022003 OR << 1145032005 OR << 1145029007"
+741000172102,0,"<<716186003 |No known allergy (situation)|"
+TMP-fnpp9z,0,<<2342007
+TMP-fnpp9z,0,<<2342007
+TMP-90tfro,0,"^ 816080008 |International Patient Summary| AND < 404684003 | Clinical finding |"
+TMP-xp85ek,0,"<< 50043002 | Disorder of respiratory system (disorder) |"
+TMP-xp85ek,0,"<<118669005 | Procedure on respiratory system (procedure) |"
+TMP-xp85ek,0,"<<183447000 | Admission to respiratory intensive care unit (procedure) |"
+TMP-xp85ek,0,"<<410205005 | Respiratory care assessment (procedure) |"
+TMP-xp85ek,0,"<<410207002 | Respiratory care management (procedure) |"
+TMP-xp85ek,0,"<<408501008 | Emergency hospital admission for chronic obstructive pulmonary disease (procedure) |"
+TMP-xp85ek,0,"<<410198006 | Respiratory function management (regime/therapy) |"
+TMP-xp85ek,0,"<<409523000 | Standard respiratory precautions (procedure) |"
+TMP-xp85ek,0,"<<183507005 | Non-urgent respiratory admission (procedure) |"
+TMP-xp85ek,0,"<<363021009 | Complication of respiratory therapy procedure (disorder) |"
+TMP-xp85ek,0,"<<23426006 | Measurement of respiratory function (procedure) |"
+TMP-62rubw,0,"(<404684003 |Clinical finding (finding)|:*=<<122489005 |Urinary system structure (body structure)|) OR (<71388002 |Procedure (procedure)|:*=<<122489005 |Urinary system structure (body structure)|) OR (<<122489005 |Urinary system structure (body structure)|)"
+TMP-sq8wjo,0,<<368208006
+TMP-veq46o,0,"<<185823004 |Finding of skin texture (finding)|"
+TMP-eayyyh,0,"<<763087004 |Medicinal product categorized by therapeutic role (product)|"
+TMP-x0kedu,0,"^ 816080008 |International Patient Summary| AND < 404684003 | Clinical finding (finding) |"
+CT-angiography,0,"<<418272005|Computed tomography angiography with contrast (procedure)|"
+TMP-90v5n0,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-io13xe,0,"*: 733725009 |Has concentration strength numerator unit| = *"
+76981000003100,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-z1njm1,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-l4py9c,0,<250373003
+TMP-uoomjs,0,<115671006
+TMP-8c9hgn,0,<4422003
+TMP-tkaxki,0,<19830006
+TMP-dx2n8w,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-n0blxo,0,"<<105590001 |substance (substance)|"
+TMP-gcr1vi,0,"< 185823004 |Finding of skin texture (finding)|"
+78951000003109,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+78991000003102,0,"< 185823004 MINUS (297948003 OR 297947008 OR 366649008 OR 277797007 OR 271815000 OR 85345005 OR 248194004 OR 10360000 OR 248195003)"
+TMP-4jibq2,0,"< 284548004 |Hospital department|"
+TMP-fvleb3,0,"< 394658006 |Clinical specialty|"
+TMP-4vuto3,0,"< 410720000 | Pain by sensation quality (finding) | : [0..0] 363698007 |Finding site (attribute)| = *"
+TMP-ify27u,0,"(< 185823004 MINUS (297948003 OR 297947008 OR 366649008 OR 277797007 OR 271815000 OR 85345005 OR 248194004 OR 10360000 OR 248195003))"
+TMP-n9s10d,0,"<185823004 | Finding of skin texture (finding) |  MINUS   ( <<  366649008 |Finding of thickness of skin (finding)| OR << 297947008 | Finding of consistency of skin (finding) | OR << 248194004 |Wrinkled face (finding)|)"
+TMP-phoqiw,0,"< 410720000 | Pain by sensation quality (finding) | MINUS (< 410720000 | Pain by sensation quality (finding) |: {363698007 |Finding site (attribute)|=*})"
+TMP-n9ugkt,0,"< 185823004 |Finding of skin texture (finding)|"
+TMP-n9ugkt,1,"<< 297947008 |Finding of consistency of skin (finding)|"
+TMP-n9ugkt,1,"<< 366649008 |Finding of thickness of skin (finding)|"
+TMP-n9ugkt,1,"<< 248194004 |Wrinkled face (finding)|"
+TMP-zjjgts,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-76jblp,0,"< 185823004"
+TMP-jty4pt,0,"<410720000 |Pain by sensation quality (finding)| : [0..0] 363698007 |Finding site (attribute)|  = *"
+TMP-al3e05,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-p7mhoz,0,"< 387713003 |Surgical procedure (procedure)|: {<< 424226004 |Using device (attribute)| = << 86174004 |Laparoscope,device (physical object)|} AND { <<405813007 |sitio del procedimiento - directo (atributo)| = <<34707002 |estructura de la vía biliar (estructura corporal)|}"
+TMP-6lwrwx,0,"< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *"
+TMP-r0lus5,0,"< 404684003 |clinical finding|: 363714003 |Interprets (attribute)| = <<364530004 |Skin texture (observable entity)|"
+TMP-r0lus5,1,"<<297947008 |Finding of consistency of skin (finding)|"
+TMP-r0lus5,1,"<<366649008 |Finding of thickness of skin (finding)|"
+TMP-r0lus5,1,"<<248194004 |Wrinkled face (finding)|"
+TMP-r0lus5,1,"<<275887009 |Scaly scalp (finding)|"
+TMP-mezjoa,0,"< 185823004 | Finding of skin texture (finding) |"
+79601000003106,0,"<410720000: 363698007 |Finding site (attribute)| !=*"
+TMP-m4tdlm,0,"(<185823004 |Finding of skin texture| : 363698007 |Finding site| =  >>20795001 |Structure of skin region|) MINUS (<<297947008 |Finding of consistency of skin (finding)| OR <<366649008 |Finding of thickness of skin (finding)|)"
+TMP-l0ew73,0,"< 410720000 | Pain by sensation quality (finding) |"
+TMP-l0ew73,1,"<< 279001004 |Pain finding at anatomical site (finding)|"
+TMP-l0ew73,1,"<<55145008 | Stabbing pain |"
+TMP-y26911,1,"<< 366649008 |Finding of thickness of skin (finding)|"
+TMP-y26911,1,"<< 297947008 |Finding of consistency of skin (finding)|"
+TMP-y26911,0,"< 185823004 |Finding of skin texture (finding)| : 363698007 |Finding site (attribute)| != < 20795001 |Structure of skin region (body structure)|"

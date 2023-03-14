@@ -183,11 +183,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
     }
 
     private Project createDefaultEditionProject(Edition dbEdition) {
-        logger.debug("zzz2");
         final String projectName = dbEdition.getName() + " Default Project";
         final String projectDescription = "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + dbEdition.getName() + ".";
-
-        logger.debug("zzz3");
 
         // Create default project
         final Project project = dbHandler.addProject(projectName, projectDescription, dbEdition);
@@ -221,11 +218,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
             
             // Create a Default Project for the edition if doesnt' already exist
             dbEditions = service.getAll(Edition.class);
-            logger.debug("zzz1 with defaultEditionProjects: " + defaultEditionProjects);
+
             statistics.setTeamsAdded(newShortNames.size());
             newShortNames.stream().filter(shortName -> !defaultEditionProjects.containsKey(shortName)).forEach(shortName -> {
                 try {
-                    logger.debug("zzz2 with shortName: " + shortName);
 
                     List<Edition> matchingEditions = dbEditions.stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
                     Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
@@ -234,14 +230,12 @@ public class SyncCodeSystemAgent extends SyncAgent {
     
                     defaultEditionProjects.put(shortName, project);
     
-                    logger.debug("zzz4 with defaultEditionProjects: " + defaultEditionProjects);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    logger.debug("failed creating default edition project for shortName: " + shortName);
+                    logger.error("failed creating default edition project for shortName: " + shortName);
                 }
             });
 
-            logger.debug("zzz11 with defaultEditionProjects: " + defaultEditionProjects);
 
             // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
             // TODO: Define solution although for now simply activating
@@ -495,7 +489,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             // Initialize defaultEditionProjects already defined in RT2 DB
             dbProjects.stream().filter(project -> project.getName().endsWith(" Default Project")).forEach(project -> defaultEditionProjects.put(project.getEdition().getShortName(), project));
-            logger.debug("zzz Starting sync with defaultEditionProjects containing: " + defaultEditionProjects);
         }
     }
 

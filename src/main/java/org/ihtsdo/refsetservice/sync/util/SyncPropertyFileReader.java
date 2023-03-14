@@ -18,11 +18,16 @@ import org.springframework.core.io.ClassPathResource;
 
 public class SyncPropertyFileReader {
 
+    /** The logger. */
+    private final Logger logger = LoggerFactory.getLogger(SyncPropertyFileReader.class);
+
     private ClassPathResource projectsResource = new ClassPathResource("sync/rtt-migration/projects.txt");
 
     private ClassPathResource clausesResource = new ClassPathResource("sync/rtt-migration/clauses.txt");
 
     private ClassPathResource refsetsResource = new ClassPathResource("sync/rtt-migration/refsets.txt");
+
+    private ClassPathResource refsetRttToSctIdResource = new ClassPathResource("sync/rtt-migration/refsetRttToSct.txt");
 
     private ClassPathResource refsetToTagsResource = new ClassPathResource("sync/rtt-migration/refsetToTags.txt");
 
@@ -47,7 +52,7 @@ public class SyncPropertyFileReader {
     private ClassPathResource teamMembershipResource = new ClassPathResource("sync/initial-teams/teamMembership.txt");
 
     /** The Constant SPLIT_CHARACTER. */
-    private final String SPLIT_CHARACTER = "\t";
+    public static final String SPLIT_CHARACTER = "\t";
 
     private final Map<String, String> refsetToProjectsInfoMap = readRttRefsetsToProjectsMap();
 
@@ -75,9 +80,6 @@ public class SyncPropertyFileReader {
     private final Map<String, ArrayList<String>> rttRefsetToClausesMap = new HashMap<>();
 
     private final Map<String, String> projectOrganizationMap = new HashMap<>();
-
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(SyncPropertyFileReader.class);
 
     private Set<String> projectsToIgnore = new HashSet<>();
 
@@ -112,11 +114,30 @@ public class SyncPropertyFileReader {
      *
      * @throws Exception the exception
      */
-    void parseRttData() throws Exception {
+    public void parseRttData() throws Exception {
 
         // Based on findings, define the list of refsets in RTT
         populateFromFile(clausesResource, FileProcessType.CLAUSE);
         populateFromFile(projectsResource, FileProcessType.PROJECT);
+
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(refsetRttToSctIdResource.getInputStream()));
+
+        // Grab Header on 2nd time through
+        String line = reader.readLine();
+        line = reader.readLine();
+
+        while (line != null) {
+
+            if (!rttRefsetSctIdToRttIdMap.containsKey(line.split(SPLIT_CHARACTER)[1])) {
+
+                rttRefsetSctIdToRttIdMap.put(line.split(SPLIT_CHARACTER)[1], new HashSet<String>());
+            }
+
+            rttRefsetSctIdToRttIdMap.get(line.split(SPLIT_CHARACTER)[1]).add(line.split(SPLIT_CHARACTER)[0]);
+
+            line = reader.readLine();
+        }
+
         populateFromFile(refsetsResource, FileProcessType.REFSET);
     }
 
@@ -219,15 +240,17 @@ public class SyncPropertyFileReader {
 
             reader = new BufferedReader(new InputStreamReader(refsetToDescriptionResource.getInputStream()));
 
+            // Grab header first
             String line = reader.readLine();
+            line = reader.readLine();
 
             while (line != null && !line.trim().isEmpty()) {
 
-                int columnSplit = line.indexOf(",");
+                int columnSplit = line.indexOf(SyncPropertyFileReader.SPLIT_CHARACTER);
 
                 if (columnSplit < 0) {
 
-                    throw new Exception("Have issue with line: " + line);
+                    logger.error("Have issue with line: " + line);
 
                 }
 
@@ -261,7 +284,7 @@ public class SyncPropertyFileReader {
 
             while (line != null && !line.isEmpty()) {
 
-                String[] columns = line.split(",");
+                String[] columns = line.split(SPLIT_CHARACTER);
 
                 if (!refsetToProjectsInfoMap.containsKey(columns[0])) {
 
@@ -293,14 +316,19 @@ public class SyncPropertyFileReader {
 
             while (line != null && !line.isEmpty()) {
 
-                String[] columns = line.split("\t");
+                String[] columns = line.split(SPLIT_CHARACTER);
 
                 if (!refsetToTagsInfoMap.containsKey(columns[0])) {
 
                     refsetToTagsInfoMap.put(columns[0], new HashSet<>());
                 }
 
-                refsetToTagsInfoMap.get(columns[0]).add(stripQuotes(columns[1]));
+                if (columns.length == 2 && !columns[0].isEmpty() && !columns[1].isEmpty() && refsetToTagsInfoMap.containsKey(columns[0])) {
+
+                    refsetToTagsInfoMap.get(columns[0]).add(stripQuotes(columns[1]));
+                } else {
+                    logger.debug("Skipping this line: " + line);
+                }
                 line = reader.readLine();
             }
 
@@ -502,13 +530,6 @@ public class SyncPropertyFileReader {
                         if (refsetJson != null) {
 
                             rttIdToRefsetJsonMap.put(line.split(SPLIT_CHARACTER)[0], refsetJson);
-
-                            if (!rttRefsetSctIdToRttIdMap.containsKey(line.split(SPLIT_CHARACTER)[8])) {
-
-                                rttRefsetSctIdToRttIdMap.put(line.split(SPLIT_CHARACTER)[8], new HashSet<String>());
-                            }
-
-                            rttRefsetSctIdToRttIdMap.get(line.split(SPLIT_CHARACTER)[8]).add(line.split(SPLIT_CHARACTER)[0]);
                         }
                         break;
 
@@ -612,13 +633,12 @@ public class SyncPropertyFileReader {
 
         String updatedLine = line;
         String narrative;
-
         try {
 
             // Clean up narrative if has commas which some do
             if (updatedLine.split(SPLIT_CHARACTER)[9].startsWith("\"")) {
 
-                // Can't rely on splitting on comma. Must identify narrative and
+           // Can't rely on splitting on comma. Must identify narrative and
                 // then remove from line before finding other values
                 final int descStartIdx = updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[9]);
                 final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
@@ -686,10 +706,8 @@ public class SyncPropertyFileReader {
             // Begin RefsetJson
             buf.append("{");
             buf.append("\"name\": \"" + values[17] + "\",");
-            buf.append("\"active\": \"true\",");
             buf.append("\"refsetId\": \"" + values[8] + "\",");
             buf.append("\"moduleId\": \"" + values[5] + "\",");
-            buf.append("\"type\": \"" + values[24] + "\",");
             buf.append("\"version\": \"" + values[2] + "\","); // "2021-05-30 00:00:00"
             buf.append("\"narrative\": \"" + narrative + "\",");
             buf.append("\"privateRefset\": " + ((values[15].equals("0")) ? "true" : "false"));
@@ -744,7 +762,6 @@ public class SyncPropertyFileReader {
         }
 
         try {
-
             if (line.split(SPLIT_CHARACTER)[1].startsWith("\"")) {
 
                 // If description has commas (and some do), can't rely on
@@ -799,7 +816,7 @@ public class SyncPropertyFileReader {
         return refsetToTagsMap;
     }
 
-    public Map<String, Set<String>> getRttRefsetSctIdToRttIdMap() {
+    public Map<String, Set<String>> getRefsetSctIdToRttIdMap() {
 
         return rttRefsetSctIdToRttIdMap;
     }
