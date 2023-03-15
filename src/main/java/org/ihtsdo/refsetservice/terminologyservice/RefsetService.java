@@ -99,6 +99,9 @@ public class RefsetService {
 
     /** A cache of the sorted branch versions. */
     private static final Map<String, List<String>> branchVersionCache = new HashMap<>();
+    
+    /** A cache of the branches to use for refset searches. */
+    private static final Set<String> branchSearchCache = new HashSet<>();
 
     /** A list of refset actively being updated. */
     public static final Set<String> refsetsToShowUpgradeWarning = new HashSet<>();
@@ -1575,9 +1578,15 @@ public class RefsetService {
 
                     refsetIdsFromMembers.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
                     refsetIdsFromTermServer.addAll(refsetIdsFromMembers);
-
+                    
+                    Set<String> nonPublishedBranchPaths = new HashSet<>();
+                    
+                    if (showInDevelopment && !user.getName().equals(SecurityService.GUEST_USERNAME)) {
+                        nonPublishedBranchPaths = getInDevelopmentBranchPaths(service);
+                    }
+                        
                     // search descriptions of Simple type reference set (foundation metadata concept) "<446609009"
-                    refsetIdsFromTermServer.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009"));
+                    refsetIdsFromTermServer.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009", nonPublishedBranchPaths));
                 }
 
                 termQueryForRt2 = "(tags: (" + termQueryForRt2 + ")";
@@ -1695,6 +1704,33 @@ public class RefsetService {
 
         return results;
     }
+    
+    
+    /**
+     * Get the set of unique Refset IDs.
+     *
+     * @param service the Terminology Service
+     * @return the set of unique Refset IDs
+     * @throws Exception the exception
+     */
+    public static Set<String> getInDevelopmentBranchPaths(final TerminologyService service) throws Exception {
+
+        if (!branchSearchCache.isEmpty()) {
+            return branchSearchCache;
+        }
+
+        final ResultList<Refset> results = service.find("versionStatus: " + Refset.IN_DEVELOPMENT, new PfsParameter(), Refset.class, null);
+
+        for (final Refset refset : results.getItems()) {
+            
+            final String branchPath = getBranchPath(refset);
+            branchSearchCache.add(branchPath);
+        }
+        
+        logger.debug("!!!!!!!! getInDevelopmentBranchPaths: " + branchSearchCache);
+        return branchSearchCache;
+    }
+    
 
     /**
      * Create a new version of a refset.
@@ -2238,6 +2274,7 @@ public class RefsetService {
             branchVersionCache.clear();
         }
         
+        branchSearchCache.clear();
         uniqueRefsetIds.clear();
 
     }

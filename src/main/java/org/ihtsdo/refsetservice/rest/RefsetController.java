@@ -1598,8 +1598,10 @@ public class RefsetController extends BaseController {
 		if (showOnlyPermitted != null && showOnlyPermitted == true) {
 			onlyShowPermitted = true;
 		}
-
+		
 		try (TerminologyService service = new TerminologyService()) {
+		    
+		    RefsetService.getInDevelopmentBranchPaths(service);
 
 			logger.debug("searchRefsets searchParameters: " + ModelUtility.toJson(searchParameters)
 					+ "; searchConcepts: " + searchConcepts + " ; showInDevelopment: " + includeInDevelopment

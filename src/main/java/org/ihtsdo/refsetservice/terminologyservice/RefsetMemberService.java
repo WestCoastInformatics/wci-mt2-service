@@ -637,48 +637,54 @@ public class RefsetMemberService {
     /**
      * Multisearch of descriptions
      * 
-     * @param term Term to search
+     * @param searchParameters the search parameters
      * @param ecl ECL to narrow search
+     * @param nonPublishedBranchPaths a set of non-published branch paths to search in addition to all published branches
      * @return Collection of conceptIds as strings.
      * @throws Exception the exception
      */
-    public static Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl) throws Exception {
+    public static Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl, final Set<String> nonPublishedBranchPaths) throws Exception {
 
         final String query = searchParameters.getQuery();
         final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
         String snowstormQuery = "";
         String[] queryParts = query.split(" AND ");
+        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectNode body = mapper.createObjectNode();
+        final ArrayNode bodyPaths = mapper.createArrayNode();
 
         for (final String queryPart : queryParts) {
 
             String[] keyValue = queryPart.split(":");
 
             if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
-
                 continue;
             } else {
-
                 snowstormQuery += queryPart + " AND ";
             }
-
         }
 
         snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+        
+        for (final String branchPath : nonPublishedBranchPaths) {
+            bodyPaths.add(branchPath);
+        }
+        
+        body.set("branches", bodyPaths);
 
         String url = SnowstormConnection.BASE_URL + "multisearch/descriptions?active=true&offset=0&limit=10000" + "&ecl=" + StringUtility.encodeValue(ecl) + "&term="
             + StringUtility.encodeValue(snowstormQuery);
         
         logger.debug("searchMultisearchDescriptions: Search Refset Concepts descriptions URL: " + url);
+        logger.debug("!!!!! searchMultisearchDescriptions: Search Refset Concepts descriptions BODY: " + body);
 
-        try (Response response = SnowstormConnection.getResponse(url)) {
+        try (Response response = SnowstormConnection.postResponse(url, body.toString())) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-
                 throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
             }
 
             final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
             final Set<String> conceptIds = new HashSet<>();
@@ -690,7 +696,6 @@ public class RefsetMemberService {
                 if (itemsNode.isArray()) {
 
                     for (JsonNode itemNode : itemsNode) {
-
                         conceptIds.add(itemNode.get("concept").get("conceptId").asText());
                     }
 
