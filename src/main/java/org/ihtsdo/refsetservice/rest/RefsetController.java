@@ -109,7 +109,7 @@ public class RefsetController extends BaseController {
 	/** The local directory to store exported refset files. */
 	private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-	private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
+	private static final String EMAIL_SUBJECT = "SNOMED International Reference Set Tool - ";
 
 	private static final String REQUEST_ACTION = "Request-Access";
 
@@ -215,7 +215,7 @@ public class RefsetController extends BaseController {
 					Refset.class, null);
 
 			if (refset == null) {
-				throw new Exception("Unable to retrieve refset " + refsetInternalId);
+				throw new Exception("Unable to retrieve reference set " + refsetInternalId);
 			}
 
 			service.setModifiedBy(user.getUserName());
@@ -1082,7 +1082,7 @@ public class RefsetController extends BaseController {
 
 			if (error.equals("")) {
 
-				String message = "All refsets promoted in code system " + codeSystem;
+				String message = "All reference sets promoted in code system " + codeSystem;
 				return new ResponseEntity<>("{\"status\": \"" + message + ".\"}", HttpStatus.OK);
 
 			} else {
@@ -1348,7 +1348,7 @@ public class RefsetController extends BaseController {
 			// error message
 			if (refsetsNotUpdated.size() > 0) {
 
-				error = "Unable to update refsets: ";
+				error = "Unable to update reference sets: ";
 
 				for (final String unremovedConcept : refsetsNotUpdated) {
 
@@ -1360,7 +1360,7 @@ public class RefsetController extends BaseController {
 
 			if (error.equals("")) {
 
-				return new ResponseEntity<>("{\"status\": \"All refsets updated.\"}", HttpStatus.OK);
+				return new ResponseEntity<>("{\"status\": \"All reference sets updated.\"}", HttpStatus.OK);
 			} else {
 
 				return new ResponseEntity<>("{\"error\": \"" + error + "\"}", HttpStatus.OK);
@@ -2018,7 +2018,7 @@ public class RefsetController extends BaseController {
 
 				if (refset == null) {
 
-					throw new Exception("Unable to retrieve refset " + refsetInternalId);
+					throw new Exception("Unable to retrieve reference set " + refsetInternalId);
 				}
 
 				RefsetService.setRefsetPermissions(user, refset);
@@ -2077,7 +2077,7 @@ public class RefsetController extends BaseController {
 
 				if (refset == null) {
 
-					throw new Exception("Unable to retrieve refset " + refsetInternalId);
+					throw new Exception("Unable to retrieve reference set " + refsetInternalId);
 				}
 
 				final Concept concept = RefsetMemberService.getConceptDetails(conceptId, refset);
@@ -3168,7 +3168,7 @@ public class RefsetController extends BaseController {
 
 			if (results == null) {
 
-				throw new Exception("There were no comparison results to retrieve for this refset.");
+				throw new Exception("There were no comparison results to retrieve for this reference set.");
 			}
 
 			logger.debug("getComparisonData: results " + results);
@@ -3244,7 +3244,7 @@ public class RefsetController extends BaseController {
 			RefsetService.shareRefset(user, refsetInternalId, emailInfo.getRecipient(),
 					emailInfo.getAdditionalMessage());
 
-			final String returnMessage = "{\"message\": \"Share Refset was Successful\"}";
+			final String returnMessage = "{\"message\": \"Share Reference Set was Successful\"}";
 
 			return new ResponseEntity<>(returnMessage, HttpStatus.OK);
 
@@ -3280,7 +3280,7 @@ public class RefsetController extends BaseController {
 			RefsetService.requestProjectAccess(user, refsetInternalId, emailInfo.getRecipient(),
 					emailInfo.getAdditionalMessage());
 
-			final String returnMessage = "{\"message\": \"Refset access (via project access) was requested was Successful\"}";
+			final String returnMessage = "{\"message\": \"Reference set access (via project access) was requested was Successful\"}";
 
 			return new ResponseEntity<>(returnMessage, HttpStatus.OK);
 
@@ -3383,7 +3383,7 @@ public class RefsetController extends BaseController {
 				return new ResponseEntity<>(returnMessage, HttpStatus.OK);
 			}
 
-			final String returnMessage = "{\"message\": \"It is prohibited to be Reseting refsets on this production system\"}";
+			final String returnMessage = "{\"message\": \"It is prohibited to be reseting reference sets on this production system\"}";
 			return new ResponseEntity<>(returnMessage, HttpStatus.FORBIDDEN);
 
 		} catch (final Exception e) {
@@ -3412,7 +3412,7 @@ public class RefsetController extends BaseController {
 			RefsetService.inviteUserToOrganization(authUser, refsetInternalId, emailInfo.getRecipient(),
 					emailInfo.getAdditionalMessage());
 
-			final String returnMessage = "{\"message\": \"Refset invite was Successful\"}";
+			final String returnMessage = "{\"message\": \"Reference set invite was Successful\"}";
 
 			return new ResponseEntity<>(returnMessage, HttpStatus.OK);
 
@@ -3451,7 +3451,7 @@ public class RefsetController extends BaseController {
 
 		} catch (final Exception e) {
 
-			logger.error("Exception while processing response for refset invite", e);
+			logger.error("Exception while processing response for reference set invite", e);
 			return new ResponseEntity<>(HttpStatus.OK);
 		}
 	}

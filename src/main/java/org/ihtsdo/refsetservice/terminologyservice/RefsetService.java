@@ -110,10 +110,10 @@ public class RefsetService {
     public static final Set<String> uniqueRefsetIds = new HashSet<>();
 
     /** The Constant EMAIL_SUBJECT. */
-    private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
+    private static final String EMAIL_SUBJECT = "SNOMED International Reference Set Tool - ";
 
     /** The Constant SHARE_ACTION. */
-    private static final String SHARE_ACTION = "Share-Refset";
+    private static final String SHARE_ACTION = "Share-Reference-Set";
 
     /** The Constant INVITE_ACTION. */
     private static final String INVITE_ACTION = "Invite";
@@ -166,7 +166,7 @@ public class RefsetService {
         // get the edition and project for the new refset
         if (refsetConceptId != null && doesRefsetExist(refsetConceptId, null)) {
 
-            return "Error - Concept Id '" + refsetConceptId + "' is already used as a refset.";
+            return "Error - Concept Id '" + refsetConceptId + "' is already used as a reference set.";
         }
 
         project = service.get(refsetEditParameters.getProjectId(), Project.class);
@@ -250,7 +250,7 @@ public class RefsetService {
                     refsetConceptId = conceptNode.get("conceptId").asText();
                 } else {
 
-                    throw new Exception("Unable to create new refset concept.");
+                    throw new Exception("Unable to create new reference set concept.");
                 }
 
             }
@@ -438,7 +438,7 @@ public class RefsetService {
 
         if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
 
-            throw new Exception("Refset is not in the proper status to be modified " + refset.getId());
+            throw new Exception("Reference set is not in the proper status to be modified " + refset.getId());
         }
 
         // set user changed fields
@@ -660,12 +660,12 @@ public class RefsetService {
 
         if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
 
-            throw new Exception("Refset is not in the proper status to be modified " + refset.getId());
+            throw new Exception("Reference set is not in the proper status to be modified " + refset.getId());
         }
 
         if (!refset.getType().equals(Refset.INTENSIONAL)) {
 
-            throw new Exception("This is not an Intensional Refset " + refset.getId());
+            throw new Exception("This is not an Intensional reference set " + refset.getId());
         }
 
         final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
@@ -719,12 +719,12 @@ public class RefsetService {
 
         if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
 
-            throw new Exception("Refset is not in the proper status to be modified " + refset.getId());
+            throw new Exception("Reference set is not in the proper status to be modified " + refset.getId());
         }
 
         if (!refset.getType().equals(Refset.INTENSIONAL)) {
 
-            throw new Exception("This is not an Intensional Refset " + refset.getId());
+            throw new Exception("This is not an Intensional reference set " + refset.getId());
         }
 
         final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
@@ -884,7 +884,7 @@ public class RefsetService {
 
         if (unprocessedConcepts.size() > 0) {
 
-            statusMessage = "Error - Refset definition modified but unable to process concepts: ";
+            statusMessage = "Error - Reference set definition modified but unable to process concepts: ";
 
             for (final String unprocessedConcept : unprocessedConcepts) {
 
@@ -958,7 +958,7 @@ public class RefsetService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                throw new Exception("Unable to retrieve refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                throw new Exception("Unable to retrieve reference set concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
             }
 
             // create the body entity for the update call from the retrieved concept
@@ -1048,7 +1048,7 @@ public class RefsetService {
 
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                throw new Exception("Unable to update refset concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                throw new Exception("Unable to update reference set concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
             }
 
             logger.info("updateRefsetConcept refset concept: " + refsetId);
@@ -1074,10 +1074,10 @@ public class RefsetService {
         boolean otherVersions = false;
         
         if (refset == null) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refset Internal Id: " + refset.getId() + " does not exist in the RT2 database");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Reference set Internal Id: " + refset.getId() + " does not exist in the RT2 database");
 
         } else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refset Internal Id: " + refset.getId() + " is not 'In Development' and can not be removed.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Reference set Internal Id: " + refset.getId() + " is not 'In Development' and can not be removed.");
         }
 
         refsetId = refset.getRefsetId();
@@ -1231,7 +1231,7 @@ public class RefsetService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                throw new Exception("Unable to get refset concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                throw new Exception("Unable to get reference set concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
             }
 
             final ObjectMapper mapper = new ObjectMapper();
@@ -1308,7 +1308,7 @@ public class RefsetService {
 
         if (refset == null) {
 
-            throw new Exception("Unable to retrieve refset " + refsetInternalId);
+            throw new Exception("Unable to retrieve reference set " + refsetInternalId);
         }
 
         setCommonRefsetProperties(service, user, refset);
@@ -1348,7 +1348,7 @@ public class RefsetService {
 
         if (refset == null) {
 
-            throw new Exception("Unable to retrieve refset " + refsetId + " with version date: " + versionDate);
+            throw new Exception("Unable to retrieve reference set " + refsetId + " with version date: " + versionDate);
         }
 
         setCommonRefsetProperties(service, user, refset);
@@ -1727,7 +1727,6 @@ public class RefsetService {
             branchSearchCache.add(branchPath);
         }
         
-        logger.debug("!!!!!!!! getInDevelopmentBranchPaths: " + branchSearchCache);
         return branchSearchCache;
     }
     
@@ -1754,7 +1753,7 @@ public class RefsetService {
 
         if (results.getItems().size() > 0) {
 
-            throw new Exception("There is already a version of this refset that is 'In Development', and there can only be one");
+            throw new Exception("There is already a version of this reference set that is 'In Development', and there can only be one");
         }
 
         newRefsetVersion.populateFrom(refset);
@@ -1959,7 +1958,7 @@ public class RefsetService {
 
         if (refset == null) {
 
-            throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+            throw new Exception("Reference set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
         }
 
         return refset;
@@ -2013,7 +2012,7 @@ public class RefsetService {
 
         if (!userCanView) {
             
-            final String message = "User does not have permission to view this refset.";
+            final String message = "User does not have permission to view this reference set.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
         }
@@ -2367,8 +2366,8 @@ public class RefsetService {
         final Refset refset = service.get(refsetInternalId, Refset.class);
         final Project project = refset.getProject();
         final String projectAdminEmail = project.getPrimaryContactEmail();
-        final String subject = "Refset Request: " + refset.getName() + " (" + refset.getRefsetId() + ")";
-        final String body = "A user is requesting access to a project you administer.\n\n" + "Edition: " + refset.getEditionName() + "\n" + "Project: " + project.getName() + "\n" + "Refset: "
+        final String subject = "Reference set Request: " + refset.getName() + " (" + refset.getRefsetId() + ")";
+        final String body = "A user is requesting access to a project you administer.\n\n" + "Edition: " + refset.getEditionName() + "\n" + "Project: " + project.getName() + "\n" + "Reference set: "
             + refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" + "User: " + user.getName() + " (" + user.getEmail() + ")" + "\n\n" + "Comments: " + comments;
 
         EmailUtility.sendEmail(subject, user.getEmail(), projectAdminEmail, body);
@@ -2421,7 +2420,7 @@ public class RefsetService {
         logger.debug("refset is: " + refset);
 
         if (!refset.getType().equals(Refset.INTENSIONAL)) {
-            throw new Exception("Refset Internal Id: " + refset.getId() + " is not 'Intensional' and can not be converted.");
+            throw new Exception("Reference set Internal Id: " + refset.getId() + " is not 'Intensional' and can not be converted.");
         }
 
         // Convert Metadata
@@ -2609,7 +2608,7 @@ public class RefsetService {
 
             for (User adminRecipient : adminEmailRecipients.values()) {
 
-                AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access ds(via refset)", adminRecipient.getUserName(), project.getName() + "'s admins");
+                AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access (via reference set)", adminRecipient.getUserName(), project.getName() + "'s admins");
                 Set<String> adminEmail = new HashSet<>();
 
                 adminEmail.add(adminRecipient.getEmail());
@@ -2655,7 +2654,7 @@ public class RefsetService {
 
         if (originalRefset.isPrivateRefset() && !originalRefset.getRoles().contains(User.ROLE_VIEWER)) {
 
-            throw new Exception("User does not have the permission to copy this refset " + originalRefset.getRefsetId());
+            throw new Exception("User does not have the permission to copy this reference set " + originalRefset.getRefsetId());
         }
 
         if (project == null) {
@@ -2666,7 +2665,7 @@ public class RefsetService {
         project = setProjectPermissions(user, project);
 
         if (!project.getRoles().contains(User.ROLE_AUTHOR) && !project.getRoles().contains(User.ROLE_ADMIN)) {
-            throw new Exception("User does not have the permission to create a refset in this project " + project.getName());
+            throw new Exception("User does not have the permission to create a reference set in this project " + project.getName());
         }
 
         Refset newRefset = new Refset(originalRefset);
@@ -2685,7 +2684,7 @@ public class RefsetService {
 
             if (name == null || name.equals("")) {
 
-                throw new Exception("A name for the new refset must be supplied");
+                throw new Exception("A name for the new reference set must be supplied");
             }
 
             newRefset.setName(name);
@@ -2862,7 +2861,7 @@ public class RefsetService {
 
         if (StringUtils.isBlank(recipientEmail)) {
 
-            throw new Exception("Recipient must have an email address to invite to Refset.");
+            throw new Exception("Recipient must have an email address to invite to reference set.");
         }
 
         // TODO: move this URL to properties.
