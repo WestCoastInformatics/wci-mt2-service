@@ -79,7 +79,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
         analyzeRefsetVersions(addedOrInactivatedRefsetIds);
 
-
         // Final step for project connection
         finalizeNewOrChangedRefsets();
 
@@ -195,7 +194,6 @@ public class SyncRefsetAgent extends SyncAgent {
         // Dev note: Stream ignores those that are listed in the new or inactivated refsetId list (activated will be processed for changes)
 
         logger.info(("analyze refset versions"));
-
 
         for (String refsetId : termserverRefsetIdToRefsetVersionsDataMap.keySet().stream().filter(refsetId -> !addedOrInactivatedRefsetIds.contains(refsetId)).collect(Collectors.toList())) {
             statistics.incrementRefsetVersionsSynced();
@@ -342,7 +340,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             logger.info("Gather refset data for each refset available with each edition's version for: " + filteredTermserverShortNameToVersionBranchMap.keySet());
             for (String editionShortName : filteredTermserverShortNameToVersionBranchMap.keySet()) {
-
+                logger.debug("xxx editionShortName: " + editionShortName);
                 Edition edition = isEditionToProcess(editionShortName);
 
                 // Have valid edition. Filter refsets to process
@@ -532,26 +530,33 @@ public class SyncRefsetAgent extends SyncAgent {
             }
             Iterator<JsonNode> refsetIterator = gettermserverRefsetVersionMembers(edition.getName(), edition.getBranch(), termserverVersionBranchMap.get(versionDate), versionDate);
 
+//            logger.debug("zzz1 with editionName: " + edition.getName());
             while (refsetIterator != null && refsetIterator.hasNext()) {
                 JsonNode refsetNode;
 
+  //              logger.debug("zzz2");
+                JsonNode node = refsetIterator.next();
                 // Check if should process Refset
-                if ((refsetNode = isRefsetToProcess(refsetIterator, edition.getShortName())) != null) {
+                if ((refsetNode = isRefsetToProcess(node, edition.getShortName())) != null) {
+    //                logger.debug("zzz3");
 
                     final String refsetId = refsetNode.get("conceptId").asText();
+      //              logger.debug("zzz4 refsetId: " + refsetId);
 
                     if (!refsetToModuleMap.containsKey(refsetId)) {
+        //                logger.debug("zzz5");
 
                         String moduleId = determineConceptModuleId(refsetId, edition.getBranch());
                         refsetToModuleMap.put(refsetId, moduleId);
                     }
-
+          //          logger.debug("zzz6");
 
                     final String termserverRefsetBranchPath = termserverVersionBranchMap.get(versionDate);
                     final Set<Long> termserverEditionBranchDates = termserverVersionBranchMap.keySet();
 
                     // If perVersionSync, then create version per branch and return. Otherwise, determine if changes exist in this version
                     if (getIsPerVersionSync() || versionHasChanges(refsetId, versionDate, termserverRefsetBranchPath, edition.getName(), termserverEditionBranchDates)) {
+            //            logger.debug("zzz7");
 
                         SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, termserverVersionBranchMap.keySet(), versionDate, termserverRefsetBranchPath);
 
@@ -743,42 +748,32 @@ public class SyncRefsetAgent extends SyncAgent {
      */
     private Project determineProject(SyncRefsetMetadata metadata) {
         // Cache contains refset project already?
+
+        
         if (!refsetProjectMap.containsKey(metadata.getRefsetId())) {
-
             // refset project defined in RTT?
-            if (utilities.getPropertyReader().getRefsetSctIdToProjectsInfoMap().containsKey(metadata.getRefsetId())) {
+            if (utilities.getPropertyReader().getSctIdToProjectIdMap().containsKey(metadata.getRefsetId())) {
 
-                String projectInfo = utilities.getPropertyReader().getRefsetSctIdToProjectsInfoMap().get(metadata.getRefsetId());
-                final String rttProjectId = projectInfo.split(SyncPropertyFileReader.SPLIT_CHARACTER)[0];
+                final String rttProjectId = utilities.getPropertyReader().getSctIdToProjectIdMap().get(metadata.getRefsetId());
+                
 
                 // Rtt project already defined?
                 if (!rttProjects.containsKey(rttProjectId)) {
 
-                    // Create project
-                    String[] projectDetails = projectInfo.split(SyncPropertyFileReader.SPLIT_CHARACTER);
-
-                    if (projectDetails.length != 3) {
-
-                        logger.error("rrr - Have issue with project details line: " + projectDetails[0] + " --- " + projectDetails[1]);
+                    if (utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).keySet().size() != 1) {
+                        logger.error("Have unexpected number of names/descriptions for projectId: " + rttProjectId + " with names: " + utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).keySet());
                         return null;
                     }
 
-                    // Clean out project Name & Description
-                    for (int i = 0; i < 2; i++) {
-                        
-                        if (projectDetails[i].startsWith("\"")) {
+                    final String projectName = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).keySet().iterator().next();
+                    final String projectDescription = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).values().iterator().next();
 
-                            projectDetails[i] = projectDetails[i].substring(1);
-                        }
+                    
 
-                        if (projectDetails[i].endsWith("\"")) {
+                    // Create project
 
-                            projectDetails[i] = projectDetails[i].substring(0, projectDetails[i].length() - 1);
-                        }
 
-                    }
-
-                    Project project = dbHandler.addProject(projectDetails[0].replaceFirst("\"", ""), projectDetails[1], metadata.getEdition());
+                    Project project = dbHandler.addProject(projectName, projectDescription, metadata.getEdition());
                     statistics.incrementProjectsAdded();
 
                     rttProjects.put(rttProjectId, project);
@@ -884,7 +879,6 @@ public class SyncRefsetAgent extends SyncAgent {
         // For now, default db refsets to PUBLIC
         refset.setPrivateRefset(false);
 
-
         // Update refset from JSON for Narrative, Type, tags, and ecl clauses. Project too.
         if (utilities.getPropertyReader().getRefsetSctIdToRttIdMap().keySet().contains(refset.getRefsetId())) {
 
@@ -947,31 +941,39 @@ public class SyncRefsetAgent extends SyncAgent {
         }
     }
 
-    protected JsonNode isRefsetToProcess(Iterator<JsonNode> refsetIterator, String shortName) throws Exception {
-        final JsonNode refsetNode = refsetIterator.next();
+    protected JsonNode isRefsetToProcess(JsonNode refsetNode, String shortName) throws Exception {
+//        logger.debug("yyy1 shortName: " + shortName);
 
         if (!refsetNode.has("conceptId") || !refsetNode.has("active")) {
 
             throw new Exception("Getting unexpected Refset info from node: " + refsetNode.toString());
         }
+  //      logger.debug("yyy2");
         String refsetId = refsetNode.get("conceptId").asText();
+    //    logger.debug("yyy3 refsetId: " + refsetId);
 
         if (!utilities.isInternationalEdition(shortName) && utilities.getCoreRefsets().contains(refsetId)) {
+      //      logger.debug("yyy4");
 
             return null;
         }
+        //logger.debug("yyy5");
 
         if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
+          //  logger.debug("yyy6");
 
-            logger.info("Found refsetId: " + refsetId + ", but will not add it per prop file");
+            //logger.info("Found refsetId: " + refsetId + ", but will not add it per prop file");
 
             return null;
         }
+//        logger.debug("yyy7");
 
         if (!isTesting() || (isTesting() && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset))) {
+  //          logger.debug("yyy8");
 
             return refsetNode;
         }
+    //    logger.debug("yyy9");
 
         return null;
     }

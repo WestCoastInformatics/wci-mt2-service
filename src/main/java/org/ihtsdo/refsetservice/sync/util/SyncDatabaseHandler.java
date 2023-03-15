@@ -484,7 +484,7 @@ public class SyncDatabaseHandler {
         try (final TerminologyService service = new TerminologyService()) {
 
             List<Refset> allRefsets = service.getAll(Refset.class);
-            List<Refset> matchingRefsets = allRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().equals(versionDate)).collect(Collectors.toList());
+            List<Refset> matchingRefsets = allRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().getTime() == versionDate).collect(Collectors.toList());
             utilities.validateMatches(matchingRefsets, refsetId + " / " + versionDate);
 
             Refset matchingRefset = matchingRefsets.iterator().next();

@@ -54,8 +54,6 @@ public class SyncPropertyFileReader {
     /** The Constant SPLIT_CHARACTER. */
     public static final String SPLIT_CHARACTER = "\t";
 
-    private final Map<String, String> refsetToProjectsInfoMap = readRttRefsetsToProjectsMap();
-
     private final Map<String, String> refsetToClausesInfoMap = readRttRefsetsToClausesMap();
 
     private final Map<String, String> refsetToDescriptionMap = readRttRefsetsToDescriptionMap();
@@ -90,6 +88,10 @@ public class SyncPropertyFileReader {
 
     /** The metadata map. */
     private final Map<String, SyncPersistenceMetadata> metadataMap = new HashMap<>();
+
+    private final Map<String, String> sctIdToProjectIdMap = new HashMap<>();
+
+    private Map<String, Map<String, String>> projectIdToProjectInfoMap = new HashMap<>();
 
     private static Map<String, Set<String>> defaultLanguageRefsetMap = null;
 
@@ -271,24 +273,29 @@ public class SyncPropertyFileReader {
         return refsetToDescriptionMap;
     }
 
-    private Map<String, String> readRttRefsetsToProjectsMap() {
+    private void readRttProjectInfo() {
 
         BufferedReader reader;
-        Map<String, String> refsetToProjectsInfoMap = new HashMap<>();
+        Map<String, Map<String, String>> refsetToProjectsInfoMap = new HashMap<>();
 
         try {
 
             reader = new BufferedReader(new InputStreamReader(refsetToProjectsResource.getInputStream()));
 
+            // ProjectId, refsetId, projectName, projectDescription
             String line = reader.readLine();
 
             while (line != null && !line.isEmpty()) {
 
                 String[] columns = line.split(SPLIT_CHARACTER);
 
-                if (!refsetToProjectsInfoMap.containsKey(columns[0])) {
+                sctIdToProjectIdMap.put(columns[1], columns[0]);
 
-                    refsetToProjectsInfoMap.put(columns[0], line.substring(line.indexOf(",") + 1));
+                if (!projectIdToProjectInfoMap.containsKey(columns[0])) {
+
+                    Map<String, String> projectNameDescription = new HashMap<>();
+                    projectNameDescription.put(columns[2], columns[3]);
+                    projectIdToProjectInfoMap.put(columns[0], projectNameDescription);
                 }
 
                 line = reader.readLine();
@@ -299,8 +306,6 @@ public class SyncPropertyFileReader {
 
             e.printStackTrace();
         }
-
-        return refsetToProjectsInfoMap;
     }
 
     private Map<String, Set<String>> readRttRefsetsToTagsMap() {
@@ -638,7 +643,7 @@ public class SyncPropertyFileReader {
             // Clean up narrative if has commas which some do
             if (updatedLine.split(SPLIT_CHARACTER)[9].startsWith("\"")) {
 
-           // Can't rely on splitting on comma. Must identify narrative and
+                // Can't rely on splitting on comma. Must identify narrative and
                 // then remove from line before finding other values
                 final int descStartIdx = updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[9]);
                 final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
@@ -796,9 +801,22 @@ public class SyncPropertyFileReader {
 
     }
 
-    public Map<String, String> getRefsetSctIdToProjectsInfoMap() {
+    public Map<String, Map<String, String>> getProjectIdToProjectInfoMap() {
 
-        return refsetToProjectsInfoMap;
+        if (projectIdToProjectInfoMap.isEmpty()) {
+            readRttProjectInfo();
+        }
+
+        return projectIdToProjectInfoMap;
+    }
+
+    public Map<String, String> getSctIdToProjectIdMap() {
+
+        if (sctIdToProjectIdMap.isEmpty()) {
+            readRttProjectInfo();
+        }
+
+        return sctIdToProjectIdMap;
     }
 
     Map<String, String> getRefsetToClausesInfoMap() {

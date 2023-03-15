@@ -110,7 +110,6 @@ public class SyncUtilities {
     }
 
     public Set<String> getCoreRefsets() throws Exception {
-
         if (coreRefsets != null && !coreRefsets.isEmpty()) {
             return coreRefsets;
         }
@@ -137,6 +136,7 @@ public class SyncUtilities {
                 if (!refset.has("conceptId")) {
                     logger.error("Refset must have conceptId: " + refset);
                 } else {
+                    logger.info("Core Refset: " + refset.get("conceptId").asText());
                     coreRefsets.add(refset.get("conceptId").asText());
                 }
             }
