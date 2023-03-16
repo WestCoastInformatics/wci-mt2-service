@@ -66,17 +66,10 @@ public class ErrorHandlerController implements ErrorController {
 		} catch (Exception e) {
 			ppBody = body.toString().replaceAll("<", "&lt;");
 		}
-
-		// TODO: Replace the commmented out portion with something appropriate
-		// for
-		// this service
-		return String.format("<html><body><h2>Error Page</h2><div>Something went wrong", statusCode, ppBody);
-		// + "<a
-		// href=\"https://datascience.cancer.gov/about/application-support\">"
-		// + "please contact the NCI helpdesk</a></div><div>Status code:
-		// <b>%s</b></div>"
-		// + "<div>Message: <pre>%s</pre></div><body></html>", statusCode,
-		// ppBody);
+		if (statusCode != null && statusCode == 401) {
+			return String.format("<html><body><h2>Error Page</h2><div>Unauthorized. Log in to access this page");
+		}
+		return String.format("<html><body><h2>Error Page</h2><div>Something went wrong</div><pre>%s<%/pre>", ppBody);
 	}
 
 	/**
