@@ -2466,7 +2466,7 @@ public class RefsetService {
             emailBody.append("Hello, ").append(recipient).append(",").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Main announcement
-            emailBody.append("A SNOMED International Refset Tool user named '").append(user.getUserName()).append("' (").append(user.getEmail()).append(") would like to share the reference set named: ").append(refset.getName())
+            emailBody.append("A SNOMED International Reference Set Tool user named '").append(user.getUserName()).append("' (").append(user.getEmail()).append(") would like to share the reference set named: ").append(refset.getName())
                 .append(" with you. Here is a direct link to access that reference set: ").append(refsetUrl).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             // Additional Info from Sender
@@ -2482,7 +2482,7 @@ public class RefsetService {
 
             // Signature
             emailBody.append("Thank you,").append(System.getProperty("line.separator"));
-            emailBody.append("The SNOMED International Refset Tooling Team");
+            emailBody.append("The SNOMED International Reference Set Tooling Team");
 
             String action = SHARE_ACTION;
             EmailUtility.sendEmail(EMAIL_SUBJECT + action, null, new HashSet<>(Arrays.asList(recipient)), emailBody.toString());
