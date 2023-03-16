@@ -50,6 +50,7 @@ import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
 import org.ihtsdo.refsetservice.sync.SyncService;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
@@ -173,6 +174,8 @@ public class RefsetController extends BaseController {
 				refset.setUpgradeWarning(true);
 				RefsetService.refsetsToShowUpgradeWarning.remove(refset.getId());
 			}
+			
+			refset.getProject().getEdition().setModuleNames(ProjectService.getModuleNames(refset.getProject()));
 
 			logger.debug("getRefset: refset: " + ModelUtility.toJson(refset));
 

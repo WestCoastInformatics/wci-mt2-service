@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -151,6 +152,7 @@ public class ProjectController extends BaseController {
 	 * @param searchParameters the search parameters
 	 * @param bindingResult    the binding result
 	 * @param includeMembers   the include members
+	 * @param includeModuleNames   Include names of modules for the edition
 	 * @return the string
 	 * @throws Exception the exception
 	 */
@@ -162,12 +164,13 @@ public class ProjectController extends BaseController {
 			@ApiResponse(code = 500, message = "Internal server error") })
 	// @ModelAttribute API params documented in SearchParameter
 	@ApiImplicitParams({
-			@ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false") })
+			@ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+	@ApiImplicitParam(name = "includeModuleNames", value = "Include names of modules for the edition", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"), })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult,
-			@QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
+			@QueryParam(value = "includeMembers") final boolean includeMembers, @RequestParam(required = false) final Boolean includeModuleNames) throws Exception {
 
 		authorizeUser();
 
@@ -191,6 +194,10 @@ public class ProjectController extends BaseController {
 
 						final Team team = TeamService.getTeam(teamId, includeMembers);
 						members.addAll(team.getMemberList());
+					}
+					
+					if (includeModuleNames) {
+					    project.getEdition().setModuleNames(ProjectService.getModuleNames(project));
 					}
 
 					project.getMemberList().addAll(members);

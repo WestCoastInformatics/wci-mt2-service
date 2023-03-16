@@ -23,6 +23,7 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -89,6 +90,11 @@ public class Edition extends AbstractHasModified {
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Organization organization;
+    
+    /** The modules and names for this edition. 
+     * TODO - This is a temporary field until we fix sync to add the module name to the main modules field */
+    @Transient
+    private Map<String, String> moduleNames;
 
     /**
      * Instantiates an empty {@link Edition}.
@@ -504,6 +510,32 @@ public class Edition extends AbstractHasModified {
             this.organization.setName(organizationName);
         }
     }
+    
+    /**
+     * Gets the modules and names for this edition
+     * 
+     * @return The modules and names for this edition
+     */
+    @JsonGetter()
+    public Map<String, String> getModuleNames() {
+
+        if (moduleNames == null) {
+
+            moduleNames = new HashMap<>();
+        }
+
+        return moduleNames;
+    }
+
+    /**
+     * Sets the modules and names for this edition
+     * 
+     * @param moduleNames modules and names for this edition
+     */
+    public void setModuleNames(Map<String, String> moduleNames) {
+
+        this.moduleNames = moduleNames;
+    }
 
     /**
      * Hash code.
@@ -524,6 +556,7 @@ public class Edition extends AbstractHasModified {
         result = prime * result + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
         result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
         result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + ((moduleNames == null) ? 0 : moduleNames.hashCode());
         return result;
     }
 
@@ -658,6 +691,18 @@ public class Edition extends AbstractHasModified {
 
         } else if (!organization.equals(other.organization)) {
 
+            return false;
+        }
+        
+        if (moduleNames == null) {
+            
+            if (other.moduleNames != null) {
+                
+                return false;
+            }
+            
+        } else if (!moduleNames.equals(other.moduleNames)) {
+            
             return false;
         }
 
