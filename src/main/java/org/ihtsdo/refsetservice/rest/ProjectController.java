@@ -163,9 +163,11 @@ public class ProjectController extends BaseController {
 			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
 			@ApiResponse(code = 500, message = "Internal server error") })
 	// @ModelAttribute API params documented in SearchParameter
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
-	@ApiImplicitParam(name = "includeModuleNames", value = "Include names of modules for the edition", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"), })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "includeModuleNames", value = "Include names of modules for the edition", required = false, dataTypeClass = Boolean.class, paramType = "query",
+            defaultValue = "false"),
+    })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(
@@ -196,7 +198,7 @@ public class ProjectController extends BaseController {
 						members.addAll(team.getMemberList());
 					}
 					
-					if (includeModuleNames) {
+					if (includeModuleNames != null && includeModuleNames) {
 					    project.getEdition().setModuleNames(ProjectService.getModuleNames(project));
 					}
 
