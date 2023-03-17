@@ -1585,6 +1585,21 @@ public class RefsetMemberService {
             final List<Concept> concepts = getAllRefsetMembers(service, refsetInternalId, "", new ArrayList<Concept>());
             Collections.sort(concepts, Comparator.comparing((Concept concept) -> Long.parseLong(concept.getCode())));
 
+            final List<Concept> conceptsToProcess = new ArrayList<>();
+            int i = 0;
+
+            for (final Concept concept : concepts) {
+
+                conceptsToProcess.add(concept);
+                i++;
+
+                if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == concepts.size()) {
+
+                    populateAllLanguageDescriptions(refset, conceptsToProcess);
+                    conceptsToProcess.clear();
+                }
+
+            }
             populateAllLanguageDescriptions(refset, concepts);
 
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -2151,7 +2166,8 @@ public class RefsetMemberService {
 
                 if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == allConceptList.size()) {
 
-                    populateAllLanguageDescriptions(refset, concepts.getItems());
+                    populateAllLanguageDescriptions(refset, conceptsToProcess);
+                    conceptsToProcess.clear();
                 }
 
             }
@@ -5212,8 +5228,21 @@ public class RefsetMemberService {
 
                                         }
 
-                                        // logger.debug("compileUpgradeData IN THREAD ID: " + Thread.currentThread().getId());
-                                        populateAllLanguageDescriptions(upgradeRefset, replacementConceptsToLookup);
+                                        final List<Concept> conceptsToProcess = new ArrayList<>();
+                                        int i = 0;
+
+                                        for (final Concept concept : replacementConceptsToLookup) {
+
+                                            conceptsToProcess.add(concept);
+                                            i++;
+
+                                            if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == replacementConceptsToLookup.size()) {
+
+                                                populateAllLanguageDescriptions(upgradeRefset, conceptsToProcess);
+                                                conceptsToProcess.clear();
+                                            }
+
+                                        }
 
                                         for (final Concept replacementConcept : replacementConceptsToLookup) {
 
