@@ -7,6 +7,7 @@ import javax.servlet.http.Cookie;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.User;
@@ -41,7 +42,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
     public User authenticate(final String userName) throws Exception {
 
         final boolean authenticated = checkImsLogin(userName);
-        
+
         if (userName == null || !authenticated) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user is not authenticated with IMS.");
         }
@@ -56,9 +57,9 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                 user.getRoles().add(role.substring(rt2RolePrefix.length()));
             }
         }
-        
+
         if (userName.equals("twhalen")) {
-            
+
             user.getRoles().clear();
             user.getRoles().add("snomedctus-all-viewer");
             user.getRoles().add("snomedctse-inrp-reviewer");
@@ -70,7 +71,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         logger.debug("authenticate user is: " + user);
         return user;
     }
-    
+
     /**
      * Calls an IMS endpoint to make sure user is authenticated.
      *
@@ -78,30 +79,29 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
      * @return the response
      * @throws Exception the exception
      */
-    protected static boolean checkImsLogin(final String userName) throws Exception {
+    protected boolean checkImsLogin(final String userName) throws Exception {
 
-        final String authUrlBase = PropertyUtility.getProperty("snowstorm.authUrl");
-        String url = authUrlBase + "account";
+        final String url = getAuthenticateUrl() + "account";
         boolean authenticated = false;
         final Cookie imsCookie = SecurityService.getImsCookie();
-        
+
         if (imsCookie == null) {
             return false;
         }
-        
+
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
         final javax.ws.rs.core.Cookie newCookie = new javax.ws.rs.core.Cookie(imsCookie.getName(), imsCookie.getValue());
-        
-        try (Response response = target.request("application/json").cookie(newCookie).get()) {
-            
+
+        try (Response response = target.request(MediaType.APPLICATION_JSON).cookie(newCookie).get()) {
+
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {
 
                 final String resultString = response.readEntity(String.class);
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString.toString());
                 final String imsUserName = root.get("login").asText();
-                
+
                 // make sure that the passed in user name is the same as what IMS has authenticated
                 if (imsUserName.equals(userName)) {
                     authenticated = true;
@@ -112,7 +112,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             logger.error("IMS Authentication error: {} ", url, e);
             throw e;
         }
-        
+
         return authenticated;
     }
 
@@ -143,6 +143,20 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
     public String getName() {
 
         return "IHTSDO Identity Management Service handler";
+    }
+
+    /* see superclass */
+    @Override
+    public String getAuthenticateUrl() throws Exception {
+
+        return PropertyUtility.getProperty("security.handler.IMS.url");
+    }
+
+    /* see superclass */
+    @Override
+    public String getLogoutUrl() throws Exception {
+
+        return PropertyUtility.getProperty("security.handler.IMS.url.logout");
     }
 
 }
