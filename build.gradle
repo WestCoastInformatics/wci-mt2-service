@@ -29,13 +29,13 @@ repositories {
 
 // Project.version info (upgrade version when needed)
 group = "org.ihtsdo.refsetservice"
-version = "1.0.6" 
+version = "1.0.7" 
 
 // Extra Properties
 ext {
 
 	// always use "-SNAPSHOT" for versionTag except for release commits
-	versionTag = ""
+	versionTag = "-SNAPSHOT"
 	versionNumber = version
 	
 	if (!project.hasProperty("debAppName")) {
