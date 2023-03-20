@@ -9,10 +9,8 @@
  */
 package org.ihtsdo.refsetservice.service;
 
-import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.PfsParameter;
-import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ResultList;

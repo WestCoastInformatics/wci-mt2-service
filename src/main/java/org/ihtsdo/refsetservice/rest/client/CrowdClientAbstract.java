@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -9,6 +9,9 @@
  */
 package org.ihtsdo.refsetservice.rest.client;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -142,5 +145,20 @@ public class CrowdClientAbstract {
             logger.error("CROWD DELETE ERROR url: {}", url, e);
             throw e;
         }
+    }
+
+    /**
+     * Url Encode a string.
+     *
+     * @param toEncode the to encode
+     * @return the string
+     * @throws UnsupportedEncodingException
+     */
+    protected static String urlEncode(final String stringToEncode) throws UnsupportedEncodingException {
+
+        if (StringUtils.isBlank(stringToEncode)) {
+            return stringToEncode;
+        }
+        return URLEncoder.encode(stringToEncode, StandardCharsets.UTF_8.toString());
     }
 }

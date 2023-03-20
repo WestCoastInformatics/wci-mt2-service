@@ -177,7 +177,7 @@ public class RefsetMemberService {
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 386;
 
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
-    private static final int URL_MAX_CHAR_LENGTH = 6800;
+    private static final int URL_MAX_CHAR_LENGTH = 6200;
 
     /** The max number of record elasticsearch will return without erroring. */
     private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
@@ -264,7 +264,7 @@ public class RefsetMemberService {
 
         if (refset == null) {
 
-            throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+            throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
         }
 
         refset = RefsetService.setRefsetPermissions(user, refset);
@@ -290,7 +290,7 @@ public class RefsetMemberService {
 
         if (refset == null) {
 
-            throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+            throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
         }
 
         final String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?ecl=%5E%20" + refset.getRefsetId() + "&offset=0&limit=10000"
@@ -627,7 +627,7 @@ public class RefsetMemberService {
 
         } catch (Exception ex) {
 
-            throw new Exception("Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not retrieve Reference Set members from snowstorm: " + ex.getMessage(), ex);
         }
 
         logger.debug("searchDirectoryMembers refsetQuery: {}", refsetIds);
@@ -637,48 +637,54 @@ public class RefsetMemberService {
     /**
      * Multisearch of descriptions
      * 
-     * @param term Term to search
+     * @param searchParameters the search parameters
      * @param ecl ECL to narrow search
+     * @param nonPublishedBranchPaths a set of non-published branch paths to search in addition to all published branches
      * @return Collection of conceptIds as strings.
      * @throws Exception the exception
      */
-    public static Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl) throws Exception {
+    public static Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl, final Set<String> nonPublishedBranchPaths) throws Exception {
 
         final String query = searchParameters.getQuery();
         final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
         String snowstormQuery = "";
         String[] queryParts = query.split(" AND ");
+        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectNode body = mapper.createObjectNode();
+        final ArrayNode bodyPaths = mapper.createArrayNode();
 
         for (final String queryPart : queryParts) {
 
             String[] keyValue = queryPart.split(":");
 
             if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
-
                 continue;
             } else {
-
                 snowstormQuery += queryPart + " AND ";
             }
-
         }
 
         snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+        
+        for (final String branchPath : nonPublishedBranchPaths) {
+            bodyPaths.add(branchPath);
+        }
+        
+        body.set("branches", bodyPaths);
 
         String url = SnowstormConnection.BASE_URL + "multisearch/descriptions?active=true&offset=0&limit=10000" + "&ecl=" + StringUtility.encodeValue(ecl) + "&term="
             + StringUtility.encodeValue(snowstormQuery);
         
         logger.debug("searchMultisearchDescriptions: Search Refset Concepts descriptions URL: " + url);
+        logger.debug("!!!!! searchMultisearchDescriptions: Search Refset Concepts descriptions BODY: " + body);
 
-        try (Response response = SnowstormConnection.getResponse(url)) {
+        try (Response response = SnowstormConnection.postResponse(url, body.toString())) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-
                 throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
             }
 
             final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
             final Set<String> conceptIds = new HashSet<>();
@@ -690,7 +696,6 @@ public class RefsetMemberService {
                 if (itemsNode.isArray()) {
 
                     for (JsonNode itemNode : itemsNode) {
-
                         conceptIds.add(itemNode.get("concept").get("conceptId").asText());
                     }
 
@@ -730,7 +735,7 @@ public class RefsetMemberService {
 
         if (queryResults == null || queryResults.isEmpty()) {
 
-            throw new Exception("Found no published refsets for project id " + projectId + " to export.");
+            throw new Exception("Found no published Reference Sets for project id " + projectId + " to export.");
         }
 
         try {
@@ -740,11 +745,13 @@ public class RefsetMemberService {
                 final SearchParameters searchParameters = new SearchParameters();
                 final String versionDate = simpleDateFormat.format(o[1]);
                 searchParameters.setQuery("refsetId:" + o[0].toString() + " AND versionDate:" + versionDate + " AND versionStatus:PUBLISHED");
-                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false, false);
+                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false, false, false);
 
                 if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
 
                     for (final Refset refset : refsetList.getItems()) {
+                        
+                        RefsetService.setRefsetPermissions(user, refset);
 
                         final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, versionDate.replace("-", ""), exportMetadata, withNames);
                         refsetFiles.add(EXPORT_FILE_DIR + fileName);
@@ -822,11 +829,11 @@ public class RefsetMemberService {
 
         try {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
+            final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(), refsetInternalId);
 
             if (refset == null) {
 
-                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+                throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
 
             try {
@@ -954,7 +961,7 @@ public class RefsetMemberService {
 
             if (refset == null) {
 
-                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+                throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
 
             S3ConnectionWrapper.connectToAmazonS3();
@@ -1222,7 +1229,7 @@ public class RefsetMemberService {
         } else if (sourceFiles.size() == 0) {
 
             final Path path = Path.of(builderDirectoryTempDir.toString() + File.separator + "noresults.txt");
-            Files.write(path, ("No results for refset " + refset.getRefsetId()).getBytes(StandardCharsets.UTF_8));
+            Files.write(path, ("No results for Reference Set " + refset.getRefsetId()).getBytes(StandardCharsets.UTF_8));
             sourceFiles.add(path.toString());
             noFiles = true;
         }
@@ -1418,7 +1425,7 @@ public class RefsetMemberService {
 
         } catch (Exception ex) {
 
-            throw new Exception("Could not retrieve refset members from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not retrieve Reference Set members from snowstorm: " + ex.getMessage(), ex);
         }
 
     }
@@ -1446,11 +1453,11 @@ public class RefsetMemberService {
         // get the refset and member information
         try {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
+            final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(), refsetInternalId);
 
             if (refset == null) {
 
-                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+                throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
 
             refsetFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + "_member_ids.txt";
@@ -1506,7 +1513,7 @@ public class RefsetMemberService {
 
         } catch (Exception ex) {
 
-            throw new Exception("Could not get refset member data from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not get Reference Set member data from snowstorm: " + ex.getMessage(), ex);
         }
 
         // print the sctids file
@@ -1555,11 +1562,11 @@ public class RefsetMemberService {
 
         try {
 
-            final Refset refset = service.get(refsetInternalId, Refset.class);
+            final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(), refsetInternalId);
 
             if (refset == null) {
 
-                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+                throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
 
             refsetFileName = "freeset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + ".txt";
@@ -1578,6 +1585,21 @@ public class RefsetMemberService {
             final List<Concept> concepts = getAllRefsetMembers(service, refsetInternalId, "", new ArrayList<Concept>());
             Collections.sort(concepts, Comparator.comparing((Concept concept) -> Long.parseLong(concept.getCode())));
 
+            final List<Concept> conceptsToProcess = new ArrayList<>();
+            int i = 0;
+
+            for (final Concept concept : concepts) {
+
+                conceptsToProcess.add(concept);
+                i++;
+
+                if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == concepts.size()) {
+
+                    populateAllLanguageDescriptions(refset, conceptsToProcess);
+                    conceptsToProcess.clear();
+                }
+
+            }
             populateAllLanguageDescriptions(refset, concepts);
 
             results.setTimeTaken(System.currentTimeMillis() - start);
@@ -1629,7 +1651,7 @@ public class RefsetMemberService {
 
         } catch (Exception ex) {
 
-            throw new Exception("Could not create freeset txt file: " + ex.getMessage(), ex);
+            throw new Exception("Could not create free set txt file: " + ex.getMessage(), ex);
         }
 
         // zip the files together
@@ -1782,46 +1804,46 @@ public class RefsetMemberService {
 
         if (refset.getVersionDate() != null) {
 
-            fileLines.append("Refset Version Date" + separator + DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+            fileLines.append("Reference Set Version Date" + separator + DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
         } else {
 
-            fileLines.append("Refset Version Date" + separator + "\n");
+            fileLines.append("Reference Set Version Date" + separator + "\n");
         }
 
         if (refset.isLocalSet()) {
 
-            fileLines.append("Local Refset" + separator + "True" + "\n");
+            fileLines.append("Local Reference Set" + separator + "True" + "\n");
         }
 
-        fileLines.append("Refset Last Modified Date" + separator + DateUtility.formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
-        fileLines.append("Refset Type" + separator + refset.getType() + "\n");
+        fileLines.append("Reference Set Last Modified Date" + separator + DateUtility.formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+        fileLines.append("Reference Set Type" + separator + refset.getType() + "\n");
 
         if (refset.isActive()) {
 
-            fileLines.append("Refset Status" + separator + "Active" + "\n");
+            fileLines.append("Reference Set Status" + separator + "Active" + "\n");
         } else {
 
-            fileLines.append("Refset Status" + separator + "Inactive" + "\n");
+            fileLines.append("Reference Set Status" + separator + "Inactive" + "\n");
         }
 
         if (refset.isPrivateRefset()) {
 
-            fileLines.append("Private Refset" + separator + "True" + "\n");
+            fileLines.append("Private Reference Set" + separator + "True" + "\n");
         } else {
 
-            fileLines.append("Private Refset" + separator + "False" + "\n");
+            fileLines.append("Private Reference Set" + separator + "False" + "\n");
         }
 
         fileLines.append("Tags" + separator + String.join(", ", refset.getTags()) + "\n");
 
         if (refset.getNarrative() != null && !refset.getNarrative().equals("")) {
 
-            fileLines.append("Refset Narrative" + separator + refset.getNarrative() + "\n");
+            fileLines.append("Reference Set Narrative" + separator + refset.getNarrative() + "\n");
         }
 
         if (refset.getVersionNotes() != null && !refset.getVersionNotes().equals("")) {
 
-            fileLines.append("Refset Version Notes" + separator + refset.getVersionNotes() + "\n");
+            fileLines.append("Reference Set Version Notes" + separator + refset.getVersionNotes() + "\n");
         }
 
         if (refset.getExternalUrl() != null && !refset.getExternalUrl().equals("")) {
@@ -1832,7 +1854,7 @@ public class RefsetMemberService {
         if (refset.getType().equals(Refset.INTENSIONAL)) {
 
             final String definition = RefsetService.getEclFromDefinition(refset.getDefinitionClauses());
-            fileLines.append("Refset Definition" + separator + definition + "\n");
+            fileLines.append("Reference Set Definition" + separator + definition + "\n");
         }
 
         // print the sctids file
@@ -2144,7 +2166,8 @@ public class RefsetMemberService {
 
                 if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == allConceptList.size()) {
 
-                    populateAllLanguageDescriptions(refset, concepts.getItems());
+                    populateAllLanguageDescriptions(refset, conceptsToProcess);
+                    conceptsToProcess.clear();
                 }
 
             }
@@ -2266,7 +2289,7 @@ public class RefsetMemberService {
         String url = SnowstormConnection.BASE_URL + getBranchPath(refset) + "/concepts?&offset=0&limit=" + limit;
 
         // if this search is for editing then get the concept leaf information
-        if (searchParameters.isEditing()) {
+        if (searchParameters.getEditing()) {
 
             url += "&includeLeafFlag=true&form=inferred";
         }
@@ -2411,7 +2434,7 @@ public class RefsetMemberService {
                         conceptBatch.add(concept);
                     }
 
-                    if (searchParameters.isEditing() || limitToNonMembers) {
+                    if (searchParameters.getEditing() || limitToNonMembers) {
 
                         populateMembershipInformation(refset, conceptBatch);
                     }
@@ -2912,7 +2935,7 @@ public class RefsetMemberService {
                                 populateAllLanguageDescriptions(refset, threadConcepts);
 
                                 // if not searching and editing then get the concept leaf information
-                                if (doNotSearch && searchParameters.isEditing()) {
+                                if (doNotSearch && searchParameters.getEditing()) {
 
                                     populateConceptLeafStatus(refset, threadConcepts);
                                 }
@@ -2945,7 +2968,7 @@ public class RefsetMemberService {
 
         } catch (Exception ex) {
 
-            throw new Exception("Could not get refset member list for refset " + refsetId + " from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not get Reference Set member list for Reference Set " + refsetId + " from snowstorm: " + ex.getMessage(), ex);
         }
 
         return members;
@@ -3110,7 +3133,7 @@ public class RefsetMemberService {
 
         } catch (Exception ex) {
 
-            throw new Exception("Could not get refset children for concept " + conceptId + " from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not get Reference Set children for concept " + conceptId + " from snowstorm: " + ex.getMessage(), ex);
         }
 
     }
@@ -3139,7 +3162,7 @@ public class RefsetMemberService {
                 throw ex;
             }
 
-            throw new Exception("Could not get refset parents for concept " + conceptId + " from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not get Reference Set parents for concept " + conceptId + " from snowstorm: " + ex.getMessage(), ex);
         }
 
     }
@@ -3164,7 +3187,7 @@ public class RefsetMemberService {
                 throw ex;
             }
 
-            throw new Exception("Could not get refset children for concept " + conceptId + " from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not get Reference Set children for concept " + conceptId + " from snowstorm: " + ex.getMessage(), ex);
         }
 
     }
@@ -3776,7 +3799,7 @@ public class RefsetMemberService {
 
             } catch (Exception e) {
 
-                throw new Exception("Caught during defining refset version on: " + refsetId + " --- " + branch + "\n" + e.getStackTrace().toString());
+                throw new Exception("Caught during defining Reference Set version on: " + refsetId + " --- " + branch + "\n" + e.getStackTrace().toString());
             }
 
         }
@@ -3842,7 +3865,7 @@ public class RefsetMemberService {
 
         } catch (Exception ex) {
 
-            throw new Exception("Could not get refset children for concept " + refsetId + " from snowstorm: " + ex.getMessage(), ex);
+            throw new Exception("Could not get Reference Set children for concept " + refsetId + " from snowstorm: " + ex.getMessage(), ex);
         }
 
     }
@@ -3875,7 +3898,7 @@ public class RefsetMemberService {
 
             if (refset == null) {
 
-                throw new Exception("Refset Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+                throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
             }
 
             final String url = SnowstormConnection.BASE_URL + RefsetService.getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId() + "&referencedComponentId=" + referencedComponentId;
@@ -3970,7 +3993,7 @@ public class RefsetMemberService {
 
             } catch (Exception ex) {
 
-                logger.error("Could not grab refset members for refset " + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
+                logger.error("Could not grab Reference Set members for Reference Set " + refset.getRefsetId() + " from snowstorm: " + ex.getMessage(), ex);
                 continue;
             }
 
@@ -4005,7 +4028,7 @@ public class RefsetMemberService {
             pfs.setSort("latestVersion");
 
             final ResultList<Refset> refsets = service.find("", null, Refset.class, null);
-            logger.info("Starting to cache member ancestors for all " + refsets.getItems().size() + " refsets");
+            logger.info("Starting to cache member ancestors for all " + refsets.getItems().size() + " Reference Sets");
 
             for (final Refset refset : refsets.getItems()) {
 
@@ -4057,7 +4080,7 @@ public class RefsetMemberService {
 
             if (memberTotal > 100000) {
 
-                logger.warn("Could not cache the ancestors of refset " + refset.getRefsetId() + " because it has too many members: " + memberTotal);
+                logger.warn("Could not cache the ancestors of Reference Set " + refset.getRefsetId() + " because it has too many members: " + memberTotal);
                 branchCache.put(cacheString, new HashSet<String>());
                 ancestorsCache.put(branchPath, branchCache);
                 return true;
@@ -4065,7 +4088,7 @@ public class RefsetMemberService {
 
         } catch (Exception e) {
 
-            logger.error("Could not cache the ancestors of refset " + refset.getRefsetId() + " from snowstorm: " + e.getMessage(), e);
+            logger.error("Could not cache the ancestors of Reference Set " + refset.getRefsetId() + " from snowstorm: " + e.getMessage(), e);
         }
 
         // Get ancestors of all members via ecl e.g. >(^723264001)
@@ -4116,7 +4139,7 @@ public class RefsetMemberService {
 
                     } catch (Exception e) {
 
-                        logger.error("Could not cache the ancestors of refset " + refset.getRefsetId() + " from snowstorm: " + e.getMessage(), e);
+                        logger.error("Could not cache the ancestors of Reference Set " + refset.getRefsetId() + " from snowstorm: " + e.getMessage(), e);
                     }
 
                 }
@@ -4182,7 +4205,7 @@ public class RefsetMemberService {
 
         if (refset == null) {
 
-            throw new Exception("Refset Internal Id: " + refset.getId() + " does not exist in the RT2 database");
+            throw new Exception("Reference Set Internal Id: " + refset.getId() + " does not exist in the RT2 database");
         }
 
         if (conceptIds.size() == 0) {
@@ -4314,8 +4337,7 @@ public class RefsetMemberService {
 
                 bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
                 final String memberSearchBody = memberSearchBodyBase + bodyConceptIds + "]}";
-                logger.debug("addRefsetMembers member search body: " + memberSearchBody);
-                logger.debug("addRefsetMembers conceptIds: " + conceptIds);
+                //logger.debug("addRefsetMembers member search body: " + memberSearchBody);
 
                 try (final Response response = SnowstormConnection.postResponse(memberSearchUrl, memberSearchBody)) {
 
@@ -4405,14 +4427,14 @@ public class RefsetMemberService {
         final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId).put("moduleId", moduleId).put("referencedComponentId", conceptId);
 
         logger.debug("callAddMemberSingle URL: " + url);
-        logger.debug("callAddMemberSingle URL body: " + body.toString());
+        //logger.debug("callAddMemberSingle URL body: " + body.toString());
 
         try (final Response response = SnowstormConnection.postResponse(url, body.toString())) {
 
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                logger.error("Add Refset Member call to url '" + url + "' for refset '" + refsetId + "' and concept '" + conceptId + "' wasn't successful. " + response.toString());
+                logger.error("Add Reference Set Member call to url '" + url + "' for Reference Set '" + refsetId + "' and concept '" + conceptId + "' wasn't successful. " + response.toString());
                 unaddedConcepts.add(conceptId);
             }
 
@@ -4446,11 +4468,11 @@ public class RefsetMemberService {
         }
 
         logger.debug("callAddMembersBulk URL: " + bulkUrl);
-        logger.debug("callAddMembersBulk URL body: " + body.toString());
+        //logger.debug("callAddMembersBulk URL body: " + body.toString());
 
         String jobStatusUrl = null;
         boolean jobDone = false;
-        String errorMessage = "Add Refset Member bulk call to url '" + bulkUrl + "' for refset '" + refsetId + " wasn't successful. ";
+        String errorMessage = "Add Reference Set Member bulk call to url '" + bulkUrl + "' for Reference Set '" + refsetId + " wasn't successful. ";
 
         try (final Response response = SnowstormConnection.postResponse(bulkUrl, body.toString())) {
 
@@ -4486,7 +4508,9 @@ public class RefsetMemberService {
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
+                        jobDone = true;
                         logger.error(errorMessage + response.toString());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + response.toString());
                     }
 
                     final String resultString = response.readEntity(String.class);
@@ -4502,7 +4526,8 @@ public class RefsetMemberService {
                     } else if (status.equalsIgnoreCase("failed")) {
 
                         jobDone = true;
-                        logger.error(errorMessage + root.get("message").asText());
+                        logger.error(errorMessage + response.toString());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
                     } else {
 
                         logger.debug("Bulk member add hasn't finished yet...");
@@ -4631,8 +4656,6 @@ public class RefsetMemberService {
                     memberUpdateArray.add(memberBody);
                 }
 
-                logger.debug("removeRefsetMembers conceptNode: " + ModelUtility.toJson(conceptNode));
-
                 final JsonNode referencedComponent = conceptNode.get("referencedComponent");
 
                 if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
@@ -4674,10 +4697,10 @@ public class RefsetMemberService {
 
                 final String deleteBody = mapper.createObjectNode().set("memberIds", memberDeleteArray).toString();
                 final String deleteUrl = url + "?force";
-                String errorMessage = "Remove Refset Member bulk call to url '" + deleteUrl + "' for refset '" + refsetId + " wasn't successful. ";
+                String errorMessage = "Remove Reference Set Member bulk call to url '" + deleteUrl + "' for Reference Set '" + refsetId + " wasn't successful. ";
 
                 logger.debug("removeRefsetMembers URL: " + deleteUrl);
-                logger.debug("removeRefsetMembers URL Body: " + deleteBody);
+                //logger.debug("removeRefsetMembers URL Body: " + deleteBody);
 
                 try (final Response response = SnowstormConnection.deleteResponse(deleteUrl, deleteBody)) {
 
@@ -4739,7 +4762,7 @@ public class RefsetMemberService {
         final ObjectMapper mapper = new ObjectMapper();
 
         logger.debug("callUpdateMemberSingle URL: " + url);
-        logger.debug("callUpdateMemberSingle URL body: " + memberBody.toString());
+        //logger.debug("callUpdateMemberSingle URL body: " + memberBody.toString());
 
         try (final Response response = SnowstormConnection.putResponse(url, memberBody.toString())) {
 
@@ -4749,7 +4772,7 @@ public class RefsetMemberService {
                 final String memberId = memberBody.get("memberId").asText();
                 final String conceptId = memberBody.get("referencedComponentId").asText();
 
-                logger.error("Inactivate Refset Member call to url '" + url + "' for refset '" + refsetId + "' and concept '" + conceptId + "' and member '" + memberId + "' wasn't successful. "
+                logger.error("Inactivate Reference Set Member call to url '" + url + "' for Reference Set '" + refsetId + "' and concept '" + conceptId + "' and member '" + memberId + "' wasn't successful. "
                     + response.toString());
                 unchangedConcepts.add(memberId);
             }
@@ -4778,7 +4801,7 @@ public class RefsetMemberService {
 
         String jobStatusUrl = null;
         boolean jobDone = false;
-        String errorMessage = "Inactive Reference Set Member bulk call to url '" + url + "' for refset '" + refsetId + " wasn't successful. ";
+        String errorMessage = "Inactivate Reference Set Member bulk call to url '" + url + "' for Reference Set '" + refsetId + " wasn't successful. ";
 
         try (final Response response = SnowstormConnection.postResponse(url, memberBodies.toString())) {
 
@@ -4814,7 +4837,9 @@ public class RefsetMemberService {
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
+                        jobDone = true;
                         logger.error(errorMessage + response.toString());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + response.toString());
                     }
 
                     final String resultString = response.readEntity(String.class);
@@ -4829,7 +4854,10 @@ public class RefsetMemberService {
 
                     } else if (status.equalsIgnoreCase("failed")) {
 
+                        jobDone = true;
                         logger.error(errorMessage + root.get("message").asText());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
+                        
                     } else {
 
                         logger.debug("Bulk member inactivate hasn't finished yet...");
@@ -4881,7 +4909,7 @@ public class RefsetMemberService {
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                    throw new Exception("Unable to get refset concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                    throw new Exception("Unable to get Reference Set concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
                 }
 
                 final String resultString = response.readEntity(String.class);
@@ -4954,7 +4982,7 @@ public class RefsetMemberService {
 
         if (!tempRefset.getWorkflowStatus().equals(WorkflowService.READY_FOR_EDIT)) {
 
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Refset is in the wrong status to be Upgraded");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is in the wrong status to be Upgraded");
         }
 
         final Refset upgradeRefset = tempRefset;
@@ -5200,8 +5228,21 @@ public class RefsetMemberService {
 
                                         }
 
-                                        // logger.debug("compileUpgradeData IN THREAD ID: " + Thread.currentThread().getId());
-                                        populateAllLanguageDescriptions(upgradeRefset, replacementConceptsToLookup);
+                                        final List<Concept> conceptsToProcess = new ArrayList<>();
+                                        int i = 0;
+
+                                        for (final Concept concept : replacementConceptsToLookup) {
+
+                                            conceptsToProcess.add(concept);
+                                            i++;
+
+                                            if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == replacementConceptsToLookup.size()) {
+
+                                                populateAllLanguageDescriptions(upgradeRefset, conceptsToProcess);
+                                                conceptsToProcess.clear();
+                                            }
+
+                                        }
 
                                         for (final Concept replacementConcept : replacementConceptsToLookup) {
 

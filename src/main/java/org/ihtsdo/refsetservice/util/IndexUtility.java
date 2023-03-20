@@ -926,7 +926,7 @@ public final class IndexUtility {
                     }
                 })).toQuery();
 
-        logger.debug("###*********### ElasticSearch QueryString: " + searchQuery.queryString());
+        //logger.debug("###*********### ElasticSearch QueryString: " + searchQuery.queryString());
         
         // if start index and max results are set, set paging
         if (pfs != null && pfs.getOffset() >= 0 && pfs.getLimit() >= 0) {

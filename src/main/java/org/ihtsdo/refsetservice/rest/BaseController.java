@@ -1,13 +1,21 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.rest;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.ihtsdo.refsetservice.model.AuthContext;
 import org.ihtsdo.refsetservice.model.RestException;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -20,79 +28,82 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * Base controller for error handling.
  */
-@CrossOrigin(origins = {
-        "http://localhost:4200", "http://localhost:8888", "http://local.ihtsdotools.org:8888",
-        "https://dev-rt2.ihtsdotools.org", "https://uat-rt2.ihtsdotools.org", "https://rt2.ihtsdotools.org"
-}, allowCredentials = "true")
+@CrossOrigin(origins = { "http://localhost:4200", "http://localhost:8888", "http://local.ihtsdotools.org:8888",
+		"https://dev-rt2.ihtsdotools.org", "https://uat-rt2.ihtsdotools.org",
+		"https://rt2.ihtsdotools.org" }, allowCredentials = "true")
 public class BaseController {
 
-    /** The Constant log. */
-    private static Logger logger = LoggerFactory.getLogger(BaseController.class);
+	/** The Constant log. */
+	private static Logger logger = LoggerFactory.getLogger(BaseController.class);
 
-    /**
-     * Handle exception.
-     *
-     * @param exception the e
-     * @return the ResponseEntity
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("rawtypes")
-    public ResponseEntity handleException(final Exception exception) throws Exception {
-        
-        if (exception instanceof ResponseStatusException) {
-            
-            final ResponseStatusException responseStatusException = (ResponseStatusException)exception;
-            return ResponseEntity.status(responseStatusException.getRawStatusCode()).body(responseStatusException.getReason());
-            
-        } else if (exception instanceof RestException) {
-            
-            final RestException restException = (RestException)exception;
-            return ResponseEntity.status(restException.getError().getStatus()).body(restException.getMessage());
-            
-        } else {
-            
-            logger.error("Unexpected error", exception);
-            final String errorMessage = "Unexpected error occurred in the system. Please contact info@snomed.org";
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
-        }
-    }
+	/**
+	 * Handle exception.
+	 *
+	 * @param exception the e
+	 * @return the ResponseEntity
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("rawtypes")
+	public ResponseEntity handleException(final Exception exception) throws Exception {
 
-    /**
-     * Check to make sure parameters were properly bound to variables.
-     *
-     * @param bindingResult the binding result
-     * @throws Exception the exception
-     */
-    public void checkBinding(final BindingResult bindingResult) throws Exception {
+		if (exception instanceof ResponseStatusException) {
 
-     // Check whether or not parameter binding was successful
-        if (bindingResult.hasErrors()) {
+			final ResponseStatusException responseStatusException = (ResponseStatusException) exception;
+			return ResponseEntity.status(responseStatusException.getRawStatusCode())
+					.body(responseStatusException.getReason());
 
-            final List<FieldError> errors = bindingResult.getFieldErrors();
-            final List<String> errorMessages = new ArrayList<>();
+		} else if (exception instanceof RestException) {
 
-            for (final FieldError error : errors) {
+			final RestException restException = (RestException) exception;
+			return ResponseEntity.status(restException.getError().getStatus()).body(restException.getMessage());
 
-                final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = "
-                        + error.getField() + ", " + error.getCode();
-                logger.error(errorMessage);
-                errorMessages.add(errorMessage);
-            }
+		} else {
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.join("\n ", errorMessages));
-        }
-    }
+			logger.error("Unexpected error", exception);
+			final String errorMessage = "Unexpected error occurred in the system. Please contact info@snomed.org";
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
+		}
+	}
 
-    /**
-     * Authorize.
-     *
-     * @param request the request
-     * @return the auth context
-     * @throws Exception the exception
-     */
-    public AuthContext authorize(final HttpServletRequest request) throws Exception {
-        // TODO finish authorize logic
-        return null;
-    }
+	/**
+	 * Check to make sure parameters were properly bound to variables.
+	 *
+	 * @param bindingResult the binding result
+	 * @throws Exception the exception
+	 */
+	public void checkBinding(final BindingResult bindingResult) throws Exception {
+
+		// Check whether or not parameter binding was successful
+		if (bindingResult.hasErrors()) {
+
+			final List<FieldError> errors = bindingResult.getFieldErrors();
+			final List<String> errorMessages = new ArrayList<>();
+
+			for (final FieldError error : errors) {
+
+				final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = " + error.getField() + ", "
+						+ error.getCode();
+				logger.error(errorMessage);
+				errorMessages.add(errorMessage);
+			}
+
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.join("\n ", errorMessages));
+		}
+	}
+
+	/**
+	 * Authorize.
+	 *
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	public User authorizeUser() throws Exception {
+
+		final User authUser = SecurityService.getUserFromSession();
+		if (authUser == null || authUser.getId() == null) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+		}
+		return authUser;
+	}
+
 }

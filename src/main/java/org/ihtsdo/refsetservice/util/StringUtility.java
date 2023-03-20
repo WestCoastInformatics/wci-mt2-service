@@ -2,6 +2,7 @@
 package org.ihtsdo.refsetservice.util;
 
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -14,8 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CaseFormat;
-
-import java.nio.charset.StandardCharsets;
 
 /**
  * Utility class for interacting with Strings.

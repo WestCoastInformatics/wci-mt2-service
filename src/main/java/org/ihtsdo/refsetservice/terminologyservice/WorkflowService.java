@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -244,7 +243,7 @@ public final class WorkflowService {
                 }
             } catch (Exception e) {
                 
-                logger.error("Unable to merge refset into project branch for Reference set " + refset.getRefsetId() + " because: " + e.getMessage(), e);
+                logger.error("Unable to merge Reference Set into project branch for Reference set " + refset.getRefsetId() + " because: " + e.getMessage(), e);
                 refsetsNotUpdated.add(refset.getRefsetId());
             }
         }
@@ -317,7 +316,7 @@ public final class WorkflowService {
                 final String refsetBranchPath = RefsetService.getBranchPath(refset);
                 final String topLevelRefsetBranchPath = getLocalsetTopLevelRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId());
                 mergeBranch(refsetBranchPath, topLevelRefsetBranchPath, "Promoting versioned local set", false);
-                logger.info("Publication (non-snomed versioning) of localset refset: " + refset.getRefsetId());
+                logger.info("Publication (non-snomed versioning) of localset Reference Set: " + refset.getRefsetId());
             } else {
                 logger.info("Publication of refset: " + refset.getRefsetId());
             }
@@ -480,7 +479,7 @@ public final class WorkflowService {
 
             } else {
 
-                final String message = "Unable to merge edit into refset branch for refset " + refset.getRefsetId() + " because the edit branch doesn't exist.";
+                final String message = "Unable to merge edit into Reference Set branch for Reference Set " + refset.getRefsetId() + " because the edit branch doesn't exist.";
                 logger.error(message);
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message);
             }
@@ -573,7 +572,7 @@ public final class WorkflowService {
 
         // Update an object
         service.update(refset);
-        logger.info("Refset workflow status set to " + status + " for refset " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
+        logger.info("Reference Set workflow status set to " + status + " for Reference Set " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
 
         // update the refset permissions
         return RefsetService.setRefsetPermissions(user, refset);
@@ -605,7 +604,7 @@ public final class WorkflowService {
             throw new Exception("Unable to create a new workflow history entry.");
         }
 
-        logger.info("New workflow history entry with status " + refset.getWorkflowStatus() + " added for refset " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
+        logger.info("New workflow history entry with status " + refset.getWorkflowStatus() + " added for Reference Set " + refset.getId() + ". Time: " + (System.currentTimeMillis() - start));
     }
 
     /**
@@ -627,7 +626,7 @@ public final class WorkflowService {
 
         if (results.getItems().size() == 0) {
 
-            throw new Exception("Unable to retrieve worflow for refset " + refset.getId());
+            throw new Exception("Unable to retrieve worflow for Reference Set " + refset.getId());
         }
 
         return results.getItems().get(0);
@@ -1725,7 +1724,7 @@ public final class WorkflowService {
     public static void canUserPerformWorkflowAction(final User user, final Refset refset, final String action) throws Exception {
 
         if (!WorkflowService.getAllowedActions(user, refset).contains(action)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unsuccessful attempt to update workflow status for refset " + refset.getId() + " from status " + refset.getWorkflowStatus() + " with action " + action);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unsuccessful attempt to update workflow status for Reference Set " + refset.getId() + " from status " + refset.getWorkflowStatus() + " with action " + action);
         }
     }
     
@@ -1739,7 +1738,7 @@ public final class WorkflowService {
     public static void canUserEditRefset(final User user, final Refset refset) throws Exception {
         
         if (!Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_UPGRADE).contains(refset.getWorkflowStatus()) || !user.getUserName().equals(refset.getAssignedUser())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Refset is not in the proper state or user does not have permission to edit.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is not in the proper state or user does not have permission to edit.");
         }
         
     }
@@ -1754,7 +1753,7 @@ public final class WorkflowService {
     public static void canUserPerformInDevelopmentActionsOnRefset(final User user, final Refset refset) throws Exception {
 
         if (!Refset.IN_DEVELOPMENT.equals(refset.getVersionStatus()) || !user.doesUserHavePermission(User.ROLE_VIEWER, refset.getProject())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Refset is not in the proper state or user does not have permission to perform this action.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is not in the proper state or user does not have permission to perform this action.");
         }
     }
 }

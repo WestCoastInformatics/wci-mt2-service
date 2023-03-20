@@ -30,7 +30,6 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserProjectRole;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
-import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -39,8 +38,10 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
@@ -387,11 +388,10 @@ public class SecurityService implements AutoCloseable {
      * Authenticate.
      *
      * @param userName the user name
-     * @param password the password
      * @return the user
      * @throws Exception the exception
      */
-    public User authenticate(final String userName, final String password) throws Exception {
+    public User authenticate(final String userName) throws Exception {
 
         // Check userName and password are not null
         if (userName == null || userName.isEmpty()) {
@@ -415,7 +415,7 @@ public class SecurityService implements AutoCloseable {
         //
         // Call the security service
         //
-        User authUser = handler.authenticate(userName, password);
+        User authUser = handler.authenticate(userName);
         logger.info("Authenticated user is {}", authUser);
         return authHelper(authUser);
     }
@@ -565,14 +565,20 @@ public class SecurityService implements AutoCloseable {
     /**
      * Logout.
      *
-     * @param authToken the auth token
+     * @param userName the user name
      * @throws Exception the exception
      */
     // @Override
-    public void logout(final String authToken) throws Exception {
+    public void logout(final String userName) throws Exception {
 
-        tokenUsernameMap.remove(authToken);
-        tokenTimeoutMap.remove(authToken);
+        final User user = getUserFromSession();
+        
+        if (!user.getUserName().equals(userName)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This user name supplied is not authenticated.");
+        }
+        
+        tokenUsernameMap.remove(userName);
+        tokenTimeoutMap.remove(userName);
         removeFromSession(SESSION_USER_OBJECT_KEY);
         clearCookies();
     }

@@ -1,6 +1,5 @@
 package org.ihtsdo.refsetservice.model;
 
-import org.ihtsdo.refsetservice.model.Error;
 import org.springframework.http.HttpStatus;
 
 /**
