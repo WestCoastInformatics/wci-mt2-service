@@ -1672,6 +1672,11 @@ public class RefsetService {
             query += " AND privateRefset: false";
         }
 
+        // incase query is empty.  search will fail with parentheses
+        if ("()".equals(query)) {
+            query = "";
+        }
+        
         logger.debug("searchRefsets query: " + query);
         results = service.find(query, pfs, Refset.class, null);
 
