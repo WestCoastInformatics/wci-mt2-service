@@ -286,7 +286,7 @@ public class ProjectService extends BaseService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                throw new Exception("call to url '" + conceptSearchUrl + "' for module name lookup wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + conceptSearchUrl + "' for module name lookup wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final JsonNode root = mapper.readTree(resultString.toString());

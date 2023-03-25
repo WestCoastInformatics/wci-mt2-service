@@ -231,7 +231,7 @@ public class RefsetService {
 
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                    throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                    throw new Exception("call to url '" + url + "' wasn't successful. " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
                 }
 
                 // Only process payload if Rest call is successful
@@ -958,7 +958,7 @@ public class RefsetService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                throw new Exception("Unable to retrieve reference set concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                throw new Exception("Unable to retrieve reference set concept: " + refsetId + " Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
             }
 
             // create the body entity for the update call from the retrieved concept
@@ -1048,7 +1048,7 @@ public class RefsetService {
 
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                throw new Exception("Unable to update reference set concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                throw new Exception("Unable to update reference set concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
             }
 
             logger.info("updateRefsetConcept refset concept: " + refsetId);
@@ -1231,7 +1231,7 @@ public class RefsetService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                throw new Exception("Unable to get reference set concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                throw new Exception("Unable to get reference set concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final ObjectMapper mapper = new ObjectMapper();
@@ -2307,7 +2307,7 @@ public class RefsetService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                throw new Exception("Unable to get edition versions. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                throw new Exception("Unable to get edition versions. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);

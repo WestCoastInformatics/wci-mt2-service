@@ -255,7 +255,7 @@ public class SnowstormConnection {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                 throw new LocalException(
-                        "Authentication of generic user failed. " + response.toString());
+                        "Authentication of generic user failed. " + " Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
             }
 
             Map<String, NewCookie> genericUserCookies = response.getCookies();
