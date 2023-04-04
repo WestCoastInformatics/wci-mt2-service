@@ -304,7 +304,7 @@ public class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -606,7 +606,7 @@ public class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -681,7 +681,7 @@ public class RefsetMemberService {
         try (Response response = SnowstormConnection.postResponse(url, body.toString())) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -1417,7 +1417,7 @@ public class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -1600,7 +1600,6 @@ public class RefsetMemberService {
                 }
 
             }
-            populateAllLanguageDescriptions(refset, concepts);
 
             results.setTimeTaken(System.currentTimeMillis() - start);
             results.setItems(concepts);
@@ -1618,7 +1617,7 @@ public class RefsetMemberService {
 
                 for (final Map<String, String> entry : cpt.getDescriptions()) {
 
-                    if (entry.get("type").equalsIgnoreCase("fsn") && StringUtils.isBlank(fsn)) {
+                    if (entry != null && "fsn".equalsIgnoreCase(entry.get("type")) && StringUtils.isBlank(fsn)) {
 
                         fsn = entry.get("term");
                     }
@@ -1937,14 +1936,13 @@ public class RefsetMemberService {
             conceptIds.append(concept.getCode());
         }
 
-        // logger.debug("Get Member Descriptions URL: " + url + "&conceptIds=" + conceptIds);
-
         // Call Snowstorm
-        try (final Response response = SnowstormConnection.getResponse(url + "&conceptIds=" + conceptIds)) {
+        final String fullSnowstormUrl = url + "&conceptIds=" + conceptIds;
+        try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + fullSnowstormUrl + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -2029,7 +2027,7 @@ public class RefsetMemberService {
 
         } catch (Exception ex) {
 
-            logger.error("Could not retrieve descriptions" + ex.getMessage());
+            logger.error("Could not retrieve descriptions " + ex.getMessage());
             ex.printStackTrace();
         }
 
@@ -2066,12 +2064,12 @@ public class RefsetMemberService {
 
         // Call Snowstorm
         // logger.debug("Get Concept Leaf Status URL: " + url + "&conceptIds=" + conceptIds);
-
-        try (final Response response = SnowstormConnection.getResponse(url + "&conceptIds=" + conceptIds)) {
+        final String fullSnowstormUrl = url + "&conceptIds=" + conceptIds;
+        try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + fullSnowstormUrl + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -2217,7 +2215,7 @@ public class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             // read the results of the call for ancestors for many concepts
@@ -2354,14 +2352,15 @@ public class RefsetMemberService {
         while (hasMorePages) {
 
             // Call Snowstorm
-            logger.debug("searchConcepts URL: " + url + searchAfter);
+            final String fullSnowstormUrl = url + searchAfter;
+            logger.debug("searchConcepts URL: " + fullSnowstormUrl);
 
-            try (final Response response = SnowstormConnection.getResponse(url + searchAfter)) {
+            try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl)) {
 
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
                     hasMorePages = false;
-                    throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                    throw new Exception("call to url '" + fullSnowstormUrl + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                 }
 
                 final String resultString = response.readEntity(String.class);
@@ -2778,7 +2777,7 @@ public class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -2853,14 +2852,15 @@ public class RefsetMemberService {
 
                 while (hasMorePages) {
 
-                    logger.debug("Get Member List URL: " + url + searchAfter);
+                    final String fullSnowstormUrl = url + searchAfter;
+                    logger.debug("Get Member List URL: " + fullSnowstormUrl);
 
-                    try (final Response response = SnowstormConnection.getResponse(url + searchAfter, acceptLanguage)) {
+                    try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl, acceptLanguage)) {
 
                         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
                             hasMorePages = false;
-                            throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                            throw new Exception("call to url '" + fullSnowstormUrl + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                         }
 
                         final String resultString = response.readEntity(String.class);
@@ -3215,7 +3215,7 @@ public class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -3742,7 +3742,7 @@ public class RefsetMemberService {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
                     hasMorePages = false;
-                    throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                    throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                 }
 
                 final String resultString = response.readEntity(String.class);
@@ -3842,7 +3842,7 @@ public class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -3909,7 +3909,7 @@ public class RefsetMemberService {
 
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                    throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                    throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                 }
 
                 final String resultString = response.readEntity(String.class);
@@ -4069,7 +4069,7 @@ public class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("Call to url '" + memberCountUrl + "' wasn't successful. " + response.getStatus() + ": " + response.toString());
+                throw new Exception("Call to url '" + memberCountUrl + "' wasn't successful. " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -4111,11 +4111,12 @@ public class RefsetMemberService {
                 @Override
                 public void run() {
 
-                    try (final Response response = SnowstormConnection.getResponse(url + offset)) {
+                    final String fullSnowstormUrl = url + offset;
+                    try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl)) {
 
                         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                            throw new Exception("Call to url '" + url + offset + "' wasn't successful. " + response.getStatus() + ": " + response.toString());
+                            throw new Exception("Call to url '" + fullSnowstormUrl + "' wasn't successful. " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
                         }
 
                         final String resultString = response.readEntity(String.class);
@@ -4273,7 +4274,7 @@ public class RefsetMemberService {
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                        throw new Exception("call to url '" + conceptSearchUrl + "' for concept verification wasn't successful. " + response.toString());
+                        throw new Exception("call to url '" + conceptSearchUrl + "' for concept verification wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                     }
 
                     final JsonNode root = mapper.readTree(resultString.toString());
@@ -4346,7 +4347,7 @@ public class RefsetMemberService {
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                        throw new Exception("call to url '" + conceptSearchUrl + "' for member search wasn't successful. " + response.toString());
+                        throw new Exception("call to url '" + conceptSearchUrl + "' for member search wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                     }
 
                     final JsonNode root = mapper.readTree(resultString.toString());
@@ -4434,7 +4435,7 @@ public class RefsetMemberService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                logger.error("Add Reference Set Member call to url '" + url + "' for Reference Set '" + refsetId + "' and concept '" + conceptId + "' wasn't successful. " + response.toString());
+                logger.error("Add Reference Set Member call to url '" + url + "' for Reference Set '" + refsetId + "' and concept '" + conceptId + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                 unaddedConcepts.add(conceptId);
             }
 
@@ -4479,7 +4480,7 @@ public class RefsetMemberService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.CREATED.getStatusCode()) {
 
-                logger.error(errorMessage + response.toString());
+                logger.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             jobStatusUrl = response.getHeaderString("Location");
@@ -4509,8 +4510,8 @@ public class RefsetMemberService {
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
                         jobDone = true;
-                        logger.error(errorMessage + response.toString());
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + response.toString());
+                        logger.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                     }
 
                     final String resultString = response.readEntity(String.class);
@@ -4526,7 +4527,7 @@ public class RefsetMemberService {
                     } else if (status.equalsIgnoreCase("failed")) {
 
                         jobDone = true;
-                        logger.error(errorMessage + response.toString());
+                        logger.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
                     } else {
 
@@ -4623,7 +4624,7 @@ public class RefsetMemberService {
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
                     searchAgain = false;
-                    throw new Exception("call to url '" + memberSearchUrl + "' wasn't successful. " + response.toString());
+                    throw new Exception("call to url '" + memberSearchUrl + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                 }
 
                 final JsonNode root = mapper.readTree(resultString.toString());
@@ -4707,7 +4708,7 @@ public class RefsetMemberService {
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
 
-                        logger.error(errorMessage + response.toString());
+                        logger.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                     }
 
                 }
@@ -4773,7 +4774,7 @@ public class RefsetMemberService {
                 final String conceptId = memberBody.get("referencedComponentId").asText();
 
                 logger.error("Inactivate Reference Set Member call to url '" + url + "' for Reference Set '" + refsetId + "' and concept '" + conceptId + "' and member '" + memberId + "' wasn't successful. "
-                    + response.toString());
+                    + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                 unchangedConcepts.add(memberId);
             }
 
@@ -4808,7 +4809,7 @@ public class RefsetMemberService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.CREATED.getStatusCode()) {
 
-                logger.error(errorMessage + response.toString());
+                logger.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             jobStatusUrl = response.getHeaderString("Location");
@@ -4838,8 +4839,9 @@ public class RefsetMemberService {
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
                         jobDone = true;
-                        logger.error(errorMessage + response.toString());
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + response.toString());
+                        logger.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                     }
 
                     final String resultString = response.readEntity(String.class);
@@ -4909,7 +4911,7 @@ public class RefsetMemberService {
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                    throw new Exception("Unable to get Reference Set concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.toString());
+                    throw new Exception("Unable to get Reference Set concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
                 }
 
                 final String resultString = response.readEntity(String.class);
@@ -5016,14 +5018,15 @@ public class RefsetMemberService {
         // use members call to get members
         while (hasMorePages) {
 
-            logger.debug("compileUpgradeData Member list URL: " + url + searchAfter);
-
-            try (final Response response = SnowstormConnection.getResponse(url + searchAfter, acceptLanguage)) {
+            final String fullSnowstormUrl = url + searchAfter;
+            logger.debug("compileUpgradeData Member list URL: " + fullSnowstormUrl);
+            
+            try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl, acceptLanguage)) {
 
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
                     hasMorePages = false;
-                    throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                    throw new Exception("call to url '" + fullSnowstormUrl + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                 }
 
                 final String resultString = response.readEntity(String.class);
@@ -5128,7 +5131,7 @@ public class RefsetMemberService {
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
                     searchAgain = false;
-                    throw new Exception("call to url '" + memberDetailsUrl + "' wasn't successful. " + response.toString());
+                    throw new Exception("call to url '" + memberDetailsUrl + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                 }
 
                 final JsonNode root = mapper.readTree(resultString.toString());
@@ -5213,7 +5216,7 @@ public class RefsetMemberService {
                                             // Only process payload if Rest call is successful
                                             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                                                throw new Exception("call to url '" + conceptSearchUrl + "' for member search wasn't successful. " + response.toString());
+                                                throw new Exception("call to url '" + conceptSearchUrl + "' for member search wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                                             }
 
                                             final JsonNode root = mapper.readTree(resultString.toString());
@@ -5519,7 +5522,7 @@ public class RefsetMemberService {
 
                             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                                throw new Exception("call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                             }
 
                             final ObjectMapper mapper = new ObjectMapper();

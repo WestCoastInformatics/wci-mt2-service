@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -145,8 +145,8 @@ public class SecurityService implements AutoCloseable {
         if (imsCookie != null) {
 
             final Cookie cookie = new Cookie(imsCookie.getName(), null);
-            cookie.setPath("/"); // cookies[i].getPath()
-            cookie.setDomain(".ihtsdotools.org"); // cookies[i].getDomain()
+            cookie.setPath("/");
+            cookie.setDomain(".ihtsdotools.org");
             cookie.setHttpOnly(imsCookie.isHttpOnly());
             cookie.setMaxAge(0);
             response.addCookie(cookie);
@@ -168,17 +168,12 @@ public class SecurityService implements AutoCloseable {
             return null;
         }
         
-        ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
         Cookie imsCookie = null;
         final Cookie[] cookies = requestAttributes.getRequest().getCookies();
 
         if (cookies != null) {
 
-            HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
-            //logger.debug("getImsCookie cookies: " + ModelUtility.toJson(cookies));
-            //logger.debug("getImsCookie Builder Host: " + builder.build().toString());
-            //logger.debug("getImsCookie getServerName: " + requestAttributes.getRequest().getServerName());
-            //logger.debug("getImsCookie getRemoteHost: " + requestAttributes.getRequest().getRemoteHost());
+
 
             for (int i = 0; i < cookies.length; i++) {
 
@@ -448,11 +443,10 @@ public class SecurityService implements AutoCloseable {
             userFound.setRoles(authUser.getRoles());
             updateUser(userFound);
             userId = userFound.getId();
-        }
-        // if User not found, create one for our use
-        else {
 
-            logger.info("add user {}", authUser);
+        } else if (("rt2-dev-admin".equals(authUser.getUserName()) || "rt2-uat-admin".equals(authUser.getUserName()) || "rt2-prod-admin".equals(authUser.getUserName())) && userFound == null) {
+
+            logger.info("add admin user {}", authUser);
             User newUser = new User();
             newUser.setEmail(authUser.getEmail());
             newUser.setName(authUser.getName());
@@ -460,8 +454,11 @@ public class SecurityService implements AutoCloseable {
             newUser.setRoles(authUser.getRoles());
             newUser = addUser(newUser);
             userId = newUser.getId();
+
+        } else {
+            // if user not found, return not
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are not a member of an organization.  You can still browse public reference sets.");
         }
-        // manager.clear();
 
         // Generate application-managed token
         final String token = handler.computeTokenForUser(authUser.getUserName());
@@ -473,10 +470,8 @@ public class SecurityService implements AutoCloseable {
         // Reload the user to populate UserPreferences
         final User finalUser = getUser(userId);
         finalUser.setAuthToken(token);
-
-        // checkAndAddUserToOrganization(finalUser);
-
         return finalUser;
+
     }
 
     /**
@@ -659,7 +654,7 @@ public class SecurityService implements AutoCloseable {
         }
 
     }
-
+    
     /**
      * Update user.
      *

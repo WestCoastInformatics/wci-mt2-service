@@ -1159,7 +1159,7 @@ public final class WorkflowService {
             
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("call to url '" + url + "' wasn't successful. " + response.toString());
+                throw new Exception("call to url '" + url + "' wasn't successful. " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
             }
 
             final String resultString = response.readEntity(String.class);
@@ -1366,7 +1366,7 @@ public final class WorkflowService {
 
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                    logger.error(error + response.toString());
+                    logger.error(error + " Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
                 }
 
                 final String resultString = response.readEntity(String.class);
