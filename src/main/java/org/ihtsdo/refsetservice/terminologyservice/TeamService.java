@@ -80,7 +80,7 @@ public class TeamService extends BaseService {
 			service.beginTransaction();
 
 			service.add(team);
-			service.add(AuditEntryHelper.newTeamEntry(team));
+			service.add(AuditEntryHelper.addTeamEntry(team));
 			service.commit();
 
 			setUserRoles(authUser, newTeam, newTeam.getUserRoles());

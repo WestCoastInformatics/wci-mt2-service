@@ -107,7 +107,7 @@ public class OrganizationService extends BaseService {
         newOrganization.getMembers().add(userToAdd);
 
         service.add(newOrganization);
-        service.add(AuditEntryHelper.newOrganizationEntry(newOrganization));
+        service.add(AuditEntryHelper.addOrganizationEntry(newOrganization));
 
         // create admin team when creating an organization
         final Team adminTeam = new Team();

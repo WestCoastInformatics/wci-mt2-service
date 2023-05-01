@@ -47,7 +47,7 @@ import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
-import org.ihtsdo.refsetservice.sync.SyncService;
+import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
@@ -2179,7 +2179,7 @@ public class RefsetController extends BaseController {
 
 			try (TerminologyService service = new TerminologyService()) {
 
-				SyncService.sync(service, refsetPerVersionSync, runForProduction, isIgnoreCoreRefsets);
+				SyncAgent.sync(service, refsetPerVersionSync, runForProduction, isIgnoreCoreRefsets);
 
 				return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
 			}
@@ -3375,7 +3375,7 @@ public class RefsetController extends BaseController {
 
 			logger.debug("resetRefset: refsetId: " + refsetId);
 
-			if (!SyncService.getIsProductionSystem()) {
+			if (!SyncAgent.getIsProductionSystem()) {
 
 				service.setModifiedBy(user.getUserName());
 

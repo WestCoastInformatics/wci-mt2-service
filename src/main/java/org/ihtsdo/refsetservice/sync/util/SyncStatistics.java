@@ -1,47 +1,68 @@
 package org.ihtsdo.refsetservice.sync.util;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.ihtsdo.refsetservice.model.Project;
-import org.ihtsdo.refsetservice.model.Team;
-
 public class SyncStatistics {
 
     // Code Systems
-    private static int codeSystemsSynced = 0;
+    private int codeSystemsSynced = 0;
 
-    private static int codeSystemsFiltered = 0;
+    private int codeSystemsFiltered = 0;
 
     // Orgs
     private int organizationsAdded = 0;
 
-    private static int organizationsUnchanged = 0;
+    private int organizationsInactivated = 0;
+
+    private int organizationsActivated = 0;
+
+    private int organizationsUnchanged = 0;
+
+    private int organizationsModified = 0;;
+
+    private int organizationsActivatedAndModified = 0;;
 
     // Editions
-    private static int editionsAdded = 0;
+    private int editionsAdded = 0;
 
-    private static int editionsRemoved = 0;;
+    private int editionsInactivated = 0;;
 
-    private static int editionsUnchanged = 0;
+    private int editionsActivated = 0;
 
-    private static int editionsRecreated = 0;;
+    private int editionsUnchanged = 0;
+
+    private int editionsModified = 0;;
+
+    private int editionsActivatedAndModified = 0;;
+
+    private int editionOrganizationMapChanged = 0;
 
     // Refsets
-    private static int refsetVersionsAdded = 0;
+    private int refsetIdsAdded = 0;
 
-    private static int refsetVersionsRemoved = 0;;
+    private int refsetIdsInactivated = 0;;
 
-    private static int refsetVersionsUnchanged = 0;
+    private int refsetIdsActivated = 0;
 
-    private static int refsetVersionsRecreated = 0;;
+    private int refsetIdsSynced = 0;
 
-    private static int refsetVersionsSynced = 0;
+    private int refsetIdsActivatedAndModified = 0;
 
-    // Processing Only as we don't sync these with Snowstorm
-    private static final Set<Project> projectsProcessed = new HashSet<>();;
+    private int refsetVersionsAdded = 0;
 
-    private static final Set<Team> teamsProcessed = new HashSet<>();
+    private int refsetVersionsInactivated = 0;;
+
+    private int refsetVersionsActivated = 0;
+
+    private int refsetVersionsUnchanged = 0;
+
+    private int refsetVersionsModified = 0;
+
+    private int refsetVersionsActivatedAndModified = 0;
+
+    private int refsetVersionsSynced = 0;
+
+    private int projectsAdded = 0;
+
+    private int teamsAdded = 0;
 
     public static final String CHANGED = "Changed";
 
@@ -54,17 +75,31 @@ public class SyncStatistics {
         buf.append(System.getProperty("line.separator") + "*********    Syncing Results    *************" + System.getProperty("line.separator"));
 
         buf.append("Code systems encountered: " + codeSystemsSynced + ". Syncing " + codeSystemsFiltered + " after filtered them" + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("ORGANIZATIONS Added: " + organizationsAdded + " / Unchanged: " + organizationsUnchanged + System.getProperty("line.separator"));
+        // Organizations
+        buf.append("*** Organizations --> Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: " + organizationsActivated + " / Unchanged: "
+                + organizationsUnchanged + " / Modified: " + organizationsModified + " / ActivatedAndModified: " + organizationsActivatedAndModified + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("EDITIONS Added: " + editionsAdded + " / Removed: " + editionsRemoved + " / Recreated: " + editionsRecreated + " / Unchanged: " + editionsUnchanged
-                + System.getProperty("line.separator"));
+        // Editions
+        buf.append("*** EDITIONS --> Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: " + editionsActivated + " / Unchanged: " + editionsUnchanged + " / Modified: "
+                + editionsModified + " / ActivatedAndModified: " + editionsActivatedAndModified + System.getProperty("line.separator"));
 
-        buf.append("REFSET VERSION PAIRs Synced " + refsetVersionsSynced + " Added: " + refsetVersionsAdded + " / Removed: " + refsetVersionsRemoved + " / Recreated: " + refsetVersionsRecreated
-                + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
+        buf.append("*** EDITIONS to ORGANIZATION MAP --> Changes: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("Projects " + projectsProcessed.size() + " Processed " + System.getProperty("line.separator"));
-        buf.append("Teams " + teamsProcessed.size() + " Processed" + System.getProperty("line.separator"));
+        // Refsets
+        buf.append("*** REFSET FULLY NEW, INACTIVATED, or (RE)ACTIVATED ON ALL VERSIONS (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated
+                + " / ActivatedAndModified: " + refsetIdsActivatedAndModified + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
+
+        buf.append("*** REFSET VERSIONs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: "
+                + refsetVersionsModified + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
+
+        // Othera
+        buf.append("*** Projects --> " + projectsAdded + " Processed " + System.getProperty("line.separator"));
+        buf.append("*** Teams --> " + teamsAdded + " Processed" + System.getProperty("line.separator"));
 
         return buf.toString();
     }
@@ -74,32 +109,42 @@ public class SyncStatistics {
         codeSystemsFiltered = 0;
 
         organizationsAdded = 0;
+        organizationsActivated = 0;
+        organizationsInactivated = 0;
         organizationsUnchanged = 0;
+        organizationsModified = 0;
+        organizationsActivatedAndModified = 0;
 
         editionsAdded = 0;
-        editionsRemoved = 0;
+        editionsInactivated = 0;
+        editionsActivated = 0;
         editionsUnchanged = 0;
-        editionsRecreated = 0;
+        editionsModified = 0;
+        editionsActivatedAndModified = 0;
+
+        editionOrganizationMapChanged = 0;
+
+        refsetIdsAdded = 0;
+        refsetIdsInactivated = 0;
+        refsetIdsActivated = 0;
+        refsetIdsActivatedAndModified = 0;
+        refsetIdsSynced = 0;
 
         refsetVersionsAdded = 0;
-        refsetVersionsRemoved = 0;
+        refsetVersionsInactivated = 0;
+        refsetVersionsActivated = 0;
         refsetVersionsUnchanged = 0;
-        refsetVersionsRecreated = 0;
+        refsetVersionsModified = 0;
+        refsetVersionsActivatedAndModified = 0;
         refsetVersionsSynced = 0;
 
-        projectsProcessed.clear();
-        teamsProcessed.clear();
+        projectsAdded = 0;
+        teamsAdded = 0;
 
     }
 
-    public int getOrganizationsAdded() {
-        return organizationsAdded;
-    }
-
-    public int getOrganizationsUnchanged() {
-        return organizationsUnchanged;
-    }
-
+    /** Getters **/
+    // Code Systems
     public int getCodeSystemsSynced() {
         return codeSystemsSynced;
     }
@@ -108,9 +153,44 @@ public class SyncStatistics {
         return codeSystemsFiltered;
     }
 
+    // Organizations
+    public int getOrganizationsAdded() {
+        return organizationsAdded;
+    }
+
+    public int getOrganizationsInactivated() {
+        return organizationsInactivated;
+    }
+
+    public int getOrganizationsActivated() {
+        return organizationsActivated;
+    }
+
+    public int getOrganizationsUnchanged() {
+        return organizationsUnchanged;
+    }
+
+    public int getOrganizationsModified() {
+
+        return organizationsModified;
+    }
+
+    public int getOrganizationsActivatedAndModified() {
+        return organizationsActivatedAndModified;
+    }
+
+    // Editions
     public int getEditionsAdded() {
 
         return editionsAdded;
+    }
+
+    public int getEditionsInactivated() {
+        return editionsInactivated;
+    }
+
+    public int getEditionsActivated() {
+        return editionsActivated;
     }
 
     public int getEditionsUnchanged() {
@@ -118,9 +198,42 @@ public class SyncStatistics {
         return editionsUnchanged;
     }
 
-    public int getEditionsRecreated() {
+    public int getEditionsModified() {
 
-        return editionsRecreated;
+        return editionsModified;
+    }
+
+    public int getEditionsActivatedAndModified() {
+        return editionsActivatedAndModified;
+    }
+
+    public int getEditionOrganizationMapChanged() {
+        return editionOrganizationMapChanged;
+    }
+
+    // Refsets
+    public int getRefsetIdsAdded() {
+
+        return refsetIdsAdded;
+    }
+
+    public int getRefsetIdsInactivated() {
+
+        return refsetIdsInactivated;
+    }
+
+    public int getRefsetIdsActivated() {
+
+        return refsetIdsActivated;
+    }
+
+    public int getRefsetIdsActivatedAndModified() {
+
+        return refsetIdsActivatedAndModified;
+    }
+
+    public int getRefsetIdsSynced() {
+        return refsetIdsSynced;
     }
 
     public int getRefsetVersionsAdded() {
@@ -128,9 +241,14 @@ public class SyncStatistics {
         return refsetVersionsAdded;
     }
 
-    public int getRefsetVersionsRemoved() {
+    public int getRefsetVersionsInactivated() {
 
-        return refsetVersionsRemoved;
+        return refsetVersionsInactivated;
+    }
+
+    public int getRefsetVersionsActivated() {
+
+        return refsetVersionsActivated;
     }
 
     public int getRefsetVersionsUnchanged() {
@@ -138,16 +256,23 @@ public class SyncStatistics {
         return refsetVersionsUnchanged;
     }
 
-    public int getRefsetVersionsRecreated() {
+    public int getRefsetVersionsModified() {
 
-        return refsetVersionsRecreated;
+        return refsetVersionsModified;
+    }
+
+    public int getRefsetVersionsActivatedAndModified() {
+
+        return refsetVersionsActivatedAndModified;
     }
 
     public int getRefsetVersionsSynced() {
+
         return refsetVersionsSynced;
     }
 
-    // Increments
+    /** Setters **/
+    // Code Systems
     public void setCodeSystemsSynced(int val) {
         codeSystemsSynced = val;
     }
@@ -156,41 +281,120 @@ public class SyncStatistics {
         codeSystemsFiltered = val;
     }
 
-    public void incrementOrganizationsAdded() {
-        organizationsAdded++;
+    // Organizations
+    public void setOrganizationsAdded(int val) {
+        organizationsAdded = val;
+
     }
 
-    public void incrementOrganizationsUnchanged() {
-        organizationsUnchanged++;
+    public void setOrganizationsInactivated(int val) {
+        organizationsInactivated = val;
+
     }
 
-    public void incrementRefsetVersionsAdded() {
-        refsetVersionsAdded++;
+    public void setOrganizationsActivated(int organizationsActivated) {
+        this.organizationsActivated = organizationsActivated;
     }
 
-    public void incrementRefsetVersionsRemoved() {
-        refsetVersionsRemoved++;
+    public void setOrganizationsUnchanged(int val) {
+        organizationsUnchanged = val;
+
     }
 
-    // SETTERS
+    public void setOrganizationsModified(int organizationsModified) {
+        this.organizationsModified = organizationsModified;
+    }
+
+    public void setOrganizationsActivatedAndModified(int organizationsActivatedAndModified) {
+        this.organizationsActivatedAndModified = organizationsActivatedAndModified;
+    }
+
+    // Editions
     public void setEditionsAdded(int val) {
         editionsAdded = val;
     }
 
-    public void setEditionsRemoved(int val) {
-        editionsRemoved = val;
+    public void setEditionsInactivated(int val) {
+        editionsInactivated = val;
+    }
+
+    public void setEditionsActivated(int val) {
+        editionsActivated = val;
+
     }
 
     public void setEditionsUnchanged(int val) {
         editionsUnchanged = val;
     }
 
-    public void setEditionsRecreated(int val) {
-        editionsRecreated = val;
+    public void setEditionsModified(int val) {
+        editionsModified = val;
     }
 
-    public void setRefsetVersionsRemoved(int val) {
-        refsetVersionsRemoved = val;
+    public void setEditionsActivatedAndModified(int val) {
+        editionsActivatedAndModified = val;
+
+    }
+
+    // Refset Ids
+    public void setRefsetIdsAdded(int val) {
+        refsetIdsAdded = val;
+    }
+
+    public void setRefsetIdsInactivated(int val) {
+        refsetIdsInactivated = val;
+    }
+
+    public void setRefsetIdsActivated(int val) {
+        this.refsetIdsActivated = val;
+    }
+
+    public void setRefsetIdsActivatedAndModified(int val) {
+        this.refsetIdsActivatedAndModified = val;
+    }
+
+    public void setRefsetIdsSynced(int val) {
+        this.refsetIdsSynced = val;
+    }
+
+    // Refset Version Pairs
+    public void setRefsetVersionsAdded(int val) {
+        refsetVersionsAdded = val;
+    }
+
+    public void incrementRefsetVersionsAdded() {
+        refsetVersionsAdded++;
+
+    }
+
+    public void incrementRefsetVersionsInactivated(int val) {
+        refsetVersionsInactivated += val;
+    }
+
+    public void incrementRefsetVersionsActivated(int val) {
+        this.refsetVersionsActivated += val;
+    }
+
+    public void incrementRefsetVersionsUnchanged(int val) {
+        this.refsetVersionsUnchanged = +val;
+    }
+
+    public void incrementRefsetVersionsModified(int val) {
+        this.refsetVersionsModified = +val;
+    }
+
+    public void incrementRefsetVersionsActivatedAndModified(int val) {
+        this.refsetVersionsActivatedAndModified += val;
+    }
+
+    public void incrementRefsetVersionsSynced() {
+        refsetVersionsSynced += 1;
+    }
+
+    // Increments
+    public void incrementEditionOrganizationMapChanged() {
+        editionOrganizationMapChanged++;
+
     }
 
     public void incrementRefsetVersionsUnchanged() {
@@ -198,26 +402,32 @@ public class SyncStatistics {
 
     }
 
-    public void incrementRefsetVersionsRecreated() {
-        refsetVersionsRecreated++;
+    public void incrementRefsetVersionsModified() {
+        refsetVersionsModified++;
     }
 
-    public void setRefsetVersionsSynced(int val) {
-        refsetVersionsSynced = val;
+    public void incrementRefsetVersionsInactivated() {
+        refsetVersionsInactivated++;
     }
 
-    public void setRefsetVersionsAdded(int val) {
-        refsetVersionsAdded = val;
+    public int getProjectsAdded() {
+
+        return projectsAdded;
     }
 
-    public Set<Project> getProjectsProcessed() {
+    public int getTeamsProcessed() {
 
-        return projectsProcessed;
+        return teamsAdded;
     }
 
-    public Set<Team> getTeamsProcessed() {
+    public void setTeamsAdded(int val) {
+        teamsAdded = val;
 
-        return teamsProcessed;
+    }
+
+    public void incrementProjectsAdded() {
+        projectsAdded++;
+
     }
 
 }
