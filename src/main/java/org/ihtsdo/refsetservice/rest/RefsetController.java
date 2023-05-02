@@ -2097,33 +2097,11 @@ public class RefsetController extends BaseController {
 
 	}
 
-	/**
-	 * Syncs RTT data into the database but only if the database is empty. This call
-	 * requires authentication with the correct role.
-	 *
-	 * @param quickSync          Should the sync be run adding a refset version for
-	 *                           each branch version, which is faster than checking
-	 *                           each refset for publication. Default is false
-	 * @param perVersionCreation If true, create a refset for every version created.
-	 *                           If false, only when changes are observed.
-	 * @return the status of the sync
-	 * @throws Exception the exception
-	 */
-	@ApiIgnore
-	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/rtt", produces = "application/json")
-	public @ResponseBody ResponseEntity<String> syncRttData(
-			@RequestParam(required = false) final Boolean perVersionCreation,
-			@RequestParam(required = false) final Boolean forProduction,
-			@RequestParam(required = false) final Boolean ignoreCoreRefsets) throws Exception {
-
-		return syncSnowstorm(perVersionCreation, forProduction, ignoreCoreRefsets);
-	}
-
-	/**
+/**
 	 * Sync against snowstorm still relying upon latest RTT data files to sync.
 	 * Compares against all of a given refets's versions on snowstorm, so no need
 	 * for a quickSync option. This call requires authentication with the correct
-	 * role.
+	 * role. Note: May cause a Gateway Timeout Exception.
 	 * 
 	 * TODO: Determine if can do a nightly update of data files programmatically
 	 *
@@ -2135,13 +2113,24 @@ public class RefsetController extends BaseController {
 	 * @return the status of the sync
 	 * @throws Exception the exception
 	 */
-	@ApiIgnore
-	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
-	public @ResponseBody ResponseEntity<String> syncSnowstorm(
-			@RequestParam(required = false) final Boolean perVersionCreation,
-			@RequestParam(required = false) final Boolean forProduction,
-			@RequestParam(required = false) final Boolean ignoreCoreRefsets) throws Exception {
+	
 
+    @ApiIgnore
+    @ApiOperation(value = "Sync against snowstorm still relying upon latest RTT data files to sync. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully published the refsets. The payload contains the status."),
+            @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+            @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found") })
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "perVersionCreation", value = "For testing - Will simply create a new refset/version pair regardless if any changes have occurred in a new version of a given refset. Default is false", required = false, dataTypeClass = String.class, paramType = "query"),
+            @ApiImplicitParam(name = "forProduction", value = "For production - Will make a number of checks that are only valid for production purposes. Default is false.", required = false, dataTypeClass = String.class, paramType = "query"),
+            @ApiImplicitParam(name = "ignoreCoreRefsets", value = "For testing - Will skip SI's code system containing the core refsets due to the number of releases causing processing time to increase dramatically. Default is false.", required = false, dataTypeClass = String.class, paramType = "query"), })
+    @PutMapping("/admin/sync/snowstorm")
+    public @ResponseBody ResponseEntity<String> syncSnowstorm(
+            @RequestParam(required = false) final Boolean perVersionCreation,
+            @RequestParam(required = false) final Boolean forProduction,
+            @RequestParam(required = false) final Boolean ignoreCoreRefsets) throws Exception {
+        
 		final User user = SecurityService.getUserFromSession();
 
 		if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
