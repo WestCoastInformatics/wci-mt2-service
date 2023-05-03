@@ -80,9 +80,13 @@ public class OrganizationController extends BaseController {
 
     /** The local icon file directory. */
     private static final String ICON_URL_PREFIX = "user/icon/";
-
-    /** The config properties. */
-    private static final Properties PROPERTIES = PropertyUtility.getProperties();
+   
+    /**  The app url root. */
+    private static String appUrlRoot;
+    
+    static {
+        appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
+    }
 
     /**
      * Return the organization.
@@ -673,50 +677,39 @@ public class OrganizationController extends BaseController {
     /**
      * Response to invite organization.
      *
-     * @param id the organization id
-     * @param acceptance the acceptance
-     * @param requester the requester
-     * @param recipientEmail the recipient email
+     * @param id the id of the invite request
+     * @param acceptance the accepted or decline
      * @return the response entity
      * @throws Exception the exception
      */
     @ApiOperation(value = "Process invitation response to join organization.")
     @ApiResponses(value = {
-        @ApiResponse(code = 302, message = "Response to invitation processed"),
-        @ApiResponse(code = 404, message = "Not Found"),
-        @ApiResponse(code = 417, message = "Failed Expectation"), 
+        @ApiResponse(code = 302, message = "Response to invitation processed"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
         @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "acceptance", value = "Indicate if accepted with true or false", required = true, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
-        @ApiImplicitParam(name = "requester", value = "Id of user making request, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "recipientEmail", value = "Email of the recipient, e.g. user@email.com", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "id", value = "Invite request id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "acceptance", value = "Indicate if accepted with true or false", required = true, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
     })
     @RecordMetric
-    @GetMapping(value = "/organization/{id}/response")
-    public @ResponseBody ResponseEntity<String> responseToInviteOrganization(
-
-        @PathVariable final String id, @QueryParam(value = "acceptance") final boolean acceptance, @QueryParam(value = "requester") final String requester,
-        @QueryParam(value = "recipientEmail") final String recipientEmail
-
-    ) throws Exception {
+    @GetMapping(value = "/inviterequest/{id}/response")
+    public @ResponseBody ResponseEntity<String> responseToInviteOrganization(@PathVariable(value = "id") final String id, @QueryParam(value = "acceptance") final boolean acceptance) throws Exception {
 
         // no auth - response is from email.
 
         final HttpHeaders headers = new HttpHeaders();
-        headers.add("Location", PROPERTIES.getProperty("app.url.root"));
+        headers.add("Location", appUrlRoot);
 
         try {
 
-            logger.info("responseToInviteOrganization: id: " + id + " and acceptance: " + acceptance + " and requester: " + requester + " recipientEmail: " + recipientEmail);
-            OrganizationService.processOrganizationInvitation(id, acceptance, requester, recipientEmail);
+            logger.info("response to invite request: id: " + id + " and acceptance: " + acceptance);
+            OrganizationService.processOrganizationInvitation(id, acceptance);
 
             return new ResponseEntity<>(headers, HttpStatus.FOUND);
 
         } catch (final Exception e) {
 
-            logger.error("Exception while processing response for organization id invite", e);
+            logger.error("Exception while processing response for organization id invite", acceptance);
             return new ResponseEntity<>(headers, HttpStatus.FOUND);
         }
     }
