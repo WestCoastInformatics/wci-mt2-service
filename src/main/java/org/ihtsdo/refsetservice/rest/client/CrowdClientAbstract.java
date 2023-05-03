@@ -73,6 +73,17 @@ public class CrowdClientAbstract {
      * @throws Exception the exception
      */
     protected static Response get(final String url) throws Exception {
+        return get(url, ACCEPT_DEFAULT);
+    }
+
+    /**
+     * Calls a Crowd URL and returns the response.
+     *
+     * @param url The Crowd URL to call
+     * @return the response
+     * @throws Exception the exception
+     */
+    protected static Response get(final String url, final String mediaType) throws Exception {
 
         try {
             final Client client = ClientBuilder.newClient();
@@ -82,7 +93,7 @@ public class CrowdClientAbstract {
 
             logger.debug("CROWD API GET Url: {}", url);
 
-            final Response response = target.request(ACCEPT_DEFAULT).get();
+            final Response response = target.request(mediaType).get();
             return response;
 
         } catch (Exception e) {

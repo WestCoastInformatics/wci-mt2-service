@@ -57,8 +57,8 @@ public class SyncDatabaseHandler {
             Organization organization = organizations.iterator().next();
 
             // Create a single Admin team per Edition w hen we first discover it
-            final SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
-            initializer.createAdminOrganizationTeam(organization);
+//            final SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
+//            initializer.createAdminOrganizationTeam(organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -196,8 +196,11 @@ public class SyncDatabaseHandler {
             project.setPrivateProject(false);
             project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
             project.setEdition(edition);
-            project.getTeams().add(OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()).getId());
-
+            
+            if (OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()) != null) {
+                project.getTeams().add(OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()).getId());
+            }
+            
             // Persist
             final Project p = service.add(project);
 

@@ -43,7 +43,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
     protected static String testingEditionShortName = "SNOMEDCT-BE";
 

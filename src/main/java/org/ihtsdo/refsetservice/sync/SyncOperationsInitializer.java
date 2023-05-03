@@ -39,23 +39,23 @@ public class SyncOperationsInitializer {
 
     private static User userResponderUser = null;
 
-    private static User developerTestingAdmin = null;
-
-    private static User superUser = null;
-
-    private static User rdaAdmimUser = null;
-
+//    private static User developerTestingAdmin = null;
+//
+//    private static User superUser = null;
+//
+//    private static User rdaAdmimUser = null;
+//
+//    private static final String SUPER_USER_NAME = "refset-dev";
+//
+//    private static final String RDA_ADMIN_NAME = "Rory Davidson";
+//
+//    private static final Set<User> adminUsers = new HashSet<>();
+//
     private static final Set<String> allRoles = new HashSet<>();
 
     private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
 
     private static final String WCI_TESTING_REFSET_NAME = "Default Single WCI Testing Refset";
-
-    private static final String SUPER_USER_NAME = "refset-dev";
-
-    private static final String RDA_ADMIN_NAME = "Rory Davidson";
-
-    private static final Set<User> adminUsers = new HashSet<>();
 
     static private Edition developerTestingEdition = null;
 
@@ -101,6 +101,7 @@ public class SyncOperationsInitializer {
         dbHandler.setUtilities(utilities);
 
         try {
+            /*
             developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
             rdaAdmimUser = utilities.getUser(RDA_ADMIN_NAME, RDA_ADMIN_NAME, "rda@snomed.org", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
@@ -108,7 +109,7 @@ public class SyncOperationsInitializer {
             adminUsers.add(developerTestingAdmin);
             adminUsers.add(superUser);
             adminUsers.add(rdaAdmimUser);
-
+*/
             // For Feedback Refset
             feedbackInitiatiorUser = utilities.getUser("feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
             userResponderUser = utilities.getUser("feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
@@ -139,7 +140,7 @@ public class SyncOperationsInitializer {
         }
 
     }
-
+/*
     public void createAdminOrganizationTeam(Organization organization) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
@@ -158,7 +159,7 @@ public class SyncOperationsInitializer {
         }
 
     }
-
+*/
     private void createTestingContent() throws Exception {
 
         final Edition developerEdition = getDeveloperTestingEdition();
@@ -348,12 +349,13 @@ public class SyncOperationsInitializer {
         Set<String> memberIds = new HashSet<>();
         memberIds.add(feedbackInitiatiorUser.getId());
         memberIds.add(userResponderUser.getId());
+/*
         adminUsers.stream().forEach(user -> memberIds.add(user.getId()));
-
         final Team singleFeedbackTeam =
                 dbHandler.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", getDeveloperTestingEdition().getOrganization(), allRoles, memberIds);
 
         testingProject.getTeams().add(singleFeedbackTeam.getId());
+*/
         testingProject = dbHandler.updateProject(testingProject);
 
         getDeveloperTestingEdition().getOrganization().getMembers().add(feedbackInitiatiorUser);
@@ -437,7 +439,7 @@ public class SyncOperationsInitializer {
 
         return syncUser;
     }
-
+/*
     public static Set<User> getAdminUsers() {
 
         return adminUsers;
@@ -447,5 +449,5 @@ public class SyncOperationsInitializer {
 
         return adminUsers.stream().map(User::getId).collect(Collectors.toList());
     }
-
+*/
 }

@@ -405,6 +405,7 @@ public class OrganizationService extends BaseService {
      */
     public static Team getOrganizationAdminTeam(final TerminologyService service, final String organizationId) throws Exception {
 
+        // TODO: Update per sync to ensure any new admin teams identified
         final ResultList<Team> teams = getOrganizationTeams(service, organizationId);
         
         for (final Team team : new ArrayList<Team>(teams.getItems())) {

@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -28,6 +29,7 @@ import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
@@ -99,8 +101,10 @@ public class SyncUtilities {
                 user = results.getItems().iterator().next();
             } else {
 
+                HashSet<String> rt2Roles = new HashSet<String>(roles.stream().filter(r -> UserRole.getAllRoles().contains(r)).collect(Collectors.toList()));
+
                 // Need to create user
-                user = dbHandler.addUser(name, userName, email, roles);
+                dbHandler.addUser(name, userName, email, rt2Roles);
             }
 
         }

@@ -14,6 +14,9 @@ import javax.ws.rs.core.Response;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.Team;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
@@ -41,7 +44,67 @@ public class SyncCodeSystemAgent extends SyncAgent {
     public void sync() throws Exception {
 
         initializeSync();
+        
+        
+        
+        
+        
+            final Set<String> uniqueUsers = new HashSet<>();
+        
+            Map<String, Set<String>> crowdGroupMembers = CrowdAPIClient.getAllGroupsMembers();
+            Set<String> crowdGroups = crowdGroupMembers.keySet();
+            logger.debug("bbb-11 groups are: " + crowdGroups);
 
+            crowdGroupMembers.keySet().stream().forEach(group -> uniqueUsers.addAll(crowdGroupMembers.get(group)));
+
+            logger.debug("bbb-22 Unique users are: " + uniqueUsers);
+            
+            Map<String, User> userMap = new HashMap<>();
+            
+            for (String crowdUsername : uniqueUsers) {
+
+                User crowdUser = CrowdAPIClient.getUser(crowdUsername);
+                
+                User rt2User = utilities.getUser(crowdUser.getName(), crowdUsername, crowdUser.getEmail(), crowdUser.getRoles());
+                
+                userMap.put(crowdUsername, rt2User);
+            }
+/*          
+            try (final TerminologyService service = new TerminologyService()) {
+                List<Team> dbTeams = service.getAll(Team.class);
+                
+
+                for (String crowdGroupName : crowdGroups) {
+                    if (!dbTeams.contains(crowdGroupName)) {
+                        // Update values
+                        List<Team> matchingTeams = dbTeams.stream().filter(t -> t.getName().equals(crowdGroupName)).collect(Collectors.toList());
+
+                        crowdGroupMembers.keySet().stream().
+
+                        if (matchingTeams.isEmpty()) {
+                            // Create Team
+                        } else {
+                            if (matchingTeams.size() != 1) {
+                                throw new Exception ("Must have zero or one team in RT2 DB by name of: " + crowdGroupName);
+                            }
+                            
+                            // Update Team Values
+                            matchingTeams.iterator().next().setRoles(crowdGroups
+                        }
+                    }
+}
+            }
+ */
+        int a = -1;
+        if (a < 0) {
+            return;
+        }
+        
+        
+        
+        
+        
+        
         // Get all code systems from Snowstorm
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
 
@@ -56,6 +119,12 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         // Review both DB & Snowstorm editon-to-org map to ensure consistency
         compareEditionOrganizationMaps(existingInBothShortNames);
+        
+    }
+
+    private List<String> updateTeams() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     private void analyzeCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
