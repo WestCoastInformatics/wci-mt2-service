@@ -72,7 +72,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -114,9 +113,6 @@ public class RefsetController extends BaseController {
 
 	private static final String REQUEST_ACTION = "Request-Access";
 
-	/** The config properties. */
-	private static final Properties PROPERTIES = PropertyUtility.getProperties();
-
 	/** Static initialization. */
 	static {
 
@@ -140,7 +136,7 @@ public class RefsetController extends BaseController {
 			@ApiImplicitParam(name = "refsetId", value = "The ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path"),
 			@ApiImplicitParam(name = "versionDate", value = "The date of the refset version (YYYY-MM-DD) or IN DEVELOPMENT.", required = true, dataTypeClass = String.class, paramType = "path"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<Refset> getRefset(@PathVariable(value = "refsetId") final String refsetId,
 			@PathVariable(value = "versionDate") final String versionDate) throws Exception {
 
@@ -203,7 +199,7 @@ public class RefsetController extends BaseController {
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataTypeClass = String.class, paramType = "path") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/memberCount", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/memberCount", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> getRefsetMemberCount(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request)
 			throws Exception {
@@ -251,7 +247,7 @@ public class RefsetController extends BaseController {
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to check.", required = true, dataTypeClass = String.class, paramType = "path") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/isLocked", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/isLocked", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> isRefsetLocked(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, HttpServletRequest request)
 			throws Exception {
@@ -859,7 +855,7 @@ public class RefsetController extends BaseController {
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/workflowHistory", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/workflowHistory", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<WorkflowHistory>> getWorkflowHistory(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
@@ -1480,7 +1476,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found") })
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"), })
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/convert", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/convert", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> convertToExtensional(final @PathVariable String refsetInternalId)
 			throws Exception {
 
@@ -1579,7 +1575,7 @@ public class RefsetController extends BaseController {
 			@ApiImplicitParam(name = "showOnlyPermitted", value = " A flag on whether to only show refsets user has specific permission to and not general public refsets", required = false, dataTypeClass = boolean.class, paramType = "query")
 	})
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Refset>> searchRefsets(final SearchParameters searchParameters,
 			final boolean searchConcepts, @RequestParam(required = false) final Boolean showInDevelopment,
 			@RequestParam(required = false) final Boolean countComments,
@@ -1647,7 +1643,7 @@ public class RefsetController extends BaseController {
 	})
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = { "/refset/{refsetInternalId}/taxonomySearch",
-			"/refset/{refsetInternalId}/conceptSearch" }, produces = "application/json")
+			"/refset/{refsetInternalId}/conceptSearch" }, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ConceptResultList> searchConcepts(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			final SearchParameters searchParameters, final BindingResult bindingResult, HttpServletRequest request)
@@ -1713,7 +1709,7 @@ public class RefsetController extends BaseController {
 			@ApiImplicitParam(name = "returnChildren", value = "For taxonomy calls should children be returned. If false then parents will be returned", required = false, dataType = "boolean", paramType = "query", defaultValue = "true")
 	})
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ConceptResultList> getMembers(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			final SearchParameters searchParameters, final String displayType,
@@ -1771,7 +1767,7 @@ public class RefsetController extends BaseController {
 			@ApiImplicitParam(name = "refsetId", value = "The ID of the refset for which ancestors are to be identified.", required = true, dataTypeClass = String.class, paramType = "path"),
 			@ApiImplicitParam(name = "versionDate", value = "The date of the refset version (YYYY-MM-DD) or IN DEVELOPMENT.", required = true, dataTypeClass = String.class, paramType = "path"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetId}/versionDate/{versionDate}", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/ancestors/{refsetId}/versionDate/{versionDate}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> cacheMemberAncestors(
 			@PathVariable(value = "refsetId") final String refsetId,
 			@PathVariable(value = "versionDate") final String versionDate) throws Exception {
@@ -1834,7 +1830,7 @@ public class RefsetController extends BaseController {
 			@ApiImplicitParam(name = "transientEffectiveTime", value = "Format: yyyymmdd. Add a transient effectiveTime to rows of content which are not yet versioned.", required = false, dataTypeClass = String.class, paramType = "query"),
 			@ApiImplicitParam(name = "exportMetadata", value = "e.g.  true or false", required = true, dataType = "boolean", paramType = "query"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> exportRefset(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String format,
 			final String exportType, final String languageId, final String fileNameDate,
@@ -1916,7 +1912,7 @@ public class RefsetController extends BaseController {
 			@ApiImplicitParam(name = "format", value = "The type of export: 'rf2', 'rf2_with_names'", required = true, dataTypeClass = String.class, paramType = "query"),
 			@ApiImplicitParam(name = "exportMetadata", value = "e.g.  true or false", required = true, dataType = "boolean", paramType = "query") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/export/project/{projectId}", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/export/project/{projectId}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> exportAllRefsetsForProject(
 			@PathVariable(value = "projectId") final String projectId, final String format, final String languageId,
 			final String fileNameDate, final boolean exportMetadata) throws Exception {
@@ -1955,7 +1951,7 @@ public class RefsetController extends BaseController {
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "fileName", value = "The name of the file to download.", required = true, dataTypeClass = String.class, paramType = "path") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<Resource> downloadExport(
 			@PathVariable(value = "fileName") final String fileName) throws Exception {
 
@@ -2003,7 +1999,7 @@ public class RefsetController extends BaseController {
 			@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "path"),
 			@ApiImplicitParam(name = "conceptId", value = "The ID of the member to return.", required = true, dataTypeClass = String.class, paramType = "path"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Map<String, String>>> getMemberHistory(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@PathVariable(value = "conceptId") final String conceptId) throws Exception {
@@ -2062,7 +2058,7 @@ public class RefsetController extends BaseController {
 			@ApiImplicitParam(name = "conceptId", value = "The ID of the concept to return.", required = true, dataTypeClass = String.class, paramType = "path"),
 			@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset to return.", required = true, dataTypeClass = String.class, paramType = "query"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/concept/{conceptId}", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/concept/{conceptId}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<Concept> getConceptDetails(
 			@PathVariable(value = "conceptId") final String conceptId, final String refsetInternalId) throws Exception {
 
@@ -2110,7 +2106,7 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@ApiIgnore
-	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/rtt", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/rtt", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> syncRttData(
 			@RequestParam(required = false) final Boolean perVersionCreation,
 			@RequestParam(required = false) final Boolean forProduction,
@@ -2136,7 +2132,7 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@ApiIgnore
-	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/snowstorm", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> syncSnowstorm(
 			@RequestParam(required = false) final Boolean perVersionCreation,
 			@RequestParam(required = false) final Boolean forProduction,
@@ -2202,7 +2198,7 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@ApiIgnore
-	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/feedback", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/feedback", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> createNewFeedbackTestingRefset() throws Exception {
 
 		try {
@@ -2242,7 +2238,7 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@ApiIgnore
-	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/intensional", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/intensional", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> createNewIntensionalTestingRefset() throws Exception {
 
 		try {
@@ -2282,7 +2278,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(code = 400, message = "Bad request"),
 			@ApiResponse(code = 404, message = "Resource not found") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/versionStatuses", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/versionStatuses", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getVersionStatuses() throws Exception {
 
 		try {
@@ -2324,7 +2320,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(code = 400, message = "Bad request"),
 			@ApiResponse(code = 404, message = "Resource not found") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/versions", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/versions", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getVersions() throws Exception {
 
 		try {
@@ -2395,7 +2391,7 @@ public class RefsetController extends BaseController {
 	@ApiImplicitParams({
         @ApiImplicitParam(name = "onlyEditionsWithoutOrganizations", value = "Should the results be limited to editions that do not have an organization tied to them.", required = false, dataTypeClass = String.class, paramType = "query"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/editions", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/editions", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getEditions(
 			@QueryParam(value = "onlyUsersTeams") final boolean onlyEditionsWithoutOrganizations) throws Exception {
 
@@ -2494,7 +2490,7 @@ public class RefsetController extends BaseController {
 	    @ApiImplicitParam(name = "branch", value = "The branch to retrieve the concepts from.", required = true, dataTypeClass = String.class, paramType = "query"),
         @ApiImplicitParam(name = "areParentConcepts", value = "Do these concepts represent parent concepts for a new refset, or will they be the underlying concepts for a the refset itself.", required = true, dataTypeClass = String.class, paramType = "query"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/general/refsetConcepts", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/general/refsetConcepts", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ConceptResultList> getRefsetConcepts(final String branch,
 			final boolean areParentConcepts) throws Exception {
 
@@ -2532,7 +2528,7 @@ public class RefsetController extends BaseController {
 	@ApiImplicitParams({ 
         @ApiImplicitParam(name = "branch", value = "The branch to retrieve the concepts from.", required = true, dataTypeClass = String.class, paramType = "query")})
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/general/branchVersions", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/general/branchVersions", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<String>> getBranchVersions(final String branch) throws Exception {
 
 		try {
@@ -2567,7 +2563,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(code = 400, message = "Bad request"),
 			@ApiResponse(code = 404, message = "Resource not found") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/organizations", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/organizations", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getOrganizations() throws Exception {
 
 		try {
@@ -2635,7 +2631,7 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/ancestorCache", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/ancestorCache", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> getRefsetAncestorCache(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
@@ -2680,7 +2676,7 @@ public class RefsetController extends BaseController {
             @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path"),
             @ApiImplicitParam(name = "conceptId", value = "The ID of the member concept.", required = true, dataTypeClass = String.class, paramType = "path")})
     @RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}/ancestorConcepts", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}/ancestorConcepts", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<Concept> getMemberAncestorConcepts(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@PathVariable(value = "conceptId") final String conceptId) throws Exception {
@@ -2720,7 +2716,7 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "refsetInternalId", value = "A list of comma separated internal refset IDs to upgrade.", required = true, dataTypeClass = String.class, paramType = "path")})
     @RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalIds}/compileUpgradeData", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalIds}/compileUpgradeData", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> compileUpgradeData(
 			@PathVariable(value = "refsetInternalIds") final String refsetInternalIds) throws Exception {
 
@@ -2805,7 +2801,7 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({
         @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path") })
     @RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/upgradeData", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/upgradeData", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<UpgradeInactiveConcept>> getUpgradeData(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
@@ -3000,7 +2996,7 @@ public class RefsetController extends BaseController {
         @ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the refset.", required = true, dataTypeClass = String.class, paramType = "path")})
     @RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = {
-			"/refset/{refsetInternalId}/replacementConceptSearch" }, produces = "application/json")
+			"/refset/{refsetInternalId}/replacementConceptSearch" }, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<UpgradeReplacementConcept>> replacementConceptSearch(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			final SearchParameters searchParameters, final BindingResult bindingResult, HttpServletRequest request)
@@ -3051,7 +3047,7 @@ public class RefsetController extends BaseController {
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "refsetInternalId", value = "the internal refset ID", required = true, dataTypeClass = String.class, paramType = "query") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = { "/refset/dropdownSearch" }, produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = { "/refset/dropdownSearch" }, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Refset>> searchRefsetsForDropdowns(
 			final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
@@ -3099,7 +3095,7 @@ public class RefsetController extends BaseController {
         @ApiImplicitParam(name = "activeRefsetInternalId", value = "The internal ID of the active refset.", required = true, dataTypeClass = String.class, paramType = "path"),
         @ApiImplicitParam(name = "comparisonRefsetInternalId", value = "The internal ID of the comparison refset.", required = true, dataTypeClass = String.class, paramType = "query")})
     @RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/compileComparisonData", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/compileComparisonData", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> compileComparisonData(
 			@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
 			@RequestParam(required = true) final String comparisonRefsetInternalId) throws Exception {
@@ -3149,7 +3145,7 @@ public class RefsetController extends BaseController {
     @ApiImplicitParams({
         @ApiImplicitParam(name = "activeRefsetInternalId", value = "The internal ID of the active refset.", required = true, dataTypeClass = String.class, paramType = "path")})
     @RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/comparisonData", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/comparisonData", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<RefsetMemberComparison> getComparisonData(
 			@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
 			final HttpServletRequest request) throws Exception {
@@ -3202,7 +3198,7 @@ public class RefsetController extends BaseController {
 			@ApiImplicitParam(name = "comments", value = "Any comments related to the request.", required = true, dataTypeClass = String.class, paramType = "query"),
 	})
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/requestAccess", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/requestAccess", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<Boolean> requestRefsetAccess(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String comments)
 			throws Exception {
@@ -3309,7 +3305,7 @@ public class RefsetController extends BaseController {
         @ApiImplicitParam(name = "parentConceptId", value = "The new refset's parent concept ID.", required = true, dataTypeClass = String.class, paramType = "query"),
         @ApiImplicitParam(name = "newRefsetConceptId", value = "The new refset's concept ID", required = true, dataTypeClass = String.class, paramType = "query")})
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/copy", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/copy", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> copyRefset(@PathVariable(required = true) final String refsetInternalId,
 			@RequestParam final String name, @RequestParam final String projectId, @RequestParam final Boolean localSet,
 			@RequestParam final Boolean privateRefset, @RequestParam final Boolean comboSet,
@@ -3361,7 +3357,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(code = 403, message = "May not reset refset on a production system"),
 			@ApiResponse(code = 404, message = "Resource not found") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/reset", produces = "application/json")
+	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/reset", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> resetRefset(@PathVariable final String refsetId) throws Exception {
 
 		final User user = SecurityService.getUserFromSession();
@@ -3424,39 +3420,6 @@ public class RefsetController extends BaseController {
 			return handleException(e);
 		}
 
-	}
-
-	@ApiIgnore
-	@ApiOperation(value = "Process response to invitation to join refset. This call requires the requester to have the correct role.")
-	@RecordMetric
-	@GetMapping(value = "/refset/{refsetId}/response")
-	@Hidden
-	public @ResponseBody ResponseEntity<String> responseToInviteOrganization(
-
-			@PathVariable final String refsetId, @QueryParam(value = "acceptance") final boolean acceptance,
-			@QueryParam(value = "requester") final String requester,
-			@QueryParam(value = "recipientEmail") final String recipientEmail
-
-	) throws Exception {
-
-		try {
-
-			logger.debug("responseToInviteOrganization: refsetId: " + refsetId + " and acceptance: " + acceptance
-					+ " and requester: " + requester + " recipientEmail: " + recipientEmail);
-
-			RefsetService.processRefsetInvitation(refsetId, acceptance, requester, recipientEmail);
-
-			// Redirect here
-			final HttpHeaders headers = new HttpHeaders();
-			headers.add("Location", PROPERTIES.getProperty("app.url.root"));
-
-			return new ResponseEntity<>(headers, HttpStatus.FOUND);
-
-		} catch (final Exception e) {
-
-			logger.error("Exception while processing response for reference set invite", e);
-			return new ResponseEntity<>(HttpStatus.OK);
-		}
 	}
 
 }

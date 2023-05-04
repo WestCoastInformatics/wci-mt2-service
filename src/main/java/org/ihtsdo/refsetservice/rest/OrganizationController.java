@@ -12,7 +12,6 @@ package org.ihtsdo.refsetservice.rest;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.Properties;
 
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.QueryParam;
@@ -43,7 +42,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -672,46 +670,6 @@ public class OrganizationController extends BaseController {
             return handleException(e);
         }
 
-    }
-
-    /**
-     * Response to invite organization.
-     *
-     * @param id the id of the invite request
-     * @param acceptance the accepted or decline
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Process invitation response to join organization.")
-    @ApiResponses(value = {
-        @ApiResponse(code = 302, message = "Response to invitation processed"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Invite request id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "acceptance", value = "Indicate if accepted with true or false", required = true, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
-    })
-    @RecordMetric
-    @GetMapping(value = "/inviterequest/{id}/response")
-    public @ResponseBody ResponseEntity<String> responseToInviteOrganization(@PathVariable(value = "id") final String id, @QueryParam(value = "acceptance") final boolean acceptance) throws Exception {
-
-        // no auth - response is from email.
-
-        final HttpHeaders headers = new HttpHeaders();
-        headers.add("Location", appUrlRoot);
-
-        try {
-
-            logger.info("response to invite request: id: " + id + " and acceptance: " + acceptance);
-            OrganizationService.processOrganizationInvitation(id, acceptance);
-
-            return new ResponseEntity<>(headers, HttpStatus.FOUND);
-
-        } catch (final Exception e) {
-
-            logger.error("Exception while processing response for organization id invite", acceptance);
-            return new ResponseEntity<>(headers, HttpStatus.FOUND);
-        }
     }
 
 }
