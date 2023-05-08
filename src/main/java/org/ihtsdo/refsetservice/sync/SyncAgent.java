@@ -55,7 +55,7 @@ public abstract class SyncAgent {
 
     protected static String developerTestingEditionShortName = null;
 
-    protected static Organization develeperTestingOranization = null;
+    protected static Organization develeperTestingOrganization = null;
 
     /** Other process fields **/
     // Owner Name to Organization Description
@@ -91,6 +91,9 @@ public abstract class SyncAgent {
 
         // Only identify branches on filtered code systems and on runShortSync value
         SyncAgent agent = new SyncCodeSystemAgent();
+        agent.sync();
+
+        agent = new SyncCrowdAgent();
         agent.sync();
 
         // Find all refsets from filtered branches

@@ -65,6 +65,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     private static final String GET_GROUP = "/rest/usermanagement/1/group?groupname=";
 
     private static final String GET_MEMBERSHIPS = "/rest/usermanagement/1/group/membership";
+
     /** Add group POST. */
     private static final String ADD_GROUP = "/rest/usermanagement/1/group";
 
@@ -144,8 +145,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
          */
         for (String role : ROLES) {
 
-            final String groupName =
-                generateProjectName ? CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, projectName, role) : CrowdGroupNameAlgorithm.buildCrowdGroupName(organization, projectName, role);
+            final String groupName = generateProjectName ? CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, projectName, role)
+                    : CrowdGroupNameAlgorithm.buildCrowdGroupName(organization, projectName, role);
 
             logger.info("CALL CROWD API url:" + BASE_URL + ADD_GROUP);
             final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
@@ -257,23 +258,21 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     public static Set<String> getAllGroups() throws Exception {
         final Set<String> userGroups = new HashSet<>();
         ByteArrayInputStream input = null;
-        
+
         logger.debug("Get all groups with url: " + BASE_URL + GET_MEMBERSHIPS);
-        
+
         try (final Response response = get(BASE_URL + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);) {
 
-            
             if (response.getStatus() == 200) {
 
                 final String xmlString = response.readEntity(String.class);
 
                 // Load the input XML document, parse it and return an instance of the
                 // Document class.
-                input = new ByteArrayInputStream(
-                        xmlString.toString().getBytes("UTF-8"));
+                input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));
                 DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder builder = factory.newDocumentBuilder();
-        
+
                 Document document = builder.parse(input);
 
                 NodeList groupList = document.getDocumentElement().getChildNodes();
@@ -283,19 +282,19 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
                     if (groupNode.getNodeType() == Node.ELEMENT_NODE) {
 
-                         // Get the value of the group name attribute.
-                         String groupName = groupNode.getAttributes().getNamedItem("group").getNodeValue();
-                         logger.debug("groupName1: " + groupName);
+                        // Get the value of the group name attribute.
+                        String groupName = groupNode.getAttributes().getNamedItem("group").getNodeValue();
+                        logger.debug("groupName1: " + groupName);
 
-                         if (groupName.startsWith(appPrefix)) {
-                             userGroups.add(groupName);
-                         }
+                        if (groupName.startsWith(appPrefix)) {
+                            userGroups.add(groupName);
+                        }
 
                     } else {
                         logger.error("groupNode Type2: " + groupNode.getNodeType());
                     }
                 }
-                
+
                 return userGroups;
             } else {
                 throw new Exception("The groups could not be retrieved. Received HTTP " + response.getStatus() + " from the API server.");
@@ -307,99 +306,73 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
     public static Map<String, Set<String>> getAllGroupsMembers() throws Exception {
         logger.debug("Get all groups' members {}");
-        
+
         final Map<String, Set<String>> groupMemberMap = new HashMap<>();
         logger.debug("url: " + BASE_URL + GET_MEMBERSHIPS);
-        
-        try (final Response response = get(BASE_URL + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);) {
-            logger.debug("aaa-1");
 
-            
+        try (final Response response = get(BASE_URL + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);) {
+
             if (response.getStatus() == 200) {
-                logger.debug("aaa-2");
 
                 final String xmlString = response.readEntity(String.class);
-                // logger.debug("Root: " + xmlString);
 
-                ByteArrayInputStream input = new ByteArrayInputStream(
-                        xmlString.toString().getBytes("UTF-8"));
+                ByteArrayInputStream input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));
                 DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder builder = factory.newDocumentBuilder();
-                logger.debug("aaa-3");
 
-        
                 // Load the input XML document, parse it and return an instance of the
                 // Document class.
                 Document document = builder.parse(input);
 
                 NodeList membershipList = document.getDocumentElement().getChildNodes();
-                logger.debug("MembershipList.length: " + membershipList.getLength());
 
                 for (int i = 0; i < membershipList.getLength(); i++) {
 
                     Node membershipNode = membershipList.item(i);
-                    logger.debug("aaa-55 groupNode Name: " + membershipNode.getNodeName());
-                    logger.debug("aaa-55 groupNode Type: " + membershipNode.getNodeType());
 
                     if (membershipNode.getNodeType() == Node.ELEMENT_NODE && membershipNode.getNodeName().equals("membership")) {
-                        
-                         Element membership = (Element) membershipNode;
-                         // Get the value of the group name attribute.
-                         String groupName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
-                         logger.debug("Group Name 1: " + groupName);
 
-                         if (!groupName.startsWith(appPrefix) || !membership.hasChildNodes()) {
-                             continue;
-                         }
+                        Element membership = (Element) membershipNode;
+                        // Get the value of the group name attribute.
+                        String groupName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
+                        if (!groupName.startsWith("rt2-snomedctbe-jd2")) {
+                            continue;
+                        }
+                        if (!groupName.startsWith(appPrefix) || !membership.hasChildNodes()) {
+                            continue;
+                        }
 
-                         if (!groupMemberMap.containsKey(groupName)) {
-                             groupMemberMap.put(groupName, new HashSet<>());
-                         }
+                        if (!groupMemberMap.containsKey(groupName)) {
+                            groupMemberMap.put(groupName, new HashSet<>());
+                        }
 
-                         NodeList usersList = membership.getChildNodes();
-                         logger.debug("usersList.length: " + usersList.getLength());
+                        NodeList usersList = membership.getChildNodes();
 
-                         for (int j = 0; j < usersList.getLength(); j++) {
-                             Node usersNode = usersList.item(j);
-                             
-                             logger.debug("aaa-66 usersNode Name: " + usersNode.getNodeName());
-                             logger.debug("aaa-66 usersNode Type: " + usersNode.getNodeType());
+                        for (int j = 0; j < usersList.getLength(); j++) {
+                            Node usersNode = usersList.item(j);
 
-                             if (usersNode.getNodeType() == Node.ELEMENT_NODE && usersNode.getNodeName().equals("users") ) {
-                                 Element users = (Element) usersNode;
-                                 
-                                 NodeList userList = users.getChildNodes();
-                                 logger.debug("userList length: " + userList.getLength());
-                                 
-                                 for (int k = 0; k < userList.getLength(); k++) {
+                            if (usersNode.getNodeType() == Node.ELEMENT_NODE && usersNode.getNodeName().equals("users")) {
+                                Element users = (Element) usersNode;
 
-                                     Node userNode = userList.item(k);
+                                NodeList userList = users.getChildNodes();
 
-                                     logger.debug("aaa-77 userNode Name: " + userNode.getNodeName());
-                                     logger.debug("aaa-77 userNode Type: " + userNode.getNodeType());
+                                for (int k = 0; k < userList.getLength(); k++) {
 
-                                     if (usersNode.getNodeType() == Node.ELEMENT_NODE && userNode.getNodeName().equals("user")) {
-                                         // Get the user name
-                                         logger.debug("aaa-888");
-                                         String userName = userNode.getAttributes().getNamedItem("name").getNodeValue();
-                                         logger.debug("aaa-888 with : " + userName);
-        
-                                         groupMemberMap.get(groupName).add(userName);
-        
-                                     } else {
-                                         logger.error("memberNode Type4: " + usersNode.getNodeType());
-                                     }
-                                 }
-                             }
-                         }
-                         
-                         logger.debug("Members of groupName " + groupName + ": ");
-                         groupMemberMap.get(groupName).stream().forEach(userName -> logger.debug(userName));
-                         
+                                    Node userNode = userList.item(k);
+
+                                    if (usersNode.getNodeType() == Node.ELEMENT_NODE && userNode.getNodeName().equals("user")) {
+                                        // Get the user name
+                                        String userName = userNode.getAttributes().getNamedItem("name").getNodeValue();
+
+                                        groupMemberMap.get(groupName).add(userName);
+
+                                    }
+                                }
+                            }
+                        }
+
                     }
                 }
-
-                logger.debug("aaa-OUT with first group members: " + groupMemberMap.keySet());
 
                 return groupMemberMap;
             } else {

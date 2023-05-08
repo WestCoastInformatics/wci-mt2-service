@@ -143,7 +143,7 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public void initializeService(TerminologyService service) {
+    public static void initializeService(TerminologyService service) {
 
         service.setModifiedBy("Sync");
         service.setModifiedFlag(true);

@@ -69,6 +69,7 @@ public class SyncRefsetAgent extends SyncAgent {
     private List<Project> dbProjects = new ArrayList<>();
 
     public void sync() throws Exception {
+        logger.info("Starting sync of Refset Agent");
 
         initializeSync();
 
@@ -340,7 +341,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             logger.info("Gather refset data for each refset available with each edition's version for: " + filteredTermserverShortNameToVersionBranchMap.keySet());
             for (String editionShortName : filteredTermserverShortNameToVersionBranchMap.keySet()) {
-                logger.debug("xxx editionShortName: " + editionShortName);
+                
                 Edition edition = isEditionToProcess(editionShortName);
 
                 // Have valid edition. Filter refsets to process
