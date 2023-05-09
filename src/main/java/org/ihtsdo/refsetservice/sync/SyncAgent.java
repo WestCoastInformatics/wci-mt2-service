@@ -152,10 +152,10 @@ public abstract class SyncAgent {
     }
 
     protected boolean isDifferentAttribute(String shortName, String attributeName, Object databaseAttribute, Object snowstormAttribute) {
-        logger.debug("ppp DB: " + databaseAttribute);
-        logger.debug("ppp Sn: " + snowstormAttribute);
-        logger.debug("ppp databaseAttribute.equals(snowstormAttribute: " + databaseAttribute.equals(snowstormAttribute));
-        logger.debug("ppp snowstormAttribute.equals(databaseAttribute: " + snowstormAttribute.equals(databaseAttribute));
+//        logger.debug("in isDifferentAttribute() w/DB: " + databaseAttribute);
+//        logger.debug("in isDifferentAttribute() w/Sn: " + snowstormAttribute);
+//        logger.debug("in isDifferentAttribute() w/databaseAttribute.equals(snowstormAttribute: " + databaseAttribute.equals(snowstormAttribute));
+//        logger.debug("in isDifferentAttribute() w/snowstormAttribute.equals(databaseAttribute: " + snowstormAttribute.equals(databaseAttribute));
 
         if (snowstormAttribute == null && databaseAttribute == null) {
             // Both null, no difference

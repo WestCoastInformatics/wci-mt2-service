@@ -497,18 +497,18 @@ public class TeamService extends BaseService {
 		team.getMembers().add(userToAdd.getId());
 
 		service.beginTransaction();
-		service.update(team);
-		service.add(AuditEntryHelper.addUserToTeamEntry(team, userToAdd));
+		final Team updatedTeam = service.update(team);
+		service.add(AuditEntryHelper.addUserToTeamEntry(updatedTeam, userToAdd));
 		service.commit();
 
-		setUserRoles(userToAdd, team, team.getUserRoles());
+		setUserRoles(userToAdd, updatedTeam, updatedTeam.getUserRoles());
 
 		// add user to crowd groups
 		if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
 				|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
 
 			logger.info("CALLING CROWD API");
-			final String teamsQuery = "teams:" + team.getId();
+			final String teamsQuery = "teams:" + updatedTeam.getId();
 			final SearchParameters searchParameters = new SearchParameters();
 			searchParameters.setQuery(teamsQuery);
 			final ResultList<Project> projectList = ProjectService.searchProjects(user, searchParameters);
@@ -520,7 +520,7 @@ public class TeamService extends BaseService {
 					CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(),
 							project.getDescription(), true);
 
-					for (String role : team.getRoles()) {
+					for (String role : updatedTeam.getRoles()) {
 
 						final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(
 								project.getEdition().getShortName(), project.getCrowdProjectId(), role);
@@ -533,7 +533,7 @@ public class TeamService extends BaseService {
 			logger.info("SKIP CALLING CROWD API");
 		}
 
-		return team;
+		return updatedTeam;
 	}
 
 	/**
