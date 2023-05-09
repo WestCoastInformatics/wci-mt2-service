@@ -353,7 +353,7 @@ public class DiscussionService {
         if (!DiscussionService.canUserEditPost(user, refset, post)) {
 
             logger.error("deletePost: User does not have permissions to perform this action: {}.", user.getUserName());
-            throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to delete this discussion post.");
+            throw new RestException(false, HttpStatus.UNAUTHORIZED, "Unauthorized", "User does not have permissions to delete this discussion post.");
         }
 
         service.setTransactionPerOperation(false);
@@ -402,7 +402,7 @@ public class DiscussionService {
         if (!DiscussionService.canUserEditThread(user, refset, thread)) {
 
             logger.error("deleteThread: User does not have permissions to perform this action: {}.", user.getUserName());
-            throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to delete this discussion thread.");
+            throw new RestException(false, HttpStatus.UNAUTHORIZED, "Unauthorized", "User does not have permissions to delete this discussion thread.");
         }
 
         service.setTransactionPerOperation(false);

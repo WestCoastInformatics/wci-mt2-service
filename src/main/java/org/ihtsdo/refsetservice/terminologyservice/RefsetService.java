@@ -10,7 +10,6 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -26,7 +25,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -70,7 +68,6 @@ import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -2031,7 +2028,7 @@ private static String APP_URL_ROOT;
             
             final String message = "User does not have permission to view this reference set.";
             logger.error(message);
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, message);
         }
 
 

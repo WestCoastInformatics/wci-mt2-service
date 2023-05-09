@@ -1724,7 +1724,7 @@ public final class WorkflowService {
     public static void canUserPerformWorkflowAction(final User user, final Refset refset, final String action) throws Exception {
 
         if (!WorkflowService.getAllowedActions(user, refset).contains(action)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unsuccessful attempt to update workflow status for Reference Set " + refset.getId() + " from status " + refset.getWorkflowStatus() + " with action " + action);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unsuccessful attempt to update workflow status for Reference Set " + refset.getId() + " from status " + refset.getWorkflowStatus() + " with action " + action);
         }
     }
     
@@ -1738,7 +1738,7 @@ public final class WorkflowService {
     public static void canUserEditRefset(final User user, final Refset refset) throws Exception {
         
         if (!Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_UPGRADE).contains(refset.getWorkflowStatus()) || !user.getUserName().equals(refset.getAssignedUser())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is not in the proper state or user does not have permission to edit.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Reference Set is not in the proper state or user does not have permission to edit.");
         }
         
     }
@@ -1753,7 +1753,7 @@ public final class WorkflowService {
     public static void canUserPerformInDevelopmentActionsOnRefset(final User user, final Refset refset) throws Exception {
 
         if (!Refset.IN_DEVELOPMENT.equals(refset.getVersionStatus()) || !user.doesUserHavePermission(User.ROLE_VIEWER, refset.getProject())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is not in the proper state or user does not have permission to perform this action.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Reference Set is not in the proper state or user does not have permission to perform this action.");
         }
     }
 }

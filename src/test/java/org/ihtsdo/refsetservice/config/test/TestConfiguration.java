@@ -15,7 +15,6 @@ import java.util.List;
 
 import javax.annotation.PreDestroy;
 
-import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;

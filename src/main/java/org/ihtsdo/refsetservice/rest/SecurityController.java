@@ -88,7 +88,6 @@ public class SecurityController extends BaseController {
     @ApiOperation(value = "Log out the authenticated user. This call requires authentication", response = Void.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successful logout"),
-        @ApiResponse(code = 403, message = "Forbidden"),
         @ApiResponse(code = 500, message = "Internal server error")
      })
     @ApiImplicitParams({@ApiImplicitParam(name = "userName", value = "User name to log out", required = true, dataTypeClass = String.class, paramType = "path") })

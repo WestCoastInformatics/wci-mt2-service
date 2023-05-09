@@ -42,7 +42,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * Reference implementation of the {@link SecurityService}.
@@ -569,7 +568,7 @@ public class SecurityService implements AutoCloseable {
         final User user = getUserFromSession();
         
         if (!user.getUserName().equals(userName)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This user name supplied is not authenticated.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user name supplied is not authenticated.");
         }
         
         tokenUsernameMap.remove(userName);

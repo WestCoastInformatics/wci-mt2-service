@@ -70,15 +70,17 @@ public class TeamController extends BaseController {
 	 * @return the team
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Get team.  This call requires authentication with the correct role.", response = Team.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "includeMembers", value = "Include team's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false") })
-	@RequestMapping(method = RequestMethod.GET, value = "/team/{id}")
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Get team.  This call requires authentication with the correct role.", response = Team.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "includeMembers", value = "Include team's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
+    })
+    @RequestMapping(method = RequestMethod.GET, value = "/team/{id}")
 	public @ResponseBody ResponseEntity<Team> getTeam(@PathVariable(value = "id") final String id,
 			@QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
@@ -115,18 +117,20 @@ public class TeamController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Find teams.  This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found") })
-	// @ModelAttribute API params documented in SearchParameter
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "includeMembers", value = "Include team's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
-			@ApiImplicitParam(name = "onlyUsersTeams", value = "Limit to only user teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
-			@ApiImplicitParam(name = "hideOrganizationTeams", value = "Hide organization teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false") })
-	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/team/search", produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Find teams.  This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found")
+    })
+    // @ModelAttribute API params documented in SearchParameter
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "includeMembers", value = "Include team's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "onlyUsersTeams", value = "Limit to only user teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "hideOrganizationTeams", value = "Hide organization teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/team/search", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Team>> getTeams(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult,
 			@QueryParam(value = "includeMembers") final boolean includeMembers,
@@ -168,17 +172,17 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
-	@ApiOperation(value = "Add team.  This call requires authentication with the correct role.", response = Project.class)
-	@ApiResponses(value = { @ApiResponse(code = 201, message = "Team successfully created"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
-			@ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "team", value = "Team object", required = true, dataTypeClass = Team.class, paramType = "body") })
-	@RecordMetric
-	@PostMapping(value = "/team", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Add team.  This call requires authentication with the correct role.", response = Project.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Team successfully created"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "team", value = "Team object", required = true, dataTypeClass = Team.class, paramType = "body")
+    })
+    @RecordMetric
+    @PostMapping(value = "/team", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity addTeam(@RequestBody final Team team) throws Exception {
 
 		logger.info("Add team: {}", team);
@@ -218,18 +222,18 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
-	@ApiOperation(value = "Update team.  This call requires authentication with the correct role.", response = Team.class)
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "team", value = "Team object", required = true, dataTypeClass = Team.class, paramType = "body") })
-	@ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully updated team"),
-			@ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"),
-			@ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@RecordMetric
-	@PutMapping(value = "/team/{id}", consumes = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Update team.  This call requires authentication with the correct role.", response = Team.class)
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "team", value = "Team object", required = true, dataTypeClass = Team.class, paramType = "body")
+    })
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Successfully updated team"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @RecordMetric
+    @PutMapping(value = "/team/{id}", consumes = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity updateTeam(@PathVariable(value = "id") final String id,
 			@RequestBody final Team team) throws Exception {
 
@@ -276,16 +280,17 @@ public class TeamController extends BaseController {
 	 * @return the users
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Get users for team.  This call requires authentication with the correct role.", response = ResultListUser.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
-	@RequestMapping(value = "/team/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Get users for team.  This call requires authentication with the correct role.", response = ResultListUser.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @RequestMapping(value = "/team/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	public ResponseEntity<Object> getOrganizationUsers(@PathVariable final String id) throws Exception {
 
 		logger.info("Get team users. Id: {}", id);
@@ -311,15 +316,16 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Add user to team.  This call requires authentication with the correct role.", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully added user to team"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@PostMapping("/team/{id}/member")
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Add user to team.  This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Successfully added user to team"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @PostMapping("/team/{id}/member")
 	public @ResponseBody ResponseEntity<String> addUsersToTeam(@PathVariable final String id, final String emails)
 			throws Exception {
 
@@ -361,16 +367,17 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Delete users from team.  This call requires authentication with the correct role.", response = Void.class)
-	@ApiResponses(value = { @ApiResponse(code = 202, message = "Successfully removed user from team"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "userId", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@DeleteMapping("/team/{id}/member/{userId}")
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Delete users from team.  This call requires authentication with the correct role.", response = Void.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Successfully removed user from team"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "userId", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @DeleteMapping("/team/{id}/member/{userId}")
 	public @ResponseBody ResponseEntity<Void> removeUserFromTeam(@PathVariable final String id,
 			@PathVariable final String userId) throws Exception {
 
@@ -403,16 +410,17 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Add role to team.  This call requires authentication with the correct role.", response = Void.class)
-	@ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully added role to team"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "role", value = "Role to add. One of ADMIN, REVIEWER, VIEWER or AUTHOR.", required = true, dataTypeClass = String.class, paramType = "path") })
-	@PostMapping("/team/{id}/role/{role}")
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Add role to team.  This call requires authentication with the correct role.", response = Void.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Successfully added role to team"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "role", value = "Role to add. One of ADMIN, REVIEWER, VIEWER or AUTHOR.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @PostMapping("/team/{id}/role/{role}")
 	public @ResponseBody ResponseEntity<Void> addRoleToTeam(@PathVariable final String id,
 			@PathVariable final String role) throws Exception {
 
@@ -440,17 +448,18 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Delete role from team.  This call requires authentication with the correct role.", response = Void.class)
-	@ApiResponses(value = { @ApiResponse(code = 202, message = "Successfully removed role from team"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "role", value = "Role to add. One of ADMIN, REVIEWER, VIEWER or AUTHOR.", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
-	@DeleteMapping("/team/{id}/role/{role}")
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Delete role from team.  This call requires authentication with the correct role.", response = Void.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Successfully removed role from team"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "role", value = "Role to add. One of ADMIN, REVIEWER, VIEWER or AUTHOR.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @DeleteMapping("/team/{id}/role/{role}")
 	public @ResponseBody ResponseEntity<Void> removeRoleFromTeam(@PathVariable final String id,
 			@PathVariable final String role) throws Exception {
 
@@ -477,16 +486,17 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Inactivate a team.  This call requires authentication with the correct role.", response = Void.class)
-	@ApiResponses(value = { @ApiResponse(code = 202, message = "Successfully inactivated team"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
-	@DeleteMapping(value = "/team/{id}")
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Inactivate a team.  This call requires authentication with the correct role.", response = Void.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Successfully inactivated team"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Team id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @DeleteMapping(value = "/team/{id}")
 	public ResponseEntity<Void> deleteTeam(@PathVariable("id") final String id) throws Exception {
 
 		logger.info("Inactivate team: {}", id);

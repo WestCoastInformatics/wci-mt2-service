@@ -21,8 +21,6 @@ import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

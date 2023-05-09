@@ -65,13 +65,15 @@ public class AuditController extends BaseController {
 	 * @return the auditEntryImpl
 	 * @throws Exception the exception
 	 */
-	@RequestMapping(method = RequestMethod.GET, value = "/audit/{id}")
-	@ApiOperation(value = "Get audit entry.", response = AuditEntry.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Audit entry id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/audit/{id}")
+    @ApiOperation(value = "Get audit entry.", response = AuditEntry.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Audit entry id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
 	public @ResponseBody ResponseEntity<AuditEntry> getAuditEntry(@PathVariable(value = "id") final String id)
 			throws Exception {
 
@@ -94,24 +96,26 @@ public class AuditController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@RequestMapping(method = RequestMethod.GET, value = "/audit", produces = MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Find audit entries. This call requires authentication with the correct role.", response = ResultList.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "query", value = "The value to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-			@ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-			@ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0") })
-	@RecordMetric
+    @SuppressWarnings("unchecked")
+    @RequestMapping(method = RequestMethod.GET, value = "/audit", produces = MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Find audit entries. This call requires authentication with the correct role.", response = ResultList.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "query", value = "The value to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+    })
+    @RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntries(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
 
 		final User authUser = SecurityService.getUserFromSession();
 		if (authUser == null) {
-			return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 		}
 
 		// Check to make sure parameters were properly bound to variables.
@@ -138,21 +142,24 @@ public class AuditController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Find audit entries for entity. This call requires authentication with the correct role.", response = ResultList.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "entityType", value = "The entity type, e.g. 'REFSET'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
-			@ApiImplicitParam(name = "entityId", value = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
-			@ApiImplicitParam(name = "expand", value = "Will expand the result to include related entries.  e.g include project and teams for an organization ", required = false, dataTypeClass = Boolean.class, paramType = "path", defaultValue = "false"),
-			@ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-			@ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-			@ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0") })
-	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId}", produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Find audit entries for entity. This call requires authentication with the correct role.", response = ResultList.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "entityType", value = "The entity type, e.g. 'REFSET'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
+        @ApiImplicitParam(name = "entityId", value = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true, dataTypeClass = String.class, paramType = "path",
+            defaultValue = ""),
+        @ApiImplicitParam(name = "expand", value = "Will expand the result to include related entries.  e.g include project and teams for an organization ", required = false,
+            dataTypeClass = Boolean.class, paramType = "path", defaultValue = "false"),
+        @ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
+        @ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
+        @ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntriesForEntity(
 			@PathVariable final String entityType, @PathVariable final String entityId,
 			@QueryParam(value = "expand") final Boolean expand, @ModelAttribute final SearchParameters searchParameters,
@@ -160,7 +167,7 @@ public class AuditController extends BaseController {
 
 		final User authUser = SecurityService.getUserFromSession();
 		if (authUser == null) {
-			return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 		}
 
 		if (StringUtils.isBlank(entityType)) {

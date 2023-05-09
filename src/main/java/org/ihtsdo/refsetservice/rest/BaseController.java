@@ -101,7 +101,7 @@ public class BaseController {
 
 		final User authUser = SecurityService.getUserFromSession();
 		if (authUser == null || authUser.getId() == null) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 		}
 		return authUser;
 	}

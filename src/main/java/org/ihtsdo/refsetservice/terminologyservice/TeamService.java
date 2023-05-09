@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,9 +55,16 @@ public class TeamService extends BaseService {
 	/** The organization level team description. */
 	public static String organizationLevelTeamDescription = "'s dedicated ADMIN Team to manage their projects, members, and teams with.";
 
-	/** The config properties. */
-	private static final Properties PROPERTIES = PropertyUtility.getProperties();
+//	/** The config properties. */
+//	private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
+    /**  The crowd unit test skip. */
+    private static String CROWD_UNIT_TEST_SKIP;
+
+    static {
+            CROWD_UNIT_TEST_SKIP = PropertyUtility.getProperty("crowd.unit.test.skip");
+    }
+    
 	/**
 	 * Creates the team.
 	 *
@@ -503,9 +509,8 @@ public class TeamService extends BaseService {
 
 		setUserRoles(userToAdd, team, team.getUserRoles());
 
-		// add user to crowd groups
-		if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
-				|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+        // add user to crowd groups
+        if (CROWD_UNIT_TEST_SKIP == null || !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 
 			logger.info("CALLING CROWD API");
 			final String teamsQuery = "teams:" + team.getId();
@@ -639,9 +644,8 @@ public class TeamService extends BaseService {
 		service.update(team);
 		service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToRemove));
 
-		// remove user from crowd groups
-		if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
-				|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+        // remove user from crowd groups
+        if (CROWD_UNIT_TEST_SKIP == null || !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 
 			logger.info("CALLING CROWD API");
 			final String teamsQuery = "teams:" + team.getId();
@@ -707,9 +711,8 @@ public class TeamService extends BaseService {
 			service.add(AuditEntryHelper.addRoleToTeamEntry(team, role));
 			service.commit();
 
-			// add user to crowd groups if team is assigned to projects.
-			if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
-					|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+            // add user to crowd groups if team is assigned to projects.
+            if (CROWD_UNIT_TEST_SKIP == null || !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 				logger.info("CALLING CROWD API from ProjectService updateMemberships");
 
 				final List<Project> projects = getTeamProjects(team);
@@ -771,8 +774,7 @@ public class TeamService extends BaseService {
 			service.commit();
 
 			// remove users from team if team assigned to projects.
-			if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
-					|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+            if (CROWD_UNIT_TEST_SKIP == null || !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 				logger.info("CALLING CROWD API from ProjectService updateMemberships");
 
 				final List<Project> projects = getTeamProjects(team);
