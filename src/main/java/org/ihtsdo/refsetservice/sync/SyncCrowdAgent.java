@@ -45,7 +45,7 @@ public class SyncCrowdAgent extends SyncAgent {
             crowdGroups.stream().forEach(group -> uniqueUsers.addAll(crowdGroupMembers.get(group)));
             Map<String, User> userMap = createOrUpdateUsers(uniqueUsers);
             final List<User> dbUsers = service.getAll(User.class);
-            logger.debug("zzz-1: Out with: " + dbUsers);
+            logger.debug("zzz-1: Out with dbUsers.size(): " + dbUsers.size());
 
             logger.debug("zzz-2: addRemoveUsersToOrganizations");
             addRemoveUsersToOrganizations(crowdGroupMembers, userMap);
@@ -57,7 +57,7 @@ public class SyncCrowdAgent extends SyncAgent {
             logger.debug("zzz-3: createOrUpdateTeams");
             createOrUpdateTeams(crowdGroups);
             List<Team> dbTeams = service.getAll(Team.class);
-            logger.debug("zzz-3: Out with: " + dbTeams);
+            logger.debug("zzz-3: Out with dbTeams.size: " + dbTeams.size());
 
             logger.debug("zzz-4: addRemoveTeamMembers");
             addRemoveTeamMembers(crowdGroupMembers, userMap);
@@ -73,62 +73,87 @@ public class SyncCrowdAgent extends SyncAgent {
     // Important: If issues arise in missing or unexpected members of team, first place to look is CROWD for inconsistencies across members in teams
     private void addRemoveTeamMembers(Map<String, Set<String>> crowdGroupMembersMap, Map<String, User> userMap) throws Exception {
 
+        Map<String, Map<String, Set<String>>> dbOrganizationToTeamUsernamesMap = new HashMap<>();
+
         try (final TerminologyService service = new TerminologyService()) {
             SyncDatabaseHandler.initializeService(service);
 
             final List<Edition> dbEditions = service.getAll(Edition.class);
-            final List<Team> dbTeams = service.getAll(Team.class);
 
             for (Edition edition : dbEditions) {
 
-                for (String crowdGroup : crowdGroupMembersMap.keySet()) {
+                final List<Team> dbTeams = OrganizationService.getOrganizationTeams(service, edition.getOrganizationId()).getItems();
 
-                    final String[] groupCoordinates = crowdGroup.split("-");
-                    final String crowdEditionName = groupCoordinates[EDITION_SHORTNAME];
-                    final String crowdTeamName = groupCoordinates[TEAM_NAME];
+                if (!dbOrganizationToTeamUsernamesMap.containsKey(edition.getOrganizationId())) {
+                    dbOrganizationToTeamUsernamesMap.put(edition.getOrganizationId(), new HashMap<>());
+                }
 
-                    for (Team dbTeam : dbTeams) {
+                for (Team dbTeam : dbTeams) {
 
+                    if (!dbOrganizationToTeamUsernamesMap.get(edition.getOrganizationId()).containsKey(dbTeam.getId())) {
+                        dbOrganizationToTeamUsernamesMap.get(edition.getOrganizationId()).put(dbTeam.getId(), new HashSet<>());
+                    }
+
+                    for (String crowdGroup : crowdGroupMembersMap.keySet()) {
+
+                        final String[] groupCoordinates = crowdGroup.split("-");
+                        final String crowdEditionName = groupCoordinates[EDITION_SHORTNAME];
+                        final String crowdTeamName = groupCoordinates[TEAM_NAME];
 
                         // Match on team and edition to ensure proper handling of similarly named teams across editions.
-                        if (crowdTeamName.equals(dbTeam.getName()) && crowdEditionName.equals(edition.getShortName().replace("-", "").toLowerCase())) {
-                            Map<String, User> userIdMap = new HashMap<>();
-
-                            for (String userId : dbTeam.getMembers()) {
-                                User user = service.get(userId, User.class);
-                                userMap.put(user.getUserName(), user);
-                                userIdMap.put(user.getId(), user);
-                            }
-                            
-                            // TODO: Handle Updated user in crowd (say email)
-                            final List<User> localMembers = new ArrayList<>();
-                            dbTeam.getMembers().stream().forEach(userId -> localMembers.add(userIdMap.get(userId)));
+                        if (crowdTeamName.equals(dbTeam.getName()) && crowdEditionName.equals(editionShortNameToCrowdCodeSystem(edition.getShortName()))) {
 
                             final Set<String> crowdMembersUsernames = crowdGroupMembersMap.get(crowdGroup);
 
-                            // Identify and remove users from RT2 team
-                            Set<User> removeLocally = new HashSet<User>(localMembers);
-                            localMembers.stream().filter(u -> crowdMembersUsernames.contains(u.getUserName())).forEach(u -> removeLocally.remove(u));
-
-                            // Remove users from team
-                            logger.info("remove local users from team: " + removeLocally);
-
-                            for (User user : removeLocally) {
-                                dbTeam = TeamService.removeUserFromTeam(service, SecurityService.getUserFromSession(), dbTeam, userMap.get(user.getUserName()));
-
-                            }
-
-                            // Identify and add users from RT2 team
-                            Set<String> addLocally = new HashSet<String>(crowdMembersUsernames);
-                            localMembers.stream().filter(u -> crowdMembersUsernames.contains(u.getUserName())).forEach(us -> addLocally.remove(us.getUserName()));
-
-                            logger.info("add local users to organization: " + addLocally);
-
-                            // Add users to RT2 team
-                            for (String user : addLocally) {
-                                dbTeam = TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), dbTeam, userMap.get(user));
-                            }
+                            dbOrganizationToTeamUsernamesMap.get(edition.getOrganizationId()).get(dbTeam.getId());
+                            dbOrganizationToTeamUsernamesMap.get(edition.getOrganizationId()).get(dbTeam.getId()).addAll(crowdMembersUsernames);
                         }
+                    }
+                }
+            }
+
+            for (String organizationId : dbOrganizationToTeamUsernamesMap.keySet()) {
+                final Organization organization = service.get(organizationId, Organization.class);
+
+                for (String teamId : dbOrganizationToTeamUsernamesMap.get(organizationId).keySet()) {
+
+                    Map<String, User> userIdMap = new HashMap<>();
+
+                    // Initialize user information er team (to get latest from previous team updates)
+                    for (User user : organization.getMembers()) {
+                        user = service.get(user.getId(), User.class);
+                        userMap.put(user.getUserName(), user);
+                        userIdMap.put(user.getId(), user);
+                    }
+
+                    final Team team = service.get(teamId, Team.class);
+
+                    // TODO: Handle Updated user in crowd (say email)
+                    final List<User> localMembers = new ArrayList<>();
+                    team.getMembers().stream().forEach(userId -> localMembers.add(userIdMap.get(userId)));
+
+                    // Identify and remove users from RT2 organization
+                    Set<User> removeLocally = new HashSet<User>(localMembers);
+                    localMembers.stream().filter(u -> dbOrganizationToTeamUsernamesMap.get(organizationId).get(teamId).contains(u.getUserName())).forEach(u -> removeLocally.remove(u));
+
+                    // Remove users from RT2 organization
+                    logger.info("remove local users from organization {}'s team: {}: " + removeLocally, organization.getName(), team.getName());
+
+                    for (User user : removeLocally) {
+                        OrganizationService.removeUserFromOrganization(service, SecurityService.getUserFromSession(), user.getId(), organizationId);
+
+                    }
+
+                    // Identify and add users to RT2 team
+                    Set<String> addLocally = new HashSet<String>(dbOrganizationToTeamUsernamesMap.get(organizationId).get(teamId));
+                    localMembers.stream().filter(u -> dbOrganizationToTeamUsernamesMap.get(organizationId).get(teamId).contains(u.getUserName())).forEach(us -> addLocally.remove(us.getUserName()));
+
+                    // Add users to RT2 team
+                    logger.info("add local users to organization {}: " + addLocally, organization.getName());
+
+                    for (String username : addLocally) {
+
+                        OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), organizationId, userMap.get(username));
                     }
                 }
             }
@@ -197,74 +222,97 @@ public class SyncCrowdAgent extends SyncAgent {
     }
 
     // Important: If issues arise in missing or unexpected aspects of a team, first place to look is CROWD for inconsistencies across members in teams
-    private void createOrUpdateTeams(Set<String> crowdGroups) throws Exception {
+    private void createOrUpdateTeams(Set<String> allCrowdTeamRoleStrings) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-            final Map<String, Map<String, Set<String>>> editionGroupRolesMap = new HashMap<>();
+            // Edition, to Team, to Roles
+            final Map<String, Map<String, Set<String>>> organizationGroupRolesMap = new HashMap<>();
+            final Map<String, Set<String>> organizationGroupCrowdStringMap = new HashMap<>();
+
+            final List<Edition> dbEditions = service.getAll(Edition.class);
 
             // Sort crowdGroups by edition/groupName/Set<Role>
-            for (String group : crowdGroups) {
+            for (String crowdTeamRoleString : allCrowdTeamRoleStrings) {
+                if (isTesting() && !crowdTeamRoleString.startsWith("rt2-" + editionShortNameToCrowdCodeSystem(testingEditionShortName) + "-")) {
+                    continue;
+                    // TODO: Change to throw new Exception("No edition in DB for editionShortName: " + crowdCodeSystem);
+                }
 
-                final String[] groupCoordinates = group.split("-");
+                final String[] groupCoordinates = crowdTeamRoleString.split("-");
 
                 final String crowdCodeSystem = groupCoordinates[EDITION_SHORTNAME];
                 final String crowdGroupName = groupCoordinates[TEAM_NAME];
                 final String crowdGroupRole = groupCoordinates[ROLE];
+                // Identify crowd teams & edition's teams in DB (via Org)
 
-                if (!editionGroupRolesMap.containsKey(crowdCodeSystem)) {
-                    editionGroupRolesMap.put(crowdCodeSystem, new HashMap<>());
+                List<Edition> editions = dbEditions.stream().filter(e -> editionShortNameToCrowdCodeSystem(e.getShortName()).equals(crowdCodeSystem)).collect(Collectors.toList());
+
+                if (editions.size() != 1) {
+                    throw new Exception("Can't have multiple editions matching group: " + crowdTeamRoleString + " with: " + editions);
+                }
+                final Edition edition = editions.iterator().next();
+                final Organization organization = edition.getOrganization();
+
+                if (!organizationGroupRolesMap.containsKey(organization.getId())) {
+                    organizationGroupRolesMap.put(organization.getId(), new HashMap<>());
+                    organizationGroupCrowdStringMap.put(organization.getId(), new HashSet<>());
                 }
 
-                if (!editionGroupRolesMap.get(crowdCodeSystem).containsKey(crowdGroupName)) {
-                    editionGroupRolesMap.get(crowdCodeSystem).put(crowdGroupName, new HashSet<>());
+                if (!organizationGroupRolesMap.get(organization.getId()).containsKey(crowdGroupName)) {
+                    organizationGroupRolesMap.get(organization.getId()).put(crowdGroupName, new HashSet<>());
+                    organizationGroupCrowdStringMap.get(organization.getId()).add(crowdTeamRoleString);
                 }
 
-                editionGroupRolesMap.get(crowdCodeSystem).get(crowdGroupName).add(crowdGroupRole);
+                organizationGroupRolesMap.get(organization.getId()).get(crowdGroupName).add(crowdGroupRole);
             }
 
-            final List<Edition> dbEditions = service.getAll(Edition.class);
+            for (String organizationId : organizationGroupRolesMap.keySet()) {
 
-            for (String editionShortName : editionGroupRolesMap.keySet()) {
+                Organization organization = service.get(organizationId, Organization.class);
 
-                // Identify crowd teams & edition's teams in DB (via Org)
-                List<Edition> editions = dbEditions.stream().filter(e -> e.getShortName().replace("-", "").toLowerCase().equals(editionShortName)).collect(Collectors.toList());
-                if (editions.isEmpty()) {
-                    throw new Exception("No edition in DB for editionShortName: " + editionShortName);
-                } else if (editions.size() > 1) {
-                    throw new Exception("must have found a zero or one matching edition shortname in the RT2 DB at this point: " + editionShortName);
-                }
+                final Set<String> crowdCodeSystemGroupNames = organizationGroupRolesMap.get(organizationId).keySet();
+                final Set<String> crowdTeamRoleString = organizationGroupCrowdStringMap.get(organizationId);
+                final Set<String> dbOrganizationGroupNames = new HashSet<>();
+                final Map<String, Team> teamMap = new HashMap<>();
 
-                final Edition edition = editions.iterator().next();
-                Map<String, Team> localTeamMap = new HashMap<>();
-                OrganizationService.getOrganizationTeams(service, edition.getOrganizationId()).getItems().stream().forEach(t -> localTeamMap.put(t.getName(), t));
+                OrganizationService.getOrganizationTeams(service, organization.getId()).getItems().stream().forEach(team -> {
+                    dbOrganizationGroupNames.add(team.getName());
+                    teamMap.put(team.getName(), team);
+                });
 
-                final Set<String> crowdTeams = editionGroupRolesMap.get(editionShortName).keySet();
+                // Make sure RT2 team exists as expected in crowd
 
-                // TODO: Handle Updated team in crowd (say different roles)
-
-                // Identify what to remove from RT2 and do so
-                Set<String> removeLocally = new HashSet<String>(localTeamMap.keySet());
-                removeLocally.removeAll(crowdTeams);
+                // First, Identify what teams to remove from RT2 and do so
+                Set<String> removeLocally = new HashSet<String>(dbOrganizationGroupNames);
+                removeLocally.removeAll(crowdCodeSystemGroupNames);
 
                 for (String teamToRemove : removeLocally) {
-                    TeamService.inactivateTeam(SecurityService.getUserFromSession(), localTeamMap.get(teamToRemove).getId());
+                    TeamService.inactivateTeam(SecurityService.getUserFromSession(), teamMap.get(teamToRemove).getId());
                 }
 
-                // Identify what to add from RT2 and do so
-                Set<String> addLocally = new HashSet<String>(crowdTeams);
-                addLocally.removeAll(localTeamMap.keySet());
+                List<String> teamsToAdd = crowdCodeSystemGroupNames.stream().filter(crowdTeamToAdd -> !dbOrganizationGroupNames.contains(crowdTeamToAdd)).collect(Collectors.toList());
+                for (String teamName : teamsToAdd) {
 
-                for (String teamToAdd : addLocally) {
+                    final Team newTeam = new Team();
+                    newTeam.setDescription("Team created in Crowd brought over to RT2 " + organization.getName());
+                    newTeam.setName(teamName);
+                    newTeam.setPrimaryContactEmail(organization.getPrimaryContactEmail());
+                    newTeam.setOrganization(organization);
+                    newTeam.getRoles().addAll(organizationGroupRolesMap.get(organizationId).get(teamName));
 
-                    final Team crowdTeam = new Team();
-                    crowdTeam.setDescription("Team created in Crowd brought over to RT2 " + edition.getOrganization().getName());
-                    crowdTeam.setName(teamToAdd);
-                    crowdTeam.setPrimaryContactEmail(edition.getOrganization().getPrimaryContactEmail());
-                    crowdTeam.setOrganization(edition.getOrganization());
-                    crowdTeam.getRoles().addAll(editionGroupRolesMap.get(editionShortName).get(teamToAdd));
-                    Team newTeam = TeamService.createTeam(SecurityService.getUserFromSession(), crowdTeam);
+                    final Team createdTeam = TeamService.createTeam(SecurityService.getUserFromSession(), newTeam);
+                    teamMap.put(teamName, createdTeam);
                 }
 
+                // Then make sure RT2 roles match Crowd
+                List<String> inBoth = crowdCodeSystemGroupNames.stream().filter(crowdTeamToAdd -> dbOrganizationGroupNames.contains(crowdTeamToAdd)).collect(Collectors.toList());
+
+                for (String teamName : inBoth) {
+                    if (!organizationGroupRolesMap.get(organizationId).get(teamName).equals(teamMap.get(teamName).getRoles())) {
+                        teamMap.get(teamName).getRoles().clear();
+                        teamMap.get(teamName).getRoles().addAll(organizationGroupRolesMap.get(organizationId).get(teamName));
+                    }
+                }
             }
         }
     }
@@ -272,51 +320,76 @@ public class SyncCrowdAgent extends SyncAgent {
     // Important: If issues arise in missing or unexpected members of organizations, first place to look is CROWD for inconsistencies across members in organizations
     private void addRemoveUsersToOrganizations(Map<String, Set<String>> crowdGroupMembers, Map<String, User> userMap) throws Exception {
 
-        final Set<String> organizationsUpdated = new HashSet<>();
+        Map<String, Set<String>> dbOrganizationUsernamesMap = new HashMap<>();
 
         try (final TerminologyService service = new TerminologyService()) {
             SyncDatabaseHandler.initializeService(service);
 
             final Map<String, Set<String>> groupEditionToUpdateMap = identifyGroupEditionsToProcess(crowdGroupMembers.keySet());
 
-            for (String group : groupEditionToUpdateMap.keySet()) {
+            for (String crowdGroup : groupEditionToUpdateMap.keySet()) {
 
-                for (String editionId : groupEditionToUpdateMap.get(group)) {
+                final String[] groupCoordinates = crowdGroup.split("-");
+                final String crowdEditionName = groupCoordinates[EDITION_SHORTNAME];
+
+                for (String editionId : groupEditionToUpdateMap.get(crowdGroup)) {
+
                     Edition edition = service.get(editionId, Edition.class);
 
                     // Update in case Org aspects of edition have been changed since edition added
-                    if (!organizationsUpdated.contains(edition.getOrganizationName())) {
+                    if (crowdEditionName.equals(editionShortNameToCrowdCodeSystem(edition.getShortName()))) {
 
-                        // TODO: Handle Updated user in crowd (say email)
-                        final Set<User> localMembers = edition.getOrganization().getMembers();
-                        final Set<String> crowdMembersUsernames = crowdGroupMembers.get(group);
-
-                        // Identify and remove users from RT2 organization
-                        Set<User> removeLocally = new HashSet<User>(localMembers);
-                        localMembers.stream().filter(u -> crowdMembersUsernames.contains(u.getUserName())).forEach(u -> removeLocally.remove(u));
-
-                        // Remove users from RT2 organization
-                        logger.info("remove local users from organization: " + removeLocally);
-
-                        for (User user : removeLocally) {
-                            OrganizationService.removeUserFromOrganization(service, SecurityService.getUserFromSession(), user.getId(), edition.getOrganizationId());
-
+                        if (!dbOrganizationUsernamesMap.containsKey(edition.getOrganizationId())) {
+                            dbOrganizationUsernamesMap.put(edition.getOrganizationId(), new HashSet<>());
                         }
 
-                        // Identify and add users to RT2 organization
-                        Set<String> addLocally = new HashSet<String>(crowdMembersUsernames);
-                        localMembers.stream().filter(u -> crowdMembersUsernames.contains(u.getUserName())).forEach(us -> addLocally.remove(us.getUserName()));
-
-                        // Add users to RT2 organization
-                        logger.info("add local users to organization: " + addLocally);
-
-                        for (String user : addLocally) {
-                            OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), edition.getOrganizationId(), userMap.get(user).getEmail());
-                        }
+                        final Set<String> crowdMembersUsernames = crowdGroupMembers.get(crowdGroup);
+                        dbOrganizationUsernamesMap.get(edition.getOrganizationId()).addAll(crowdMembersUsernames);
 
                     }
+                }
+            }
+
+            for (String organizationId : dbOrganizationUsernamesMap.keySet()) {
+                Organization organization = service.get(organizationId, Organization.class);
+
+                Map<String, User> userIdMap = new HashMap<>();
+
+                // Initialize user information er team (to get latest from previous team updates)
+                for (User user : organization.getMembers()) {
+                    user = service.get(user.getId(), User.class);
+                    userMap.put(user.getUserName(), user);
+                    userIdMap.put(user.getId(), user);
+                }
+
+                // TODO: Handle Updated user in crowd (say email)
+                final List<User> localMembers = new ArrayList<>();
+                organization.getMembers().stream().forEach(user -> localMembers.add(userIdMap.get(user.getId())));
+
+                // Identify and remove users from RT2 organization
+                Set<User> removeLocally = new HashSet<User>(localMembers);
+                localMembers.stream().filter(u -> dbOrganizationUsernamesMap.get(organizationId).contains(u.getUserName())).forEach(u -> removeLocally.remove(u));
+
+                // Remove users from RT2 organization
+                logger.info("remove local users from organization {}: " + removeLocally, organization.getName());
+
+                for (User user : removeLocally) {
+                    OrganizationService.removeUserFromOrganization(service, SecurityService.getUserFromSession(), user.getId(), organizationId);
 
                 }
+
+                // Identify and add users to RT2 organization
+                Set<String> addLocally = new HashSet<String>(dbOrganizationUsernamesMap.get(organizationId));
+                localMembers.stream().filter(u -> dbOrganizationUsernamesMap.get(organizationId).contains(u.getUserName())).forEach(us -> addLocally.remove(us.getUserName()));
+
+                // Add users to RT2 organization
+                logger.info("add local users to organization {}: " + addLocally, organization.getName());
+
+                for (String username : addLocally) {
+
+                    OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), organizationId, userMap.get(username));
+                }
+
             }
 
         }
@@ -331,7 +404,7 @@ public class SyncCrowdAgent extends SyncAgent {
             List<Edition> dbEditions = service.getAll(Edition.class);
 
             final Map<String, Edition> dbEditionMap = new HashMap<>();
-            dbEditions.stream().forEach(e -> dbEditionMap.put(e.getShortName().replace("-", "").toLowerCase(), e));
+            dbEditions.stream().forEach(e -> dbEditionMap.put(editionShortNameToCrowdCodeSystem(e.getShortName()), e));
 
             for (String group : crowdGroups) {
                 editionsToUpdate.put(group, new HashSet<>());
@@ -352,5 +425,9 @@ public class SyncCrowdAgent extends SyncAgent {
         }
 
         return editionsToUpdate;
+    }
+
+    private String editionShortNameToCrowdCodeSystem(String editionShortName) {
+        return editionShortName.toLowerCase().replace("-", "");
     }
 }

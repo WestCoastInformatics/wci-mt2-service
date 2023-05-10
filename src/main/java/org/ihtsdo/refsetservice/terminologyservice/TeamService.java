@@ -116,7 +116,7 @@ public class TeamService extends BaseService {
 
 			if (results.getTotal() > 0) {
 
-				final String message = "There is already a team with that name in this Organization";
+				final String message = "There is already a team with that name in this Organization via query: " + query;
 				logger.error(message);
 				throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
 			}
