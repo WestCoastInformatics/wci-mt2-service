@@ -228,6 +228,7 @@ public class SyncCrowdAgent extends SyncAgent {
             // Edition, to Team, to Roles
             final Map<String, Map<String, Set<String>>> organizationGroupRolesMap = new HashMap<>();
             final Map<String, Set<String>> organizationGroupCrowdStringMap = new HashMap<>();
+            final Map<String, Set<String>> organizationIgnoredGroupsMap = new HashMap<>();
 
             final List<Edition> dbEditions = service.getAll(Edition.class);
 
@@ -247,31 +248,39 @@ public class SyncCrowdAgent extends SyncAgent {
 
                 List<Edition> editions = dbEditions.stream().filter(e -> editionShortNameToCrowdCodeSystem(e.getShortName()).equals(crowdCodeSystem)).collect(Collectors.toList());
 
-                if (editions.size() != 1) {
-                    throw new Exception("Can't have multiple editions matching group: " + crowdTeamRoleString + " with: " + editions);
-                }
-                final Edition edition = editions.iterator().next();
-                final Organization organization = edition.getOrganization();
+                if (editions.size() == 0) {
+                    if (!organizationIgnoredGroupsMap.containsKey(crowdCodeSystem)) {
+                        organizationIgnoredGroupsMap.put(crowdCodeSystem, new HashSet<>());
+                    }
+                    organizationIgnoredGroupsMap.get(crowdCodeSystem).add(crowdGroupRole);
 
-                if (!organizationGroupRolesMap.containsKey(organization.getId())) {
-                    organizationGroupRolesMap.put(organization.getId(), new HashMap<>());
-                    organizationGroupCrowdStringMap.put(organization.getId(), new HashSet<>());
-                }
+                } else if (editions.size() > 1) {
+                    logger.error("Too many editions for editions.size(): " + editions.size());
+                } else {
+                    final Edition edition = editions.iterator().next();
+                    final Organization organization = edition.getOrganization();
 
-                if (!organizationGroupRolesMap.get(organization.getId()).containsKey(crowdGroupName)) {
-                    organizationGroupRolesMap.get(organization.getId()).put(crowdGroupName, new HashSet<>());
-                    organizationGroupCrowdStringMap.get(organization.getId()).add(crowdTeamRoleString);
-                }
+                    if (!organizationGroupRolesMap.containsKey(organization.getId())) {
+                        organizationGroupRolesMap.put(organization.getId(), new HashMap<>());
+                        organizationGroupCrowdStringMap.put(organization.getId(), new HashSet<>());
+                    }
 
-                organizationGroupRolesMap.get(organization.getId()).get(crowdGroupName).add(crowdGroupRole);
+                    if (!organizationGroupRolesMap.get(organization.getId()).containsKey(crowdGroupName)) {
+                        organizationGroupRolesMap.get(organization.getId()).put(crowdGroupName, new HashSet<>());
+                        organizationGroupCrowdStringMap.get(organization.getId()).add(crowdTeamRoleString);
+                    }
+
+                    organizationGroupRolesMap.get(organization.getId()).get(crowdGroupName).add(crowdGroupRole);
+                }
             }
+
+            logger.info("Ignoring these code systems {} and all their respective groups {}", organizationIgnoredGroupsMap.keySet(), organizationIgnoredGroupsMap);
 
             for (String organizationId : organizationGroupRolesMap.keySet()) {
 
                 Organization organization = service.get(organizationId, Organization.class);
 
                 final Set<String> crowdCodeSystemGroupNames = organizationGroupRolesMap.get(organizationId).keySet();
-                final Set<String> crowdTeamRoleString = organizationGroupCrowdStringMap.get(organizationId);
                 final Set<String> dbOrganizationGroupNames = new HashSet<>();
                 final Map<String, Team> teamMap = new HashMap<>();
 
@@ -298,7 +307,7 @@ public class SyncCrowdAgent extends SyncAgent {
                     newTeam.setName(teamName);
                     newTeam.setPrimaryContactEmail(organization.getPrimaryContactEmail());
                     newTeam.setOrganization(organization);
-                    newTeam.getRoles().addAll(organizationGroupRolesMap.get(organizationId).get(teamName));
+                    newTeam.setRoles(organizationGroupRolesMap.get(organizationId).get(teamName));
 
                     final Team createdTeam = TeamService.createTeam(SecurityService.getUserFromSession(), newTeam);
                     teamMap.put(teamName, createdTeam);
@@ -309,8 +318,7 @@ public class SyncCrowdAgent extends SyncAgent {
 
                 for (String teamName : inBoth) {
                     if (!organizationGroupRolesMap.get(organizationId).get(teamName).equals(teamMap.get(teamName).getRoles())) {
-                        teamMap.get(teamName).getRoles().clear();
-                        teamMap.get(teamName).getRoles().addAll(organizationGroupRolesMap.get(organizationId).get(teamName));
+                        teamMap.get(teamName).setRoles(organizationGroupRolesMap.get(organizationId).get(teamName));
                     }
                 }
             }
