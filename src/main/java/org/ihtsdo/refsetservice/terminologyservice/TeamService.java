@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -482,6 +483,7 @@ public class TeamService extends BaseService {
 		checkEditPermissions(user, team);
 
 		final Organization organization = team.getOrganization();
+		final Edition edition = EditionService.getEditionForOrganization(organization.getId());
 		final Set<User> organizationMembers = organization.getMembers();
 
 		if (!organizationMembers.contains(userToAdd)) {
@@ -523,7 +525,7 @@ public class TeamService extends BaseService {
 				for (Project project : projectList.getItems()) {
 
 					CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(),
-							project.getDescription(), true);
+							project.getDescription(), true, false);
 
 					for (String role : team.getRoles()) {
 
@@ -532,6 +534,17 @@ public class TeamService extends BaseService {
 						CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
 					}
 				}
+			}
+			
+			if (team.getName().contains("Administrator(s) for organization")) {
+			    
+			    CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization Administrators", false, true);
+			    
+			    final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(
+			        edition.getShortName(), "all", "admin");
+			    
+			    CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
+			    
 			}
 
 		} else {
@@ -600,11 +613,11 @@ public class TeamService extends BaseService {
 	 */
 	public static Team removeUserFromTeam(final TerminologyService service, final User user, final Team team,
 			final User userToRemove) throws Exception {
-
+	    
 		// The user being removed has at least one reference set iin Edit or Review
 		// assigned to them
 		// As the admin, you are able to un-assign the reference set(s) first before
-		// inactivating user.
+		// inactivating user.	    
 		final List<Project> projectsForTeam = getTeamProjects(team);
 		if (projectsForTeam != null && !projectsForTeam.isEmpty()) {
 
@@ -662,6 +675,15 @@ public class TeamService extends BaseService {
 					}
 				}
 			}
+			
+			final Edition edition = EditionService.getEditionForOrganization(team.getOrganization().getId());
+			if (team.getName().contains("Administrator(s) for organization")) {
+                
+                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(
+                    edition.getShortName(), "all", "admin");
+                CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
+                
+            }
 
 		} else {
 			logger.info("SKIP CALLING CROWD API");

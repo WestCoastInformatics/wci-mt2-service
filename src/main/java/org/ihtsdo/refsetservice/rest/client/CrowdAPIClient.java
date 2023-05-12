@@ -110,9 +110,10 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @param projectName the project name
      * @param projectDescription the project description
      * @param generateProjectName the generate project name
+     * @param adminOnly to add the all-admin permission for organization administrators
      * @throws Exception the exception
      */
-    public static void addGroup(final String organization, final String projectName, final String projectDescription, final boolean generateProjectName) throws Exception {
+    public static void addGroup(final String organization, final String projectName, final String projectDescription, final boolean generateProjectName, final boolean adminOnly) throws Exception {
 
         logger.info("Add group {} to organization {} with description of {}", projectName, organization, projectDescription);
 
@@ -129,7 +130,14 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         /*
          * {"name": "rt2-test-all-author", "description": "test crowd client", "type": "GROUP" }
          */
-        for (String role : ROLES) {
+        final Set<String> rolesToAdd = new HashSet<>();
+        if (adminOnly) {
+            rolesToAdd.add("admin");
+        } else {
+            rolesToAdd.addAll(ROLES);
+        }
+            
+        for (final String role : rolesToAdd) {
 
             final String groupName =
                 generateProjectName ? CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, projectName, role) : CrowdGroupNameAlgorithm.buildCrowdGroupName(organization, projectName, role);

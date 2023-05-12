@@ -463,7 +463,7 @@ public class ProjectService extends BaseService {
                 for (final String teamId : copyOfNewTeams) {
                     final Team team = TeamService.getTeam(teamId, true);
                     // ignores 400 errors, if the group already exists
-                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true);
+                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true, false);
                     if (team != null && team.getMemberList() != null) {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {

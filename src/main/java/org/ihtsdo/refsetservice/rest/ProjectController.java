@@ -280,7 +280,7 @@ public class ProjectController extends BaseController {
 				try {
 
 					CrowdAPIClient.addGroup(project.getEdition().getShortName(), localProject.getName(),
-							localProject.getDescription(), true);
+							localProject.getDescription(), true, false);
 
 				} catch (Exception e) {
 

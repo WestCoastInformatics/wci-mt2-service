@@ -496,7 +496,7 @@ public class OrganizationService extends BaseService {
 
         final Edition edition = EditionService.getEditionForOrganization(organizationId);
         final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
-        CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization user", false);
+        CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization user", false, false);
         CrowdAPIClient.addMembership(crowdGroupName, userToAdd.getUserName());
     }
 
