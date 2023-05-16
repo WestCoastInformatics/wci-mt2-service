@@ -15,10 +15,12 @@ import java.util.Set;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -413,11 +415,11 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(jsonString);
                 final JsonNode users = root.get("users");
-                if (users == null) {
-                    throw new Exception("Could not find user with email of " + email + ".");
+                if (users == null || (users.isArray() && users.isEmpty())) {
+                    throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Could not find user with email of " + email + ".");
                 }
                 if (users.isArray() && users.size() > 1) {
-                    throw new Exception("Found multiple users with email of " + email + ". Can't determine which user to create.");
+                    throw new RestException(false, HttpStatus.CONFLICT, "Found multiple", "Found multiple users with email of " + email + ". Can't determine which user to create.");
                 }
 
                 final String name = users.get(0).findValue("name").asText();
