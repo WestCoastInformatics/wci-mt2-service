@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.assertj.core.util.Arrays;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;

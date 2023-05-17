@@ -10,7 +10,6 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.Set;
 
 import javax.ws.rs.NotFoundException;
@@ -65,9 +64,13 @@ public class ProjectController extends BaseController {
 
 	/** Search projects API note. */
 	private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
+	
+    /**  The crowd unit test skip. */
+    private static String CROWD_UNIT_TEST_SKIP;
 
-	/** The config properties. */
-	private static final Properties PROPERTIES = PropertyUtility.getProperties();
+    static {
+            CROWD_UNIT_TEST_SKIP = PropertyUtility.getProperty("crowd.unit.test.skip");
+    }
 
 	/**
 	 * Returns a specific project.
@@ -77,17 +80,18 @@ public class ProjectController extends BaseController {
 	 * @return the project
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
-	@ApiOperation(value = "Get project.  This call requires authentication with the correct role.", response = Project.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false") })
-	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Get project.  This call requires authentication with the correct role.", response = Project.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity getProject(@PathVariable(value = "id") final String id,
 			@QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
@@ -119,16 +123,17 @@ public class ProjectController extends BaseController {
 	 * @throws Exception the exception
 	 */
 
-	@SuppressWarnings("rawtypes")
-	@ApiOperation(value = "Get teams for project.  This call requires authentication with the correct role.", response = ResultList.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/project/{id}/teams", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Get teams for project.  This call requires authentication with the correct role.", response = ResultList.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/project/{id}/teams", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity getProjectTeams(@PathVariable(value = "id") final String id) throws Exception {
 
 		logger.info("Project: id: " + id);
@@ -156,20 +161,20 @@ public class ProjectController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Find projects. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	// @ModelAttribute API params documented in SearchParameter
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Find projects. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    // @ModelAttribute API params documented in SearchParameter
     @ApiImplicitParams({
         @ApiImplicitParam(name = "includeMembers", value = "Include project's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
         @ApiImplicitParam(name = "includeModuleNames", value = "Include names of modules for the edition", required = false, dataTypeClass = Boolean.class, paramType = "query",
             defaultValue = "false"),
     })
-	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult,
 			@QueryParam(value = "includeMembers") final boolean includeMembers, @RequestParam(required = false) final Boolean includeModuleNames) throws Exception {
@@ -223,17 +228,18 @@ public class ProjectController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
-	@ApiOperation(value = "Add project.  This call requires authentication with the correct role.", response = Project.class)
-	@ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully create project"),
-			@ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"),
-			@ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "project", value = "Project object", required = true, dataTypeClass = Project.class, paramType = "body") })
-	@RecordMetric
-	@PostMapping(value = "/project", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Add project.  This call requires authentication with the correct role.", response = Project.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Successfully create project"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "project", value = "Project object", required = true, dataTypeClass = Project.class, paramType = "body")
+    })
+    @RecordMetric
+    @PostMapping(value = "/project", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity addProject(@RequestBody final Project project) throws Exception {
 
 		logger.info("Add project: {}", project);
@@ -266,15 +272,15 @@ public class ProjectController extends BaseController {
 
 			final Project localProject = ProjectService.addProject(authUser, project);
 
-			if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
-					|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+			if (CROWD_UNIT_TEST_SKIP == null
+					|| !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 
 				logger.info("CALLING CROWD API");
 
 				try {
 
 					CrowdAPIClient.addGroup(project.getEdition().getShortName(), localProject.getName(),
-							localProject.getDescription(), true);
+							localProject.getDescription(), true, false);
 
 				} catch (Exception e) {
 
@@ -307,18 +313,18 @@ public class ProjectController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
-	@ApiOperation(value = "Update project.  This call requires authentication with the correct role.", response = Project.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Update specified project"),
-			@ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"),
-			@ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "project", value = "Project object", required = true, dataTypeClass = Project.class, paramType = "body") })
-	@RecordMetric
-	@PutMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Update project.  This call requires authentication with the correct role.", response = Project.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Update specified project"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "project", value = "Project object", required = true, dataTypeClass = Project.class, paramType = "body")
+    })
+    @RecordMetric
+    @PutMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity updateProject(@PathVariable(value = "id") final String id,
 			@RequestBody final Project project) throws Exception {
 
@@ -361,16 +367,17 @@ public class ProjectController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
-	@ApiOperation(value = "Inactivate project.  This call requires authentication with the correct role.")
-	@ApiResponses(value = { @ApiResponse(code = 202, message = "Successfully inactivated project"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
-	@DeleteMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("rawtypes")
+    @ApiOperation(value = "Inactivate project.  This call requires authentication with the correct role.")
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Successfully inactivated project"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Project id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @DeleteMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)
 	public ResponseEntity deleteProject(@PathVariable("id") final String id) throws Exception {
 
 		logger.info("Inactivate project: {}", id);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -10,7 +10,6 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -26,7 +25,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,6 +41,7 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DefinitionClauseEditHistory;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.InviteRequest;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -69,7 +68,6 @@ import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -140,8 +138,17 @@ public class RefsetService {
         refsetToLanguagesMap.put("46011000052107", "sv");
     }
 
-    /** The config properties. */
-    private static final Properties PROPERTIES = PropertyUtility.getProperties();
+//    /** The config properties. */
+//    private static final Properties PROPERTIES = PropertyUtility.getProperties();
+    
+    
+    /**  The app url root. */
+private static String APP_URL_ROOT; 
+    
+    static {
+        APP_URL_ROOT = PropertyUtility.getProperties().getProperty("app.url.root");
+    }
+    
 
     /**
      * Create a refset with the given parameters .
@@ -904,6 +911,7 @@ public class RefsetService {
      * @param service the Terminology Service
      * @param user the user
      * @param refset the refset
+     * @param active the active
      * @return the status of the operation
      * @throws Exception the exception
      */
@@ -937,7 +945,7 @@ public class RefsetService {
     /**
      * Inactivate an underlying refset concept.
      *
-     * @param refse the refset
+     * @param refset the refset
      * @param active the new active state
      * @param moduleId the new module ID
      * @throws Exception the exception
@@ -1109,6 +1117,7 @@ public class RefsetService {
      * Delete the refset and all edit and refset specific branches.
      *
      * @param service the service
+     * @param user the user
      * @param refset the refset
      * @throws Exception the exception
      */
@@ -2019,7 +2028,7 @@ public class RefsetService {
             
             final String message = "User does not have permission to view this reference set.";
             logger.error(message);
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, message);
         }
 
 
@@ -2465,7 +2474,7 @@ public class RefsetService {
             final StringBuffer emailBody = new StringBuffer();
             final String version = (refset.getVersionDate() != null) ? refset.getVersionDate().toString().substring(0, 10) : refset.getVersionStatus();
 
-            final String refsetUrl = PROPERTIES.getProperty("app.url.root") + "/details/" + refset.getRefsetId() + "/" + StringUtility.encodeValue(version).replace("+", "%20");
+            final String refsetUrl = APP_URL_ROOT + "/details/" + refset.getRefsetId() + "/" + StringUtility.encodeValue(version).replace("+", "%20");
 
             // Title
             emailBody.append("Hello, ").append(recipient).append(",").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
@@ -2604,7 +2613,7 @@ public class RefsetService {
                 .append(System.getProperty("line.separator"));
             
             
-            emailBody.append("Go to the Reference Set Tool: ").append(PROPERTIES.getProperty("app.url.root")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
+            emailBody.append("Go to the Reference Set Tool: ").append(APP_URL_ROOT).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
             emailBody.append(System.getProperty("line.separator")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
@@ -2875,7 +2884,7 @@ public class RefsetService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = getRefset(service, authUser, refsetInternalId);
-            
+
             if (!authUser.checkPermission(User.ROLE_VIEWER, refset.getEdition(), null)) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
             }
@@ -2894,10 +2903,19 @@ public class RefsetService {
                 }
             }
 
-            final String queryString = "requester=" + authUser.getId() + "&recipientEmail=" + URLEncoder.encode(recipientEmail, "UTF-8");
+            // add in invite request
+            final InviteRequest request = new InviteRequest();
+            request.setAction(INVITE_ACTION);
+            request.setActive(true);
+            request.setRequester(authUser.getId());
+            request.setRecipientEmail(recipientEmail);
+            request.setPayload("refset:" + refsetInternalId);
 
-            final String acceptUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=true&" + queryString;
-            final String declineUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/refset/" + refsetInternalId + "/response?acceptance=false&" + queryString;
+            service.setModifiedBy(authUser.getUserName());
+            service.add(request);
+
+            final String acceptUrl = APP_URL_ROOT + "/invite/response?ir=" + request.getId() + "&r=true";
+            final String declineUrl = APP_URL_ROOT + "/invite/response?ir=" + request.getId() + "&r=false";
 
             final String BUTTON = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
                 + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
@@ -2962,15 +2980,14 @@ public class RefsetService {
     /**
      * Accept invitation.
      *
-     * @param refsetId the refset id
+     * @param service the service
+     * @param inviteRequest the invite request
      * @param acceptance the acceptance
-     * @param requesterId the requester id
-     * @param recipientEmail the recipient email
      * @throws Exception the exception
      */
-    public static void processRefsetInvitation(final String refsetId, final boolean acceptance, final String requesterId, final String recipientEmail) throws Exception {
+    public static void processRefsetInvitation(final TerminologyService service, final InviteRequest inviteRequest, final boolean acceptance) throws Exception {
 
-        final User memberUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+        final User memberUser = CrowdAPIClient.findUserByEmail(inviteRequest.getRecipientEmail());
         final boolean isMember = (memberUser != null);
         final StringBuffer emailBody = new StringBuffer();
 
@@ -2979,89 +2996,100 @@ public class RefsetService {
             + "    <a href='{{BUTTION_LINK}}' target='_blank' style='padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;text-decoration: none;font-weight:bold;display: inline-block;'>"
             + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
 
-        try (final TerminologyService service = new TerminologyService()) {
+        final User requesterUser = UserService.getUser(inviteRequest.getRequester(), false);
+        if (requesterUser == null) {
+            logger.error("Requester not found: {}", inviteRequest.getRequester());
+        }
+        
+        // get refset from payload
+        final Map<String, String> nameValuePairs = new HashMap<>();
+        final String[] pairs = inviteRequest.getPayload().split("&");
+        for (final String pair : pairs) {
+            final String[] keyValue = pair.split(":");
+            nameValuePairs.put(keyValue[0], keyValue[1]);
+        }
+        
+        final String refsetId = nameValuePairs.get("refset");
+        logger.info("Requester is: {}", requesterUser);
+        final Refset refset = getRefset(service, requesterUser, refsetId);
 
-            final User requesterUser = UserService.getUser(requesterId, false);
-            if (requesterUser == null) {
-                logger.error("Requester not found: {}", requesterId);
-            }
-            logger.info("Requester is: {}", requesterUser);
-            final Refset refset = getRefset(service, requesterUser, refsetId);
-            
-            if (!requesterUser.checkPermission(User.ROLE_VIEWER, refset.getEdition(), null)) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
-            }
+        if (!requesterUser.checkPermission(User.ROLE_VIEWER, refset.getEdition(), null)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
+        }
 
-            // if rejected, send notification to requester
-            if (!acceptance) {
+        service.setModifiedBy(requesterUser.getUserName());
+        inviteRequest.setResponse(String.valueOf(acceptance));
+        inviteRequest.setResponseDate(new Date());
+        service.update(inviteRequest);
 
-                emailBody.append("<html>");
-                emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-                emailBody.append("<div>");
+        // if rejected, send notification to requester
+        if (!acceptance) {
 
-                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
 
-                // Main invite
-                emailBody.append("    <span>").append(isMember ? memberUser.getName() : recipientEmail).append(" has declined your invitation to join ").append(refset.getOrganizationName())
-                    .append(" as a collaborator.</span><br/><br/>");
+            emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
 
-                // Go to app
-                emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                    .append(BUTTON.replace("{{BUTTION_LINK}}", PROPERTIES.getProperty("app.url.root")).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+            // Main invite
+            emailBody.append("    <span>").append(isMember ? memberUser.getName() : inviteRequest.getRecipientEmail()).append(" has declined your invitation to join ")
+                .append(refset.getOrganizationName()).append(" as a collaborator.</span><br/><br/>");
 
-                emailBody.append("</div>");
-                emailBody.append("</body>");
-                emailBody.append("</html>");
+            // Go to app
+            emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                .append(BUTTON.replace("{{BUTTION_LINK}}", APP_URL_ROOT).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
-                final String action = INVITE_DECLINED;
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
 
-                // TODO: what should the from email be?
-                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
-                logger.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients );
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+            final String action = INVITE_DECLINED;
 
-            }
-
-            // if accepted, add user to org, admin has to add to team and project since we can't determine here which of the project's team to add the user.
-            if (acceptance) {
-
-                // add user to org as a viewer, will not error if already a member.
-                OrganizationService.addUserToOrganization(service, requesterUser, refset.getEdition().getOrganizationId(), memberUser.getEmail());
-
-                emailBody.append("<html>");
-                emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-                emailBody.append("<div>");
-
-                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
-
-                // Main invite
-                emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ").append(refset.getOrganizationName())
-                    .append(" as a collaborator.</span><br/><br/>");
-                emailBody.append("    <span>").append(memberUser.getName()).append("has been added to ").append(refset.getOrganizationName()).append(" as a <b>Viewer</b>.</span><br/><br/>");
-
-                // Warning
-                emailBody.append("    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
-
-                // Go to app
-                emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                    .append(BUTTON.replace("{{BUTTION_LINK}}", PROPERTIES.getProperty("app.url.root")).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
-
-                emailBody.append("</div>");
-                emailBody.append("</body>");
-                emailBody.append("</html>");
-
-                final String action = INVITE_ACCEPTED;
-
-                // TODO: what should the from email be?
-                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
-                logger.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients );
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
-
-            }
-
-            AuditEntryHelper.responseForRefsetInvite(refset, requesterUser, recipientEmail.trim(), acceptance);
+            // TODO: what should the from email be?
+            final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+            logger.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients);
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
 
         }
+
+        // if accepted, add user to org, admin has to add to team and project since we can't determine here which of the project's team to add the user.
+        if (acceptance) {
+
+            // add user to org as a viewer, will not error if already a member.
+            OrganizationService.addUserToOrganization(service, requesterUser, refset.getEdition().getOrganizationId(), memberUser.getEmail());
+
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
+
+            emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+
+            // Main invite
+            emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ").append(refset.getOrganizationName())
+                .append(" as a collaborator.</span><br/><br/>");
+            emailBody.append("    <span>").append(memberUser.getName()).append("has been added to ").append(refset.getOrganizationName()).append(" as a <b>Viewer</b>.</span><br/><br/>");
+
+            // Warning
+            emailBody.append("    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
+
+            // Go to app
+            emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                .append(BUTTON.replace("{{BUTTION_LINK}}", APP_URL_ROOT).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
+
+            final String action = INVITE_ACCEPTED;
+
+            // TODO: what should the from email be?
+            final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+            logger.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients);
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+
+        }
+
+        AuditEntryHelper.responseForRefsetInvite(refset, requesterUser, inviteRequest.getRecipientEmail(), acceptance);
 
     }
 }

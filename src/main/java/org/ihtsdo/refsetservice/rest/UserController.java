@@ -79,18 +79,19 @@ public class UserController extends BaseController {
 	 * @return the user
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Get user. This call requires authentication with the correct role.", response = User.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "includeOrganizations", value = "Include user's organizations", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
-			@ApiImplicitParam(name = "includeTeams", value = "Include user's teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false") })
-	@RecordMetric
-	@RequestMapping(value = "/user/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Get user. This call requires authentication with the correct role.", response = User.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "includeOrganizations", value = "Include user's organizations", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "includeTeams", value = "Include user's teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
+    })
+    @RecordMetric
+    @RequestMapping(value = "/user/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<User> getUser(@PathVariable(value = "id") final String id,
 			@QueryParam(value = "includeOrganizations") final boolean includeOrganizations,
 			@QueryParam(value = "includeTeams") final boolean includeTeams) throws Exception {
@@ -120,19 +121,19 @@ public class UserController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Update user. This call requires authentication with the correct role.", response = User.class)
-	@ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully updated user"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
-			@ApiResponse(code = 415, message = "Unsupported Media Type"),
-			@ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "user", value = "User object", required = true, dataTypeClass = User.class, paramType = "body") })
-	@RecordMetric
-	@PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Update user. This call requires authentication with the correct role.", response = User.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 201, message = "Successfully updated user"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 415, message = "Unsupported Media Type"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "user", value = "User object", required = true, dataTypeClass = User.class, paramType = "body")
+    })
+    @RecordMetric
+    @PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id,
 			@RequestBody final User user) throws Exception {
 
@@ -166,18 +167,18 @@ public class UserController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Delete icon for the user. This call requires authentication with the correct role.", response = User.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully removed icon for user"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
-			@ApiResponse(code = 415, message = "Unsupported Media Type"),
-			@ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
-	@DeleteMapping(value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Delete icon for the user. This call requires authentication with the correct role.", response = User.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully removed icon for user"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 415, message = "Unsupported Media Type"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
+    @DeleteMapping(value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id)
 			throws Exception {
 
@@ -216,19 +217,20 @@ public class UserController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Find users. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	// @ModelAttribute API params documented in SearchParameter
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "includeOrganizations", value = "Include user's organizations", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
-			@ApiImplicitParam(name = "includeTeams", value = "Include user's teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
-			@ApiImplicitParam(name = "query", value = "The value to be searched'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = "") })
-	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Find users. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    // @ModelAttribute API params documented in SearchParameter
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "includeOrganizations", value = "Include user's organizations", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "includeTeams", value = "Include user's teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "query", value = "The value to be searched'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = "")
+    })
+    @RecordMetric
+    @RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<User>> getUsers(
 			@QueryParam(value = "includeOrganizations") final boolean includeOrganizations,
 			@QueryParam(value = "includeTeams") final boolean includeTeams,
@@ -272,15 +274,16 @@ public class UserController extends BaseController {
 	 * @return the user icon
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Icon file for the user", response = Resource.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully added icon for user"),
-			@ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "filename", value = "File name for user icon.", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RequestMapping(value = "/user/icon/{fileName}", method = RequestMethod.GET)
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Icon file for the user", response = Resource.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully added icon for user"), @ApiResponse(code = 400, message = "Bad request"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "filename", value = "File name for user icon.", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RequestMapping(value = "/user/icon/{fileName}", method = RequestMethod.GET)
 	public @ResponseBody ResponseEntity<Resource> getUserIcon(@PathVariable("fileName") final String fileName)
 			throws Exception {
 
@@ -309,18 +312,18 @@ public class UserController extends BaseController {
 	 * @return the response entity with the icon URI
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@ApiOperation(value = "Update icon for user. This call requires authentication with the correct role.", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 202, message = "Successfully updated icon for user"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
-			@ApiResponse(code = 417, message = "Failed Expectation"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "file", value = "Icon file", required = true, dataTypeClass = MultipartFile.class, paramType = "form") })
-	@RecordMetric
-	@PostMapping(value = "/user/{id}/icon")
+    @SuppressWarnings("unchecked")
+    @ApiOperation(value = "Update icon for user. This call requires authentication with the correct role.", response = String.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Successfully updated icon for user"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "file", value = "Icon file", required = true, dataTypeClass = MultipartFile.class, paramType = "form")
+    })
+    @RecordMetric
+    @PostMapping(value = "/user/{id}/icon")
 	public ResponseEntity<String> editUserIcon(@PathVariable("id") final String id,
 			@RequestParam("file") MultipartFile inputFile) throws Exception {
 

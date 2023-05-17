@@ -49,9 +49,13 @@ public class ProjectService extends BaseService {
 
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(ProjectService.class);
+    
+    /**  The crowd unit test skip. */
+    private static String CROWD_UNIT_TEST_SKIP;
 
-    /** The config properties. */
-    private static final Properties PROPERTIES = PropertyUtility.getProperties();
+    static {
+            CROWD_UNIT_TEST_SKIP = PropertyUtility.getProperty("crowd.unit.test.skip");
+    }
 
     /**
      * Adds the project.
@@ -443,7 +447,7 @@ public class ProjectService extends BaseService {
      */
     private static void updateMemberships(final Project project, final Set<String> oldTeams, final Set<String> newTeams) throws Exception {
 
-        if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+        if (CROWD_UNIT_TEST_SKIP == null || !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 
             logger.info("CALLING CROWD API from ProjectService updateMemberships");
 
@@ -459,7 +463,7 @@ public class ProjectService extends BaseService {
                 for (final String teamId : copyOfNewTeams) {
                     final Team team = TeamService.getTeam(teamId, true);
                     // ignores 400 errors, if the group already exists
-                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true);
+                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true, false);
                     if (team != null && team.getMemberList() != null) {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {

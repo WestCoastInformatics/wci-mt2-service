@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -9,17 +9,19 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.InviteRequest;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -50,9 +52,6 @@ public class OrganizationService extends BaseService {
     /** The logger. */
     private static Logger logger = LoggerFactory.getLogger(OrganizationService.class);
 
-    /** The config properties. */
-    private static final Properties PROPERTIES = PropertyUtility.getProperties();
-
     /** The Constant EMAIL_SUBJECT. */
     private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
     
@@ -64,7 +63,18 @@ public class OrganizationService extends BaseService {
 
     /** The Constant INVITE_DECLINED. */
     private static final String INVITE_DECLINED = "Invite declined";
+    
+    /**  The app url root. */
+    private static String APP_URL_ROOT;
+    
+    /**  The crowd unit test skip. */
+    private static String crowdUnitTestSkip;
 
+    static {
+            APP_URL_ROOT = PropertyUtility.getProperties().getProperty("app.url.root");
+            crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+    }
+    
     /**
      * Creates the organization.
      *
@@ -122,7 +132,7 @@ public class OrganizationService extends BaseService {
 
         setRoles(user, newOrganization, newOrganization.getRoles());
 
-        if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
             logger.info("CALLING CROWD API from OrganizationService createOrganization");
 
             try {
@@ -438,7 +448,7 @@ public class OrganizationService extends BaseService {
      * Adds the user to organization.
      *
      * @param service the Terminology Service
-     * @param user the user
+     * @param authUser the auth user
      * @param organizationId the organization id
      * @param email the email
      * @throws Exception the exception
@@ -486,7 +496,7 @@ public class OrganizationService extends BaseService {
 
         final Edition edition = EditionService.getEditionForOrganization(organizationId);
         final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
-        CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization user", false);
+        CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization user", false, false);
         CrowdAPIClient.addMembership(crowdGroupName, userToAdd.getUserName());
     }
 
@@ -728,7 +738,6 @@ public class OrganizationService extends BaseService {
             final User crowdUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
             final boolean isCrowdMember = (crowdUser != null);
 
-            // TODO: Determine needs of hasMembership based on approach implemented
             if (isCrowdMember) {
                 final Set<String> memberships = CrowdAPIClient.getMembershipsForUser(crowdUser.getUserName());
                 // final boolean hasMemberships = (memberships != null) ? memberships.stream().anyMatch(m -> m.startsWith("rt2-")) : false;
@@ -739,11 +748,20 @@ public class OrganizationService extends BaseService {
                 }                
             }
 
-            final String queryString = "requester=" + authUser.getId() + "&recipientEmail=" + URLEncoder.encode(recipientEmail, "UTF-8");
-
-            final String acceptUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/organization/" + organizationId + "/response?acceptance=true&" + queryString;
-            final String declineUrl = PROPERTIES.getProperty("app.url.root") + "/refsetservice/organization/" + organizationId + "/response?acceptance=false&" + queryString;
-
+            //add in invite request
+            final InviteRequest request = new InviteRequest();
+            request.setAction(INVITE_ACTION);
+            request.setActive(true);
+            request.setRequester(authUser.getId());
+            request.setRecipientEmail(recipientEmail);
+            request.setPayload("organization:" + organizationId);
+            
+            service.setModifiedBy(authUser.getUserName());
+            service.add(request);
+            
+            final String acceptUrl = APP_URL_ROOT + "/invite/response?ir=" + request.getId() +"&r=true";
+            final String declineUrl = APP_URL_ROOT + "/invite/response?ir="+ request.getId() +"&r=false";            
+            
             final String BUTTON = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
                 + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
                 + "    <a href='{{BUTTION_LINK}}' target='_blank' style='padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;text-decoration: none;font-weight:bold;display: inline-block;'>"
@@ -807,103 +825,112 @@ public class OrganizationService extends BaseService {
     /**
      * Process organization invitation.
      *
-     * @param organizationId the organization id
+     * @param service the service
+     * @param inviteRequest the invite request
      * @param acceptance the acceptance
-     * @param requesterId the requester id
-     * @param recipientEmail the recipient email
      * @throws Exception the exception
      */
-    public static void processOrganizationInvitation(final String organizationId, final boolean acceptance, final String requesterId, final String recipientEmail) throws Exception {
+    public static void processOrganizationInvitation(final TerminologyService service, final InviteRequest inviteRequest, final boolean acceptance) throws Exception {
 
-        final User memberUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+        final User memberUser = CrowdAPIClient.findUserByEmail(inviteRequest.getRecipientEmail());
         final boolean isMember = (memberUser != null);
         final StringBuffer emailBody = new StringBuffer();
 
-        final String BUTTON = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+        final String button = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
             + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
             + "    <a href='{{BUTTION_LINK}}' target='_blank' style='padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;text-decoration: none;font-weight:bold;display: inline-block;'>"
             + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final User requesterUser = UserService.getUser(requesterId, false);
-            if (requesterUser == null) {
-                logger.error("Requester not found: {}", requesterId);
-            }
-            service.setModifiedBy(requesterUser.getUserName());
-
-            logger.info("Requester is: {}", requesterUser);
-            final Organization organization = getOrganization(service, requesterUser, organizationId, true);
-
-            // if rejected, send notification to requester
-            if (!acceptance) {
-
-                emailBody.append("<html>");
-                emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-                emailBody.append("<div>");
-
-                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
-
-                // Main invite
-                emailBody.append("    <span>").append(isMember ? memberUser.getName() : recipientEmail).append(" has declined your invitation to join ").append(organization.getName())
-                    .append(" as a collaborator.</span><br/><br/>");
-
-                // Go to app
-                emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                    .append(BUTTON.replace("{{BUTTION_LINK}}", PROPERTIES.getProperty("app.url.root")).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
-
-                emailBody.append("</div>");
-                emailBody.append("</body>");
-                emailBody.append("</html>");
-
-                final String action = INVITE_DECLINED;
-
-                // TODO: what should the from email be?
-                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
-                logger.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients);
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
-
-            }
-
-            // if accepted, add user to org, admin has to add to team and project since we can't determine here which of the project's team to add the user.
-            if (acceptance) {
-
-                // add user to org as a viewer, will not error if already a member.
-                OrganizationService.addUserToOrganization(service, requesterUser, organization.getId(), memberUser.getEmail());
-
-                emailBody.append("<html>");
-                emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-                emailBody.append("<div>");
-
-                emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
-
-                // Main invite
-                emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ").append(organization.getName())
-                    .append(" as a collaborator.</span><br/><br/>");
-                emailBody.append("    <span>").append(memberUser.getName()).append("has been added to ").append(organization.getName()).append(" as a <b>Viewer</b>.</span><br/><br/>");
-
-                // Warning
-                emailBody.append("    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
-
-                // Go to app
-                emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                    .append(BUTTON.replace("{{BUTTION_LINK}}", PROPERTIES.getProperty("app.url.root")).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
-
-                emailBody.append("</div>");
-                emailBody.append("</body>");
-                emailBody.append("</html>");
-
-                final String action = INVITE_ACCEPTED;
-
-                // TODO: what should the from email be?
-                final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
-                logger.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients);
-                EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
-
-            }
-
-            AuditEntryHelper.responseForOrganizationInvite(organization, requesterUser, recipientEmail.trim(), acceptance);
+        final User requesterUser = UserService.getUser(inviteRequest.getRequester(), false);
+        if (requesterUser == null) {
+            logger.error("Requester not found: {}", inviteRequest.getRequester());
         }
+        service.setModifiedBy(requesterUser.getUserName());
+        inviteRequest.setResponse(String.valueOf(acceptance));
+        inviteRequest.setResponseDate(new Date());
+
+        service.update(inviteRequest);
+
+        logger.info("Requester is: {}", requesterUser);
+
+        // get organization from payload
+        final Map<String, String> nameValuePairs = new HashMap<>();
+        final String[] pairs = inviteRequest.getPayload().split("&");
+        for (final String pair : pairs) {
+            final String[] keyValue = pair.split(":");
+            nameValuePairs.put(keyValue[0], keyValue[1]);
+        }
+
+        final String organizationId = nameValuePairs.get("organization");
+        final Organization organization = getOrganization(service, requesterUser, organizationId, true);
+
+        // if rejected, send notification to requester
+        if (!acceptance) {
+
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
+
+            emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+
+            // Main invite
+            emailBody.append("    <span>").append(isMember ? memberUser.getName() : inviteRequest.getRecipientEmail()).append(" has declined your invitation to join ").append(organization.getName())
+                .append(" as a collaborator.</span><br/><br/>");
+
+            // Go to app
+            emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", APP_URL_ROOT).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
+
+            final String action = INVITE_DECLINED;
+
+            // TODO: what should the from email be?
+            final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+            logger.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients);
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+
+        }
+
+        // if accepted, add user to org, admin has to add to team and project since we can't determine here which of the project's team to add the user.
+        if (acceptance) {
+
+            // add user to org as a viewer, will not error if already a member.
+            OrganizationService.addUserToOrganization(service, requesterUser, organization.getId(), memberUser.getEmail());
+
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
+
+            emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+
+            // Main invite
+            emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ").append(organization.getName()).append(" as a collaborator.</span><br/><br/>");
+            emailBody.append("    <span>").append(memberUser.getName()).append("has been added to ").append(organization.getName()).append(" as a <b>Viewer</b>.</span><br/><br/>");
+
+            // Warning
+            emailBody.append("    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
+
+            // Go to app
+            emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", APP_URL_ROOT).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
+
+            final String action = INVITE_ACCEPTED;
+
+            // TODO: what should the from email be?
+            final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+            logger.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients);
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+
+        }
+
+        AuditEntryHelper.responseForOrganizationInvite(organization, requesterUser, inviteRequest.getRecipientEmail(), acceptance);
 
     }
 
@@ -917,7 +944,7 @@ public class OrganizationService extends BaseService {
      */
     private static void removeUserFromTeams(final TerminologyService service, final String organizationId, final User userToRemove, final User authUser) {
 
-        if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
             logger.info("CALLING CROWD API from ProjectService updateMemberships");
 
             try {

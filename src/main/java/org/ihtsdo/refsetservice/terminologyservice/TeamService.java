@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -13,12 +13,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -56,9 +56,16 @@ public class TeamService extends BaseService {
 	/** The organization level team description. */
 	public static String organizationLevelTeamDescription = "'s dedicated ADMIN Team to manage their projects, members, and teams with.";
 
-	/** The config properties. */
-	private static final Properties PROPERTIES = PropertyUtility.getProperties();
+//	/** The config properties. */
+//	private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
+    /**  The crowd unit test skip. */
+    private static String CROWD_UNIT_TEST_SKIP;
+
+    static {
+            CROWD_UNIT_TEST_SKIP = PropertyUtility.getProperty("crowd.unit.test.skip");
+    }
+    
 	/**
 	 * Creates the team.
 	 *
@@ -476,6 +483,7 @@ public class TeamService extends BaseService {
 		checkEditPermissions(user, team);
 
 		final Organization organization = team.getOrganization();
+		final Edition edition = EditionService.getEditionForOrganization(organization.getId());
 		final Set<User> organizationMembers = organization.getMembers();
 
 		if (!organizationMembers.contains(userToAdd)) {
@@ -503,9 +511,8 @@ public class TeamService extends BaseService {
 
 		setUserRoles(userToAdd, team, team.getUserRoles());
 
-		// add user to crowd groups
-		if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
-				|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+        // add user to crowd groups
+        if (CROWD_UNIT_TEST_SKIP == null || !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 
 			logger.info("CALLING CROWD API");
 			final String teamsQuery = "teams:" + team.getId();
@@ -518,7 +525,7 @@ public class TeamService extends BaseService {
 				for (Project project : projectList.getItems()) {
 
 					CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(),
-							project.getDescription(), true);
+							project.getDescription(), true, false);
 
 					for (String role : team.getRoles()) {
 
@@ -527,6 +534,17 @@ public class TeamService extends BaseService {
 						CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
 					}
 				}
+			}
+			
+			if (team.getName().contains("Administrator(s) for organization")) {
+			    
+			    CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization Administrators", false, true);
+			    
+			    final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(
+			        edition.getShortName(), "all", "admin");
+			    
+			    CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
+			    
 			}
 
 		} else {
@@ -595,11 +613,11 @@ public class TeamService extends BaseService {
 	 */
 	public static Team removeUserFromTeam(final TerminologyService service, final User user, final Team team,
 			final User userToRemove) throws Exception {
-
+	    
 		// The user being removed has at least one reference set iin Edit or Review
 		// assigned to them
 		// As the admin, you are able to un-assign the reference set(s) first before
-		// inactivating user.
+		// inactivating user.	    
 		final List<Project> projectsForTeam = getTeamProjects(team);
 		if (projectsForTeam != null && !projectsForTeam.isEmpty()) {
 
@@ -639,9 +657,8 @@ public class TeamService extends BaseService {
 		service.update(team);
 		service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToRemove));
 
-		// remove user from crowd groups
-		if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
-				|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+        // remove user from crowd groups
+        if (CROWD_UNIT_TEST_SKIP == null || !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 
 			logger.info("CALLING CROWD API");
 			final String teamsQuery = "teams:" + team.getId();
@@ -658,6 +675,15 @@ public class TeamService extends BaseService {
 					}
 				}
 			}
+			
+			final Edition edition = EditionService.getEditionForOrganization(team.getOrganization().getId());
+			if (team.getName().contains("Administrator(s) for organization")) {
+                
+                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(
+                    edition.getShortName(), "all", "admin");
+                CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
+                
+            }
 
 		} else {
 			logger.info("SKIP CALLING CROWD API");
@@ -707,9 +733,8 @@ public class TeamService extends BaseService {
 			service.add(AuditEntryHelper.addRoleToTeamEntry(team, role));
 			service.commit();
 
-			// add user to crowd groups if team is assigned to projects.
-			if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
-					|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+            // add user to crowd groups if team is assigned to projects.
+            if (CROWD_UNIT_TEST_SKIP == null || !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 				logger.info("CALLING CROWD API from ProjectService updateMemberships");
 
 				final List<Project> projects = getTeamProjects(team);
@@ -771,8 +796,7 @@ public class TeamService extends BaseService {
 			service.commit();
 
 			// remove users from team if team assigned to projects.
-			if (PROPERTIES.getProperty("crowd.unit.test.skip") == null
-					|| !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+            if (CROWD_UNIT_TEST_SKIP == null || !"true".equalsIgnoreCase(CROWD_UNIT_TEST_SKIP)) {
 				logger.info("CALLING CROWD API from ProjectService updateMemberships");
 
 				final List<Project> projects = getTeamProjects(team);

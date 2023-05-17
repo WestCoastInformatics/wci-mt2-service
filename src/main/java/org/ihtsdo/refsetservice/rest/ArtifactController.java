@@ -70,14 +70,16 @@ public class ArtifactController extends BaseController {
 	 * @return the artifact entry
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@RequestMapping(method = RequestMethod.GET, value = "/artifact/{id}")
-	@ApiOperation(value = "Get artifact.", response = Artifact.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
+    @SuppressWarnings("unchecked")
+    @RequestMapping(method = RequestMethod.GET, value = "/artifact/{id}")
+    @ApiOperation(value = "Get artifact.", response = Artifact.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
 	public @ResponseBody ResponseEntity<Artifact> getArtifact(@PathVariable(value = "id") final String id)
 			throws Exception {
 
@@ -106,14 +108,15 @@ public class ArtifactController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@RequestMapping(method = RequestMethod.GET, value = "/artifact", produces = MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Find artifacts.", response = ResultList.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	// @ModelAttribute API params documented in SearchParameter
-	@RecordMetric
+    @SuppressWarnings("unchecked")
+    @RequestMapping(method = RequestMethod.GET, value = "/artifact", produces = MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Find artifacts.", response = ResultList.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    // @ModelAttribute API params documented in SearchParameter
+    @RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<Artifact>> findArtifacts(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
@@ -155,14 +158,15 @@ public class ArtifactController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@PostMapping(value = "/artifact")
-	@ApiOperation(value = "Add artifact. This call requires authentication with the correct role.", response = Artifact.class)
-	@ApiResponses(value = { @ApiResponse(code = 202, message = "Added artifact"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "artifact", value = "Artifact object", required = true, dataTypeClass = Artifact.class, paramType = "body") })
-	@RecordMetric
+    @PostMapping(value = "/artifact")
+    @ApiOperation(value = "Add artifact. This call requires authentication with the correct role.", response = Artifact.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 202, message = "Added artifact"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "artifact", value = "Artifact object", required = true, dataTypeClass = Artifact.class, paramType = "body")
+    })
+    @RecordMetric
 	public ResponseEntity<?> addArtifact(@RequestParam final String artifact,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
@@ -205,16 +209,17 @@ public class ArtifactController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
-	@PutMapping(value = "/artifact/{id}")
-	@ApiOperation(value = "Update artifact. This call requires authentication with the correct role.", response = Artifact.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Updated artifact"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "artifact", value = "Artifact object", required = true, dataTypeClass = Artifact.class, paramType = "body") })
-	@RecordMetric
+    @SuppressWarnings("rawtypes")
+    @PutMapping(value = "/artifact/{id}")
+    @ApiOperation(value = "Update artifact. This call requires authentication with the correct role.", response = Artifact.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Updated artifact"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
+        @ApiImplicitParam(name = "artifact", value = "Artifact object", required = true, dataTypeClass = Artifact.class, paramType = "body")
+    })
+    @RecordMetric
 	public ResponseEntity updateArtifact(final @PathVariable String id, final @RequestBody String artifact)
 			throws Exception {
 
@@ -245,15 +250,16 @@ public class ArtifactController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
-	@DeleteMapping(value = "/artifact/{id}")
-	@ApiOperation(value = "Inactivate artifact. This call requires authentication with the correct role.", response = Void.class)
-	@ApiResponses(value = { @ApiResponse(code = 204, message = "Successfully inactivated artifact"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
+    @SuppressWarnings("rawtypes")
+    @DeleteMapping(value = "/artifact/{id}")
+    @ApiOperation(value = "Inactivate artifact. This call requires authentication with the correct role.", response = Void.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 204, message = "Successfully inactivated artifact"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
 	public ResponseEntity inactivateArtifact(final @PathVariable String id) throws Exception {
 
 		logger.info("Inactivate artifact: " + id);
@@ -280,16 +286,17 @@ public class ArtifactController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("unchecked")
-	@GetMapping(value = "/artifact/{id}/file")
-	@ApiOperation(value = "Download artifact.", response = Resource.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Retrieved artifact"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-			@ApiResponse(code = 404, message = "Not Found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
-	@RecordMetric
+    @SuppressWarnings("unchecked")
+    @GetMapping(value = "/artifact/{id}/file")
+    @ApiOperation(value = "Download artifact.", response = Resource.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Retrieved artifact"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
+    })
+    @RecordMetric
 	public ResponseEntity<Resource> downloadArtifact(@PathVariable("id") final String id) throws Exception {
 
 		logger.info("Download artifact: " + id);

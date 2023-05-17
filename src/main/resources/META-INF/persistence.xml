@@ -31,6 +31,8 @@
     
     <!--  import models for auth -->
     <class>org.ihtsdo.refsetservice.model.User</class>
+    
+    <class>org.ihtsdo.refsetservice.model.InviteRequest</class>
 
   </persistence-unit>
 </persistence>

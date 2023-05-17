@@ -25,7 +25,6 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
-import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeAll;

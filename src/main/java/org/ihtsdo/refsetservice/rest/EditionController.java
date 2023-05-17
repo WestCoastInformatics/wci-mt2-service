@@ -57,7 +57,7 @@ public class EditionController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get edition", response = Edition.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"),
         @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
@@ -122,7 +122,7 @@ public class EditionController extends BaseController {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 404, message = "Resource not found"),
         @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
-	// @ModelAttribute API params documented in SearchParameter
+    // @ModelAttribute API params documented in SearchParameter
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
     // no auth required

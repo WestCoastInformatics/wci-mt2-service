@@ -55,7 +55,7 @@ public class BaseController {
 		} else if (exception instanceof RestException) {
 
 			final RestException restException = (RestException) exception;
-			return ResponseEntity.status(restException.getError().getStatus()).body(restException.getMessage());
+			return ResponseEntity.status(restException.getError().getStatus()).body(restException.getError().getMessage());
 
 		} else {
 
@@ -101,7 +101,7 @@ public class BaseController {
 
 		final User authUser = SecurityService.getUserFromSession();
 		if (authUser == null || authUser.getId() == null) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 		}
 		return authUser;
 	}
