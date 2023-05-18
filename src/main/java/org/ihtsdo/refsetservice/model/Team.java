@@ -245,7 +245,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     }
 
     /**
-     * Returns the roles.
+     * Returns the roles available to the team.
      *
      * @return the roles
      */
@@ -339,7 +339,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     }
     
     /**
-     * Returns the user's roles for this team.
+     * Returns a user's roles on this team .
      *
      * @return the user's roles
      */

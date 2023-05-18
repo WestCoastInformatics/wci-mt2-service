@@ -235,7 +235,7 @@ public class TeamService extends BaseService {
 	 * @return the list
 	 * @throws Exception the exception
 	 */
-	public static void inactivateTeam(final User user, final String teamId) throws Exception {
+	public static Team inactivateTeam(final User user, final String teamId) throws Exception {
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -260,18 +260,20 @@ public class TeamService extends BaseService {
 			}
 
 			team.setActive(false);
-			service.update(team);
-			service.add(AuditEntryHelper.inactivateTeamEntry(team));
+			final Team updatedTeam = service.update(team);
+			service.add(AuditEntryHelper.inactivateTeamEntry(updatedTeam));
 
-			final List<Project> teamProjects = getTeamProjects(team);
+			final List<Project> teamProjects = getTeamProjects(updatedTeam);
 
 			for (final Project teamProject : teamProjects) {
 
-				teamProject.getTeams().remove(team.getId());
+				teamProject.getTeams().remove(updatedTeam.getId());
 				service.update(teamProject);
 			}
 
 			service.commit();
+			
+			return updatedTeam;
 		}
 	}
 

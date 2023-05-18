@@ -10,10 +10,8 @@
 package org.ihtsdo.refsetservice.rest.client;
 
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,9 +59,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     private static final String GET_DIRECT_GROUPS = "/rest/usermanagement/1/user/group/direct?username=";
 
     // GROUP
-    /** Get group GET. */
-    private static final String GET_GROUP = "/rest/usermanagement/1/group?groupname=";
-
+    /** Get group memberships GET. */
     private static final String GET_MEMBERSHIPS = "/rest/usermanagement/1/group/membership";
 
     /** Add group POST. */
@@ -85,7 +81,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static User getUser(final String userName) throws Exception {
 
-        logger.debug("Get information for user {}", userName);
+        // logger.debug("Get information for user {}", userName);
         if (StringUtils.isEmpty(userName)) {
             throw new Exception("User name cannot be empty or null. Received username: " + userName);
         }
@@ -334,16 +330,18 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
                         Element membership = (Element) membershipNode;
                         // Get the value of the group name attribute.
-                        String groupName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
-                        if (!groupName.startsWith("rt2-snomedctbe-jd2")) {
+                        String projectName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
+                        
+                       if (!projectName.contains("all-all")) {
+                            //logger.debug("REMOVE THIS");
                             continue;
-                        }
-                        if (!groupName.startsWith(appPrefix) || !membership.hasChildNodes()) {
+                      }
+                        if (!projectName.startsWith(appPrefix) || !membership.hasChildNodes()) {
                             continue;
                         }
 
-                        if (!groupMemberMap.containsKey(groupName)) {
-                            groupMemberMap.put(groupName, new HashSet<>());
+                        if (!groupMemberMap.containsKey(projectName)) {
+                            groupMemberMap.put(projectName, new HashSet<>());
                         }
 
                         NodeList usersList = membership.getChildNodes();
@@ -364,7 +362,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                                         // Get the user name
                                         String userName = userNode.getAttributes().getNamedItem("name").getNodeValue();
 
-                                        groupMemberMap.get(groupName).add(userName);
+                                        groupMemberMap.get(projectName).add(userName);
 
                                     }
                                 }

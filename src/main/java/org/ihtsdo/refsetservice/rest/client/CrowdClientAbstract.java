@@ -91,7 +91,7 @@ public class CrowdClientAbstract {
             client.register(feature);
             final WebTarget target = client.target(url);
 
-            logger.debug("CROWD API GET Url: {}", url);
+            // logger.debug("CROWD API GET Url: {}", url);
 
             final Response response = target.request(mediaType).get();
             return response;
@@ -119,7 +119,7 @@ public class CrowdClientAbstract {
             final WebTarget target = client.target(url);
             final Builder builder = target.request(ACCEPT_DEFAULT);
 
-            logger.debug("CROWD API POST Url: {}", url);
+            // logger.debug("CROWD API POST Url: {}", url);
 
             final Response response = builder.post(Entity.json(entity));
             return response;

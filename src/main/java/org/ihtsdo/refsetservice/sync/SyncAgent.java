@@ -4,9 +4,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -43,7 +46,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
     protected static String testingEditionShortName = "SNOMEDCT-BE";
 
@@ -152,10 +155,10 @@ public abstract class SyncAgent {
     }
 
     protected boolean isDifferentAttribute(String shortName, String attributeName, Object databaseAttribute, Object snowstormAttribute) {
-//        logger.debug("in isDifferentAttribute() w/DB: " + databaseAttribute);
-//        logger.debug("in isDifferentAttribute() w/Sn: " + snowstormAttribute);
-//        logger.debug("in isDifferentAttribute() w/databaseAttribute.equals(snowstormAttribute: " + databaseAttribute.equals(snowstormAttribute));
-//        logger.debug("in isDifferentAttribute() w/snowstormAttribute.equals(databaseAttribute: " + snowstormAttribute.equals(databaseAttribute));
+        // logger.debug("in isDifferentAttribute() w/DB: " + databaseAttribute);
+        // logger.debug("in isDifferentAttribute() w/Sn: " + snowstormAttribute);
+        // logger.debug("in isDifferentAttribute() w/databaseAttribute.equals(snowstormAttribute: " + databaseAttribute.equals(snowstormAttribute));
+        // logger.debug("in isDifferentAttribute() w/snowstormAttribute.equals(databaseAttribute: " + snowstormAttribute.equals(databaseAttribute));
 
         if (snowstormAttribute == null && databaseAttribute == null) {
             // Both null, no difference
@@ -197,8 +200,8 @@ public abstract class SyncAgent {
 
     public static Boolean getIsIgnoreCoreRefsets() {
 
-        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
-     // return true;
+        // return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+        return true;
     }
 
     public static Boolean getIsProductionSystem() {
@@ -214,7 +217,24 @@ public abstract class SyncAgent {
     public static void setTesting(boolean testing) {
 
         SyncAgent.testing = testing;
-
     }
 
+    List<Edition> readDbAllEditions() throws Exception {
+        try (TerminologyService service = new TerminologyService()) {
+
+            return readDbAllEditions(service);
+        }
+    }
+
+    List<Edition> readDbAllEditions(TerminologyService service) throws Exception {
+        return service.getAll(Edition.class);
+    }
+
+    List<Edition> readDbActiveEditions(TerminologyService service) throws Exception {
+        return readDbAllEditions(service).stream().filter(e -> e.isActive()).collect(Collectors.toList());
+    }
+
+    List<Edition> readDbInactiveEditions(TerminologyService service) throws Exception {
+        return readDbAllEditions(service).stream().filter(e -> !e.isActive()).collect(Collectors.toList());
+    }
 }
