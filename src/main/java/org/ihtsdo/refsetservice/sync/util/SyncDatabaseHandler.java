@@ -1,5 +1,6 @@
 package org.ihtsdo.refsetservice.sync.util;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -13,9 +14,10 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
@@ -57,8 +59,8 @@ public class SyncDatabaseHandler {
             Organization organization = organizations.iterator().next();
 
             // Create a single Admin team per Edition w hen we first discover it
-//            final SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
-//            initializer.createAdminOrganizationTeam(organization);
+            // final SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
+            // initializer.createAdminOrganizationTeam(organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -185,6 +187,10 @@ public class SyncDatabaseHandler {
     }
 
     public Project addProject(String projectName, String projectDescription, Edition edition) {
+        return addProject(projectName, projectDescription, edition, new ArrayList<User>());
+    }
+
+    public Project addProject(String projectName, String projectDescription, Edition edition, List<User> users) {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -196,17 +202,19 @@ public class SyncDatabaseHandler {
             project.setPrivateProject(false);
             project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
             project.setEdition(edition);
-            
+            project.setPrimaryContactEmail(edition.getOrganization().getPrimaryContactEmail());
+            project.setMemberList(users);
+
             if (OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()) != null) {
                 project.getTeams().add(OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()).getId());
             }
-            
+
             // Persist
-            final Project p = service.add(project);
+            final Project createdProject = ProjectService.addProject(SecurityService.getUserFromSession(), project);
 
-            logger.info("Adding new Project: " + p.getId() + " (" + p.getName() + ") ");
+            logger.info("Adding new Project: " + createdProject.getId() + " (" + createdProject.getName() + ") ");
 
-            return p;
+            return createdProject;
         } catch (Exception e) {
             logger.error("Failed to add project: " + projectName + " with Exception --> " + e.getMessage());
 

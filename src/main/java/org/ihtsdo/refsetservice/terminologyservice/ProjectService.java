@@ -354,7 +354,7 @@ public class ProjectService extends BaseService {
      * @param projectId the project id
      * @throws Exception the exception
      */
-    public static void inactivateProject(final User user, final String projectId) throws Exception {
+    public static Project inactivateProject(final User user, final String projectId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -409,9 +409,11 @@ public class ProjectService extends BaseService {
 
             }
 
-            service.update(project);
+            final Project updatedProject = service.update(project);
             service.add(AuditEntryHelper.inactivateProjectEntry(project));
             service.commit();
+            
+            return updatedProject;
         }
 
     }

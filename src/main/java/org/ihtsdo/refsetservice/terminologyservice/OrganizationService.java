@@ -505,7 +505,7 @@ public class OrganizationService extends BaseService {
      * @param email the email
      * @throws Exception the exception
      */
-    public static void addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final User userToAdd) throws Exception {
+    public static Organization addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final User userToAdd) throws Exception {
 
         // must return members in order to add another member.
         final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, true);
@@ -525,7 +525,7 @@ public class OrganizationService extends BaseService {
         organization.getMembers().add(userToAdd);
         AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd);
 
-        service.update(organization);
+        return service.update(organization);
 
         /*
          * TODO: Confirm to remove given these update CROWD which RT2 should now never do
