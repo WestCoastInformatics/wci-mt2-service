@@ -46,7 +46,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = true;
+    private static boolean testing = false;
 
     protected static String testingEditionShortName = "SNOMEDCT-BE";
 
@@ -200,8 +200,8 @@ public abstract class SyncAgent {
 
     public static Boolean getIsIgnoreCoreRefsets() {
 
-        // return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
-        return true;
+        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+        //return true;
     }
 
     public static Boolean getIsProductionSystem() {

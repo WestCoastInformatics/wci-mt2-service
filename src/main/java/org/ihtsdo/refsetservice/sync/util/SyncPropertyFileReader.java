@@ -332,7 +332,7 @@ public class SyncPropertyFileReader {
 
                     refsetToTagsInfoMap.get(columns[0]).add(stripQuotes(columns[1]));
                 } else {
-                    logger.debug("Skipping this line: " + line);
+                    logger.info("Skipping this line in readRttRefsetsToTagsMap(): " + line);
                 }
                 line = reader.readLine();
             }

@@ -313,7 +313,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public User addUser(String name, String userName, String email, Set<String> roles) {
+    public User addUser(String name, String userName, String email) {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -325,7 +325,6 @@ public class SyncDatabaseHandler {
             user.setUserName(userName);
             user.setActive(true);
             user.setEmail(email);
-            user.setRoles(roles);
 
             // Persist
             final User u = service.add(user);

@@ -101,10 +101,8 @@ public class SyncUtilities {
                 user = results.getItems().iterator().next();
             } else {
 
-                HashSet<String> rt2Roles = new HashSet<String>(roles.stream().filter(r -> UserRole.getAllRoles().contains(r)).collect(Collectors.toList()));
-
                 // Need to create user
-                user = dbHandler.addUser(name, userName, email, rt2Roles);
+                user = dbHandler.addUser(name, userName, email);
             }
 
         }

@@ -933,38 +933,28 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     protected JsonNode isRefsetToProcess(JsonNode refsetNode, String shortName) throws Exception {
-        // logger.debug("yyy1 shortName: " + shortName);
-
         if (!refsetNode.has("conceptId") || !refsetNode.has("active")) {
 
             throw new Exception("Getting unexpected Refset info from node: " + refsetNode.toString());
         }
-        // logger.debug("yyy2");
+
         String refsetId = refsetNode.get("conceptId").asText();
-        // logger.debug("yyy3 refsetId: " + refsetId);
 
         if (!utilities.isInternationalEdition(shortName) && utilities.getCoreRefsets().contains(refsetId)) {
-            // logger.debug("yyy4");
 
             return null;
         }
-        // logger.debug("yyy5");
 
         if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
-            // logger.debug("yyy6");
-
-            // logger.info("Found refsetId: " + refsetId + ", but will not add it per prop file");
+            logger.info("Found refsetId: " + refsetId + ", but will not add it per property file refsetsToIgnore.txt");
 
             return null;
         }
-        // logger.debug("yyy7");
 
         if (!isTesting() || (isTesting() && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset))) {
-            // logger.debug("yyy8");
 
             return refsetNode;
         }
-        // logger.debug("yyy9");
 
         return null;
     }
