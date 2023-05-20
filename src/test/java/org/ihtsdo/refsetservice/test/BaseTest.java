@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.test;
 
@@ -17,13 +26,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({
-        "test"
+    "test"
 })
 public class BaseTest {
-    
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(BaseTest.class);
-    
+
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(BaseTest.class);
+
     /**
      * Adds the user.
      *
@@ -37,8 +46,8 @@ public class BaseTest {
             service.addUser(user);
 
             return user;
-        } catch (Exception e) {
-            logger.error("Error adding user: {}", user, e);
+        } catch (final Exception e) {
+            LOG.error("Error adding user: {}", user, e);
             throw e;
         }
     }

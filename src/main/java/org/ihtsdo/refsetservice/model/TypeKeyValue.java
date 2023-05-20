@@ -34,6 +34,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      * Instantiates an empty {@link TypeKeyValue}.
      */
     public TypeKeyValue() {
+
         // do nothing
     }
 
@@ -43,6 +44,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      * @param typeKeyValue the type key value
      */
     public TypeKeyValue(final TypeKeyValue typeKeyValue) {
+
         populateFrom(typeKeyValue);
     }
 
@@ -52,6 +54,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      * @param typeKeyValue the type key value
      */
     public void populateFrom(final TypeKeyValue typeKeyValue) {
+
         super.populateFrom(typeKeyValue);
         type = typeKeyValue.getType();
         key = typeKeyValue.getKey();
@@ -66,6 +69,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      * @param value the value
      */
     public TypeKeyValue(final String type, final String key, final String value) {
+
         this.type = type;
         this.value = value;
         this.key = key;
@@ -78,6 +82,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getType() {
+
         return type;
     }
 
@@ -87,6 +92,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      * @param type the type
      */
     public void setType(final String type) {
+
         this.type = type;
     }
 
@@ -97,6 +103,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getKey() {
+
         return key;
     }
 
@@ -106,6 +113,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      * @param key the key
      */
     public void setKey(final String key) {
+
         this.key = key;
     }
 
@@ -116,6 +124,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getValue() {
+
         return value;
     }
 
@@ -125,6 +134,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      * @param value the value
      */
     public void setValue(final String value) {
+
         this.value = value;
     }
 
@@ -136,6 +146,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      */
     @Override
     public int compareTo(final TypeKeyValue tkv) {
+
         int i = type.compareTo(tkv.getType());
         if (i == 0) {
             i = key.compareTo(tkv.getKey());
@@ -153,6 +164,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((key == null) ? 0 : key.hashCode());
@@ -169,6 +181,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      */
     @Override
     public boolean equals(final Object obj) {
+
         if (this == obj) {
             return true;
         }
@@ -206,6 +219,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
     /* see superclass */
     @Override
     public void lazyInit() {
+
         // n/a
     }
 
@@ -216,6 +230,7 @@ public class TypeKeyValue extends AbstractHasModified implements Comparable<Type
      */
     @Override
     public String toString() {
+
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {

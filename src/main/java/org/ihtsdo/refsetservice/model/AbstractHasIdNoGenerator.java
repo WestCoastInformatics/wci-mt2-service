@@ -26,16 +26,17 @@ public abstract class AbstractHasIdNoGenerator implements HasId {
      * Instantiates an empty {@link AbstractHasIdNoGenerator}.
      */
     protected AbstractHasIdNoGenerator() {
+
         // n/a
     }
 
     /**
-     * Instantiates a {@link AbstractHasIdNoGenerator} from the specified
-     * parameters.
+     * Instantiates a {@link AbstractHasIdNoGenerator} from the specified parameters.
      *
      * @param other the other
      */
     protected AbstractHasIdNoGenerator(final HasId other) {
+
         populateFrom(other);
     }
 
@@ -45,18 +46,19 @@ public abstract class AbstractHasIdNoGenerator implements HasId {
      * @param other the other
      */
     public void populateFrom(final HasId other) {
+
         this.id = other.getId();
     }
 
     /**
-     * Returns the id. NOTE: this causes a hibernate warning, but the background
-     * behavior is correct. Moving it or removing it causes either other
-     * problems or the field to not be indexed.
+     * Returns the id. NOTE: this causes a hibernate warning, but the background behavior is correct. Moving it or removing it causes either other problems or
+     * the field to not be indexed.
      * @return the id
      */
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getId() {
+
         return id;
     }
 
@@ -67,12 +69,14 @@ public abstract class AbstractHasIdNoGenerator implements HasId {
      */
     @Override
     public void setId(final String id) {
+
         this.id = id;
     }
 
     /* see superclass */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((id == null) ? 0 : id.hashCode());
@@ -82,6 +86,7 @@ public abstract class AbstractHasIdNoGenerator implements HasId {
     /* see superclass */
     @Override
     public boolean equals(final Object obj) {
+
         if (this == obj) {
             return true;
         }
@@ -105,6 +110,7 @@ public abstract class AbstractHasIdNoGenerator implements HasId {
     /* see superclass */
     @Override
     public String toString() {
+
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {

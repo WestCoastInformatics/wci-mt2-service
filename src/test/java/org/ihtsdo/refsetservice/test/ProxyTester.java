@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ProxyTester {
 
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(ProxyTester.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(ProxyTester.class);
 
     /** Set of fields to exclude. */
     private Set<String> excludes = new TreeSet<String>();
@@ -51,18 +51,18 @@ public class ProxyTester {
      * @param obj Object to test.
      */
     public ProxyTester(final Object obj) {
+
         this.clazz = obj.getClass();
     }
 
     /**
-     * Adds a field to the list of tested fields. If this method is called, the
-     * tester will not attempt to list all the getters and setters on the object
-     * under test, and will instead simply test all the fields in the include
-     * list.
+     * Adds a field to the list of tested fields. If this method is called, the tester will not attempt to list all the getters and setters on the object under
+     * test, and will instead simply test all the fields in the include list.
      * 
      * @param field Field name whose getter/setter should be tested.
      */
     public void include(final String field) {
+
         includes.add(field.toLowerCase());
     }
 
@@ -72,6 +72,7 @@ public class ProxyTester {
      * @param field Field name to exclude from testing.
      */
     public void exclude(final String field) {
+
         excludes.add(field.toLowerCase());
     }
 
@@ -83,6 +84,7 @@ public class ProxyTester {
      * @param o the o the object
      */
     public void proxy(final Class<?> clazz, final int i, final Object o) {
+
         if (!proxyMap.containsKey(clazz)) {
             proxyMap.put(clazz, new HashMap<Integer, Object>());
         }
@@ -98,6 +100,7 @@ public class ProxyTester {
      * @param o the o
      */
     public void proxy(final String field, final int i, final Object o) {
+
         if (!fieldProxyMap.containsKey(field.toLowerCase())) {
             fieldProxyMap.put(field.toLowerCase(), new HashMap<Integer, Object>());
         }
@@ -106,8 +109,7 @@ public class ProxyTester {
     }
 
     /**
-     * Walks through the methods in the class looking for getters and setters
-     * that are on our include list (if any) and are not on our exclude list.
+     * Walks through the methods in the class looking for getters and setters that are on our include list (if any) and are not on our exclude list.
      *
      * @param initializer a value that when used produces certain field values
      * @return the object
@@ -115,13 +117,13 @@ public class ProxyTester {
      */
     @SuppressWarnings("deprecation")
     public Object createObject(final int initializer) throws Exception {
+
         // Verify there is a no-argument constructor
         Object o = null;
         try {
             o = clazz.newInstance();
         } catch (final Exception e) {
-            throw new Exception(
-                    "Class " + clazz + " unexpectedly does not have a no-argument constructor");
+            throw new Exception("Class " + clazz + " unexpectedly does not have a no-argument constructor");
         }
         setFields(o, false, false, initializer);
         return o;
@@ -136,8 +138,8 @@ public class ProxyTester {
      * @param initializer the initializer
      * @throws Exception the exception
      */
-    protected void setFields(final Object o, final boolean reverseIncludes, final boolean logField,
-        final int initializer) throws Exception {
+    protected void setFields(final Object o, final boolean reverseIncludes, final boolean logField, final int initializer) throws Exception {
+
         final Set<String> fieldsSeen = new HashSet<>();
         final Method[] methods = clazz.getMethods();
         for (int i = 0; i < methods.length; i++) {
@@ -158,14 +160,12 @@ public class ProxyTester {
             fieldsSeen.add(fieldName.toLowerCase());
 
             /* Check the field name against our include/exclude list. */
-            if (!includes.isEmpty() && !includes.contains(fieldName.toLowerCase())
-                    && !reverseIncludes) {
+            if (!includes.isEmpty() && !includes.contains(fieldName.toLowerCase()) && !reverseIncludes) {
                 // skip if includes are explicit and none are listed
                 continue;
             }
 
-            if (!includes.isEmpty() && includes.contains(fieldName.toLowerCase())
-                    && reverseIncludes) {
+            if (!includes.isEmpty() && includes.contains(fieldName.toLowerCase()) && reverseIncludes) {
                 // skip if includes are explicit and none are listed
                 continue;
             }
@@ -193,7 +193,7 @@ public class ProxyTester {
                 }
             }
             if (logField) {
-                logger.debug("  field = " + fieldName);
+                LOG.debug("  field = " + fieldName);
             }
             setField(o, fieldName, getter, m, args[0], initializer);
         }
@@ -239,6 +239,7 @@ public class ProxyTester {
          */
         @Override
         public Object invoke(final Object o, final Method m, final Object[] a) {
+
             return null;
         }
     }
@@ -254,32 +255,29 @@ public class ProxyTester {
      * @param initializer the initializer
      * @throws Exception the exception
      */
-    protected void setField(final Object o, final String fieldName, final Method get,
-        final Method set, final Class<?> argType, final int initializer) throws Exception {
+    protected void setField(final Object o, final String fieldName, final Method get, final Method set, final Class<?> argType, final int initializer)
+        throws Exception {
+
         final Object proxy = makeProxy(fieldName, argType, initializer);
 
-        // logger
-        // .info(" " + set.getName() + " = " + proxy.toString());
+        // LOG.info(" " + set.getName() + " = " + proxy.toString());
         try {
             set.invoke(o, new Object[] {
-                    proxy
+                proxy
             });
         } catch (final InvocationTargetException e) {
             e.printStackTrace();
-            throw new RuntimeException("Setter " + set.getDeclaringClass().getName() + "."
-                    + set.getName() + " threw " + e.getTargetException().toString());
+            throw new RuntimeException("Setter " + set.getDeclaringClass().getName() + "." + set.getName() + " threw " + e.getTargetException().toString());
         } catch (final IllegalArgumentException e) {
-            logger.debug("o=" + o.getClass().getName());
-            logger.debug("proxy=" + proxy.getClass().getName());
+            LOG.debug("o=" + o.getClass().getName());
+            LOG.debug("proxy=" + proxy.getClass().getName());
             throw e;
         }
     }
 
     /**
-     * Makes a proxy of a given class. If the class is an interface type, uses
-     * the standard JDK proxy mechanism. If it's not, uses cglib. The use of
-     * cglib is via reflection so that cglib is not required to use this library
-     * unless the caller actually needs to proxy a concrete class.
+     * Makes a proxy of a given class. If the class is an interface type, uses the standard JDK proxy mechanism. If it's not, uses cglib. The use of cglib is
+     * via reflection so that cglib is not required to use this library unless the caller actually needs to proxy a concrete class.
      *
      * @param fieldName the field name
      * @param type the type
@@ -288,10 +286,10 @@ public class ProxyTester {
      * @throws Exception the exception
      */
     @SuppressWarnings({
-            "rawtypes", "deprecation"
+        "rawtypes", "deprecation"
     })
-    protected Object makeProxy(final String fieldName, final Class<?> type, final int initializer)
-        throws Exception {
+    protected Object makeProxy(final String fieldName, final Class<?> type, final int initializer) throws Exception {
+
         // Return field name proxies
         if (fieldProxyMap.containsKey(fieldName.toLowerCase())) {
             return fieldProxyMap.get(fieldName.toLowerCase()).get(initializer);
@@ -315,8 +313,7 @@ public class ProxyTester {
             return LocalTime.of(initializer, initializer);
         }
         if (type == LocalDateTime.class) {
-            return LocalDateTime.of(initializer, initializer, initializer, initializer,
-                    initializer);
+            return LocalDateTime.of(initializer, initializer, initializer, initializer, initializer);
         }
         if (type == Boolean.class || type == boolean.class) {
             return new Boolean((initializer & 1) == 0);
@@ -367,7 +364,7 @@ public class ProxyTester {
         /* Use JDK dynamic proxy if the argument is an interface. */
         if (type.isInterface()) {
             return Proxy.newProxyInstance(type.getClassLoader(), new Class[] {
-                    type
+                type
             }, new DummyInvocationHandler());
         }
 
@@ -380,21 +377,20 @@ public class ProxyTester {
             callbackClass = Class.forName("net.sf.cglib.proxy.Callback");
             fixedValueClass = Class.forName("net.sf.cglib.proxy.FixedValue");
         } catch (final ClassNotFoundException e) {
-            throw new ClassNotFoundException("Need cglib to make a dummy " + type.getName()
-                    + ". Make sure cglib.jar is on " + "your classpath.");
+            throw new ClassNotFoundException("Need cglib to make a dummy " + type.getName() + ". Make sure cglib.jar is on " + "your classpath.");
         }
 
         /* Make a dummy callback (proxies within proxies!) */
         Object callback;
         callback = Proxy.newProxyInstance(callbackClass.getClassLoader(), new Class[] {
-                fixedValueClass
+            fixedValueClass
         }, new DummyInvocationHandler());
 
         final Method createMethod = enhancerClass.getMethod("create", new Class[] {
-                Class.class, callbackClass
+            Class.class, callbackClass
         });
         return createMethod.invoke(null, new Object[] {
-                type, callback
+            type, callback
         });
     }
 
@@ -409,6 +405,7 @@ public class ProxyTester {
      * @throws Exception the exception
      */
     private Object makeEnum(final Class<?> clazz1, final int initializer) throws Exception {
+
         final Method m = clazz1.getMethod("values", new Class[0]);
         final Object[] o = (Object[]) m.invoke(null, new Object[0]);
         return o[initializer];
@@ -420,6 +417,7 @@ public class ProxyTester {
      * @return the clazz
      */
     public Class<?> getClazz() {
+
         return clazz;
     }
 
@@ -429,6 +427,7 @@ public class ProxyTester {
      * @param clazz the clazz
      */
     public void setClazz(final Class<?> clazz) {
+
         this.clazz = clazz;
     }
 
@@ -438,6 +437,7 @@ public class ProxyTester {
      * @return the excludes
      */
     public Set<String> getExcludes() {
+
         return excludes;
     }
 
@@ -447,6 +447,7 @@ public class ProxyTester {
      * @param excludes the excludes
      */
     public void setExcludes(final Set<String> excludes) {
+
         this.excludes = excludes;
     }
 
@@ -456,6 +457,7 @@ public class ProxyTester {
      * @return the includes
      */
     public Set<String> getIncludes() {
+
         return includes;
     }
 
@@ -465,6 +467,7 @@ public class ProxyTester {
      * @param includes the includes
      */
     public void setIncludes(final Set<String> includes) {
+
         this.includes = includes;
     }
 }

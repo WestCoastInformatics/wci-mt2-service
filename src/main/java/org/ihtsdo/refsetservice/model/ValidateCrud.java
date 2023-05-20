@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -19,7 +19,6 @@ public interface ValidateCrud<T> {
     /**
      * Validate add.
      *
-     * @param context the context
      * @throws Exception the exception indicating validation failure
      */
     public void validateAdd() throws Exception;
@@ -27,7 +26,6 @@ public interface ValidateCrud<T> {
     /**
      * Validate update.
      *
-     * @param context the context
      * @param other the other
      * @throws Exception the exception indicating validation failure
      */
@@ -36,7 +34,6 @@ public interface ValidateCrud<T> {
     /**
      * Validate delete.
      *
-     * @param context the context
      * @throws Exception the exception indicating validation failure
      */
     public void validateDelete() throws Exception;

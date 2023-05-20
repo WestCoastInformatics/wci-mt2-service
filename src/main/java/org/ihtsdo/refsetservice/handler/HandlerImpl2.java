@@ -23,6 +23,7 @@ public class HandlerImpl2 implements ExampleHandler {
      */
     @Override
     public String doSomething() throws Exception {
+
         return properties.getProperty("server.port");
     }
 }

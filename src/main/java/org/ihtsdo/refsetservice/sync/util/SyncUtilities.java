@@ -47,7 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SyncUtilities {
 
-    private final Logger logger = LoggerFactory.getLogger(SyncUtilities.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncUtilities.class);
 
     private static final SyncPropertyFileReader propertyReader = new SyncPropertyFileReader();
 
@@ -76,7 +76,7 @@ public class SyncUtilities {
 
     private static final String DEFAULT_WCI_REFSET_PARENT_CONCEPT = "446609009"; // Simple Type Refset Concept
 
-    public Organization addOrganziation(final String orgName, String orgDesc, String orgMaintainerType) throws Exception {
+    public Organization addOrganziation(final String orgName, final String orgDesc, final String orgMaintainerType) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -90,14 +90,15 @@ public class SyncUtilities {
             // Persist
             final Organization o = service.add(org);
 
-            logger.info("Adding new Organziation: " + o.getId() + " (" + o.getName() + ") " + o);
+            LOG.info("Adding new Organziation: " + o.getId() + " (" + o.getName() + ") " + o);
 
             return o;
         }
 
     }
 
-    public Edition addEdition(String shortName, String editionName, String editionBranch, final Organization organization, JsonNode codeSystem) throws Exception {
+    public Edition addEdition(final String shortName, final String editionName, final String editionBranch, final Organization organization, final JsonNode codeSystem)
+        throws Exception {
 
         final String defaultLanguageCode = identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -106,19 +107,19 @@ public class SyncUtilities {
         // Case of no modules handled downstream
         final Set<String> editionModules = identifyModules(shortName, editionName, editionBranch, codeSystem);
 
-        Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionModules, defaultLanguageCode, organization);
+        final Edition newEdition = addEdition(shortName, editionName, editionBranch, defaultLanguageRefsets, editionModules, defaultLanguageCode, organization);
 
         return newEdition;
     }
 
-    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, Organization organization)
-        throws Exception {
+    private Edition addEdition(final String shortName, final String name, final String branch, final Set<String> defaultLanguageRefsets, final Set<String> modules,
+        final String defaultLanguageCode, final Organization organization) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
 
-            Edition edition = new Edition();
+            final Edition edition = new Edition();
 
             edition.setShortName(shortName);
             edition.setName(name);
@@ -131,13 +132,13 @@ public class SyncUtilities {
             // New ones only created as new
             edition.setActive(true);
 
-            Edition e = service.add(edition);
+            final Edition e = service.add(edition);
 
-            logger.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
+            LOG.info("Adding new Edition: " + e.getId() + " (" + e.getName() + ")" + e);
 
             return e;
-        } catch (Exception e) {
-            logger.error("Failed to add edition: " + shortName);
+        } catch (final Exception e) {
+            LOG.error("Failed to add edition: " + shortName);
             // TODO: Review
             statistics.setEditionsAdded(statistics.getEditionsAdded() - 1);
 
@@ -146,32 +147,34 @@ public class SyncUtilities {
 
     }
 
-    public void removeEdition(Edition edition) throws Exception {
+    public void removeEdition(final Edition edition) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
 
-            logger.info("Removing existing RT2 Edition: " + edition.getId() + " (" + edition.getName() + ")" + edition);
+            LOG.info("Removing existing RT2 Edition: " + edition.getId() + " (" + edition.getName() + ")" + edition);
 
             service.remove(edition);
 
         }
     }
 
-    public void removeRefsetVersionPair(Refset refset) throws Exception {
+    public void removeRefsetVersionPair(final Refset refset) throws Exception {
+
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
 
-            logger.info("Removing existing refset: " + refset.getId() + " (" + refset.getRefsetId() + ")" + refset.getVersionDate());
+            LOG.info("Removing existing refset: " + refset.getId() + " (" + refset.getRefsetId() + ")" + refset.getVersionDate());
 
             service.remove(refset);
 
         }
     }
 
-    public Refset addRefset(String name, String refsetId, String moduleId, Date versionDate, String type, String narrative) throws Exception {
+    public Refset addRefset(final String name, final String refsetId, final String moduleId, final Date versionDate, final String type, final String narrative) throws Exception {
+
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
@@ -192,14 +195,14 @@ public class SyncUtilities {
             // Persist
             final Refset r = service.add(refset);
 
-            logger.info("Adding new Refset and/or Version for : " + r.getId() + " (" + r.getName() + ") on: " + r.getVersionDate());
+            LOG.info("Adding new Refset and/or Version for : " + r.getId() + " (" + r.getName() + ") on: " + r.getVersionDate());
 
             return r;
         }
 
     }
 
-    public Project addProject(String projectName, String projectDescription, Edition edition) throws Exception {
+    public Project addProject(final String projectName, final String projectDescription, final Edition edition) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -217,7 +220,7 @@ public class SyncUtilities {
 
             statistics.getProjectsProcessed().add(p);
 
-            logger.info("Adding new Project: " + p.getId() + " (" + p.getName() + ") " + p);
+            LOG.info("Adding new Project: " + p.getId() + " (" + p.getName() + ") " + p);
 
             return p;
 
@@ -225,9 +228,9 @@ public class SyncUtilities {
 
     }
 
-    public Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String narrative, Project project) throws Exception {
+    public Refset addWCIRefset(final User u, final String name, final String refsetId, final String moduleId, final Date versionDate, final String narrative, final Project project) throws Exception {
 
-        logger.info("Adding WCI Testing Org's single project: " + project);
+        LOG.info("Adding WCI Testing Org's single project: " + project);
 
         final Refset refsetParameters = new Refset();
 
@@ -259,11 +262,11 @@ public class SyncUtilities {
 
                 final Refset refset = (Refset) returned;
 
-                logger.info("Added new WCI Refset - " + refset.getId() + " (" + refset.getName() + ")" + refset);
+                LOG.info("Added new WCI Refset - " + refset.getId() + " (" + refset.getName() + ")" + refset);
 
-                Refset updatedRefset = initializeWorkflowStatus(refset);
+                final Refset updatedRefset = initializeWorkflowStatus(refset);
 
-                logger.info(" and then updated the new WCI refset's Workflow Status - " + updatedRefset);
+                LOG.info(" and then updated the new WCI refset's Workflow Status - " + updatedRefset);
 
                 return updatedRefset;
             }
@@ -272,13 +275,13 @@ public class SyncUtilities {
 
     }
 
-    public Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberIds) throws Exception {
+    public Team addTeam(final String teamName, final String teamDescription, final Organization organization, final Set<String> roles, final Set<String> memberIds) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
 
-            Team team = new Team();
+            final Team team = new Team();
             team.setName(teamName);
             team.setDescription(teamDescription);
             team.setOrganization(organization);
@@ -291,14 +294,14 @@ public class SyncUtilities {
 
             statistics.getTeamsProcessed().add(t);
 
-            logger.info("Adding new Team: " + t.getId() + " (" + t.getName() + ") " + t);
+            LOG.info("Adding new Team: " + t.getId() + " (" + t.getName() + ") " + t);
 
             return t;
         }
 
     }
 
-    public User addUser(String name, String userName, String email, Set<String> roles) throws Exception {
+    public User addUser(final String name, final String userName, final String email, final Set<String> roles) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -315,28 +318,28 @@ public class SyncUtilities {
             // Persist
             final User u = service.add(user);
 
-            logger.info("Adding new User: " + u.getId() + " (" + u.getName() + ") " + u);
+            LOG.info("Adding new User: " + u.getId() + " (" + u.getName() + ") " + u);
 
             return u;
         }
 
     }
 
-    public Set<DefinitionClause> getRefsetClauses(String rttId) throws Exception {
+    public Set<DefinitionClause> getRefsetClauses(final String rttId) throws Exception {
 
-        Set<DefinitionClause> refsetClauses = new HashSet<>();
+        final Set<DefinitionClause> refsetClauses = new HashSet<>();
 
         try (final TerminologyService service = new TerminologyService()) {
 
             initializeService(service);
 
-            for (String clauseJson : propertyReader.getRttRefsetToClausesMap().get(rttId)) {
+            for (final String clauseJson : propertyReader.getRttRefsetToClausesMap().get(rttId)) {
 
                 final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
 
                 setMetadata(clause, propertyReader.getMetadataMap().get("refset-" + rttId));
 
-                DefinitionClause persistedClause = service.add(clause);
+                final DefinitionClause persistedClause = service.add(clause);
 
                 refsetClauses.add(persistedClause);
             }
@@ -346,7 +349,7 @@ public class SyncUtilities {
 
     }
 
-    public User getUser(String name, String userName, String email, Set<String> roles) throws Exception {
+    public User getUser(final String name, final String userName, final String email, final Set<String> roles) throws Exception {
 
         User user = null;
 
@@ -356,7 +359,7 @@ public class SyncUtilities {
             final QueryParameter query = new QueryParameter();
             query.setQuery("userName:" + userName + " AND active:true");
 
-            ResultList<User> results = service.find(query, pfs, User.class, null);
+            final ResultList<User> results = service.find(query, pfs, User.class, null);
 
             if (results.getItems() != null && results.getItems().size() == 1) {
 
@@ -381,7 +384,7 @@ public class SyncUtilities {
         }
 
         // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/900000000000443000/descendants?stated=false&offset=0&limit=50
-        String url = SnowstormConnection.BASE_URL + "MAIN/concepts/" + CORE_MODULE_PARENT + "/descendants?stated=false&offset=0&limit=50";
+        final String url = SnowstormConnection.getBaseUrl() + "MAIN/concepts/" + CORE_MODULE_PARENT + "/descendants?stated=false&offset=0&limit=50";
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -400,29 +403,29 @@ public class SyncUtilities {
                 final JsonNode module = moduleIterator.next();
 
                 if (!module.has("conceptId")) {
-                    logger.error("Module must have conceptId: " + module);
+                    LOG.error("Module must have conceptId: " + module);
                 } else {
                     coreModules.add(module.get("conceptId").asText());
                 }
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new Exception("Failed finding descendents of CORE MModule Parent in MAIN to identify international modules");
         }
 
         return coreModules;
     }
 
-    public Set<String> identifyModules(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
+    public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch, final JsonNode codeSystem) throws Exception {
 
-        Set<String> editionModules = new HashSet<>();
+        final Set<String> editionModules = new HashSet<>();
 
         if (isInternationalEdition(editionName)) {
 
-            Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+            final Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
 
             while (moduleIterator.hasNext()) {
 
-                JsonNode module = moduleIterator.next();
+                final JsonNode module = moduleIterator.next();
 
                 if (module.get("active").asBoolean()) {
 
@@ -434,12 +437,12 @@ public class SyncUtilities {
 
         } else {
 
-            Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+            final Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
 
             // Ignore CORE Modules
             while (moduleIterator.hasNext()) {
 
-                JsonNode module = moduleIterator.next();
+                final JsonNode module = moduleIterator.next();
 
                 if (module.get("active").asBoolean() && !getCoreModules().contains(module.get("conceptId").asText())) {
 
@@ -471,7 +474,7 @@ public class SyncUtilities {
 
     }
 
-    public String identifyDefaultLanguageCode(JsonNode codeSystem, String editionName) throws Exception {
+    public String identifyDefaultLanguageCode(final JsonNode codeSystem, final String editionName) throws Exception {
 
         // Identify Edition's defaultLanguageCode - Per Kai, transform first language in set as defaultLangCode
         if (!codeSystem.has("languages")) {
@@ -479,14 +482,14 @@ public class SyncUtilities {
             throw new Exception("All Code Systems must have lanaguages set filled in. " + editionName + " does not");
         }
 
-        Iterator<String> languages = codeSystem.get("languages").fieldNames();
+        final Iterator<String> languages = codeSystem.get("languages").fieldNames();
 
         return languages.next();
     }
 
-    public Set<String> identifyDefaultLanguageRefsets(JsonNode codeSystem, String shortName) {
+    public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName) {
 
-        Set<String> retSet = new HashSet<>();
+        final Set<String> retSet = new HashSet<>();
 
         // Identify Edition's Default Language Refsets
         if (codeSystem.has("defaultLanguageReferenceSets")) {
@@ -549,18 +552,18 @@ public class SyncUtilities {
 
     }
 
-    public void printEditionValues(Edition edition) throws Exception {
+    public void printEditionValues(final Edition edition) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null).getItems();
             final List<Team> teams = service.getAll(Team.class);
 
-            for (Project project : orgProjects) {
+            for (final Project project : orgProjects) {
 
-                for (String teamId : project.getTeams()) {
+                for (final String teamId : project.getTeams()) {
 
-                    Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
+                    final Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
 
                     if (team == null) {
 
@@ -575,17 +578,18 @@ public class SyncUtilities {
 
     }
 
-    public void emailImportResults(String queryResults) throws Exception {
+    public void emailImportResults(final String queryResults) throws Exception {
 
         try {
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
+            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt",
+                dateFormat.format(new Date()));
             final Path path = Paths.get(fileName);
-            byte[] queryResultsToBytes = queryResults.getBytes();
+            final byte[] queryResultsToBytes = queryResults.getBytes();
 
             Files.write(path, queryResultsToBytes);
-        } catch (IOException e) {
-            logger.error("Error occured writing post sync report to file", e);
+        } catch (final IOException e) {
+            LOG.error("Error occured writing post sync report to file", e);
         }
 
         RefsetService.clearAllRefsetCaches(null);
@@ -597,10 +601,10 @@ public class SyncUtilities {
             EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, queryResults);
         }
 
-        logger.info("Completed Syncing with Snowstorm");
+        LOG.info("Completed Syncing with Snowstorm");
     }
 
-    public void initializeService(TerminologyService service) {
+    public void initializeService(final TerminologyService service) {
 
         service.setModifiedBy("Sync");
         service.setModifiedFlag(true);
@@ -631,23 +635,25 @@ public class SyncUtilities {
 
     }
 
-    public boolean isInternationalEdition(String matchingString) {
+    public boolean isInternationalEdition(final String matchingString) {
 
         return "international edition".equals(matchingString.toLowerCase()) || "snomedct".equals(matchingString.toLowerCase());
     }
 
-    public boolean isDeveloperEdition(String editionName) {
+    public boolean isDeveloperEdition(final String editionName) {
 
         return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
     }
 
     public void clearPreviousRun() {
+
         editionModulesMap.clear();
         coreModules.clear();
         undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
     }
 
-    public SyncStatistics setStatistics(SyncStatistics statistics) {
-        return this.statistics = statistics;
+    public SyncStatistics setStatistics(final SyncStatistics statistics) {
+
+        return SyncUtilities.statistics = statistics;
     }
 }

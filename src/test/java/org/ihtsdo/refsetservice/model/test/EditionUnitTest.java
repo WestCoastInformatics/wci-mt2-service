@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model.test;
 
@@ -23,9 +32,8 @@ import org.slf4j.LoggerFactory;
  */
 public class EditionUnitTest extends BaseTest {
 
-    /** The logger. */
-    @SuppressWarnings("unused")
-    private final Logger logger = LoggerFactory.getLogger(EditionUnitTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(EditionUnitTest.class);
 
     /** The model object to test. */
     private Edition object;
@@ -33,6 +41,7 @@ public class EditionUnitTest extends BaseTest {
     /** The organization object. */
     private Organization organization;
 
+    /** The Constant DEFAULT_LANGUAGE_REFSET. */
     private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
     /**
@@ -130,7 +139,7 @@ public class EditionUnitTest extends BaseTest {
 
             final ProxyTester tester2 = new ProxyTester(new Edition());
             final Edition object = (Edition) tester2.createObject(1);
-            logger.info("************ object: " + object);
+            LOG.info("************ object: " + object);
             object.setId(null);
             object.setOrganization(null);
             object.setDefaultLanguageRefsets(null);

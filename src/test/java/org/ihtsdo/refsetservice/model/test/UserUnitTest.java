@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
  */
 public class UserUnitTest extends BaseTest {
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(UserUnitTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UserUnitTest.class);
 
     /** The model object to test. */
     private User object;

@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.util;
 
@@ -8,14 +17,21 @@ import org.ihtsdo.refsetservice.model.Configurable;
 /**
  * Utility methods for handlers.
  */
-public class HandlerUtility {
+public final class HandlerUtility {
 
     /** The property key for service handlers. */
     public static final String SERVICE_KEY = "service.handler";
 
     /**
-     * Instantiates a handler using standard setup and configures it with
-     * properties.
+     * Instantiates an empty {@link HandlerUtility}.
+     */
+    private HandlerUtility() {
+
+        // n/a
+    }
+
+    /**
+     * Instantiates a handler using standard setup and configures it with properties.
      *
      * @param <T> the
      * @param property the property
@@ -24,8 +40,8 @@ public class HandlerUtility {
      * @return the t
      * @throws Exception the exception
      */
-    public static <T extends Configurable> T newStandardHandlerInstanceWithConfiguration(
-        final String property, final String handlerName, final Class<T> type) throws Exception {
+    public static <T extends Configurable> T newStandardHandlerInstanceWithConfiguration(final String property, final String handlerName, final Class<T> type)
+        throws Exception {
 
         // Instantiate the handler
         // property = "metadata.service.handler" (e.g)
@@ -36,7 +52,7 @@ public class HandlerUtility {
             throw new Exception("Unexpected null classkey " + classKey);
         }
         final String handlerClass = PropertyUtility.getProperty(classKey);
-        // logger.debug("Instantiate " + handlerClass);
+        // LOG.debug("Instantiate " + handlerClass);
         final T handler = newHandlerInstance(handlerName, handlerClass, type);
 
         // Look up and build properties
@@ -65,7 +81,7 @@ public class HandlerUtility {
                 }
 
                 // if (!property.contains("password")) {
-                // logger.debug(" property " + shortKey + " = " +
+                // LOG.debug(" property " + shortKey + " = " +
                 // config.getProperty(key.toString()));
                 // }
                 handlerProperties.put(shortKey, PropertyUtility.getProperty(key.toString()));
@@ -87,10 +103,10 @@ public class HandlerUtility {
      * @throws Exception the exception
      */
     @SuppressWarnings({
-            "unchecked", "deprecation"
+        "unchecked", "deprecation"
     })
-    public static <T> T newHandlerInstance(final String handler, final String handlerClass,
-        final Class<T> type) throws Exception {
+    public static <T> T newHandlerInstance(final String handler, final String handlerClass, final Class<T> type) throws Exception {
+
         if (handlerClass == null) {
             throw new Exception("Handler class " + handlerClass + " is not defined");
         }
@@ -106,8 +122,7 @@ public class HandlerUtility {
             // do nothing
         }
         if (o == null) {
-            throw new Exception("Unable to instantiate class " + handlerClass
-                    + ", check for default constructor.");
+            throw new Exception("Unable to instantiate class " + handlerClass + ", check for default constructor.");
         }
         if (type.isAssignableFrom(o.getClass())) {
             return (T) o;

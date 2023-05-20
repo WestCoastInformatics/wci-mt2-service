@@ -163,7 +163,7 @@ public class CrowdGroup {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        CrowdGroup other = (CrowdGroup) obj;
+        final CrowdGroup other = (CrowdGroup) obj;
         if (application == null) {
             if (other.application != null) {
                 return false;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -21,16 +21,17 @@ import org.slf4j.LoggerFactory;
 /**
  * Service class to handle creating and getting audit entries.
  */
-public class AuditService {
+public final class AuditService {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(AuditService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(AuditService.class);
 
     /**
      * Instantiates an empty {@link AuditService}.
      */
-    public AuditService() {
+    private AuditService() {
 
+        // n/a
     }
 
     /**
@@ -47,7 +48,7 @@ public class AuditService {
             return service.get(id, AuditEntry.class);
 
         } catch (final Exception e) {
-            logger.error("Error searching audit entries. Id: {}", id, e);
+            LOG.error("Error searching audit entries. Id: {}", id, e);
             throw e;
         }
 
@@ -83,17 +84,17 @@ public class AuditService {
             if (searchParameters.getSort() != null) {
                 pfs.setSort(searchParameters.getSort());
             }
-            
+
             if (query != null && !query.equals("")) {
                 query = IndexUtility.addWildcardsToQuery("(" + query + ")", AuditEntry.class);
             }
-            
+
             final ResultList<AuditEntry> results = service.find(query, pfs, AuditEntry.class, null);
 
             return results;
 
         } catch (final Exception e) {
-            logger.error("Error searching audit entries. Search Parameters: {}", searchParameters.toString(), e);
+            LOG.error("Error searching audit entries. Search Parameters: {}", searchParameters.toString(), e);
             throw e;
         }
 
@@ -118,7 +119,7 @@ public class AuditService {
             service.commit();
 
         } catch (final Exception e) {
-            logger.error("Error adding audit entry.  AuditEntry: {}", auditEntry.toString(), e);
+            LOG.error("Error adding audit entry.  AuditEntry: {}", auditEntry.toString(), e);
             throw e;
         }
     }

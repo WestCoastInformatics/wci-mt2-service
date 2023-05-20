@@ -21,31 +21,31 @@ public class RefsetEditParameters {
 
     /** The refset concept ID. */
     private String refsetConceptId;
-    
+
     /** The parent concept ID. */
     private String parentConceptId;
-    
+
     /** The branch. */
     private String branch;
-    
+
     /** The project ID. */
     private String projectId;
-    
+
     /** The organization ID. */
     private String organizationId;
-    
+
     /** The narrative. */
     private String narrative;
-    
+
     /** The version notes. */
     private String versionNotes;
-    
+
     /** The definition clauses. */
     private List<DefinitionClause> definitionClauses = new ArrayList<>();
-    
+
     /** The refset type (Extensional or Intesional). */
     private String type;
-    
+
     /** The tags. */
     private Set<String> tags;
 
@@ -56,6 +56,7 @@ public class RefsetEditParameters {
      * Instantiates an empty {@link RefsetEditParameters}.
      */
     public RefsetEditParameters() {
+
         // n/a
     }
 
@@ -65,6 +66,7 @@ public class RefsetEditParameters {
      * @param other the other
      */
     public RefsetEditParameters(final RefsetEditParameters other) {
+
         populateFrom(other);
     }
 
@@ -74,6 +76,7 @@ public class RefsetEditParameters {
      * @param other the other
      */
     public void populateFrom(final RefsetEditParameters other) {
+
         name = other.getName();
         refsetConceptId = other.getRefsetConceptId();
         parentConceptId = other.getParentConceptId();
@@ -94,6 +97,7 @@ public class RefsetEditParameters {
      * @return the name
      */
     public String getName() {
+
         return name;
     }
 
@@ -103,6 +107,7 @@ public class RefsetEditParameters {
      * @param name the name
      */
     public void setName(final String name) {
+
         this.name = name;
     }
 
@@ -112,6 +117,7 @@ public class RefsetEditParameters {
      * @return the refset concept ID
      */
     public String getRefsetConceptId() {
+
         return refsetConceptId;
     }
 
@@ -121,117 +127,130 @@ public class RefsetEditParameters {
      * @param refsetConceptId the refset concept ID
      */
     public void setrefsetConceptId(final String refsetConceptId) {
+
         this.refsetConceptId = refsetConceptId;
     }
-    
+
     /**
      * Returns the parent concept ID.
      *
      * @return the parent concept ID
      */
     public String getParentConceptId() {
+
         return parentConceptId;
     }
-    
+
     /**
      * Sets the parent concept ID.
      *
      * @param parentConceptId the parent concept ID
      */
     public void setParentConceptId(final String parentConceptId) {
+
         this.parentConceptId = parentConceptId;
     }
-    
+
     /**
      * Returns the branch.
      *
      * @return the branch
      */
     public String getBranch() {
+
         return branch;
     }
-    
+
     /**
      * Sets the branch.
      *
      * @param branch the branch
      */
     public void setBranch(final String branch) {
+
         this.branch = branch;
     }
-    
+
     /**
      * Returns the project ID.
      *
      * @return the project ID
      */
     public String getProjectId() {
+
         return projectId;
     }
-    
+
     /**
      * Sets the project ID.
      *
      * @param projectId the project ID
      */
     public void setProjectId(final String projectId) {
+
         this.projectId = projectId;
     }
-    
+
     /**
      * Returns the organizationId.
      *
      * @return the organizationId
      */
     public String getOrganizationId() {
+
         return organizationId;
     }
-    
+
     /**
      * Sets the organization ID.
      *
      * @param organizationId the organization ID
      */
     public void setOrganizationId(final String organizationId) {
+
         this.organizationId = organizationId;
     }
-    
+
     /**
      * Returns the narrative.
      *
      * @return the narrative
      */
     public String getNarrative() {
+
         return narrative;
     }
-    
+
     /**
      * Sets the narrative.
      *
      * @param narrative the narrative
      */
     public void setNarrative(final String narrative) {
+
         this.narrative = narrative;
     }
-    
+
     /**
      * Returns the version notes.
      *
      * @return the versionNotes
      */
     public String getVersionNotes() {
+
         return versionNotes;
     }
-    
+
     /**
      * Sets the version notes.
      *
      * @param versionNotes the version notes
      */
     public void setVersionNotes(final String versionNotes) {
+
         this.versionNotes = versionNotes;
     }
-    
+
     /**
      * Gets the definition clauses.
      *
@@ -252,15 +271,17 @@ public class RefsetEditParameters {
      * @param definitionClauses the definitionClauses to set
      */
     public void setDefinitionClauses(final List<DefinitionClause> definitionClauses) {
+
         this.definitionClauses = definitionClauses;
     }
-    
+
     /**
      * Returns the type.
      *
      * @return the type
      */
     public String getType() {
+
         return type;
     }
 
@@ -270,33 +291,37 @@ public class RefsetEditParameters {
      * @param type the type
      */
     public void setType(final String type) {
+
         this.type = type;
     }
-    
+
     /**
      * Returns the tags.
      *
      * @return the tags
      */
     public Set<String> getTags() {
+
         return tags;
     }
-    
+
     /**
      * Sets the tags.
      *
      * @param tags the tags
      */
     public void setTags(final Set<String> tags) {
+
         this.tags = tags;
     }
-    
+
     /**
      * Returns the local set flag.
      *
      * @return the local set flag
      */
     public Boolean getLocalSet() {
+
         return localSet;
     }
 
@@ -306,6 +331,7 @@ public class RefsetEditParameters {
      * @param localSet the local set flag
      */
     public void setLocalSet(final Boolean localSet) {
+
         this.localSet = localSet;
     }
 
@@ -340,93 +366,93 @@ public class RefsetEditParameters {
         } else if (!refsetConceptId.equals(other.refsetConceptId)) {
             return false;
         }
-        
+
         if (parentConceptId == null) {
-            
+
             if (other.parentConceptId != null) {
                 return false;
             }
-            
+
         } else if (!parentConceptId.equals(other.parentConceptId)) {
             return false;
         }
-        
+
         if (branch == null) {
-            
+
             if (other.branch != null) {
                 return false;
             }
-            
+
         } else if (!branch.equals(other.branch)) {
             return false;
         }
-        
+
         if (projectId == null) {
-            
+
             if (other.projectId != null) {
                 return false;
             }
-            
+
         } else if (!projectId.equals(other.projectId)) {
             return false;
         }
-        
+
         if (organizationId == null) {
-            
+
             if (other.organizationId != null) {
                 return false;
             }
-            
+
         } else if (!organizationId.equals(other.organizationId)) {
             return false;
         }
-        
+
         if (narrative == null) {
-            
+
             if (other.narrative != null) {
                 return false;
             }
-            
+
         } else if (!narrative.equals(other.narrative)) {
             return false;
         }
-        
+
         if (versionNotes == null) {
-            
+
             if (other.versionNotes != null) {
                 return false;
             }
-            
+
         } else if (!versionNotes.equals(other.versionNotes)) {
             return false;
         }
-        
+
         if (definitionClauses == null) {
-            
+
             if (other.definitionClauses != null) {
                 return false;
             }
-            
+
         } else if (!definitionClauses.equals(other.definitionClauses)) {
             return false;
         }
-        
+
         if (type == null) {
-            
+
             if (other.type != null) {
                 return false;
             }
-            
+
         } else if (!type.equals(other.type)) {
             return false;
         }
-        
+
         if (tags == null) {
-            
+
             if (other.tags != null) {
                 return false;
             }
-            
+
         } else if (!tags.equals(other.tags)) {
             return false;
         }

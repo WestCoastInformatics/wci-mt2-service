@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -128,6 +128,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      *
      * @param other the other
      */
+    @Override
     public void populateFrom(final Project other) {
 
         super.populateFrom(other);
@@ -248,14 +249,16 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
         this.edition.setId(editionId);
     }
-    
+
     /**
      * Returns the organization ID.
      *
      * @return the organization ID
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({@PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")}))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
+    }))
     public String getOrganizationId() {
 
         if (edition == null || edition.getOrganization() == null) {
@@ -264,7 +267,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
             return edition.getOrganization().getId();
         }
     }
-    
+
     /**
      * Sets the organization ID.
      *
@@ -566,7 +569,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @Override
     public void lazyInit() {
 
-        // TODO Auto-generated method stub
+        // n/a
     }
 
     /* see superclass */

@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class SyncOperationsInitializer {
 
-    private final Logger logger = LoggerFactory.getLogger(SyncOperationsInitializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncOperationsInitializer.class);
 
     private SyncUtilities utilities;
 
@@ -79,21 +79,23 @@ public class SyncOperationsInitializer {
 
         // Support one-off usages for specific testing cases i.e. adding an intensional refset
         utilities = new SyncUtilities();
-        SyncStatistics statstics = new SyncStatistics();
+        final SyncStatistics statstics = new SyncStatistics();
         utilities.setStatistics(statstics);
 
         initializeSync();
     }
 
-    public SyncOperationsInitializer(SyncUtilities utilities) {
+    public SyncOperationsInitializer(final SyncUtilities utilities) {
 
         this.utilities = utilities;
         initializeSync();
     }
 
     private void initializeSync() {
+
         try {
-            developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
+            developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com",
+                new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
             superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
             rdaAdmimUser = utilities.getUser(RDA_ADMIN_NAME, RDA_ADMIN_NAME, "rda@snomed.org", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
 
@@ -102,21 +104,23 @@ public class SyncOperationsInitializer {
             adminUsers.add(rdaAdmimUser);
 
             // For Feedback Refset
-            feedbackInitiatiorUser = utilities.getUser("feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-            userResponderUser = utilities.getUser("feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-        } catch (Exception e) {
+            feedbackInitiatiorUser = utilities.getUser("feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com",
+                new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+            userResponderUser = utilities.getUser("feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com",
+                new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+        } catch (final Exception e) {
 
             e.printStackTrace();
         }
 
     }
 
-    public void initialize(Edition developerTestingEdition, List<Edition> allDatabaseEditions, List<Refset> allDatabaseRefsets) throws Exception {
+    public void initialize(final Edition developerTestingEdition, final List<Edition> allDatabaseEditions, final List<Refset> allDatabaseRefsets) throws Exception {
 
         // Only run this once on DEV and UAT (but never prod). If developerTestingEdition is set, we know that this has already been run
         if (developerTestingEdition != null) {
 
-            logger.info("Creating testing support and content");
+            LOG.info("Creating testing support and content");
 
             if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(FEEDBACK_INITIAL_REFSET_ID))) {
 
@@ -127,23 +131,23 @@ public class SyncOperationsInitializer {
 
         } else {
 
-            logger.error("Failed to create testing support and content as develeperTestingEdition is null");
+            LOG.error("Failed to create testing support and content as develeperTestingEdition is null");
         }
 
     }
 
-    void createAdminOrganizationTeam(Organization organization) throws Exception {
+    void createAdminOrganizationTeam(final Organization organization) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
 
-            Set<String> memberIds = new HashSet<>();
+            final Set<String> memberIds = new HashSet<>();
 
             memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
 
             utilities.addTeam(TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
-                    new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
+                new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
 
             // Finally, add the users to the organization
             organization.getMembers().addAll(adminUsers);
@@ -157,14 +161,14 @@ public class SyncOperationsInitializer {
 
         final Edition developerEdition = getDeveloperTestingEdition();
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
 
             testingProject = utilities.addProject(WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, developerTestingEdition);
 
             utilities.addWCIRefset(getSyncUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getModules().iterator().next(),
-                    utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
+                utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
 
             // Create wci testing refsets(for DEV only)
             createTestingRefsets();
@@ -180,15 +184,15 @@ public class SyncOperationsInitializer {
 
         final Edition developerEdition = getDeveloperTestingEdition();
 
-        logger.info(" Create Feedback & Intensional refsets for testing (for DEV only)");
+        LOG.info(" Create Feedback & Intensional refsets for testing (for DEV only)");
 
         // create new refset with name = Feedback/Intensional Testing Version 1 with July 31 2022 version off International Edition
-        Refset intensionalRefset = utilities.addWCIRefset(getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
-                utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
+        final Refset intensionalRefset = utilities.addWCIRefset(getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID,
+            developerEdition.getModules().iterator().next(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
         addIntensionalContent(intensionalRefset);
 
-        Refset feedbackRefset = utilities.addWCIRefset(getSyncUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
-                utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
+        final Refset feedbackRefset = utilities.addWCIRefset(getSyncUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID,
+            developerEdition.getModules().iterator().next(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
 
         addFeedbackContent(feedbackRefset);
 
@@ -199,7 +203,7 @@ public class SyncOperationsInitializer {
      */
     public Refset createTestingFeedbackRefset() throws Exception {
 
-        Refset newTestingRefset = createTestingRefset(FEEDBACK_REFSET_NAME_BASE, FEEDBACK_REFSET_ID_BASE);
+        final Refset newTestingRefset = createTestingRefset(FEEDBACK_REFSET_NAME_BASE, FEEDBACK_REFSET_ID_BASE);
 
         addFeedbackContent(newTestingRefset);
 
@@ -211,26 +215,26 @@ public class SyncOperationsInitializer {
      */
     public Refset createTestingIntensionalRefset() throws Exception {
 
-        Refset newTestingRefset = createTestingRefset(INTENSIONAL_REFSET_NAME_BASE, INTENSIONAL_REFSET_ID_BASE);
+        final Refset newTestingRefset = createTestingRefset(INTENSIONAL_REFSET_NAME_BASE, INTENSIONAL_REFSET_ID_BASE);
 
         addIntensionalContent(newTestingRefset);
 
         return newTestingRefset;
     }
 
-    private Refset createTestingRefset(String testingRefsetName, String testingRefsetId) throws Exception {
+    private Refset createTestingRefset(final String testingRefsetName, final String testingRefsetId) throws Exception {
 
         final Project developerTestingProject = getDeveloperTestingProject();
-        final Edition developerTestingEdition = getDeveloperTestingEdition();
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
-            final List<Refset> projectRefsets = service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
+            final List<Refset> projectRefsets =
+                service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
 
             int latestVersion = 0;
 
-            for (Refset projectRefset : projectRefsets) {
+            for (final Refset projectRefset : projectRefsets) {
 
                 if (projectRefset.getRefsetId().startsWith(testingRefsetId) && projectRefset.getName().startsWith(testingRefsetName)) {
 
@@ -252,28 +256,28 @@ public class SyncOperationsInitializer {
 
             if (latestVersion == 0) {
 
-                newTestingRefset = utilities.addWCIRefset(getSyncUser(), testingRefsetName + "1", testingRefsetId + "01", getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "",
-                        getDeveloperTestingProject());
+                newTestingRefset = utilities.addWCIRefset(getSyncUser(), testingRefsetName + "1", testingRefsetId + "01",
+                    getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "", getDeveloperTestingProject());
             } else {
 
                 latestVersion++;
-                String tensValue = Integer.toString(latestVersion / 10);
-                String onesValue = Integer.toString(latestVersion % 10);
+                final String tensValue = Integer.toString(latestVersion / 10);
+                final String onesValue = Integer.toString(latestVersion % 10);
 
                 newTestingRefset = utilities.addWCIRefset(getSyncUser(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
-                        getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "", getDeveloperTestingProject());
+                    getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "", getDeveloperTestingProject());
             }
 
-            logger.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());
+            LOG.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());
 
             return newTestingRefset;
         }
 
     }
 
-    private void addIntensionalContent(Refset refset) throws Exception {
+    private void addIntensionalContent(final Refset refset) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
 
@@ -288,14 +292,14 @@ public class SyncOperationsInitializer {
             refset.setType(Refset.INTENSIONAL);
             refset.getDefinitionClauses().add(persistedClause);
 
-            final Refset updatedRefset = service.update(refset);
+            service.update(refset);
         }
 
     }
 
-    private void addFeedbackContent(Refset refset) throws Exception {
+    private void addFeedbackContent(final Refset refset) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
 
@@ -345,20 +349,20 @@ public class SyncOperationsInitializer {
         }
 
         // Create users for testing initial feedback
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             utilities.initializeService(service);
 
             // Create users and teams, then add to org/project
-            Set<String> userRole = new HashSet<>();
+            final Set<String> userRole = new HashSet<>();
             userRole.add(User.ROLE_AUTHOR);
-            Set<String> memberIds = new HashSet<>();
+            final Set<String> memberIds = new HashSet<>();
             memberIds.add(feedbackInitiatiorUser.getId());
             memberIds.add(userResponderUser.getId());
             adminUsers.stream().forEach(user -> memberIds.add(user.getId()));
 
-            final Team singleFeedbackTeam =
-                    utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", getDeveloperTestingEdition().getOrganization(), allRoles, memberIds);
+            final Team singleFeedbackTeam = utilities.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members",
+                getDeveloperTestingEdition().getOrganization(), allRoles, memberIds);
 
             testingProject.getTeams().add(singleFeedbackTeam.getId());
             testingProject = service.update(testingProject);
@@ -374,11 +378,11 @@ public class SyncOperationsInitializer {
 
         if (testingProject == null) {
 
-            try (TerminologyService service = new TerminologyService()) {
+            try (final TerminologyService service = new TerminologyService()) {
 
-                List<Project> projects = service.getAll(Project.class);
+                final List<Project> projects = service.getAll(Project.class);
 
-                for (Project p : projects) {
+                for (final Project p : projects) {
 
                     if (p.getName().equals(WCI_TESTING_PROJECT_NAME)) {
 
@@ -403,11 +407,11 @@ public class SyncOperationsInitializer {
 
         if (developerTestingEdition == null) {
 
-            try (TerminologyService service = new TerminologyService()) {
+            try (final TerminologyService service = new TerminologyService()) {
 
-                List<Edition> editions = service.getAll(Edition.class);
+                final List<Edition> editions = service.getAll(Edition.class);
 
-                for (Edition e : editions) {
+                for (final Edition e : editions) {
 
                     if (e.getName().toLowerCase().contains("wci")) {
 
@@ -438,7 +442,7 @@ public class SyncOperationsInitializer {
             syncUser.setActive(true);
             syncUser.setEmail("test@wci.com");
 
-            Set<String> roles = new HashSet<>();
+            final Set<String> roles = new HashSet<>();
             roles.add("all-all-all");
             syncUser.setRoles(roles);
         }

@@ -27,9 +27,8 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
  */
 public class S3DownloadUnitTest extends BaseTest {
 
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(S3DownloadUnitTest.class);
-
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(S3DownloadUnitTest.class);
 
     /**
      * Test file download.
@@ -38,10 +37,11 @@ public class S3DownloadUnitTest extends BaseTest {
      */
     @Test
     public void testFileDownload() throws Exception {
-        AmazonS3 s3Client = connectToAmazonS3();
+
+        final AmazonS3 s3Client = connectToAmazonS3();
 
         ObjectListing objects = s3Client.listObjects("wci1");
-        List<S3ObjectSummary> fullKeyList = objects.getObjectSummaries();
+        final List<S3ObjectSummary> fullKeyList = objects.getObjectSummaries();
         objects = s3Client.listNextBatchOfObjects(objects);
 
         while (objects.isTruncated()) {
@@ -52,13 +52,13 @@ public class S3DownloadUnitTest extends BaseTest {
         fullKeyList.addAll(objects.getObjectSummaries());
 
         // Download a single file
-        logger.info("List of files in S3 Bucket:");
-        for (S3ObjectSummary obj : fullKeyList) {
-            logger.info(obj.getKey());
+        LOG.info("List of files in S3 Bucket:");
+        for (final S3ObjectSummary obj : fullKeyList) {
+            LOG.info(obj.getKey());
         }
 
         String downloadFilename = null;
-        for (S3ObjectSummary item : fullKeyList) {
+        for (final S3ObjectSummary item : fullKeyList) {
             if (!item.getKey().endsWith("/")) {
                 downloadFilename = item.getKey();
                 break;
@@ -69,13 +69,12 @@ public class S3DownloadUnitTest extends BaseTest {
             throw new Exception("No files found in S3 bucket");
         }
 
-        logger.info("Going to download the first object only: " + downloadFilename);
+        LOG.info("Going to download the first object only: " + downloadFilename);
 
-        S3Object o = s3Client.getObject("wci1", downloadFilename);
-        S3ObjectInputStream s3is = o.getObjectContent();
-        FileOutputStream fos = new FileOutputStream(
-                new File(downloadFilename.substring(downloadFilename.indexOf("/") + 1)));
-        byte[] readBuf = new byte[1024];
+        final S3Object o = s3Client.getObject("wci1", downloadFilename);
+        final S3ObjectInputStream s3is = o.getObjectContent();
+        final FileOutputStream fos = new FileOutputStream(new File(downloadFilename.substring(downloadFilename.indexOf("/") + 1)));
+        final byte[] readBuf = new byte[1024];
         int readLen = 0;
         while ((readLen = s3is.read(readBuf)) > 0) {
             fos.write(readBuf, 0, readLen);
@@ -90,22 +89,21 @@ public class S3DownloadUnitTest extends BaseTest {
      * @return the amazon S 3
      */
     private AmazonS3 connectToAmazonS3() {
+
         // Connect to server using instance profile credentials
-        AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_1)
-                .withCredentials(new InstanceProfileCredentialsProvider(false)).build();
+        AmazonS3 s3Client =
+            AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_1).withCredentials(new InstanceProfileCredentialsProvider(false)).build();
 
         // Check if connection was successful. If not, try to connect with
         // static
         // keys instead
         try {
             s3Client.listBuckets();
-        } catch (SdkClientException e) {
+        } catch (final SdkClientException e) {
             // Connect to server with static keys
-            BasicAWSCredentials awsCreds = new BasicAWSCredentials(
-                    PropertyUtility.getProperties().getProperty("aws.access.key.id"),
-                    PropertyUtility.getProperties().getProperty("aws.secret.access.key"));
-            s3Client = AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_1)
-                    .withCredentials(new AWSStaticCredentialsProvider(awsCreds)).build();
+            final BasicAWSCredentials awsCreds = new BasicAWSCredentials(PropertyUtility.getProperties().getProperty("aws.access.key.id"),
+                PropertyUtility.getProperties().getProperty("aws.secret.access.key"));
+            s3Client = AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_1).withCredentials(new AWSStaticCredentialsProvider(awsCreds)).build();
 
             // Check connection again. If this fails as well, it will throw the
             // exception to the calling method

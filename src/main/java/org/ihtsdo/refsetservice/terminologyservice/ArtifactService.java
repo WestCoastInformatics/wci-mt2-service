@@ -23,8 +23,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ArtifactService extends BaseService {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(ArtifactService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(ArtifactService.class);
 
     /**
      * Instantiates an empty {@link ArtifactService}.
@@ -47,7 +47,7 @@ public class ArtifactService extends BaseService {
             return service.get(id, Artifact.class);
 
         } catch (final Exception e) {
-            logger.error("Error searching artifact entries. Id: {}", id, e);
+            LOG.error("Error searching artifact entries. Id: {}", id, e);
             throw e;
         }
 
@@ -93,7 +93,7 @@ public class ArtifactService extends BaseService {
             return results;
 
         } catch (final Exception e) {
-            logger.error("Error searching artifact entries. Search Parameters: {}", searchParameters.toString(), e);
+            LOG.error("Error searching artifact entries. Search Parameters: {}", searchParameters.toString(), e);
             throw e;
         }
 
@@ -121,7 +121,7 @@ public class ArtifactService extends BaseService {
             return artifact;
 
         } catch (final Exception e) {
-            logger.error("Error adding artifact.  Artifact: {}", artifact.toString(), e);
+            LOG.error("Error adding artifact.  Artifact: {}", artifact.toString(), e);
             throw e;
         }
     }
@@ -148,7 +148,7 @@ public class ArtifactService extends BaseService {
             return artifact;
 
         } catch (final Exception e) {
-            logger.error("Error updateing artifact.  Artifact: {}", artifact.toString(), e);
+            LOG.error("Error updateing artifact.  Artifact: {}", artifact.toString(), e);
             throw e;
         }
     }

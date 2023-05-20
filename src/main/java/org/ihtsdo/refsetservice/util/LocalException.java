@@ -2,8 +2,7 @@
 package org.ihtsdo.refsetservice.util;
 
 /**
- * Represents a known exception with a user-friendly error message that is
- * handled differently by error handlers.
+ * Represents a known exception with a user-friendly error message that is handled differently by error handlers.
  */
 public class LocalException extends Exception {
 
@@ -14,6 +13,7 @@ public class LocalException extends Exception {
      * @param t the t
      */
     public LocalException(final String message, final Exception t) {
+
         super(message, t);
     }
 
@@ -23,6 +23,7 @@ public class LocalException extends Exception {
      * @param message the message
      */
     public LocalException(final String message) {
+
         super(message);
 
     }

@@ -49,19 +49,20 @@ public class SyncStatistics {
 
     public String printStatistics() {
 
-        StringBuffer buf = new StringBuffer();
+        final StringBuffer buf = new StringBuffer();
 
         buf.append(System.getProperty("line.separator") + "*********    Syncing Results    *************" + System.getProperty("line.separator"));
 
-        buf.append("Code systems encountered: " + codeSystemsSynced + ". Syncing " + codeSystemsFiltered + " after filtered them" + System.getProperty("line.separator"));
+        buf.append("Code systems encountered: " + codeSystemsSynced + ". Syncing " + codeSystemsFiltered + " after filtered them"
+            + System.getProperty("line.separator"));
 
         buf.append("ORGANIZATIONS Added: " + organizationsAdded + " / Unchanged: " + organizationsUnchanged + System.getProperty("line.separator"));
 
-        buf.append("EDITIONS Added: " + editionsAdded + " / Removed: " + editionsRemoved + " / Recreated: " + editionsRecreated + " / Unchanged: " + editionsUnchanged
-                + System.getProperty("line.separator"));
+        buf.append("EDITIONS Added: " + editionsAdded + " / Removed: " + editionsRemoved + " / Recreated: " + editionsRecreated + " / Unchanged: "
+            + editionsUnchanged + System.getProperty("line.separator"));
 
-        buf.append("REFSET VERSION PAIRs Synced " + refsetVersionsSynced + " Added: " + refsetVersionsAdded + " / Removed: " + refsetVersionsRemoved + " / Recreated: " + refsetVersionsRecreated
-                + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
+        buf.append("REFSET VERSION PAIRs Synced " + refsetVersionsSynced + " Added: " + refsetVersionsAdded + " / Removed: " + refsetVersionsRemoved
+            + " / Recreated: " + refsetVersionsRecreated + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
 
         buf.append("Projects " + projectsProcessed.size() + " Processed " + System.getProperty("line.separator"));
         buf.append("Teams " + teamsProcessed.size() + " Processed" + System.getProperty("line.separator"));
@@ -70,6 +71,7 @@ public class SyncStatistics {
     }
 
     public void clearStatistics() {
+
         codeSystemsSynced = 0;
         codeSystemsFiltered = 0;
 
@@ -93,18 +95,22 @@ public class SyncStatistics {
     }
 
     public int getOrganizationsAdded() {
+
         return organizationsAdded;
     }
 
     public int getOrganizationsUnchanged() {
+
         return organizationsUnchanged;
     }
 
     public int getCodeSystemsSynced() {
+
         return codeSystemsSynced;
     }
 
     public int getCodeSystemsFiltered() {
+
         return codeSystemsFiltered;
     }
 
@@ -144,69 +150,85 @@ public class SyncStatistics {
     }
 
     public int getRefsetVersionsSynced() {
+
         return refsetVersionsSynced;
     }
 
     // Increments
-    public void setCodeSystemsSynced(int val) {
+    public void setCodeSystemsSynced(final int val) {
+
         codeSystemsSynced = val;
     }
 
-    public void setCodeSystemsFiltered(int val) {
+    public void setCodeSystemsFiltered(final int val) {
+
         codeSystemsFiltered = val;
     }
 
     public void incrementOrganizationsAdded() {
+
         organizationsAdded++;
     }
 
     public void incrementOrganizationsUnchanged() {
+
         organizationsUnchanged++;
     }
 
     public void incrementRefsetVersionsAdded() {
+
         refsetVersionsAdded++;
     }
 
     public void incrementRefsetVersionsRemoved() {
+
         refsetVersionsRemoved++;
     }
 
     // SETTERS
-    public void setEditionsAdded(int val) {
+    public void setEditionsAdded(final int val) {
+
         editionsAdded = val;
     }
 
-    public void setEditionsRemoved(int val) {
+    public void setEditionsRemoved(final int val) {
+
         editionsRemoved = val;
     }
 
-    public void setEditionsUnchanged(int val) {
+    public void setEditionsUnchanged(final int val) {
+
         editionsUnchanged = val;
     }
 
-    public void setEditionsRecreated(int val) {
+    public void setEditionsRecreated(final int val) {
+
         editionsRecreated = val;
     }
 
-    public void setRefsetVersionsRemoved(int val) {
+    public void setRefsetVersionsRemoved(final int val) {
+
         refsetVersionsRemoved = val;
     }
 
     public void incrementRefsetVersionsUnchanged() {
+
         refsetVersionsUnchanged++;
 
     }
 
     public void incrementRefsetVersionsRecreated() {
+
         refsetVersionsRecreated++;
     }
 
-    public void setRefsetVersionsSynced(int val) {
+    public void setRefsetVersionsSynced(final int val) {
+
         refsetVersionsSynced = val;
     }
 
-    public void setRefsetVersionsAdded(int val) {
+    public void setRefsetVersionsAdded(final int val) {
+
         refsetVersionsAdded = val;
     }
 

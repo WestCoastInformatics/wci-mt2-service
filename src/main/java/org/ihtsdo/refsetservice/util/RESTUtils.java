@@ -22,7 +22,7 @@ public class RESTUtils {
 
     /** The Constant log. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(RESTUtils.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RESTUtils.class);
 
     /** The username. */
     private String username;
@@ -40,6 +40,7 @@ public class RESTUtils {
      * Instantiates an empty {@link RESTUtils}.
      */
     public RESTUtils() {
+
         // n/a
     }
 
@@ -51,8 +52,8 @@ public class RESTUtils {
      * @param readTimeout the read timeout
      * @param connectTimeout the connect timeout
      */
-    public RESTUtils(final String username, final String password, final long readTimeout,
-            final long connectTimeout) {
+    public RESTUtils(final String username, final String password, final long readTimeout, final long connectTimeout) {
+
         this.username = username;
         this.password = password;
         // this.readTimeout = Duration.ofSeconds(readTimeout);
@@ -73,8 +74,7 @@ public class RESTUtils {
 
         final RestTemplate restTemplate = new RestTemplate();
         restTemplate.getInterceptors().add(new BasicAuthenticationInterceptor(username, password));
-        restTemplate.getMessageConverters().add(0,
-                new StringHttpMessageConverter(Charset.forName("UTF-8")));
+        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
         final MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();
         body.add("query", query);
         final HttpHeaders headers = new HttpHeaders();

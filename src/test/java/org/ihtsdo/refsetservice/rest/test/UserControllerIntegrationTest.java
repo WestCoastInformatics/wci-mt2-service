@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -14,8 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.util.Properties;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
@@ -38,7 +36,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -56,16 +53,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class UserControllerIntegrationTest extends BaseTest {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(UserControllerIntegrationTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(UserControllerIntegrationTest.class);
 
     /** The mvc. */
     @Autowired
     private MockMvc mvc;
 
-    /** The test properties. */
-    @Autowired
-    private Properties testProperties;
+    // /** The test properties. */
+    // @Autowired
+    // private Properties testProperties;
 
     /** The object mapper. */
     private ObjectMapper objectMapper;
@@ -73,9 +70,9 @@ public class UserControllerIntegrationTest extends BaseTest {
     /** The base url. */
     private String baseUrl = "";
 
-    /** The env. */
-    @Autowired
-    private Environment env;
+    // /** The env. */
+    // @Autowired
+    // private Environment env;
 
     /** The edition. */
     private Edition edition = null;
@@ -122,9 +119,9 @@ public class UserControllerIntegrationTest extends BaseTest {
         try {
 
             testUser = addUser(testUser);
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("ERROR {}", e.getMessage(), e);
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -148,9 +145,9 @@ public class UserControllerIntegrationTest extends BaseTest {
         try {
 
             edition = EditionService.createEdition(testUser, tempEdition);
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("ERROR {}", e.getMessage(), e);
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -167,9 +164,9 @@ public class UserControllerIntegrationTest extends BaseTest {
 
             service.commit();
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("ERROR {}", e.getMessage(), e);
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -188,15 +185,15 @@ public class UserControllerIntegrationTest extends BaseTest {
             try {
 
                 addUser(user2);
-            } catch (Exception e) {
+            } catch (final Exception e) {
 
-                logger.error("Exception adding users : {}", e);
+                LOG.error("Exception adding users : {}", e);
                 throw e;
             }
 
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
 
-            logger.error("Exception setting up date for tests", ex);
+            LOG.error("Exception setting up date for tests", ex);
             assertThat(false).isEqualTo(true);
         }
 
@@ -220,7 +217,7 @@ public class UserControllerIntegrationTest extends BaseTest {
 
         result = mvc.perform(get(url).queryParam("includeMembers", "true").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
 
         final User newUser = new ObjectMapper().readValue(content, User.class);
         assertThat(compareUsers(testUser, newUser, false)).isTrue();
@@ -267,9 +264,8 @@ public class UserControllerIntegrationTest extends BaseTest {
         // find by user name
         url = baseUrl + "/search?";
 
-        result = mvc.perform(
-            get(url).queryParam("query", "userName:" + testUser.getUserName()).queryParam("includeOrganizations", "false").queryParam("includeTeams", "false").contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk()).andReturn();
+        result = mvc.perform(get(url).queryParam("query", "userName:" + testUser.getUserName()).queryParam("includeOrganizations", "false")
+            .queryParam("includeTeams", "false").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
         final ResultList<User> userNameResultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() {
         }));
@@ -285,11 +281,13 @@ public class UserControllerIntegrationTest extends BaseTest {
         /*
          * NOT INDEXED IN USER url = baseUrl + "/search";
          * 
-         * result = mvc.perform(get(url).queryParam("query", "email:" + testUser.getEmail()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
-         * content = result.getResponse().getContentAsString(); logger.info(" content = {}", content); final ResultList<User> emailResultList = new
+         * result = mvc.perform(get(url).queryParam("query", "email:" +
+         * testUser.getEmail()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn(); content =
+         * result.getResponse().getContentAsString(); LOG.info(" content = {}", content); final ResultList<User> emailResultList = new
          * ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() { }));
          * 
-         * assertThat(emailResultList).isNotNull(); assertThat(emailResultList.getItems()).isNotNull(); assertThat(emailResultList.getItems().size()).isEqualTo(1);
+         * assertThat(emailResultList).isNotNull(); assertThat(emailResultList.getItems()).isNotNull();
+         * assertThat(emailResultList.getItems().size()).isEqualTo(1);
          * 
          * final User emailNewUser = emailResultList.getItems().get(0); assertThat(compareUsers(testUser, emailNewUser, true)).isTrue();
          */
@@ -298,13 +296,15 @@ public class UserControllerIntegrationTest extends BaseTest {
         /*
          * NOT INDEXED IN USER url = baseUrl + "/search";
          * 
-         * result = mvc.perform(get(url).queryParam("query", "name:" + testUser.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
-         * content = result.getResponse().getContentAsString(); logger.info(" content = {}", content); final ResultList<User> resultList = new
+         * result = mvc.perform(get(url).queryParam("query", "name:" +
+         * testUser.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn(); content =
+         * result.getResponse().getContentAsString(); LOG.info(" content = {}", content); final ResultList<User> resultList = new
          * ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() { }));
          * 
          * assertThat(resultList).isNotNull(); assertThat(resultList.getItems()).isNotNull(); assertThat(resultList.getItems().size()).isEqualTo(1);
          * 
-         * final User newUser = resultList.getItems().get(0); assertThat(compareUsers(testUser, newUser, true)).isTrue(); testUser = resultList.getItems().get(0);
+         * final User newUser = resultList.getItems().get(0); assertThat(compareUsers(testUser, newUser, true)).isTrue(); testUser =
+         * resultList.getItems().get(0);
          */
 
     }
@@ -325,7 +325,7 @@ public class UserControllerIntegrationTest extends BaseTest {
     private boolean compareUsers(final User newUser, final User originalUser, final boolean nonUpdatedAttributes) {
 
         boolean pass = false;
-        logger.info("new user record = {}", newUser);
+        LOG.info("new user record = {}", newUser);
         assertThat(newUser).isNotNull();
         assertThat(newUser.getName()).isEqualTo(originalUser.getName());
         assertThat(newUser.isActive()).isEqualTo(originalUser.isActive());

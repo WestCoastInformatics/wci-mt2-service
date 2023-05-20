@@ -17,8 +17,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
  * Abstractly represents something that changes over time.
  */
 @MappedSuperclass
-public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGenerator
-        implements HasModified {
+public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGenerator implements HasModified {
 
     /** The modified. */
     @Column(nullable = false)
@@ -45,16 +44,17 @@ public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGene
      * Instantiates an empty {@link AbstractHasModifiedNoGenerator}.
      */
     protected AbstractHasModifiedNoGenerator() {
+
         super();
     }
 
     /**
-     * Instantiates a {@link AbstractHasModifiedNoGenerator} from the specified
-     * parameters.
+     * Instantiates a {@link AbstractHasModifiedNoGenerator} from the specified parameters.
      *
      * @param other the other
      */
     protected AbstractHasModifiedNoGenerator(final HasModified other) {
+
         populateFrom(other);
     }
 
@@ -64,6 +64,7 @@ public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGene
      * @param other the other
      */
     public void populateFrom(final HasModified other) {
+
         // Only copy this stuff if the object has an id
         if (other.getId() != null) {
             super.populateFrom(other);
@@ -78,40 +79,46 @@ public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGene
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean isActive() {
+
         return active;
     }
 
     /* see superclass */
     @Override
     public void setActive(final boolean active) {
+
         this.active = active;
     }
 
     /* see superclass */
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    //@DateBridge(resolution = Resolution.DAY, encoding = EncodingType.STRING)
+    // @DateBridge(resolution = Resolution.DAY, encoding = EncodingType.STRING)
     public Date getModified() {
+
         return modified;
     }
 
     /* see superclass */
     @Override
     public void setModified(final Date modified) {
+
         this.modified = modified;
     }
 
     /* see superclass */
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    //@DateBridge(resolution = Resolution.DAY, encoding = EncodingType.STRING)
+    // @DateBridge(resolution = Resolution.DAY, encoding = EncodingType.STRING)
     public Date getCreated() {
+
         return created;
     }
 
     /* see superclass */
     @Override
     public void setCreated(final Date created) {
+
         this.created = created;
     }
 
@@ -119,12 +126,14 @@ public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGene
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getModifiedBy() {
+
         return modifiedBy;
     }
 
     /* see superclass */
     @Override
     public void setModifiedBy(final String modifiedBy) {
+
         this.modifiedBy = modifiedBy;
     }
 
@@ -133,6 +142,7 @@ public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGene
      */
     @Override
     public void clearTrackingFields() {
+
         setId(null);
         created = null;
         modified = null;

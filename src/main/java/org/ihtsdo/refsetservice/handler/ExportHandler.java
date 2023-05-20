@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -42,14 +42,24 @@ import com.amazonaws.services.s3.AmazonS3;
  */
 public class ExportHandler {
 
-    private static final String TOP_LEVEL_AWS_FOLDER = S3ConnectionWrapper.PROJECT_DIR + "/";
+    /** The Constant TOP_LEVEL_AWS_FOLDER. */
+    private static final String TOP_LEVEL_AWS_FOLDER = S3ConnectionWrapper.getProjectDirectory() + "/";
 
-    /** The logger. */
-    @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(ExportHandler.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(ExportHandler.class);
 
-    public boolean isRequestedFileOnS3(final Refset refset, AmazonS3 s3Client, String type,
-        Set<String> dates) throws Exception {
+    /**
+     * Indicates whether or not requested file on S 3 is the case.
+     *
+     * @param refset the refset
+     * @param s3Client the s 3 client
+     * @param type the type
+     * @param dates the dates
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     * @throws Exception the exception
+     */
+    public boolean isRequestedFileOnS3(final Refset refset, final AmazonS3 s3Client, final String type, final Set<String> dates) throws Exception {
+
         // Check if date lives on s3
         return false;
     }
@@ -66,7 +76,8 @@ public class ExportHandler {
      * @return the string
      * @throws Exception the exception
      */
-    public String generateRt2VersionFileName(Refset refset, String type, String languageId, Set<String> dates, boolean exportMetadata, boolean withNames) throws Exception {
+    public String generateRt2VersionFileName(final Refset refset, final String type, final String languageId, final Set<String> dates,
+        final boolean exportMetadata, final boolean withNames) throws Exception {
 
         // RT2-1037
         // der2_Refset_<refset_name_in_camelcase><Snapshot|Delta><CountryCode><Namespace>_<PublicationDate>.txt
@@ -102,12 +113,13 @@ public class ExportHandler {
 
         if ("snapshot".equals(type.toLowerCase())) {
 
-            name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-")) + "Snapshot" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0];
+            name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-")) + "Snapshot" + "_" + countryCode + namespace
+                + refset.getRefsetId() + "_" + dates.toArray()[0];
 
         } else {
 
-            name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-")) + "Delta" + "_" + countryCode + namespace + refset.getRefsetId() + "_" + dates.toArray()[0] + "_"
-                + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
+            name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-")) + "Delta" + "_" + countryCode + namespace
+                + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
         }
 
         if (withNames) {
@@ -123,44 +135,87 @@ public class ExportHandler {
         return name;
     }
 
-    public String generateAwsBaseVersionPath(Refset refset, String type, Set<String> dates) throws Exception {
-        
-        String path =  getAwsBranchPath(refset) + "/" + refset.getRefsetId() + "/" + dates.toArray()[0] + "/" + type;
-            
+    /**
+     * Generate aws base version path.
+     *
+     * @param refset the refset
+     * @param type the type
+     * @param dates the dates
+     * @return the string
+     * @throws Exception the exception
+     */
+    public String generateAwsBaseVersionPath(final Refset refset, final String type, final Set<String> dates) throws Exception {
+
+        String path = getAwsBranchPath(refset) + "/" + refset.getRefsetId() + "/" + dates.toArray()[0] + "/" + type;
+
         if (!"snapshot".equals(type.toLowerCase())) {
             path += "/" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
         }
-        
+
         return path;
     }
-    
-    public String getAwsBranchPath(Refset refset) throws Exception {
+
+    /**
+     * Returns the aws branch path.
+     *
+     * @param refset the refset
+     * @return the aws branch path
+     * @throws Exception the exception
+     */
+    public String getAwsBranchPath(final Refset refset) throws Exception {
+
         return TOP_LEVEL_AWS_FOLDER + RefsetService.getBranchPath(refset);
     }
 
-    public String generateSnowVersionFileName(Refset refset, String type, Set<String> dates) {
+    /**
+     * Generate snow version file name.
+     *
+     * @param refset the refset
+     * @param type the type
+     * @param dates the dates
+     * @return the string
+     */
+    public String generateSnowVersionFileName(final Refset refset, final String type, final Set<String> dates) {
+
         // der2_Refset_Simple551000172106Snapshot_BE_20200315
         if ("snapshot".equals(type.toLowerCase())) {
-            return "der2_Refset_Simple" + refset.getRefsetId() + type + "_"
-                    + refset.getEditionShortName() + "_" + dates.toArray()[0] + ".zip";
+            return "der2_Refset_Simple" + refset.getRefsetId() + type + "_" + refset.getEditionShortName() + "_" + dates.toArray()[0] + ".zip";
         } else {
-            return "der2_Refset_Simple" + refset.getRefsetId() + type + "_"
-                    + refset.getEditionShortName() + "_" + dates.toArray()[0] + "_"
-                    + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]) + ".txt";
+            return "der2_Refset_Simple" + refset.getRefsetId() + type + "_" + refset.getEditionShortName() + "_" + dates.toArray()[0] + "_"
+                + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]) + ".txt";
         }
     }
 
+    /**
+     * Returns the top level aws path.
+     *
+     * @return the top level aws path
+     */
     public String getTopLevelAwsPath() {
+
         return TOP_LEVEL_AWS_FOLDER;
     }
-    
-    public boolean deleteFilesFromBranchPath(final String branchPath) throws Exception{
-        
-        S3ConnectionWrapper.connectToAmazonS3();
+
+    /**
+     * Delete files from branch path.
+     *
+     * @param branchPath the branch path
+     * @return true, if successful
+     * @throws Exception the exception
+     */
+    public boolean deleteFilesFromBranchPath(final String branchPath) throws Exception {
+
         return S3ConnectionWrapper.deleteObjectFromAws(getTopLevelAwsPath() + branchPath);
     }
 
-    public String generateSnowVersionFile(String entityString) throws Exception {
+    /**
+     * Generate snow version file.
+     *
+     * @param entityString the entity string
+     * @return the string
+     * @throws Exception the exception
+     */
+    public String generateSnowVersionFile(final String entityString) throws Exception {
         /*-
          * Example of entity
          {
@@ -177,51 +232,50 @@ public class ExportHandler {
             "unpromotedChangesOnly": false
         } */
 
-        logger.debug(entityString);
+        LOG.debug(entityString);
 
         // Call Snowstorm to create RF2 file
-        String snowstormExportApiUrl = SnowstormConnection.BASE_URL + "exports";
-
-        logger.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entityString);
+        final String snowstormExportApiUrl = SnowstormConnection.getBaseUrl() + "exports";
+        LOG.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entityString);
 
         String snowVersionFileUrl = "";
 
-        try (Response response =
-                SnowstormConnection.postResponse(snowstormExportApiUrl, entityString)) {
+        try {
+            final Response response = SnowstormConnection.postResponse(snowstormExportApiUrl, entityString);
 
             snowVersionFileUrl = response.getLocation().toString() + "/archive";
-            logger.debug("Snowstorm File URL: " + snowVersionFileUrl);
+            LOG.debug("Snowstorm File URL: " + snowVersionFileUrl);
 
-        } catch (Exception ex) {
-            throw new Exception(
-                    "Could not generate the Rf2 file by snowstorm with : " + entityString, ex);
+        } catch (final Exception ex) {
+            throw new Exception("Could not generate the Rf2 file by snowstorm with : " + entityString, ex);
 
         }
 
         return snowVersionFileUrl;
     }
 
-    public void downloadSnowGeneratedFile(String snowVersionFileUrl, String localSnowVersionPath)
-        throws Exception {
+    /**
+     * Download snow generated file.
+     *
+     * @param snowVersionFileUrl the snow version file url
+     * @param localSnowVersionPath the local snow version path
+     * @throws Exception the exception
+     */
+    public void downloadSnowGeneratedFile(final String snowVersionFileUrl, final String localSnowVersionPath) throws Exception {
 
         // Download generated file from Snowstorm
-        try {
+        LOG.debug("Local snow version file path is: " + localSnowVersionPath);
 
-            logger.debug("Local snow version file path is: " + localSnowVersionPath);
+        final InputStream inputStream = SnowstormConnection.getFileDownload(snowVersionFileUrl);
+        // Download the Snowstorm file
 
-            // Download the Snowstorm file
-            try (InputStream inputStream = SnowstormConnection.getFileDownload(snowVersionFileUrl);
-                    ReadableByteChannel readableByteChannel = Channels.newChannel(inputStream);
-                    FileOutputStream fileOutputStream = new FileOutputStream(localSnowVersionPath);
-                    FileChannel fileChannel = fileOutputStream.getChannel()) {
+        try (final ReadableByteChannel readableByteChannel = Channels.newChannel(inputStream);
+            final FileOutputStream fileOutputStream = new FileOutputStream(localSnowVersionPath);
+            final FileChannel fileChannel = fileOutputStream.getChannel()) {
 
-                fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-                fileOutputStream.close();
-            }
-
-        } catch (Exception ex) {
-            throw new Exception(
-                    "Failed to download the Snowstorm generated RF2 file: " + ex.getMessage(), ex);
+            fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+        } catch (final Exception ex) {
+            throw new Exception("Failed to download the Snowstorm generated RF2 file: " + ex.getMessage(), ex);
         }
     }
 }

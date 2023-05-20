@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -90,9 +90,10 @@ public class Edition extends AbstractHasModified {
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Organization organization;
-    
-    /** The modules and names for this edition. 
-     * TODO - This is a temporary field until we fix sync to add the module name to the main modules field */
+
+    /**
+     * The modules and names for this edition. TODO - This is a temporary field until we fix sync to add the module name to the main modules field
+     */
     @Transient
     private Map<String, String> moduleNames;
 
@@ -320,7 +321,7 @@ public class Edition extends AbstractHasModified {
                 continue;
             }
 
-            Map<String, String> languageDetails = new HashMap<>();
+            final Map<String, String> languageDetails = new HashMap<>();
             languageDetails.put("languageRefset", languageRefsetCode);
             languageDetails.put("languageCode", languageCode);
             languageDetails.put("qualifiedLanguageRefset", languageRefsetCode + "PT");
@@ -339,8 +340,8 @@ public class Edition extends AbstractHasModified {
 
                 if (languageCode.equals("en")) {
 
-                    qualifiedLanguageList.add(1, Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset", languageRefsetCode + "FSN",
-                        "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"));
+                    qualifiedLanguageList.add(1, Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset",
+                        languageRefsetCode + "FSN", "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"));
                 }
 
             } else {
@@ -430,7 +431,7 @@ public class Edition extends AbstractHasModified {
     /**
      * Sets the organization.
      *
-     * @param edition the organization to set
+     * @param organization the organization
      */
     public void setOrganization(final Organization organization) {
 
@@ -441,7 +442,7 @@ public class Edition extends AbstractHasModified {
      * Returns the organization ID.
      *
      * @return the organization ID
-     * @throws Exception
+     * @throws Exception the exception
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(derivedFrom = @ObjectPath({
@@ -478,7 +479,7 @@ public class Edition extends AbstractHasModified {
      * Returns the organization name.
      *
      * @return the organization name
-     * @throws Exception
+     * @throws Exception the exception
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(derivedFrom = @ObjectPath({
@@ -510,10 +511,10 @@ public class Edition extends AbstractHasModified {
             this.organization.setName(organizationName);
         }
     }
-    
+
     /**
-     * Gets the modules and names for this edition
-     * 
+     * Gets the modules and names for this edition.
+     *
      * @return The modules and names for this edition
      */
     @JsonGetter()
@@ -528,11 +529,11 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
-     * Sets the modules and names for this edition
-     * 
+     * Sets the modules and names for this edition.
+     *
      * @param moduleNames modules and names for this edition
      */
-    public void setModuleNames(Map<String, String> moduleNames) {
+    public void setModuleNames(final Map<String, String> moduleNames) {
 
         this.moduleNames = moduleNames;
     }
@@ -693,16 +694,16 @@ public class Edition extends AbstractHasModified {
 
             return false;
         }
-        
+
         if (moduleNames == null) {
-            
+
             if (other.moduleNames != null) {
-                
+
                 return false;
             }
-            
+
         } else if (!moduleNames.equals(other.moduleNames)) {
-            
+
             return false;
         }
 
@@ -714,7 +715,7 @@ public class Edition extends AbstractHasModified {
      */
     @Override
     public void lazyInit() {
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 }

@@ -14,12 +14,14 @@ public abstract class BaseModel {
      * Instantiates an empty {@link BaseModel}.
      */
     protected BaseModel() {
+
         // n/a
     }
 
     /* see superclass */
     @Override
     public String toString() {
+
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {

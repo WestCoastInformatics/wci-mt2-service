@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.service;
 
@@ -47,11 +56,10 @@ import org.slf4j.LoggerFactory;
 /**
  * JPA implementation of the root services.
  */
-// @Component
 public class TerminologyService implements RootService {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(TerminologyService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(TerminologyService.class);
 
     /** The last modified flag. */
     private boolean lastModifiedFlag = true;
@@ -73,10 +81,10 @@ public class TerminologyService implements RootService {
 
     /** The transaction per operation. */
     private boolean transactionPerOperation = true;
-    
+
     /** Should multiple transactions per operation be automatically allowed. */
     private boolean autoMultipleTransactionsPerOperation = true;
-    
+
     /** The transaction per operation internally changed. */
     private boolean transactionPerOperationIntenallyChanged = false;
 
@@ -106,38 +114,33 @@ public class TerminologyService implements RootService {
         // created once or if the factory has closed
         if (factory == null || !factory.isOpen()) {
 
-            logger.debug("Setting root service entity manager factory. ", properties);
-            factory = Persistence.createEntityManagerFactory("refsetservice-ds",
-                    PropertyUtility.getJpaProperties());
+            LOG.debug("Setting root service entity manager factory. ", properties);
+            factory = Persistence.createEntityManagerFactory("refsetservice-ds", PropertyUtility.getJpaProperties());
         }
 
         if (searchHandlerMap == null) {
             final String key = "search.handler";
             searchHandlerMap = new HashMap<>();
-            logger.debug(">>>>>> handler property: " + PropertyUtility.getProperty(key));
+            LOG.debug(">>>>>> handler property: " + PropertyUtility.getProperty(key));
 
             for (final String handlerName : PropertyUtility.getProperty(key).split(",")) {
-                logger.debug(">>>>>> handler name: " + handlerName);
+                LOG.debug(">>>>>> handler name: " + handlerName);
                 if (handlerName.isEmpty()) {
                     continue;
                 }
 
                 // Add handlers to map
-                final SearchHandler handlerService =
-                        HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
-                                SearchHandler.class);
+                final SearchHandler handlerService = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, SearchHandler.class);
                 searchHandlerMap.put(handlerName, handlerService);
             }
 
-            logger.debug(">>>>>> searchHandlerMap: " + ModelUtility.toJson(searchHandlerMap));
+            LOG.debug(">>>>>> searchHandlerMap: " + ModelUtility.toJson(searchHandlerMap));
 
             if (!searchHandlerMap.containsKey(ModelUtility.DEFAULT)) {
-                throw new Exception(
-                        "search.handler." + ModelUtility.DEFAULT + " expected and does not exist.");
+                throw new Exception("search.handler." + ModelUtility.DEFAULT + " expected and does not exist.");
             }
 
-            logger.debug("  initialize search handler = " + searchHandlerMap.values().stream()
-                    .map(f -> f.getName()).collect(Collectors.toSet()));
+            LOG.debug("  initialize search handler = " + searchHandlerMap.values().stream().map(f -> f.getName()).collect(Collectors.toSet()));
 
             // Validate the search handler map was initialized successfuly
             validateInit();
@@ -149,7 +152,7 @@ public class TerminologyService implements RootService {
 
         // If we're using DDL "create" mode, clear the indexes
         if (reindex || "create".equals(properties.getProperty("hibernate.hbm2ddl.auto"))) {
-            logger.info("  clear indexes");
+            LOG.info("  clear indexes");
             clearLuceneIndexes();
             computeLuceneIndexes(null);
             reindex = false;
@@ -182,12 +185,11 @@ public class TerminologyService implements RootService {
     @SuppressWarnings("unchecked")
     @Override
     public Class<? extends HasModified> getType(final String type) throws Exception {
+
         try {
-            return (Class<? extends HasModified>) Class
-                    .forName(modelPackage + "." + StringUtility.capitalize(type));
+            return (Class<? extends HasModified>) Class.forName(modelPackage + "." + StringUtility.capitalize(type));
         } catch (final Exception e) {
-            return (Class<? extends HasModified>) Class
-                    .forName(modelPackage2 + "." + StringUtility.capitalize(type));
+            return (Class<? extends HasModified>) Class.forName(modelPackage2 + "." + StringUtility.capitalize(type));
 
         }
     }
@@ -206,7 +208,7 @@ public class TerminologyService implements RootService {
             throw new Exception("Factory is null, serious problem.");
         }
         if (!factory.isOpen()) {
-            logger.debug("Setting root service entity manager factory.");
+            LOG.debug("Setting root service entity manager factory.");
             factory = Persistence.createEntityManagerFactory("TermServiceDS", properties);
         }
     }
@@ -219,6 +221,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void closeFactory() throws Exception {
+
         if (factory.isOpen()) {
             factory.close();
         }
@@ -232,6 +235,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public boolean getTransactionPerOperation() {
+
         return transactionPerOperation;
     }
 
@@ -243,6 +247,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void setTransactionPerOperation(final boolean transactionPerOperation) {
+
         this.transactionPerOperation = transactionPerOperation;
     }
 
@@ -256,10 +261,10 @@ public class TerminologyService implements RootService {
     public void beginTransaction() throws Exception {
 
         if (transactionPerOperation && autoMultipleTransactionsPerOperation) {
-            
+
             transactionPerOperation = false;
             transactionPerOperationIntenallyChanged = true;
-            
+
         } else if (transaction != null && transaction.isActive()) {
             throw new IllegalStateException("Error attempting to begin a transaction when there " + "is already an active transaction");
         }
@@ -279,17 +284,17 @@ public class TerminologyService implements RootService {
 
         if (transactionPerOperation) {
             throw new IllegalStateException("Error attempting to commit a transaction when using transactions per operation mode.");
-            
+
         } else if (transaction != null && !transaction.isActive()) {
             throw new IllegalStateException("Error attempting to commit a transaction when there is no active transaction");
-            
+
         } else if (transaction != null) {
-            
+
             transaction.commit();
             manager.clear();
-            
+
             if (transactionPerOperationIntenallyChanged) {
-                
+
                 transactionPerOperationIntenallyChanged = false;
                 transactionPerOperation = true;
             }
@@ -306,11 +311,9 @@ public class TerminologyService implements RootService {
     public void rollback() throws Exception {
 
         if (getTransactionPerOperation()) {
-            throw new IllegalStateException(
-                    "Error attempting to rollback a transaction when using transactions per "
-                            + " operation mode.");
+            throw new IllegalStateException("Error attempting to rollback a transaction when using transactions per " + " operation mode.");
         } else if (transaction != null && !transaction.isActive()) {
-            logger.debug("n/a");
+            LOG.debug("n/a");
         } else if (transaction != null) {
             transaction.rollback();
             manager.clear();
@@ -325,6 +328,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void close() throws Exception {
+
         if (manager.isOpen()) {
             manager.close();
         }
@@ -338,6 +342,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void clear() throws Exception {
+
         if (manager.isOpen()) {
             manager.clear();
         }
@@ -351,6 +356,7 @@ public class TerminologyService implements RootService {
      */
     @Override
     public EntityManager getEntityManager() throws Exception {
+
         return manager;
     }
 
@@ -362,8 +368,8 @@ public class TerminologyService implements RootService {
      * @return the javax.persistence. query
      * @throws Exception the exception
      */
-    public javax.persistence.Query applyPfsToJPQLQuery(final String queryStr,
-        final PfsParameter pfs) throws Exception {
+    public javax.persistence.Query applyPfsToJPQLQuery(final String queryStr, final PfsParameter pfs) throws Exception {
+
         final StringBuilder localQueryStr = new StringBuilder();
         localQueryStr.append(queryStr);
 
@@ -389,13 +395,12 @@ public class TerminologyService implements RootService {
      * Retrieves the sort field value from an object.
      *
      * @param o the object
-     * @param sortField the period-separated X list of sequential getX methods,
-     *            e.g. a.b.c
+     * @param sortField the period-separated X list of sequential getX methods, e.g. a.b.c
      * @return the value of the requested sort field
      * @throws Exception the exception
      */
-    @SuppressWarnings("null")
     public Object getSortFieldValue(final Object o, final String sortField) throws Exception {
+
         // split the fields for method retrieval, e.g. a.b.c. =
         // o.getA().getB().getC()
         final String[] splitFields = sortField.split("\\.");
@@ -405,20 +410,16 @@ public class TerminologyService implements RootService {
         Object finalObject = o;
 
         while (i < splitFields.length) {
-            finalMethod = finalObject.getClass()
-                    .getMethod("get" + StringUtility.capitalize(splitFields[i]), new Class<?>[] {});
+            finalMethod = finalObject.getClass().getMethod("get" + StringUtility.capitalize(splitFields[i]), new Class<?>[] {});
             finalMethod.setAccessible(true);
             finalObject = finalMethod.invoke(finalObject, new Object[] {});
             i++;
         }
 
         // verify that final object is actually a string, enum, or date
-        if (!finalMethod.getReturnType().equals(String.class)
-                && !finalMethod.getReturnType().isEnum()
-                && !finalMethod.getReturnType().equals(Long.class)
-                && !finalMethod.getReturnType().equals(Date.class)) {
-            throw new Exception("Requested sort field value is not string, enum, or date value "
-                    + finalMethod.getReturnType().getName());
+        if (!finalMethod.getReturnType().equals(String.class) && !finalMethod.getReturnType().isEnum() && !finalMethod.getReturnType().equals(Long.class)
+            && !finalMethod.getReturnType().equals(Date.class)) {
+            throw new Exception("Requested sort field value is not string, enum, or date value " + finalMethod.getReturnType().getName());
         }
         return finalObject;
 
@@ -428,14 +429,13 @@ public class TerminologyService implements RootService {
      * Retrieves the sort field value from an object.
      *
      * @param o the object
-     * @param sortField the period-separated X list of sequential getX methods,
-     *            e.g. a.b.c
+     * @param sortField the period-separated X list of sequential getX methods, e.g. a.b.c
      * @return the value of the requested sort field
      * @throws Exception the exception
      */
-    @SuppressWarnings("null")
     // package visibility
-    Class<?> getSortFieldType(final Object o, final String sortField) throws Exception {
+    protected Class<?> getSortFieldType(final Object o, final String sortField) throws Exception {
+
         // split the fields for method retrieval, e.g. a.b.c. =
         // o.getA().getB().getC()
         final String[] splitFields = sortField.split("\\.");
@@ -445,20 +445,16 @@ public class TerminologyService implements RootService {
         Object finalObject = o;
 
         while (i < splitFields.length) {
-            finalMethod = finalObject.getClass()
-                    .getMethod("get" + StringUtility.capitalize(splitFields[i]), new Class<?>[] {});
+            finalMethod = finalObject.getClass().getMethod("get" + StringUtility.capitalize(splitFields[i]), new Class<?>[] {});
             finalMethod.setAccessible(true);
             finalObject = finalMethod.invoke(finalObject, new Object[] {});
             i++;
         }
 
         // verify that final object is actually a string, enum, or date
-        if (!finalMethod.getReturnType().equals(String.class)
-                && !finalMethod.getReturnType().isEnum()
-                && !finalMethod.getReturnType().equals(Long.class)
-                && !finalMethod.getReturnType().equals(Date.class)) {
-            throw new Exception("Requested sort field value is not string, enum, or date value "
-                    + finalMethod.getReturnType().getName());
+        if (!finalMethod.getReturnType().equals(String.class) && !finalMethod.getReturnType().isEnum() && !finalMethod.getReturnType().equals(Long.class)
+            && !finalMethod.getReturnType().equals(Date.class)) {
+            throw new Exception("Requested sort field value is not string, enum, or date value " + finalMethod.getReturnType().getName());
         }
         return finalMethod.getReturnType();
 
@@ -476,8 +472,7 @@ public class TerminologyService implements RootService {
      * @throws Exception the exception
      */
     @Override
-    public <T> List<T> applyPfsToList(final List<T> list, final Class<T> clazz, final int[] totalCt,
-        final PfsParameter pfs) throws Exception {
+    public <T> List<T> applyPfsToList(final List<T> list, final Class<T> clazz, final int[] totalCt, final PfsParameter pfs) throws Exception {
 
         // Skip empty pfs
         if (pfs == null) {
@@ -512,9 +507,9 @@ public class TerminologyService implements RootService {
             // sort the list
             Collections.sort(result, new Comparator<T>() {
 
-                @SuppressWarnings("null")
                 @Override
                 public int compare(final T t1, final T t2) {
+
                     // if an exception is returned, simply pass equality
                     try {
 
@@ -530,10 +525,8 @@ public class TerminologyService implements RootService {
 
                                 // handle date comparison by long value
                                 if (isDate || isLong) {
-                                    final Long l1 = s1 == null ? null
-                                            : (isDate ? ((Date) s1).getTime() : ((Long) s1));
-                                    final Long l2 = s2 == null ? null
-                                            : (isDate ? ((Date) s2).getTime() : ((Long) s2));
+                                    final Long l1 = s1 == null ? null : (isDate ? ((Date) s1).getTime() : ((Long) s1));
+                                    final Long l2 = s2 == null ? null : (isDate ? ((Date) s2).getTime() : ((Long) s2));
 
                                     if (ascending) {
                                         if (l1 == null && s2 != null) {
@@ -570,8 +563,7 @@ public class TerminologyService implements RootService {
                                     if (s2 == null && s1 != null) {
                                         return -1;
                                     }
-                                    if (s2 != null
-                                            && (s2.toString()).compareTo(s1.toString()) != 0) {
+                                    if (s2 != null && (s2.toString()).compareTo(s1.toString()) != 0) {
                                         return (s2.toString()).compareTo(s1.toString());
                                     } else {
                                         return 0;
@@ -597,6 +589,7 @@ public class TerminologyService implements RootService {
 
                 @Override
                 public int compare(final T arg0, final T arg1) {
+
                     return random.nextInt();
                 }
             });
@@ -613,8 +606,7 @@ public class TerminologyService implements RootService {
         if (pfs.getOffset() != -1) {
             startIndex = pfs.getOffset();
             // End of the list, or ...
-            toIndex = (pfs.getLimit() == -1) ? result.size()
-                    : Math.min(result.size(), startIndex + pfs.getLimit());
+            toIndex = (pfs.getLimit() == -1) ? result.size() : Math.min(result.size(), startIndex + pfs.getLimit());
             if (startIndex > toIndex) {
                 startIndex = 0;
             }
@@ -632,6 +624,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void setModifiedFlag(final boolean lastModifiedFlag) {
+
         this.lastModifiedFlag = lastModifiedFlag;
     }
 
@@ -643,6 +636,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public boolean isModifiedFlag() {
+
         return lastModifiedFlag;
     }
 
@@ -654,6 +648,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void commitClearBegin() throws Exception {
+
         commit();
         clear();
         beginTransaction();
@@ -669,11 +664,11 @@ public class TerminologyService implements RootService {
      */
     /* see superclass */
     @Override
-    public void logAndCommit(final int objectCt, final int logCt, final int commitCt)
-        throws Exception {
+    public void logAndCommit(final int objectCt, final int logCt, final int commitCt) throws Exception {
+
         // log at regular intervals
         if (objectCt % logCt == 0 && objectCt > 0) {
-            logger.info("    count = " + objectCt);
+            LOG.info("    count = " + objectCt);
         }
         if (objectCt % commitCt == 0) {
             commitClearBegin();
@@ -727,6 +722,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public <T extends Object> T addObject(final T object) throws Exception {
+
         try {
             // add
             if (getTransactionPerOperation()) {
@@ -753,14 +749,12 @@ public class TerminologyService implements RootService {
      * @param hasLastModified the has last modified
      * @throws Exception the exception
      */
-    public <T extends HasModified> void updateHasLastModified(final T hasLastModified)
-        throws Exception {
+    public <T extends HasModified> void updateHasLastModified(final T hasLastModified) throws Exception {
 
         // set last modified fields (user, timestamp)
         if (isModifiedFlag()) {
             if (getModifiedBy() == null) {
-                throw new Exception(
-                        "Service cannot update object, name of modifying user required");
+                throw new Exception("Service cannot update object, name of modifying user required");
             } else {
                 hasLastModified.setModifiedBy(getModifiedBy());
             }
@@ -788,6 +782,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public <T extends Object> void updateObject(final T object) throws Exception {
+
         try {
             // update
             if (getTransactionPerOperation()) {
@@ -816,8 +811,8 @@ public class TerminologyService implements RootService {
      * @return the t
      * @throws Exception the exception
      */
-    public <T extends HasModified> T removeHasLastModified(final String id, final Class<T> clazz)
-        throws Exception {
+    public <T extends HasModified> T removeHasLastModified(final String id, final Class<T> clazz) throws Exception {
+
         try {
             // Get transaction and object
             transaction = manager.getTransaction();
@@ -826,8 +821,7 @@ public class TerminologyService implements RootService {
             // set last modified fields (user, timestamp)
             if (isModifiedFlag()) {
                 if (getModifiedBy() == null) {
-                    throw new Exception(
-                            "Service cannot remove object, name of modifying user required");
+                    throw new Exception("Service cannot remove object, name of modifying user required");
                 } else {
                     hasLastModified.setModifiedBy(getModifiedBy());
                 }
@@ -871,6 +865,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public <T extends Object> void removeObject(final T object) throws Exception {
+
         try {
             // Get transaction and object
             transaction = manager.getTransaction();
@@ -907,8 +902,8 @@ public class TerminologyService implements RootService {
      * @return the checks for object
      * @throws Exception the exception
      */
-    protected <T extends Object> T getObject(final String id, final Class<T> clazz)
-        throws Exception {
+    protected <T extends Object> T getObject(final String id, final Class<T> clazz) throws Exception {
+
         // Get transaction and object
         transaction = manager.getTransaction();
         final T component = manager.find(clazz, id);
@@ -924,6 +919,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void lockObject(final Object object) throws Exception {
+
         manager.lock(object, LockModeType.PESSIMISTIC_WRITE);
     }
 
@@ -935,6 +931,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void unlockObject(final Object object) {
+
         manager.lock(object, LockModeType.NONE);
     }
 
@@ -948,6 +945,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public boolean isObjectLocked(final Object object) throws Exception {
+
         return manager.getLockMode(object).equals(LockModeType.PESSIMISTIC_WRITE);
     }
 
@@ -959,6 +957,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void refreshCaches() throws Exception {
+
         // init();
         closeFactory();
         openFactory();
@@ -972,6 +971,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public String getModifiedBy() {
+
         return lastModifiedBy;
     }
 
@@ -983,6 +983,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void setModifiedBy(final String lastModifiedBy) {
+
         this.lastModifiedBy = lastModifiedBy;
     }
 
@@ -998,6 +999,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public <T extends HasId> T get(final String id, final Class<T> clazz) throws Exception {
+
         if (id == null) {
             return null;
         }
@@ -1024,9 +1026,9 @@ public class TerminologyService implements RootService {
     @SuppressWarnings("unchecked")
     @Override
     public <T extends HasModified> List<T> getAll(final Class<T> clazz) throws Exception {
+
         try {
-            final javax.persistence.Query query =
-                    getEntityManager().createQuery("from " + clazz.getName());
+            final javax.persistence.Query query = getEntityManager().createQuery("from " + clazz.getName());
             return query.getResultList();
         } catch (final NoResultException e) {
             return null;
@@ -1046,8 +1048,8 @@ public class TerminologyService implements RootService {
      */
     /* see superclass */
     @Override
-    public <T extends HasId> ResultList<T> find(final String query, final PfsParameter pfs,
-        final Class<T> clazz, final String handler) throws Exception {
+    public <T extends HasId> ResultList<T> find(final String query, final PfsParameter pfs, final Class<T> clazz, final String handler) throws Exception {
+
         return find(new QueryParameter(query), pfs, clazz, handler);
     }
 
@@ -1064,8 +1066,9 @@ public class TerminologyService implements RootService {
      */
     /* see superclass */
     @Override
-    public <T extends HasId> ResultList<String> findIds(final String query, final PfsParameter pfs,
-        final Class<T> clazz, final String handler) throws Exception {
+    public <T extends HasId> ResultList<String> findIds(final String query, final PfsParameter pfs, final Class<T> clazz, final String handler)
+        throws Exception {
+
         return findIds(new QueryParameter(query), pfs, clazz, handler);
     }
 
@@ -1082,8 +1085,8 @@ public class TerminologyService implements RootService {
      */
     /* see superclass */
     @Override
-    public <T extends HasId> int findTotal(final String query, final PfsParameter pfs,
-        final Class<T> clazz, final String handler) throws Exception {
+    public <T extends HasId> int findTotal(final String query, final PfsParameter pfs, final Class<T> clazz, final String handler) throws Exception {
+
         return findTotal(new QueryParameter(query), pfs, clazz, handler);
     }
 
@@ -1100,19 +1103,17 @@ public class TerminologyService implements RootService {
      */
     /* see superclass */
     @Override
-    public <T extends HasId> ResultList<T> find(final QueryParameter query, final PfsParameter pfs,
-        final Class<T> clazz, final String handler) throws Exception {
+    public <T extends HasId> ResultList<T> find(final QueryParameter query, final PfsParameter pfs, final Class<T> clazz, final String handler)
+        throws Exception {
+
         final ResultList<T> list = new ResultList<>();
         final int[] totalCt = new int[1];
         if (query == null) {
-            list.setItems(getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler,
-                    SearchHandler.class).getQueryResults("*:*", null, null, clazz, pfs, totalCt,
-                            getEntityManager()));
+            list.setItems(getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler, SearchHandler.class).getQueryResults("*:*", null, null, clazz,
+                pfs, totalCt, getEntityManager()));
         } else {
-            list.setItems(getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler,
-                    SearchHandler.class).getQueryResults(query.getQuery(),
-                            query.getFieldedClauses(), query.getAdditionalClauses(), clazz, pfs,
-                            totalCt, getEntityManager()));
+            list.setItems(getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler, SearchHandler.class).getQueryResults(query.getQuery(),
+                query.getFieldedClauses(), query.getAdditionalClauses(), clazz, pfs, totalCt, getEntityManager()));
         }
         list.setTotal(totalCt[0]);
         list.setLimit(pfs == null ? new PfsParameter().getLimit() : pfs.getLimit());
@@ -1124,7 +1125,7 @@ public class TerminologyService implements RootService {
         // ((HasJsonData) x).unmarshall();
         // }
         // } catch (Exception e) {
-        // logger.error("Unexpected error unmarshalling search result", e);
+        // LOG.error("Unexpected error unmarshalling search result", e);
         // }
         // }).count();
         return list;
@@ -1143,18 +1144,17 @@ public class TerminologyService implements RootService {
      */
     /* see superclass */
     @Override
-    public <T extends HasId> ResultList<String> findIds(final QueryParameter query,
-        final PfsParameter pfs, final Class<T> clazz, final String handler) throws Exception {
+    public <T extends HasId> ResultList<String> findIds(final QueryParameter query, final PfsParameter pfs, final Class<T> clazz, final String handler)
+        throws Exception {
+
         final ResultList<String> list = new ResultList<>();
         final int[] totalCt = new int[1];
         if (query == null) {
-            list.setItems(getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler,
-                    SearchHandler.class).getIdResults("*:*", null, null, clazz, pfs, totalCt,
-                            getEntityManager()));
+            list.setItems(getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler, SearchHandler.class).getIdResults("*:*", null, null, clazz,
+                pfs, totalCt, getEntityManager()));
         } else {
-            list.setItems(getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler,
-                    SearchHandler.class).getIdResults(query.getQuery(), query.getFieldedClauses(),
-                            query.getAdditionalClauses(), clazz, pfs, totalCt, getEntityManager()));
+            list.setItems(getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler, SearchHandler.class).getIdResults(query.getQuery(),
+                query.getFieldedClauses(), query.getAdditionalClauses(), clazz, pfs, totalCt, getEntityManager()));
         }
         list.setTotal(totalCt[0]);
         list.setLimit(pfs == null ? new PfsParameter().getLimit() : pfs.getLimit());
@@ -1175,17 +1175,15 @@ public class TerminologyService implements RootService {
      */
     /* see superclass */
     @Override
-    public <T extends HasId> int findTotal(final QueryParameter query, final PfsParameter pfs,
-        final Class<T> clazz, final String handler) throws Exception {
+    public <T extends HasId> int findTotal(final QueryParameter query, final PfsParameter pfs, final Class<T> clazz, final String handler) throws Exception {
+
         if (query == null) {
-            return getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler,
-                    SearchHandler.class).countQueryResults("*:*", null, null, clazz, pfs,
-                            getEntityManager());
+            return getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler, SearchHandler.class).countQueryResults("*:*", null, null, clazz, pfs,
+                getEntityManager());
         }
 
-        return getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler,
-                SearchHandler.class).countQueryResults(query.getQuery(), query.getFieldedClauses(),
-                        query.getAdditionalClauses(), clazz, pfs, getEntityManager());
+        return getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler, SearchHandler.class).countQueryResults(query.getQuery(),
+            query.getFieldedClauses(), query.getAdditionalClauses(), clazz, pfs, getEntityManager());
     }
 
     /**
@@ -1199,6 +1197,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public <T extends HasModified> T add(final T object) throws Exception {
+
         return addHasLastModified(object);
     }
 
@@ -1213,6 +1212,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public <T extends HasModified> T update(final T object) throws Exception {
+
         updateHasLastModified(object);
         return object;
     }
@@ -1227,6 +1227,7 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public <T extends HasModified> void remove(final T object) throws Exception {
+
         removeObject(object);
     }
 
@@ -1242,6 +1243,7 @@ public class TerminologyService implements RootService {
     @SuppressWarnings("unchecked")
     @Override
     public <T extends SearchHandler> List<T> getHandlers(final Class<T> type) throws Exception {
+
         if (type == SearchHandler.class) {
             final List<SearchHandler> list = new ArrayList<>();
             for (final SearchHandler handler : searchHandlerMap.values()) {
@@ -1264,6 +1266,7 @@ public class TerminologyService implements RootService {
     @SuppressWarnings("unchecked")
     @Override
     public <T extends SearchHandler> T getHandler(final Class<T> type) throws Exception {
+
         if (type == SearchHandler.class) {
             return (T) searchHandlerMap.get(ModelUtility.DEFAULT);
         }
@@ -1282,12 +1285,11 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends SearchHandler> T getHandlerByName(final String name, final Class<T> type)
-        throws Exception {
+    public <T extends SearchHandler> T getHandlerByName(final String name, final Class<T> type) throws Exception {
+
         if (type == SearchHandler.class) {
             if (!searchHandlerMap.containsKey(name)) {
-                throw new Exception(
-                        "Unexpected missing handler name for DefaultSearchHandler.class = " + name);
+                throw new Exception("Unexpected missing handler name for DefaultSearchHandler.class = " + name);
             }
             return (T) searchHandlerMap.get(name);
         }
@@ -1305,12 +1307,12 @@ public class TerminologyService implements RootService {
      */
     @Override
     @SuppressWarnings({
-            "unchecked", "deprecation"
+        "unchecked", "deprecation"
     })
     public <T> T newInstance(final Class<T> clazz) throws Exception {
+
         final String simpleName = clazz.getSimpleName();
-        final String jpaClassName =
-                clazz.getName().replace(simpleName, "jpa." + simpleName + "Jpa");
+        final String jpaClassName = clazz.getName().replace(simpleName, "jpa." + simpleName + "Jpa");
         final Class<?> jpaClass = Class.forName(jpaClassName);
         if (jpaClass == null) {
             throw new Exception("Unable to find class " + jpaClassName);
@@ -1331,11 +1333,10 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends HasModified, S extends T> Class<S> getType(final Class<T> clazz)
-        throws Exception {
+    public <T extends HasModified, S extends T> Class<S> getType(final Class<T> clazz) throws Exception {
+
         final String simpleName = clazz.getSimpleName();
-        final String jpaClassName =
-                clazz.getName().replace(simpleName, "jpa." + simpleName + "Jpa");
+        final String jpaClassName = clazz.getName().replace(simpleName, "jpa." + simpleName + "Jpa");
         return (Class<S>) Class.forName(jpaClassName);
     }
 
@@ -1352,9 +1353,9 @@ public class TerminologyService implements RootService {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends HasId> T copyInstance(final Class<T> clazz, final T object) throws Exception {
+
         final String simpleName = clazz.getSimpleName();
-        final String jpaClassName =
-                clazz.getName().replace(simpleName, "jpa." + simpleName + "Jpa");
+        final String jpaClassName = clazz.getName().replace(simpleName, "jpa." + simpleName + "Jpa");
         final Class<?> jpaClass = Class.forName(jpaClassName);
         if (jpaClass == null) {
             throw new Exception("Unable to find class " + jpaClassName);
@@ -1372,11 +1373,11 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void computeLuceneIndexes(final String indexedObjects) throws Exception {
+
         // set of objects to be re-indexed
         final Set<String> objectsToReindex = new HashSet<>();
         final Map<String, Class<?>> reindexMap = new HashMap<>();
-        final Reflections reflections =
-                new Reflections(properties.getProperty("app.entity_packages"));
+        final Reflections reflections = new Reflections(properties.getProperty("app.entity_packages"));
         for (final Class<?> clazz : reflections.getTypesAnnotatedWith(Indexed.class)) {
             reindexMap.put(clazz.getSimpleName(), clazz);
         }
@@ -1389,8 +1390,7 @@ public class TerminologyService implements RootService {
                 if (objectsToReindex.contains(className)) {
                     // This restriction can be removed by using full class names
                     // however, then calling the mojo is more complicated
-                    throw new Exception(
-                            "Reindex process assumes simple class names are different.");
+                    throw new Exception("Reindex process assumes simple class names are different.");
                 }
                 objectsToReindex.add(className);
             }
@@ -1408,9 +1408,9 @@ public class TerminologyService implements RootService {
 
         }
 
-        logger.info("starting reindexing for:");
+        LOG.info("starting reindexing for:");
         for (final String objectToReindex : objectsToReindex) {
-            logger.info("  " + objectToReindex);
+            LOG.info("  " + objectToReindex);
         }
 
         final SearchSession searchSession = Search.session(getEntityManager());
@@ -1419,24 +1419,22 @@ public class TerminologyService implements RootService {
         for (final String key : reindexMap.keySet()) {
             // Concepts
             if (objectsToReindex.contains(key)) {
-                logger.info("  creating indexes for " + key);
+                LOG.info("  creating indexes for " + key);
 
                 try {
                     searchSession.workspace(reindexMap.get(key)).purge();
                     searchSession.indexingPlan().execute(); // may not need
                                                             // anymore
-                    searchSession.massIndexer(reindexMap.get(key)).batchSizeToLoadObjects(100)
-                            .cacheMode(CacheMode.IGNORE).idFetchSize(100).threadsToLoadObjects(10)
-                            .startAndWait();
+                    searchSession.massIndexer(reindexMap.get(key)).batchSizeToLoadObjects(100).cacheMode(CacheMode.IGNORE).idFetchSize(100)
+                        .threadsToLoadObjects(10).startAndWait();
                 } catch (final IllegalArgumentException e) {
-                    logger.warn("      NOT AN ENTITY in this project");
+                    LOG.warn("      NOT AN ENTITY in this project");
                     // throw new Exception (e);
                 }
 
                 // if using elasticsearch the max result window size must be
                 // increased
-                if (properties.getProperty("spring.jpa.properties.hibernate.search.backend.type")
-                        .trim().equals("elasticsearch")) {
+                if (properties.getProperty("spring.jpa.properties.hibernate.search.backend.type").trim().equals("elasticsearch")) {
                     IndexUtility.setMaxWindowSize(key, getEntityManager());
                 }
 
@@ -1446,8 +1444,8 @@ public class TerminologyService implements RootService {
         }
 
         if (objectsToReindex.size() != 0) {
-            throw new Exception("The following objects were specified for re-indexing, "
-                    + "but do not exist as indexed objects: " + objectsToReindex.toString());
+            throw new Exception(
+                "The following objects were specified for re-indexing, " + "but do not exist as indexed objects: " + objectsToReindex.toString());
         }
 
     }
@@ -1460,15 +1458,14 @@ public class TerminologyService implements RootService {
     /* see superclass */
     @Override
     public void clearLuceneIndexes() throws Exception {
-        logger.info("  clearing lucene indexes");
 
-        logger.info("******** properties app.entity_packages: "
-                + properties.getProperty("app.entity_packages"));
-        final Reflections reflections =
-                new Reflections(properties.getProperty("app.entity_packages"));
+        LOG.info("  clearing lucene indexes");
+
+        LOG.info("******** properties app.entity_packages: " + properties.getProperty("app.entity_packages"));
+        // NUNO DEAD CODE final Reflections reflections = new Reflections(properties.getProperty("app.entity_packages"));
         final SearchSession searchSession = Search.session(getEntityManager());
 
-        SearchSchemaManager schemaManager = searchSession.schemaManager();
+        final SearchSchemaManager schemaManager = searchSession.schemaManager();
         schemaManager.dropAndCreate();
 
     }
@@ -1483,8 +1480,8 @@ public class TerminologyService implements RootService {
      * @return the t
      * @throws Exception the exception
      */
-    public <T extends HasModified> T findSingle(final QueryParameter query, final Class<T> clazz,
-        final String handler) throws Exception {
+    @Override
+    public <T extends HasModified> T findSingle(final QueryParameter query, final Class<T> clazz, final String handler) throws Exception {
 
         final PfsParameter pfs = new PfsParameter();
         pfs.setOffset(0);
@@ -1492,17 +1489,15 @@ public class TerminologyService implements RootService {
         if (query == null) {
             return null;
         }
-        final List<T> list = getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler,
-                SearchHandler.class).getQueryResults(query.getQuery(), query.getFieldedClauses(),
-                        query.getAdditionalClauses(), clazz, pfs, new int[1], getEntityManager());
+        final List<T> list = getHandlerByName(StringUtility.isEmpty(handler) ? "DEFAULT" : handler, SearchHandler.class).getQueryResults(query.getQuery(),
+            query.getFieldedClauses(), query.getAdditionalClauses(), clazz, pfs, new int[1], getEntityManager());
         if (list.size() == 0) {
             return null;
         }
         if (list.size() == 1) {
             return list.get(0);
         }
-        throw new Exception("More than one object returned for the query - " + list.size() + ", "
-                + list.toString());
+        throw new Exception("More than one object returned for the query - " + list.size() + ", " + list.toString());
     }
 
     /**
@@ -1515,8 +1510,8 @@ public class TerminologyService implements RootService {
      * @return the t
      * @throws Exception the exception
      */
-    public <T extends HasModified> T findSingle(final String query, final Class<T> clazz,
-        final String handler) throws Exception {
+    @Override
+    public <T extends HasModified> T findSingle(final String query, final Class<T> clazz, final String handler) throws Exception {
 
         return findSingle(new QueryParameter(query), clazz, handler);
     }
@@ -1527,8 +1522,9 @@ public class TerminologyService implements RootService {
      * @return the db prefix
      * @throws Exception the exception
      */
+    @Override
     public String getDbPrefix() throws Exception {
-        // TODO Auto-generated method stub
+
         return null;
     }
 
@@ -1540,8 +1536,9 @@ public class TerminologyService implements RootService {
      * @return the string
      * @throws Exception the exception
      */
+    @Override
     public String checkCache(final String cache, final String key) throws Exception {
-        // TODO Auto-generated method stub
+
         return null;
     }
 
@@ -1554,12 +1551,12 @@ public class TerminologyService implements RootService {
      * @throws Exception the exception
      */
     @Override
-    public void addCache(final String cache, final String key, final String value)
-        throws Exception {
-        // TODO Auto-generated method stub
+    public void addCache(final String cache, final String key, final String value) throws Exception {
+
+        // n/a
 
     }
-    
+
     /**
      * Clear user sessions.
      *

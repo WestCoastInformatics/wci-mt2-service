@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
@@ -40,81 +39,84 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 /**
  * Class to handle making calls to Amazon S3.
  */
-public class S3ConnectionWrapper {
+public final class S3ConnectionWrapper {
 
-    /** The logger. */
-    private static final Logger logger = LoggerFactory.getLogger(S3ConnectionWrapper.class);
-
-    /** The config properties. */
-    private final Properties properties = PropertyUtility.getProperties();
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(S3ConnectionWrapper.class);
 
     /** The snowstorm url. */
-    public static String ID;
+    private static String awsAccessKeyId;
 
     /** The snowstorm url for performing write or update actions. */
-    public static String KEY;
+    private static String awsSecretAccessKey;
 
     /** The bucket. */
-    public static String BUCKET;
+    private static String awsBucket;
 
     /** The region. */
-    public static Regions REGION;
+    private static Regions awsRegion;
 
     /** The project directory. */
-    public static String PROJECT_DIR;
-    
+    private static String projectDir;
+
     /** The icon directory. */
-    public static String ICON_DIR;
-    
+    private static String iconDir;
+
     /** The artifact directory. */
-    public static String ARTIFACT_DIR;
+    private static String artifactDir;
 
     /** The S3 client. */
     private static AmazonS3 s3Client;
-    
-    /** The S3 separator character. */
-    public static String separator = "/";
+
+    /** The S3 SEPARATOR character. */
+    private static final String SEPARATOR = "/";
 
     /** Static initialization. */
     static {
 
-        BUCKET = PropertyUtility.getProperty("aws.bucket");
-        REGION = Regions.fromName(PropertyUtility.getProperty("aws.region"));
-        PROJECT_DIR = PropertyUtility.getProperty("aws.project.base.dir");
-        ICON_DIR = PropertyUtility.getProperty("aws.icon.dir");
-        ARTIFACT_DIR = PropertyUtility.getProperty("aws.artifact.dir");
-        ID = PropertyUtility.getProperty("aws.access.key.id");
-        KEY = PropertyUtility.getProperty("aws.secret.access.key");
+        awsBucket = PropertyUtility.getProperty("aws.bucket");
+        awsRegion = Regions.fromName(PropertyUtility.getProperty("aws.region"));
+        projectDir = PropertyUtility.getProperty("aws.project.base.dir");
+        iconDir = PropertyUtility.getProperty("aws.icon.dir");
+        artifactDir = PropertyUtility.getProperty("aws.artifact.dir");
+        awsAccessKeyId = PropertyUtility.getProperty("aws.access.key.id");
+        awsSecretAccessKey = PropertyUtility.getProperty("aws.secret.access.key");
     }
 
     /**
-     * Connect to amazon S3.
-     *
-     * @return the amazon S3
+     * Instantiates an empty {@link S3ConnectionWrapper}.
      */
-    static public void connectToAmazonS3() {
+    private S3ConnectionWrapper() {
+
+        // n/a
+    }
+
+    /**
+     * Connect to amazon S 3.
+     */
+    private static void connectToAmazonS3() {
 
         if (s3Client != null) {
             return;
         }
 
         try {
-            
+
             // Connect to server using instance profile credentials
-            s3Client = AmazonS3ClientBuilder.standard().withRegion(REGION).withCredentials(new InstanceProfileCredentialsProvider(false)).build();
+            s3Client = AmazonS3ClientBuilder.standard().withRegion(awsRegion).withCredentials(new InstanceProfileCredentialsProvider(false)).build();
 
             // Check if connection was successful. If not, try to connect with static keys instead
             try {
                 s3Client.listBuckets();
-                
-            } catch (SdkClientException e) {
-                
+
+            } catch (final SdkClientException e) {
+
                 // Connect to server with static keys
-                AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().withRegion(REGION);
+                AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().withRegion(awsRegion);
 
-                if (ID != null && !ID.equals("") && !ID.equals("none") && !ID.equals("change_me")) {
+                if (awsAccessKeyId != null && !awsAccessKeyId.equals("") && !awsAccessKeyId.equals("none") && !awsAccessKeyId.equals("change_me")) {
 
-                    final BasicAWSCredentials awsCreds = new BasicAWSCredentials(ID, KEY);
+                    final BasicAWSCredentials awsCreds = new BasicAWSCredentials(awsAccessKeyId, awsSecretAccessKey);
                     clientBuilder = clientBuilder.withCredentials(new AWSStaticCredentialsProvider(awsCreds));
                 }
 
@@ -125,13 +127,33 @@ public class S3ConnectionWrapper {
                 throw new NullPointerException("Client returned was null");
             }
 
-            logger.info("Connected to S3 in region: " + REGION);
-            
-        } catch (Exception ex) {
-            
-            logger.error("Couldn't connect to AWS S3", ex);
+            LOG.info("Connected to S3 in region: " + awsRegion);
+
+        } catch (final Exception ex) {
+
+            LOG.error("Couldn't connect to AWS S3", ex);
             throw ex;
         }
+    }
+
+    /**
+     * Returns the SEPARATOR.
+     *
+     * @return the SEPARATOR
+     */
+    public static String getSeparator() {
+
+        return SEPARATOR;
+    }
+
+    /**
+     * Returns the project directory.
+     *
+     * @return the project directory
+     */
+    public static String getProjectDirectory() {
+
+        return projectDir;
     }
 
     /**
@@ -145,17 +167,19 @@ public class S3ConnectionWrapper {
     public static void uploadToS3(final String awsUploadPath, final String localFilePath, final String fileName) throws Exception {
 
         final String filePath = getCorrectAwsFilePath(awsUploadPath);
-        
+
         try {
-            
+            connectToAmazonS3();
+
             // Upload a file as a new object with ContentType and title specified.
-            final PutObjectRequest request = new PutObjectRequest(S3ConnectionWrapper.BUCKET, filePath + fileName, new File(localFilePath + File.separator + fileName));
+            final PutObjectRequest request =
+                new PutObjectRequest(S3ConnectionWrapper.awsBucket, filePath + fileName, new File(localFilePath + File.separator + fileName));
             final ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType("plain/text");
             metadata.addUserMetadata("title", fileName);
             request.setMetadata(metadata);
             s3Client.putObject(request);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new Exception("Failed to upload the file: " + fileName + " locally at: " + localFilePath + " to the awsPath: " + filePath, e);
         }
     }
@@ -169,9 +193,10 @@ public class S3ConnectionWrapper {
      * @throws Exception the exception
      */
     public static boolean isInS3Cache(final String awsPath, final String fileName) throws Exception {
-        
+
+        connectToAmazonS3();
         final String filePath = getCorrectAwsFilePath(awsPath);
-        return (s3Client.doesObjectExist(BUCKET, filePath + fileName));
+        return (s3Client.doesObjectExist(awsBucket, filePath + fileName));
     }
 
     /**
@@ -184,11 +209,12 @@ public class S3ConnectionWrapper {
      */
     public static String getS3Url(final String awsFilePath, final String fileName) throws Exception {
 
+        connectToAmazonS3();
         final String filePath = getCorrectAwsFilePath(awsFilePath);
-        
+
         try {
-            return s3Client.getUrl(BUCKET, filePath + fileName).toExternalForm();
-        } catch (Exception e) {
+            return s3Client.getUrl(awsBucket, filePath + fileName).toExternalForm();
+        } catch (final Exception e) {
             throw new Exception("Failed to get the file: " + fileName + " at the expected S3 Path: " + awsFilePath, e);
         }
     }
@@ -203,17 +229,18 @@ public class S3ConnectionWrapper {
      */
     public static void downloadFileFromS3(final String awsPath, final String awsFileName, final String downloadLocation) throws Exception {
 
+        connectToAmazonS3();
         final String filePath = getCorrectAwsFilePath(awsPath);
-        
-        try (S3Object s3Object = s3Client.getObject(BUCKET, filePath + awsFileName)) {
-        
+
+        try (S3Object s3Object = s3Client.getObject(awsBucket, filePath + awsFileName)) {
+
             try (final S3ObjectInputStream s3InputStream = s3Object.getObjectContent()) {
-                
+
                 try (final FileOutputStream fos = new FileOutputStream(new File(downloadLocation))) {
-                    
+
                     final byte[] readBuf = new byte[1024];
                     int readLen = 0;
-                    
+
                     while ((readLen = s3InputStream.read(readBuf)) > 0) {
                         fos.write(readBuf, 0, readLen);
                     }
@@ -221,7 +248,6 @@ public class S3ConnectionWrapper {
             }
         }
     }
-    
 
     /**
      * Delete an object from AWS.
@@ -231,33 +257,34 @@ public class S3ConnectionWrapper {
      */
     public static boolean deleteObjectFromAws(final String awsPath) {
 
-        logger.debug("deleteObjectFromAws: awsPath: " + awsPath);
-        
-        final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(BUCKET).withPrefix(awsPath);
+        connectToAmazonS3();
+        LOG.debug("deleteObjectFromAws: awsPath: " + awsPath);
+
+        final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(awsBucket).withPrefix(awsPath);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
 
         final ArrayList<KeyVersion> keys = new ArrayList<KeyVersion>();
-        
-        for (S3ObjectSummary obj : listing.getObjectSummaries()) {
-            
+
+        for (final S3ObjectSummary obj : listing.getObjectSummaries()) {
+
             keys.add(new KeyVersion(obj.getKey()));
-            logger.debug("deleteObjectFromAws: object to delete: " + obj.getKey());
+            LOG.debug("deleteObjectFromAws: object to delete: " + obj.getKey());
         }
 
         if (keys.isEmpty()) {
             return true;
         }
-        final DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(BUCKET).withKeys(keys).withQuiet(false);
+        final DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(awsBucket).withKeys(keys).withQuiet(false);
 
         s3Client.deleteObjects(deleteRequest);
         final DeleteObjectsResult delObjRes = s3Client.deleteObjects(deleteRequest);
 
         final int successfulDeletes = delObjRes.getDeletedObjects().size();
-        logger.debug("deleteObjectFromAws: " + successfulDeletes + " objects successfully deleted.");
+        LOG.debug("deleteObjectFromAws: " + successfulDeletes + " objects successfully deleted.");
 
         return successfulDeletes > 0;
     }
-    
+
     /**
      * Delete an object from AWS.
      *
@@ -266,66 +293,69 @@ public class S3ConnectionWrapper {
      */
     public static List<String> getDirectoryListing(final String awsPath) {
 
-        logger.debug("getDirectoryListing: awsPath: " + awsPath);
-        
-        final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(BUCKET).withPrefix(awsPath);
+        LOG.debug("getDirectoryListing: awsPath: " + awsPath);
+        connectToAmazonS3();
+
+        final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(awsBucket).withPrefix(awsPath);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
         final List<String> files = new ArrayList<String>();
-        
-        for (S3ObjectSummary obj : listing.getObjectSummaries()) {
+
+        for (final S3ObjectSummary obj : listing.getObjectSummaries()) {
             files.add(obj.getKey());
         }
 
         return files;
-        
+
     }
 
-    
     /**
-     * Make sure the AWS file path ends with the correct separator.
+     * Make sure the AWS file path ends with the correct SEPARATOR.
      *
      * @param awsPath the AWS path
      * @return the correct AWS path
      * @throws Exception the exception
      */
     public static String getCorrectAwsFilePath(final String awsPath) throws Exception {
-        
+
         String filePath = awsPath;
-        
-        if (!filePath.endsWith(separator)) {
-            filePath += separator;
+
+        if (!filePath.endsWith(SEPARATOR)) {
+            filePath += SEPARATOR;
         }
-        
+
         return filePath;
     }
-    
+
     /**
-     * Get the AWS project path with with the end separator.
+     * Get the AWS project path with with the end SEPARATOR.
      *
      * @return the AWS project path
      * @throws Exception the exception
      */
     public static String getAwsProjectPath() throws Exception {
-        return PROJECT_DIR + separator;
+
+        return projectDir + SEPARATOR;
     }
-    
+
     /**
-     * Get the AWS icon path with with the end separator.
+     * Get the AWS icon path with with the end SEPARATOR.
      *
      * @return the AWS icon path
      * @throws Exception the exception
      */
     public static String getAwsIconPath() throws Exception {
-        return getAwsProjectPath() + ICON_DIR + separator;
+
+        return getAwsProjectPath() + iconDir + SEPARATOR;
     }
-    
+
     /**
-     * Get the AWS artifact path with with the end separator.
+     * Get the AWS artifact path with with the end SEPARATOR.
      *
      * @return the AWS artifact path
      * @throws Exception the exception
      */
     public static String getAwsArtifactPath() throws Exception {
-        return getAwsProjectPath() + ARTIFACT_DIR + separator;
+
+        return getAwsProjectPath() + artifactDir + SEPARATOR;
     }
 }

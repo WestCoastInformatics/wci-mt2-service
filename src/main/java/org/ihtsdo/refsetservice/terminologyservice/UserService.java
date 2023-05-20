@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
  */
 public class UserService extends BaseService {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(UserService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     /**
      * Returns the user.
@@ -38,7 +38,7 @@ public class UserService extends BaseService {
      * @return the user
      * @throws Exception the exception
      */
-    public static User getUser(final String userId, boolean includeTeams) throws Exception {
+    public static User getUser(final String userId, final boolean includeTeams) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -46,7 +46,7 @@ public class UserService extends BaseService {
 
             if (user == null) {
                 final String message = "Unable to find user for id " + userId + ".";
-                logger.error(message);
+                LOG.error(message);
                 throw new NotFoundException(message);
             }
 
@@ -63,9 +63,8 @@ public class UserService extends BaseService {
         }
     }
 
-    
     /**
-     * Returns the user by email
+     * Returns the user by email.
      *
      * @param email the email
      * @return the user
@@ -78,7 +77,7 @@ public class UserService extends BaseService {
             final User user = service.findSingle("email:" + email, User.class, null);
             if (user == null) {
                 final String message = "User with " + email + " does not exist.";
-                logger.error(message);
+                LOG.error(message);
                 throw new NotFoundException(message);
             }
 
@@ -146,7 +145,7 @@ public class UserService extends BaseService {
             final User original = service.get(updateUser.getId(), User.class);
 
             if (original == null) {
-                logger.info("Unable to find user for id {}.", updateUser.getId());
+                LOG.info("Unable to find user for id {}.", updateUser.getId());
                 throw new NotFoundException();
             }
 
