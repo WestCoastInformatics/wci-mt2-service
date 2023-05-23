@@ -1,57 +1,35 @@
-package org.ihtsdo.refsetservice.sync;
+package org.ihtsdo.refsetservice.sync.util;
 
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DiscussionPost;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.DiscussionType;
 import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
-import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
-import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SyncOperationsInitializer {
+public class SyncTestingInitializer {
 
-    private final Logger logger = LoggerFactory.getLogger(SyncOperationsInitializer.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncTestingInitializer.class);
 
     private SyncUtilities utilities;
 
     private SyncDatabaseHandler dbHandler;
 
-    private static User syncUser = null;
-
     private static User feedbackInitiatiorUser = null;
 
     private static User userResponderUser = null;
-
-//    private static User developerTestingAdmin = null;
-//
-//    private static User superUser = null;
-//
-//    private static User rdaAdmimUser = null;
-//
-//    private static final String SUPER_USER_NAME = "refset-dev";
-//
-//    private static final String RDA_ADMIN_NAME = "Rory Davidson";
-//
-//    private static final Set<User> adminUsers = new HashSet<>();
-//
-    private static final Set<String> allRoles = new HashSet<>();
 
     private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
 
@@ -77,13 +55,13 @@ public class SyncOperationsInitializer {
 
     private static final String WCI_TESTING_PROJECT_DESCRIPTION = "The single project for all WCI testing refsets";
 
-    public SyncOperationsInitializer() {
+    public SyncTestingInitializer() {
 
         // Support one-off usages for specific testing cases i.e. adding an intensional refset
         initializeSync();
     }
 
-    public SyncOperationsInitializer(SyncUtilities utilities) {
+    public SyncTestingInitializer(SyncUtilities utilities) {
 
         this.utilities = utilities;
         initializeSync();
@@ -101,15 +79,6 @@ public class SyncOperationsInitializer {
         dbHandler.setUtilities(utilities);
 
         try {
-            /*
-            developerTestingAdmin = utilities.getUser("rt2-dev-admin", "rt2-dev-admin", "rt2-dev-admin@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
-            superUser = utilities.getUser(SUPER_USER_NAME, SUPER_USER_NAME, "refset-dev@westcoastinformatics.com", allRoles);
-            rdaAdmimUser = utilities.getUser(RDA_ADMIN_NAME, RDA_ADMIN_NAME, "rda@snomed.org", new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)));
-
-            adminUsers.add(developerTestingAdmin);
-            adminUsers.add(superUser);
-            adminUsers.add(rdaAdmimUser);
-*/
             // For Feedback Refset
             feedbackInitiatiorUser = utilities.getUser("feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
             userResponderUser = utilities.getUser("feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
@@ -140,26 +109,7 @@ public class SyncOperationsInitializer {
         }
 
     }
-/*
-    public void createAdminOrganizationTeam(Organization organization) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
-
-            Set<String> memberIds = new HashSet<>();
-
-            memberIds.addAll(adminUsers.stream().map(User::getId).collect(Collectors.toList()));
-
-            dbHandler.addTeam(TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
-                    new HashSet<String>(Arrays.asList(User.ROLE_ADMIN)), memberIds);
-
-            // Finally, add the users to the organization
-            organization.getMembers().addAll(adminUsers);
-            dbHandler.updateOrganization(organization);
-
-        }
-
-    }
-*/
     private void createTestingContent() throws Exception {
 
         final Edition developerEdition = getDeveloperTestingEdition();
@@ -168,7 +118,7 @@ public class SyncOperationsInitializer {
 
             testingProject = dbHandler.addProject(WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, developerTestingEdition);
 
-            dbHandler.addWCIRefset(getSyncUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getModules().iterator().next(),
+            dbHandler.addWCIRefset(utilities.getSyncUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getModules().iterator().next(),
                     utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
 
             // Create wci testing refsets(for DEV only)
@@ -188,11 +138,11 @@ public class SyncOperationsInitializer {
         logger.info(" Create Feedback & Intensional refsets for testing (for DEV only)");
 
         // create new refset with name = Feedback/Intensional Testing Version 1 with July 31 2022 version off International Edition
-        Refset intensionalRefset = dbHandler.addWCIRefset(getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
+        Refset intensionalRefset = dbHandler.addWCIRefset(utilities.getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
                 utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
         addIntensionalContent(intensionalRefset);
 
-        Refset feedbackRefset = dbHandler.addWCIRefset(getSyncUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
+        Refset feedbackRefset = dbHandler.addWCIRefset(utilities.getSyncUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
                 utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
 
         addFeedbackContent(feedbackRefset);
@@ -255,15 +205,15 @@ public class SyncOperationsInitializer {
 
             if (latestVersion == 0) {
 
-                newTestingRefset = dbHandler.addWCIRefset(getSyncUser(), testingRefsetName + "1", testingRefsetId + "01", getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "",
-                        getDeveloperTestingProject());
+                newTestingRefset = dbHandler.addWCIRefset(utilities.getSyncUser(), testingRefsetName + "1", testingRefsetId + "01", getDeveloperTestingEdition().getModules().iterator().next(),
+                        new Date(), "", getDeveloperTestingProject());
             } else {
 
                 latestVersion++;
                 String tensValue = Integer.toString(latestVersion / 10);
                 String onesValue = Integer.toString(latestVersion % 10);
 
-                newTestingRefset = dbHandler.addWCIRefset(getSyncUser(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
+                newTestingRefset = dbHandler.addWCIRefset(utilities.getSyncUser(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
                         getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "", getDeveloperTestingProject());
             }
 
@@ -295,7 +245,7 @@ public class SyncOperationsInitializer {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            dbHandler.initializeService(service);
+            SyncDatabaseHandler.initializeService(service);
 
             // add feedback
             DiscussionThread thread = new DiscussionThread();
@@ -349,13 +299,12 @@ public class SyncOperationsInitializer {
         Set<String> memberIds = new HashSet<>();
         memberIds.add(feedbackInitiatiorUser.getId());
         memberIds.add(userResponderUser.getId());
-/*
-        adminUsers.stream().forEach(user -> memberIds.add(user.getId()));
-        final Team singleFeedbackTeam =
-                dbHandler.addTeam("WCI Feedback Team", "WCI Feedback Testing/Demoing Team with all roles for all WCI members", getDeveloperTestingEdition().getOrganization(), allRoles, memberIds);
-
-        testingProject.getTeams().add(singleFeedbackTeam.getId());
-*/
+        /*
+         * adminUsers.stream().forEach(user -> memberIds.add(user.getId())); final Team singleFeedbackTeam = dbHandler.addTeam("WCI Feedback Team",
+         * "WCI Feedback Testing/Demoing Team with all roles for all WCI members", getDeveloperTestingEdition().getOrganization(), allRoles, memberIds);
+         * 
+         * testingProject.getTeams().add(singleFeedbackTeam.getId());
+         */
         testingProject = dbHandler.updateProject(testingProject);
 
         getDeveloperTestingEdition().getOrganization().getMembers().add(feedbackInitiatiorUser);
@@ -422,32 +371,4 @@ public class SyncOperationsInitializer {
         return developerTestingEdition;
     }
 
-    public static User getSyncUser() {
-
-        if (syncUser == null) {
-
-            syncUser = new User();
-            syncUser.setName("Migrator");
-            syncUser.setUserName("Migrator");
-            syncUser.setActive(true);
-            syncUser.setEmail("test@wci.com");
-
-            Set<String> roles = new HashSet<>();
-            roles.add("all-all-all");
-            syncUser.setRoles(roles);
-        }
-
-        return syncUser;
-    }
-/*
-    public static Set<User> getAdminUsers() {
-
-        return adminUsers;
-    }
-
-    public static List<String> getAdminUserIds() {
-
-        return adminUsers.stream().map(User::getId).collect(Collectors.toList());
-    }
-*/
 }

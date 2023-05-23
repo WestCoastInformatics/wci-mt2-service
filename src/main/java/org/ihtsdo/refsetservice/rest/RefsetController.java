@@ -46,8 +46,8 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
 import org.ihtsdo.refsetservice.sync.SyncAgent;
+import org.ihtsdo.refsetservice.sync.util.SyncTestingInitializer;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
@@ -2205,7 +2205,7 @@ public class RefsetController extends BaseController {
 	        
 			String status = "Feedback testing refset created successfully";
 			logger.info("Create new refset, initialized with feedback, for testing purposes");
-			SyncOperationsInitializer initializer = new SyncOperationsInitializer();
+			SyncTestingInitializer initializer = new SyncTestingInitializer();
 			Refset refset = initializer.createTestingFeedbackRefset();
 
 			logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId()
@@ -2245,7 +2245,7 @@ public class RefsetController extends BaseController {
 
 			String status = "Intensional testing refset created successfully";
 			logger.info("Create new intensional refset for testing purposes");
-			SyncOperationsInitializer initializer = new SyncOperationsInitializer();
+			SyncTestingInitializer initializer = new SyncTestingInitializer();
 			Refset refset = initializer.createTestingIntensionalRefset();
 
 			logger.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId()

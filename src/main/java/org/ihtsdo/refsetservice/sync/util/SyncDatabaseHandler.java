@@ -1,6 +1,7 @@
 package org.ihtsdo.refsetservice.sync.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -16,9 +17,11 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -58,9 +61,8 @@ public class SyncDatabaseHandler {
 
             Organization organization = organizations.iterator().next();
 
-            // Create a single Admin team per Edition w hen we first discover it
-            // final SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
-            // initializer.createAdminOrganizationTeam(organization);
+            // Create a single Admin team per Edition when we first discover it
+            createAdminOrganizationTeam(organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -187,10 +189,6 @@ public class SyncDatabaseHandler {
     }
 
     public Project addProject(String projectName, String projectDescription, Edition edition) {
-        return addProject(projectName, projectDescription, edition, new ArrayList<User>());
-    }
-
-    public Project addProject(String projectName, String projectDescription, Edition edition, List<User> users) {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -203,7 +201,6 @@ public class SyncDatabaseHandler {
             project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
             project.setEdition(edition);
             project.setPrimaryContactEmail(edition.getOrganization().getPrimaryContactEmail());
-            project.setMemberList(users);
 
             if (OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()) != null) {
                 project.getTeams().add(OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()).getId());
@@ -626,6 +623,19 @@ public class SyncDatabaseHandler {
             return null;
         }
 
+    }
+
+    private void createAdminOrganizationTeam(Organization organization) throws Exception {
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            Set<String> memberIds = new HashSet<>();
+
+            memberIds.addAll(SyncAgent.getAdminUsers().stream().map(User::getId).collect(Collectors.toList()));
+
+            addTeam(TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
+                    new HashSet<String>(Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER, User.ROLE_VIEWER)), memberIds);
+        }
     }
 
 }

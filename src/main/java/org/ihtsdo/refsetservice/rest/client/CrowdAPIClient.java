@@ -332,10 +332,6 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                         // Get the value of the group name attribute.
                         String projectName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
                         
-                       if (!projectName.contains("all-all")) {
-                            //logger.debug("REMOVE THIS");
-                            continue;
-                      }
                         if (!projectName.startsWith(appPrefix) || !membership.hasChildNodes()) {
                             continue;
                         }

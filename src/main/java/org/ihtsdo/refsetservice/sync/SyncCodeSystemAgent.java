@@ -214,24 +214,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
             statistics.setEditionsAdded(newShortNames.size());
             newShortNames.stream().forEach(shortName -> dbHandler.addEdition(termserverShortNameCodeSystemMap.get(shortName), termserverEditionShortNameToOrganizationNameMap.get(shortName)));
 
-            // Create a Default Project for the edition if doesnt' already exist
-
+            // Create a Default Project for the edition if no projects already exist from Crowd
             statistics.setTeamsAdded(newShortNames.size());
-            newShortNames.stream().filter(shortName -> !defaultEditionProjects.containsKey(shortName)).forEach(shortName -> {
-                try {
-
-                    List<Edition> matchingEditions = readDbAllEditions().stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
-                    Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
-
-                    Project project = createDefaultEditionProject(dbEdition);
-
-                    defaultEditionProjects.put(shortName, project);
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    logger.error("failed creating default edition project for shortName: " + shortName);
-                }
-            });
 
             // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
             // TODO: Define solution although for now simply activating
@@ -476,14 +460,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         codeSystemsNewAndInactive.clear();
         editionShortNameOrganizationNameMap.clear();
-        defaultEditionProjects.clear();
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            // Initialize defaultEditionProjects already defined in RT2 DB
-            service.getAll(Project.class).stream().filter(project -> project.getName().endsWith(" Default Project"))
-                    .forEach(project -> defaultEditionProjects.put(project.getEdition().getShortName(), project));
-        }
     }
 
     private int countCodeSystems(Iterator<JsonNode> organizationIterator) {

@@ -2,16 +2,14 @@ package org.ihtsdo.refsetservice.sync;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
-import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
@@ -64,10 +62,13 @@ public abstract class SyncAgent {
     // Owner Name to Organization Description
     protected static Set<JsonNode> filteredCodeSystems = new HashSet<>();
 
-    // ShortName to Project
-    protected static final Map<String, Project> defaultEditionProjects = new HashMap<>();
-
     protected static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
+
+    protected static final String SNOMED_ADMIN_USERNAME = "rdavidson";
+
+    protected static final String DEVELOPER_ADMIN_USERNAME_PREFIX = "refset-";
+
+    protected static final Set<User> adminUsers = new HashSet<>();
 
     // TODO: Define when called vs normal one
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
@@ -145,7 +146,6 @@ public abstract class SyncAgent {
         developerTestingEditionShortName = null;
 
         filteredCodeSystems.clear();
-        defaultEditionProjects.clear();
 
         statistics.clearStatistics();
 
@@ -187,11 +187,6 @@ public abstract class SyncAgent {
         return developerTestingEditionShortName;
     }
 
-    public Map<String, Project> getDefaultEditionProjects() {
-
-        return defaultEditionProjects;
-    }
-
     public static boolean isTesting() {
 
         return testing;
@@ -201,7 +196,7 @@ public abstract class SyncAgent {
     public static Boolean getIsIgnoreCoreRefsets() {
 
         return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
-        //return true;
+        // return true;
     }
 
     public static Boolean getIsProductionSystem() {
@@ -236,5 +231,9 @@ public abstract class SyncAgent {
 
     List<Edition> readDbInactiveEditions(TerminologyService service) throws Exception {
         return readDbAllEditions(service).stream().filter(e -> !e.isActive()).collect(Collectors.toList());
+    }
+
+    public static Set<User> getAdminUsers() {
+        return adminUsers;
     }
 }

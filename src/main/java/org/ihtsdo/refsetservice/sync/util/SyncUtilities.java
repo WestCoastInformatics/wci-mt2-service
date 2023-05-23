@@ -16,7 +16,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -29,9 +28,7 @@ import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
@@ -51,6 +48,8 @@ public class SyncUtilities {
     private final Logger logger = LoggerFactory.getLogger(SyncUtilities.class);
 
     private SyncDatabaseHandler dbHandler;
+
+    private static User syncUser = null;
 
     private static final SyncPropertyFileReader propertyReader = new SyncPropertyFileReader();
 
@@ -473,8 +472,8 @@ public class SyncUtilities {
         try (final TerminologyService service = new TerminologyService()) {
 
             // if the status is Published then create a new version of the refset that is ready to be edited
-            dbHandler.initializeService(service);
-            refset = WorkflowService.setWorkflowStatusByAction(service, SyncOperationsInitializer.getSyncUser(), WorkflowService.FINISH_EDIT, refset, "");
+            SyncDatabaseHandler.initializeService(service);
+            refset = WorkflowService.setWorkflowStatusByAction(service, getSyncUser(), WorkflowService.FINISH_EDIT, refset, "");
 
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
@@ -505,6 +504,24 @@ public class SyncUtilities {
         logger.info("Operation took " + differenceInSeconds + " seconds to run");
         logger.info("Operation took " + differenceInMinutes + " minutes to run");
 
+    }
+
+    public User getSyncUser() {
+
+        if (syncUser == null) {
+
+            syncUser = new User();
+            syncUser.setName("Migrator");
+            syncUser.setUserName("Migrator");
+            syncUser.setActive(true);
+            syncUser.setEmail("test@wci.com");
+
+            Set<String> roles = new HashSet<>();
+            roles.add("all-all-all");
+            syncUser.setRoles(roles);
+        }
+
+        return syncUser;
     }
 
 }
