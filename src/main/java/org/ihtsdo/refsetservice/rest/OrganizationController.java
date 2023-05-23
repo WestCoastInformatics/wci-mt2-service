@@ -78,13 +78,6 @@ public class OrganizationController extends BaseController {
     /** The local icon file directory. */
     private static final String ICON_URL_PREFIX = "user/icon/";
 
-    // /** The app url root. */
-    // private static String appUrlRoot;
-    //
-    // static {
-    // appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
-    // }
-
     /**
      * Return the organization.
      *

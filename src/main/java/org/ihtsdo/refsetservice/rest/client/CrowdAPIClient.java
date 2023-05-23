@@ -109,22 +109,6 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             throw new Exception("The user " + userName + " could not be found. Received HTTP " + response.statusCode() + " from the API server.");
         }
 
-        /*
-         * final User user = new User(); try (final Response response = get(baseUrl + GET_USER + "?username=" + userName);) {
-         * 
-         * // 200 OK. // 404 the user could not be found. if (response.getStatus() == 200) {
-         * 
-         * final String jsonString = response.readEntity(String.class); final ObjectMapper mapper = new ObjectMapper(); final JsonNode root =
-         * mapper.readTree(jsonString);
-         * 
-         * user.setName(root.get("display-name").asText()); user.setEmail(root.get("email").asText()); user.setUserName(userName);
-         * 
-         * return user;
-         * 
-         * } else if (response.getStatus() == 400) { throw new Exception("The user " + userName + " could not be found."); } else { throw new
-         * Exception("The user " + userName + " could not be found. Received HTTP " + response.getStatus() + " from the API server."); } }
-         */
-
     }
 
     /**
@@ -332,13 +316,6 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             });
         }
         return userGroups;
-        // } else if (response.getStatus() == 400) {
-        // throw new Exception("The user " + username.trim() + " could not be found or the user is not a member of a group.");
-        // } else {
-        // throw new Exception("The user " + username.trim() + " could not be found or the user is not a member of a group. Received HTTP "
-        // + response.getStatus() + " from the API server.");
-        // }
-        // }
     }
 
     /**
@@ -356,9 +333,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
         final Set<String> users = new HashSet<>();
 
-        // try (final Response response = get(baseUrl);) {
         return users;
-        // }
 
     }
 
@@ -471,9 +446,12 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final ObjectMapper mapper = new ObjectMapper();
         final JsonNode root = mapper.readTree(jsonString);
         final JsonNode users = root.get("users");
+        
         if (users == null || (users.isArray() && users.isEmpty())) {
-            throw new RestException(false, HttpStatus.NOT_FOUND, "Not found", "Could not find user with email of " + email + ".");
+
+            return null;
         }
+        
         if (users.isArray() && users.size() > 1) {
             throw new RestException(false, HttpStatus.CONFLICT, "Found multiple",
                 "Found multiple users with email of " + email + ". Can't determine which user to create.");
