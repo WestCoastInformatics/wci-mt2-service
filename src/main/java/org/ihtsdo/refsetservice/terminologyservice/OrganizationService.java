@@ -154,17 +154,48 @@ public class OrganizationService extends BaseService {
      * @return the organization
      * @throws Exception the exception
      */
-    public static Organization getOrganization(final TerminologyService service, final User user, final String id, final boolean includeMembers) throws Exception {
+    public static Organization getInactiveOrganization(final TerminologyService service, final User user, final String id, final boolean includeMembers) throws Exception {
 
-        final Organization organization = service.findSingle("id: " + id + " AND active:true", Organization.class, null);
+        Organization organization = service.findSingle("id: " + id + " AND active:false", Organization.class, null);
 
         if (organization == null) {
 
-            final String message = "Unable to find organization for id " + id + ".";
+            final String message = "Unable to find organization for id " + id + " in order to getInactiveOrganization.";
+            logger.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+        }
+        organization = handleMembers(organization, user, includeMembers);
+
+        return organization;
+    }
+
+    /**
+     * Returns the organization.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param id the id
+     * @param includeMembers the include members
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization getOrganization(final TerminologyService service, final User user, final String id, final boolean includeMembers) throws Exception {
+
+        Organization organization = service.findSingle("id: " + id + " AND active:true", Organization.class, null);
+
+        if (organization == null) {
+
+            final String message = "Unable to find organization for id " + id + " in order to getOrganization.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
+        organization = handleMembers(organization, user, includeMembers);
+
+        return organization;
+    }
+
+    private static Organization handleMembers(final Organization organization, final User user, final boolean includeMembers) throws Exception {
         if (includeMembers) {
             organization.getMembers();
         } else {
@@ -196,7 +227,7 @@ public class OrganizationService extends BaseService {
 
         if (originalOrganization == null) {
 
-            final String message = "Unable to find organization for id " + organization.getId() + ".";
+            final String message = "Unable to find organization for id " + organization.getId() + " in order to updateOrganization.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -217,7 +248,7 @@ public class OrganizationService extends BaseService {
      * @param service the Terminology Service
      * @param user the user
      * @param organizationId the organization id
-     * @return 
+     * @return
      * @return the list
      * @throws Exception the exception
      */
@@ -228,7 +259,7 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
 
-            final String message = "Unable to find organization for id " + organizationId + ".";
+            final String message = "Unable to find organization for id " + organizationId + "." + " in order to inactivateOrganization.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -353,7 +384,7 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
 
-            final String message = "Unable to find organization for id " + organizationId + ".";
+            final String message = "Unable to find organization for id " + organizationId + "." + " in order to getOrganizationUsers.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -455,7 +486,7 @@ public class OrganizationService extends BaseService {
             // find user in crowd
             final User user = CrowdAPIClient.findUserByEmail(email);
             if (user == null) {
-                logger.error("Unable to find user for email " + email + ".");
+                logger.error("Unable to find user for email via Crowd" + email + "." + " in order to addUserToOrganization.");
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "User not found in IMS. Please make sure you entered their email correctly. If the email address entered is correct, the user being added has never been added to IMS before. Instead of \"Add User\", click the \"Invite to Join\"");
             }
@@ -465,7 +496,7 @@ public class OrganizationService extends BaseService {
             userToAdd = service.findSingle("email:" + email, User.class, null);
 
             if (userToAdd == null) {
-                final String message = "Unable to find user for email " + email + ".";
+                final String message = "Unable to find user for email in Rt2 Database" + email + " in order to addUserToOrganization.";
                 logger.error(message);
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
             }
@@ -476,7 +507,7 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
 
-            final String message = "Unable to find organization for " + organizationId + ".";
+            final String message = "Unable to find organization for " + organizationId + "." + " in order to addUserToOrganization.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -514,7 +545,7 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
 
-            final String message = "Unable to find organization for " + organizationId + ".";
+            final String message = "Unable to find organization for " + organizationId + "." + " in order to addUserToOrganization.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -553,7 +584,7 @@ public class OrganizationService extends BaseService {
 
         if (userToRemove == null) {
 
-            final String message = "Unable to find user for id " + userId + ".";
+            final String message = "Unable to find user for id " + userId + "." + " in order to removeUserFromOrganization.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -561,7 +592,7 @@ public class OrganizationService extends BaseService {
         final Organization organization = service.get(organizationId, Organization.class);
         if (organization == null) {
 
-            final String message = "Unable to find organization for id " + organizationId + ".";
+            final String message = "Unable to find organization for id " + organizationId + "." + " in order to removeUserFromOrganization.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -625,7 +656,7 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
 
-            final String message = "Unable to find organization for id " + organizationId + ".";
+            final String message = "Unable to find organization for id " + organizationId + "." + " in order to updateOrganizationIcon.";
             logger.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }

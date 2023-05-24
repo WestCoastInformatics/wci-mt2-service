@@ -34,24 +34,17 @@ public class SyncDatabaseHandler {
 
     private SyncUtilities utilities;
 
-    public SyncDatabaseHandler(SyncUtilities utilities) {
+    public SyncDatabaseHandler(final SyncUtilities utilities) {
         this.utilities = utilities;
     }
 
-    public void setUtilities(SyncUtilities utilities) {
+    public void setUtilities(final SyncUtilities utilities) {
         this.utilities = utilities;
     }
 
-    public static void initializeService(TerminologyService service) {
+    public Edition addEdition(final TerminologyService service, final JsonNode codeSystem, final String organizationName) {
 
-        service.setModifiedBy("Sync");
-        service.setModifiedFlag(true);
-
-    }
-
-    public Edition addEdition(JsonNode codeSystem, String organizationName) {
-        try (TerminologyService service = new TerminologyService()) {
-
+        try {
             // These have already been defined, so assume, don't check letting error handling play out instead
             final String shortName = codeSystem.get("shortName").asText();
             final String editionName = codeSystem.get("name").asText();
@@ -67,7 +60,7 @@ public class SyncDatabaseHandler {
             Organization organization = organizations.iterator().next();
 
             // Create a single Admin team per Edition when we first discover it
-            createAdminOrganizationTeam(organization);
+            createAdminOrganizationTeam(service, organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -76,9 +69,9 @@ public class SyncDatabaseHandler {
             // Case of no modules handled downstream
             final Set<String> editionModules = utilities.identifyModules(shortName, editionName, branch, codeSystem);
 
-            Edition newEdition = addEdition(shortName, editionName, branch, defaultLanguageRefsets, editionModules, defaultLanguageCode, maintainerType, organization);
+            Edition newEdition = addEdition(service, shortName, editionName, branch, defaultLanguageRefsets, editionModules, defaultLanguageCode, maintainerType, organization);
 
-            utilities.printEditionValues(newEdition);
+            utilities.printEditionValues(service, newEdition);
 
             return newEdition;
         } catch (Exception e) {
@@ -92,12 +85,9 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Organization addOrganziation(final String organizationName, String organizationDescription) {
+    public Organization addOrganziation(final TerminologyService service, final String organizationName, final String organizationDescription) {
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
+        try {
             final Organization organization = new Organization();
             organization.setName(organizationName);
             organization.setDescription(organizationDescription);
@@ -106,7 +96,7 @@ public class SyncDatabaseHandler {
             final Organization newOrganization = service.add(organization);
 
             logger.info("Adding new Organziation: " + newOrganization.getId() + " (" + newOrganization.getName() + ")");
-
+            logger.debug("AAA: {} ", newOrganization);
             service.add(AuditEntryHelper.addOrganizationEntry(newOrganization));
 
             return newOrganization;
@@ -120,13 +110,10 @@ public class SyncDatabaseHandler {
 
     }
 
-    private Edition addEdition(String shortName, String name, String branch, Set<String> defaultLanguageRefsets, Set<String> modules, String defaultLanguageCode, String maintainerType,
-        Organization organization) {
+    private Edition addEdition(final TerminologyService service, final String shortName, final String name, final String branch, final Set<String> defaultLanguageRefsets, final Set<String> modules,
+        final String defaultLanguageCode, String maintainerType, final Organization organization) {
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
+        try {
             Edition edition = new Edition();
 
             edition.setShortName(shortName);
@@ -149,17 +136,15 @@ public class SyncDatabaseHandler {
 
             return newEdition;
         } catch (Exception e) {
-            logger.error("Failed to add edition associated with codeSystem: " + shortName);
+            logger.error("Failed to add edition associated with codeSystem: " + shortName + " with Exception --> " + e.getMessage());
 
             return null;
         }
     }
 
-    public Refset addRefset(String name, String refsetId, String moduleId, long versionDate, String type, Project project) {
-        try (final TerminologyService service = new TerminologyService()) {
+    public Refset addRefset(final TerminologyService service, final String name, final String refsetId, final String moduleId, long versionDate, final String type, final Project project) {
 
-            initializeService(service);
-
+        try {
             final Refset refset = new Refset();
 
             refset.setName(name);
@@ -191,12 +176,9 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Project addProject(String projectName, String projectDescription, Edition edition) {
+    public Project addProject(final TerminologyService service, final String projectName, final String projectDescription, final Edition edition) {
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
+        try {
             final Project project = new Project();
             project.setName(projectName);
             project.setDescription(projectDescription);
@@ -226,10 +208,10 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public Refset addWCIRefset(User u, String name, String refsetId, String moduleId, Date versionDate, String narrative, Project project) {
+    public Refset addWCIRefset(final TerminologyService service, final User u, final String name, final String refsetId, final String moduleId, final Date versionDate, final String narrative,
+        final Project project) {
 
-        try (TerminologyService service = new TerminologyService()) {
-
+        try {
             Edition e = service.get(project.getEditionId(), Edition.class);
 
             if (!utilities.isDeveloperEdition(e.getShortName())) {
@@ -254,8 +236,6 @@ public class SyncDatabaseHandler {
             refsetParameters.setProject(project);
             refsetParameters.setLatestPublishedVersion(false);
 
-            initializeService(service);
-
             // Sets up completely different than normal addRefset routine
             final Object returned = RefsetService.createRefset(service, u, refsetParameters);
 
@@ -268,7 +248,7 @@ public class SyncDatabaseHandler {
 
                 logger.info("Added new WCI Refset - " + refset.getId() + " (" + refset.getName() + ")");
 
-                Refset updatedRefset = utilities.initializeWorkflowStatus(refset);
+                Refset updatedRefset = utilities.initializeWorkflowStatus(service, refset);
 
                 logger.info(" and then updated the new WCI refset's Workflow Status");
 
@@ -287,12 +267,9 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Team addTeam(String teamName, String teamDescription, Organization organization) {
+    public Team addTeam(final TerminologyService service, final String teamName, final String teamDescription, final Organization organization) {
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
+        try {
             Team team = new Team();
             team.setName(teamName);
             team.setDescription(teamDescription);
@@ -317,12 +294,9 @@ public class SyncDatabaseHandler {
 
     }
 
-    public User addUser(String name, String userName, String email) {
+    public User addUser(final TerminologyService service, final String name, final String userName, final String email) {
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
+        try {
             final User user = new User();
 
             user.setName(name);
@@ -348,18 +322,19 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Edition updateEditionStatus(String shortName, boolean isActive) {
+    public Edition updateEditionStatus(final TerminologyService service, final String shortName, boolean isActive) {
         List<Edition> matchingEditions = null;
 
-        try (final TerminologyService service = new TerminologyService()) {
-
+        try {
             matchingEditions = service.getAll(Edition.class).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
             utilities.validateMatches(matchingEditions, shortName);
 
             final Edition edition = matchingEditions.iterator().next();
 
             if (isActive == edition.isActive()) {
-                throw new Exception("Attempting to set active status to " + isActive + " for an edition " + edition.getName() + " whose status is already that");
+
+                logger.error("Attempting to set active status to " + isActive + " for an edition " + edition.getName() + " whose status is already that");
+                return edition;
             }
 
             edition.setActive(isActive);
@@ -373,18 +348,16 @@ public class SyncDatabaseHandler {
             return updatedEdition;
 
         } catch (Exception e) {
-            logger.error("Failed to update status of edition: " + shortName + " to " + isActive);
+            logger.error("Failed to update status of edition: " + shortName + " to " + isActive + " with Exception --> " + e.getMessage());
 
             return null;
         }
 
     }
 
-    public Organization updateOrganizationStatus(String organizationName, boolean isActive) {
-        try (final TerminologyService service = new TerminologyService()) {
+    public Organization updateOrganizationStatus(final TerminologyService service, final String organizationName, boolean isActive) {
 
-            initializeService(service);
-
+        try {
             final List<Organization> allOrganizations = service.getAll(Organization.class);
 
             List<Organization> matchingOrganizations = allOrganizations.stream().filter(o -> o.getName().equals(organizationName)).collect(Collectors.toList());
@@ -393,7 +366,8 @@ public class SyncDatabaseHandler {
             final Organization organization = matchingOrganizations.iterator().next();
 
             if (isActive == organization.isActive()) {
-                throw new Exception("Attempting to set active status to " + isActive + " for an organization " + organizationName + " whose status is already that");
+                logger.error("Attempting to set active status to " + isActive + " for an organization " + organizationName + " whose status is already that");
+                return organization;
             }
 
             Organization updatedOrganization = null;
@@ -417,7 +391,7 @@ public class SyncDatabaseHandler {
             return updatedOrganization;
 
         } catch (Exception e) {
-            logger.error("Failed to update status of organziation: " + organizationName + " to " + isActive);
+            logger.error("Failed to update status of organziation: " + organizationName + " to " + isActive + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 
@@ -425,11 +399,9 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public Edition updateEdition(Edition dbEdition) {
-        try (TerminologyService service = new TerminologyService()) {
+    public Edition updateEdition(final TerminologyService service, final Edition dbEdition) {
 
-            initializeService(service);
-
+        try {
             final Edition updatedEdition = service.update(dbEdition);
 
             service.add(AuditEntryHelper.updateEditionEntry(updatedEdition));
@@ -447,11 +419,9 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public Refset updateRefset(Refset refset) {
-        try (final TerminologyService service = new TerminologyService()) {
+    public Refset updateRefset(final TerminologyService service, final Refset refset) {
 
-            initializeService(service);
-
+        try {
             final Refset updatedRefset = service.update(refset);
 
             service.add(AuditEntryHelper.updateRefsetVersionEntry(updatedRefset));
@@ -469,14 +439,11 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public Set<Refset> updateMultipleRefsets(Set<Refset> refsets) {
+    public Set<Refset> updateMultipleRefsets(final TerminologyService service, final Set<Refset> refsets) {
 
         Set<String> refsetDbIds = new HashSet<>();
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
+        try {
             Set<Refset> updatedRefsets = new HashSet<>();
 
             for (Refset refset : refsets) {
@@ -506,10 +473,13 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Refset updateRefsetVersionStatus(Refset refset, boolean isActive) {
-        try (final TerminologyService service = new TerminologyService()) {
+    public Refset updateRefsetVersionStatus(final TerminologyService service, final Refset refset, boolean isActive) {
 
-            initializeService(service);
+        try {
+            if (isActive == refset.isActive()) {
+                logger.error("Attempting to set active status to " + isActive + " for an refset " + refset.getName() + " whose status is already that");
+                return refset;
+            }
 
             refset.setActive(isActive);
 
@@ -522,7 +492,7 @@ public class SyncDatabaseHandler {
 
             return updatedRefset;
         } catch (Exception e) {
-            logger.error("Failed to update status of refset: " + refset.getName() + " (" + refset.getVersionDate() + ") to " + isActive);
+            logger.error("Failed to update status of refset: " + refset.getName() + " (" + refset.getVersionDate() + ") to " + isActive + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 
@@ -531,19 +501,18 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Refset updateRefsetVersionStatus(String refsetId, long versionDate, boolean isActive) {
+    public Refset updateRefsetVersionStatus(final TerminologyService service, final String refsetId, long versionDate, boolean isActive) {
 
-        try (final TerminologyService service = new TerminologyService()) {
-
+        try {
             List<Refset> allRefsets = service.getAll(Refset.class);
             List<Refset> matchingRefsets = allRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().getTime() == versionDate).collect(Collectors.toList());
             utilities.validateMatches(matchingRefsets, refsetId + " / " + versionDate);
 
             Refset matchingRefset = matchingRefsets.iterator().next();
 
-            return updateRefset(matchingRefset);
+            return updateRefset(service, matchingRefset);
         } catch (Exception e) {
-            logger.error("Failed to update status of refset version: " + refsetId + " (" + versionDate + ") to " + isActive);
+            logger.error("Failed to update status of refset version: " + refsetId + " (" + versionDate + ") to " + isActive + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 
@@ -551,14 +520,11 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public Set<DefinitionClause> addDefinitionClauses(String rttId) {
+    public Set<DefinitionClause> addDefinitionClauses(final TerminologyService service, final String rttId) {
 
         Set<DefinitionClause> refsetClauses = new HashSet<>();
 
-        try (final TerminologyService service = new TerminologyService()) {
-
-            initializeService(service);
-
+        try {
             for (String clauseJson : utilities.getPropertyReader().getRttRefsetToClausesMap().get(rttId)) {
 
                 final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
@@ -586,11 +552,9 @@ public class SyncDatabaseHandler {
         return refsetClauses;
     }
 
-    public Organization updateOrganization(Organization organization) {
-        try (TerminologyService service = new TerminologyService()) {
+    public Organization updateOrganization(final TerminologyService service, final Organization organization) {
 
-            initializeService(service);
-
+        try {
             final Organization updatedOrganization = service.update(organization);
 
             service.add(AuditEntryHelper.updateOrganizationEntry(updatedOrganization));
@@ -608,11 +572,9 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public Project updateProject(Project project) {
-        try (TerminologyService service = new TerminologyService()) {
+    public Project updateProject(final TerminologyService service, final Project project) {
 
-            initializeService(service);
-
+        try {
             final Project updatedProject = service.update(project);
 
             logger.info("Updated project: " + updatedProject.getId() + "  (" + updatedProject.getName() + ") ");
@@ -630,11 +592,9 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public DefinitionClause addDefinitionClause(DefinitionClause clause) {
-        try (final TerminologyService service = new TerminologyService()) {
+    public DefinitionClause addDefinitionClause(final TerminologyService service, final DefinitionClause clause) {
 
-            initializeService(service);
-
+        try {
             // Persist
             final DefinitionClause addedClause = service.add(clause);
 
@@ -650,18 +610,24 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public Set<Refset> updateRefsetIdsStatus(String refsetId, boolean isActive) {
+    public Set<Refset> updateRefsetStatusAllVersions(final TerminologyService service, final String refsetId, boolean isActive) {
 
         Set<Refset> updatedRefsetVersions = new HashSet<>();
 
-        try (final TerminologyService service = new TerminologyService()) {
-
+        try {
             List<Refset> matchingRefsetVersions = service.getAll(Refset.class).stream().filter(r -> r.getRefsetId().equals(refsetId)).collect(Collectors.toList());
 
             for (Refset refsetVersion : matchingRefsetVersions) {
+
+                if (isActive == refsetVersion.isActive()) {
+
+                    logger.error("Attempting to set active status to " + isActive + " for an refset " + refsetVersion.getName() + " whose status is already that");
+                    continue;
+                }
+
                 refsetVersion.setActive(isActive);
 
-                Refset updatedRefsetVersion = updateRefset(refsetVersion);
+                Refset updatedRefsetVersion = updateRefset(service, refsetVersion);
 
                 logger.info("Updated refset version status: " + updatedRefsetVersion.getId() + " to " + isActive + "  (" + updatedRefsetVersion.getName() + " / "
                         + updatedRefsetVersion.getVersionDate() + ") ");
@@ -670,22 +636,21 @@ public class SyncDatabaseHandler {
             }
             return updatedRefsetVersions;
         } catch (Exception e) {
-            logger.error("Failed to update status of all versions of refsetId: " + refsetId + " to " + isActive);
+            logger.error("Failed to update status of all versions of refsetId: " + refsetId + " to " + isActive + " with Exception --> " + e.getMessage());
 
             return null;
         }
 
     }
 
-    private Team createAdminOrganizationTeam(Organization organization) throws Exception {
+    public Team createAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
-
+        try {
             Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
 
             if (adminTeam == null) {
 
-                addTeam(TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization);
+                adminTeam = addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization);
 
                 for (UserRole role : UserRole.getAllRoles()) {
                     adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role));
@@ -693,7 +658,10 @@ public class SyncDatabaseHandler {
             }
 
             return adminTeam;
+        } catch (Exception e) {
+            logger.error("Failed to create admin team with Exception --> " + e.getMessage());
 
+            return null;
         }
     }
 }

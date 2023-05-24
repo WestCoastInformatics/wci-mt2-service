@@ -300,7 +300,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         }
     }
 
-    public static Map<String, Set<String>> getAllGroupsMembers() throws Exception {
+    public static Map<String, Set<String>> getAllCrowdRuleMembers() throws Exception {
         logger.debug("Get all groups' members {}");
 
         final Map<String, Set<String>> groupMemberMap = new HashMap<>();

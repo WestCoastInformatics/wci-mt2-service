@@ -2245,6 +2245,7 @@ public class RefsetController extends BaseController {
 
 			String status = "Intensional testing refset created successfully";
 			logger.info("Create new intensional refset for testing purposes");
+			
 			SyncTestingInitializer initializer = new SyncTestingInitializer();
 			Refset refset = initializer.createTestingIntensionalRefset();
 

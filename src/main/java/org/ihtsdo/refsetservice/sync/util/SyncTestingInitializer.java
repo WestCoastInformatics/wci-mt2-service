@@ -31,10 +31,6 @@ public class SyncTestingInitializer {
 
     private static User userResponderUser = null;
 
-    private static final String WCI_TESTING_REFSET_CONCEPT_ID = "92535302004";
-
-    private static final String WCI_TESTING_REFSET_NAME = "Default Single WCI Testing Refset";
-
     static private Edition developerTestingEdition = null;
 
     static private Project testingProject = null;
@@ -43,31 +39,26 @@ public class SyncTestingInitializer {
 
     private static final String FEEDBACK_REFSET_ID_BASE = "9999999";
 
-    private static final String FEEDBACK_INITIAL_REFSET_ID = "999999901";
-
     private static final String INTENSIONAL_REFSET_NAME_BASE = "WCI Testing Intensional Refset ";
 
     private static final String INTENSIONAL_REFSET_ID_BASE = "8888888";
 
-    private static final String INTENSIONAL_INITIAL_REFSET_ID = "888888801";
-
     private static final String WCI_TESTING_PROJECT_NAME = "WCI Testing Project";
-
-    private static final String WCI_TESTING_PROJECT_DESCRIPTION = "The single project for all WCI testing refsets";
 
     public SyncTestingInitializer() {
 
         // Support one-off usages for specific testing cases i.e. adding an intensional refset
-        initializeSync();
+        try (TerminologyService service = new TerminologyService()) {
+            initializeSync(service);
+        } catch (Exception e) {
+            logger.error("Failed starting the testing initialization from controller other than sync with errorMessage: " + e.getMessage());
+        }
     }
 
-    public SyncTestingInitializer(SyncUtilities utilities) {
+    private void initializeSync(TerminologyService service) {
+        service.setModifiedBy("Sync");
+        service.setModifiedFlag(true);
 
-        this.utilities = utilities;
-        initializeSync();
-    }
-
-    private void initializeSync() {
         if (dbHandler == null) {
             dbHandler = new SyncDatabaseHandler(null);
         }
@@ -80,8 +71,10 @@ public class SyncTestingInitializer {
 
         try {
             // For Feedback Refset
-            feedbackInitiatiorUser = utilities.getUser("feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-            userResponderUser = utilities.getUser("feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+            feedbackInitiatiorUser =
+                    utilities.getUser(service, "feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+            userResponderUser =
+                    utilities.getUser(service, "feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -89,208 +82,145 @@ public class SyncTestingInitializer {
 
     }
 
-    public void initialize(Edition developerTestingEdition, List<Edition> allDatabaseEditions, List<Refset> allDatabaseRefsets) throws Exception {
-
-        // Only run this once on DEV and UAT (but never prod). If developerTestingEdition is set, we know that this has already been run
-        if (developerTestingEdition != null) {
-
-            logger.info("Creating testing support and content");
-
-            if (!allDatabaseRefsets.stream().anyMatch(r -> r.getRefsetId().equals(FEEDBACK_INITIAL_REFSET_ID))) {
-
-                // Create developer project and refsets (for DEV only)
-                createTestingContent();
-
-            }
-
-        } else {
-
-            logger.error("Failed to create testing support and content as develeperTestingEdition is null");
-        }
-
-    }
-
-    private void createTestingContent() throws Exception {
-
-        final Edition developerEdition = getDeveloperTestingEdition();
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            testingProject = dbHandler.addProject(WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, developerTestingEdition);
-
-            dbHandler.addWCIRefset(SecurityService.getUserFromSession(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getModules().iterator().next(),
-                    utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
-
-            // Create wci testing refsets(for DEV only)
-            createTestingRefsets();
-        }
-
-    }
-
-    /*
-     * Called when creating the first instance of testing refsets
-     */
-
-    public void createTestingRefsets() throws Exception {
-
-        final Edition developerEdition = getDeveloperTestingEdition();
-
-        logger.info(" Create Feedback & Intensional refsets for testing (for DEV only)");
-
-        // create new refset with name = Feedback/Intensional Testing Version 1 with July 31 2022 version off International Edition
-        Refset intensionalRefset = dbHandler.addWCIRefset(SecurityService.getUserFromSession(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID,
-                developerEdition.getModules().iterator().next(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
-        addIntensionalContent(intensionalRefset);
-
-        Refset feedbackRefset = dbHandler.addWCIRefset(SecurityService.getUserFromSession(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID,
-                developerEdition.getModules().iterator().next(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
-
-        addFeedbackContent(feedbackRefset);
-
-    }
-
     /*
      * Called when adding another instance of testing-feedback refset
      */
     public Refset createTestingFeedbackRefset() throws Exception {
+        try (TerminologyService service = new TerminologyService()) {
+            initializeSync(service);
 
-        Refset newTestingRefset = createTestingRefset(FEEDBACK_REFSET_NAME_BASE, FEEDBACK_REFSET_ID_BASE);
+            Refset newTestingRefset = createTestingRefset(service, FEEDBACK_REFSET_NAME_BASE, FEEDBACK_REFSET_ID_BASE);
 
-        addFeedbackContent(newTestingRefset);
+            addFeedbackContent(service, newTestingRefset);
 
-        return newTestingRefset;
+            return newTestingRefset;
+        }
     }
 
     /*
      * Called when adding another instance of testing-intensional refset
      */
     public Refset createTestingIntensionalRefset() throws Exception {
+        try (TerminologyService service = new TerminologyService()) {
+            initializeSync(service);
 
-        Refset newTestingRefset = createTestingRefset(INTENSIONAL_REFSET_NAME_BASE, INTENSIONAL_REFSET_ID_BASE);
+            Refset newTestingRefset = createTestingRefset(service, INTENSIONAL_REFSET_NAME_BASE, INTENSIONAL_REFSET_ID_BASE);
 
-        addIntensionalContent(newTestingRefset);
+            addIntensionalContent(service, newTestingRefset);
+
+            return newTestingRefset;
+        }
+    }
+
+    private Refset createTestingRefset(TerminologyService service, String testingRefsetName, String testingRefsetId) throws Exception {
+
+        final Project developerTestingProject = getDeveloperTestingProject(service);
+
+        final List<Refset> projectRefsets = service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
+
+        int latestVersion = 0;
+
+        for (Refset projectRefset : projectRefsets) {
+
+            if (projectRefset.getRefsetId().startsWith(testingRefsetId) && projectRefset.getName().startsWith(testingRefsetName)) {
+
+                final int refsetVersion = Integer.parseInt(projectRefset.getName().substring(testingRefsetName.length()).trim());
+
+                if (refsetVersion > latestVersion) {
+
+                    latestVersion = refsetVersion;
+                }
+                // Iterate through the refsets, look at the refset name, and find the integer list after the default name.
+                // if keysize = 0, this is first one. So create with RefsetId: based on the testingRefsetId and iteration.
+                // else, if the refset integer is greater than the greatest one seen, make this the new refsetName & refsetId integer
+
+            }
+
+        }
+
+        Refset newTestingRefset;
+
+        if (latestVersion == 0) {
+
+            newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + "1", testingRefsetId + "01",
+                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", getDeveloperTestingProject(service));
+        } else {
+
+            latestVersion++;
+            String tensValue = Integer.toString(latestVersion / 10);
+            String onesValue = Integer.toString(latestVersion % 10);
+
+            newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
+                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", getDeveloperTestingProject(service));
+        }
+
+        logger.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());
 
         return newTestingRefset;
     }
 
-    private Refset createTestingRefset(String testingRefsetName, String testingRefsetId) throws Exception {
-
-        final Project developerTestingProject = getDeveloperTestingProject();
-
-        try (TerminologyService service = new TerminologyService()) {
-
-            final List<Refset> projectRefsets = service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
-
-            int latestVersion = 0;
-
-            for (Refset projectRefset : projectRefsets) {
-
-                if (projectRefset.getRefsetId().startsWith(testingRefsetId) && projectRefset.getName().startsWith(testingRefsetName)) {
-
-                    final int refsetVersion = Integer.parseInt(projectRefset.getName().substring(testingRefsetName.length()).trim());
-
-                    if (refsetVersion > latestVersion) {
-
-                        latestVersion = refsetVersion;
-                    }
-                    // Iterate through the refsets, look at the refset name, and find the integer list after the default name.
-                    // if keysize = 0, this is first one. So create with RefsetId: based on the testingRefsetId and iteration.
-                    // else, if the refset integer is greater than the greatest one seen, make this the new refsetName & refsetId integer
-
-                }
-
-            }
-
-            Refset newTestingRefset;
-
-            if (latestVersion == 0) {
-
-                newTestingRefset = dbHandler.addWCIRefset(SecurityService.getUserFromSession(), testingRefsetName + "1", testingRefsetId + "01",
-                        getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "", getDeveloperTestingProject());
-            } else {
-
-                latestVersion++;
-                String tensValue = Integer.toString(latestVersion / 10);
-                String onesValue = Integer.toString(latestVersion % 10);
-
-                newTestingRefset = dbHandler.addWCIRefset(SecurityService.getUserFromSession(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
-                        getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "", getDeveloperTestingProject());
-            }
-
-            logger.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());
-
-            return newTestingRefset;
-        }
-
-    }
-
-    private void addIntensionalContent(Refset refset) throws Exception {
+    private void addIntensionalContent(TerminologyService service, Refset refset) throws Exception {
 
         // Create ecl clause
         final String testClause = "<<716186003 |No known allergy (situation)|";
         final DefinitionClause clause = new DefinitionClause();
         clause.setNegated(false);
         clause.setValue(testClause);
-        final DefinitionClause persistedClause = dbHandler.addDefinitionClause(clause);
+        final DefinitionClause persistedClause = dbHandler.addDefinitionClause(service, clause);
 
         // Set Intensional Refset Infromation
         refset.setType(Refset.INTENSIONAL);
         refset.getDefinitionClauses().add(persistedClause);
 
-        dbHandler.updateRefset(refset);
+        dbHandler.updateRefset(service, refset);
 
     }
 
-    private void addFeedbackContent(Refset refset) throws Exception {
+    private void addFeedbackContent(TerminologyService service, Refset refset) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        // add feedback
+        DiscussionThread thread = new DiscussionThread();
+        thread.setSubject("Testing discussion thread on refset");
+        thread.setType(DiscussionType.REFSET.toString());
+        thread.setRefsetInternalId(refset.getId());
+        thread.setStatus("OPEN");
+        thread.setVisibility("VISIBLE");
+        thread.setPrivateThread(false);
+        thread = service.add(thread);
 
-            SyncDatabaseHandler.initializeService(service);
+        service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
+        service.setModifiedFlag(true);
+        service.setTransactionPerOperation(false);
+        service.beginTransaction();
 
-            // add feedback
-            DiscussionThread thread = new DiscussionThread();
-            thread.setSubject("Testing discussion thread on refset");
-            thread.setType(DiscussionType.REFSET.toString());
-            thread.setRefsetInternalId(refset.getId());
-            thread.setStatus("OPEN");
-            thread.setVisibility("VISIBLE");
-            thread.setPrivateThread(false);
-            thread = service.add(thread);
+        DiscussionPost post = new DiscussionPost();
+        post.setUser(feedbackInitiatiorUser);
+        post.setMessage("Topic Header");
+        post.setVisibility("VISIBLE");
+        post.setPrivatePost(false);
+        post = service.add(post);
+        thread.getPosts().add(post);
 
-            service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
-            service.setModifiedFlag(true);
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
+        post = new DiscussionPost();
+        post.setUser(userResponderUser);
+        post.setMessage("Comment #1");
+        post.setVisibility("VISIBLE");
+        post.setPrivatePost(false);
+        post = service.add(post);
+        thread.getPosts().add(post);
 
-            DiscussionPost post = new DiscussionPost();
-            post.setUser(feedbackInitiatiorUser);
-            post.setMessage("Topic Header");
-            post.setVisibility("VISIBLE");
-            post.setPrivatePost(false);
-            post = service.add(post);
-            thread.getPosts().add(post);
+        post = new DiscussionPost();
+        post.setUser(feedbackInitiatiorUser);
+        post.setMessage("Comment #2");
+        post.setVisibility("VISIBLE");
+        post.setPrivatePost(false);
+        post = service.add(post);
+        thread.getPosts().add(post);
 
-            post = new DiscussionPost();
-            post.setUser(userResponderUser);
-            post.setMessage("Comment #1");
-            post.setVisibility("VISIBLE");
-            post.setPrivatePost(false);
-            post = service.add(post);
-            thread.getPosts().add(post);
-
-            post = new DiscussionPost();
-            post.setUser(feedbackInitiatiorUser);
-            post.setMessage("Comment #2");
-            post.setVisibility("VISIBLE");
-            post.setPrivatePost(false);
-            post = service.add(post);
-            thread.getPosts().add(post);
-
-            // Finalize transaction
-            service.update(thread);
-            service.commit();
-            service.setTransactionPerOperation(true);
-        }
+        // Finalize transaction
+        service.update(thread);
+        service.commit();
+        service.setTransactionPerOperation(true);
 
         // Create users for testing initial feedback
         // Create users and teams, then add to org/project
@@ -299,35 +229,26 @@ public class SyncTestingInitializer {
         Set<String> memberIds = new HashSet<>();
         memberIds.add(feedbackInitiatiorUser.getId());
         memberIds.add(userResponderUser.getId());
-        /*
-         * adminUsers.stream().forEach(user -> memberIds.add(user.getId())); final Team singleFeedbackTeam = dbHandler.addTeam("WCI Feedback Team",
-         * "WCI Feedback Testing/Demoing Team with all roles for all WCI members", getDeveloperTestingEdition().getOrganization(), allRoles, memberIds);
-         * 
-         * testingProject.getTeams().add(singleFeedbackTeam.getId());
-         */
-        testingProject = dbHandler.updateProject(testingProject);
 
-        getDeveloperTestingEdition().getOrganization().getMembers().add(feedbackInitiatiorUser);
-        getDeveloperTestingEdition().getOrganization().getMembers().add(userResponderUser);
-        dbHandler.updateOrganization(getDeveloperTestingEdition().getOrganization());
+        testingProject = dbHandler.updateProject(service, testingProject);
+
+        getDeveloperTestingEdition(service).getOrganization().getMembers().add(feedbackInitiatiorUser);
+        getDeveloperTestingEdition(service).getOrganization().getMembers().add(userResponderUser);
+        dbHandler.updateOrganization(service, getDeveloperTestingEdition(service).getOrganization());
 
     }
 
-    private Project getDeveloperTestingProject() throws Exception {
+    private Project getDeveloperTestingProject(TerminologyService service) throws Exception {
 
         if (testingProject == null) {
 
-            try (TerminologyService service = new TerminologyService()) {
+            List<Project> projects = service.getAll(Project.class);
 
-                List<Project> projects = service.getAll(Project.class);
+            for (Project p : projects) {
 
-                for (Project p : projects) {
+                if (p.getName().equals(WCI_TESTING_PROJECT_NAME)) {
 
-                    if (p.getName().equals(WCI_TESTING_PROJECT_NAME)) {
-
-                        testingProject = p;
-                    }
-
+                    testingProject = p;
                 }
 
             }
@@ -342,21 +263,17 @@ public class SyncTestingInitializer {
         return testingProject;
     }
 
-    private Edition getDeveloperTestingEdition() throws Exception {
+    private Edition getDeveloperTestingEdition(TerminologyService service) throws Exception {
 
         if (developerTestingEdition == null) {
 
-            try (TerminologyService service = new TerminologyService()) {
+            List<Edition> editions = service.getAll(Edition.class);
 
-                List<Edition> editions = service.getAll(Edition.class);
+            for (Edition e : editions) {
 
-                for (Edition e : editions) {
+                if (e.getName().toLowerCase().contains("wci")) {
 
-                    if (e.getName().toLowerCase().contains("wci")) {
-
-                        developerTestingEdition = e;
-                    }
-
+                    developerTestingEdition = e;
                 }
 
             }

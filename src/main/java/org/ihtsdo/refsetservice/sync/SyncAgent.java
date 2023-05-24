@@ -33,7 +33,7 @@ public abstract class SyncAgent {
 
     protected static final SyncStatistics statistics = new SyncStatistics();
 
-    protected abstract void sync() throws Exception;
+    protected abstract void syncComponent(TerminologyService service) throws Exception;
 
     /** Execution options. */
     private static Boolean isProductionSystem = null;
@@ -43,11 +43,12 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
-    protected static String testingEditionShortName = "SNOMEDCT-BE";
+    protected static String testingEditionShortName = "SNOMEDCT-NL";
 
-    protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
+    // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
+    protected static String testingRefset = "9631000146108"; // To test entire edition
     // protected static String testingRefset = null; // To test entire edition
     // protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
     // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
@@ -96,17 +97,17 @@ public abstract class SyncAgent {
 
         // Only identify branches on filtered code systems and on runShortSync value
         SyncAgent agent = new SyncCodeSystemAgent();
-        agent.sync();
+        agent.syncComponent(service);
 
         agent = new SyncCrowdAgent();
-        agent.sync();
+        agent.syncComponent(service);
 
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
-        agent.sync();
+        agent.syncComponent(service);
 
         // Post processing
-        utilities.emailSyncResults();
+        utilities.emailSyncResults(service);
 
         logger.info(statistics.printStatistics());
         logger.info("Completed Syncing with Snowstorm");
@@ -213,18 +214,9 @@ public abstract class SyncAgent {
         return adminUsernames;
     }
 
-    List<Edition> readDbAllEditions() throws Exception {
-        try (TerminologyService service = new TerminologyService()) {
+    List<Organization> readDbOrganizations(TerminologyService service) throws Exception {
 
-            return readDbAllEditions(service);
-        }
-    }
-
-    List<Organization> readDbOrganizations() throws Exception {
-        try (TerminologyService service = new TerminologyService()) {
-
-            return service.getAll(Organization.class);
-        }
+        return service.getAll(Organization.class);
     }
 
     List<Edition> readDbAllEditions(TerminologyService service) throws Exception {

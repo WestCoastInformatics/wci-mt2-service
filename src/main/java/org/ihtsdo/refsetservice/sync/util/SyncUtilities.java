@@ -81,34 +81,31 @@ public class SyncUtilities {
         this.dbHandler = dbHandler;
     }
 
-    public User getUser(String userName) throws Exception {
+    public User getUser(TerminologyService service, String userName) throws Exception {
 
         User user = null;
 
-        try (final TerminologyService service = new TerminologyService()) {
+        final PfsParameter pfs = new PfsParameter();
+        final QueryParameter query = new QueryParameter();
+        query.setQuery("userName:" + userName + " AND active:true");
 
-            final PfsParameter pfs = new PfsParameter();
-            final QueryParameter query = new QueryParameter();
-            query.setQuery("userName:" + userName + " AND active:true");
+        ResultList<User> results = service.find(query, pfs, User.class, null);
 
-            ResultList<User> results = service.find(query, pfs, User.class, null);
+        if (results.getItems() != null && results.getItems().size() == 1) {
 
-            if (results.getItems() != null && results.getItems().size() == 1) {
-
-                // User already exists
-                user = results.getItems().iterator().next();
-            }
-
-            return user;
+            // User already exists
+            user = results.getItems().iterator().next();
         }
+
+        return user;
     }
 
-    public User getUser(String name, String userName, String email, Set<String> roles) throws Exception {
+    public User getUser(TerminologyService service, String name, String userName, String email, Set<String> roles) throws Exception {
 
-        User user = getUser(userName);
+        User user = getUser(service, userName);
 
         if (user == null) {
-            user = dbHandler.addUser(name, userName, email);
+            user = dbHandler.addUser(service, name, userName, email);
         }
 
         return user;
@@ -287,24 +284,20 @@ public class SyncUtilities {
         return retSet;
     }
 
-    public void printEditionValues(Edition edition) throws Exception {
+    public void printEditionValues(TerminologyService service, Edition edition) throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null).getItems();
+        final List<Team> teams = service.getAll(Team.class);
 
-            final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null).getItems();
-            final List<Team> teams = service.getAll(Team.class);
+        for (Project project : orgProjects) {
 
-            for (Project project : orgProjects) {
+            for (String teamId : project.getTeams()) {
 
-                for (String teamId : project.getTeams()) {
+                Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
 
-                    Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
+                if (team == null) {
 
-                    if (team == null) {
-
-                        throw new Exception("  Unable to locate team in project " + project.getName() + " for team: " + teamId);
-                    }
-
+                    throw new Exception("  Unable to locate team in project " + project.getName() + " for team: " + teamId);
                 }
 
             }
@@ -328,7 +321,7 @@ public class SyncUtilities {
         return editionModulesMap;
     }
 
-    private String getSyncResults() throws Exception {
+    private String getSyncResults(TerminologyService service) throws Exception {
 
         final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
 
@@ -351,38 +344,33 @@ public class SyncUtilities {
         final StringBuilder result = new StringBuilder();
 
         // Collect results
-        try (final TerminologyService service = new TerminologyService()) {
 
-            for (final String query : sqlQueries) {
-                if (query != null && !query.contains("--") && query.contains("select ")) {
+        for (final String query : sqlQueries) {
+            if (query != null && !query.contains("--") && query.contains("select ")) {
 
-                    @SuppressWarnings("unchecked")
-                    final List<Object[]> rows = service.getEntityManager().createNativeQuery(query).getResultList();
-                    result.append(query).append("\r\n");
+                @SuppressWarnings("unchecked")
+                final List<Object[]> rows = service.getEntityManager().createNativeQuery(query).getResultList();
+                result.append(query).append("\r\n");
 
-                    if (rows != null) {
-                        for (final Object[] row : rows) {
-                            for (final Object field : row) {
-                                result.append(field).append("|");
-                            }
-                            result.append("\r\n");
+                if (rows != null) {
+                    for (final Object[] row : rows) {
+                        for (final Object field : row) {
+                            result.append(field).append("|");
                         }
+                        result.append("\r\n");
                     }
-                    result.append("\r\n");
                 }
+                result.append("\r\n");
             }
-
-            logger.info("DONE POST SYNC DATA QUERIES");
-
-        } catch (Exception e) {
-            logger.error("ERROR getting db results", e);
         }
+
+        logger.info("DONE POST SYNC DATA QUERIES");
 
         return result.toString();
     }
 
-    public void emailSyncResults() throws Exception {
-        String results = getSyncResults();
+    public void emailSyncResults(TerminologyService service) throws Exception {
+        String results = getSyncResults(service);
 
         try {
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
@@ -457,7 +445,7 @@ public class SyncUtilities {
         return codeSystemType;
     }
 
-    Refset initializeWorkflowStatus(Refset refset) throws Exception {
+    Refset initializeWorkflowStatus(TerminologyService service, Refset refset) throws Exception {
 
         if (!isDeveloperEdition(refset.getEdition().getShortName())) {
             throw new Exception("Cannot modify the workflow status of anything other than the developer org");
@@ -465,10 +453,8 @@ public class SyncUtilities {
 
         final String currentStatus = refset.getWorkflowStatus();
 
-        try (final TerminologyService service = new TerminologyService()) {
-
+        try {
             // if the status is Published then create a new version of the refset that is ready to be edited
-            SyncDatabaseHandler.initializeService(service);
             refset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
 
             // if the status changed return the updated refset else return null
