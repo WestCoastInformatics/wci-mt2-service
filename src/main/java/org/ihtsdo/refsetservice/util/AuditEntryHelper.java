@@ -82,17 +82,23 @@ public class AuditEntryHelper {
     }
 
     /**
-     * Inactivate edition entry.
+     * Change edition entry.
      *
-     * @param edition the edition
+     * @param refset the edition
      * @return the audit entry
      */
-    public static AuditEntry inactivateEditionEntry(final Edition edition) {
+    public static AuditEntry changeEditionStatusEntry(final Edition edition) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.EDITION.toString());
         entry.setEntityId(edition.getId());
-        entry.setMessage("INACTIVATE Edition");
+
+        if (edition.isActive()) {
+            entry.setMessage("REACTIVATE Edition");
+        } else {
+            entry.setMessage("INACTIVATE Edition");
+        }
+
         entry.setDetails(edition.getName());
         log(entry);
         return entry;
@@ -134,34 +140,23 @@ public class AuditEntryHelper {
     }
 
     /**
-     * Inactivate organization entry.
+     * Change organization status entry.
      *
-     * @param organization the organization
+     * @param refset the organization
      * @return the audit entry
      */
-    public static AuditEntry inactivateOrganizationEntry(final Organization organization) {
+    public static AuditEntry changeOrganizationStatusEntry(final Organization organization) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
-        entry.setMessage("INACTIVATE Organization");
-        entry.setDetails(organization.getName());
-        log(entry);
-        return entry;
-    }
 
-    /**
-     * Inactivate organization entry.
-     *
-     * @param organization the organization
-     * @return the audit entry
-     */
-    public static AuditEntry activateOrganizationEntry(final Organization organization) {
+        if (organization.isActive()) {
+            entry.setMessage("REACTIVATE Organization");
+        } else {
+            entry.setMessage("INACTIVATE Organization");
+        }
 
-        final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
-        entry.setEntityId(organization.getId());
-        entry.setMessage("INACTIVATE Organization");
         entry.setDetails(organization.getName());
         log(entry);
         return entry;
@@ -314,17 +309,23 @@ public class AuditEntryHelper {
     }
 
     /**
-     * Inactivate project entry.
+     * Change project status entry.
      *
      * @param project the project
      * @return the audit entry
      */
-    public static AuditEntry inactivateProjectEntry(final Project project) {
+    public static AuditEntry changeProjectStatusEntry(final Project project) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.PROJECT.toString());
         entry.setEntityId(project.getId());
-        entry.setMessage("INACTIVATE Project");
+
+        if (project.isActive()) {
+            entry.setMessage("REACTIVATE Project");
+        } else {
+            entry.setMessage("INACTIVATE Project");
+        }
+
         entry.setDetails(project.getName());
         log(entry);
         return entry;
@@ -366,17 +367,23 @@ public class AuditEntryHelper {
     }
 
     /**
-     * Inactivate team entry.
+     * Change team status entry.
      *
      * @param team the team
      * @return the audit entry
      */
-    public static AuditEntry inactivateTeamEntry(final Team team) {
+    public static AuditEntry changeTeamStatusEntry(final Team team) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.TEAM.toString());
         entry.setEntityId(team.getId());
-        entry.setMessage("INACTIVATE Team");
+
+        if (team.isActive()) {
+            entry.setMessage("REACTIVATE Team");
+        } else {
+            entry.setMessage("INACTIVATE Team");
+        }
+
         entry.setDetails(team.getName());
         log(entry);
         return entry;
@@ -490,17 +497,23 @@ public class AuditEntryHelper {
     }
 
     /**
-     * Inactivate user entry.
+     * Change user status entry.
      *
      * @param user the user
      * @return the audit entry
      */
-    public static AuditEntry inactivateUserEntry(final User user) {
+    public static AuditEntry changeUserStatusEntry(final User user) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.USER.toString());
         entry.setEntityId(user.getId());
-        entry.setMessage("INACTIVATE User");
+        
+        if (user.isActive()) {
+            entry.setMessage("REACTIVATE User");
+        } else {
+            entry.setMessage("INACTIVATE User");
+        }
+
         entry.setDetails(user.getName());
         log(entry);
         return entry;
@@ -525,7 +538,24 @@ public class AuditEntryHelper {
     }
 
     /**
-     * Inactivate refset entry.
+     * Update refset entry.
+     *
+     * @param refset the refset
+     * @return the audit entry
+     */
+    public static AuditEntry updateRefsetVersionEntry(final Refset refset) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityId(refset.getId());
+        entry.setMessage("UPDATE Refset");
+        entry.setDetails(refset.getName());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Change refset status entry.
      *
      * @param refset the refset
      * @return the audit entry

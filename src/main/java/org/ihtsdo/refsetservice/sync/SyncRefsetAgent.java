@@ -36,13 +36,9 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private final Logger logger = LoggerFactory.getLogger(SyncRefsetAgent.class);
 
-    private final Set<Refset> termserverRefsets = new HashSet<>();
-
     private final Set<SyncRefsetMetadata> filteredRefsets = new HashSet<>();
 
     private final Map<String, String> refsetToModuleMap = new HashMap<String, String>();
-
-    private final Map<String, Edition> refsetEditions = new HashMap<>();
 
     private Map<String, Map<Long, SyncRefsetMetadata>> termserverRefsetIdToRefsetVersionsDataMap;
 
@@ -216,7 +212,8 @@ public class SyncRefsetAgent extends SyncAgent {
                     activatedVersions.stream().forEach(version -> dbHandler.updateRefsetVersionStatus(refsetId, version, true));
                 }
 
-                // Inactivate active DB refsetVersions that are not in termserver // TODO: Define solution although for now simply inactivating
+                // Inactivate active DB refsetVersions that are not in termserver 
+                // TODO: Define solution although for now simply inactivating
                 if (dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId)) {
 
                     for (long dbVersion : dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet()) {
@@ -381,10 +378,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private void initializeSync() throws Exception {
 
-        termserverRefsets.clear();
         filteredRefsets.clear();
         refsetToModuleMap.clear();
-        refsetEditions.clear();
         newlyCreatedAndUnchangedRefsetToVersionsMap.clear();
         rttProjects.clear();
 
@@ -461,9 +456,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 modifiedVersions.add(modifyingVersion.getVersionDate().getTime());
 
-                // TODO: Still need to post-process?
-                postRefsetProcessing(modifyingVersion, termserverPairMetadata.getEdition());
-
             } else {
                 logger.debug("ppp6");
 
@@ -486,17 +478,6 @@ public class SyncRefsetAgent extends SyncAgent {
         }
 
         return refsetName;
-    }
-
-    private void postRefsetProcessing(Refset refset, Edition edition) {
-
-        if (refset != null) {
-
-            refsetEditions.put(refset.getRefsetId(), edition);
-
-            termserverRefsets.add(refset);
-        }
-
     }
 
     private void filterEditionRefsetVerions(Edition edition, SortedMap<Long, String> termserverVersionBranchMap) throws Exception {
@@ -735,12 +716,11 @@ public class SyncRefsetAgent extends SyncAgent {
                         return null;
                     }
 
-                    final String projectName = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).keySet().iterator().next();
-                    final String projectDescription = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).values().iterator().next();
+                    final String rttProjectName = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).keySet().iterator().next();
+                    final String rttProjectDescription = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).values().iterator().next();
 
                     // Create project
-
-                    Project project = dbHandler.addProject(projectName, projectDescription, metadata.getEdition());
+                    Project project = dbHandler.addProject(rttProjectName, rttProjectDescription, metadata.getEdition());
                     statistics.incrementProjectsAdded();
 
                     rttProjects.put(rttProjectId, project);
@@ -1041,9 +1021,6 @@ public class SyncRefsetAgent extends SyncAgent {
                 return null;
             }
             Refset newRefset = dbHandler.addRefset(refsetName, refsetId, moduleId, version, refsetType, project);
-
-            // TODO: Still need to post-process?
-            postRefsetProcessing(newRefset, syncRefsetMetadata.getEdition());
 
             return newRefset;
         } catch (Exception e) {

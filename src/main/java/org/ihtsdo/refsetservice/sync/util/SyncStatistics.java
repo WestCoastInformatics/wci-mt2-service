@@ -14,12 +14,6 @@ public class SyncStatistics {
 
     private int organizationsActivated = 0;
 
-    private int organizationsUnchanged = 0;
-
-    private int organizationsModified = 0;;
-
-    private int organizationsActivatedAndModified = 0;;
-
     // Editions
     private int editionsAdded = 0;
 
@@ -78,8 +72,8 @@ public class SyncStatistics {
         buf.append(System.getProperty("line.separator"));
 
         // Organizations
-        buf.append("*** Organizations --> Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: " + organizationsActivated + " / Unchanged: "
-                + organizationsUnchanged + " / Modified: " + organizationsModified + " / ActivatedAndModified: " + organizationsActivatedAndModified + System.getProperty("line.separator"));
+        buf.append("*** Organizations --> Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: " + organizationsActivated
+                + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Editions
@@ -111,9 +105,6 @@ public class SyncStatistics {
         organizationsAdded = 0;
         organizationsActivated = 0;
         organizationsInactivated = 0;
-        organizationsUnchanged = 0;
-        organizationsModified = 0;
-        organizationsActivatedAndModified = 0;
 
         editionsAdded = 0;
         editionsInactivated = 0;
@@ -164,19 +155,6 @@ public class SyncStatistics {
 
     public int getOrganizationsActivated() {
         return organizationsActivated;
-    }
-
-    public int getOrganizationsUnchanged() {
-        return organizationsUnchanged;
-    }
-
-    public int getOrganizationsModified() {
-
-        return organizationsModified;
-    }
-
-    public int getOrganizationsActivatedAndModified() {
-        return organizationsActivatedAndModified;
     }
 
     // Editions
@@ -294,19 +272,6 @@ public class SyncStatistics {
 
     public void setOrganizationsActivated(int organizationsActivated) {
         this.organizationsActivated = organizationsActivated;
-    }
-
-    public void setOrganizationsUnchanged(int val) {
-        organizationsUnchanged = val;
-
-    }
-
-    public void setOrganizationsModified(int organizationsModified) {
-        this.organizationsModified = organizationsModified;
-    }
-
-    public void setOrganizationsActivatedAndModified(int organizationsActivatedAndModified) {
-        this.organizationsActivatedAndModified = organizationsActivatedAndModified;
     }
 
     // Editions

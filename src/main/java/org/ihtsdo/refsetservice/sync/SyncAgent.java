@@ -43,7 +43,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = true;
+    private static boolean testing = false;
 
     protected static String testingEditionShortName = "SNOMEDCT-BE";
 
@@ -82,6 +82,8 @@ public abstract class SyncAgent {
     }
 
     public static void sync(TerminologyService service) throws Exception {
+      
+        service.add(AuditEntryHelper.syncEntry(new Date()));
 
         final long startOperationStartTime = new Date().getTime();
 
@@ -195,8 +197,8 @@ public abstract class SyncAgent {
     }
 
     public static Boolean getIsIgnoreCoreRefsets() {
-
-        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+return false;
+        // return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
         // return true;
     }
 

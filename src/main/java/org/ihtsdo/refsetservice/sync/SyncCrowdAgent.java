@@ -18,6 +18,7 @@ import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,31 +58,24 @@ public class SyncCrowdAgent extends SyncAgent {
     }
 
     private void assignUsersToAdminTeams(Map<String, User> userMap) throws Exception {
-        try (TerminologyService service = new TerminologyService()) {            
+        try (TerminologyService service = new TerminologyService()) {
             SyncDatabaseHandler.initializeService(service);
 
             List<Organization> dbOrganizations = readDbOrganizations();
-
-            logger.debug("111 {}", dbOrganizations);
 
             Set<User> adminUsers = new HashSet<>();
             for (String userName : SyncAgent.getAdminUsernames()) {
                 adminUsers.add(utilities.getUser(userName));
             }
 
-            logger.debug("222 {}", adminUsers);
-
             for (Organization organization : dbOrganizations) {
 
                 Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
 
-                logger.debug("333 {}", adminTeam);
-
                 for (User user : adminUsers) {
-                    adminTeam = TeamService.addUserToTeam(service, utilities.getSyncUser(), adminTeam, user);
+                    adminTeam = TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, user);
                 }
 
-                logger.debug("444", adminTeam);
             }
 
         }
@@ -279,15 +273,19 @@ public class SyncCrowdAgent extends SyncAgent {
                 Edition edition = service.get(editionId, Edition.class);
                 Set<String> projects = editionProjectsMap.get(editionId);
 
+                Set<String> editionProjectsNames = ProjectService.getProjectNamesForEdition(edition.getId());
+
                 for (String projectName : projects) {
 
-                    final Project newProject = dbHandler.addProject(projectName, "Default description for crowd-defined project: " + projectName, edition);
+                    if (!editionProjectsNames.contains(projectName)) {
+                        final Project newProject = dbHandler.addProject(projectName, "Default description for crowd-defined project: " + projectName, edition);
 
-                    if (!addedProjectMap.containsKey(editionId)) {
-                        addedProjectMap.put(editionId, new HashSet<>());
+                        if (!addedProjectMap.containsKey(editionId)) {
+                            addedProjectMap.put(editionId, new HashSet<>());
+                        }
+
+                        addedProjectMap.get(editionId).add(newProject);
                     }
-
-                    addedProjectMap.get(editionId).add(newProject);
                 }
             }
         }

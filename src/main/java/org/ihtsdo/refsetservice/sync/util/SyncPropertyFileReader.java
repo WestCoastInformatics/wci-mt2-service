@@ -117,7 +117,6 @@ public class SyncPropertyFileReader {
      * @throws Exception the exception
      */
     public void parseRttData() throws Exception {
-
         // Based on findings, define the list of refsets in RTT
         populateFromFile(clausesResource, FileProcessType.CLAUSE);
         populateFromFile(projectsResource, FileProcessType.PROJECT);

@@ -2144,7 +2144,7 @@ public class RefsetController extends BaseController {
 
 			boolean refsetPerVersionSync = false;
 			boolean runForProduction = false;
-			boolean isIgnoreCoreRefsets = true;
+			boolean isIgnoreCoreRefsets = false;
 
 			if (perVersionCreation != null && perVersionCreation.booleanValue()) {
 

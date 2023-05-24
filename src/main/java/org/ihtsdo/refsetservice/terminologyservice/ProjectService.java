@@ -410,7 +410,7 @@ public class ProjectService extends BaseService {
             }
 
             final Project updatedProject = service.update(project);
-            service.add(AuditEntryHelper.inactivateProjectEntry(project));
+            service.add(AuditEntryHelper.changeProjectStatusEntry(project));
             service.commit();
             
             return updatedProject;

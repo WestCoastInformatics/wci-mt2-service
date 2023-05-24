@@ -261,7 +261,7 @@ public class TeamService extends BaseService {
 
 			team.setActive(false);
 			final Team updatedTeam = service.update(team);
-			service.add(AuditEntryHelper.inactivateTeamEntry(updatedTeam));
+			service.add(AuditEntryHelper.changeTeamStatusEntry(updatedTeam));
 
 			final List<Project> teamProjects = getTeamProjects(updatedTeam);
 

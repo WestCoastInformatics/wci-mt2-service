@@ -70,7 +70,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         statistics.setCodeSystemsFiltered(filteredCodeSystems.size());
     }
 
-    private List<String> analyzeOrganizationsAndEditions() throws Exception {
+    private void analyzeOrganizationsAndEditions() throws Exception {
         List<String> existingInBothShortNames = new ArrayList<>();
 
         final Map<String, String> dbActiveEditionShortNameToOrganizationNameMap = new HashMap<>();
@@ -136,59 +136,16 @@ public class SyncCodeSystemAgent extends SyncAgent {
             statistics.setOrganizationsAdded(addedOrganizations.size());
 
             // Activate previously inactivated organizations. Note: Will log and update stats after remove those that were activatedAndModified
-            // TODO: Define solution although for now simply activating
             List<String> activatedShortNames = termserverOrganizationNames.stream().filter(c -> dbInactiveOrganizationNames.contains(c)).collect(Collectors.toList());
             activatedShortNames.stream().forEach(n -> dbHandler.updateOrganizationStatus(n, true));
 
-            // If have active organizations:
-            // 1) Inactivate any active DB organizations that are not in termserver
-            // 2) Compare against termserver
-            // TODO: Define solution although for now simply inactivating
-            if (!dbActiveOrganizationNames.isEmpty()) {
+            // If have active organizations Inactivate any active DB organizations that are not returned from termserver
+            // Note: Nothing to compare against as only value on termserver (owner) is also the primary key. Thus activating/inactivating is sufficient
 
-                List<String> inactivatedShortNames = dbActiveOrganizationNames.stream().filter(c -> !termserverOrganizationNames.contains(c)).collect(Collectors.toList());
-                inactivatedShortNames.stream().forEach(n -> dbHandler.updateOrganizationStatus(n, false));
-                statistics.setOrganizationsInactivated(inactivatedShortNames.size());
-
-                // Determine organizations that are active in DB and found in termserver and compare for changes
-                dbActiveEditionShortNameToOrganizationNameMap.keySet().stream().forEach(sn -> existingInBothShortNames.add(sn));
-
-                // Compare organizations in termserver & active in db
-                if (!existingInBothShortNames.isEmpty()) {
-                    List<String> modifiedShortNames = compareAndModifyOrganizations(new ArrayList<>(existingInBothShortNames));
-                    List<String> unchangedShortNames = existingInBothShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
-
-                    // Have modified... now revisit acivated to see if they too are modified
-                    statistics.setOrganizationsUnchanged(unchangedShortNames.size());
-                    statistics.setOrganizationsModified(modifiedShortNames.size());
-                }
-            }
-
-            // Compare organizations in termserver & newly actived in db
-            if (!activatedShortNames.isEmpty()) {
-                // Determine organizations that were just activated to see if there are any other changes necessary
-                List<String> activatedAndModifiedShortNames = compareAndModifyOrganizations(activatedShortNames);
-                statistics.setOrganizationsActivatedAndModified(activatedAndModifiedShortNames.size());
-
-                // Finalize those organizations that were only activated (and not further modified)
-                activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
-                statistics.setOrganizationsActivated(activatedShortNames.size());
-            }
-
-            return existingInBothShortNames;
-
+            List<String> inactivatedShortNames = dbActiveOrganizationNames.stream().filter(c -> !termserverOrganizationNames.contains(c)).collect(Collectors.toList());
+            inactivatedShortNames.stream().forEach(n -> dbHandler.updateOrganizationStatus(n, false));
+            statistics.setOrganizationsInactivated(inactivatedShortNames.size());
         }
-    }
-
-    private Project createDefaultEditionProject(Edition dbEdition) {
-        final String projectName = dbEdition.getName() + " Default Project";
-        final String projectDescription = "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + dbEdition.getName() + ".";
-
-        // Create default project
-        final Project project = dbHandler.addProject(projectName, projectDescription, dbEdition);
-        statistics.incrementProjectsAdded();
-
-        return project;
     }
 
     private List<String> analyzeEditions() throws Exception {
@@ -210,22 +167,20 @@ public class SyncCodeSystemAgent extends SyncAgent {
             termserverShortNames.stream().filter(shortName -> DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(shortName)).forEach(shortName -> developerTestingEditionShortName = shortName);
 
             // Determine and create new editions (not in active nor in inactive DB editions)
-            List<String> newShortNames = termserverShortNames.stream().filter(c -> !dbActiveEditionShortNames.contains(c) && !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
-            statistics.setEditionsAdded(newShortNames.size());
-            newShortNames.stream().forEach(shortName -> dbHandler.addEdition(termserverShortNameCodeSystemMap.get(shortName), termserverEditionShortNameToOrganizationNameMap.get(shortName)));
+            List<String> addedShortNames = termserverShortNames.stream().filter(c -> !dbActiveEditionShortNames.contains(c) && !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
+            statistics.setEditionsAdded(addedShortNames.size());
+            addedShortNames.stream().forEach(shortName -> dbHandler.addEdition(termserverShortNameCodeSystemMap.get(shortName), termserverEditionShortNameToOrganizationNameMap.get(shortName)));
 
             // Create a Default Project for the edition if no projects already exist from Crowd
-            statistics.setTeamsAdded(newShortNames.size());
+            statistics.setTeamsAdded(addedShortNames.size());
 
             // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
-            // TODO: Define solution although for now simply activating
             List<String> activatedShortNames = termserverShortNames.stream().filter(c -> dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
             activatedShortNames.stream().forEach(n -> dbHandler.updateEditionStatus(n, true));
 
-            // TODO: Define solution although for now simply inactivating
             // If have active editions:
             // 1) Inactivate any active DB editions that are not in termserver
-            // 2) Compare against termserver
+            // 2) Compare against termserver to identify any changes in attributes defined on term server
             if (!dbActiveEditionShortNames.isEmpty()) {
                 List<String> inactivatedShortNames = dbActiveEditionShortNames.stream().filter(c -> !termserverShortNames.contains(c)).collect(Collectors.toList());
                 inactivatedShortNames.stream().forEach(n -> dbHandler.updateEditionStatus(n, false));
@@ -364,19 +319,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
     }
 
-    /*-
-     * Note -> Currently only sync-based attribute is organizationName. Yet, this is also the primary key for organizations. Thus nothing to do as:
-     * 1) name being changed is found with previous organization add/activate/inactive analysis. 
-     * 2) Description is defined on RT2, not on Snowstorm (as is primaryEmail & iconUrl)
-     * 
-     * If new values ever provided, then this method should be updated
-     */
-    private List<String> compareAndModifyOrganizations(List<String> matchingShortNames) throws Exception {
-        List<String> modifiedShortNames = new ArrayList<>();
-
-        return modifiedShortNames;
-    }
-
     private String determineOrganizationDescription(String organizationName) {
 
         if (organizationName.startsWith(DEFAULT_ORGANIZATION_PREFACE)) {
@@ -441,8 +383,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 } else if (!maintainerType.equalsIgnoreCase("Managed Service")) {
 
-                    // TODO: Remove once have handled more than Managed Service only
-                    // Ensure only processing Managed Service editions
+                    // TODO: Handle Type-3 (non-Managed Service only)
                     logger.info("Skipping codesystem " + editionShortName + " as is of maintainerType: " + maintainerType);
 
                 } else {

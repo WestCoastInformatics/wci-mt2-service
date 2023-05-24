@@ -118,7 +118,7 @@ public class SyncTestingInitializer {
 
             testingProject = dbHandler.addProject(WCI_TESTING_PROJECT_NAME, WCI_TESTING_PROJECT_DESCRIPTION, developerTestingEdition);
 
-            dbHandler.addWCIRefset(utilities.getSyncUser(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getModules().iterator().next(),
+            dbHandler.addWCIRefset(SecurityService.getUserFromSession(), WCI_TESTING_REFSET_NAME, WCI_TESTING_REFSET_CONCEPT_ID, developerEdition.getModules().iterator().next(),
                     utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
 
             // Create wci testing refsets(for DEV only)
@@ -138,12 +138,12 @@ public class SyncTestingInitializer {
         logger.info(" Create Feedback & Intensional refsets for testing (for DEV only)");
 
         // create new refset with name = Feedback/Intensional Testing Version 1 with July 31 2022 version off International Edition
-        Refset intensionalRefset = dbHandler.addWCIRefset(utilities.getSyncUser(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
-                utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
+        Refset intensionalRefset = dbHandler.addWCIRefset(SecurityService.getUserFromSession(), INTENSIONAL_REFSET_NAME_BASE + "1", INTENSIONAL_INITIAL_REFSET_ID,
+                developerEdition.getModules().iterator().next(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
         addIntensionalContent(intensionalRefset);
 
-        Refset feedbackRefset = dbHandler.addWCIRefset(utilities.getSyncUser(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID, developerEdition.getModules().iterator().next(),
-                utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
+        Refset feedbackRefset = dbHandler.addWCIRefset(SecurityService.getUserFromSession(), FEEDBACK_REFSET_NAME_BASE + "1", FEEDBACK_INITIAL_REFSET_ID,
+                developerEdition.getModules().iterator().next(), utilities.getSdf().parse("2021-07-31 07:00:00.000000"), "", testingProject);
 
         addFeedbackContent(feedbackRefset);
 
@@ -205,15 +205,15 @@ public class SyncTestingInitializer {
 
             if (latestVersion == 0) {
 
-                newTestingRefset = dbHandler.addWCIRefset(utilities.getSyncUser(), testingRefsetName + "1", testingRefsetId + "01", getDeveloperTestingEdition().getModules().iterator().next(),
-                        new Date(), "", getDeveloperTestingProject());
+                newTestingRefset = dbHandler.addWCIRefset(SecurityService.getUserFromSession(), testingRefsetName + "1", testingRefsetId + "01",
+                        getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "", getDeveloperTestingProject());
             } else {
 
                 latestVersion++;
                 String tensValue = Integer.toString(latestVersion / 10);
                 String onesValue = Integer.toString(latestVersion % 10);
 
-                newTestingRefset = dbHandler.addWCIRefset(utilities.getSyncUser(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
+                newTestingRefset = dbHandler.addWCIRefset(SecurityService.getUserFromSession(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
                         getDeveloperTestingEdition().getModules().iterator().next(), new Date(), "", getDeveloperTestingProject());
             }
 

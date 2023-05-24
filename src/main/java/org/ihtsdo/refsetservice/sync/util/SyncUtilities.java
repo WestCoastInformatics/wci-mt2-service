@@ -28,11 +28,13 @@ import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -382,15 +384,6 @@ public class SyncUtilities {
         return result.toString();
     }
 
-    public void parseRttData() throws Exception {
-
-        // Identify all refset metadata, any refsets' ECL definitions, and project metadata from RTT files manually sync'd over
-        // TODO: #1: Add a automated pull of the data off of RTT?
-        // TODO: #2: Move this to a similar like SyncRttAgent class
-        getPropertyReader().parseRttData();
-
-    }
-
     public void emailSyncResults() throws Exception {
         String results = getSyncResults();
 
@@ -479,7 +472,7 @@ public class SyncUtilities {
 
             // if the status is Published then create a new version of the refset that is ready to be edited
             SyncDatabaseHandler.initializeService(service);
-            refset = WorkflowService.setWorkflowStatusByAction(service, getSyncUser(), WorkflowService.FINISH_EDIT, refset, "");
+            refset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
 
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(refset.getWorkflowStatus())) {
@@ -511,23 +504,4 @@ public class SyncUtilities {
         logger.info("Operation took " + differenceInMinutes + " minutes to run");
 
     }
-
-    public User getSyncUser() {
-
-        if (syncUser == null) {
-
-            syncUser = new User();
-            syncUser.setName("Migrator");
-            syncUser.setUserName("Migrator");
-            syncUser.setActive(true);
-            syncUser.setEmail("test@wci.com");
-
-            Set<String> roles = new HashSet<>();
-            roles.add("all-all-all");
-            syncUser.setRoles(roles);
-        }
-
-        return syncUser;
-    }
-
 }

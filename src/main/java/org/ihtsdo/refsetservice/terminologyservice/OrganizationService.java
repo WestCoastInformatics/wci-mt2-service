@@ -217,10 +217,11 @@ public class OrganizationService extends BaseService {
      * @param service the Terminology Service
      * @param user the user
      * @param organizationId the organization id
+     * @return 
      * @return the list
      * @throws Exception the exception
      */
-    public static void inactivateOrganization(final TerminologyService service, final User user, final String organizationId) throws Exception {
+    public static Organization inactivateOrganization(final TerminologyService service, final User user, final String organizationId) throws Exception {
 
         // Find the object
         final Organization organization = getOrganization(service, user, organizationId, false);
@@ -264,9 +265,10 @@ public class OrganizationService extends BaseService {
         }
 
         organization.setActive(false);
-        service.update(organization);
-        AuditEntryHelper.inactivateOrganizationEntry(organization);
+        final Organization updatedOrganization = service.update(organization);
+        AuditEntryHelper.changeOrganizationStatusEntry(organization);
 
+        return updatedOrganization;
     }
 
     /**
