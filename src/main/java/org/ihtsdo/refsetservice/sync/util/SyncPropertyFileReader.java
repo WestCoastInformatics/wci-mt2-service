@@ -274,12 +274,9 @@ public class SyncPropertyFileReader {
 
     private void readRttProjectInfo() {
 
-        BufferedReader reader;
-        Map<String, Map<String, String>> refsetToProjectsInfoMap = new HashMap<>();
-
         try {
 
-            reader = new BufferedReader(new InputStreamReader(refsetToProjectsResource.getInputStream()));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(refsetToProjectsResource.getInputStream()));
 
             // ProjectId, refsetId, projectName, projectDescription
             String line = reader.readLine();
@@ -619,7 +616,7 @@ public class SyncPropertyFileReader {
             return buf.toString();
         } catch (Exception e) {
 
-            logger.error("failed to process line #" + lineNumber + " of clause json: " + line);
+            logger.error("Failed to process line #" + lineNumber + " of clause json: " + line);
             e.printStackTrace();
 
             throw e;
@@ -738,8 +735,7 @@ public class SyncPropertyFileReader {
             return buf.toString();
         } catch (Exception e) {
 
-            logger.error("failed to process line #" + lineNumber + " of refset json: " + line);
-            logger.error("and here is the updatedLine: " + updatedLine);
+            logger.error("Failed to process line #" + lineNumber + " of refset json: " + line);
             e.printStackTrace();
 
             throw e;
@@ -792,7 +788,7 @@ public class SyncPropertyFileReader {
             metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncPersistenceMetadata(modified, modifiedBy));
         } catch (Exception e) {
 
-            logger.error("failed to process line #" + lineNumber + " of project json: " + line);
+            logger.error("Failed to process line #" + lineNumber + " of project json: " + line);
             e.printStackTrace();
 
             throw e;

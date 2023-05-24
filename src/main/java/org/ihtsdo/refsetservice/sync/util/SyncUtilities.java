@@ -50,8 +50,6 @@ public class SyncUtilities {
 
     private SyncDatabaseHandler dbHandler;
 
-    private static User syncUser = null;
-
     private static final SyncPropertyFileReader propertyReader = new SyncPropertyFileReader();
 
     private static Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
@@ -500,7 +498,7 @@ public class SyncUtilities {
         long differenceInSeconds = ((end.getTime() - startTime.getTime()) / (1000 * 60 * 60)) % 60;
 
         logger.info("Operation took " + differenceInSeconds + " seconds to run");
-        
+
         return differenceInMinutes;
 
     }

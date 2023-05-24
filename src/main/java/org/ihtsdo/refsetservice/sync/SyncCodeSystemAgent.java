@@ -13,7 +13,6 @@ import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
-import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
@@ -71,7 +70,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
     }
 
     private void analyzeOrganizationsAndEditions() throws Exception {
-        List<String> existingInBothShortNames = new ArrayList<>();
 
         final Map<String, String> dbActiveEditionShortNameToOrganizationNameMap = new HashMap<>();
         final Map<String, Set<String>> dbActiveOrganizationNameToEditionsShortNameMap = new HashMap<>();

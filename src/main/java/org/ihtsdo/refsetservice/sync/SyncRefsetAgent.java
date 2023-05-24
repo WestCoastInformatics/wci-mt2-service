@@ -403,9 +403,6 @@ public class SyncRefsetAgent extends SyncAgent {
             utilities.validateMatches(matchingVersions, refsetId + " / " + testingVersionDate);
             Refset modifyingVersion = matchingVersions.iterator().next();
 
-            logger.debug("ppp testingVersionDate: " + testingVersionDate);
-            logger.error("---> BUG ---> ppp modifyingVersion.getEdition().getBranch(): " + modifyingVersion.getEdition());
-
             List<Long> matchingTermserverRefsetVersionData =
                     termserverPairDataMap.keySet().stream().filter(termserverVersion -> (testingVersionDate == termserverVersion)).collect(Collectors.toList());
 
@@ -423,25 +420,25 @@ public class SyncRefsetAgent extends SyncAgent {
 
             if (isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset name ", modifyingVersion.getName(), termserverRefsetName)) {
                 modifyingVersion.setName(termserverRefsetName);
-                logger.debug("ppp2");
+                modificationMade = true;
+            }
+
+            if (isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset branch ", modifyingVersion.getBranchPath(), termserverRefsetBranch)) {
+                modifyingVersion.setBranchPath(termserverRefsetBranch);
+                logger.error("Likely an error as refsetId/version " + refsetId + "/" + testingVersionDate + " shouldn't be able to change their branch path from " + modifyingVersion.getBranchPath()
+                        + " to " + termserverRefsetBranch);
                 modificationMade = true;
             }
 
             if (isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset moduleId ", modifyingVersion.getModuleId(), termserverRefsetModuleId)) {
                 modifyingVersion.setModuleId(termserverRefsetModuleId);
                 modificationMade = true;
-                logger.debug("ppp4");
             }
 
             if (modificationMade) {
-                logger.debug("ppp5");
                 dbHandler.updateRefset(modifyingVersion);
 
                 modifiedVersions.add(modifyingVersion.getVersionDate().getTime());
-
-            } else {
-                logger.debug("ppp6");
-
             }
         }
 
@@ -1002,11 +999,12 @@ public class SyncRefsetAgent extends SyncAgent {
             final String refsetName = determineRefsetName(syncRefsetMetadata);
             final String refsetType = Refset.EXTENSIONAL; // All from termserver are strictly extension
             final long version = syncRefsetMetadata.getVersion();
-            final Project project = determineProject(syncRefsetMetadata);
 
+            final Project project = determineProject(syncRefsetMetadata);
             if (project == null) {
                 return null;
             }
+
             Refset newRefset = dbHandler.addRefset(refsetName, refsetId, moduleId, version, refsetType, project);
 
             return newRefset;

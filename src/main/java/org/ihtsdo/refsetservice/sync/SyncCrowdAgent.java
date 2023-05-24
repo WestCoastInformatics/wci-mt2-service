@@ -73,11 +73,6 @@ public class SyncCrowdAgent extends SyncAgent {
 
                 Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
 
-                logger.debug("AAA 0 :" + adminUsers);
-                logger.debug("AAA 1 :" + adminTeam);
-                logger.debug("AAA 2 :" + adminTeam.getMemberList());
-                logger.debug("AAA 3 :" + adminTeam.getMembers());
-
                 boolean matchFound = false;
                 for (User user : adminUsers) {
                     for (String memberId : adminTeam.getMembers()) {

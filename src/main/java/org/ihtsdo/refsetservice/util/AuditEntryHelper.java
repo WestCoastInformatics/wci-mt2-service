@@ -507,7 +507,7 @@ public class AuditEntryHelper {
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.USER.toString());
         entry.setEntityId(user.getId());
-        
+
         if (user.isActive()) {
             entry.setMessage("REACTIVATE User");
         } else {
