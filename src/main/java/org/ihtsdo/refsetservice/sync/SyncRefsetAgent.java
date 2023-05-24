@@ -372,8 +372,8 @@ public class SyncRefsetAgent extends SyncAgent {
             }
 
             // determine matching editions
-            final List<Edition> mathcingEditions = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(editionShortName)).collect(Collectors.toList());
-            Edition edition = (Edition) utilities.validateMatches(mathcingEditions, editionShortName);
+            final List<Edition> matchingEditions = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(editionShortName)).collect(Collectors.toList());
+            Edition edition = (Edition) utilities.validateMatches(matchingEditions, editionShortName);
 
             return edition;
         }

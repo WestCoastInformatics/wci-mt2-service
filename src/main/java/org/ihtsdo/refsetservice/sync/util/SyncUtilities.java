@@ -82,7 +82,7 @@ public class SyncUtilities {
         this.dbHandler = dbHandler;
     }
 
-    public User getUser(String name, String userName, String email, Set<String> roles) throws Exception {
+    public User getUser(String userName) throws Exception {
 
         User user = null;
 
@@ -98,12 +98,18 @@ public class SyncUtilities {
 
                 // User already exists
                 user = results.getItems().iterator().next();
-            } else {
-
-                // Need to create user
-                user = dbHandler.addUser(name, userName, email);
             }
 
+            return user;
+        }
+    }
+
+    public User getUser(String name, String userName, String email, Set<String> roles) throws Exception {
+
+        User user = getUser(userName);
+
+        if (user == null) {
+            user = dbHandler.addUser(name, userName, email);
         }
 
         return user;

@@ -519,9 +519,6 @@ public class OrganizationService extends BaseService {
 
         checkEditPermissions(authUser, organization);
 
-        logger.debug("xxx-1");
-        logger.debug("userToAdd: {}", userToAdd);
-        logger.debug("organization.getMembers(): {}", organization.getMembers());
         organization.getMembers().add(userToAdd);
         AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd);
 

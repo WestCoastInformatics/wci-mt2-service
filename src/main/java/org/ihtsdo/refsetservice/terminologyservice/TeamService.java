@@ -676,7 +676,7 @@ public class TeamService extends BaseService {
 	 * @param role     the role
 	 * @throws Exception the exception
 	 */
-	public static void addRoleToTeam(final User authUser, final String teamId, final String role) throws Exception {
+	public static Team addRoleToTeam(final User authUser, final String teamId, final String role) throws Exception {
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -705,7 +705,7 @@ public class TeamService extends BaseService {
 			service.setTransactionPerOperation(false);
 			service.beginTransaction();
 
-			service.update(team);
+			final Team updatedTeam = service.update(team);
 			service.add(AuditEntryHelper.addRoleToTeamEntry(team, role));
 			service.commit();
 
@@ -727,7 +727,9 @@ public class TeamService extends BaseService {
 					}
 				}
 			}
-		}
+			
+			return updatedTeam;
+        }
 	}
 
 	/**

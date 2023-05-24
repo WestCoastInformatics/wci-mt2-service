@@ -66,28 +66,18 @@ public enum UserRole {
         return ALL_ROLES;
     }
 
-    // /**
-    // * Checks for privileges of.
-    // *
-    // * @param role the role
-    // * @return true, if successful
-    // */
-    // public boolean hasPrivilegesOf(UserRole role) {
-    // if (this == UserRole.VIEWER && role == UserRole.VIEWER)
-    // return true;
-    // else if (this == UserRole.AUTHOR && (role == UserRole.VIEWER || role == UserRole.AUTHOR))
-    // return true;
-    // else if (this == UserRole.REVIEWER && (role == UserRole.VIEWER || role == UserRole.USER
-    // || role == UserRole.AUTHOR || role == UserRole.REVIEWER))
-    // return true;
-    // else if (this == UserRole.USER && (role == UserRole.VIEWER || role == UserRole.USER || role == UserRole.AUTHOR))
-    // return true;
-    // else if (this == UserRole.LEAD && (role == UserRole.VIEWER || role == UserRole.USER || role == UserRole.AUTHOR
-    // || role == UserRole.REVIEWER || role == UserRole.LEAD))
-    // return true;
-    // else if (this == UserRole.ADMIN)
-    // return true;
-    // else
-    // return false;
-    // }
+    public static String getRoleString(UserRole user) {
+
+        if (user.equals(VIEWER)) {
+            return "VIEWER";
+        } else if (user.equals(ADMIN)) {
+            return "ADMIN";
+        } else if (user.equals(AUTHOR)) {
+            return "AUTHOR";
+        } else if (user.equals(REVIEWER)) {
+            return "REVIEWER";
+        }
+
+        return null;
+    }
 }

@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
-import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
@@ -44,7 +43,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
     protected static String testingEditionShortName = "SNOMEDCT-BE";
 
@@ -68,7 +67,7 @@ public abstract class SyncAgent {
 
     protected static final String DEVELOPER_ADMIN_USERNAME_PREFIX = "refset-";
 
-    protected static final Set<User> adminUsers = new HashSet<>();
+    protected static final Set<String> adminUsernames = new HashSet<>();
 
     // TODO: Define when called vs normal one
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
@@ -130,6 +129,8 @@ public abstract class SyncAgent {
         isProductionSystem = runForProduction;
         isIgnoreCoreRefsets = ignoreCoreRefsets;
 
+        adminUsernames.add(SNOMED_ADMIN_USERNAME);
+        adminUsernames.add(DEVELOPER_ADMIN_USERNAME_PREFIX);
     }
 
     public static void setRefsetToSync(final String refsetId, final String editionShortName) throws Exception {
@@ -214,10 +215,21 @@ public abstract class SyncAgent {
         SyncAgent.testing = testing;
     }
 
+    public static Set<String> getAdminUsernames() {
+        return adminUsernames;
+    }
+
     List<Edition> readDbAllEditions() throws Exception {
         try (TerminologyService service = new TerminologyService()) {
 
             return readDbAllEditions(service);
+        }
+    }
+
+    List<Organization> readDbOrganizations() throws Exception {
+        try (TerminologyService service = new TerminologyService()) {
+
+            return service.getAll(Organization.class);
         }
     }
 
@@ -231,9 +243,5 @@ public abstract class SyncAgent {
 
     List<Edition> readDbInactiveEditions(TerminologyService service) throws Exception {
         return readDbAllEditions(service).stream().filter(e -> !e.isActive()).collect(Collectors.toList());
-    }
-
-    public static Set<User> getAdminUsers() {
-        return adminUsers;
     }
 }

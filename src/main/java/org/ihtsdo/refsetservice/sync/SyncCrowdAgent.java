@@ -11,12 +11,14 @@ import java.util.stream.Collectors;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,15 +44,48 @@ public class SyncCrowdAgent extends SyncAgent {
 
             Map<String, User> userMap = processUsers(uniqueUsers);
 
-
             final Map<String, Set<String>> organizationGroupsMap = identifyOrganizationGroups(crowdGroupMembersMap.keySet());
 
             assignUsersToOrganizations(crowdGroupMembersMap, userMap, organizationGroupsMap);
+
+            assignUsersToAdminTeams(userMap);
 
             addNewProjects(crowdGroupMembersMap, userMap, organizationGroupsMap);
 
             logger.info("Finished syncing SyncCrowdAgent");
         }
+    }
+
+    private void assignUsersToAdminTeams(Map<String, User> userMap) throws Exception {
+        try (TerminologyService service = new TerminologyService()) {            
+            SyncDatabaseHandler.initializeService(service);
+
+            List<Organization> dbOrganizations = readDbOrganizations();
+
+            logger.debug("111 {}", dbOrganizations);
+
+            Set<User> adminUsers = new HashSet<>();
+            for (String userName : SyncAgent.getAdminUsernames()) {
+                adminUsers.add(utilities.getUser(userName));
+            }
+
+            logger.debug("222 {}", adminUsers);
+
+            for (Organization organization : dbOrganizations) {
+
+                Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
+
+                logger.debug("333 {}", adminTeam);
+
+                for (User user : adminUsers) {
+                    adminTeam = TeamService.addUserToTeam(service, utilities.getSyncUser(), adminTeam, user);
+                }
+
+                logger.debug("444", adminTeam);
+            }
+
+        }
+
     }
 
     // Important: If issues arise in missing or unexpected aspects of a users, first place to look is CROWD for inconsistencies across members in users
@@ -110,11 +145,6 @@ public class SyncCrowdAgent extends SyncAgent {
                 userMap.put(crowdUsername, rt2User);
             }
         }
-
-
-        // ADMIN Users TODO: Define if these should be altered
-        adminUsers.add(userMap.get(SNOMED_ADMIN_USERNAME));
-        adminUsers.add(userMap.get(DEVELOPER_ADMIN_USERNAME_PREFIX));
 
         return userMap;
     }
@@ -204,7 +234,7 @@ public class SyncCrowdAgent extends SyncAgent {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Map<String, Set<String>> retMap = new HashMap<>();
-            List<Organization> dbOrganizations = service.getAll(Organization.class);
+            List<Organization> dbOrganizations = readDbOrganizations();
             dbOrganizations.stream().forEach(o -> retMap.put(o.getId(), new HashSet<>()));
 
             final Map<String, Edition> dbEditionMap = new HashMap<>();
@@ -271,9 +301,7 @@ public class SyncCrowdAgent extends SyncAgent {
         // Organization to list of Projects
         final Map<String, Set<String>> crowdEditionProjectsMap = new HashMap<>();
 
-        final Set<Organization> dbOrganizations = new HashSet<>();
         final List<Edition> dbEditions = readDbAllEditions();
-        dbEditions.stream().forEach(e -> dbOrganizations.add(e.getOrganization()));
 
         // Sort crowdProjects by edition/groupName/Set<Role>
         for (String group : crowdGroups) {

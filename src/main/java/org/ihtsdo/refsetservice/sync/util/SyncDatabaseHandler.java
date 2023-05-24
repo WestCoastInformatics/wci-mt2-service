@@ -1,7 +1,5 @@
 package org.ihtsdo.refsetservice.sync.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -15,9 +13,9 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
@@ -280,7 +278,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Team addTeam(String teamName, String teamDescription, Organization organization, Set<String> roles, Set<String> memberIds) {
+    public Team addTeam(String teamName, String teamDescription, Organization organization) {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -291,8 +289,6 @@ public class SyncDatabaseHandler {
             team.setDescription(teamDescription);
             team.setOrganization(organization);
             team.setPrimaryContactEmail("support-rt2@westcoastinformatics.com");
-            team.setRoles(roles);
-            team.setMembers(memberIds);
 
             // Persist
             final Team t = service.add(team);
@@ -625,17 +621,18 @@ public class SyncDatabaseHandler {
 
     }
 
-    private void createAdminOrganizationTeam(Organization organization) throws Exception {
+    private Team createAdminOrganizationTeam(Organization organization) throws Exception {
 
         try (TerminologyService service = new TerminologyService()) {
 
-            Set<String> memberIds = new HashSet<>();
+            Team adminTeam = addTeam(TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization);
 
-            memberIds.addAll(SyncAgent.getAdminUsers().stream().map(User::getId).collect(Collectors.toList()));
+            for (UserRole role : UserRole.getAllRoles()) {
+                adminTeam = TeamService.addRoleToTeam(utilities.getSyncUser(), adminTeam.getId(), UserRole.getRoleString(role));
+            }
 
-            addTeam(TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
-                    new HashSet<String>(Arrays.asList(User.ROLE_ADMIN, User.ROLE_AUTHOR, User.ROLE_REVIEWER, User.ROLE_VIEWER)), memberIds);
+            return adminTeam;
+
         }
     }
-
 }
