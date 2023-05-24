@@ -23,6 +23,7 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -111,6 +112,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     /** The definition clauses. */
     // @Fetch(FetchMode.JOIN)
     @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClauseEditHistory.class, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("created ASC")
     private List<DefinitionClauseEditHistory> definitionClauses = new ArrayList<>();
 
     /**
