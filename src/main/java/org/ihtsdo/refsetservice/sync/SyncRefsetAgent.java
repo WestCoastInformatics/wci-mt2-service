@@ -92,29 +92,14 @@ public class SyncRefsetAgent extends SyncAgent {
             statistics.setRefsetIdsAdded(addedRefsetIds.size());
 
             // Activate previously inactivated refsets. Note: Will log and update stats after remove those that were activatedAndModified
-            // TODO: Define solution although for now simply activating
-            logger.debug("ggg Topic: TODO: Define solution although for now simply activating");
-
-            for (String refsetId : termserverRefsetIds) {
-                logger.debug("ggg refsetId: " + refsetId);
-                logger.debug("ggg dbRefsetIdToInactiveRefsetVersionsMap.containsKey(refsetId): " + dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId));
-                logger.debug("ggg dbRefsetIdToActiveRefsetVersionsMap.containsKey(refsetId): " + dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId));
-
-                if (dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId)) {
-                    logger.debug("ggg Is in Active DB");
-                } else {
-                    logger.debug("ggg Not in Active DB");
-                }
-
-            }
             List<String> activatedRefsetIds = termserverRefsetIds.stream()
                     .filter(refsetId -> dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId) && (!dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId)
                             || (dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet().stream().noneMatch(version -> dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version).isActive()))))
                     .collect(Collectors.toList());
+
             activatedRefsetIds.stream().forEach(refsetId -> dbHandler.updateRefsetIdsStatus(refsetId, true));
 
             // Inactivate active DB refsets that are not in termserver
-            // TODO: Define solution although for now simply inactivating
             List<String> inactivatedRefsetIds = new ArrayList<>();
 
             for (String refsetId : dbActiveRefsetIdToVersionRefsetMap.keySet()) {
@@ -204,7 +189,6 @@ public class SyncRefsetAgent extends SyncAgent {
                 statistics.setRefsetVersionsAdded(addedVersions.size());
 
                 // Activate previously inactivated refsetVersions. Note: Will log and update stats after remove those that were activatedAndModified
-                // TODO: Define solution although for now simply activating
                 if (dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId)) {
 
                     List<Long> results = termserverVersions.stream().filter(version -> dbInactiveRefsetIdToVersionRefsetMap.get(refsetId).containsKey(version)).collect(Collectors.toList());
@@ -212,8 +196,7 @@ public class SyncRefsetAgent extends SyncAgent {
                     activatedVersions.stream().forEach(version -> dbHandler.updateRefsetVersionStatus(refsetId, version, true));
                 }
 
-                // Inactivate active DB refsetVersions that are not in termserver 
-                // TODO: Define solution although for now simply inactivating
+                // Inactivate active DB refsetVersions that are not in termserver
                 if (dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId)) {
 
                     for (long dbVersion : dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet()) {
@@ -757,7 +740,6 @@ public class SyncRefsetAgent extends SyncAgent {
      */
     private void finalizeNewOrChangedRefsets() throws Exception {
 
-        // TODO: Determine if need to initialize latestRefsetCache (with unchanged) prior
         Map<String, Long> latestVersionCache = new HashMap<>();
         Set<Refset> refsetsUpdated = new HashSet<>();
 
@@ -788,17 +770,22 @@ public class SyncRefsetAgent extends SyncAgent {
                 }
             }
 
+            // Reset latestPublishedVersion before recalculate it
+            for (Refset refset : dbRefsets) {
+                if (refset.isLatestPublishedVersion()) {
+                    refset.setLatestPublishedVersion(false);
+                    refsetsUpdated.add(refset);
+                }
+            }
+
             // Update the latest refset version cache per refset. Set the latestVersion flag to true for them
             for (Refset refset : refsetsUpdated) {
-
                 if (latestVersionCache.containsKey(refset.getRefsetId())) {
 
                     for (String refsetId : latestVersionCache.keySet()) {
-
                         if (refset.getRefsetId().equals(refsetId) && refset.getVersionDate().getTime() == latestVersionCache.get(refsetId)) {
 
                             refset.setLatestPublishedVersion(true);
-
                             break;
                         }
 

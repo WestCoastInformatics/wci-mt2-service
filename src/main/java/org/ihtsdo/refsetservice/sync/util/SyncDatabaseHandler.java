@@ -421,7 +421,6 @@ public class SyncDatabaseHandler {
 
             e.printStackTrace();
 
-            // TODO: Determine how to handle Updates
             return null;
         }
     }
@@ -444,7 +443,6 @@ public class SyncDatabaseHandler {
 
             e.printStackTrace();
 
-            // TODO: Determine how to handle Updates
             return null;
         }
     }
@@ -467,7 +465,6 @@ public class SyncDatabaseHandler {
 
             e.printStackTrace();
 
-            // TODO: Determine how to handle Updates
             return null;
         }
     }
@@ -504,7 +501,6 @@ public class SyncDatabaseHandler {
 
             e.printStackTrace();
 
-            // TODO: Determine how to handle Updates
             return null;
         }
 
@@ -530,7 +526,6 @@ public class SyncDatabaseHandler {
 
             e.printStackTrace();
 
-            // TODO: Determine how to handle Updates
             return null;
         }
 
@@ -546,19 +541,12 @@ public class SyncDatabaseHandler {
 
             Refset matchingRefset = matchingRefsets.iterator().next();
 
-            final Refset updatedRefset = updateRefsetVersionStatus(matchingRefset, isActive);
-
-            service.add(AuditEntryHelper.changeRefsetStatusEntry(updatedRefset));
-
-            logger.info("Updated status of refset version: " + updatedRefset.getId() + "  (" + updatedRefset.getName() + ") " + updatedRefset.getVersionDate());
-
-            return updatedRefset;
+            return updateRefset(matchingRefset);
         } catch (Exception e) {
             logger.error("Failed to update status of refset version: " + refsetId + " (" + versionDate + ") to " + isActive);
 
             e.printStackTrace();
 
-            // TODO: Determine how to handle Updates
             return null;
         }
     }
@@ -616,7 +604,6 @@ public class SyncDatabaseHandler {
 
             e.printStackTrace();
 
-            // TODO: Determine how to handle Updates
             return null;
         }
     }
@@ -639,7 +626,6 @@ public class SyncDatabaseHandler {
 
             e.printStackTrace();
 
-            // TODO: Determine how to handle Updates
             return null;
         }
     }

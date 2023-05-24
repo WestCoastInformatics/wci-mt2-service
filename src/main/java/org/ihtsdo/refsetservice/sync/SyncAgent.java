@@ -69,29 +69,29 @@ public abstract class SyncAgent {
 
     protected static final Set<String> adminUsernames = new HashSet<>();
 
-    // TODO: Define when called vs normal one
+    // Call when launching sync
     public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
 
         if (isProductionSystem == null || !isProductionSystem) {
 
-            initialize(refsetPerVersionSync, runForProduction, ignoreCoreRefsets);
+            isPerVersionSync = refsetPerVersionSync;
+            isProductionSystem = runForProduction;
+            isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
 
         sync(service);
 
     }
 
+    // Call when launching a sync service were launching sync is secondary i.e., resetRefset
     public static void sync(TerminologyService service) throws Exception {
 
         final Date startOperationStartTime = new Date();
 
-        if (isProductionSystem == null) {
+        initialize(service);
 
-            initialize(false, false, false);
-        }
+        logger.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Snowstorm");
 
-        logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
-        
         service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
 
         // Only identify branches on filtered code systems and on runShortSync value
@@ -112,10 +112,13 @@ public abstract class SyncAgent {
         logger.info("Completed Syncing with Snowstorm");
 
         long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
-        AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes);
+        service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));
     }
 
-    private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
+    private static void initialize(TerminologyService service) {
+
+        service.setModifiedBy("Sync");
+        service.setModifiedFlag(true);
 
         if (dbHandler == null) {
             dbHandler = new SyncDatabaseHandler(null);
@@ -126,10 +129,6 @@ public abstract class SyncAgent {
         }
 
         dbHandler.setUtilities(utilities);
-
-        isPerVersionSync = refsetPerVersionSync;
-        isProductionSystem = runForProduction;
-        isIgnoreCoreRefsets = ignoreCoreRefsets;
 
         adminUsernames.add(SNOMED_ADMIN_USERNAME);
         adminUsernames.add(DEVELOPER_ADMIN_USERNAME_PREFIX);
@@ -197,9 +196,7 @@ public abstract class SyncAgent {
     }
 
     public static Boolean getIsIgnoreCoreRefsets() {
-return false;
-        // return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
-        // return true;
+        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
     }
 
     public static Boolean getIsProductionSystem() {

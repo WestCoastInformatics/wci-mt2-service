@@ -32,7 +32,8 @@ public class SyncCrowdAgent extends SyncAgent {
     private static final int PROJECT_NAME = 2;
 
     public void sync() throws Exception {
-        logger.info("Starting sync of CrowdAgent");
+        logger.info("Starting CrowdAgent sync()");
+
         final Set<String> uniqueUsers = new HashSet<>();
 
         // Get data from Crowd
@@ -72,8 +73,20 @@ public class SyncCrowdAgent extends SyncAgent {
 
                 Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
 
+                logger.debug("AAA 0 :" + adminUsers);
+                logger.debug("AAA 1 :" + adminTeam);
+                logger.debug("AAA 2 :" + adminTeam.getMemberList());
+                logger.debug("AAA 3 :" + adminTeam.getMembers());
+
+                boolean matchFound = false;
                 for (User user : adminUsers) {
-                    if (!adminTeam.getMemberList().contains(user)) {
+                    for (String memberId : adminTeam.getMembers()) {
+                        if (memberId.equals(user.getId())) {
+                            matchFound = true;
+                        }
+                    }
+
+                    if (!matchFound) {
                         adminTeam = TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, user);
                     }
                 }
@@ -166,7 +179,6 @@ public class SyncCrowdAgent extends SyncAgent {
                     dbUserIdMap.put(user.getId(), user);
                 }
 
-                // TODO: Handle Updated user in crowd (say email)
                 final List<User> localMembers = new ArrayList<>();
                 organization.getMembers().stream().forEach(user -> localMembers.add(dbUserIdMap.get(user.getId())));
 
