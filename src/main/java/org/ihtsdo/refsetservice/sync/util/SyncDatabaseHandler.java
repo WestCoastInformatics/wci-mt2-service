@@ -96,7 +96,7 @@ public class SyncDatabaseHandler {
             final Organization newOrganization = service.add(organization);
 
             logger.info("Adding new Organziation: " + newOrganization.getId() + " (" + newOrganization.getName() + ")");
-            logger.debug("AAA: {} ", newOrganization);
+
             service.add(AuditEntryHelper.addOrganizationEntry(newOrganization));
 
             return newOrganization;

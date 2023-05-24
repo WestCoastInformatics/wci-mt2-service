@@ -21,6 +21,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncRefsetMetadata;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
@@ -395,10 +396,6 @@ public class SyncRefsetAgent extends SyncAgent {
             utilities.validateMatches(matchingVersions, refsetId + " / " + testingVersionDate);
             Refset modifyingVersion = matchingVersions.iterator().next();
 
-            if (refsetId.equals("9631000146108") || refsetId.equals("442311000124105")) {
-                logger.debug("ppp testingVersionDate: " + testingVersionDate);
-                logger.error("---> BUG ---> ppp modifyingVersion.getEdition().getBranch(): " + modifyingVersion.getEdition());
-            }
             List<Long> matchingTermserverRefsetVersionData =
                     termserverPairDataMap.keySet().stream().filter(termserverVersion -> (testingVersionDate == termserverVersion)).collect(Collectors.toList());
 
@@ -678,6 +675,7 @@ public class SyncRefsetAgent extends SyncAgent {
         // Cache contains refset project already?
 
         if (!refsetProjectMap.containsKey(metadata.getRefsetId())) {
+
             // refset project defined in RTT?
             if (utilities.getPropertyReader().getSctIdToProjectIdMap().containsKey(metadata.getRefsetId())) {
 
@@ -689,6 +687,7 @@ public class SyncRefsetAgent extends SyncAgent {
                     if (utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).keySet().size() != 1) {
                         logger.error("Have unexpected number of names/descriptions for projectId: " + rttProjectId + " with names: "
                                 + utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).keySet());
+
                         return null;
                     }
 
@@ -696,18 +695,25 @@ public class SyncRefsetAgent extends SyncAgent {
                     final String rttProjectDescription = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).values().iterator().next();
 
                     // Create project
-                    Project project = dbHandler.addProject(service, rttProjectName, rttProjectDescription, metadata.getEdition());
+                    Project addedProject = dbHandler.addProject(service, rttProjectName, rttProjectDescription, metadata.getEdition());
+
                     statistics.incrementProjectsAdded();
 
-                    rttProjects.put(rttProjectId, project);
+                    rttProjects.put(rttProjectId, addedProject);
+
+                    refsetProjectMap.put(metadata.getRefsetId(), addedProject);
+                } else {
+                    logger.error("Unable to determine which RTT project the RTT refset {} belongs to from the RTT text files provided", metadata.getRefsetId());
                 }
-
-                Project project = rttProjects.get(rttProjectId);
-
-                refsetProjectMap.put(metadata.getRefsetId(), project);
             } else {
-                throw new Exception("All refsets from RTT must have corresponding RTT project or we have a major mistake " + metadata);
+                // Refset is not associated with any project in RTT.
+                // TODO: Determine if create default project or add to any random project in Org. For simplicity, for now will just add to random organization project
+                List<Project> projects = OrganizationService.getOrganizationProjects(service, metadata.getEdition().getOrganizationId()).getItems();
+
+                refsetProjectMap.put(metadata.getRefsetId(), projects.iterator().next());
+
             }
+
         }
 
         return refsetProjectMap.get(metadata.getRefsetId());

@@ -115,7 +115,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         // Populate organization names lists of a) termserver code system names, b) rt2 database active organization names, and c) rt2 database inactive organization names
         List<Organization> dbOrganizations = service.getAll(Organization.class);
-        logger.debug("AAA: {}", dbOrganizations);
+
         dbOrganizations.stream().filter(o -> o.isActive()).forEach(o -> dbActiveOrganizationNames.add(o.getName()));
         dbOrganizations.stream().filter(o -> !o.isActive()).forEach(o -> dbInactiveOrganizationNames.add(o.getName()));
         
@@ -140,7 +140,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         inactivatedOrganizations.stream().forEach(n -> dbHandler.updateOrganizationStatus(service, n, false));
         statistics.setOrganizationsInactivated(inactivatedOrganizations.size());
-        logger.debug("AAA out Organizations");
 
     }
 
@@ -154,7 +153,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
         List<Edition> dbEditions = service.getAll(Edition.class);
         dbEditions.stream().filter(e -> e.isActive()).forEach(e -> dbActiveEditionShortNames.add(e.getShortName()));
         dbEditions.stream().filter(e -> !e.isActive()).forEach(e -> dbInactiveEditionShortNames.add(e.getShortName()));
-        logger.debug("AAA: {}", dbEditions);
 
         // Based on filteredCodeSystems which already filtered for active code systems
         filteredCodeSystems.stream().forEach(cs -> termserverShortNameCodeSystemMap.put(cs.get("shortName").asText(), cs));
@@ -208,7 +206,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
             activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
             statistics.setEditionsActivated(activatedShortNames.size());
         }
-        logger.debug("AAA out Editions");
 
         return existingInBothShortNames;
 

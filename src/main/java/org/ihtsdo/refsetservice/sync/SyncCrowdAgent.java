@@ -233,8 +233,6 @@ public class SyncCrowdAgent extends SyncAgent {
             }
         }
 
-        logger.debug(retMap.toString());
-        
         return retMap;
     }
 
