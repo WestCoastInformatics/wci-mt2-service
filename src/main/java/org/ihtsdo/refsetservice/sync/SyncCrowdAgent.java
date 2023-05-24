@@ -73,9 +73,10 @@ public class SyncCrowdAgent extends SyncAgent {
                 Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
 
                 for (User user : adminUsers) {
-                    adminTeam = TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, user);
+                    if (!adminTeam.getMemberList().contains(user)) {
+                        adminTeam = TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, user);
+                    }
                 }
-
             }
 
         }
@@ -144,9 +145,9 @@ public class SyncCrowdAgent extends SyncAgent {
     }
 
     // Important: If issues arise in missing or unexpected members of organizations, first place to look is CROWD for inconsistencies across members in organizations
-    private Set<Organization> assignUsersToOrganizations(Map<String, Set<String>> crowdGroupMembersMap, Map<String, User> dbUserMap, Map<String, Set<String>> organizationGroupsMap) throws Exception {
+    private Set<String> assignUsersToOrganizations(Map<String, Set<String>> crowdGroupMembersMap, Map<String, User> dbUserMap, Map<String, Set<String>> organizationGroupsMap) throws Exception {
 
-        Set<Organization> updatedOrganizations = new HashSet<>();
+        Set<String> updatedOrganizations = new HashSet<>();
 
         try (final TerminologyService service = new TerminologyService()) {
             SyncDatabaseHandler.initializeService(service);
@@ -177,8 +178,10 @@ public class SyncCrowdAgent extends SyncAgent {
                 for (User user : removeLocally) {
 
                     logger.info("remove local users {} from organization {}: ", removeLocally, organization.getName());
-                    final Organization removedOrganization = OrganizationService.removeUserFromOrganization(service, SecurityService.getUserFromSession(), user.getId(), organization.getId());
-                    updatedOrganizations.add(removedOrganization);
+                    if (organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
+                        final Organization removedOrganization = OrganizationService.removeUserFromOrganization(service, SecurityService.getUserFromSession(), user.getId(), organization.getId());
+                        updatedOrganizations.add(removedOrganization.getId());
+                    }
                 }
 
                 // Identify and add users to RT2 organization
@@ -189,8 +192,10 @@ public class SyncCrowdAgent extends SyncAgent {
                 for (String username : addLocally) {
 
                     logger.info("add local users {} to organization {}: ", addLocally, organization.getName());
-                    final Organization addedOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), organization.getId(), dbUserMap.get(username));
-                    updatedOrganizations.add(addedOrganization);
+                    if (organization.getMembers().stream().noneMatch(m -> m.getUserName().equals(username))) {
+                        final Organization addedOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), organization.getId(), dbUserMap.get(username));
+                        updatedOrganizations.add(addedOrganization.getId());
+                    }
                 }
             }
         }

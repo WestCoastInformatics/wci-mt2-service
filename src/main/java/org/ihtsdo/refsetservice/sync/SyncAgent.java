@@ -82,10 +82,8 @@ public abstract class SyncAgent {
     }
 
     public static void sync(TerminologyService service) throws Exception {
-      
-        service.add(AuditEntryHelper.syncEntry(new Date()));
 
-        final long startOperationStartTime = new Date().getTime();
+        final Date startOperationStartTime = new Date();
 
         if (isProductionSystem == null) {
 
@@ -93,6 +91,8 @@ public abstract class SyncAgent {
         }
 
         logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
+        
+        service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
 
         // Only identify branches on filtered code systems and on runShortSync value
         SyncAgent agent = new SyncCodeSystemAgent();
@@ -106,13 +106,13 @@ public abstract class SyncAgent {
         agent.sync();
 
         // Post processing
-        AuditEntryHelper.syncEntry(new Date(startOperationStartTime));
         utilities.emailSyncResults();
 
         logger.info(statistics.printStatistics());
         logger.info("Completed Syncing with Snowstorm");
 
-        utilities.logProcessingTime("FULL", startOperationStartTime);
+        long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
+        AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes);
     }
 
     private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {

@@ -493,15 +493,16 @@ public class SyncUtilities {
 
     }
 
-    public void logProcessingTime(String operationType, long startTime) {
+    public long getProcessingMinutes(String operationType, Date startTime) {
 
         final Date end = new Date();
 
-        long differenceInMinutes = ((end.getTime() - startTime) / (1000 * 60)) % 60;
-        long differenceInSeconds = ((end.getTime() - startTime) / (1000 * 60 * 60)) % 60;
+        long differenceInMinutes = ((end.getTime() - startTime.getTime()) / (1000 * 60)) % 60;
+        long differenceInSeconds = ((end.getTime() - startTime.getTime()) / (1000 * 60 * 60)) % 60;
 
         logger.info("Operation took " + differenceInSeconds + " seconds to run");
-        logger.info("Operation took " + differenceInMinutes + " minutes to run");
+        
+        return differenceInMinutes;
 
     }
 }

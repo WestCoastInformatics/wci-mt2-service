@@ -803,12 +803,23 @@ public class AuditEntryHelper {
         return entry;
     }
 
-    public static HasModified syncEntry(Date date) {
+    public static HasModified syncBeginEntry(Date date) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(ENTITY_TYPE.SYNC.toString());
         entry.setEntityId("");
-        entry.setMessage("Sync completed successfully");
+        entry.setMessage("Sync starting");
+        entry.setDetails("Start date is " + date.getTime());
+        log(entry);
+        return entry;
+    }
+
+    public static HasModified syncFinishEntry(Date date, long processingMinutes) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(ENTITY_TYPE.SYNC.toString());
+        entry.setEntityId("");
+        entry.setMessage("Sync completed successfully in " + processingMinutes + " minutes");
         entry.setDetails("Finish date is " + date.getTime());
         log(entry);
         return entry;
