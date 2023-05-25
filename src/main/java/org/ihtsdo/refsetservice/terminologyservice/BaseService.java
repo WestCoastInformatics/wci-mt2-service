@@ -12,12 +12,11 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 
-
 /**
  * The Class BaseService.
  */
 public abstract class BaseService {
-    
+
     /**
      * Returns the query for active only.
      *

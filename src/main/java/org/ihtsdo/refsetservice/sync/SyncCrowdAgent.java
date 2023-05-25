@@ -30,6 +30,7 @@ public class SyncCrowdAgent extends SyncAgent {
 
     private static final int PROJECT_NAME = 2;
 
+    @Override
     public void syncComponent(TerminologyService service) throws Exception {
         logger.info("Starting CrowdAgent sync()");
 
@@ -63,7 +64,7 @@ public class SyncCrowdAgent extends SyncAgent {
         for (String userName : SyncAgent.getAdminUsernames()) {
             adminUsers.add(utilities.getUser(service, userName));
         }
-        
+
         for (String editionId : filteredEditionRulesMap.keySet()) {
             Edition edition = service.get(editionId, Edition.class);
 
@@ -75,7 +76,7 @@ public class SyncCrowdAgent extends SyncAgent {
                 // Sync must have failed before adminTeam was created for this organization. Thus create it here.
                 logger.error("Here again why?");
             }
-            
+
             boolean matchFound = false;
             for (User user : adminUsers) {
                 for (String memberId : adminTeam.getMembers()) {
@@ -206,10 +207,11 @@ public class SyncCrowdAgent extends SyncAgent {
         return updatedOrganizations;
     }
 
-    private Map<String, Set<String>> identifyCrowdOrganizationUsersFromEditions(TerminologyService service, Map<String, Set<String>> crowdRulesMembersMap, Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
+    private Map<String, Set<String>> identifyCrowdOrganizationUsersFromEditions(TerminologyService service, Map<String, Set<String>> crowdRulesMembersMap,
+        Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
 
         final Map<String, Set<String>> retMap = new HashMap<>();
-        
+
         for (String editionId : filteredEditionRulesMap.keySet()) {
             Edition edition = service.get(editionId, Edition.class);
 
@@ -241,7 +243,7 @@ public class SyncCrowdAgent extends SyncAgent {
 
         final Map<String, Set<String>> retMap = new HashMap<>();
         final Set<String> editionsToSync = new HashSet<>();
-        
+
         final Map<String, Edition> dbEditionMap = new HashMap<>();
         readDbAllEditions(service).stream().forEach(e -> dbEditionMap.put(getEditionShortNameToEdition(e.getShortName()), e));
 
@@ -251,11 +253,10 @@ public class SyncCrowdAgent extends SyncAgent {
                 editionsToSync.add(edition.getId());
             }
         }
-        
+
         editionsToSync.stream().forEach(id -> retMap.put(id, new HashSet<>()));
 
-
-        // For each rule in crowd 
+        // For each rule in crowd
         for (String rule : crowdRules) {
 
             final String[] groupCoordinates = rule.split("-");
@@ -268,9 +269,9 @@ public class SyncCrowdAgent extends SyncAgent {
                 editionsToSync.stream().forEach(id -> retMap.get(id).add(rule));
 
             } else if (dbEditionMap.containsKey(crowdCodeSystem)) {
-                // Only handle if edition's organization 
+                // Only handle if edition's organization
                 String editionId = dbEditionMap.get(crowdCodeSystem).getId();
-                
+
                 if (editionsToSync.contains(editionId)) {
                     retMap.get(editionId).add(rule);
                 }

@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.rest.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,14 +36,20 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * The Class WorkflowUnitTestUtilities.
+ */
 public class WorkflowUnitTestUtilities {
 
-    private static Logger logger = LoggerFactory.getLogger(WorkflowUnitTestUtilities.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(WorkflowUnitTestUtilities.class);
 
+    /** The mvc. */
     private MockMvc mvc;
 
+    /** The base url. */
     private String baseUrl;
-    
+
     /** The AUTHOR_USER workflow user . */
     public static final String AUTHOR_USER = "AUTHOR_USER";
 
@@ -47,15 +62,24 @@ public class WorkflowUnitTestUtilities {
     /** The VIEWER_USER workflow user . */
     public static final String VIEWER_USER = "VIEWER_USER";
 
-    private static final String WORKFLOW_PERMUTATIONS_FILE_NAME =
-            "workflowPermutationsToFinalAction.txt";
+    /** The Constant WORKFLOW_PERMUTATIONS_FILE_NAME. */
+    private static final String WORKFLOW_PERMUTATIONS_FILE_NAME = "workflowPermutationsToFinalAction.txt";
 
+    /** The workflow permutations file path. */
     private static String workflowPermutationsFilePath;
 
     /** The actions . */
     private static List<String> actions = WorkflowService.WORKFLOW_ACTIONS;
 
-    public WorkflowUnitTestUtilities(final MockMvc mvc, String baseUrl, String refsetFilePath) {
+    /**
+     * Instantiates a {@link WorkflowUnitTestUtilities} from the specified parameters.
+     *
+     * @param mvc the mvc
+     * @param baseUrl the base url
+     * @param refsetFilePath the refset file path
+     */
+    public WorkflowUnitTestUtilities(final MockMvc mvc, final String baseUrl, final String refsetFilePath) {
+
         this.mvc = mvc;
         this.baseUrl = baseUrl;
         workflowPermutationsFilePath = refsetFilePath + WORKFLOW_PERMUTATIONS_FILE_NAME;
@@ -64,22 +88,28 @@ public class WorkflowUnitTestUtilities {
     /** ThepermissiblePaths . */
     private Map<String, Map<String, Map<String, String>>> permissiblePaths;
 
-    public JsonNode exportSctIds(String internalRefsetId) {
+    /**
+     * Export sct ids.
+     *
+     * @param internalRefsetId the internal refset id
+     * @return the json node
+     */
+    public JsonNode exportSctIds(final String internalRefsetId) {
 
         try {
             final String url = "/export/" + internalRefsetId + "/?format=sctids";
-            logger.info("Export SctId url - " + url);
+            LOG.info("Export SctId url - " + url);
 
             final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
-            logger.info(" content = " + content);
+            LOG.info(" content = " + content);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(content);
 
             assertThat(root).isNotNull();
             return root;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
 
             return null;
@@ -89,18 +119,20 @@ public class WorkflowUnitTestUtilities {
     /**
      * advance workflow.
      *
+     * @param refset the refset
+     * @param user the user
+     * @param action the action
+     * @param note the note
+     * @return the refset
      * @throws Exception the exception
      */
-    public Refset updateWorkflow(final Refset refset, final String user, final String action,
-        final String note) throws Exception {
+    public Refset updateWorkflow(final Refset refset, final String user, final String action, final String note) throws Exception {
 
-        final String newStatus =
-                getWorkflowStatusByAction(user, refset.getWorkflowStatus(), action);
-        final String url = baseUrl + "/" + refset.getId() + "/workflowStatus?action=" + action
-                + "&notes=" + note;
+        getWorkflowStatusByAction(user, refset.getWorkflowStatus(), action);
+        final String url = baseUrl + "/" + refset.getId() + "/workflowStatus?action=" + action + "&notes=" + note;
 
-        final MvcResult result = mvc.perform(post(url).contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        final MvcResult result =
+            mvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
 
         final String content = result.getResponse().getContentAsString();
 
@@ -116,74 +148,77 @@ public class WorkflowUnitTestUtilities {
     /**
      * updateWorkflowNote.
      *
+     * @param refset the refset
+     * @param user the user
+     * @param note the note
      * @throws Exception the exception
      */
-    public void updateWorkflowNote(final Refset refset, final String user, final String note)
-        throws Exception {
+    public void updateWorkflowNote(final Refset refset, final String user, final String note) throws Exception {
 
         final String url = baseUrl + "/" + refset.getId() + "/workflowNote?&notes=" + note;
 
-        final MvcResult result = mvc.perform(
-                put(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()).andReturn();
+        final MvcResult result =
+            mvc.perform(put(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
 
         final String content = result.getResponse().getContentAsString();
         assertThat(content).isEqualTo("true");
     }
-    
+
     /**
      * start publication.
      *
+     * @param editionShortName the edition short name
+     * @return the string
      * @throws Exception the exception
      */
-    public String startPublication(final String editionShortName) throws Exception{
-        
+    public String startPublication(final String editionShortName) throws Exception {
+
         final String url = "/admin/startAllRefsetPublications?codeSystem=" + editionShortName;
-        
-        final MvcResult result = mvc
-                .perform(put(url)
-                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()).andReturn();
-        
+
+        final MvcResult result =
+            mvc.perform(put(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+
         final String content = result.getResponse().getContentAsString();
         assertThat(content).contains("status");
-        
+
         return content;
     }
-    
+
     /**
      * complete publication.
      *
+     * @param versionDate the version date
+     * @param editionShortName the edition short name
+     * @return the string
      * @throws Exception the exception
      */
-    public String completePublication(final String versionDate, final String editionShortName) throws Exception{
-        
+    public String completePublication(final String versionDate, final String editionShortName) throws Exception {
+
         final String url = "/admin/completeAllRefsetPublications?versionDate=" + versionDate + "&codeSystem=" + editionShortName;
-        
-        final MvcResult result = mvc
-                .perform(put(url)
-                        .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()).andReturn();
-        
+
+        final MvcResult result =
+            mvc.perform(put(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+
         final String content = result.getResponse().getContentAsString();
         assertThat(content).contains("status");
-        
+
         return content;
     }
 
     /**
      * Publication Fails call.
      *
+     * @param refsetIds the refset ids
+     * @param notes the notes
+     * @return the string
      * @throws Exception the exception
      */
     public String failPublication(final String refsetIds, final String notes) throws Exception {
 
-        final String url =
-                "/admin/failRefsetPublications?refsetIds=" + refsetIds + "&notes=" + notes;
+        final String url = "/admin/failRefsetPublications?refsetIds=" + refsetIds + "&notes=" + notes;
 
-        final MvcResult result = mvc.perform(
-                put(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()).andReturn();
+        final MvcResult result =
+            mvc.perform(put(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
 
         final String content = result.getResponse().getContentAsString();
         assertThat(content).isNotBlank();
@@ -194,19 +229,18 @@ public class WorkflowUnitTestUtilities {
     /**
      * get workflow history.
      *
+     * @param refsetInternalId the refset internal id
+     * @return the workflow history
      * @throws Exception the exception
      */
-    public List<WorkflowHistory> getWorkflowHistory(final String refsetInternalId)
-        throws Exception {
+    public List<WorkflowHistory> getWorkflowHistory(final String refsetInternalId) throws Exception {
 
-        final String url = baseUrl + "/" + refsetInternalId
-                + "/workflowHistory?limit=500&offset=0&sort=modified";
+        final String url = baseUrl + "/" + refsetInternalId + "/workflowHistory?limit=500&offset=0&sort=modified";
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
-        ResultList<WorkflowHistory> resultList = new ObjectMapper().readValue(content,
-                (new TypeReference<ResultList<WorkflowHistory>>() {
-                }));
+        final ResultList<WorkflowHistory> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<WorkflowHistory>>() {
+        }));
         assertThat(resultList).isNotNull();
 
         return resultList.getItems();
@@ -215,10 +249,13 @@ public class WorkflowUnitTestUtilities {
     /**
      * Get status by action.
      *
+     * @param user the user
+     * @param currentStatus the current status
+     * @param action the action
+     * @return the workflow status by action
      * @throws Exception the exception
      */
-    private String getWorkflowStatusByAction(final String user, final String currentStatus,
-        final String action) throws Exception {
+    private String getWorkflowStatusByAction(final String user, final String currentStatus, final String action) throws Exception {
 
         final String userRole = getUserRole(user);
         final Map<String, Map<String, String>> rolePaths = getPermissiblePaths().get(userRole);
@@ -227,8 +264,7 @@ public class WorkflowUnitTestUtilities {
             return null;
         }
 
-        final Map<String, String> roleStatusActions =
-                getPermissiblePaths().get(userRole).get(currentStatus);
+        final Map<String, String> roleStatusActions = getPermissiblePaths().get(userRole).get(currentStatus);
 
         if (roleStatusActions == null) {
             return null;
@@ -240,21 +276,23 @@ public class WorkflowUnitTestUtilities {
     /**
      * Get user role.
      *
-     * @throws Exception the exception
+     * @param user the user
+     * @return the user role
      */
     public String getUserRole(final String user) {
+
         return user.replace("_USER", "");
     }
 
     /**
      * define all action paths.
      *
+     * @return the map
      * @throws Exception the exception
      */
-    private Map<String, Map<String, Map<String, String>>> defineAllPermissiblePermutations()
-        throws Exception {
+    private Map<String, Map<String, Map<String, String>>> defineAllPermissiblePermutations() throws Exception {
 
-        Map<String, Map<String, Map<String, String>>> returnMap = new HashMap<>();
+        final Map<String, Map<String, Map<String, String>>> returnMap = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(workflowPermutationsFilePath))) {
 
@@ -262,7 +300,7 @@ public class WorkflowUnitTestUtilities {
 
             while ((line = br.readLine()) != null) {
 
-                String[] tokens = FieldedStringTokenizer.split(line, ",");
+                final String[] tokens = FieldedStringTokenizer.split(line, ",");
                 assertThat(tokens.length).isEqualTo(4);
 
                 final String user = tokens[0].toUpperCase().strip();
@@ -288,16 +326,18 @@ public class WorkflowUnitTestUtilities {
     /**
      * test all advances.
      *
+     * @param user the user
+     * @param currentStatus the current status
+     * @return the workflow action paths
      * @throws Exception the exception
      */
-    public Map<String, String> getWorkflowActionPaths(final String user,
-        final String currentStatus) throws Exception {
+    public Map<String, String> getWorkflowActionPaths(final String user, final String currentStatus) throws Exception {
 
         final Map<String, String> results = new HashMap<>();
 
-        for (String action : actions) {
+        for (final String action : actions) {
 
-            String resultingStatus = getWorkflowStatusByAction(user, currentStatus, action);
+            final String resultingStatus = getWorkflowStatusByAction(user, currentStatus, action);
             results.put(action, resultingStatus);
         }
 
@@ -307,10 +347,13 @@ public class WorkflowUnitTestUtilities {
     /**
      * validate a row.
      *
-     * @throws Exception the exception
+     * @param workflowHistory the workflow history
+     * @param userName the user name
+     * @param action the action
+     * @param status the status
+     * @param note the note
      */
-    public void validateRow(final WorkflowHistory workflowHistory, final String userName,
-        final String action, final String status, final String note) {
+    public void validateRow(final WorkflowHistory workflowHistory, final String userName, final String action, final String status, final String note) {
 
         assertThat(workflowHistory.getUserName()).isEqualTo("testUser");
         assertThat(workflowHistory.getWorkflowAction()).isEqualTo(action);
@@ -318,7 +361,14 @@ public class WorkflowUnitTestUtilities {
         assertThat(workflowHistory.getNotes()).isEqualTo(note);
     }
 
+    /**
+     * Returns the permissible paths.
+     *
+     * @return the permissible paths
+     * @throws Exception the exception
+     */
     public Map<String, Map<String, Map<String, String>>> getPermissiblePaths() throws Exception {
+
         if (permissiblePaths == null) {
             permissiblePaths = defineAllPermissiblePermutations();
         }

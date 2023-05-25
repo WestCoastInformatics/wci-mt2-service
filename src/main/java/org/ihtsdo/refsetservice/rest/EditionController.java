@@ -44,8 +44,8 @@ import io.swagger.annotations.ApiResponses;
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class EditionController extends BaseController {
 
-    /** Logger. */
-    private static Logger logger = LoggerFactory.getLogger(EditionController.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(EditionController.class);
 
     /**
      * Return the edition.
@@ -57,8 +57,9 @@ public class EditionController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get edition", response = Edition.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Edition id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
@@ -68,7 +69,7 @@ public class EditionController extends BaseController {
     // no auth required
     public ResponseEntity<Edition> getEdition(@PathVariable(value = "id") final String id) throws Exception {
 
-        logger.info("Get edition for id: {}", id);
+        LOG.info("Get edition for id: {}", id);
 
         try {
             final Edition edition = EditionService.getEdition(id);
@@ -96,7 +97,7 @@ public class EditionController extends BaseController {
     // no auth required
     public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
 
-        logger.info("Get all editions");
+        LOG.info("Get all editions");
 
         try {
 
@@ -122,13 +123,14 @@ public class EditionController extends BaseController {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 404, message = "Resource not found"),
         @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
-	// @ModelAttribute API params documented in SearchParameter
+    // @ModelAttribute API params documented in SearchParameter
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
     // no auth required
-    public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(@ModelAttribute final SearchParameters searchParameters,
+        final BindingResult bindingResult) throws Exception {
 
-        logger.info("getEditions searchParameters: " + ModelUtility.toJson(searchParameters));
+        LOG.info("getEditions searchParameters: " + ModelUtility.toJson(searchParameters));
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);

@@ -23,9 +23,8 @@ import org.springframework.context.annotation.DependsOn;
 @DependsOn("propertyUtility")
 public class PersistenceConfiguration {
 
-    /** The logger. */
-    private static Logger logger =
-            LoggerFactory.getLogger(PersistenceConfiguration.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(PersistenceConfiguration.class);
 
     /** The config properties. */
     private final Properties properties = PropertyUtility.getProperties();
@@ -34,7 +33,8 @@ public class PersistenceConfiguration {
      * Instantiates an empty {@link PersistenceConfiguration}.
      */
     public PersistenceConfiguration() {
-        logger.debug("Creating instance of class FlywayConfiguration");
+
+        LOG.debug("Creating instance of class FlywayConfiguration");
     }
 
     /**
@@ -45,11 +45,12 @@ public class PersistenceConfiguration {
     @Bean
     public FlywayMigrationStrategy customMigrationStrategy() {
 
-        FlywayMigrationStrategy strategy = new FlywayMigrationStrategy() {
+        final FlywayMigrationStrategy strategy = new FlywayMigrationStrategy() {
 
             @Override
             public void migrate(final Flyway flyway) {
-                logger.debug("customMigrationStrategy SHOULD BE MIGRATING");
+
+                LOG.debug("customMigrationStrategy SHOULD BE MIGRATING");
                 flyway.migrate();
             }
         };
@@ -67,27 +68,21 @@ public class PersistenceConfiguration {
     public Flyway customFlyway() throws Exception {
 
         final Properties config = PropertyUtility.getProperties();
-        logger.debug("customFlyway customFlyway config: ", config);
+        LOG.debug("customFlyway customFlyway config: ", config);
 
-        final String dbName = properties
-                .getProperty("app.db_name");
-        final String jdbcUrl = properties
-                .getProperty("flyway.url");
-        final String user = properties.getProperty(
-                "spring.jpa.properties.hibernate.connection.username");
-        final String pwd = properties.getProperty(
-                "spring.jpa.properties.hibernate.connection.password");
+        final String dbName = properties.getProperty("app.db_name");
+        final String jdbcUrl = properties.getProperty("flyway.url");
+        final String user = properties.getProperty("spring.jpa.properties.hibernate.connection.username");
+        final String pwd = properties.getProperty("spring.jpa.properties.hibernate.connection.password");
         final String location = "classpath:db/migration";
-        Map<String, String> placeholders = new HashMap<>();
+        final Map<String, String> placeholders = new HashMap<>();
 
         if (jdbcUrl.toLowerCase().startsWith("jdbc:mysql")) {
 
             placeholders.put("pre_if_exists", "if exists");
             placeholders.put("post_if_exists", "");
-            placeholders.put("create_mapping_events_seq",
-                    "CREATE SEQUENCE mapping_events_seq;");
-            placeholders.put("auto_increment",
-                    "set default nextval('mapping_events_seq')");
+            placeholders.put("create_mapping_events_seq", "CREATE SEQUENCE mapping_events_seq;");
+            placeholders.put("auto_increment", "set default nextval('mapping_events_seq')");
             placeholders.put("jsonb", "jsonb");
 
         } else if (jdbcUrl.toLowerCase().startsWith("jdbc:h2")) {
@@ -101,12 +96,7 @@ public class PersistenceConfiguration {
             throw new RuntimeException("Unhandled database url: " + jdbcUrl);
         }
 
-        return Flyway.configure()
-                .createSchemas(true)
-                .schemas(dbName)
-                .dataSource(jdbcUrl, user, pwd)
-                .locations(location).placeholders(placeholders)
-                .load();
+        return Flyway.configure().createSchemas(true).schemas(dbName).dataSource(jdbcUrl, user, pwd).locations(location).placeholders(placeholders).load();
     }
 
     /**
@@ -118,9 +108,8 @@ public class PersistenceConfiguration {
      */
     @Bean
     @DependsOn("customMigrationStrategy")
-    public FlywayMigrationInitializer flywayInitializer(final Flyway flyway,
-        final ObjectProvider<FlywayMigrationStrategy> migrationStrategy) {
-        return new FlywayMigrationInitializer(flyway,
-                migrationStrategy.getIfAvailable());
+    public FlywayMigrationInitializer flywayInitializer(final Flyway flyway, final ObjectProvider<FlywayMigrationStrategy> migrationStrategy) {
+
+        return new FlywayMigrationInitializer(flyway, migrationStrategy.getIfAvailable());
     }
 }

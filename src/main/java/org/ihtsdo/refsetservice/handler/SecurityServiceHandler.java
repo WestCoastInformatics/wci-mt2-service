@@ -22,7 +22,7 @@ public interface SecurityServiceHandler extends Configurable {
      *
      * @param user the user
      * @return the user
-     * @throws Exception
+     * @throws Exception the exception
      */
     public User authenticate(String user) throws Exception;
 
@@ -33,7 +33,7 @@ public interface SecurityServiceHandler extends Configurable {
      * @throws Exception the exception
      */
     public String getAuthenticateUrl() throws Exception;
-    
+
     /**
      * Returns the logout url.
      *

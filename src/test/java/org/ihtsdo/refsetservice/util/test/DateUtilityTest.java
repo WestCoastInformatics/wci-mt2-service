@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.util.test;
 
@@ -24,8 +33,8 @@ import org.slf4j.LoggerFactory;
  */
 public class DateUtilityTest extends BaseTest {
 
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(DateUtilityTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(DateUtilityTest.class);
 
     /**
      * Test valid date.
@@ -34,6 +43,7 @@ public class DateUtilityTest extends BaseTest {
      */
     @Test
     public void testValidDate() throws Exception {
+
         final Date now = new Date();
         final Date past = new Date(-1);
         final Date future = new Date(now.getTime() + 6000);
@@ -51,9 +61,10 @@ public class DateUtilityTest extends BaseTest {
      */
     @Test
     public void testRfc3339() throws Exception {
+
         final Date date = new Date();
         final String dateStr = DateUtility.formatDate(date, DateUtility.RFC_3339, null);
-        logger.info("  date string = " + dateStr);
+        LOG.info("  date string = " + dateStr);
         // surprisingly, this doesn't work
         // assertEquals(date, DateUtility.RFC_3339.parse(dateStr));
     }
@@ -67,10 +78,8 @@ public class DateUtilityTest extends BaseTest {
     public void testTimeZoneOffsetLabel() throws Exception {
 
         // This is sensitive to whether build time is daylight savings time
-        assertTrue(DateUtility.getTimeZoneOffsetLabel("America/Los_Angeles", null)
-                .matches("-0[78]:00"));
-        assertTrue(
-                DateUtility.getTimeZoneOffsetLabel("America/TYPO/Los_Angeles", null).matches("Z"));
+        assertTrue(DateUtility.getTimeZoneOffsetLabel("America/Los_Angeles", null).matches("-0[78]:00"));
+        assertTrue(DateUtility.getTimeZoneOffsetLabel("America/TYPO/Los_Angeles", null).matches("Z"));
         assertTrue(DateUtility.getTimeZoneOffsetLabel("PST", null).matches("-0[78]:00"));
 
         assertEquals("+06:00", DateUtility.getTimeZoneOffsetLabel("+06:00", null));
@@ -81,8 +90,8 @@ public class DateUtilityTest extends BaseTest {
         assertEquals("-07:00", DateUtility.getTimeZoneOffsetLabel("PDT", null));
         // assertEquals("-08:00", DateUtility.getTimeZoneOffset("PST", null));
         // This is actually PDT because it's in mid-March
-        assertEquals("-07:00", DateUtility.getTimeZoneOffsetLabel("PST",
-                DateUtility.getFastDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS).parse("20170315")));
+        assertEquals("-07:00",
+            DateUtility.getTimeZoneOffsetLabel("PST", DateUtility.getFastDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS).parse("20170315")));
     }
 
     /**
@@ -93,12 +102,10 @@ public class DateUtilityTest extends BaseTest {
     @Test
     public void testTimeZoneOffset() throws Exception {
 
-        logger.info("XXX = " + DateUtility.getTimeZoneOffset("America/Los_Angeles", null));
+        LOG.info("XXX = " + DateUtility.getTimeZoneOffset("America/Los_Angeles", null));
         // This is sensitive to whether build time is daylight savings time
-        assertTrue(
-                Math.abs(DateUtility.getTimeZoneOffset("America/Los_Angeles", null) / 3600) < 9000);
-        assertTrue(Math.abs(
-                DateUtility.getTimeZoneOffset("America/TYPO/Los_Angeles", null) / 3600) < 9000);
+        assertTrue(Math.abs(DateUtility.getTimeZoneOffset("America/Los_Angeles", null) / 3600) < 9000);
+        assertTrue(Math.abs(DateUtility.getTimeZoneOffset("America/TYPO/Los_Angeles", null) / 3600) < 9000);
         assertTrue(Math.abs(DateUtility.getTimeZoneOffset("PST", null) / 3600) < 9000);
 
         assertEquals(6000, DateUtility.getTimeZoneOffset("+06:00", null) / 3600);
@@ -109,8 +116,7 @@ public class DateUtilityTest extends BaseTest {
         assertEquals(-7000, DateUtility.getTimeZoneOffset("PDT", null) / 3600);
         // This is actually PDT because it's in mid-March
         assertEquals(-7000,
-                DateUtility.getTimeZoneOffset("PST", DateUtility.getFastDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS).parse("20170315"))
-                        / 3600);
+            DateUtility.getTimeZoneOffset("PST", DateUtility.getFastDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS).parse("20170315")) / 3600);
     }
 
     /**
@@ -120,6 +126,7 @@ public class DateUtilityTest extends BaseTest {
      */
     @Test
     public void testGetTimeZone() throws Exception {
+
         assertEquals("-07:00", DateUtility.getTimeZone(1590633334000L, -25200));
         assertEquals("-08:00", DateUtility.getTimeZone(1590633334000L, -28800));
     }
@@ -135,16 +142,12 @@ public class DateUtilityTest extends BaseTest {
         final ZoneId timeZone = ZoneId.systemDefault();
         final String abbreviation = timeZone.getDisplayName(TextStyle.NARROW, Locale.US);
 
-        ZonedDateTime startOfDay =
-                DateUtility.getStartOfDay("20201006", ZoneId.systemDefault().toString());
+        final ZonedDateTime startOfDay = DateUtility.getStartOfDay("20201006", ZoneId.systemDefault().toString());
 
-        ZonedDateTime endOfDay =
-                DateUtility.getEndOfDay("20201006", ZoneId.systemDefault().toString());
+        final ZonedDateTime endOfDay = DateUtility.getEndOfDay("20201006", ZoneId.systemDefault().toString());
 
-        assertEquals("2020-10-06 00:00:00 [" + abbreviation + "]",
-                startOfDay.format(DateUtility.DATE_YYYY_MM_DD_HH_MM_SS_VV));
-        assertEquals("2020-10-06 23:59:59 [" + abbreviation + "]",
-                endOfDay.format(DateUtility.DATE_YYYY_MM_DD_HH_MM_SS_VV));
+        assertEquals("2020-10-06 00:00:00 [" + abbreviation + "]", startOfDay.format(DateUtility.DATE_YYYY_MM_DD_HH_MM_SS_VV));
+        assertEquals("2020-10-06 23:59:59 [" + abbreviation + "]", endOfDay.format(DateUtility.DATE_YYYY_MM_DD_HH_MM_SS_VV));
 
     }
 
@@ -164,13 +167,12 @@ public class DateUtilityTest extends BaseTest {
 
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
-        final Date pdt = DateUtility.getDate(localNow.format(formatter), "yyyyMMddHHmmss",
-                timeZoneId);
+        final Date pdt = DateUtility.getDate(localNow.format(formatter), "yyyyMMddHHmmss", timeZoneId);
         // Expressed in local time, this date matches what's shown
         assertEquals(localNow.format(formatter), DateUtility.formatDate(pdt, DateUtility.DATE_FORMAT_REVERSE_WITH_24_HOUR_TIME_ONLY_NUMBERS, timeZoneId));
-        
+
         final Date z = DateUtility.getDate(utcNow.format(formatter), "yyyyMMddHHmmss", "-00:00");
-        assertEquals(localNow.format(formatter), DateUtility.formatDate(z, DateUtility.DATE_FORMAT_REVERSE_WITH_24_HOUR_TIME_ONLY_NUMBERS,timeZoneId));
+        assertEquals(localNow.format(formatter), DateUtility.formatDate(z, DateUtility.DATE_FORMAT_REVERSE_WITH_24_HOUR_TIME_ONLY_NUMBERS, timeZoneId));
     }
 
 }

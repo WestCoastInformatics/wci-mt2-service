@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.configuration;
 
@@ -19,8 +28,8 @@ import org.springframework.util.CollectionUtils;
 @Configuration
 public class CacheConfiguration {
 
-    /** the constant logger *. */
-    private static Logger logger = LoggerFactory.getLogger(CacheConfiguration.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(CacheConfiguration.class);
 
     /** the cache manager *. */
     @Autowired
@@ -33,7 +42,8 @@ public class CacheConfiguration {
      */
     @Scheduled(cron = "0 0 0 * * ?", zone = "America/Los_Angeles")
     public void evictAll() {
-        logger.info("evictAll()");
+
+        LOG.info("evictAll()");
         final Collection<String> cacheNames = cacheManager.getCacheNames();
         if (CollectionUtils.isEmpty(cacheNames)) {
             return;

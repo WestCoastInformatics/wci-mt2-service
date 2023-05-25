@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.rest.test;
 
@@ -42,13 +51,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AutoConfigureMockMvc
 public class RefsetControllerTests extends AbstractRefsetTests {
 
+    /**
+     * The Enum RefsetConceptStatus.
+     */
     public enum RefsetConceptStatus {
-        EXISTS, NOT_FOUND
+
+        /** The exists. */
+        EXISTS,
+        /** The not found. */
+        NOT_FOUND
 
     }
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(RefsetControllerTests.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(RefsetControllerTests.class);
 
     /** The Constant MAIN_TESTING_REFSET_ID. */
     // Belgian simple reference set for translated animal materials w/101
@@ -57,50 +73,72 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     // production
     private static final String GPS_REFSET_ID = "787778008";
 
+    /** The Constant FIRST_MAIN_NRC_REFSET_CONCEPT_ID. */
     // With 2 parents, 6 children and 0 defing rels
     private static final String FIRST_MAIN_NRC_REFSET_CONCEPT_ID = "37663002";
 
+    /** The Constant SECOND_MAIN_NRC_REFSET_CONCEPT_ID. */
     // With 1 parents, 0 children and 0 defing rels
     private static final String SECOND_MAIN_NRC_REFSET_CONCEPT_ID = "276310004";
 
+    /** The Constant FIRST_MAIN_CORE_REFSET_CONCEPT_ID. */
     private static final String FIRST_MAIN_CORE_REFSET_CONCEPT_ID = "118690002";
 
+    /** The inactive refset version internal id. */
     private static String inactiveRefsetVersionInternalId;
 
+    /** The earlier inactive refset internal id. */
     private static String earlierInactiveRefsetInternalId;
 
+    /** The delta export refset version internal id. */
     private static String deltaExportRefsetVersionInternalId;
 
-    private static final List<String> firstConceptDescList = new ArrayList<>();
+    /** The Constant FIRST_CONCEPT_DESC_LIST. */
+    private static final List<String> FIRST_CONCEPT_DESC_LIST = new ArrayList<>();
 
-    private static final List<String> firstConceptParentDescList = new ArrayList<>();
+    /** The Constant FIRST_CONCEPT_PARENT_DESC_LIST. */
+    private static final List<String> FIRST_CONCEPT_PARENT_DESC_LIST = new ArrayList<>();
 
-    private static final List<String> inactiveConceptDescList = new ArrayList<>();
+    /** The Constant INACTIVE_CONCEPT_DESC_LIST. */
+    private static final List<String> INACTIVE_CONCEPT_DESC_LIST = new ArrayList<>();
 
-    private static final List<String> secondConceptAllDescTypeList = new ArrayList<>();
+    /** The Constant SECOND_CONCEPT_ALL_DESC_TYPE_LIST. */
+    private static final List<String> SECOND_CONCEPT_ALL_DESC_TYPE_LIST = new ArrayList<>();
 
-    private static final List<String> secondConceptPtAndFsnOnlyDescList = new ArrayList<>();
+    /** The Constant SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST. */
+    private static final List<String> SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST = new ArrayList<>();
 
-    private static final List<String> conceptSearchDescList = new ArrayList<>();
+    /** The Constant CONCEPT_SEARCH_DESC_LIST. */
+    private static final List<String> CONCEPT_SEARCH_DESC_LIST = new ArrayList<>();
 
+    /** The Constant TWO_VERSION_DELTA_FILE. */
     private static final String TWO_VERSION_DELTA_FILE = REFSET_FILE_PATH + "Lateralizable Delta 201801 to 201807.txt";
 
+    /** The Constant THREE_VERSION_DELTA_FILE. */
     private static final String THREE_VERSION_DELTA_FILE = REFSET_FILE_PATH + "Lateralizable Delta 201801 to 201901.txt";
 
+    /** The Constant SNAPSHOT_FILE. */
     private static final String SNAPSHOT_FILE = REFSET_FILE_PATH + "561000172108 Snapshot 20200315.txt";
 
+    /** The Constant LIST_OF_SCTIDS_FILE. */
     private static final String LIST_OF_SCTIDS_FILE = REFSET_FILE_PATH + "561000172108 ListOfSctIds 20200315.txt";
 
+    /** The Constant REFSET_SNAPSHOT_EXPORT_VERSION. */
     private static final String REFSET_SNAPSHOT_EXPORT_VERSION = "20200315";
 
+    /** The Constant REFSET_DELTA_TO_EXPORT_REFSET_ID. */
     private static final String REFSET_DELTA_TO_EXPORT_REFSET_ID = "723264001";
 
+    /** The Constant REFSET_DELTA_TO_EXPORT_VERSION. */
     private static final String REFSET_DELTA_TO_EXPORT_VERSION = "2021-07-31";
 
+    /** The Constant REFSET_DELTA_FROM_EXPORT_VERSION. */
     private static final String REFSET_DELTA_FROM_EXPORT_VERSION = "20180131";
 
+    /** The Constant REFSET_DELTA_TO_EXPORT_TWO_VERSIONS. */
     private static final String REFSET_DELTA_TO_EXPORT_TWO_VERSIONS = "20180731";
 
+    /** The Constant REFSET_DELTA_TO_EXPORT_THREE_VERSIONS. */
     private static final String REFSET_DELTA_TO_EXPORT_THREE_VERSIONS = "20190131";
 
     // Test by term per language
@@ -108,105 +146,114 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     // by term id
     // by refset id
     // By narrative
-    private static final String membersSearchQueryList[] = new String[] {
+    /** The Constant MEMBERS_SEARCH_QUERY_LIST. */
+    private static final String[] MEMBERS_SEARCH_QUERY_LIST = new String[] {
         "human", "Animal", "HAIR", "Non", "niet", "menselijk", "dierenhaar", "poil", "dierlijk", "haar", "276310004", "412393015", "1495334015"
     };
 
-    private static final String invalidSearchTerms[] = new String[] {
+    /** The Constant INVALID_SEARCH_TERMS. */
+    private static final String[] INVALID_SEARCH_TERMS = new String[] {
         "138875005", "SNOMED Clinical Terms version"
     };
 
+    /** The first time setup. */
     private static boolean firstTimeSetup = true;
 
+    /** The skip earlier inactive version tests. */
     private static boolean skipEarlierInactiveVersionTests = false;
 
     /**
      * Sets the up.
+     *
+     * @param info the up
+     * @throws Exception the exception
      */
     @BeforeEach
-    public void setUp(TestInfo info) throws Exception {
+    public void setUp(final TestInfo info) throws Exception {
 
         if (info.getDisplayName().equals("testMigration()")) {
 
             return;
         }
 
-        if (getUtil == null) {
+        if (getGetUtil() == null) {
 
-            getUtil = new GetUnitTestUtilities(mvc, baseUrl, SIMPLE_DATE_FORMAT);
-            exportUtil = new ExportUnitTestUtilities(mvc);
-            workflowUtil = new WorkflowUnitTestUtilities(mvc, baseUrl, REFSET_FILE_PATH);
+            setGetUtil(new GetUnitTestUtilities(getMvc(), getBaseUrl(), SIMPLE_DATE_FORMAT));
+            setExportUtil(new ExportUnitTestUtilities(getMvc()));
+            setWorkflowUtil(new WorkflowUnitTestUtilities(getMvc(), getBaseUrl(), REFSET_FILE_PATH));
         }
 
         // Setup Utility classes
-        objectMapper = new ObjectMapper();
-        JacksonTester.initFields(this, objectMapper);
-        baseUrl = "/refset";
+        setObjectMapper(new ObjectMapper());
+        JacksonTester.initFields(this, getObjectMapper());
+        setBaseUrl("/refset");
 
         if (firstTimeSetup) {
 
-            readOnlyTestingProjectId = getUtil.getInternalProjectId(READ_ONLY_TESTING_PROJECT_NAME);
-            mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
-            mainCoreTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION);
+            setReadOnlyTestingProjectId(getGetUtil().getInternalProjectId(READ_ONLY_TESTING_PROJECT_NAME));
+            setMainNrcTestingRefsetInternalId(getGetUtil().getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION));
+            setMainCoreTestingRefsetInternalId(getGetUtil().getInternalRefsetId(MAIN_CORE_TESTING_REFSET_ID, MAIN_CORE_TESTING_REFSET_VERSION));
 
             // Ensure have the export directory created on testing system
 
-            String exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
-            File f = new File(exportFileDir);
+            final String exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
+            final File f = new File(exportFileDir);
 
             if (!f.exists()) {
 
                 throw new Exception("Tests with Export because the expected export directory doesn't exist: " + exportFileDir);
             }
 
-            mainNrcTestingRefsetInternalId = getUtil.getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
+            setMainNrcTestingRefsetInternalId(getGetUtil().getInternalRefsetId(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION));
 
-            inactiveRefsetVersionInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
-            deltaExportRefsetVersionInternalId = getUtil.getInternalRefsetId(REFSET_DELTA_TO_EXPORT_REFSET_ID, REFSET_DELTA_TO_EXPORT_VERSION);
+            inactiveRefsetVersionInternalId = getGetUtil().getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID,
+                REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
+            deltaExportRefsetVersionInternalId = getGetUtil().getInternalRefsetId(REFSET_DELTA_TO_EXPORT_REFSET_ID, REFSET_DELTA_TO_EXPORT_VERSION);
 
             try {
 
-                earlierInactiveRefsetInternalId = getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION);
-            } catch (Exception e) {
+                earlierInactiveRefsetInternalId = getGetUtil().getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID,
+                    REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION);
+            } catch (final Exception e) {
 
-                logger.info("Snowstorm instance we are running against doesn't have " + REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION + " of the refset "
-                    + REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID + ", thus skip related tests");
+                LOG.info("Snowstorm instance we are running against doesn't have " + REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION
+                    + " of the refset " + REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID + ", thus skip related tests");
                 skipEarlierInactiveVersionTests = true;
             }
 
-            refsetWithInactiveConceptAsActiveMemberInternalId =
-                getUtil.getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION);
+            setRefsetWithInactiveConceptAsActiveMemberInternalId(getGetUtil().getInternalRefsetId(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID,
+                REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION));
 
-            firstConceptDescList.add("Venom (substance)");
-            firstConceptDescList.add("Venom");
-            firstConceptDescList.add("venin");
-            firstConceptDescList.add("gif");
+            FIRST_CONCEPT_DESC_LIST.add("Venom (substance)");
+            FIRST_CONCEPT_DESC_LIST.add("Venom");
+            FIRST_CONCEPT_DESC_LIST.add("venin");
+            FIRST_CONCEPT_DESC_LIST.add("gif");
 
-            firstConceptParentDescList.add("Animal agent (substance)");
-            firstConceptParentDescList.add("Animal agent");
-            firstConceptParentDescList.add("produit animal");
-            firstConceptParentDescList.add("dierlijk product");
+            FIRST_CONCEPT_PARENT_DESC_LIST.add("Animal agent (substance)");
+            FIRST_CONCEPT_PARENT_DESC_LIST.add("Animal agent");
+            FIRST_CONCEPT_PARENT_DESC_LIST.add("produit animal");
+            FIRST_CONCEPT_PARENT_DESC_LIST.add("dierlijk product");
 
-            inactiveConceptDescList.add("Rotator cuff syndrome (disorder)");
-            inactiveConceptDescList.add("Rotator cuff syndrome");
-            inactiveConceptDescList.add("Rotator cuff rupture");
-            inactiveConceptDescList.add("Rotator cuff tear");
-            inactiveConceptDescList.add("Rupture of rotator cuff of shoulder");
+            INACTIVE_CONCEPT_DESC_LIST.add("Rotator cuff syndrome (disorder)");
+            INACTIVE_CONCEPT_DESC_LIST.add("Rotator cuff syndrome");
+            INACTIVE_CONCEPT_DESC_LIST.add("Rotator cuff rupture");
+            INACTIVE_CONCEPT_DESC_LIST.add("Rotator cuff tear");
+            INACTIVE_CONCEPT_DESC_LIST.add("Rupture of rotator cuff of shoulder");
 
-            secondConceptAllDescTypeList.add("Non-human hair - material (substance)");
-            secondConceptAllDescTypeList.add("Animal hair");
-            secondConceptAllDescTypeList.add("Non-human hair - material");
-            secondConceptAllDescTypeList.add("poil animal");
-            secondConceptAllDescTypeList.add("dierlijk haar");
-            secondConceptAllDescTypeList.add("dierenhaar");
-            secondConceptAllDescTypeList.add("niet-menselijk haar");
+            SECOND_CONCEPT_ALL_DESC_TYPE_LIST.add("Non-human hair - material (substance)");
+            SECOND_CONCEPT_ALL_DESC_TYPE_LIST.add("Animal hair");
+            SECOND_CONCEPT_ALL_DESC_TYPE_LIST.add("Non-human hair - material");
+            SECOND_CONCEPT_ALL_DESC_TYPE_LIST.add("poil animal");
+            SECOND_CONCEPT_ALL_DESC_TYPE_LIST.add("dierlijk haar");
+            SECOND_CONCEPT_ALL_DESC_TYPE_LIST.add("dierenhaar");
+            SECOND_CONCEPT_ALL_DESC_TYPE_LIST.add("niet-menselijk haar");
 
-            secondConceptPtAndFsnOnlyDescList.add("Non-human hair - material (substance)");
-            secondConceptPtAndFsnOnlyDescList.add("Animal hair");
-            secondConceptPtAndFsnOnlyDescList.add("poil animal");
-            secondConceptPtAndFsnOnlyDescList.add("dierlijk haar");
+            SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST.add("Non-human hair - material (substance)");
+            SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST.add("Animal hair");
+            SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST.add("poil animal");
+            SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST.add("dierlijk haar");
 
-            conceptSearchDescList.add("Brazilian pemphigus foliaceus");
+            CONCEPT_SEARCH_DESC_LIST.add("Brazilian pemphigus foliaceus");
 
             firstTimeSetup = false;
         }
@@ -215,15 +262,13 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
     /**
      * Test getting a project.
-     *
-     * @throws Exception the exception
      */
     @Test
     public void testGetProject() {
 
-        final Project project = getUtil.getProject(readOnlyTestingProjectId);
+        final Project project = getGetUtil().getProject(getReadOnlyTestingProjectId());
 
-        assertThat(project.getId()).isEqualTo(readOnlyTestingProjectId);
+        assertThat(project.getId()).isEqualTo(getReadOnlyTestingProjectId());
         assertThat(project.getName()).isEqualTo(READ_ONLY_TESTING_PROJECT_NAME);
     }
 
@@ -235,7 +280,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testRefset() throws Exception {
 
-        final Refset refset = getUtil.getRefsetFromRefsetIdAndVersion(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
+        final Refset refset = getGetUtil().getRefsetFromRefsetIdAndVersion(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
 
         validateRefsetMetadata(refset);
     }
@@ -248,12 +293,12 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testEditions() throws Exception {
 
-        final ResultList<TypeKeyValue> editions = getUtil.getEditions();
+        final ResultList<TypeKeyValue> editions = getGetUtil().getEditions();
         assertThat(editions.getItems().size()).isGreaterThan(8);
 
         boolean editionFound = false;
 
-        for (TypeKeyValue keyValue : editions.getItems()) {
+        for (final TypeKeyValue keyValue : editions.getItems()) {
 
             if ("belgian edition".equalsIgnoreCase(keyValue.getKey())) {
 
@@ -274,7 +319,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testBranchVersions() throws Exception {
 
-        final ResultList<String> versions = getUtil.getBranches("SNOMEDCT-BE");
+        final ResultList<String> versions = getGetUtil().getBranches("SNOMEDCT-BE");
         assertThat(versions.getItems().size()).isGreaterThan(0);
 
         for (final String version : versions.getItems()) {
@@ -292,7 +337,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testSearchProject() throws Exception {
 
-        final ResultList<Project> resultList = getUtil.searchProjects();
+        final ResultList<Project> resultList = getGetUtil().searchProjects();
 
         assertThat(resultList.getItems().size()).isGreaterThanOrEqualTo(1);
     }
@@ -309,42 +354,42 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         Refset refset;
 
         // Test by name
-        refsetList = getUtil.searchDirectory("animal");
+        refsetList = getGetUtil().searchDirectory("animal");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by partial name
-        refsetList = getUtil.searchDirectory("ani");
+        refsetList = getGetUtil().searchDirectory("ani");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by alternate refset name (using translation)
-        refsetList = getUtil.searchDirectory("ensemble de référence simple belge pour les matières animales traduites");
+        refsetList = getGetUtil().searchDirectory("ensemble de référence simple belge pour les matières animales traduites");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by partial alternate refset name (using translation)
-        refsetList = getUtil.searchDirectory("matiè");
+        refsetList = getGetUtil().searchDirectory("matiè");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by edition name
-        refsetList = getUtil.searchDirectory("editionName:Belgian Edition");
+        refsetList = getGetUtil().searchDirectory("editionName:Belgian Edition");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by combination
-        refsetList = getUtil.searchDirectory("animal AND editionName:Belgian Edition");
+        refsetList = getGetUtil().searchDirectory("animal AND editionName:Belgian Edition");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test by combination with partials
-        refsetList = getUtil.searchDirectory("anim AND editionName:Belgian Edi");
+        refsetList = getGetUtil().searchDirectory("anim AND editionName:Belgian Edi");
         refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test on inactive concept that is active member of an active refset
-        refsetList = getUtil.searchDirectory(INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+        refsetList = getGetUtil().searchDirectory(INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
         refset = validateRefsetExists(refsetList, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID);
         assertThat(refset).isNotNull();
 
@@ -353,41 +398,41 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // by term id
         // by refset id
         // By narrative
-        String searchTerms[] = new String[] {
+        final String[] searchTerms = new String[] {
             "Dog", "squame", "huidschilfer", "olie uit lever van vis", "260154005", "999861000172117", "561000172108", "Allergies General"
         };
 
         for (int i = 0; i < searchTerms.length; i++) {
 
-            logger.info("Testing term - " + searchTerms[i]);
+            LOG.info("Testing term - " + searchTerms[i]);
 
-            refsetList = getUtil.searchDirectory(searchTerms[i]);
+            refsetList = getGetUtil().searchDirectory(searchTerms[i]);
             refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
 
             validateRefsetMetadata(refset);
         }
 
         // Verify when expect to return no matching refsets
-        for (int i = 0; i < invalidSearchTerms.length; i++) {
+        for (int i = 0; i < INVALID_SEARCH_TERMS.length; i++) {
 
-            logger.info("Testing term - " + invalidSearchTerms[i]);
+            LOG.info("Testing term - " + INVALID_SEARCH_TERMS[i]);
 
-            refsetList = getUtil.searchDirectory(invalidSearchTerms[i]);
+            refsetList = getGetUtil().searchDirectory(INVALID_SEARCH_TERMS[i]);
             refset = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
 
             assertThat(refset).isNull();
         }
 
         // Test Inactive Concept search
-        refsetList = getUtil.searchDirectory(INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+        refsetList = getGetUtil().searchDirectory(INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
         refset = validateRefsetExists(refsetList, REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID);
         validateRefsetMetadata(refset);
 
         // Test graceful handling of zero results
         try {
 
-            refsetList = getUtil.searchDirectory("1234567890");
-        } catch (AssertionError e) {
+            refsetList = getGetUtil().searchDirectory("1234567890");
+        } catch (final AssertionError e) {
 
             assertThat(refsetList.getItems().isEmpty()).isTrue();
             assertThat(refsetList.getTotal()).isEqualTo(0);
@@ -403,7 +448,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testExportSctidList() throws Exception {
 
-        final JsonNode root = exportUtil.exportSctIds(mainNrcTestingRefsetInternalId);
+        final JsonNode root = getExportUtil().exportSctIds(getMainNrcTestingRefsetInternalId());
 
         // Validate
         validateExportFiles(root, LIST_OF_SCTIDS_FILE);
@@ -419,9 +464,9 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // Clear content on AWS first to ensure actually are generating export
         // rather than just returning cached content
-        exportUtil.deleteRefsetExportsFromAws(MAIN_NRC_TESTING_REFSET_ID, REFSET_SNAPSHOT_EXPORT_VERSION);
+        getExportUtil().deleteRefsetExportsFromAws(MAIN_NRC_TESTING_REFSET_ID, REFSET_SNAPSHOT_EXPORT_VERSION);
 
-        final JsonNode root = exportUtil.exportRf2Snapshot(mainNrcTestingRefsetInternalId, REFSET_SNAPSHOT_EXPORT_VERSION);
+        final JsonNode root = getExportUtil().exportRf2Snapshot(getMainNrcTestingRefsetInternalId(), REFSET_SNAPSHOT_EXPORT_VERSION);
 
         // Validate
         validateExportFiles(root, SNAPSHOT_FILE);
@@ -436,16 +481,17 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testExportRf2Delta() throws Exception {
 
         /* Test delta between two versions */
-        exportUtil.deleteRefsetExportsFromAwsAllVersions(REFSET_DELTA_TO_EXPORT_REFSET_ID);
+        getExportUtil().deleteRefsetExportsFromAwsAllVersions(REFSET_DELTA_TO_EXPORT_REFSET_ID);
 
-        JsonNode root = exportUtil.exportRf2Delta(deltaExportRefsetVersionInternalId, REFSET_DELTA_FROM_EXPORT_VERSION, REFSET_DELTA_TO_EXPORT_TWO_VERSIONS);
+        JsonNode root =
+            getExportUtil().exportRf2Delta(deltaExportRefsetVersionInternalId, REFSET_DELTA_FROM_EXPORT_VERSION, REFSET_DELTA_TO_EXPORT_TWO_VERSIONS);
 
         validateExportFiles(root, TWO_VERSION_DELTA_FILE);
 
         /* Test delta between three versions */
-        exportUtil.deleteRefsetExportsFromAwsAllVersions(REFSET_DELTA_TO_EXPORT_REFSET_ID);
+        getExportUtil().deleteRefsetExportsFromAwsAllVersions(REFSET_DELTA_TO_EXPORT_REFSET_ID);
 
-        root = exportUtil.exportRf2Delta(deltaExportRefsetVersionInternalId, REFSET_DELTA_FROM_EXPORT_VERSION, REFSET_DELTA_TO_EXPORT_THREE_VERSIONS);
+        root = getExportUtil().exportRf2Delta(deltaExportRefsetVersionInternalId, REFSET_DELTA_FROM_EXPORT_VERSION, REFSET_DELTA_TO_EXPORT_THREE_VERSIONS);
 
         validateExportFiles(root, THREE_VERSION_DELTA_FILE);
     }
@@ -459,26 +505,26 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testConceptDetails() throws Exception {
 
         // Test normal concept Details Call
-        Concept concept = getUtil.getConceptDetails(mainNrcTestingRefsetInternalId, FIRST_MAIN_NRC_REFSET_CONCEPT_ID);
-        validateConcept(concept, FIRST_MAIN_NRC_REFSET_CONCEPT_ID, null, false, firstConceptDescList, 0, 0, 0);
+        Concept concept = getGetUtil().getConceptDetails(getMainNrcTestingRefsetInternalId(), FIRST_MAIN_NRC_REFSET_CONCEPT_ID);
+        validateConcept(concept, FIRST_MAIN_NRC_REFSET_CONCEPT_ID, null, false, FIRST_CONCEPT_DESC_LIST, 0, 0, 0);
 
         // Try second concept
-        concept = getUtil.getConceptDetails(mainNrcTestingRefsetInternalId, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
-        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, null, false, secondConceptAllDescTypeList, 0, 0, 0);
+        concept = getGetUtil().getConceptDetails(getMainNrcTestingRefsetInternalId(), SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
+        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, null, false, SECOND_CONCEPT_ALL_DESC_TYPE_LIST, 0, 0, 0);
 
-        concept = getUtil.getConceptDetails(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
-        validateConcept(concept, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID, null, false, inactiveConceptDescList, 0, 0, 0);
+        concept = getGetUtil().getConceptDetails(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+        validateConcept(concept, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID, null, false, INACTIVE_CONCEPT_DESC_LIST, 0, 0, 0);
 
         // Test invalid refset is handled gracefully
         try {
 
             concept = null;
-            concept = getUtil.getConceptDetails(INVALID_INTERNAL_REFSET_ID, FIRST_MAIN_NRC_REFSET_CONCEPT_ID);
-        } catch (AssertionError ae) {
+            concept = getGetUtil().getConceptDetails(INVALID_INTERNAL_REFSET_ID, FIRST_MAIN_NRC_REFSET_CONCEPT_ID);
+        } catch (final AssertionError ae) {
 
             assertThat(concept).isNull();
 
-            logger.info("Successfully identified that refset is invalid");
+            LOG.info("Successfully identified that refset is invalid");
         }
 
     }
@@ -494,7 +540,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         final String branch = "MAIN/2022-01-31";
 
         // call the api to get the refset concept list for refset parents
-        final ConceptResultList existingRefsetConcepts = getUtil.getRefsetConcepts(branch, RefsetConceptsType.ALL_SIMPLE_TYPE_CONCEPTS);
+        final ConceptResultList existingRefsetConcepts = getGetUtil().getRefsetConcepts(branch, RefsetConceptsType.ALL_SIMPLE_TYPE_CONCEPTS);
         assertThat(existingRefsetConcepts.getItems().size()).isEqualTo(39);
 
         final Concept existingRefsetConcept = identifyMemberFromList(existingRefsetConcepts, GPS_REFSET_ID);
@@ -502,7 +548,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // call the api to get the refset concept list for using as the
         // underlying concept for a new refset
-        final ConceptResultList newRefsetConcepts = getUtil.getRefsetConcepts(branch, RefsetConceptsType.NEW_REFSET_CONCEPTS);
+        final ConceptResultList newRefsetConcepts = getGetUtil().getRefsetConcepts(branch, RefsetConceptsType.NEW_REFSET_CONCEPTS);
         assertThat(newRefsetConcepts.getItems().size()).isEqualTo(29);
 
         final Concept newRefsetConcept = identifyMemberFromList(newRefsetConcepts, GPS_REFSET_ID);
@@ -517,20 +563,20 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testMemberList() throws Exception {
 
-        ConceptResultList members = getUtil.getMembers(mainNrcTestingRefsetInternalId);
+        ConceptResultList members = getGetUtil().getMembers(getMainNrcTestingRefsetInternalId());
 
         // At time last update, 101 members were found in the refsets
         assertThat(members.size()).isEqualTo(101);
 
         // Membership info and descriptions, but no parents/children
         Concept concept = identifyMemberFromList(members, FIRST_MAIN_NRC_REFSET_CONCEPT_ID);
-        validateConcept(concept, FIRST_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, firstConceptDescList, 0, 0, 0);
+        validateConcept(concept, FIRST_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, FIRST_CONCEPT_DESC_LIST, 0, 0, 0);
 
         // Membership info and descriptions, but no parents/children
         concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
-        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, secondConceptPtAndFsnOnlyDescList, 0, 0, 0);
+        validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST, 0, 0, 0);
 
-        members = getUtil.getMembers(inactiveRefsetVersionInternalId);
+        members = getGetUtil().getMembers(inactiveRefsetVersionInternalId);
         concept = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
         assertThat(concept).isNotNull();
         assertThat(concept.isActive()).isFalse();
@@ -538,43 +584,43 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     }
 
     /**
-     * Test searching refset members for when examining which members of a given refset match on the search criteria
+     * Test searching refset members for when examining which members of a given refset match on the search criteria.
      *
      * @throws Exception the exception
      */
     @Test
     public void testSearchMember() throws Exception {
 
-        for (int i = 0; i < membersSearchQueryList.length; i++) {
+        for (int i = 0; i < MEMBERS_SEARCH_QUERY_LIST.length; i++) {
 
-            logger.debug("Testing term - : " + membersSearchQueryList[i]);
+            LOG.debug("Testing term - : " + MEMBERS_SEARCH_QUERY_LIST[i]);
 
-            final ConceptResultList members = getUtil.searchMembers(mainNrcTestingRefsetInternalId, membersSearchQueryList[i]);
+            final ConceptResultList members = getGetUtil().searchMembers(getMainNrcTestingRefsetInternalId(), MEMBERS_SEARCH_QUERY_LIST[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include relationships
-            validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, secondConceptPtAndFsnOnlyDescList, 0, 0, 0);
+            validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, "20200315", true, SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST, 0, 0, 0);
         }
 
         /*-
          * TODO: Add this test once replace ECL-based search with one that returns inactive concepts
          * 
          * // Test Inactive
-         * logger.debug("Testing term - : " + INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+         * LOG.debug("Testing term - : " + INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
          * 
-         * ConceptResultList members = getUtil.searchMembers(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+         * ConceptResultList members = getGetUtil().searchMembers(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
          * Concept concept = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
          * 
          * // Doesn't include relationships
-         * validateConcept(concept, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID, "20200315", true, secondConceptPtAndFsnOnlyDescList, 0, 0, 0);
+         * validateConcept(concept, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID, "20200315", true, SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST, 0, 0, 0);
          */
 
         // Test Invalid
-        for (int i = 0; i < invalidSearchTerms.length; i++) {
+        for (int i = 0; i < INVALID_SEARCH_TERMS.length; i++) {
 
-            logger.info("Testing term - " + invalidSearchTerms[i]);
+            LOG.info("Testing term - " + INVALID_SEARCH_TERMS[i]);
 
-            final ConceptResultList members = getUtil.searchMembers(mainNrcTestingRefsetInternalId, invalidSearchTerms[i]);
+            final ConceptResultList members = getGetUtil().searchMembers(getMainNrcTestingRefsetInternalId(), INVALID_SEARCH_TERMS[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include relationships
@@ -584,42 +630,42 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     }
 
     /**
-     * Test searching refset members taxonomy
+     * Test searching refset members taxonomy.
      *
      * @throws Exception the exception
      */
     @Test
     public void testSearchTaxonomy() throws Exception {
 
-        for (int i = 0; i < membersSearchQueryList.length; i++) {
+        for (int i = 0; i < MEMBERS_SEARCH_QUERY_LIST.length; i++) {
 
-            logger.debug("Testing term - : " + membersSearchQueryList[i]);
+            LOG.debug("Testing term - : " + MEMBERS_SEARCH_QUERY_LIST[i]);
 
-            final ConceptResultList members = getUtil.searchTaxonomy(mainNrcTestingRefsetInternalId, membersSearchQueryList[i]);
+            final ConceptResultList members = getGetUtil().searchTaxonomy(getMainNrcTestingRefsetInternalId(), MEMBERS_SEARCH_QUERY_LIST[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include membership status nor memberEffectiveTime
-            validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, null, false, secondConceptPtAndFsnOnlyDescList, 0, -1, 0);
+            validateConcept(concept, SECOND_MAIN_NRC_REFSET_CONCEPT_ID, null, false, SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST, 0, -1, 0);
         }
 
         /*-
          * TODO: Add this test once replace ECL-based search with one that returns inactive concepts
          * 
          * // Test Inactive
-         * logger.debug("Testing term - : " + INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+         * LOG.debug("Testing term - : " + INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
          * 
-         * ConceptResultList members = getUtil.searchTaxonomy(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+         * ConceptResultList members = getGetUtil().searchTaxonomy(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
          * Concept concept = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
          * 
          * // Doesn't include relationships
-         * validateConcept(concept, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID, "20200315", true, secondConceptPtAndFsnOnlyDescList, 0, 0, 0);
+         * validateConcept(concept, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID, "20200315", true, SECOND_CONCEPT_PT_AND_FSN_ONLY_DESC_LIST, 0, 0, 0);
          */
 
-        for (int i = 0; i < invalidSearchTerms.length; i++) {
+        for (int i = 0; i < INVALID_SEARCH_TERMS.length; i++) {
 
-            logger.info("Testing term - " + invalidSearchTerms[i]);
+            LOG.info("Testing term - " + INVALID_SEARCH_TERMS[i]);
 
-            final ConceptResultList members = getUtil.searchTaxonomy(mainNrcTestingRefsetInternalId, invalidSearchTerms[i]);
+            final ConceptResultList members = getGetUtil().searchTaxonomy(getMainNrcTestingRefsetInternalId(), INVALID_SEARCH_TERMS[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include relationships
@@ -643,7 +689,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // Call this first
         // @RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/ancestorCache", produces = "application/json")
-        final boolean cacheSuccess = getUtil.setupAncestorCache(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
+        final boolean cacheSuccess = getGetUtil().setupAncestorCache(MAIN_NRC_TESTING_REFSET_ID, MAIN_NRC_TESTING_REFSET_VERSION);
         assertThat(cacheSuccess).isTrue();
 
         // Search on grandparent
@@ -653,9 +699,9 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         for (int i = 0; i < hierarchy.size() - 1; i++) {
 
             final String parentId = hierarchy.get(i);
-            logger.info("Testing parentID: " + parentId);
+            LOG.info("Testing parentID: " + parentId);
 
-            final ConceptResultList children = getUtil.getChildren(mainNrcTestingRefsetInternalId, parentId);
+            final ConceptResultList children = getGetUtil().getChildren(getMainNrcTestingRefsetInternalId(), parentId);
             final Concept childConcept = identifyMemberFromList(children, hierarchy.get(i + 1));
 
             assertThat(childConcept.getHasDescendantRefsetMembers()).isTrue();
@@ -671,14 +717,14 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     @Test
     public void testAncestorPath() throws Exception {
 
-        final Concept concept = getUtil.getAncestorPath(FIRST_MAIN_CORE_REFSET_CONCEPT_ID, mainCoreTestingRefsetInternalId);
+        final Concept concept = getGetUtil().getAncestorPath(FIRST_MAIN_CORE_REFSET_CONCEPT_ID, getMainCoreTestingRefsetInternalId());
 
         // Verify that nodes in ancestor path is as expected
         final ConceptResultList ancestorList = new ConceptResultList(concept.getParents());
         assertThat(ancestorList.size()).isEqualTo(5);
 
         // Verify that the main concept isn't added as an ancestor of itself
-        Concept nonAncestor = identifyMemberFromList(ancestorList, FIRST_MAIN_CORE_REFSET_CONCEPT_ID);
+        final Concept nonAncestor = identifyMemberFromList(ancestorList, FIRST_MAIN_CORE_REFSET_CONCEPT_ID);
         assertThat(nonAncestor).isNull();
 
         // Verify that the main concept isn't added as an ancestor of itself
@@ -710,7 +756,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         // MEMBER_WITH_HX_CONCEPT_ID activated in Jan 31 2017 and inactivated in
         // Jan 31 2019
-        final ResultList<Map<String, String>> memberHistory = getUtil.getMemberHistory(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+        final ResultList<Map<String, String>> memberHistory =
+            getGetUtil().getMemberHistory(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
 
         for (final Map<String, String> historyEntry : memberHistory.getItems()) {
 
@@ -740,13 +787,14 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testVersionStatuses() throws Exception {
         // One-off test so not pushing to utils
 
-        final String url = baseUrl + "/versionStatuses";
-        logger.info("Testing url - " + url);
-        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        final String url = getBaseUrl() + "/versionStatuses";
+        LOG.info("Testing url - " + url);
+        final MvcResult result = getMvc().perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
-        ResultList<TypeKeyValue> versionStatuses = new ObjectMapper().readValue(content, (new TypeReference<ResultList<TypeKeyValue>>() {
-            /* NA */}));
+        LOG.info(" content = " + content);
+        final ResultList<TypeKeyValue> versionStatuses = new ObjectMapper().readValue(content, (new TypeReference<ResultList<TypeKeyValue>>() {
+            /* NA */
+        }));
         assertThat(versionStatuses).isNotNull();
         assertThat(versionStatuses.getTotal()).isEqualTo(VersionStatus.values().length);
 
@@ -754,7 +802,6 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
     /**
      * Test getting list of version statuses.
-     * @return
      *
      * @throws Exception the exception
      */
@@ -767,12 +814,12 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // Was active in Orig Version
         if (!skipEarlierInactiveVersionTests) {
 
-            Concept matchedConcept = getUtil.getConceptDetails(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+            final Concept matchedConcept = getGetUtil().getConceptDetails(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             assertThat(matchedConcept.isActive()).isTrue();
         }
 
         // Inactivated in latest Version
-        Concept latestConcept = getUtil.getConceptDetails(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+        final Concept latestConcept = getGetUtil().getConceptDetails(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
         assertThat(latestConcept.isActive()).isFalse();
 
         /*
@@ -780,12 +827,12 @@ public class RefsetControllerTests extends AbstractRefsetTests {
          */
         if (!skipEarlierInactiveVersionTests) {
 
-            ConceptResultList members = getUtil.searchMembers(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
-            Concept member = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+            final ConceptResultList members = getGetUtil().searchMembers(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+            final Concept member = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             assertThat(member.isActive()).isTrue();
         }
 
-        ConceptResultList members = getUtil.searchMembers(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+        ConceptResultList members = getGetUtil().searchMembers(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
         Concept member = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
         // assertThat(member).isNull();
 
@@ -795,7 +842,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // Orig version was a child of INACTIVE_CONCEPT_PARENT_ID
         if (!skipEarlierInactiveVersionTests) {
 
-            ConceptResultList children = getUtil.getChildren(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID);
+            final ConceptResultList children = getGetUtil().getChildren(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID);
             member = identifyMemberFromList(children, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             assertThat(member.isActive()).isTrue();
         }
@@ -805,8 +852,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // This should throw an exception to detect if we get here somehow
         try {
 
-            children = getUtil.getChildren(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID);
-        } catch (AssertionError e) {
+            children = getGetUtil().getChildren(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID);
+        } catch (final AssertionError e) {
 
             assertThat(children).isNull();
         }
@@ -817,7 +864,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         // Taxonomy Search returns active member
         if (!skipEarlierInactiveVersionTests) {
 
-            members = getUtil.searchTaxonomy(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+            members = getGetUtil().searchTaxonomy(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             member = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             assertThat(member).isNotNull();
             assertThat(member.isActive()).isTrue();
@@ -825,35 +872,34 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
         try {
 
-            members = getUtil.searchTaxonomy(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID);
-        } catch (AssertionError e) {
+            members = getGetUtil().searchTaxonomy(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID);
+        } catch (final AssertionError e) {
 
             assertThat(members.getItems()).isEmpty();
         }
 
         // Search for an INACTIVE_CONCEPT that is still an ACTIVE_REFSET_MEMBER of an ACTIVE_REFSET
 
-        /*- 
-         * TODO: Once we determine how to best handle searching refset for inactive concepts (right now ECL-based so only return actives)
-         * ... Do this for List only (doesn't work for taxonomy which is only active concepts)
-        
-        members = getUtil.searchMembers(refsetWithInactiveConceptAsActiveMember, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
-        member = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
-        assertThat(member).isNotNull();
-        assertThat(member.isActive()).isFalse();
-        assertThat(member.isMemberOfRefset()).isTrue();
-        */
+        // TODO: Once we determine how to best handle searching refset for inactive concepts (right now ECL-based so only return actives)
+        // Do this for List only (doesn't work for taxonomy which is only active concepts)
+
+        // members = getGetUtil().searchMembers(refsetWithInactiveConceptAsActiveMember, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID); member =
+        // identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID); assertThat(member).isNotNull(); assertThat(member.isActive()).isFalse();
+        // assertThat(member.isMemberOfRefset()).isTrue();
 
     }
 
+    /**
+     * Test tags.
+     */
     @Test
     public void testTags() {
 
         final String testTag = "General / Allergies";
-        logger.info("Testing term - " + testTag);
+        LOG.info("Testing term - " + testTag);
 
-        ResultList<Refset> refsetList = getUtil.searchDirectory(testTag);
-        Refset refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
+        final ResultList<Refset> refsetList = getGetUtil().searchDirectory(testTag);
+        final Refset refsetIdentified = validateRefsetExists(refsetList, MAIN_NRC_TESTING_REFSET_ID);
 
         // Collection - Tags
         assertThat(refsetIdentified.getTags().size()).isEqualTo(1);
@@ -861,17 +907,22 @@ public class RefsetControllerTests extends AbstractRefsetTests {
 
     }
 
-    /*
+    /**
+     * Identify member from list.
      *
-     * Supporting Methods - return the concept from the list that matches with the conceptId specified
-     *
+     * @param concepts the concepts
+     * @param conceptId the concept id
+     * @return the concept
      */
-    private Concept identifyMemberFromList(ConceptResultList concepts, String conceptId) {
+    private Concept identifyMemberFromList(final ConceptResultList concepts, final String conceptId) {
+        /*
+         * Supporting Methods - return the concept from the list that matches with the conceptId specified
+         */
 
         // Test first concept
         Concept concept = null;
 
-        for (Concept conceptBeingTested : concepts.getItems()) {
+        for (final Concept conceptBeingTested : concepts.getItems()) {
 
             if (conceptBeingTested.getCode().equals(conceptId)) {
 
@@ -894,24 +945,24 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     public void testSync() throws Exception {
 
         final String url = "/admin/sync/snowstorm";
-        logger.info("Testing url - " + url);
-        final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        LOG.info("Testing url - " + url);
+        final MvcResult result = getMvc().perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
-        logger.info(" content = " + content);
+        LOG.info(" content = " + content);
 
         assertThat(content).isEqualTo("RTT data sync completed successfully");
 
         final String feedbackUrl = "/admin/sync/feedback";
-        logger.info("Testing feedbackUrl - " + feedbackUrl);
-        final MvcResult feedbackResult = mvc.perform(get(feedbackUrl)).andExpect(status().isOk()).andReturn();
+        LOG.info("Testing feedbackUrl - " + feedbackUrl);
+        final MvcResult feedbackResult = getMvc().perform(get(feedbackUrl)).andExpect(status().isOk()).andReturn();
         final String feedbackContent = feedbackResult.getResponse().getContentAsString();
-        logger.info(" feedbackContent = " + feedbackContent);
+        LOG.info(" feedbackContent = " + feedbackContent);
 
         final String intensionalUrl = "/admin/sync/intensional";
-        logger.info("Testing intensionalUrl - " + intensionalUrl);
-        final MvcResult intensionalResult = mvc.perform(get(intensionalUrl)).andExpect(status().isOk()).andReturn();
+        LOG.info("Testing intensionalUrl - " + intensionalUrl);
+        final MvcResult intensionalResult = getMvc().perform(get(intensionalUrl)).andExpect(status().isOk()).andReturn();
         final String intensionalContent = intensionalResult.getResponse().getContentAsString();
-        logger.info(" intensionalContent = " + intensionalContent);
+        LOG.info(" intensionalContent = " + intensionalContent);
     }
 
 }

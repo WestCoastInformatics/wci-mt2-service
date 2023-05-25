@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.util;
 
@@ -13,92 +22,197 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_EMPTY)
 public class ConceptLookupParameters {
 
-	private boolean singleConceptRequest = false;
+    /** The single concept request. */
+    private boolean singleConceptRequest = false;
 
-	private boolean getDescriptions = false;
+    /** The get descriptions. */
+    private boolean getDescriptions = false;
 
+    /** The get parents. */
     private boolean getParents = false;
-    
+
+    /** The get children. */
     private boolean getChildren = false;
 
+    /** The get role groups. */
     private boolean getRoleGroups = false;
 
+    /** The get membership information. */
     private boolean getMembershipInformation = false;
-    
+
+    /** The get fsn. */
     private boolean getFsn = false;
 
+    /** The non default preferred terms. */
     private List<String> nonDefaultPreferredTerms = new ArrayList<>();
 
     /**
      * Instantiates an empty {@link ConceptLookupParameters}.
      */
     public ConceptLookupParameters() {
+
         // n/a
     }
 
+    /**
+     * Indicates whether or not single concept request is the case.
+     *
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
     public boolean isSingleConceptRequest() {
-		return singleConceptRequest;
-	}
 
-	public void setSingleConceptRequest(boolean singleConceptRequest) {
-		this.singleConceptRequest = singleConceptRequest;
-	}
+        return singleConceptRequest;
+    }
 
+    /**
+     * Sets the single concept request.
+     *
+     * @param singleConceptRequest the single concept request
+     */
+    public void setSingleConceptRequest(final boolean singleConceptRequest) {
+
+        this.singleConceptRequest = singleConceptRequest;
+    }
+
+    /**
+     * Indicates whether or not returns the descriptions is the case.
+     *
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
     public boolean isGetDescriptions() {
-		return getDescriptions;
-	}
 
-	public void setGetDescriptions(boolean getDescriptions) {
-		this.getDescriptions = getDescriptions;
-	}
+        return getDescriptions;
+    }
 
-	public boolean isGetParents() {
-		return getParents;
-	}
+    /**
+     * Sets the returns the descriptions.
+     *
+     * @param getDescriptions the returns the descriptions
+     */
+    public void setGetDescriptions(final boolean getDescriptions) {
 
-	public void setGetParents(boolean getParents) {
-		this.getParents = getParents;
-	}
-	
-	public boolean isGetChildren() {
-	    return getChildren;
-	}
-	
-	public void setGetChildren(boolean getChildren) {
-	    this.getChildren = getChildren;
-	}
-	
-	public boolean isGetFsn() {
-	    return getFsn;
-	}
-	
-	public void setGetFsn(boolean getFsn) {
-	    this.getFsn = getFsn;
-	}
+        this.getDescriptions = getDescriptions;
+    }
 
-	public boolean isGetRoleGroups() {
-		return getRoleGroups;
-	}
+    /**
+     * Indicates whether or not returns the parents is the case.
+     *
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
+    public boolean isGetParents() {
 
-	public void setGetRoleGroups(boolean getRoleGroups) {
-		this.getRoleGroups = getRoleGroups;
-	}
+        return getParents;
+    }
 
-	public boolean isGetMembershipInformation() {
-		return getMembershipInformation;
-	}
+    /**
+     * Sets the returns the parents.
+     *
+     * @param getParents the returns the parents
+     */
+    public void setGetParents(final boolean getParents) {
 
-	public void setGetMembershipInformation(boolean getMembershipInformation) {
-		this.getMembershipInformation = getMembershipInformation;
-	}
+        this.getParents = getParents;
+    }
 
-	public List<String> getNonDefaultPreferredTerms() {
-		return nonDefaultPreferredTerms;
-	}
+    /**
+     * Indicates whether or not returns the children is the case.
+     *
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
+    public boolean isGetChildren() {
 
-	public void setNonDefaultPreferredTerms(List<String> nonDefaultPreferredTerms) {
-		this.nonDefaultPreferredTerms = nonDefaultPreferredTerms;
-	}
+        return getChildren;
+    }
+
+    /**
+     * Sets the returns the children.
+     *
+     * @param getChildren the returns the children
+     */
+    public void setGetChildren(final boolean getChildren) {
+
+        this.getChildren = getChildren;
+    }
+
+    /**
+     * Indicates whether or not returns the fsn is the case.
+     *
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
+    public boolean isGetFsn() {
+
+        return getFsn;
+    }
+
+    /**
+     * Sets the returns the fsn.
+     *
+     * @param getFsn the returns the fsn
+     */
+    public void setGetFsn(final boolean getFsn) {
+
+        this.getFsn = getFsn;
+    }
+
+    /**
+     * Indicates whether or not returns the role groups is the case.
+     *
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
+    public boolean isGetRoleGroups() {
+
+        return getRoleGroups;
+    }
+
+    /**
+     * Sets the returns the role groups.
+     *
+     * @param getRoleGroups the returns the role groups
+     */
+    public void setGetRoleGroups(final boolean getRoleGroups) {
+
+        this.getRoleGroups = getRoleGroups;
+    }
+
+    /**
+     * Indicates whether or not returns the membership information is the case.
+     *
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
+    public boolean isGetMembershipInformation() {
+
+        return getMembershipInformation;
+    }
+
+    /**
+     * Sets the returns the membership information.
+     *
+     * @param getMembershipInformation the returns the membership information
+     */
+    public void setGetMembershipInformation(final boolean getMembershipInformation) {
+
+        this.getMembershipInformation = getMembershipInformation;
+    }
+
+    /**
+     * Returns the non default preferred terms.
+     *
+     * @return the non default preferred terms
+     */
+    public List<String> getNonDefaultPreferredTerms() {
+
+        return nonDefaultPreferredTerms;
+    }
+
+    /**
+     * Sets the non default preferred terms.
+     *
+     * @param nonDefaultPreferredTerms the non default preferred terms
+     */
+    public void setNonDefaultPreferredTerms(final List<String> nonDefaultPreferredTerms) {
+
+        this.nonDefaultPreferredTerms = nonDefaultPreferredTerms;
+    }
 
     /**
      * Instantiates a {@link ConceptLookupParameters} from the specified parameters.
@@ -106,6 +220,7 @@ public class ConceptLookupParameters {
      * @param other the other
      */
     public ConceptLookupParameters(final ConceptLookupParameters other) {
+
         populateFrom(other);
     }
 
@@ -115,18 +230,17 @@ public class ConceptLookupParameters {
      * @param other the other
      */
     public void populateFrom(final ConceptLookupParameters other) {
-        
-    	singleConceptRequest = other.isSingleConceptRequest();
-    	getDescriptions = other.isGetDescriptions();
-    	getParents = other.isGetParents();
-    	getChildren = other.isGetChildren();
-    	getFsn = other.isGetFsn();
+
+        singleConceptRequest = other.isSingleConceptRequest();
+        getDescriptions = other.isGetDescriptions();
+        getParents = other.isGetParents();
+        getChildren = other.isGetChildren();
+        getFsn = other.isGetFsn();
         getRoleGroups = other.isGetRoleGroups();
         getMembershipInformation = other.isGetMembershipInformation();
         nonDefaultPreferredTerms = other.getNonDefaultPreferredTerms();
     }
 
-    
     /**
      * Sets the sort ascending.
      *
@@ -135,62 +249,62 @@ public class ConceptLookupParameters {
      */
     @Override
     public boolean equals(final Object obj) {
-        
+
         if (this == obj) {
             return true;
         }
-        
+
         if (obj == null) {
             return false;
         }
-        
+
         if (getClass() != obj.getClass()) {
             return false;
         }
-        
+
         final ConceptLookupParameters other = (ConceptLookupParameters) obj;
-        
+
         if (nonDefaultPreferredTerms == null) {
-            
+
             if (other.nonDefaultPreferredTerms != null) {
                 return false;
             }
-            
+
         } else if (!nonDefaultPreferredTerms.equals(other.nonDefaultPreferredTerms)) {
             return false;
         }
-        
+
         if (singleConceptRequest != other.singleConceptRequest) {
-        	return false;
+            return false;
         }
-        
+
         if (getDescriptions != other.getDescriptions) {
             return false;
         }
-        
+
         if (getParents != other.getParents) {
             return false;
         }
-        
+
         if (getChildren != other.getChildren) {
             return false;
         }
-        
+
         if (getFsn != other.getFsn) {
             return false;
         }
-        
+
         if (getRoleGroups != other.getRoleGroups) {
             return false;
         }
-        
+
         if (getMembershipInformation != other.getMembershipInformation) {
             return false;
         }
-        
+
         return true;
     }
-    
+
     /**
      * Hash code.
      *
@@ -198,7 +312,7 @@ public class ConceptLookupParameters {
      */
     @Override
     public int hashCode() {
-        
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((nonDefaultPreferredTerms == null) ? 0 : nonDefaultPreferredTerms.hashCode());
@@ -220,7 +334,7 @@ public class ConceptLookupParameters {
     /* see superclass */
     @Override
     public String toString() {
-        
+
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {

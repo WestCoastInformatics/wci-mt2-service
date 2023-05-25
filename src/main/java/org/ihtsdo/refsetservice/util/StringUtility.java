@@ -21,9 +21,9 @@ import com.google.common.base.CaseFormat;
  */
 public final class StringUtility {
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(StringUtility.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StringUtility.class);
 
     /** The Constant PUNCTUATION. */
     public static final String PUNCTUATION = " \t-({[)}]_!@#%&*\\:;\"',.?/~+=|<>$`^";
@@ -32,8 +32,7 @@ public final class StringUtility {
     public static final String NORM_PUNCTUATION = " \t-{}_!@#%&*\\:;,?/~+=|<>$`^";
 
     /** The Constant PUNCTUATION_REGEX. */
-    public static final String PUNCTUATION_REGEX =
-            "[ \\t\\-\\(\\{\\[\\)\\}\\]_!@#%&\\*\\\\:;\\\"',\\.\\?\\/~\\+=\\|<>$`^]";
+    public static final String PUNCTUATION_REGEX = "[ \\t\\-\\(\\{\\[\\)\\}\\]_!@#%&\\*\\\\:;\\\"',\\.\\?\\/~\\+=\\|<>$`^]";
 
     /** The Constant NORM_PUNCTUATION_REGEX. */
     public static final String NORM_PUNCTUATION_REGEX = "[ \\t\\-{}_!@#%&\\*\\\\:;,?/~+=|<>$`^]";
@@ -42,6 +41,7 @@ public final class StringUtility {
      * Instantiates an empty {@link StringUtility}.
      */
     private StringUtility() {
+
         // n/a
     }
 
@@ -53,6 +53,7 @@ public final class StringUtility {
      * @throws Exception the exception
      */
     public static int toArabic(final String number) throws Exception {
+
         if (number.isEmpty()) {
             return 0;
         }
@@ -105,20 +106,20 @@ public final class StringUtility {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public static boolean isRomanNumeral(final String number) {
+
         return number.matches("^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$");
     }
 
     /**
-     * Converts string field to case-insensitive string of tokens with
-     * punctuation removed For example, "HIV Infection" becomes "hiv infection",
-     * while "1,2-hydroxy" becomes "1 2 hydroxy".
+     * Converts string field to case-insensitive string of tokens with punctuation removed For example, "HIV Infection" becomes "hiv infection", while
+     * "1,2-hydroxy" becomes "1 2 hydroxy".
      *
      * @param value the value
      * @return the string
      */
     public static String normalize(final String value) {
-        return ltrimNonAlpaNumeric(value).toLowerCase().replaceAll(PUNCTUATION_REGEX, " ")
-                .replaceAll("\\s+", " ").trim();
+
+        return ltrimNonAlpaNumeric(value).toLowerCase().replaceAll(PUNCTUATION_REGEX, " ").replaceAll("\\s+", " ").trim();
     }
 
     /**
@@ -128,8 +129,8 @@ public final class StringUtility {
      * @return the string
      */
     public static String trimNonAlpaNumeric(final String value) {
-        return value.replaceFirst("^[^\\p{IsAlphabetic}\\p{IsDigit}]*", "")
-                .replaceFirst("[^\\p{IsAlphabetic}\\p{IsDigit}]*$", "");
+
+        return value.replaceFirst("^[^\\p{IsAlphabetic}\\p{IsDigit}]*", "").replaceFirst("[^\\p{IsAlphabetic}\\p{IsDigit}]*$", "");
     }
 
     /**
@@ -139,6 +140,7 @@ public final class StringUtility {
      * @return the string
      */
     public static String ltrimNonAlpaNumeric(final String value) {
+
         return value.replaceFirst("^[^\\p{IsAlphabetic}\\p{IsDigit}]*", "").trim();
     }
 
@@ -149,6 +151,7 @@ public final class StringUtility {
      * @return the string
      */
     public static String reverse(final String string) {
+
         final List<String> list = Arrays.asList(string.split(" "));
         Collections.reverse(list);
         return FieldedStringTokenizer.join(list, " ").trim();
@@ -161,9 +164,9 @@ public final class StringUtility {
      * @return the list
      */
     public static List<String> wordind(final String name) {
+
         final String[] tokens = FieldedStringTokenizer.split(name, PUNCTUATION);
-        return Arrays.asList(tokens).stream().filter(s -> s.length() > 0)
-                .collect(Collectors.toList());
+        return Arrays.asList(tokens).stream().filter(s -> s.length() > 0).collect(Collectors.toList());
     }
 
     /**
@@ -173,6 +176,7 @@ public final class StringUtility {
      * @return the string
      */
     public static String capitalize(final String value) {
+
         if (StringUtility.isEmpty(value)) {
             return value;
         }
@@ -186,6 +190,7 @@ public final class StringUtility {
      * @return the string
      */
     public static String capitalizeEachWord(final String value) {
+
         if (StringUtility.isEmpty(value)) {
             return value;
         }
@@ -207,10 +212,11 @@ public final class StringUtility {
      * @return the string
      */
     public static String unCamelCase(final String str) {
+
         // insert a space between lower & upper
         return capitalize(str.replaceAll("([a-z])([A-Z])", "$1 $2")
-                // space before last upper in a sequence followed by lower
-                .replaceAll("\\b([A-Z]+)([A-Z])([a-z])", "$1 $2$3"));
+            // space before last upper in a sequence followed by lower
+            .replaceAll("\\b([A-Z]+)([A-Z])([a-z])", "$1 $2$3"));
     }
 
     /**
@@ -220,6 +226,7 @@ public final class StringUtility {
      * @return the string
      */
     public static String camelCase(final String str) {
+
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, str.replaceAll(" ", "_"));
     }
 
@@ -231,8 +238,8 @@ public final class StringUtility {
      * @return the string
      */
     public static String substr(final String string, final int len) {
-        return string.substring(0, Math.min(len, string.length()))
-                + (string.length() > len ? "..." : "");
+
+        return string.substring(0, Math.min(len, string.length())) + (string.length() > len ? "..." : "");
     }
 
     /**
@@ -244,8 +251,8 @@ public final class StringUtility {
      * @return the string
      */
     public static String mask(final String string, final int start, final int end) {
-        return string.substring(0, start) + StringUtils.repeat("X", end - start)
-                + string.substring(end);
+
+        return string.substring(0, start) + StringUtils.repeat("X", end - start) + string.substring(end);
     }
 
     /**
@@ -255,8 +262,8 @@ public final class StringUtility {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public static boolean isUuid(final String uuid) {
-        return uuid != null && uuid.matches(
-                "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$");
+
+        return uuid != null && uuid.matches("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$");
     }
 
     /**
@@ -266,6 +273,7 @@ public final class StringUtility {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public static boolean isEmail(final String email) {
+
         return email != null && email.matches("^[A-Za-z0-9\\.+]+@[A-Za-z0-9.-]+\\.[A-Za-z0-9.-]+$");
     }
 
@@ -277,6 +285,7 @@ public final class StringUtility {
      * @throws Exception the exception
      */
     public static String composeQueryString(final Map<String, String> clauses) throws Exception {
+
         final StringBuilder sb = new StringBuilder();
         for (final String key : clauses.keySet()) {
             // Skip empty key or value
@@ -301,14 +310,14 @@ public final class StringUtility {
     }
 
     /**
-     * Compose query from a list of possibly empty/null clauses and an operator
-     * (typically OR or AND).
+     * Compose query from a list of possibly empty/null clauses and an operator (typically OR or AND).
      *
      * @param operator the operator
      * @param clauses the clauses
      * @return the string
      */
     public static String composeQuery(final String operator, final List<String> clauses) {
+
         final StringBuilder sb = new StringBuilder();
         if (operator.equals("OR")) {
             sb.append("(");
@@ -343,6 +352,7 @@ public final class StringUtility {
      * @return the string
      */
     public static String composeQuery(final String operator, final String... clauses) {
+
         final StringBuilder sb = new StringBuilder();
         if (operator.equals("OR")) {
             sb.append("(");
@@ -373,13 +383,11 @@ public final class StringUtility {
      *
      * @param fieldName the field name
      * @param fieldValue the field value
-     * @param escapeValue - whether the value can have characters that need to
-     *            be escaped
+     * @param escapeValue - whether the value can have characters that need to be escaped
      * @return the string
      * @throws Exception the exception
      */
-    public static String composeClause(final String fieldName, final String fieldValue,
-        final boolean escapeValue) throws Exception {
+    public static String composeClause(final String fieldName, final String fieldValue, final boolean escapeValue) throws Exception {
 
         if (!StringUtility.isEmpty(fieldValue)) {
             if (escapeValue) {
@@ -391,7 +399,7 @@ public final class StringUtility {
             return "NOT " + fieldName + ":[* TO *]";
         }
     }
-    
+
     /**
      * Encode a value.
      *
@@ -399,7 +407,8 @@ public final class StringUtility {
      * @return the encoded value
      * @throws Exception the exception
      */
-    public static String encodeValue(String value) throws Exception{
+    public static String encodeValue(final String value) throws Exception {
+
         return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
     }
 
@@ -410,6 +419,7 @@ public final class StringUtility {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public static boolean isEmpty(final String str) {
+
         return str == null || str.isEmpty();
     }
 }

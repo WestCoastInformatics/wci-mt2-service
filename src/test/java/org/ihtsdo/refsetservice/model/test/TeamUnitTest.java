@@ -18,9 +18,9 @@ import org.slf4j.LoggerFactory;
  */
 public class TeamUnitTest extends BaseTest {
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(TeamUnitTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TeamUnitTest.class);
 
     /** The model object to test. */
     private Team object;

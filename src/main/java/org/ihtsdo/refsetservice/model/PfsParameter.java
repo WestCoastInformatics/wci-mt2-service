@@ -28,6 +28,7 @@ public class PfsParameter {
      * The default constructor.
      */
     public PfsParameter() {
+
         // do nothing
     }
 
@@ -37,6 +38,7 @@ public class PfsParameter {
      * @param pfs the pfs
      */
     public PfsParameter(final PfsParameter pfs) {
+
         limit = pfs.getLimit();
         offset = pfs.getOffset();
         sort = pfs.getSort();
@@ -52,8 +54,8 @@ public class PfsParameter {
      * @param ascending the ascending
      * @param sort the sort
      */
-    public PfsParameter(final Integer offset, final Integer limit, final Boolean ascending,
-            final String sort) {
+    public PfsParameter(final Integer offset, final Integer limit, final Boolean ascending, final String sort) {
+
         if (offset != null) {
             setOffset(offset);
         }
@@ -79,6 +81,7 @@ public class PfsParameter {
      * @param limit the limit
      */
     public PfsParameter(final int offset, final int limit) {
+
         this.limit = limit;
         this.offset = offset;
     }
@@ -89,6 +92,7 @@ public class PfsParameter {
      * @return the pfs parameter
      */
     public static PfsParameter defaultInstance() {
+
         final PfsParameter pfs = new PfsParameter();
         pfs.setLimit(1000);
         pfs.setOffset(0);
@@ -101,6 +105,7 @@ public class PfsParameter {
      * @return the max results
      */
     public int getLimit() {
+
         return limit;
     }
 
@@ -111,6 +116,7 @@ public class PfsParameter {
      */
 
     public void setLimit(final int limit) {
+
         this.limit = limit;
     }
 
@@ -121,6 +127,7 @@ public class PfsParameter {
      */
 
     public int getOffset() {
+
         return offset;
     }
 
@@ -130,6 +137,7 @@ public class PfsParameter {
      * @param offset the offset
      */
     public void setOffset(final int offset) {
+
         this.offset = offset;
     }
 
@@ -140,6 +148,7 @@ public class PfsParameter {
      */
 
     public boolean isAscending() {
+
         return ascending;
     }
 
@@ -150,6 +159,7 @@ public class PfsParameter {
      */
 
     public void setAscending(final boolean ascending) {
+
         this.ascending = ascending;
     }
 
@@ -160,6 +170,7 @@ public class PfsParameter {
      */
 
     public String getSort() {
+
         return sort;
     }
 
@@ -170,6 +181,7 @@ public class PfsParameter {
      */
 
     public void setSort(final String sort) {
+
         this.sort = sort;
     }
 
@@ -179,6 +191,7 @@ public class PfsParameter {
      * @param sortFields the sort fields
      */
     public void setSortFields(final List<String> sortFields) {
+
         this.sortFields = sortFields;
     }
 
@@ -189,6 +202,7 @@ public class PfsParameter {
      */
 
     public List<String> getSortFields() {
+
         return this.sortFields;
     }
 
@@ -196,6 +210,7 @@ public class PfsParameter {
 
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + (ascending ? 1231 : 1237);
@@ -209,6 +224,7 @@ public class PfsParameter {
     /* see superclass */
     @Override
     public boolean equals(final Object obj) {
+
         if (this == obj) {
             return true;
         }
@@ -252,15 +268,16 @@ public class PfsParameter {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public boolean isIndexInRange(final int i) {
-        return getOffset() != -1 && getLimit() != -1 && i >= getOffset()
-                && i < (getOffset() + getLimit());
+
+        return getOffset() != -1 && getLimit() != -1 && i >= getOffset() && i < (getOffset() + getLimit());
     }
 
     /* see superclass */
     @Override
     public String toString() {
-        return "PfsParameterJpa [limit=" + limit + ", startIndex=" + offset + ", sort=" + sort
-                + ", sortFields=" + sortFields + ", ascending=" + ascending + "]";
+
+        return "PfsParameterJpa [limit=" + limit + ", startIndex=" + offset + ", sort=" + sort + ", sortFields=" + sortFields + ", ascending=" + ascending
+            + "]";
     }
 
 }

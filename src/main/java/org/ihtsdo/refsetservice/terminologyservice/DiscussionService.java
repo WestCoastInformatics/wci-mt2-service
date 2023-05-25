@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -36,10 +36,18 @@ import com.fasterxml.jackson.core.type.TypeReference;
 /**
  * Service class to handle getting and modifying discussion information.
  */
-public class DiscussionService {
+public final class DiscussionService {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(DiscussionService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(DiscussionService.class);
+
+    /**
+     * Instantiates an empty {@link DiscussionService}.
+     */
+    private DiscussionService() {
+
+        // n/a
+    }
 
     /**
      * Returns a list of discussion threads based on the refset and possibly member ID.
@@ -52,8 +60,8 @@ public class DiscussionService {
      * @return a list of matching discussion threads
      * @throws Exception the exception
      */
-    public static ResultList<DiscussionThread> getDiscussions(final TerminologyService service, final User user, final DiscussionType type, final Refset refset, final String conceptId)
-        throws Exception {
+    public static ResultList<DiscussionThread> getDiscussions(final TerminologyService service, final User user, final DiscussionType type, final Refset refset,
+        final String conceptId) throws Exception {
 
         if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
             return new ResultList<DiscussionThread>();
@@ -120,15 +128,15 @@ public class DiscussionService {
     public static DiscussionThread getDiscussion(final TerminologyService service, final User user, final String id) throws Exception {
 
         final DiscussionThread discussionThread = service.get(id, DiscussionThread.class);
-        
+
         // make sure the user can access this thread
-        final Refset refset = RefsetService.getRefset(service, user, discussionThread.getRefsetInternalId());
+        RefsetService.getRefset(service, user, discussionThread.getRefsetInternalId());
 
         return discussionThread;
     }
 
     /**
-     * Returns a single discussion post
+     * Returns a single discussion post.
      *
      * @param service the Terminology Service
      * @param user the user
@@ -144,7 +152,7 @@ public class DiscussionService {
     }
 
     /**
-     * Adds discussion count to a refset
+     * Adds discussion count to a refset.
      *
      * @param service the Terminology Service
      * @param user the user
@@ -221,13 +229,14 @@ public class DiscussionService {
      * @return the list concepts with discussion counts included
      * @throws Exception the exception
      */
-    public static List<Concept> attachMemberDiscussionCounts(final TerminologyService service, final User user, final Refset refset, final List<Concept> concepts) throws Exception {
+    public static List<Concept> attachMemberDiscussionCounts(final TerminologyService service, final User user, final Refset refset,
+        final List<Concept> concepts) throws Exception {
 
         if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
             return concepts;
         }
 
-        String query = "type:" + DiscussionType.REFSET_MEMBER + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
+        final String query = "type:" + DiscussionType.REFSET_MEMBER + " AND refsetInternalId:" + QueryParserBase.escape(refset.getId());
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("conceptId");
 
@@ -241,7 +250,8 @@ public class DiscussionService {
                 int resolvedDiscussionCount = 0;
                 boolean userIsThreadMember = false;
 
-                for (final DiscussionThread thread : results.getItems().stream().filter(c -> c.getConceptId().contentEquals(concept.getCode())).collect(Collectors.toList())) {
+                for (final DiscussionThread thread : results.getItems().stream().filter(c -> c.getConceptId().contentEquals(concept.getCode()))
+                    .collect(Collectors.toList())) {
                     userIsThreadMember = thread.getPosts().stream().anyMatch(post -> post.getUser().getId().equals(user.getId()));
 
                     if (!thread.isPrivateThread() || (userIsThreadMember && thread.isPrivateThread())) {
@@ -276,11 +286,7 @@ public class DiscussionService {
         final String threadUserName = thread.getPosts().get(0).getUser().getUserName();
 
         // if the user does not have the correct roles on the refset or they did not create the thread then they can't edit it
-        if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !threadUserName.equals(user.getUserName())) {
-            return false;
-        } else {
-            return true;
-        }
+        return (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !threadUserName.equals(user.getUserName()));
     }
 
     /**
@@ -294,11 +300,7 @@ public class DiscussionService {
     public static boolean canUserViewPrivateThread(final User user, final Refset refset) throws Exception {
 
         // if the user does not have the correct roles on the refset or they did not create the thread then they can't edit it
-        if (refset.getRoles().contains(User.ROLE_VIEWER) || refset.getRoles().contains(User.ROLE_ADMIN)) {
-            return true;
-        } else {
-            return false;
-        }
+        return (refset.getRoles().contains(User.ROLE_VIEWER) || refset.getRoles().contains(User.ROLE_ADMIN));
     }
 
     /**
@@ -315,15 +317,11 @@ public class DiscussionService {
         final String postUserName = post.getUser().getUserName();
 
         // if the user does not have the correct roles on the refset or they did not create the post then they can't edit it
-        if (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !postUserName.equals(user.getUserName())) {
-            return false;
-        } else {
-            return true;
-        }
+        return (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !postUserName.equals(user.getUserName()));
     }
 
     /**
-     * Delete a discussion post by ID
+     * Delete a discussion post by ID.
      *
      * @param service the Terminology Service
      * @param user the user
@@ -337,7 +335,7 @@ public class DiscussionService {
 
         if (thread == null) {
 
-            logger.error("deletePost: Unable to retrieve discussion thread id: {}.", threadId);
+            LOG.error("deletePost: Unable to retrieve discussion thread id: {}.", threadId);
             throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
         }
 
@@ -346,14 +344,14 @@ public class DiscussionService {
 
         if (post == null) {
 
-            logger.error("deletePost: Unable to retrieve discussion post id: {}.", postId);
+            LOG.error("deletePost: Unable to retrieve discussion post id: {}.", postId);
             throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion post for " + postId + ".");
         }
 
         if (!DiscussionService.canUserEditPost(user, refset, post)) {
 
-            logger.error("deletePost: User does not have permissions to perform this action: {}.", user.getUserName());
-            throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to delete this discussion post.");
+            LOG.error("deletePost: User does not have permissions to perform this action: {}.", user.getUserName());
+            throw new RestException(false, HttpStatus.UNAUTHORIZED, "Unauthorized", "User does not have permissions to delete this discussion post.");
         }
 
         service.setTransactionPerOperation(false);
@@ -380,7 +378,7 @@ public class DiscussionService {
     }
 
     /**
-     * Delete a discussion thread by ID
+     * Delete a discussion thread by ID.
      *
      * @param service the Terminology Service
      * @param user the user
@@ -393,7 +391,7 @@ public class DiscussionService {
 
         if (thread == null) {
 
-            logger.error("deleteThread: Unable to retrieve discussion thread id: {}.", threadId);
+            LOG.error("deleteThread: Unable to retrieve discussion thread id: {}.", threadId);
             throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", "Unable to find discussion thread for " + threadId + ".");
         }
 
@@ -401,8 +399,8 @@ public class DiscussionService {
 
         if (!DiscussionService.canUserEditThread(user, refset, thread)) {
 
-            logger.error("deleteThread: User does not have permissions to perform this action: {}.", user.getUserName());
-            throw new RestException(false, HttpStatus.FORBIDDEN, "Forbidden", "User does not have permissions to delete this discussion thread.");
+            LOG.error("deleteThread: User does not have permissions to perform this action: {}.", user.getUserName());
+            throw new RestException(false, HttpStatus.UNAUTHORIZED, "Unauthorized", "User does not have permissions to delete this discussion thread.");
         }
 
         service.setTransactionPerOperation(false);

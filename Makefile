@@ -26,12 +26,23 @@ clean:
 build:
 	./gradlew clean build buildDeb -x test -x spotbugsMain -x spotbugsTest -x checkstyleTest -x checkstyleMain
 
+# Build the library and check style
+checkstyle:
+	./gradlew clean build buildDeb -x test -x spotbugsMain -x spotbugsTest
+
+# Build the library and check for bugs
+spotbugs:
+	./gradlew clean build buildDeb -x test -x checkstyleTest -x checkstyleMain
+	
 test:
 	./gradlew test
 
 install:
 	./gradlew clean build install -x test -x spotbugsMain -x spotbugsTest
 
-# Publish artifacts to nexus (requires a local .gradle/gradle.properties propery configured)
+# Publish artifacts to nexus (requires a local .gradle/gradle.properties properly configured)
 release:
 	./gradlew clean uploadArchives
+	
+version:
+	@echo $(APP_VERSION)

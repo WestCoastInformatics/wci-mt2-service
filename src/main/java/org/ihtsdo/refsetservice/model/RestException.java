@@ -1,10 +1,18 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.model;
 
 import org.springframework.http.HttpStatus;
 
 /**
- * Wrapper REST exception so we can properly format all exception responses to
- * REST calls.
+ * Wrapper REST exception so we can properly format all exception responses to REST calls.
  */
 public class RestException extends RuntimeException {
 
@@ -15,6 +23,7 @@ public class RestException extends RuntimeException {
      * Instantiates an empty {@link RestException}.
      */
     public RestException() {
+
         // n/a
     }
 
@@ -26,11 +35,11 @@ public class RestException extends RuntimeException {
      * @param error the error
      * @param message the message
      */
-    public RestException(final boolean local, final int status, final String error,
-            final String message) {
+    public RestException(final boolean local, final int status, final String error, final String message) {
+
         this.error = new Error(local, status, error, message);
     }
-    
+
     /**
      * Instantiates a {@link RestException} from the specified parameters.
      *
@@ -39,9 +48,9 @@ public class RestException extends RuntimeException {
      * @param error the error
      * @param message the message
      */
-    public RestException(final boolean local, final HttpStatus httpStatus, final String error,
-            final String message) {
-        this.error = new Error(local, httpStatus.ordinal(), error, message);
+    public RestException(final boolean local, final HttpStatus httpStatus, final String error, final String message) {
+
+        this.error = new Error(local, httpStatus.value(), error, message);
     }
 
     /**
@@ -50,6 +59,7 @@ public class RestException extends RuntimeException {
      * @param error the error
      */
     public RestException(final Error error) {
+
         this.error = error;
     }
 
@@ -59,6 +69,7 @@ public class RestException extends RuntimeException {
      * @return the error
      */
     public Error getError() {
+
         return error;
     }
 
@@ -68,12 +79,14 @@ public class RestException extends RuntimeException {
      * @param error the error
      */
     public void setError(final Error error) {
+
         this.error = error;
     }
 
     /* see superclass */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((error == null) ? 0 : error.hashCode());
@@ -83,6 +96,7 @@ public class RestException extends RuntimeException {
     /* see superclass */
     @Override
     public boolean equals(final Object obj) {
+
         if (this == obj) {
             return true;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -12,7 +12,6 @@ package org.ihtsdo.refsetservice;
 import javax.persistence.PersistenceException;
 
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -35,8 +34,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAsync
 public class Application extends SpringBootServletInitializer {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(Application.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
     /**
      * Configure.
@@ -48,7 +47,7 @@ public class Application extends SpringBootServletInitializer {
     protected SpringApplicationBuilder configure(final SpringApplicationBuilder application) {
 
         // TODO: I don't think this ever gets called..
-        logger.debug("************ Configure method called");
+        LOG.debug("************ Configure method called");
         return application.sources(Application.class);
     }
 
@@ -58,7 +57,6 @@ public class Application extends SpringBootServletInitializer {
      * @param args the command line arguments
      * @throws Exception the exception
      */
-    @SuppressWarnings("resource")
     public static void main(final String[] args) throws Exception {
 
         try {
@@ -73,27 +71,30 @@ public class Application extends SpringBootServletInitializer {
 
             }
 
-        } catch (PersistenceException e) {
+        } catch (final PersistenceException e) {
 
-            logger.error("Elasticsearch error", e);
+            LOG.error("Elasticsearch error", e);
             System.exit(1);
         }
 
-        logger.debug("REFSET SERVICE MAIN APPLICATION START");
+        LOG.debug("REFSET SERVICE MAIN APPLICATION START");
 
-        init();
+        // Removed. Method did nothing but log. RefsetMemberService.cacheAllMemberAncestors() was commented out.
+        // init();
     }
 
-    /**
-     * Initialize the application once it is started.
-     */
-    private static void init() throws Exception {
-
-        // don't run this method during tests
-        if (!PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
-            // RefsetMemberService.cacheAllMemberAncestors();
-        } else {
-            logger.debug("Not caching all members during tests.");
-        }
-    }
+    // /**
+    // * Initialize the application once it is started.
+    // *
+    // * @throws Exception the exception
+    // */
+    // private static void init() throws Exception {
+    //
+    // // don't run this method during tests
+    // if (!PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
+    // // RefsetMemberService.cacheAllMemberAncestors();
+    // } else {
+    // LOG.debug("Not caching all members during tests.");
+    // }
+    // }
 }

@@ -12,7 +12,6 @@ package org.ihtsdo.refsetservice.rest;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.Properties;
 
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.QueryParam;
@@ -33,7 +32,6 @@ import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -44,7 +42,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -73,17 +70,14 @@ import io.swagger.annotations.ApiResponses;
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class OrganizationController extends BaseController {
 
-    /** Logger. */
-    private static Logger logger = LoggerFactory.getLogger(OrganizationController.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(OrganizationController.class);
 
     /** Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /** The local icon file directory. */
     private static final String ICON_URL_PREFIX = "user/icon/";
-
-    /** The config properties. */
-    private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
     /**
      * Return the organization.
@@ -96,18 +90,21 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get organization. This call requires authentication with the correct role.", response = Organization.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization identifier, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "includeMembers", value = "Include organization's members (users)", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
+        @ApiImplicitParam(name = "includeMembers", value = "Include organization's members (users)", required = false, dataTypeClass = Boolean.class,
+            paramType = "query", defaultValue = "false")
     })
     @RecordMetric
     @RequestMapping(value = "/organization/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<Organization> getOrganization(@PathVariable(value = "id") final String id, @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
+    public ResponseEntity<Organization> getOrganization(@PathVariable(value = "id") final String id,
+        @QueryParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
-        logger.info("Get organization {}", id);
+        LOG.info("Get organization {}", id);
         final User authUser = authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -133,16 +130,17 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Find organizations. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
     })
-	// @ModelAttribute API params documented in SearchParameter
+    // @ModelAttribute API params documented in SearchParameter
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/organization/search", produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<ResultList<Organization>> getOrganizations(@QueryParam(value = "includeMembers") final boolean includeMembers,
         @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
-        logger.info("Search organizations: {}", ModelUtility.toJson(searchParameters));
+        LOG.info("Search organizations: {}", ModelUtility.toJson(searchParameters));
         final User authUser = authorizeUser();
 
         // Check to make sure parameters were properly bound to variables.
@@ -155,7 +153,7 @@ public class OrganizationController extends BaseController {
 
         } catch (final Exception e) {
 
-            logger.error("Error searching organizations.  Search criteria: {} ", searchParameters.toString());
+            LOG.error("Error searching organizations.  Search criteria: {} ", searchParameters.toString());
             return handleException(e);
         }
     }
@@ -170,9 +168,9 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("rawtypes")
     @ApiOperation(value = "Add organization. This call requires authentication with the correct role.", response = Organization.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "Organization successfully created"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 201, message = "Organization successfully created"), @ApiResponse(code = 400, message = "Bad Request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Resource not found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "organization", value = "Organization object", required = true, dataTypeClass = Organization.class, paramType = "body")
@@ -181,7 +179,7 @@ public class OrganizationController extends BaseController {
     @PostMapping(value = "/organization", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity addOrganization(@RequestBody final Organization organization) throws Exception {
 
-        logger.info("Add organization: {}", organization);
+        LOG.info("Add organization: {}", organization);
         final User authUser = authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -219,9 +217,9 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("rawtypes")
     @ApiOperation(value = "Update organization. This call requires authentication with the correct role.", response = Organization.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Organization successfully updated"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 200, message = "Organization successfully updated"), @ApiResponse(code = 400, message = "Bad Request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
@@ -231,13 +229,13 @@ public class OrganizationController extends BaseController {
     @PutMapping(value = "/organization/{id}", consumes = MediaType.APPLICATION_JSON)
     public ResponseEntity updateOrganization(@PathVariable(value = "id") final String id, @RequestBody final Organization organization) throws Exception {
 
-        logger.info("Update organization: {}", organization);
+        LOG.info("Update organization: {}", organization);
         final User authUser = authorizeUser();
 
         if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
 
             final String errorMessage = "Organization is null or organization id does not match id in URL.";
-            logger.error(errorMessage);
+            LOG.error(errorMessage);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
         }
 
@@ -245,7 +243,7 @@ public class OrganizationController extends BaseController {
             organization.validateUpdate(null);
         } catch (final Exception e) {
 
-            logger.error("Bad request for organization update.", e);
+            LOG.error("Bad request for organization update.", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
 
@@ -258,7 +256,7 @@ public class OrganizationController extends BaseController {
 
         } catch (final Exception e) {
 
-            logger.error("Error updating organization. Organization: {}", organization);
+            LOG.error("Error updating organization. Organization: {}", organization);
             return handleException(e);
         }
     }
@@ -273,8 +271,9 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("rawtypes")
     @ApiOperation(value = "Inactivate organization. This call requires authentication with the correct role.", response = Void.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Successfully inactivated organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 202, message = "Successfully inactivated organization"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
@@ -283,7 +282,7 @@ public class OrganizationController extends BaseController {
     @DeleteMapping(value = "/organization/{id}")
     public ResponseEntity deleteOrganization(@PathVariable("id") final String id) throws Exception {
 
-        logger.info("Inactivate organization: {}", id);
+        LOG.info("Inactivate organization: {}", id);
         final User authUser = authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -314,13 +313,15 @@ public class OrganizationController extends BaseController {
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "includeTeams", value = "Include organization user's teams", required = false, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
+        @ApiImplicitParam(name = "includeTeams", value = "Include organization user's teams", required = false, dataTypeClass = Boolean.class,
+            paramType = "query", defaultValue = "false")
     })
     @RecordMetric
     @RequestMapping(value = "/organization/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable(value = "id") final String id, @QueryParam(value = "includeTeams") final boolean includeTeams) throws Exception {
+    public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable(value = "id") final String id,
+        @QueryParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
-        logger.info("Get organization users. Id: {}", id);
+        LOG.info("Get organization users. Id: {}", id);
         authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -343,9 +344,9 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get team(s) for the organization. This call requires authentication with the correct role.", response = ResultListTeam.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad Request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
@@ -354,7 +355,7 @@ public class OrganizationController extends BaseController {
     @RequestMapping(value = "/organization/{id}/teams", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<ResultListTeam> getOrganizationTeams(@PathVariable(value = "id") final String id) throws Exception {
 
-        logger.info("Get organization teams. Id: {}", id);
+        LOG.info("Get organization teams. Id: {}", id);
         authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -377,9 +378,9 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get projects(s) the organization. This call requires authentication with the correct role.", response = ResultListProject.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad Request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
@@ -388,7 +389,7 @@ public class OrganizationController extends BaseController {
     @RequestMapping(value = "/organization/{id}/projects", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<ResultListProject> getOrganizationProjects(@PathVariable(value = "id") final String id) throws Exception {
 
-        logger.info("Get organization teams. Id: {}", id);
+        LOG.info("Get organization teams. Id: {}", id);
         authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -412,9 +413,9 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Add user to organization. This call requires authentication with the correct role.", response = User.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "User added to organization"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 201, message = "User added to organization"), @ApiResponse(code = 400, message = "Bad Request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
@@ -423,7 +424,7 @@ public class OrganizationController extends BaseController {
     @PostMapping(value = "/organization/{id}/user")
     public @ResponseBody ResponseEntity<String> addUserToOrganization(@PathVariable final String id, final String emails) throws Exception {
 
-        logger.info("Add user(s): {} to organization: {}.", emails, id);
+        LOG.info("Add user(s): {} to organization: {}.", emails, id);
         final User authUser = authorizeUser();
 
         if (StringUtils.isBlank(emails)) {
@@ -460,9 +461,9 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Delete user from organization. This call requires authentication with the correct role.", response = User.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Successfully removed user from organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 202, message = "Successfully removed user from organization"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
@@ -470,9 +471,10 @@ public class OrganizationController extends BaseController {
     })
     @RecordMetric
     @DeleteMapping(value = "/organization/{id}/user/{userId}")
-    public @ResponseBody ResponseEntity<Organization> removeUserFromOrganization(@PathVariable(value = "id") final String id, @PathVariable(value = "userId") final String userId) throws Exception {
+    public @ResponseBody ResponseEntity<Organization> removeUserFromOrganization(@PathVariable(value = "id") final String id,
+        @PathVariable(value = "userId") final String userId) throws Exception {
 
-        logger.info("Add user: {} to organization: {}.", userId, id);
+        LOG.info("Add user: {} to organization: {}.", userId, id);
         final User authUser = authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -501,7 +503,8 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get organization icon.", response = Resource.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Retrieved organization icon"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 200, message = "Retrieved organization icon"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "fileName", value = "fileName, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
@@ -512,7 +515,7 @@ public class OrganizationController extends BaseController {
 
         try {
 
-            logger.info("GET icon for organization {}", fileName);
+            LOG.info("GET icon for organization {}", fileName);
             final Resource file = FileUtility.getIconFile(fileName);
 
             return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
@@ -520,7 +523,7 @@ public class OrganizationController extends BaseController {
 
         } catch (final Exception e) {
 
-            logger.error("Trying to get organization icon file " + fileName, e);
+            LOG.error("Trying to get organization icon file " + fileName, e);
             return handleException(e);
         }
     }
@@ -536,9 +539,9 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Update icon for organization. This call requires authentication with the correct role.")
     @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Updated icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 202, message = "Updated icon for organization"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
@@ -546,9 +549,10 @@ public class OrganizationController extends BaseController {
     })
     @RecordMetric
     @PostMapping(value = "/organization/{id}/icon")
-    public ResponseEntity<String> editOrganizationIcon(@PathVariable("id") final String id, @RequestParam("file") final MultipartFile inputFile) throws Exception {
+    public ResponseEntity<String> editOrganizationIcon(@PathVariable("id") final String id, @RequestParam("file") final MultipartFile inputFile)
+        throws Exception {
 
-        logger.info("Update icon for organization: {}.", id);
+        LOG.info("Update icon for organization: {}.", id);
         final User authUser = authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -571,7 +575,7 @@ public class OrganizationController extends BaseController {
 
         } catch (final Exception e) {
 
-            logger.error("Trying to edit user icon for organization " + id, e);
+            LOG.error("Trying to edit user icon for organization " + id, e);
             return handleException(e);
         }
     }
@@ -586,9 +590,10 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Delete organization icon. This call requires authentication with the correct role.", response = Organization.class)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully removed organization icon"), @ApiResponse(code = 400, message = "Bad Request"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 403, message = "Forbidden"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 415, message = "Unsupported Media Type"),
-        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 200, message = "Successfully removed organization icon"), @ApiResponse(code = 400, message = "Bad Request"),
+        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 415, message = "Unsupported Media Type"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
@@ -597,7 +602,7 @@ public class OrganizationController extends BaseController {
     @DeleteMapping(value = "/organization/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<Organization> deleteOrganizationIcon(@PathVariable(value = "id") final String id) throws Exception {
 
-        logger.info("Delete organization icon: {}", id);
+        LOG.info("Delete organization icon: {}", id);
         final User authUser = authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -608,7 +613,7 @@ public class OrganizationController extends BaseController {
 
             final Organization organization = OrganizationService.getOrganization(service, authUser, id, false);
             if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
-                logger.info("Organization is null or organization id does not match id in URL.");
+                LOG.info("Organization is null or organization id does not match id in URL.");
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
 
@@ -620,11 +625,11 @@ public class OrganizationController extends BaseController {
             return new ResponseEntity<>(original, HttpStatus.OK);
 
         } catch (final NotFoundException nfe) {
-            logger.error("Error getting organization. Id {} not found.", id);
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+            LOG.error("Error getting organization. Id {} not found.", id);
+            return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-            logger.error("Error updating organization.  Id: {}", id, e);
+            LOG.error("Error updating organization.  Id: {}", id, e);
             return handleException(e);
         }
     }
@@ -640,23 +645,27 @@ public class OrganizationController extends BaseController {
     @SuppressWarnings("unchecked")
     @ApiOperation(value = "Request member/non-member to join organization. This call requires authentication with the correct role.")
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Organization icon deleted"), @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 403, message = "Forbidden"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"), @ApiResponse(code = 415, message = "Unsupported Media Type"),
-        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 200, message = "Organization icon deleted"), @ApiResponse(code = 401, message = "Unauthorized"),
+        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
+        @ApiResponse(code = 415, message = "Unsupported Media Type"), @ApiResponse(code = 417, message = "Failed Expectation"),
+        @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "emailInfo", value = "Email information", required = true, dataTypeClass = SendCommunicationEmailInfo.class, paramType = "body")
+        @ApiImplicitParam(name = "emailInfo", value = "Email information", required = true, dataTypeClass = SendCommunicationEmailInfo.class,
+            paramType = "body")
     })
     @RecordMetric
     @PostMapping(value = "/organization/{id}/invite", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String id, @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
+    public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String id,
+        @RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
         final User authUser = authorizeUser();
 
         try {
 
-            logger.info("inviteUserToOrganization: id: " + id + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: " + emailInfo.getAdditionalMessage());
+            LOG.info("inviteUserToOrganization: id: " + id + " and emailInfo.recipient: " + emailInfo.getRecipient() + " and emailInfo.additionalMessage: "
+                + emailInfo.getAdditionalMessage());
 
             OrganizationService.inviteUserToOrganization(authUser, id, emailInfo.getRecipient(), emailInfo.getAdditionalMessage());
 
@@ -669,57 +678,6 @@ public class OrganizationController extends BaseController {
             return handleException(e);
         }
 
-    }
-
-    /**
-     * Response to invite organization.
-     *
-     * @param id the organization id
-     * @param acceptance the acceptance
-     * @param requester the requester
-     * @param recipientEmail the recipient email
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Process invitation response to join organization.")
-    @ApiResponses(value = {
-        @ApiResponse(code = 302, message = "Response to invitation processed"),
-        @ApiResponse(code = 404, message = "Not Found"),
-        @ApiResponse(code = 417, message = "Failed Expectation"), 
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Organization id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "acceptance", value = "Indicate if accepted with true or false", required = true, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false"),
-        @ApiImplicitParam(name = "requester", value = "Id of user making request, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-        @ApiImplicitParam(name = "recipientEmail", value = "Email of the recipient, e.g. user@email.com", required = true, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-    })
-    @RecordMetric
-    @GetMapping(value = "/organization/{id}/response")
-    public @ResponseBody ResponseEntity<String> responseToInviteOrganization(
-
-        @PathVariable final String id, @QueryParam(value = "acceptance") final boolean acceptance, @QueryParam(value = "requester") final String requester,
-        @QueryParam(value = "recipientEmail") final String recipientEmail
-
-    ) throws Exception {
-
-        // no auth - response is from email.
-
-        final HttpHeaders headers = new HttpHeaders();
-        headers.add("Location", PROPERTIES.getProperty("app.url.root"));
-
-        try {
-
-            logger.info("responseToInviteOrganization: id: " + id + " and acceptance: " + acceptance + " and requester: " + requester + " recipientEmail: " + recipientEmail);
-            OrganizationService.processOrganizationInvitation(id, acceptance, requester, recipientEmail);
-
-            return new ResponseEntity<>(headers, HttpStatus.FOUND);
-
-        } catch (final Exception e) {
-
-            logger.error("Exception while processing response for organization id invite", e);
-            return new ResponseEntity<>(headers, HttpStatus.FOUND);
-        }
     }
 
 }

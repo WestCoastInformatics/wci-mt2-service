@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.util;
 
@@ -18,7 +27,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.stereotype.Component;
 
-
 /**
  * Set up config properties cache.
  */
@@ -27,9 +35,8 @@ import org.springframework.stereotype.Component;
 @PropertySource("classpath:exclude_refsets_from_options.properties")
 public class PropertyUtility {
 
-    /** The logger. */
-    @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(PropertyUtility.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(PropertyUtility.class);
 
     /** the Spring environment variable. */
     @Autowired
@@ -43,32 +50,32 @@ public class PropertyUtility {
 
     /**
      * initialize the properties.
+     *
+     * @throws Exception the exception
      */
     @SuppressWarnings("rawtypes")
     @PostConstruct
-    private void init() throws Exception{
+    private void init() throws Exception {
 
         final MutablePropertySources sources = ((AbstractEnvironment) env).getPropertySources();
-      
-        logger.info("Property Sources: " + sources.toString());
-        
-        StreamSupport.stream(sources.spliterator(), false)
-                .filter(ps -> ps instanceof EnumerablePropertySource)
-                .map(ps -> ((EnumerablePropertySource) ps).getPropertyNames())
-                .flatMap(Arrays::stream).distinct()
-                .forEach(prop -> properties.setProperty(prop, env.getProperty(prop)));
+
+        LOG.info("Property Sources: " + sources.toString());
+
+        StreamSupport.stream(sources.spliterator(), false).filter(ps -> ps instanceof EnumerablePropertySource)
+            .map(ps -> ((EnumerablePropertySource) ps).getPropertyNames()).flatMap(Arrays::stream).distinct()
+            .forEach(prop -> properties.setProperty(prop, env.getProperty(prop)));
         ready = true;
-        
+
         properties.setProperty("springProfiles", Arrays.toString(env.getActiveProfiles()));
-        
+
         // only uncomment for testing - do not print out properties in Production environments
-        //TreeSet<Object> sortedPropertyNames = new TreeSet<>(properties.keySet());
-        //for (Object propertyName : sortedPropertyNames) {
-        //    logger.info("Property: " + propertyName  + " = " + properties.get(propertyName));
-        //} 
-        
+        // TreeSet<Object> sortedPropertyNames = new TreeSet<>(properties.keySet());
+        // for (Object propertyName : sortedPropertyNames) {
+        // LOG.info("Property: " + propertyName + " = " + properties.get(propertyName));
+        // }
+
     }
-    
+
     /**
      * get all properties.
      *
@@ -113,13 +120,11 @@ public class PropertyUtility {
      * Return properties with the specified prefix.
      *
      * @param prefix the prefix of the properties to return
-     * @param removePrefix Should the prefix be removed from the keys of the
-     *            returned properties
+     * @param removePrefix Should the prefix be removed from the keys of the returned properties
      * @return the properties with the specified prefix
      * @throws Exception the exception
      */
-    public static Properties getPrefixedProperties(final String prefix, final boolean removePrefix)
-        throws Exception {
+    public static Properties getPrefixedProperties(final String prefix, final boolean removePrefix) throws Exception {
 
         assureReadiness();
 
@@ -130,7 +135,7 @@ public class PropertyUtility {
         while (keys.hasNext()) {
 
             String key = keys.next().toString();
-            String originalKey = key;
+            final String originalKey = key;
 
             if (key.startsWith(prefix)) {
 
@@ -142,10 +147,10 @@ public class PropertyUtility {
             }
         }
 
-        // logger.debug("****** propertiesSubset: ", propertiesSubset);
+        // LOG.debug("****** propertiesSubset: ", propertiesSubset);
         return propertiesSubset;
     }
-    
+
     /**
      * Return JPA specific properties, including any additional info.
      *
@@ -171,12 +176,12 @@ public class PropertyUtility {
      */
     @SuppressWarnings("unused")
     private static boolean isReady() {
+
         return ready;
     }
 
     /**
-     * Ensure that the properties are ready to be accessed before allowing code
-     * to continue.
+     * Ensure that the properties are ready to be accessed before allowing code to continue.
      */
     public static void assureReadiness() {
 
@@ -192,11 +197,11 @@ public class PropertyUtility {
         //
         // try {
         //
-        // logger.debug("Properties not ready. Waiting for 1s..");
+        // LOG.debug("Properties not ready. Waiting for 1s..");
         // Thread.sleep(1000);
         // } catch (InterruptedException e) {
         //
-        // logger.error("Error waiting for properties to load.", e);
+        // LOG.error("Error waiting for properties to load.", e);
         // }
         // }
         // }

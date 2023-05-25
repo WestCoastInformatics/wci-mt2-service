@@ -24,6 +24,7 @@ public class QueryParameter {
      * The default constructor.
      */
     public QueryParameter() {
+
         // do nothing
     }
 
@@ -33,6 +34,7 @@ public class QueryParameter {
      * @param query the query
      */
     public QueryParameter(final String query) {
+
         this.query = query;
     }
 
@@ -43,8 +45,8 @@ public class QueryParameter {
      * @param fieldedClauses the fielded clauses
      * @param additionalClauses the additional clauses
      */
-    public QueryParameter(final String query, final Map<String, String> fieldedClauses,
-            final Set<String> additionalClauses) {
+    public QueryParameter(final String query, final Map<String, String> fieldedClauses, final Set<String> additionalClauses) {
+
         this.query = query;
         this.fieldedClauses = fieldedClauses;
         this.additionalClauses = additionalClauses;
@@ -56,6 +58,7 @@ public class QueryParameter {
      * @param qp the qp
      */
     public QueryParameter(final QueryParameter qp) {
+
         query = qp.getQuery();
         fieldedClauses = new HashMap<>(qp.getFieldedClauses());
         additionalClauses = new HashSet<>(qp.getAdditionalClauses());
@@ -67,6 +70,7 @@ public class QueryParameter {
      * @return the query
      */
     public String getQuery() {
+
         return query;
     }
 
@@ -76,6 +80,7 @@ public class QueryParameter {
      * @param query the query
      */
     public void setQuery(final String query) {
+
         this.query = query;
     }
 
@@ -85,6 +90,7 @@ public class QueryParameter {
      * @return the fielded clauses
      */
     public Map<String, String> getFieldedClauses() {
+
         if (fieldedClauses == null) {
             fieldedClauses = new HashMap<>();
         }
@@ -97,6 +103,7 @@ public class QueryParameter {
      * @param fieldedClauses the fielded clauses
      */
     public void setFieldedClauses(final Map<String, String> fieldedClauses) {
+
         this.fieldedClauses = fieldedClauses;
     }
 
@@ -106,6 +113,7 @@ public class QueryParameter {
      * @return the additional clauses
      */
     public Set<String> getAdditionalClauses() {
+
         if (additionalClauses == null) {
             additionalClauses = new HashSet<>();
         }
@@ -118,12 +126,14 @@ public class QueryParameter {
      * @param additionalClauses the additional clauses
      */
     public void setAdditionalClauses(final Set<String> additionalClauses) {
+
         this.additionalClauses = additionalClauses;
     }
 
     /* see superclass */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((additionalClauses == null) ? 0 : additionalClauses.hashCode());
@@ -135,6 +145,7 @@ public class QueryParameter {
     /* see superclass */
     @Override
     public boolean equals(final Object obj) {
+
         if (this == obj) {
             return true;
         }
@@ -172,8 +183,8 @@ public class QueryParameter {
     /* see superclass */
     @Override
     public String toString() {
-        return "[query=" + query + ", fieldedClauses=" + fieldedClauses + ", additionalClauses="
-                + additionalClauses + "]";
+
+        return "[query=" + query + ", fieldedClauses=" + fieldedClauses + ", additionalClauses=" + additionalClauses + "]";
     }
 
 }

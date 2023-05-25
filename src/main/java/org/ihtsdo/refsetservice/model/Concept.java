@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -31,7 +31,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** The code. */
     private String code;
-    
+
     /** The UUID of the membership. */
     private String memberId;
 
@@ -74,14 +74,14 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     /** What kind of intensional refset definition exception type is this concept. (definition/inclusion/exclusion) */
     private String definitionExceptionType;
 
-    /**  The internal ID of intensional refset definition exception. */
+    /** The internal ID of intensional refset definition exception. */
     private String definitionExceptionId;
 
     // Members below are filled in when open Concept Details screen only (for now)
     /** A list of the parents of this concept. */
     private List<Concept> parents = new ArrayList<>();
 
-    /**  Does this concept have ancestors that are members of the refset. */
+    /** Does this concept have ancestors that are members of the refset. */
     private boolean hasAncestorRefsetMembers;
 
     /** A list of the children of this concept. */
@@ -89,20 +89,21 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     /** Does this concept have descendants that are members of the refset. */
     private boolean hasDescendantRefsetMembers;
-    
+
     /** The count of discussions for this item. */
     private int openDiscussionCount;
-    
+
     /** The count of discussions for this item. */
     private int resolvedDiscussionCount;
 
-    /**  The role groups. */
+    /** The role groups. */
     private Map<Integer, List<String>> roleGroups = new HashMap<>();
 
     /**
      * Instantiates an empty {@link Concept}.
      */
     public Concept() {
+
         // n/a
     }
 
@@ -190,24 +191,24 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
         this.code = code;
     }
-    
+
     /**
      * Returns the UUID of the membership.
      *
      * @return the member ID
      */
     public String getMemberId() {
-        
+
         return memberId;
     }
-    
+
     /**
      * Sets the UUID of the membership.
      *
      * @param memberId the member ID
      */
     public void setMemberId(final String memberId) {
-        
+
         this.memberId = memberId;
     }
 
@@ -306,7 +307,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param memberEffectiveTime the new member effective time
      */
-    public void setMemberEffectiveTime(Date memberEffectiveTime) {
+    public void setMemberEffectiveTime(final Date memberEffectiveTime) {
 
         this.memberEffectiveTime = memberEffectiveTime;
     }
@@ -326,11 +327,11 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param descriptions the descriptions
      */
-    public void setDescriptions(List<Map<String, String>> descriptions) {
+    public void setDescriptions(final List<Map<String, String>> descriptions) {
 
         this.descriptions = descriptions;
     }
-    
+
     /**
      * Returns the open discussion count.
      *
@@ -346,11 +347,11 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param openDiscussionCount the open discussion count
      */
-    public void setOpenDiscussionCount(int openDiscussionCount) {
+    public void setOpenDiscussionCount(final int openDiscussionCount) {
 
         this.openDiscussionCount = openDiscussionCount;
     }
-    
+
     /**
      * Returns the resolved discussion count.
      *
@@ -366,7 +367,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param resolvedDiscussionCount the resolved discussion count
      */
-    public void setResolvedDiscussionCount(int resolvedDiscussionCount) {
+    public void setResolvedDiscussionCount(final int resolvedDiscussionCount) {
 
         this.resolvedDiscussionCount = resolvedDiscussionCount;
     }
@@ -426,7 +427,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param memberOfRefset the memberOfRefset to set
      */
-    public void setMemberOfRefset(boolean memberOfRefset) {
+    public void setMemberOfRefset(final boolean memberOfRefset) {
 
         this.memberOfRefset = memberOfRefset;
     }
@@ -446,7 +447,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param hasChildren the hasChildren to set
      */
-    public void setHasChildren(boolean hasChildren) {
+    public void setHasChildren(final boolean hasChildren) {
 
         this.hasChildren = hasChildren;
     }
@@ -470,7 +471,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param parents the parents to set
      */
-    public void setParents(List<Concept> parents) {
+    public void setParents(final List<Concept> parents) {
 
         this.parents = parents;
     }
@@ -490,7 +491,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param hasAncestorRefsetMembers the hasAncestorRefsetMembers to set
      */
-    public void setHasAncestorRefsetMembers(boolean hasAncestorRefsetMembers) {
+    public void setHasAncestorRefsetMembers(final boolean hasAncestorRefsetMembers) {
 
         this.hasAncestorRefsetMembers = hasAncestorRefsetMembers;
     }
@@ -554,7 +555,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param children the children to set
      */
-    public void setChildren(List<Concept> children) {
+    public void setChildren(final List<Concept> children) {
 
         this.children = children;
     }
@@ -574,7 +575,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param hasDescendantRefsetMembers the hasDescendantRefsetMembers to set
      */
-    public void setHasDescendantRefsetMembers(boolean hasDescendantRefsetMembers) {
+    public void setHasDescendantRefsetMembers(final boolean hasDescendantRefsetMembers) {
 
         this.hasDescendantRefsetMembers = hasDescendantRefsetMembers;
     }
@@ -594,7 +595,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param map the map
      */
-    public void setRoleGroups(Map<Integer, List<String>> map) {
+    public void setRoleGroups(final Map<Integer, List<String>> map) {
 
         this.roleGroups = map;
     }
@@ -614,7 +615,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param isDefined the isDefined to set
      */
-    public void setDefined(boolean isDefined) {
+    public void setDefined(final boolean isDefined) {
 
         this.defined = isDefined;
     }
@@ -634,7 +635,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @param released the value to set the released flag to
      */
-    public void setReleased(boolean released) {
+    public void setReleased(final boolean released) {
 
         this.released = released;
     }
@@ -644,7 +645,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      *
      * @return the int
      */
-    /* see superclass */    @Override
+    /* see superclass */ @Override
     public int hashCode() {
 
         final int prime = 31;
@@ -711,12 +712,12 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         } else if (!code.equals(other.code)) {
             return false;
         }
-        
+
         if (memberId == null) {
             if (other.memberId != null) {
                 return false;
             }
-            
+
         } else if (!memberId.equals(other.memberId)) {
             return false;
         }
@@ -842,11 +843,11 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
         } else if (!version.equals(other.version)) {
             return false;
         }
-        
+
         if (other.openDiscussionCount != openDiscussionCount) {
             return false;
         }
-        
+
         if (other.resolvedDiscussionCount != resolvedDiscussionCount) {
             return false;
         }
@@ -873,7 +874,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
      */
     @Override
     public void lazyInit() {
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 }

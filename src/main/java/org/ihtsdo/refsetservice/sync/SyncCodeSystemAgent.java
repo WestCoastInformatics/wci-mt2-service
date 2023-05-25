@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SyncCodeSystemAgent extends SyncAgent {
 
-    private static Logger logger = LoggerFactory.getLogger(SyncCodeSystemAgent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncCodeSystemAgent.class);
 
     private static final HashMap<String, String> termserverEditionToOrganizationMap = new HashMap<>();
 
@@ -34,8 +34,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
         WRONG_TESTING_EDITION, INACTIVE_EDITION, IGNORED_PER_FILE_EDITION, TYPE_THREE_EDITION
     };
 
-    public void syncComponent(TerminologyService service) throws Exception {
-        logger.info("Starting sync of CodeSystemAgent");
+    @Override
+    public void syncComponent(final TerminologyService service) throws Exception {
+        LOG.info("Starting sync of CodeSystemAgent");
 
         initializeSync();
 
@@ -55,30 +56,30 @@ public class SyncCodeSystemAgent extends SyncAgent {
         syncEditionOrganizationMaps(service, existingInBothShortNames);
     }
 
-    private void analyzeTermServerCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
+    private void analyzeTermServerCodeSystems(final JsonNode organizationJsonRootNode) throws Exception {
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-        logger.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on Snowstorm: ");
+        LOG.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on Snowstorm: ");
 
         // Filter code systems (based on active-setting, ignoredCS list, testing situation, and bad data)
-        Map<ReasonEditionSkipped, Set<String>> ignoredReasonsMap = filterCodeSystems(organizationJsonRootNode);
-        logger.info("Will be processing these " + filteredCodeSystems.size() + " Code Systems: ");
+        final Map<ReasonEditionSkipped, Set<String>> ignoredReasonsMap = filterCodeSystems(organizationJsonRootNode);
+        LOG.info("Will be processing these " + filteredCodeSystems.size() + " Code Systems: ");
 
-        filteredCodeSystems.stream().forEach(c -> logger.info(c.get("shortName").asText()));
+        filteredCodeSystems.stream().forEach(c -> LOG.info(c.get("shortName").asText()));
 
         // Determine Snow edition-to-orgName map
-        for (JsonNode codeSystem : filteredCodeSystems) {
-            String shortName = codeSystem.get("shortName").asText();
-            String organizationName = determineOrganizationName(codeSystem);
+        for (final JsonNode codeSystem : filteredCodeSystems) {
+            final String shortName = codeSystem.get("shortName").asText();
+            final String organizationName = determineOrganizationName(codeSystem);
 
             termserverEditionToOrganizationMap.put(shortName, organizationName);
         }
 
         // Log why each edition that isn't being processed is being skipped
-        for (ReasonEditionSkipped reason : ignoredReasonsMap.keySet()) {
+        for (final ReasonEditionSkipped reason : ignoredReasonsMap.keySet()) {
 
             if (!ignoredReasonsMap.get(reason).isEmpty()) {
-                StringBuffer s = new StringBuffer("Ignoring these editions as they are: ");
+                final StringBuffer s = new StringBuffer("Ignoring these editions as they are: ");
                 s.append(System.lineSeparator());
 
                 switch (reason) {
@@ -98,7 +99,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 s.append(": ");
                 ignoredReasonsMap.get(reason).stream().forEach(edition -> s.append(edition + ","));
-                logger.info(s.substring(0, s.toString().length()));
+                LOG.info(s.substring(0, s.toString().length()));
             }
         }
 
@@ -107,35 +108,34 @@ public class SyncCodeSystemAgent extends SyncAgent {
         statistics.setCodeSystemsFiltered(filteredCodeSystems.size());
     }
 
-    private void syncOrganizations(TerminologyService service) throws Exception {
+    private void syncOrganizations(final TerminologyService service) throws Exception {
 
         final Set<String> dbActiveOrganizationNames = new HashSet<>();
         final Set<String> dbInactiveOrganizationNames = new HashSet<>();
         final Set<String> termserverOrganizationNames = new HashSet<>();
 
         // Populate organization names lists of a) termserver code system names, b) rt2 database active organization names, and c) rt2 database inactive organization names
-        List<Organization> dbOrganizations = service.getAll(Organization.class);
+        final List<Organization> dbOrganizations = service.getAll(Organization.class);
 
         dbOrganizations.stream().filter(o -> o.isActive()).forEach(o -> dbActiveOrganizationNames.add(o.getName()));
         dbOrganizations.stream().filter(o -> !o.isActive()).forEach(o -> dbInactiveOrganizationNames.add(o.getName()));
-        
-        
+
         filteredCodeSystems.stream().forEach(codeSystem -> termserverOrganizationNames.add(determineOrganizationName(codeSystem)));
 
         // See if any termserver organizations are new
-        List<String> addedOrganizations =
+        final List<String> addedOrganizations =
                 termserverOrganizationNames.stream().filter(o -> !dbActiveOrganizationNames.contains(o)).filter(o -> !dbInactiveOrganizationNames.contains(o)).collect(Collectors.toList());
         addedOrganizations.stream().forEach(name -> dbHandler.addOrganziation(service, name, determineOrganizationDescription(name)));
         statistics.setOrganizationsAdded(addedOrganizations.size());
 
         // Activate previously inactivated organizations. Note: Will log and update stats after remove those that were activatedAndModified
-        List<String> activatedOrganizations = termserverOrganizationNames.stream().filter(c -> dbInactiveOrganizationNames.contains(c)).collect(Collectors.toList());
+        final List<String> activatedOrganizations = termserverOrganizationNames.stream().filter(c -> dbInactiveOrganizationNames.contains(c)).collect(Collectors.toList());
         activatedOrganizations.stream().forEach(n -> dbHandler.updateOrganizationStatus(service, n, true));
 
         // If have active organizations inactivate any active DB organizations that are not returned from termserver
         // Note: No need for 'existing in both' case as only value to compare against termserver (owner) is also the primary key. Thus activating/inactivating is
         // sufficient
-        List<String> inactivatedOrganizations =
+        final List<String> inactivatedOrganizations =
                 dbActiveOrganizationNames.stream().filter(c -> !termserverOrganizationNames.contains(c)).filter(c -> !dbInactiveOrganizationNames.contains(c)).collect(Collectors.toList());
 
         inactivatedOrganizations.stream().forEach(n -> dbHandler.updateOrganizationStatus(service, n, false));
@@ -143,14 +143,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private List<String> syncEditions(TerminologyService service) throws Exception {
+    private List<String> syncEditions(final TerminologyService service) throws Exception {
         final Map<String, JsonNode> termserverShortNameCodeSystemMap = new HashMap<>();
         final List<String> existingInBothShortNames = new ArrayList<>();
         final Set<String> dbInactiveEditionShortNames = new HashSet<>();
         final Set<String> dbActiveEditionShortNames = new HashSet<>();
         final Set<String> termserverShortNames = new HashSet<>();
 
-        List<Edition> dbEditions = service.getAll(Edition.class);
+        final List<Edition> dbEditions = service.getAll(Edition.class);
         dbEditions.stream().filter(e -> e.isActive()).forEach(e -> dbActiveEditionShortNames.add(e.getShortName()));
         dbEditions.stream().filter(e -> !e.isActive()).forEach(e -> dbInactiveEditionShortNames.add(e.getShortName()));
 
@@ -160,7 +160,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         termserverShortNames.stream().filter(shortName -> DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(shortName)).forEach(shortName -> developerTestingEditionShortName = shortName);
 
         // Determine and create new editions (not in active nor in inactive DB editions)
-        List<String> addedShortNames =
+        final List<String> addedShortNames =
                 termserverShortNames.stream().filter(c -> !dbActiveEditionShortNames.contains(c)).filter(c -> !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
         statistics.setEditionsAdded(addedShortNames.size());
         addedShortNames.stream().filter(shortName -> termserverShortNameCodeSystemMap.containsKey(shortName))
@@ -170,14 +170,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
         statistics.setEditionsAdded(addedShortNames.size());
 
         // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
-        List<String> activatedShortNames = termserverShortNames.stream().filter(c -> dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
+        final List<String> activatedShortNames = termserverShortNames.stream().filter(c -> dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
         activatedShortNames.stream().forEach(n -> dbHandler.updateEditionStatus(service, n, true));
 
         // If have active editions:
         // 1) Inactivate any active DB editions that are not in termserver
         // 2) Compare against termserver to identify any changes in attributes defined on term server
         if (!dbActiveEditionShortNames.isEmpty()) {
-            List<String> inactivatedShortNames =
+            final List<String> inactivatedShortNames =
                     dbActiveEditionShortNames.stream().filter(c -> !termserverShortNames.contains(c)).filter(c -> dbActiveEditionShortNames.contains(c)).collect(Collectors.toList());
 
             inactivatedShortNames.stream().forEach(n -> dbHandler.updateEditionStatus(service, n, false));
@@ -188,8 +188,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             // Compare editions in termserver & active in db
             if (!existingInBothShortNames.isEmpty()) {
-                List<String> modifiedShortNames = compareAndModifyEditions(service, existingInBothShortNames, termserverShortNameCodeSystemMap);
-                List<String> unchangedShortNames = existingInBothShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
+                final List<String> modifiedShortNames = compareAndModifyEditions(service, existingInBothShortNames, termserverShortNameCodeSystemMap);
+                final List<String> unchangedShortNames = existingInBothShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
 
                 // Have modified... now revisit acivated to see if they too are modified
                 statistics.setEditionsUnchanged(unchangedShortNames.size());
@@ -199,7 +199,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         // Compare editions in termserver & newly actived in db
         if (!activatedShortNames.isEmpty()) {
-            List<String> activatedAndModifiedShortNames = compareAndModifyEditions(service, activatedShortNames, termserverShortNameCodeSystemMap);
+            final List<String> activatedAndModifiedShortNames = compareAndModifyEditions(service, activatedShortNames, termserverShortNameCodeSystemMap);
             statistics.setEditionsActivatedAndModified(activatedAndModifiedShortNames.size());
 
             // Finalize those editions that were only activated (and not further modified)
@@ -211,29 +211,29 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private void syncEditionOrganizationMaps(TerminologyService service, List<String> existingShortNames) throws Exception {
-        List<String> updatedEditionOrganizationMaps = new ArrayList<>();
+    private void syncEditionOrganizationMaps(final TerminologyService service, final List<String> existingShortNames) throws Exception {
+        final List<String> updatedEditionOrganizationMaps = new ArrayList<>();
 
         // TODO: Not using termserverEditionToOrganizationMap... why?
 
-        for (String shortName : existingShortNames) {
+        for (final String shortName : existingShortNames) {
 
             // Prepare DB edition for analysis
-            List<Edition> matchingDbEditions = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
+            final List<Edition> matchingDbEditions = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
             utilities.validateMatches(matchingDbEditions, shortName);
-            Edition dbEdition = matchingDbEditions.iterator().next();
-            String dbOrganizationName = dbEdition.getOrganizationName();
+            final Edition dbEdition = matchingDbEditions.iterator().next();
+            final String dbOrganizationName = dbEdition.getOrganizationName();
 
             // Prepare termserver edition for analysis
-            List<JsonNode> matchingSnowstormEditions = filteredCodeSystems.stream().filter(cs -> cs.get("shortName").asText().equals(shortName)).collect(Collectors.toList());
+            final List<JsonNode> matchingSnowstormEditions = filteredCodeSystems.stream().filter(cs -> cs.get("shortName").asText().equals(shortName)).collect(Collectors.toList());
             utilities.validateMatches(matchingSnowstormEditions, shortName);
-            JsonNode termserverEdition = matchingSnowstormEditions.iterator().next();
-            String termserverOrganizationName = determineOrganizationName(termserverEdition);
+            final JsonNode termserverEdition = matchingSnowstormEditions.iterator().next();
+            final String termserverOrganizationName = determineOrganizationName(termserverEdition);
 
             // compare
             if (!dbOrganizationName.equals(termserverOrganizationName)) {
 
-                List<Organization> matchedOrganizations = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(termserverOrganizationName)).collect(Collectors.toList());
+                final List<Organization> matchedOrganizations = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(termserverOrganizationName)).collect(Collectors.toList());
                 utilities.validateMatches(matchedOrganizations, termserverOrganizationName);
 
                 dbEdition.setOrganization(matchedOrganizations.iterator().next());
@@ -247,18 +247,19 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private List<String> compareAndModifyEditions(TerminologyService service, List<String> matchingEditionShortNames, Map<String, JsonNode> termserverShortNameCodeSystemMap) throws Exception {
-        List<String> modifiedShortNames = new ArrayList<>();
+    private List<String> compareAndModifyEditions(final TerminologyService service, final List<String> matchingEditionShortNames, final Map<String, JsonNode> termserverShortNameCodeSystemMap)
+        throws Exception {
+        final List<String> modifiedShortNames = new ArrayList<>();
 
         // Process one Organization per Edition.
-        for (String shortName : matchingEditionShortNames) {
+        for (final String shortName : matchingEditionShortNames) {
 
             if (termserverShortNameCodeSystemMap.containsKey(shortName)) {
 
                 // Find associated DB edition
-                List<Edition> matchingEditions = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
-                Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
-                Edition modifyingEdition = new Edition(dbEdition);
+                final List<Edition> matchingEditions = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
+                final Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
+                final Edition modifyingEdition = new Edition(dbEdition);
 
                 // Find values for Snowstorm Edition
                 final JsonNode codeSystem = termserverShortNameCodeSystemMap.get(shortName);
@@ -315,7 +316,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return modifiedShortNames;
     }
 
-    private String determineOrganizationDescription(String organizationName) {
+    private String determineOrganizationDescription(final String organizationName) {
 
         if (organizationName.startsWith(DEFAULT_ORGANIZATION_PREFACE)) {
 
@@ -329,7 +330,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
     }
 
-    private String determineOrganizationName(JsonNode codeSystem) {
+    private String determineOrganizationName(final JsonNode codeSystem) {
 
         // If owner defined, return it as organization name
         if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
@@ -341,7 +342,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return DEFAULT_ORGANIZATION_PREFACE + editionName;
     }
 
-    private Map<ReasonEditionSkipped, Set<String>> filterCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
+    private Map<ReasonEditionSkipped, Set<String>> filterCodeSystems(final JsonNode organizationJsonRootNode) throws Exception {
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
         final Map<ReasonEditionSkipped, Set<String>> ignoredReasonMap = new EnumMap<>(ReasonEditionSkipped.class);
@@ -357,13 +358,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             while (codeSystems.hasNext()) {
 
-                JsonNode codeSystem = codeSystems.next();
+                final JsonNode codeSystem = codeSystems.next();
 
                 // Check for invalid or ignored code systems
                 if (!codeSystem.has("shortName")) {
 
                     // Skipping odd code system without a shortName
-                    logger.error("Skipping codeSystem without a shortName: " + codeSystem);
+                    LOG.error("Skipping codeSystem without a shortName: " + codeSystem);
                     continue;
                 }
 
@@ -402,7 +403,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         termserverEditionToOrganizationMap.clear();
     }
 
-    private int countCodeSystems(Iterator<JsonNode> organizationIterator) {
+    private int countCodeSystems(final Iterator<JsonNode> organizationIterator) {
         int counter = 0;
 
         while (organizationIterator.hasNext()) {
@@ -435,8 +436,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
      */
     private JsonNode getSnowstormCodeSystems() throws Exception {
 
-        final String url = SnowstormConnection.BASE_URL + "codesystems";
-        logger.info("getSnowstormCodeSystems url: " + url);
+        final String url = SnowstormConnection.getBaseUrl() + "codesystems";
+        LOG.info("getSnowstormCodeSystems url: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 

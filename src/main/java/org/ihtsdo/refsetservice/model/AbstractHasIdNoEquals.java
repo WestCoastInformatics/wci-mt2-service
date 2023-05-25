@@ -30,16 +30,17 @@ public abstract class AbstractHasIdNoEquals implements HasId {
      * Instantiates an empty {@link AbstractHasIdNoEquals}.
      */
     protected AbstractHasIdNoEquals() {
+
         // n/a
     }
 
     /**
-     * Instantiates a {@link AbstractHasIdNoEquals} from the specified
-     * parameters.
+     * Instantiates a {@link AbstractHasIdNoEquals} from the specified parameters.
      *
      * @param other the other
      */
     protected AbstractHasIdNoEquals(final HasId other) {
+
         populateFrom(other);
     }
 
@@ -49,18 +50,19 @@ public abstract class AbstractHasIdNoEquals implements HasId {
      * @param other the other
      */
     public void populateFrom(final HasId other) {
+
         this.id = other.getId();
     }
 
     /**
-     * Returns the id. NOTE: this causes a hibernate warning, but the background
-     * behavior is correct. Moving it or removing it causes either other
-     * problems or the field to not be indexed.
+     * Returns the id. NOTE: this causes a hibernate warning, but the background behavior is correct. Moving it or removing it causes either other problems or
+     * the field to not be indexed.
      * @return the id
      */
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getId() {
+
         return id;
     }
 
@@ -71,12 +73,14 @@ public abstract class AbstractHasIdNoEquals implements HasId {
      */
     @Override
     public void setId(final String id) {
+
         this.id = id;
     }
 
     /* see superclass */
     @Override
     public String toString() {
+
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {

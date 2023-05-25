@@ -21,6 +21,7 @@ public class ElasticServerProperties {
      * @return the host
      */
     public String getHost() {
+
         return host;
     }
 
@@ -30,6 +31,7 @@ public class ElasticServerProperties {
      * @param host the host
      */
     public void setHost(final String host) {
+
         this.host = host;
     }
 
@@ -39,6 +41,7 @@ public class ElasticServerProperties {
      * @return the port
      */
     public String getPort() {
+
         return port;
     }
 
@@ -48,6 +51,7 @@ public class ElasticServerProperties {
      * @param port the port
      */
     public void setPort(final String port) {
+
         this.port = port;
     }
 
@@ -57,6 +61,7 @@ public class ElasticServerProperties {
      * @return the scheme
      */
     public String getScheme() {
+
         return scheme;
     }
 
@@ -66,6 +71,7 @@ public class ElasticServerProperties {
      * @param scheme the scheme
      */
     public void setScheme(final String scheme) {
+
         this.scheme = scheme;
     }
 

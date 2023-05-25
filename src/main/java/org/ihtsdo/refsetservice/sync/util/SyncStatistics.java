@@ -64,7 +64,7 @@ public class SyncStatistics {
 
     public String printStatistics() {
 
-        StringBuffer buf = new StringBuffer();
+        final StringBuffer buf = new StringBuffer();
 
         buf.append(System.getProperty("line.separator") + "*********    Syncing Results    *************" + System.getProperty("line.separator"));
 
@@ -99,6 +99,7 @@ public class SyncStatistics {
     }
 
     public void clearStatistics() {
+
         codeSystemsSynced = 0;
         codeSystemsFiltered = 0;
 
@@ -136,11 +137,14 @@ public class SyncStatistics {
 
     /** Getters **/
     // Code Systems
+
     public int getCodeSystemsSynced() {
+
         return codeSystemsSynced;
     }
 
     public int getCodeSystemsFiltered() {
+
         return codeSystemsFiltered;
     }
 
@@ -252,10 +256,12 @@ public class SyncStatistics {
     /** Setters **/
     // Code Systems
     public void setCodeSystemsSynced(int val) {
+
         codeSystemsSynced = val;
     }
 
-    public void setCodeSystemsFiltered(int val) {
+    public void setCodeSystemsFiltered(final int val) {
+
         codeSystemsFiltered = val;
     }
 
@@ -288,7 +294,8 @@ public class SyncStatistics {
 
     }
 
-    public void setEditionsUnchanged(int val) {
+    public void setEditionsUnchanged(final int val) {
+
         editionsUnchanged = val;
     }
 
@@ -376,12 +383,11 @@ public class SyncStatistics {
     }
 
     public int getProjectsAdded() {
-
         return projectsAdded;
+
     }
 
     public int getTeamsProcessed() {
-
         return teamsAdded;
     }
 

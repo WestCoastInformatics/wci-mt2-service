@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -66,7 +66,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     /** email for primary contact. */
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
-    
+
     /** The members. */
     @ManyToMany(fetch = FetchType.LAZY, cascade = {
         CascadeType.ALL
@@ -120,6 +120,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      *
      * @param other the other
      */
+    @Override
     public void populateFrom(final Organization other) {
 
         super.populateFrom(other);
@@ -136,6 +137,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
      *
      * @param other the other
      */
+    @Override
     public void patchFrom(final Organization other) {
 
         // Only these field can be patched
@@ -186,7 +188,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         this.description = description;
     }
-    
+
     /**
      * Returns the primary contact email.
      *
@@ -302,89 +304,58 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public boolean equals(final Object obj) {
 
         if (this == obj) {
-
             return true;
         }
-
-        if (getClass() != obj.getClass()) {
-
+        if (!super.equals(obj)) {
+            return false;
+        }
+        if (!(obj instanceof Organization)) {
             return false;
         }
 
-        final Organization other = (Organization) obj;
-
+        Organization other = (Organization) obj;
         if (description == null) {
-
             if (other.description != null) {
-
                 return false;
             }
-
         } else if (!description.equals(other.description)) {
-
             return false;
         }
-        
         if (iconUri == null) {
-
             if (other.iconUri != null) {
-
                 return false;
             }
-
         } else if (!iconUri.equals(other.iconUri)) {
-
             return false;
         }
-
         if (members == null) {
-
             if (other.members != null) {
-
                 return false;
             }
-
         } else if (!members.equals(other.members)) {
-
             return false;
         }
-
         if (name == null) {
-
             if (other.name != null) {
-
                 return false;
             }
-
         } else if (!name.equals(other.name)) {
-
             return false;
         }
-
         if (primaryContactEmail == null) {
-
             if (other.primaryContactEmail != null) {
-
                 return false;
             }
-
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
-
             return false;
         }
-
         if (roles == null) {
-
             if (other.roles != null) {
-
                 return false;
             }
-
         } else if (!roles.equals(other.roles)) {
-
             return false;
         }
-
         return true;
     }
 
@@ -406,7 +377,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @Override
     public void lazyInit() {
 
-        // TODO Auto-generated method stub
+        // n/a
     }
 
     /* see superclass */
@@ -432,7 +403,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
     /* see superclass */
     @Override
-    public void validateUpdate(Organization other) throws Exception {
+    public void validateUpdate(final Organization other) throws Exception {
 
         if (StringUtils.isBlank(getId())) {
 

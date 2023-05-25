@@ -36,7 +36,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -54,8 +53,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class OrganizationControllerIntegrationTest extends BaseTest {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(OrganizationControllerIntegrationTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(OrganizationControllerIntegrationTest.class);
 
     /** The mvc. */
     @Autowired
@@ -68,8 +67,8 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
     private String baseUrl = "";
 
     /** The env. */
-    @Autowired
-    private Environment env;
+    // @Autowired
+    // private Environment env;
 
     /** The test user. */
     private User testUser = null;
@@ -101,8 +100,8 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 
         try {
             testUser = addUser(testUser);
-        } catch (Exception e) {
-            logger.error("ERROR {}", e.getMessage(), e);
+        } catch (final Exception e) {
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -116,8 +115,8 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 
         try {
             edition = EditionService.createEdition(testUser, tempEdition);
-        } catch (Exception e) {
-            logger.error("ERROR {}", e.getMessage(), e);
+        } catch (final Exception e) {
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -160,7 +159,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
 
-        logger.info(" organization = {}", originalOrg.toString());
+        LOG.info(" organization = {}", originalOrg.toString());
         // forbidden - unit test user is set so this does not happen
         // mvc.perform(post(url).content(org.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden()).andReturn();
 
@@ -174,7 +173,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         result = mvc.perform(post(url).content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
         assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
     }
@@ -198,13 +197,13 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
 
-        logger.info(" new organization = {}", originalOrg.toString());
+        LOG.info(" new organization = {}", originalOrg.toString());
 
         // CREATE
         result = mvc.perform(post(url).content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
         assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
 
@@ -224,14 +223,15 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         mvc.perform(put(url + "xyz").content(newOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest()).andReturn();
 
         // method not found
-        mvc.perform(put(baseUrl + "xyz" + "/" + newOrg.getId()).content(newOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+        mvc.perform(put(baseUrl + "xyz" + "/" + newOrg.getId()).content(newOrg.toString()).contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound()).andReturn();
 
         // update
         url = baseUrl + "/" + newOrg.getId();
         result = mvc.perform(put(url).content(newOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
 
         final Organization updatedOrg = new ObjectMapper().readValue(content, Organization.class);
         assertThat(compareOrganization(newOrg, updatedOrg, true)).isTrue();
@@ -256,13 +256,13 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
 
-        logger.info(" organization = {}", originalOrg.toString());
+        LOG.info(" organization = {}", originalOrg.toString());
 
         // create
         result = mvc.perform(post(url).content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
         assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
 
@@ -273,7 +273,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         url = baseUrl + "/" + newOrg.getId();
         result = mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
 
         final Organization getOrg = new ObjectMapper().readValue(content, Organization.class);
         assertThat(compareOrganization(getOrg, newOrg, true)).isTrue();
@@ -298,13 +298,13 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
 
-        logger.info(" organization = {}", originalOrg.toString());
+        LOG.info(" organization = {}", originalOrg.toString());
 
         // create
         result = mvc.perform(post(url).content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
         assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
 
@@ -315,9 +315,10 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         url = baseUrl + "/" + "search";
 
         // find by id
-        result = mvc.perform(get(url).queryParam("query", "id:" + newOrg.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result =
+            mvc.perform(get(url).queryParam("query", "id:" + newOrg.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Organization> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Organization>>() {
         }));
         assertThat(resultList1).isNotNull();
@@ -327,9 +328,10 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         assertThat(compareOrganization(resultList1.getItems().get(0), newOrg, true)).isTrue();
 
         // find by name
-        result = mvc.perform(get(url).queryParam("query", "name:" + newOrg.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result = mvc.perform(get(url).queryParam("query", "name:" + newOrg.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+            .andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Organization> resultList2 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Organization>>() {
         }));
         assertThat(resultList2).isNotNull();
@@ -358,13 +360,13 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         originalOrg.setIconUri("/organization/icon/");
         originalOrg.setPrimaryContactEmail("org@test.com");
 
-        logger.info(" organization = {}", originalOrg.toString());
+        LOG.info(" organization = {}", originalOrg.toString());
 
         // create
         result = mvc.perform(post(url).content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
         assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
 
@@ -382,9 +384,10 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 
         url = baseUrl + "/search";
         // find by id
-        result = mvc.perform(get(url).queryParam("query", "id:" + newOrg.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result =
+            mvc.perform(get(url).queryParam("query", "id:" + newOrg.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Organization> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Organization>>() {
         }));
         assertThat(resultList1).isNotNull();
@@ -392,9 +395,10 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         assertThat(resultList1.getItems().size()).isEqualTo(0);
 
         // find by name
-        result = mvc.perform(get(url).queryParam("query", "name:" + newOrg.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result = mvc.perform(get(url).queryParam("query", "name:" + newOrg.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+            .andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Organization> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Organization>>() {
         }));
         assertThat(resultList).isNotNull();
@@ -414,7 +418,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
     private boolean compareOrganization(final Organization newOrganization, final Organization originalOrganization, final boolean nonUpdatedAttributes) {
 
         boolean pass = false;
-        logger.info("new org record = {}", newOrganization);
+        LOG.info("new org record = {}", newOrganization);
         assertThat(newOrganization).isNotNull();
         assertThat(newOrganization.getName()).isEqualTo(originalOrganization.getName());
         assertThat(newOrganization.isActive()).isEqualTo(originalOrganization.isActive());

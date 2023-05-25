@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -67,11 +67,11 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     @Fetch(FetchMode.JOIN)
     private Organization organization;
 
-    /**  email for primary contact. */
+    /** email for primary contact. */
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
 
-    /**  roles for team. */
+    /** roles for team. */
     @ElementCollection
     @Fetch(FetchMode.JOIN)
     private Set<String> roles;
@@ -81,11 +81,13 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     @Fetch(FetchMode.JOIN)
     private Set<String> members;
 
-    /**  The member list. */
+    /** The member list. List<User> */
     @Transient
     private List<User> memberList;
-    
-    /** The user's roles for this team. */
+
+    /**
+     * The user's roles/permissions for this team. Ex. Can the user Update or Delete the team.
+     */
     @Transient
     private List<String> userRoles;
 
@@ -122,6 +124,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
      *
      * @param other the other
      */
+    @Override
     public void populateFrom(final Team other) {
 
         super.populateFrom(other);
@@ -140,6 +143,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
      *
      * @param other the other
      */
+    @Override
     public void patchFrom(final Team other) {
 
         // super.populateFrom(other);
@@ -337,7 +341,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
 
         this.memberList = memberList;
     }
-    
+
     /**
      * Returns a user's roles on this team .
      *
@@ -360,6 +364,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
      * @param userRoles the user's roles
      */
     public void setUserRoles(final List<String> userRoles) {
+
         this.userRoles = userRoles;
     }
 
@@ -469,7 +474,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     @Override
     public void lazyInit() {
 
-        // TODO Auto-generated method stub
+        // n/a
     }
 
     /* see superclass */

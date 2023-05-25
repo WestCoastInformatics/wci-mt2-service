@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SyncUtilities {
 
-    private final Logger logger = LoggerFactory.getLogger(SyncUtilities.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncUtilities.class);
 
     private SyncDatabaseHandler dbHandler;
 
@@ -69,7 +69,7 @@ public class SyncUtilities {
 
     private static final String UNDEFINED_USER_NAME = "Undefined";
 
-    private static SyncPersistenceMetadata metadata = new SyncPersistenceMetadata(new Date(), UNDEFINED_USER_NAME);
+    private static final SyncPersistenceMetadata metadata = new SyncPersistenceMetadata(new Date(), UNDEFINED_USER_NAME);
 
     private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
@@ -77,11 +77,11 @@ public class SyncUtilities {
 
     static final String SIMPLE_REFSET_TYPE_CONCEPT = "446609009";
 
-    public SyncUtilities(SyncDatabaseHandler dbHandler) {
+    public SyncUtilities(final SyncDatabaseHandler dbHandler) {
         this.dbHandler = dbHandler;
     }
 
-    public User getUser(TerminologyService service, String userName) throws Exception {
+    public User getUser(final TerminologyService service, final String userName) throws Exception {
 
         User user = null;
 
@@ -89,7 +89,7 @@ public class SyncUtilities {
         final QueryParameter query = new QueryParameter();
         query.setQuery("userName:" + userName + " AND active:true");
 
-        ResultList<User> results = service.find(query, pfs, User.class, null);
+        final ResultList<User> results = service.find(query, pfs, User.class, null);
 
         if (results.getItems() != null && results.getItems().size() == 1) {
 
@@ -100,7 +100,7 @@ public class SyncUtilities {
         return user;
     }
 
-    public User getUser(TerminologyService service, String name, String userName, String email, Set<String> roles) throws Exception {
+    public User getUser(final TerminologyService service, final String name, final String userName, final String email, final Set<String> roles) throws Exception {
 
         User user = getUser(service, userName);
 
@@ -118,7 +118,7 @@ public class SyncUtilities {
         }
 
         // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/446609009/descendants?stated=false&offset=0&limit=50
-        String url = SnowstormConnection.BASE_URL + "MAIN/concepts/" + SIMPLE_REFSET_TYPE_CONCEPT + "/descendants?stated=false&offset=0&limit=50";
+        final String url = SnowstormConnection.getBaseUrl() + "MAIN/concepts/" + SIMPLE_REFSET_TYPE_CONCEPT + "/descendants?stated=false&offset=0&limit=50";
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -137,9 +137,9 @@ public class SyncUtilities {
                 final JsonNode refset = refsetIterator.next();
 
                 if (!refset.has("conceptId")) {
-                    logger.error("Refset must have conceptId: " + refset);
+                    LOG.error("Refset must have conceptId: " + refset);
                 } else {
-                    logger.info("Core Refset: " + refset.get("conceptId").asText());
+                    LOG.info("Core Refset: " + refset.get("conceptId").asText());
                     coreRefsets.add(refset.get("conceptId").asText());
                 }
             }
@@ -157,7 +157,7 @@ public class SyncUtilities {
         }
 
         // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/900000000000443000/descendants?stated=false&offset=0&limit=50
-        String url = SnowstormConnection.BASE_URL + "MAIN/concepts/" + CORE_MODULE_PARENT + "/descendants?stated=false&offset=0&limit=50";
+        final String url = SnowstormConnection.getBaseUrl() + "MAIN/concepts/" + CORE_MODULE_PARENT + "/descendants?stated=false&offset=0&limit=50";
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -176,29 +176,29 @@ public class SyncUtilities {
                 final JsonNode module = moduleIterator.next();
 
                 if (!module.has("conceptId")) {
-                    logger.error("Module must have conceptId: " + module);
+                    LOG.error("Module must have conceptId: " + module);
                 } else {
                     coreModules.add(module.get("conceptId").asText());
                 }
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new Exception("Failed finding descendents of CORE MModule Parent in MAIN to identify international modules");
         }
 
         return coreModules;
     }
 
-    public Set<String> identifyModules(String shortName, String editionName, String editionBranch, JsonNode codeSystem) throws Exception {
+    public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch, final JsonNode codeSystem) throws Exception {
 
-        Set<String> editionModules = new HashSet<>();
+        final Set<String> editionModules = new HashSet<>();
 
         if (isInternationalEdition(editionName)) {
 
-            Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+            final Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
 
             while (moduleIterator.hasNext()) {
 
-                JsonNode module = moduleIterator.next();
+                final JsonNode module = moduleIterator.next();
 
                 if (module.get("active").asBoolean()) {
 
@@ -210,12 +210,12 @@ public class SyncUtilities {
 
         } else {
 
-            Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+            final Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
 
             // Ignore CORE Modules
             while (moduleIterator.hasNext()) {
 
-                JsonNode module = moduleIterator.next();
+                final JsonNode module = moduleIterator.next();
 
                 if (module.get("active").asBoolean() && !getCoreModules().contains(module.get("conceptId").asText())) {
 
@@ -230,7 +230,7 @@ public class SyncUtilities {
                 if (!isDeveloperEdition(editionName)) {
                     // All non-core code systems must have a non-core module.
                     // throw new Exception("Did not find any modules for code system " + editionName);
-                    logger.error("Did not find any edition-specific modules for code system: " + editionName + ". Will default to CORE modules");
+                    LOG.error("Did not find any edition-specific modules for code system: " + editionName + ". Will default to CORE modules");
                 }
 
                 editionModules.addAll(getCoreModules());
@@ -244,7 +244,7 @@ public class SyncUtilities {
 
     }
 
-    public String identifyDefaultLanguageCode(JsonNode codeSystem, String editionName) throws Exception {
+    public String identifyDefaultLanguageCode(final JsonNode codeSystem, final String editionName) throws Exception {
 
         // Identify Edition's defaultLanguageCode - Per Kai, transform first language in set as defaultLangCode
         if (!codeSystem.has("languages")) {
@@ -252,14 +252,14 @@ public class SyncUtilities {
             throw new Exception("All Code Systems must have lanaguages set filled in. " + editionName + " does not");
         }
 
-        Iterator<String> languages = codeSystem.get("languages").fieldNames();
+        final Iterator<String> languages = codeSystem.get("languages").fieldNames();
 
         return languages.next();
     }
 
-    public Set<String> identifyDefaultLanguageRefsets(JsonNode codeSystem, String shortName) {
+    public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName) {
 
-        Set<String> retSet = new HashSet<>();
+        final Set<String> retSet = new HashSet<>();
 
         // Identify Edition's Default Language Refsets
         if (codeSystem.has("defaultLanguageReferenceSets")) {
@@ -284,16 +284,16 @@ public class SyncUtilities {
         return retSet;
     }
 
-    public void printEditionValues(TerminologyService service, Edition edition) throws Exception {
+    public void printEditionValues(final TerminologyService service, final Edition edition) throws Exception {
 
         final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null).getItems();
         final List<Team> teams = service.getAll(Team.class);
 
-        for (Project project : orgProjects) {
+        for (final Project project : orgProjects) {
 
-            for (String teamId : project.getTeams()) {
+            for (final String teamId : project.getTeams()) {
 
-                Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
+                final Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
 
                 if (team == null) {
 
@@ -321,7 +321,7 @@ public class SyncUtilities {
         return editionModulesMap;
     }
 
-    private String getSyncResults(TerminologyService service) throws Exception {
+    private String getSyncResults(final TerminologyService service) throws Exception {
 
         final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
 
@@ -364,23 +364,23 @@ public class SyncUtilities {
             }
         }
 
-        logger.info("DONE POST SYNC DATA QUERIES");
+        LOG.info("DONE POST SYNC DATA QUERIES");
 
         return result.toString();
     }
 
-    public void emailSyncResults(TerminologyService service) throws Exception {
-        String results = getSyncResults(service);
+    public void emailSyncResults(final TerminologyService service) throws Exception {
+        final String results = getSyncResults(service);
 
         try {
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
             final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
             final Path path = Paths.get(fileName);
-            byte[] queryResultsToBytes = results.getBytes();
+            final byte[] queryResultsToBytes = results.getBytes();
 
             Files.write(path, queryResultsToBytes);
         } catch (IOException e) {
-            logger.error("Error occured writing post sync report to file", e);
+            LOG.error("Error occured writing post sync report to file", e);
         }
 
         RefsetService.clearAllRefsetCaches(null);
@@ -392,29 +392,30 @@ public class SyncUtilities {
             EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, results);
         }
 
-        logger.info("Completed Syncing with Snowstorm");
+        LOG.info("Completed Syncing with Snowstorm");
 
     }
 
-    public boolean isInternationalEdition(String matchingString) {
+    public boolean isInternationalEdition(final String matchingString) {
 
         return "international edition".equals(matchingString.toLowerCase()) || "snomedct".equals(matchingString.toLowerCase());
     }
 
     // In WCI case, accepts either name or shortName
-    public boolean isDeveloperEdition(String editionName) {
+    public boolean isDeveloperEdition(final String editionName) {
 
         return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
     }
 
     public void clearPreviousRun() {
+
         editionModulesMap.clear();
         coreModules.clear();
         coreRefsets.clear();
         undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
     }
 
-    public Object validateMatches(List<?> list, String uniqueId) throws Exception {
+    public Object validateMatches(final List<?> list, final String uniqueId) throws Exception {
 
         if (list.isEmpty()) {
             throw new Exception("Cannot find an element to matching value: " + uniqueId);
@@ -425,7 +426,7 @@ public class SyncUtilities {
         return list.iterator().next();
     }
 
-    public String determineMaintainerType(JsonNode codeSystem, String editionShortName) throws Exception {
+    public String determineMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
 
         String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
 
@@ -445,7 +446,7 @@ public class SyncUtilities {
         return codeSystemType;
     }
 
-    Refset initializeWorkflowStatus(TerminologyService service, Refset refset) throws Exception {
+    Refset initializeWorkflowStatus(final TerminologyService service, final Refset refset) throws Exception {
 
         if (!isDeveloperEdition(refset.getEdition().getShortName())) {
             throw new Exception("Cannot modify the workflow status of anything other than the developer org");
@@ -455,19 +456,19 @@ public class SyncUtilities {
 
         try {
             // if the status is Published then create a new version of the refset that is ready to be edited
-            refset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
+            final Refset updatedRefset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
 
             // if the status changed return the updated refset else return null
-            if (!currentStatus.equals(refset.getWorkflowStatus())) {
+            if (!currentStatus.equals(updatedRefset.getWorkflowStatus())) {
 
-                return refset;
+                return updatedRefset;
             } else {
 
                 return null;
             }
 
         } catch (Exception e) {
-            logger.error("Failed to initialize workflow on developer refset: " + refset + " with Exception --> " + e.getMessage());
+            LOG.error("Failed to initialize workflow on developer refset: " + refset + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 
@@ -476,14 +477,14 @@ public class SyncUtilities {
 
     }
 
-    public long getProcessingMinutes(String operationType, Date startTime) {
+    public long getProcessingMinutes(final String operationType, final Date startTime) {
 
         final Date end = new Date();
 
-        long differenceInMinutes = ((end.getTime() - startTime.getTime()) / (1000 * 60)) % 60;
-        long differenceInSeconds = ((end.getTime() - startTime.getTime()) / (1000 * 60 * 60)) % 60;
+        final long differenceInMinutes = ((end.getTime() - startTime.getTime()) / (1000 * 60)) % 60;
+        final long differenceInSeconds = ((end.getTime() - startTime.getTime()) / (1000 * 60 * 60)) % 60;
 
-        logger.info("Operation took " + differenceInSeconds + " seconds to run");
+        LOG.info("Operation took " + differenceInSeconds + " seconds to run");
 
         return differenceInMinutes;
 

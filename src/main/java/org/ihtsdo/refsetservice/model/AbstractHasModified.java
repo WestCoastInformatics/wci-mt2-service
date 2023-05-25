@@ -21,9 +21,9 @@ import org.slf4j.LoggerFactory;
 @MappedSuperclass
 public abstract class AbstractHasModified extends AbstractHasId implements HasModified {
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(AbstractHasModified.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractHasModified.class);
 
     /** The modified. */
     @Column(nullable = false)
@@ -47,6 +47,7 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
      * Instantiates an empty {@link AbstractHasModified}.
      */
     protected AbstractHasModified() {
+
         super();
     }
 
@@ -56,6 +57,7 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
      * @param other the other
      */
     protected AbstractHasModified(final HasModified other) {
+
         populateFrom(other);
     }
 
@@ -65,6 +67,7 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
      * @param other the other
      */
     public void populateFrom(final HasModified other) {
+
         // Only copy this stuff if the object has an id
         if (other.getId() != null) {
             super.populateFrom(other);
@@ -79,26 +82,30 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public boolean isActive() {
+
         return active;
     }
 
     /* see superclass */
     @Override
     public void setActive(final boolean active) {
+
         this.active = active;
     }
 
     /* see superclass */
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    //@DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
+    // @DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
     public Date getModified() {
+
         return modified;
     }
 
     /* see superclass */
     @Override
     public void setModified(final Date modified) {
+
         this.modified = modified;
     }
 
@@ -106,12 +113,14 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public Date getCreated() {
+
         return created;
     }
 
     /* see superclass */
     @Override
     public void setCreated(final Date created) {
+
         this.created = created;
     }
 
@@ -119,12 +128,14 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getModifiedBy() {
+
         return modifiedBy;
     }
 
     /* see superclass */
     @Override
     public void setModifiedBy(final String modifiedBy) {
+
         this.modifiedBy = modifiedBy;
     }
 
@@ -133,6 +144,7 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
      */
     @Override
     public void clearTrackingFields() {
+
         setId(null);
         created = null;
         modified = null;

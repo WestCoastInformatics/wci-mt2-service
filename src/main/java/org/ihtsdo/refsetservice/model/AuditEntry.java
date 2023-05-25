@@ -118,7 +118,7 @@ public class AuditEntry extends AbstractHasModified {
      *
      * @param entityType the entityType to set
      */
-    public void setEntityType(String entityType) {
+    public void setEntityType(final String entityType) {
 
         this.entityType = entityType;
     }
@@ -139,7 +139,7 @@ public class AuditEntry extends AbstractHasModified {
      *
      * @param entityId the entityId to set
      */
-    public void setEntityId(String entityId) {
+    public void setEntityId(final String entityId) {
 
         this.entityId = entityId;
     }
@@ -253,14 +253,15 @@ public class AuditEntry extends AbstractHasModified {
      */
     public String toLogString() {
 
-        return "AUDIT [entityType=" + entityType + ", entityId=" + entityId + ", message=" + message + ", details=" + details + ", modified=" + getModified() + ", modified=" + getModifiedBy() + "]";
+        return "AUDIT [entityType=" + entityType + ", entityId=" + entityId + ", message=" + message + ", details=" + details + ", modified=" + getModified()
+            + ", modified=" + getModifiedBy() + "]";
     }
 
     /* see superclass */
     @Override
     public void lazyInit() {
 
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 

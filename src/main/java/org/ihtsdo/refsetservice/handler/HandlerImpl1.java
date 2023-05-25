@@ -23,6 +23,7 @@ public class HandlerImpl1 implements ExampleHandler {
      */
     @Override
     public String doSomething() throws Exception {
+
         return properties.getProperty("spring.application.name");
     }
 }

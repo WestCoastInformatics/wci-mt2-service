@@ -28,82 +28,81 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * Base controller for error handling.
  */
-@CrossOrigin(origins = { "http://localhost:4200", "http://localhost:8888", "http://local.ihtsdotools.org:8888",
-		"https://dev-rt2.ihtsdotools.org", "https://uat-rt2.ihtsdotools.org",
-		"https://rt2.ihtsdotools.org" }, allowCredentials = "true")
+@CrossOrigin(origins = {
+    "http://localhost:4200", "http://localhost:8888", "http://local.ihtsdotools.org:8888", "https://dev-rt2.ihtsdotools.org", "https://uat-rt2.ihtsdotools.org",
+    "https://rt2.ihtsdotools.org"
+}, allowCredentials = "true")
 public class BaseController {
 
-	/** The Constant log. */
-	private static Logger logger = LoggerFactory.getLogger(BaseController.class);
+    /** The Constant log. */
+    private static final Logger LOG = LoggerFactory.getLogger(BaseController.class);
 
-	/**
-	 * Handle exception.
-	 *
-	 * @param exception the e
-	 * @return the ResponseEntity
-	 * @throws Exception the exception
-	 */
-	@SuppressWarnings("rawtypes")
-	public ResponseEntity handleException(final Exception exception) throws Exception {
+    /**
+     * Handle exception.
+     *
+     * @param exception the e
+     * @return the ResponseEntity
+     * @throws Exception the exception
+     */
+    @SuppressWarnings("rawtypes")
+    public ResponseEntity handleException(final Exception exception) throws Exception {
 
-		if (exception instanceof ResponseStatusException) {
+        if (exception instanceof ResponseStatusException) {
 
-			final ResponseStatusException responseStatusException = (ResponseStatusException) exception;
-			return ResponseEntity.status(responseStatusException.getRawStatusCode())
-					.body(responseStatusException.getReason());
+            final ResponseStatusException responseStatusException = (ResponseStatusException) exception;
+            return ResponseEntity.status(responseStatusException.getRawStatusCode()).body(responseStatusException.getReason());
 
-		} else if (exception instanceof RestException) {
+        } else if (exception instanceof RestException) {
 
-			final RestException restException = (RestException) exception;
-			return ResponseEntity.status(restException.getError().getStatus()).body(restException.getMessage());
+            final RestException restException = (RestException) exception;
+            return ResponseEntity.status(restException.getError().getStatus()).body(restException.getError().getMessage());
 
-		} else {
+        } else {
 
-			logger.error("Unexpected error", exception);
-			final String errorMessage = "Unexpected error occurred in the system. Please contact info@snomed.org";
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
-		}
-	}
+            LOG.error("Unexpected error", exception);
+            final String errorMessage = "Unexpected error occurred in the system. Please contact info@snomed.org";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
+        }
+    }
 
-	/**
-	 * Check to make sure parameters were properly bound to variables.
-	 *
-	 * @param bindingResult the binding result
-	 * @throws Exception the exception
-	 */
-	public void checkBinding(final BindingResult bindingResult) throws Exception {
+    /**
+     * Check to make sure parameters were properly bound to variables.
+     *
+     * @param bindingResult the binding result
+     * @throws Exception the exception
+     */
+    public void checkBinding(final BindingResult bindingResult) throws Exception {
 
-		// Check whether or not parameter binding was successful
-		if (bindingResult.hasErrors()) {
+        // Check whether or not parameter binding was successful
+        if (bindingResult.hasErrors()) {
 
-			final List<FieldError> errors = bindingResult.getFieldErrors();
-			final List<String> errorMessages = new ArrayList<>();
+            final List<FieldError> errors = bindingResult.getFieldErrors();
+            final List<String> errorMessages = new ArrayList<>();
 
-			for (final FieldError error : errors) {
+            for (final FieldError error : errors) {
 
-				final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = " + error.getField() + ", "
-						+ error.getCode();
-				logger.error(errorMessage);
-				errorMessages.add(errorMessage);
-			}
+                final String errorMessage = "ERROR " + bindingResult.getObjectName() + " = " + error.getField() + ", " + error.getCode();
+                LOG.error(errorMessage);
+                errorMessages.add(errorMessage);
+            }
 
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.join("\n ", errorMessages));
-		}
-	}
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.join("\n ", errorMessages));
+        }
+    }
 
-	/**
-	 * Authorize.
-	 *
-	 * @return the user
-	 * @throws Exception the exception
-	 */
-	public User authorizeUser() throws Exception {
+    /**
+     * Authorize.
+     *
+     * @return the user
+     * @throws Exception the exception
+     */
+    public User authorizeUser() throws Exception {
 
-		final User authUser = SecurityService.getUserFromSession();
-		if (authUser == null || authUser.getId() == null) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-		}
-		return authUser;
-	}
+        final User authUser = SecurityService.getUserFromSession();
+        if (authUser == null || authUser.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        return authUser;
+    }
 
 }

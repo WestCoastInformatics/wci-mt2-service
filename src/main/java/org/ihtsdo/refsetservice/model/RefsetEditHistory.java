@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model;
 
@@ -14,6 +23,7 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -26,8 +36,6 @@ import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Represents a refset.
@@ -38,9 +46,6 @@ import org.slf4j.LoggerFactory;
 @Indexed
 public class RefsetEditHistory extends AbstractHasModified implements Comparable<RefsetEditHistory> {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(RefsetEditHistory.class);
-    
     /** The refset ID. */
     @Column(nullable = false, length = 256)
     private String refsetId;
@@ -52,11 +57,11 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     /** The refset type. */
     @Column(nullable = false, length = 256)
     private String type;
-    
+
     /** The version status. */
     @Column(nullable = false, length = 256)
     private String versionStatus;
-    
+
     /** The workflow status. */
     @Column(nullable = true, length = 256)
     private String workflowStatus;
@@ -87,7 +92,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     /** The module ID. */
     @Column(nullable = false, length = 256)
     private String moduleId;
-    
+
     /** The edit branch ID. */
     @Column(nullable = true, length = 256)
     private String editBranchId;
@@ -95,7 +100,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     /** The external URL. */
     @Column(nullable = true, length = 4000)
     private String externalUrl;
-    
+
     /** The refset member count. */
     @Column(nullable = false)
     private int memberCount = -1;
@@ -106,14 +111,15 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
 
     /** The definition clauses. */
     // @Fetch(FetchMode.JOIN)
-    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClauseEditHistory.class,
-            orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = DefinitionClauseEditHistory.class, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("created ASC")
     private List<DefinitionClauseEditHistory> definitionClauses = new ArrayList<>();
-    
+
     /**
      * Instantiates an empty {@link RefsetEditHistory}.
      */
     public RefsetEditHistory() {
+
         // n/a
     }
 
@@ -123,6 +129,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param code the code
      */
     public RefsetEditHistory(final String code) {
+
         this.refsetId = code;
     }
 
@@ -134,7 +141,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param name the name
      */
     public RefsetEditHistory(final String terminology, final String code, final String name) {
-        
+
         this.type = terminology;
         this.refsetId = code;
         this.name = name;
@@ -146,6 +153,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param other the other
      */
     public RefsetEditHistory(final RefsetEditHistory other) {
+
         populateFrom(other);
     }
 
@@ -155,7 +163,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param other the other
      */
     public void populateFrom(final RefsetEditHistory other) {
-        
+
         super.populateFrom(other);
         refsetId = other.getRefsetId();
         name = other.getName();
@@ -173,14 +181,14 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         tags = new HashSet<String>(other.getTags());
         memberCount = other.getMemberCount();
     }
-    
+
     /**
      * Populate from.
      *
      * @param other the other
      */
     public void populateFrom(final Refset other) {
-        
+
         super.populateFrom(other);
         refsetId = other.getRefsetId();
         name = other.getName();
@@ -206,6 +214,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getRefsetId() {
+
         return refsetId;
     }
 
@@ -215,6 +224,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param refsetId the refset ID
      */
     public void setRefsetId(final String refsetId) {
+
         this.refsetId = refsetId;
     }
 
@@ -224,6 +234,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the name
      */
     public String getName() {
+
         return name;
     }
 
@@ -233,6 +244,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param name the name
      */
     public void setName(final String name) {
+
         this.name = name;
     }
 
@@ -242,6 +254,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the type
      */
     public String getType() {
+
         return type.toUpperCase();
     }
 
@@ -251,6 +264,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param type the type
      */
     public void setType(final String type) {
+
         this.type = type.toUpperCase();
     }
 
@@ -260,6 +274,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the version status
      */
     public String getVersionStatus() {
+
         return versionStatus;
     }
 
@@ -269,24 +284,27 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param versionStatus the version status
      */
     public void setVersionStatus(final String versionStatus) {
+
         this.versionStatus = versionStatus;
     }
-    
+
     /**
      * Returns the workflow status.
      *
      * @return the workflow status
      */
     public String getWorkflowStatus() {
+
         return workflowStatus;
     }
-    
+
     /**
      * Sets the workflow status.
      *
      * @param workflowStatus the workflow status
      */
     public void setWorkflowStatus(final String workflowStatus) {
+
         this.workflowStatus = workflowStatus;
     }
 
@@ -296,6 +314,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the versionDate
      */
     public Date getVersionDate() {
+
         return versionDate;
     }
 
@@ -305,6 +324,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param versionDate the versionDate to set
      */
     public void setVersionDate(final Date versionDate) {
+
         this.versionDate = versionDate;
     }
 
@@ -314,6 +334,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the narrative
      */
     public String getNarrative() {
+
         return narrative;
     }
 
@@ -323,6 +344,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param narrative the narrative to set
      */
     public void setNarrative(final String narrative) {
+
         this.narrative = narrative;
     }
 
@@ -332,6 +354,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the versionNotes
      */
     public String getVersionNotes() {
+
         return versionNotes;
     }
 
@@ -341,6 +364,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param versionNotes the versionNotes to set
      */
     public void setVersionNotes(final String versionNotes) {
+
         this.versionNotes = versionNotes;
     }
 
@@ -350,6 +374,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the isPrivateRefset
      */
     public boolean isPrivateRefset() {
+
         return privateRefset;
     }
 
@@ -359,10 +384,10 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param privateRefset the isPrivateRefset to set
      */
     public void setPrivateRefset(final boolean privateRefset) {
+
         this.privateRefset = privateRefset;
     }
-   
-    
+
     /**
      * Gets the tags.
      *
@@ -383,24 +408,27 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param tags the tags to set
      */
     public void setTags(final Set<String> tags) {
+
         this.tags = tags;
     }
-    
+
     /**
      * Returns the member count.
      *
      * @return the member count
      */
     public int getMemberCount() {
+
         return memberCount;
     }
-    
+
     /**
      * Sets the member count.
      *
      * @param memberCount the member count to set
      */
     public void setMemberCount(final int memberCount) {
+
         this.memberCount = memberCount;
     }
 
@@ -410,6 +438,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the localSet
      */
     public boolean isLocalSet() {
+
         return localSet;
     }
 
@@ -419,6 +448,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param localSet the localSet to set
      */
     public void setLocalSet(final boolean localSet) {
+
         this.localSet = localSet;
     }
 
@@ -428,6 +458,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the moduleId
      */
     public String getModuleId() {
+
         return moduleId;
     }
 
@@ -437,6 +468,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param moduleId the moduleId to set
      */
     public void setModuleId(final String moduleId) {
+
         this.moduleId = moduleId;
     }
 
@@ -446,6 +478,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @return the edit branch ID
      */
     public String getEditBranchId() {
+
         return editBranchId;
     }
 
@@ -455,24 +488,27 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param editBranchId the edit branch ID to set
      */
     public void setEditBranchId(final String editBranchId) {
+
         this.editBranchId = editBranchId;
     }
-    
+
     /**
      * Gets the external url.
      *
      * @return the externalUrl
      */
     public String getExternalUrl() {
+
         return externalUrl;
     }
-    
+
     /**
      * Sets the external url.
      *
      * @param externalUrl the externalUrl to set
      */
     public void setExternalUrl(final String externalUrl) {
+
         this.externalUrl = externalUrl;
     }
 
@@ -496,7 +532,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      * @param definitionClauses the definitionClauses to set
      */
     public void setDefinitionClauses(final List<DefinitionClauseEditHistory> definitionClauses) {
-        
+
         Collections.sort(definitionClauses, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
         this.definitionClauses = definitionClauses;
     }
@@ -508,6 +544,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((refsetId == null) ? 0 : refsetId.hashCode());
@@ -526,7 +563,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         result = prime * result + (localSet ? 1 : 0);
         return result;
     }
-    
+
     /**
      * Equals.
      *
@@ -581,7 +618,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         } else if (!versionStatus.equals(other.versionStatus)) {
             return false;
         }
-        
+
         if (workflowStatus == null) {
             if (other.workflowStatus != null) {
                 return false;
@@ -621,7 +658,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         } else if (!moduleId.equals(other.moduleId)) {
             return false;
         }
-        
+
         if (editBranchId == null) {
             if (other.editBranchId != null) {
                 return false;
@@ -637,7 +674,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
         } else if (!externalUrl.equals(other.externalUrl)) {
             return false;
         }
-        
+
         if (memberCount != other.memberCount) {
             return false;
         }
@@ -661,6 +698,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      */
     @Override
     public int compareTo(final RefsetEditHistory o) {
+
         // Handle null
         return (name + refsetId).compareToIgnoreCase(o.getName() + o.getRefsetId());
     }
@@ -670,7 +708,7 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
      */
     @Override
     public void lazyInit() {
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 }

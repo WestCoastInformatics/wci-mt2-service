@@ -14,16 +14,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The Class CrowdGroupNameAlgorithmTest.
  */
 public class CrowdGroupNameAlgorithmTest {
-
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(CrowdGroupNameAlgorithmTest.class);
 
     /**
      * Test generate name.

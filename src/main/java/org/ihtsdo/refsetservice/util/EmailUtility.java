@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.util;
 
 import java.util.HashSet;
@@ -24,38 +33,44 @@ import org.springframework.web.server.ResponseStatusException;
  */
 public final class EmailUtility {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(EmailUtility.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(EmailUtility.class);
 
     /** The email SMTP user. */
-    private static String SMPT_USER;
+    private static String smtpUser;
 
     /** The email SMTP password. */
-    private static String SMPT_PASSWORD;
+    private static String smtpPassword;
 
-    /** The email SMTP host. */
-    public static String SMPT_HOST;
-
-    /** The email SMTP port. */
-    public static String SMPT_PORT;
-
-    /** The email to send errors to. */
-    public static String ERROR_TO_EMAIL;
+    // /** The email SMTP host. */
+    // private static String smtpHost;
+    //
+    // /** The email SMTP port. */
+    // private static String smtpPort;
+    //
+    // /** The email to send errors to. */
+    // private static String errorToEmail;
 
     /** The email address sent emails are from. */
-    public static String EMAIL_FROM;
+    private static String emailFrom;
 
-    private static final String emailValidationRegexPattern = "^(?=.{1,64}@)[\\p{L}0-9_+-]+(\\.[\\p{L}0-9_+-]+)*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,})$";
+    /** The email enabled. */
+    private static String emailEnabled;
+
+    /** The Constant emailValidationRegexPattern. */
+    private static final String EMAIL_VALIDATION_REGEX_PATTERN =
+        "^(?=.{1,64}@)[\\p{L}0-9_+-]+(\\.[\\p{L}0-9_+-]+)*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,})$";
 
     /** Static initialization. */
     static {
 
-        SMPT_USER = PropertyUtility.getProperty("mail.smtp.user");
-        SMPT_PASSWORD = PropertyUtility.getProperty("mail.smtp.password");
-        SMPT_HOST = PropertyUtility.getProperty("mail.smtp.host");
-        SMPT_PORT = PropertyUtility.getProperty("mail.smtp.port");
-        ERROR_TO_EMAIL = PropertyUtility.getProperty("mail.smtp.error.to");
-        EMAIL_FROM = PropertyUtility.getProperty("mail.smtp.from");
+        smtpUser = PropertyUtility.getProperty("mail.smtp.user");
+        smtpPassword = PropertyUtility.getProperty("mail.smtp.password");
+        // smtpHost = PropertyUtility.getProperty("mail.smtp.host");
+        // smtpPort = PropertyUtility.getProperty("mail.smtp.port");
+        // errorToEmail = PropertyUtility.getProperty("mail.smtp.error.to");
+        emailFrom = PropertyUtility.getProperty("mail.smtp.from");
+        emailEnabled = PropertyUtility.getProperty("mail.enabled");
     }
 
     /**
@@ -73,7 +88,6 @@ public final class EmailUtility {
      * @param from the from
      * @param recipients the recipients
      * @param body the body
-     * @param details the details
      * @throws Exception the exception
      */
     public static void sendEmail(final String subject, final String from, final Set<String> recipients, final String body) throws Exception {
@@ -81,33 +95,33 @@ public final class EmailUtility {
         if (recipients == null || recipients.isEmpty()) {
 
             final String message = "Email must have recipients";
-            logger.error(message);
+            LOG.error(message);
             throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
         }
 
-        if (recipients.stream().anyMatch(r -> !r.matches(emailValidationRegexPattern))) {
+        if (recipients.stream().anyMatch(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN))) {
 
             // invalid email address. Return 400
-            List<String> failingEmailAddresses = recipients.stream().filter(r -> r.matches(emailValidationRegexPattern)).collect(Collectors.toList());
-            
+            final List<String> failingEmailAddresses = recipients.stream().filter(r -> r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
+
             final String message = "Invalid email address requested for recipient(s): " + failingEmailAddresses;
-            logger.error(message);
+            LOG.error(message);
             throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
         }
 
         // avoid sending mail if disabled
-        if ("false".equals(PropertyUtility.getProperty("mail.enabled"))) {
+        if ("false".equals(emailEnabled)) {
 
             return;
         }
 
-        Session session = Session.getInstance(PropertyUtility.getProperties(), new Authenticator() {
+        final Session session = Session.getInstance(PropertyUtility.getProperties(), new Authenticator() {
 
             /* see superclass */
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
 
-                return new PasswordAuthentication(SMPT_USER, SMPT_PASSWORD);
+                return new PasswordAuthentication(smtpUser, smtpPassword);
             }
         });
 
@@ -122,7 +136,7 @@ public final class EmailUtility {
         }
 
         message.setSubject(subject);
-        String fromAdress = (from != null && !from.isBlank()) ? from : EMAIL_FROM;
+        final String fromAdress = (from != null && !from.isBlank()) ? from : emailFrom;
         message.setFrom(new InternetAddress(fromAdress));
 
         for (final String recipient : recipients) {
@@ -130,7 +144,7 @@ public final class EmailUtility {
             message.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
         }
 
-        logger.info("Senging email: " + message);
+        LOG.info("Sending email: " + message);
         Transport.send(message);
     }
 
@@ -141,7 +155,6 @@ public final class EmailUtility {
      * @param from the from
      * @param recipients the recipients
      * @param body the body
-     * @param details the details
      * @throws Exception the exception
      */
     public static void sendEmail(final String subject, final String from, final String recipients, final String body) throws Exception {
@@ -179,12 +192,12 @@ public final class EmailUtility {
         @Override
         public PasswordAuthentication getPasswordAuthentication() {
 
-            if (SMPT_PASSWORD == null) {
+            if (smtpPassword == null) {
 
                 return null;
             } else {
 
-                return new PasswordAuthentication(SMPT_USER, SMPT_PASSWORD);
+                return new PasswordAuthentication(smtpUser, smtpPassword);
             }
 
         }

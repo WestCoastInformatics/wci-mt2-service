@@ -17,15 +17,16 @@ import org.slf4j.LoggerFactory;
  */
 public class ModelUtilityTest extends BaseTest {
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private final Logger logger = LoggerFactory.getLogger(ModelUtilityTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ModelUtilityTest.class);
 
     /**
      * Test equals null.
      */
     @Test
     public void testEqualsNull() {
+
         assertTrue(ModelUtility.equalsNullSafe(null, null));
         assertTrue(ModelUtility.equalsNullSafe("a", "a"));
         assertFalse(ModelUtility.equalsNullSafe("a", null));
@@ -45,6 +46,7 @@ public class ModelUtilityTest extends BaseTest {
      */
     @Test
     public void testFirstNotNull() throws Exception {
+
         assertEquals("abc", ModelUtility.firstNotNull(null, "abc"));
         assertEquals("abc", ModelUtility.firstNotNull(null, "abc", null));
         assertEquals("abc", ModelUtility.firstNotNull("abc", null));

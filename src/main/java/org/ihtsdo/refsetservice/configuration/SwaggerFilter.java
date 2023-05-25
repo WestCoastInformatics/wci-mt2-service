@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.configuration;
 
 import java.io.IOException;
@@ -17,16 +26,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * 
+ * The Class SwaggerFilter.
  */
 @Component
 public class SwaggerFilter implements Filter {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(SwaggerFilter.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(SwaggerFilter.class);
 
+    /* see superclass */
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+    public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain) throws IOException, ServletException {
 
         String url = null;
 
@@ -39,12 +49,12 @@ public class SwaggerFilter implements Filter {
                     final Cookie cookie = SecurityService.getImsCookie();
 
                     if (cookie == null) {
-                        logger.info("Unauthorized user tried to access Swagger.");
+                        LOG.info("Unauthorized user tried to access Swagger.");
                         res.sendError(401, "Not Authorized");
                     }
 
-                } catch (Exception e) {
-                    logger.error("Error occurred checking to see if user is allowed access to swagger.", e);
+                } catch (final Exception e) {
+                    LOG.error("Error occurred checking to see if user is allowed access to swagger.", e);
                     res.sendError(401, "Not Authorized");
                 }
 

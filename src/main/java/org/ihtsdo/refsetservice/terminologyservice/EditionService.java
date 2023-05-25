@@ -18,16 +18,14 @@ import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The Class EditionService.
  */
 public class EditionService extends BaseService {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(EditionService.class);
+    // /** The Constant LOG. */
+    // private static final Logger LOG = LoggerFactory.getLogger(EditionService.class);
 
     /**
      * Creates the edition.
@@ -88,7 +86,7 @@ public class EditionService extends BaseService {
             return results;
         }
     }
-    
+
     /**
      * Returns the edition for organization.
      *
@@ -97,7 +95,7 @@ public class EditionService extends BaseService {
      * @throws Exception the exception
      */
     public static Edition getEditionForOrganization(final String organizationId) throws Exception {
-        
+
         try (final TerminologyService service = new TerminologyService()) {
 
             final Edition edition = service.findSingle("organizationId:" + organizationId, Edition.class, null);

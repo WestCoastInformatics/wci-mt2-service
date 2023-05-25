@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
 import javax.ws.rs.ForbiddenException;
@@ -47,11 +46,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class ProjectService extends BaseService {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(ProjectService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(ProjectService.class);
 
-    /** The config properties. */
-    private static final Properties PROPERTIES = PropertyUtility.getProperties();
+    /** The crowd unit test skip. */
+    private static String crowdUnitTestSkip;
+
+    static {
+        crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+    }
 
     /**
      * Adds the project.
@@ -101,7 +104,7 @@ public class ProjectService extends BaseService {
             if (project == null) {
 
                 final String errorMessage = "Unable to find project for id " + projectId + ".";
-                logger.info(errorMessage);
+                LOG.info(errorMessage);
                 throw new NotFoundException(errorMessage);
             }
 
@@ -162,11 +165,11 @@ public class ProjectService extends BaseService {
         }
 
     }
-    
+
     /**
      * Returns the team assigned to this project.
      *
-     * @param projectId the project ID 
+     * @param projectId the project ID
      * @return the project teams
      * @throws Exception the exception
      */
@@ -174,16 +177,16 @@ public class ProjectService extends BaseService {
 
         final Project project = getProject(projectId, false);
         final ResultList<Team> teams = new ResultList<>();
-        
+
         for (final String teamId : project.getTeams()) {
 
             final Team team = TeamService.getTeam(teamId, true);
             teams.getItems().add(team);
         }
-        
+
         teams.setTotal(teams.getItems().size());
         teams.setTotalKnown(true);
-        
+
         return teams;
     }
 
@@ -252,7 +255,7 @@ public class ProjectService extends BaseService {
         }
 
     }
-    
+
     /**
      * Search Projects.
      *
@@ -263,22 +266,22 @@ public class ProjectService extends BaseService {
     public static Map<String, String> getModuleNames(final Project project) throws Exception {
 
         // Create Snowstorm URL
-        final String conceptSearchUrl = SnowstormConnection.BASE_URL + project.getEdition().getBranch() + "/concepts/search";
+        final String conceptSearchUrl = SnowstormConnection.getBaseUrl() + project.getEdition().getBranch() + "/concepts/search";
         final String bodyBase = "{\"limit\": 1000, ";
         String bodyConceptIds = "\"conceptIds\":[";
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String, String> moduleNames = new HashMap<>();
-        
+
         for (final String moduleId : project.getEdition().getModules()) {
             bodyConceptIds += "\"" + moduleId + "\",";
         }
-        
+
         bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
-        
+
         final String searchBody = bodyBase + bodyConceptIds + "}";
-        logger.debug("getModuleNames URL: " + conceptSearchUrl);
-        logger.debug("getModuleNames BODY: " + searchBody);
-        
+        LOG.debug("getModuleNames URL: " + conceptSearchUrl);
+        LOG.debug("getModuleNames BODY: " + searchBody);
+
         try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, searchBody)) {
 
             final String resultString = response.readEntity(String.class);
@@ -286,7 +289,8 @@ public class ProjectService extends BaseService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                throw new Exception("call to url '" + conceptSearchUrl + "' for module name lookup wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
+                throw new Exception("call to url '" + conceptSearchUrl + "' for module name lookup wasn't successful. Status: " + response.getStatus()
+                    + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final JsonNode root = mapper.readTree(resultString.toString());
@@ -301,11 +305,11 @@ public class ProjectService extends BaseService {
                 if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
                     name = conceptNode.get("fsn").get("term").asText();
                 }
-                
+
                 moduleNames.put(conceptId, name);
             }
         }
-        
+
         return moduleNames;
     }
 
@@ -429,7 +433,7 @@ public class ProjectService extends BaseService {
 
         if (!project.getRoles().contains(User.ROLE_ADMIN)) {
 
-            logger.error("User does not have permission to edit this project.");
+            LOG.error("User does not have permission to edit this project.");
             throw new ForbiddenException("User does not have permission to edit this project.");
         }
 
@@ -445,9 +449,9 @@ public class ProjectService extends BaseService {
      */
     private static void updateMemberships(final Project project, final Set<String> oldTeams, final Set<String> newTeams) throws Exception {
 
-        if (PROPERTIES.getProperty("crowd.unit.test.skip") == null || !"true".equalsIgnoreCase(PROPERTIES.getProperty("crowd.unit.test.skip"))) {
+        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
 
-            logger.info("CALLING CROWD API from ProjectService updateMemberships");
+            LOG.info("CALLING CROWD API from ProjectService updateMemberships");
 
             final Set<String> copyOfOldTeams = (oldTeams != null) ? new HashSet<String>(oldTeams) : new HashSet<String>();
             final Set<String> copyOfNewTeams = (newTeams != null) ? new HashSet<String>(newTeams) : new HashSet<String>();
@@ -461,11 +465,12 @@ public class ProjectService extends BaseService {
                 for (final String teamId : copyOfNewTeams) {
                     final Team team = TeamService.getTeam(teamId, true);
                     // ignores 400 errors, if the group already exists
-                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true);
+                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true, false);
                     if (team != null && team.getMemberList() != null) {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {
-                                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                final String groupName =
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                 CrowdAPIClient.addMembership(groupName, user.getUserName());
                             }
                         }
@@ -483,7 +488,8 @@ public class ProjectService extends BaseService {
                     if (team != null && team.getMemberList() != null) {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {
-                                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                final String groupName =
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                 CrowdAPIClient.deleteMembership(groupName, user.getUserName());
                             }
                         }

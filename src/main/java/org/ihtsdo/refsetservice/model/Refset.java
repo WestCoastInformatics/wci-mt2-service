@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -47,14 +47,11 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDe
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-// TODO: Auto-generated Javadoc
 /**
  * Represents a refset.
  * 
@@ -63,9 +60,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Table(name = "refsets")
 @Indexed
 public class Refset extends AbstractHasModified implements Comparable<Refset> {
-
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(Refset.class);
 
     /** The refset ID. */
     @Column(nullable = false, length = 256)
@@ -559,12 +553,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @param descriptions the descriptions
      */
-    public void setDescriptions(List<Map<String, String>> descriptions) {
+    public void setDescriptions(final List<Map<String, String>> descriptions) {
 
         this.descriptions = descriptions;
     }
 
     /**
+     * Returns the version list.
+     *
      * @return the versionList
      */
     @JsonGetter()
@@ -579,14 +575,18 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the version list.
+     *
      * @param versionList the versionList to set
      */
-    public void setVersionList(List<Map<String, String>> versionList) {
+    public void setVersionList(final List<Map<String, String>> versionList) {
 
         this.versionList = versionList;
     }
 
     /**
+     * Returns the roles.
+     *
      * @return the roles
      */
     @JsonGetter()
@@ -601,9 +601,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the roles.
+     *
      * @param roles the roles
      */
-    public void setRoles(List<String> roles) {
+    public void setRoles(final List<String> roles) {
 
         this.roles = roles;
     }
@@ -1160,7 +1162,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * 
      * @param availableActions the available actions to set
      */
-    public void setAvailableActions(List<String> availableActions) {
+    public void setAvailableActions(final List<String> availableActions) {
 
         this.availableActions = availableActions;
     }
@@ -1324,6 +1326,8 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Indicates whether or not latest published version is the case.
+     *
      * @return the latestPublishedVersion
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
@@ -1333,14 +1337,18 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the latest published version.
+     *
      * @param latestPublishedVersion the latestPublishedVersion to set
      */
-    public void setLatestPublishedVersion(boolean latestPublishedVersion) {
+    public void setLatestPublishedVersion(final boolean latestPublishedVersion) {
 
         this.latestPublishedVersion = latestPublishedVersion;
     }
 
     /**
+     * Returns the checks for version in development.
+     *
      * @return Does this refset have a version in development (this is only true if this is the latest published version)
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
@@ -1350,9 +1358,11 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     }
 
     /**
+     * Sets the checks for version in development.
+     *
      * @param hasVersionInDevelopment set if this refset has a version in development (this is only true if this is the latest published version)
      */
-    public void setHasVersionInDevelopment(boolean hasVersionInDevelopment) {
+    public void setHasVersionInDevelopment(final boolean hasVersionInDevelopment) {
 
         this.hasVersionInDevelopment = hasVersionInDevelopment;
     }
@@ -1373,7 +1383,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @param openDiscussionCount the open discussion count
      */
-    public void setOpenDiscussionCount(int openDiscussionCount) {
+    public void setOpenDiscussionCount(final int openDiscussionCount) {
 
         this.openDiscussionCount = openDiscussionCount;
     }
@@ -1394,7 +1404,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @param resolvedDiscussionCount the resolved discussion count
      */
-    public void setResolvedDiscussionCount(int resolvedDiscussionCount) {
+    public void setResolvedDiscussionCount(final int resolvedDiscussionCount) {
 
         this.resolvedDiscussionCount = resolvedDiscussionCount;
     }
@@ -1792,7 +1802,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @Override
     public void lazyInit() {
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 }

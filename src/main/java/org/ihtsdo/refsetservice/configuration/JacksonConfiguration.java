@@ -20,8 +20,9 @@ public class JacksonConfiguration {
      */
     @Bean
     public ObjectMapper objectMapper() {
+
         final ObjectMapper mapper = new ObjectMapper();
-        //mapper.setSerializationInclusion(Include.NON_EMPTY);
+        // mapper.setSerializationInclusion(Include.NON_EMPTY);
         mapper.registerModule(new Hibernate5Module());
         return mapper;
     }
