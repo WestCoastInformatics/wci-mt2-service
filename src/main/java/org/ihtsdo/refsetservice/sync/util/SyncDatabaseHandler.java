@@ -449,7 +449,7 @@ public class SyncDatabaseHandler {
                 refsetDbIds.add(refset.getId());
             }
 
-            // Adding refsets identified on snowstorm
+            // Adding refsets identified on termserver
             for (final Refset refset : refsets) {
 
                 final Refset updatedRefset = service.update(refset);

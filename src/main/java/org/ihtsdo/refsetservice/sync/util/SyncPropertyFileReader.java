@@ -91,6 +91,7 @@ public class SyncPropertyFileReader {
 
     private final Map<String, String> sctIdToProjectIdMap = new HashMap<>();
 
+    /** Map of Project ids to map of project name-to-description */
     private final Map<String, Map<String, String>> projectIdToProjectInfoMap = new HashMap<>();
 
     private static Map<String, Set<String>> defaultLanguageRefsetMap = null;
@@ -343,7 +344,7 @@ public class SyncPropertyFileReader {
 
         try {
 
-            final  BufferedReader reader = new BufferedReader(new InputStreamReader(teamCreationResource.getInputStream()));
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(teamCreationResource.getInputStream()));
 
             String line = reader.readLine();
 
@@ -420,12 +421,11 @@ public class SyncPropertyFileReader {
 
     private Map<String, Set<String>> readTeamMembership() {
 
-        
         final Map<String, Set<String>> teamMembership = new HashMap<>();
 
         try {
 
-            final  BufferedReader reader = new BufferedReader(new InputStreamReader(teamMembershipResource.getInputStream()));
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(teamMembershipResource.getInputStream()));
 
             String line = reader.readLine();
 
@@ -457,8 +457,6 @@ public class SyncPropertyFileReader {
     }
 
     Map<String, Set<String>> readUndefinedDefaultLanguageRefsets() {
-
-        
 
         if (defaultLanguageRefsetMap == null) {
 
@@ -575,7 +573,7 @@ public class SyncPropertyFileReader {
 
     private String stripQuotes(final String str) {
         String updatedString = str;
-        
+
         if (updatedString.startsWith("\"")) {
 
             updatedString = updatedString.substring(1);
@@ -780,6 +778,7 @@ public class SyncPropertyFileReader {
             }
 
             projectOrganizationMap.put(line.split(SPLIT_CHARACTER)[0], organizationName);
+
             metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncPersistenceMetadata(modified, modifiedBy));
         } catch (final Exception e) {
 

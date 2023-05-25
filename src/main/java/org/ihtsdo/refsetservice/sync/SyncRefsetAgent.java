@@ -22,6 +22,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncRefsetMetadata;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
@@ -49,10 +50,9 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private Map<String, Set<Long>> newlyCreatedAndUnchangedRefsetToVersionsMap = new HashMap<>();
 
-    // rttProject Id to Rt2Project
-    private final Map<String, Project> rttProjects = new HashMap<>();
-
     private final Map<String, Project> refsetProjectMap = new HashMap<>();
+
+    private final Map<String, Project> defaultOrganizationProjectMap = new HashMap<>();
 
     @Override
     public void syncComponent(final TerminologyService service) throws Exception {
@@ -358,7 +358,6 @@ public class SyncRefsetAgent extends SyncAgent {
         filteredRefsets.clear();
         refsetToModuleMap.clear();
         newlyCreatedAndUnchangedRefsetToVersionsMap.clear();
-        rttProjects.clear();
 
         RefsetMemberService.clearVersionsWithChanges();
     }
@@ -413,27 +412,30 @@ public class SyncRefsetAgent extends SyncAgent {
             // Start comparison
             boolean modificationMade = false;
 
-            if (isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset name ", modifyingVersion.getName(), termserverRefsetName)) {
+            if (modifyingVersion.getName() == null || isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset name ", modifyingVersion.getName(), termserverRefsetName)) {
                 modifyingVersion.setName(termserverRefsetName);
                 modificationMade = true;
             }
 
-            if (isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset branch ", modifyingVersion.getBranchPath(), termserverRefsetBranch)) {
+            if (modifyingVersion.getBranchPath() == null || isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset branch ", modifyingVersion.getBranchPath(), termserverRefsetBranch)) {
                 modifyingVersion.setBranchPath(termserverRefsetBranch);
-                LOG.error("Likely an error as refsetId/version " + refsetId + "/" + testingVersionDate + " shouldn't be able to change their branch path from " + modifyingVersion.getBranchPath()
-                        + " to " + termserverRefsetBranch);
+
+                if (modifyingVersion.getBranchPath() != null) {
+                    LOG.error("Likely an error as refsetId/version " + refsetId + "/" + testingVersionDate + " shouldn't be able to change their branch path from " + modifyingVersion.getBranchPath()
+                            + " to " + termserverRefsetBranch);
+                }
                 modificationMade = true;
             }
 
-            if (isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset moduleId ", modifyingVersion.getModuleId(), termserverRefsetModuleId)) {
+            if (modifyingVersion.getModuleId() == null || isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset moduleId ", modifyingVersion.getModuleId(), termserverRefsetModuleId)) {
                 modifyingVersion.setModuleId(termserverRefsetModuleId);
                 modificationMade = true;
             }
 
             if (modificationMade) {
-                dbHandler.updateRefset(service, modifyingVersion);
+                final Refset updatedRefset = dbHandler.updateRefset(service, modifyingVersion);
 
-                modifiedVersions.add(modifyingVersion.getVersionDate().getTime());
+                modifiedVersions.add(updatedRefset.getVersionDate().getTime());
             }
         }
 
@@ -680,13 +682,11 @@ public class SyncRefsetAgent extends SyncAgent {
 
         if (!refsetProjectMap.containsKey(metadata.getRefsetId())) {
 
-            // refset project defined in RTT?
+            // refset project must be defined in RTT
             if (utilities.getPropertyReader().getSctIdToProjectIdMap().containsKey(metadata.getRefsetId())) {
-
                 final String rttProjectId = utilities.getPropertyReader().getSctIdToProjectIdMap().get(metadata.getRefsetId());
 
-                // Rtt project already defined?
-                if (!rttProjects.containsKey(rttProjectId)) {
+                if (utilities.getPropertyReader().getProjectIdToProjectInfoMap().containsKey(rttProjectId)) {
 
                     if (utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).keySet().size() != 1) {
                         LOG.error("Have unexpected number of names/descriptions for projectId: " + rttProjectId + " with names: "
@@ -695,29 +695,48 @@ public class SyncRefsetAgent extends SyncAgent {
                         return null;
                     }
 
-                    final String rttProjectName = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).keySet().iterator().next();
-                    final String rttProjectDescription = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId).values().iterator().next();
+                    final Map<String, String> rttProjectInfo = utilities.getPropertyReader().getProjectIdToProjectInfoMap().get(rttProjectId);
 
-                    // Create project
-                    final Project addedProject = dbHandler.addProject(service, rttProjectName, rttProjectDescription, metadata.getEdition());
+                    final String rttProjectName = rttProjectInfo.keySet().iterator().next();
 
-                    statistics.incrementProjectsAdded();
+                    if (refsetProjectMap.values().stream().anyMatch(project -> project.getName().equals(rttProjectName))) {
+                        final String refsetIdToUse = refsetProjectMap.keySet().stream().filter(refsetId -> refsetProjectMap.get(refsetId).getName().equals(rttProjectName)).iterator().next();
+                        refsetProjectMap.put(metadata.getRefsetId(), refsetProjectMap.get(refsetIdToUse));
 
-                    rttProjects.put(rttProjectId, addedProject);
+                    } else {
+                        final String rttProjectDescription = rttProjectInfo.get(rttProjectName);
 
-                    refsetProjectMap.put(metadata.getRefsetId(), addedProject);
-                } else {
-                    LOG.error("Unable to determine which RTT project the RTT refset {} belongs to from the RTT text files provided", metadata.getRefsetId());
+                        // Create project
+                        final Project addedProject = dbHandler.addProject(service, rttProjectName, rttProjectDescription, metadata.getEdition());
+
+                        statistics.incrementProjectsAdded();
+
+                        refsetProjectMap.put(metadata.getRefsetId(), addedProject);
+                    }
                 }
-            } else {
-                // Refset is not associated with any project in RTT.
-                // TODO: Determine if create default project or add to any random project in Org. For simplicity, for now will just add to random organization project
-                final List<Project> projects = OrganizationService.getOrganizationProjects(service, metadata.getEdition().getOrganizationId()).getItems();
 
-                refsetProjectMap.put(metadata.getRefsetId(), projects.iterator().next());
+                if (!refsetProjectMap.containsKey(metadata.getRefsetId())) {
 
+                    // Refset is not associated with any project in RTT.
+                    // TODO: Determine if create default project or add to any random project in Org. For simplicity, for now will just add to random organization project
+                    final List<Project> projects = OrganizationService.getOrganizationProjects(service, metadata.getEdition().getOrganizationId()).getItems();
+
+                    if (!defaultOrganizationProjectMap.containsKey(metadata.getEdition().getOrganizationId())) {
+
+                        final Project defaultProject = projects.iterator().next();
+
+                        LOG.error(
+                                "Unable to determine which RTT project the RTT refset {} belongs to from the RTT text files provided. Using one related to organization one at random for all refsets of such state {}",
+                                metadata.getRefsetId(), defaultProject);
+
+                        defaultOrganizationProjectMap.put(metadata.getEdition().getOrganizationId(), defaultProject);
+                    }
+
+                    final Project projectToUse = defaultOrganizationProjectMap.get(metadata.getEdition().getOrganizationId());
+                    refsetProjectMap.put(metadata.getRefsetId(), projectToUse);
+
+                }
             }
-
         }
 
         return refsetProjectMap.get(metadata.getRefsetId());
@@ -812,7 +831,7 @@ public class SyncRefsetAgent extends SyncAgent {
         } else {
 
             // If JSON not available to the refset, it means it resides exclusively on termserver.
-            // Set defaults for type & narrative (TAGS & ECL) are defined in RT2 not via snowstorm
+            // Set defaults for type & narrative (TAGS & ECL) are defined in RT2 not via termserver
             refset.setNarrative("No corresponding refset information found on RTT for " + refset.getRefsetId());
 
         }
@@ -991,16 +1010,18 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     private Refset addRefset(final TerminologyService service, final SyncRefsetMetadata syncRefsetMetadata) {
-
         try {
             final String refsetId = syncRefsetMetadata.getRefsetId();
 
             final String moduleId = refsetToModuleMap.get(refsetId);
             final String refsetName = determineRefsetName(syncRefsetMetadata);
+
             final String refsetType = Refset.EXTENSIONAL; // All from termserver are strictly extension
+
             final long version = syncRefsetMetadata.getVersion();
 
             final Project project = determineProject(service, syncRefsetMetadata);
+
             if (project == null) {
                 return null;
             }

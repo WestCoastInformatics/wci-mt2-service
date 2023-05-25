@@ -43,13 +43,13 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = true;
+    private static boolean testing = false;
 
-    protected static String TESTING_EDITION_SHORT_NAME = "SNOMEDCT-NL";
+    protected static String TESTING_EDITION_SHORT_NAME = "SNOMEDCT-BE";
 
+    protected static String testingRefset = null; // To test entire edition
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
-    protected static String testingRefset = "9631000146108"; // To test entire edition
-    // protected static String testingRefset = null; // To test entire edition
+    // protected static String testingRefset = "9631000146108"; // To test entire edition
     // protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
     // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
@@ -80,8 +80,6 @@ public abstract class SyncAgent {
             isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
 
-        isIgnoreCoreRefsets = true;
-
         sync(service);
 
     }
@@ -93,31 +91,26 @@ public abstract class SyncAgent {
 
         initialize(service);
 
-        LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Snowstorm");
+        LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
 
         service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
 
-        LOG.debug("AAA1");
         // Only identify branches on filtered code systems and on runShortSync value
         SyncAgent agent = new SyncCodeSystemAgent();
         agent.syncComponent(service);
-        LOG.debug("AAA2");
 
         agent = new SyncCrowdAgent();
         agent.syncComponent(service);
-        LOG.debug("AAA3");
 
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
         agent.syncComponent(service);
-        LOG.debug("AAA4");
 
         // Post processing
         utilities.emailSyncResults(service);
-        LOG.debug("AAA5");
 
         LOG.info(statistics.printStatistics());
-        LOG.info("Completed Syncing with Snowstorm");
+        LOG.info("Completed Syncing with Termserver");
 
         final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
         service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));
@@ -164,12 +157,12 @@ public abstract class SyncAgent {
         }
     }
 
-    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute, final Object snowstormAttribute) {
+    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute, final Object termserverAttribute) {
 
-        if (snowstormAttribute == null && databaseAttribute == null) {
+        if (termserverAttribute == null && databaseAttribute == null) {
             // Both null, no difference
             return false;
-        } else if (snowstormAttribute != null && databaseAttribute != null && databaseAttribute.equals(snowstormAttribute)) {
+        } else if (termserverAttribute != null && databaseAttribute != null && databaseAttribute.equals(termserverAttribute)) {
             // Both not null with identical value, no difference
             return false;
         }
@@ -177,11 +170,11 @@ public abstract class SyncAgent {
         // values are different. List them
         if (databaseAttribute instanceof Long) {
 
-            LOG.info(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute
-                    + ") and Snowstorm value '" + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has " + new Date((Long) termserverAttribute) + "' and DB is '"
+                    + new Date((Long) databaseAttribute) + "'");
         } else {
 
-            LOG.info(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has '" + termserverAttribute + "' and DB is '" + databaseAttribute + "'");
         }
 
         return true;

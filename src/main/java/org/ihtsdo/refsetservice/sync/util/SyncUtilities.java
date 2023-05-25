@@ -415,12 +415,12 @@ public class SyncUtilities {
         undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
     }
 
-    public Object validateMatches(final List<?> list, final String uniqueId) throws Exception {
+    public Object validateMatches(final List<?> list, final String matchingValueDescription) throws Exception {
 
         if (list.isEmpty()) {
-            throw new Exception("Cannot find an element to matching value: " + uniqueId);
+            throw new Exception("Cannot find an element to matching value: " + matchingValueDescription);
         } else if (list.size() > 1) {
-            throw new Exception("Found multiple elements with same matching value: " + uniqueId);
+            throw new Exception("Found multiple elements with same matching value: " + matchingValueDescription);
         }
 
         return list.iterator().next();
