@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public abstract class SyncAgent {
 
     /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(SyncAgent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncAgent.class);
 
     protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -43,9 +43,9 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
-    protected static String testingEditionShortName = "SNOMEDCT-NL";
+    protected static String TESTING_EDITION_SHORT_NAME = "SNOMEDCT-NL";
 
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
     protected static String testingRefset = "9631000146108"; // To test entire edition
@@ -60,7 +60,7 @@ public abstract class SyncAgent {
 
     /** Other process fields **/
     // Owner Name to Organization Description
-    protected static Set<JsonNode> filteredCodeSystems = new HashSet<>();
+    protected static final Set<JsonNode> filteredCodeSystems = new HashSet<>();
 
     protected static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
 
@@ -71,7 +71,7 @@ public abstract class SyncAgent {
     protected static final Set<String> adminUsernames = new HashSet<>();
 
     // Call when launching sync
-    public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
+    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction, final boolean ignoreCoreRefsets) throws Exception {
 
         if (isProductionSystem == null || !isProductionSystem) {
 
@@ -80,43 +80,50 @@ public abstract class SyncAgent {
             isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
 
+        isIgnoreCoreRefsets = true;
+
         sync(service);
 
     }
 
     // Call when launching a sync service were launching sync is secondary i.e., resetRefset
-    public static void sync(TerminologyService service) throws Exception {
+    public static void sync(final TerminologyService service) throws Exception {
 
         final Date startOperationStartTime = new Date();
 
         initialize(service);
 
-        logger.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Snowstorm");
+        LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Snowstorm");
 
         service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
 
+        LOG.debug("AAA1");
         // Only identify branches on filtered code systems and on runShortSync value
         SyncAgent agent = new SyncCodeSystemAgent();
         agent.syncComponent(service);
+        LOG.debug("AAA2");
 
         agent = new SyncCrowdAgent();
         agent.syncComponent(service);
+        LOG.debug("AAA3");
 
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();
         agent.syncComponent(service);
+        LOG.debug("AAA4");
 
         // Post processing
         utilities.emailSyncResults(service);
+        LOG.debug("AAA5");
 
-        logger.info(statistics.printStatistics());
-        logger.info("Completed Syncing with Snowstorm");
+        LOG.info(statistics.printStatistics());
+        LOG.info("Completed Syncing with Snowstorm");
 
-        long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
+        final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
         service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));
     }
 
-    private static void initialize(TerminologyService service) {
+    private static void initialize(final TerminologyService service) {
 
         service.setModifiedBy("Sync");
         service.setModifiedFlag(true);
@@ -139,7 +146,7 @@ public abstract class SyncAgent {
 
         setTesting(true);
         testingRefset = refsetId;
-        testingEditionShortName = editionShortName;
+        TESTING_EDITION_SHORT_NAME = editionShortName;
 
         RefsetMemberService.clearRefsetVersionsWithChanges(refsetId);
     }
@@ -157,7 +164,7 @@ public abstract class SyncAgent {
         }
     }
 
-    protected boolean isDifferentAttribute(String shortName, String attributeName, Object databaseAttribute, Object snowstormAttribute) {
+    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute, final Object snowstormAttribute) {
 
         if (snowstormAttribute == null && databaseAttribute == null) {
             // Both null, no difference
@@ -170,11 +177,11 @@ public abstract class SyncAgent {
         // values are different. List them
         if (databaseAttribute instanceof Long) {
 
-            logger.info(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute
+            LOG.info(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute
                     + ") and Snowstorm value '" + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
         } else {
 
-            logger.info(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
+            LOG.info(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
         }
 
         return true;
@@ -214,20 +221,20 @@ public abstract class SyncAgent {
         return adminUsernames;
     }
 
-    List<Organization> readDbOrganizations(TerminologyService service) throws Exception {
+    List<Organization> readDbOrganizations(final TerminologyService service) throws Exception {
 
         return service.getAll(Organization.class);
     }
 
-    List<Edition> readDbAllEditions(TerminologyService service) throws Exception {
+    List<Edition> readDbAllEditions(final TerminologyService service) throws Exception {
         return service.getAll(Edition.class);
     }
 
-    List<Edition> readDbActiveEditions(TerminologyService service) throws Exception {
+    List<Edition> readDbActiveEditions(final TerminologyService service) throws Exception {
         return readDbAllEditions(service).stream().filter(e -> e.isActive()).collect(Collectors.toList());
     }
 
-    List<Edition> readDbInactiveEditions(TerminologyService service) throws Exception {
+    List<Edition> readDbInactiveEditions(final TerminologyService service) throws Exception {
         return readDbAllEditions(service).stream().filter(e -> !e.isActive()).collect(Collectors.toList());
     }
 }

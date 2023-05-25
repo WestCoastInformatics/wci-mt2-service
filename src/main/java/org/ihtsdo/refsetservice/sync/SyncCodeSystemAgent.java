@@ -453,7 +453,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private boolean isTestingEditionToProcess(String codeSystem) {
 
-        return ((testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName) || utilities.isInternationalEdition(codeSystem));
+        return ((TESTING_EDITION_SHORT_NAME == null || TESTING_EDITION_SHORT_NAME.isEmpty()) || codeSystem.equalsIgnoreCase(TESTING_EDITION_SHORT_NAME)
+                || utilities.isInternationalEdition(codeSystem));
 
     }
 

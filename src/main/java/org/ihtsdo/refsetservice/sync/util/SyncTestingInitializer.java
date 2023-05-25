@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class SyncTestingInitializer {
 
-    private final Logger logger = LoggerFactory.getLogger(SyncTestingInitializer.class);
+    private final Logger LOG = LoggerFactory.getLogger(SyncTestingInitializer.class);
 
     private SyncUtilities utilities;
 
@@ -51,11 +51,11 @@ public class SyncTestingInitializer {
         try (TerminologyService service = new TerminologyService()) {
             initializeSync(service);
         } catch (Exception e) {
-            logger.error("Failed starting the testing initialization from controller other than sync with errorMessage: " + e.getMessage());
+            LOG.error("Failed starting the testing initialization from controller other than sync with errorMessage: " + e.getMessage());
         }
     }
 
-    private void initializeSync(TerminologyService service) {
+    private void initializeSync(final TerminologyService service) {
         service.setModifiedBy("Sync");
         service.setModifiedFlag(true);
 
@@ -86,10 +86,10 @@ public class SyncTestingInitializer {
      * Called when adding another instance of testing-feedback refset
      */
     public Refset createTestingFeedbackRefset() throws Exception {
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
             initializeSync(service);
 
-            Refset newTestingRefset = createTestingRefset(service, FEEDBACK_REFSET_NAME_BASE, FEEDBACK_REFSET_ID_BASE);
+            final Refset newTestingRefset = createTestingRefset(service, FEEDBACK_REFSET_NAME_BASE, FEEDBACK_REFSET_ID_BASE);
 
             addFeedbackContent(service, newTestingRefset);
 
@@ -104,7 +104,7 @@ public class SyncTestingInitializer {
         try (TerminologyService service = new TerminologyService()) {
             initializeSync(service);
 
-            Refset newTestingRefset = createTestingRefset(service, INTENSIONAL_REFSET_NAME_BASE, INTENSIONAL_REFSET_ID_BASE);
+            final Refset newTestingRefset = createTestingRefset(service, INTENSIONAL_REFSET_NAME_BASE, INTENSIONAL_REFSET_ID_BASE);
 
             addIntensionalContent(service, newTestingRefset);
 
@@ -112,7 +112,7 @@ public class SyncTestingInitializer {
         }
     }
 
-    private Refset createTestingRefset(TerminologyService service, String testingRefsetName, String testingRefsetId) throws Exception {
+    private Refset createTestingRefset(final TerminologyService service, final String testingRefsetName, final String testingRefsetId) throws Exception {
 
         final Project developerTestingProject = getDeveloperTestingProject(service);
 
@@ -120,7 +120,7 @@ public class SyncTestingInitializer {
 
         int latestVersion = 0;
 
-        for (Refset projectRefset : projectRefsets) {
+        for (final Refset projectRefset : projectRefsets) {
 
             if (projectRefset.getRefsetId().startsWith(testingRefsetId) && projectRefset.getName().startsWith(testingRefsetName)) {
 
@@ -147,19 +147,19 @@ public class SyncTestingInitializer {
         } else {
 
             latestVersion++;
-            String tensValue = Integer.toString(latestVersion / 10);
-            String onesValue = Integer.toString(latestVersion % 10);
+            final String tensValue = Integer.toString(latestVersion / 10);
+            final String onesValue = Integer.toString(latestVersion % 10);
 
             newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
                     getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", getDeveloperTestingProject(service));
         }
 
-        logger.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());
+        LOG.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());
 
         return newTestingRefset;
     }
 
-    private void addIntensionalContent(TerminologyService service, Refset refset) throws Exception {
+    private void addIntensionalContent(final TerminologyService service, final Refset refset) throws Exception {
 
         // Create ecl clause
         final String testClause = "<<716186003 |No known allergy (situation)|";
@@ -176,57 +176,55 @@ public class SyncTestingInitializer {
 
     }
 
-    private void addFeedbackContent(TerminologyService service, Refset refset) throws Exception {
+    private void addFeedbackContent(final TerminologyService service, final Refset refset) throws Exception {
 
         // add feedback
-        DiscussionThread thread = new DiscussionThread();
+        final DiscussionThread thread = new DiscussionThread();
         thread.setSubject("Testing discussion thread on refset");
         thread.setType(DiscussionType.REFSET.toString());
         thread.setRefsetInternalId(refset.getId());
         thread.setStatus("OPEN");
         thread.setVisibility("VISIBLE");
         thread.setPrivateThread(false);
-        thread = service.add(thread);
+        final DiscussionThread newThread = service.add(thread);
 
-        service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
-        service.setModifiedFlag(true);
         service.setTransactionPerOperation(false);
         service.beginTransaction();
 
-        DiscussionPost post = new DiscussionPost();
+        final DiscussionPost post = new DiscussionPost();
         post.setUser(feedbackInitiatiorUser);
         post.setMessage("Topic Header");
         post.setVisibility("VISIBLE");
         post.setPrivatePost(false);
-        post = service.add(post);
-        thread.getPosts().add(post);
+        final DiscussionPost newPost = service.add(post);
+        newThread.getPosts().add(newPost);
 
-        post = new DiscussionPost();
-        post.setUser(userResponderUser);
-        post.setMessage("Comment #1");
-        post.setVisibility("VISIBLE");
-        post.setPrivatePost(false);
-        post = service.add(post);
-        thread.getPosts().add(post);
+        final DiscussionPost secondPost = new DiscussionPost();
+        secondPost.setUser(userResponderUser);
+        secondPost.setMessage("Comment #1");
+        secondPost.setVisibility("VISIBLE");
+        secondPost.setPrivatePost(false);
+        final DiscussionPost newSecondPost = service.add(secondPost);
+        newThread.getPosts().add(newSecondPost);
 
-        post = new DiscussionPost();
-        post.setUser(feedbackInitiatiorUser);
-        post.setMessage("Comment #2");
-        post.setVisibility("VISIBLE");
-        post.setPrivatePost(false);
-        post = service.add(post);
-        thread.getPosts().add(post);
+        final DiscussionPost thirdPost = new DiscussionPost();
+        thirdPost.setUser(feedbackInitiatiorUser);
+        thirdPost.setMessage("Comment #2");
+        thirdPost.setVisibility("VISIBLE");
+        thirdPost.setPrivatePost(false);
+        final DiscussionPost newThirdPost = service.add(thirdPost);
+        newThread.getPosts().add(newThirdPost);
 
         // Finalize transaction
-        service.update(thread);
+        service.update(newThread);
         service.commit();
         service.setTransactionPerOperation(true);
 
         // Create users for testing initial feedback
         // Create users and teams, then add to org/project
-        Set<String> userRole = new HashSet<>();
+        final Set<String> userRole = new HashSet<>();
         userRole.add(User.ROLE_AUTHOR);
-        Set<String> memberIds = new HashSet<>();
+        final Set<String> memberIds = new HashSet<>();
         memberIds.add(feedbackInitiatiorUser.getId());
         memberIds.add(userResponderUser.getId());
 
@@ -238,13 +236,13 @@ public class SyncTestingInitializer {
 
     }
 
-    private Project getDeveloperTestingProject(TerminologyService service) throws Exception {
+    private Project getDeveloperTestingProject(final TerminologyService service) throws Exception {
 
         if (testingProject == null) {
 
-            List<Project> projects = service.getAll(Project.class);
+            final List<Project> projects = service.getAll(Project.class);
 
-            for (Project p : projects) {
+            for (final Project p : projects) {
 
                 if (p.getName().equals(WCI_TESTING_PROJECT_NAME)) {
 
@@ -263,13 +261,13 @@ public class SyncTestingInitializer {
         return testingProject;
     }
 
-    private Edition getDeveloperTestingEdition(TerminologyService service) throws Exception {
+    private Edition getDeveloperTestingEdition(final TerminologyService service) throws Exception {
 
         if (developerTestingEdition == null) {
 
-            List<Edition> editions = service.getAll(Edition.class);
+            final List<Edition> editions = service.getAll(Edition.class);
 
-            for (Edition e : editions) {
+            for (final Edition e : editions) {
 
                 if (e.getName().toLowerCase().contains("wci")) {
 

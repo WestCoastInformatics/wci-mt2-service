@@ -24,15 +24,15 @@ import org.slf4j.LoggerFactory;
 
 public class SyncCrowdAgent extends SyncAgent {
 
-    private static Logger logger = LoggerFactory.getLogger(SyncCrowdAgent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncCrowdAgent.class);
 
     private static final int EDITION_SHORTNAME = 1;
 
     private static final int PROJECT_NAME = 2;
 
     @Override
-    public void syncComponent(TerminologyService service) throws Exception {
-        logger.info("Starting CrowdAgent sync()");
+    public void syncComponent(final TerminologyService service) throws Exception {
+        LOG.info("Starting CrowdAgent sync()");
 
         final Set<String> uniqueUsers = new HashSet<>();
 
@@ -43,7 +43,7 @@ public class SyncCrowdAgent extends SyncAgent {
         // Identify changes to existing users and/or add new users information (from CROWD)
         crowdRulesMembersMap.keySet().stream().forEach(group -> uniqueUsers.addAll(crowdRulesMembersMap.get(group)));
 
-        Map<String, User> userMap = processUsers(service, uniqueUsers);
+        final Map<String, User> userMap = processUsers(service, uniqueUsers);
 
         // EditionId to Rules
         final Map<String, Set<String>> filteredEditionRulesMap = identifyEditionRules(service, crowdRulesMembersMap.keySet());
@@ -54,19 +54,18 @@ public class SyncCrowdAgent extends SyncAgent {
 
         addNewProjects(service, crowdRulesMembersMap, userMap, filteredEditionRulesMap);
 
-        logger.info("Finished syncing SyncCrowdAgent");
+        LOG.info("Finished syncing SyncCrowdAgent");
     }
 
-    private void assignUsersToAdminTeams(TerminologyService service, Map<String, User> userMap, Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
-        List<Organization> dbOrganizations = readDbOrganizations(service);
+    private void assignUsersToAdminTeams(final TerminologyService service, final Map<String, User> userMap, final Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
 
-        Set<User> adminUsers = new HashSet<>();
+        final Set<User> adminUsers = new HashSet<>();
         for (String userName : SyncAgent.getAdminUsernames()) {
             adminUsers.add(utilities.getUser(service, userName));
         }
 
         for (String editionId : filteredEditionRulesMap.keySet()) {
-            Edition edition = service.get(editionId, Edition.class);
+            final Edition edition = service.get(editionId, Edition.class);
 
             // Setup return map of organizations to crowd users
 
@@ -74,12 +73,14 @@ public class SyncCrowdAgent extends SyncAgent {
 
             if (adminTeam == null) {
                 // Sync must have failed before adminTeam was created for this organization. Thus create it here.
-                logger.error("Here again why?");
+                LOG.error("Here again why?");
             }
 
             boolean matchFound = false;
-            for (User user : adminUsers) {
-                for (String memberId : adminTeam.getMembers()) {
+
+            for (final User user : adminUsers) {
+                for (final String memberId : adminTeam.getMembers()) {
+
                     if (memberId.equals(user.getId())) {
                         matchFound = true;
                     }
@@ -94,17 +95,17 @@ public class SyncCrowdAgent extends SyncAgent {
     }
 
     // Important: If issues arise in missing or unexpected aspects of a users, first place to look is CROWD for inconsistencies across members in users
-    private Map<String, User> processUsers(TerminologyService service, Set<String> uniqueUsers) throws Exception {
+    private Map<String, User> processUsers(final TerminologyService service, final Set<String> uniqueUsers) throws Exception {
         // Create or update users based on Crowd values
-        Map<String, User> userMap = new HashMap<>();
+        final Map<String, User> userMap = new HashMap<>();
 
-        List<User> dbUsers = service.getAll(User.class);
+        final List<User> dbUsers = service.getAll(User.class);
 
-        for (String crowdUsername : uniqueUsers) {
+        for (final String crowdUsername : uniqueUsers) {
 
-            User crowdUser = CrowdAPIClient.getUser(crowdUsername);
+            final User crowdUser = CrowdAPIClient.getUser(crowdUsername);
 
-            List<User> matchingUsers = dbUsers.stream().filter(u -> u.getUserName().equals(crowdUsername)).collect(Collectors.toList());
+            final List<User> matchingUsers = dbUsers.stream().filter(u -> u.getUserName().equals(crowdUsername)).collect(Collectors.toList());
 
             User rt2User = null;
 
@@ -112,14 +113,14 @@ public class SyncCrowdAgent extends SyncAgent {
 
                 // Create user
                 rt2User = utilities.getUser(service, crowdUser.getName(), crowdUsername, crowdUser.getEmail(), crowdUser.getRoles());
-                logger.info("Added new user found on Crowd: " + rt2User);
+                LOG.info("Added new user found on Crowd: " + rt2User);
 
             } else if (matchingUsers.size() == 1) {
 
                 // User already exists. Check for changes.
                 // Note: Roles defined via group name and will be done later
                 boolean changeMade = false;
-                User dbUser = matchingUsers.iterator().next();
+                final User dbUser = matchingUsers.iterator().next();
 
                 if (!dbUser.getName().equals(crowdUser.getName())) {
                     dbUser.setName(crowdUser.getName());
@@ -134,7 +135,7 @@ public class SyncCrowdAgent extends SyncAgent {
                 if (changeMade) {
 
                     rt2User = service.update(dbUser);
-                    logger.info("Updated existing user based on changes in Crowd: " + rt2User);
+                    LOG.info("Updated existing user based on changes in Crowd: " + rt2User);
                 } else {
 
                     // No changes, but still need to add user to map
@@ -152,37 +153,37 @@ public class SyncCrowdAgent extends SyncAgent {
     }
 
     // Important: If issues arise in missing or unexpected members of organizations, first place to look is CROWD for inconsistencies across members in organizations
-    private Set<String> assignUsersToOrganizations(TerminologyService service, Map<String, Set<String>> crowdRulesMembersMap, Map<String, User> dbUserMap,
-        Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
+    private Set<String> assignUsersToOrganizations(final TerminologyService service, final Map<String, Set<String>> crowdRulesMembersMap, final Map<String, User> dbUserMap,
+        final Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
 
-        Set<String> updatedOrganizations = new HashSet<>();
+        final Set<String> updatedOrganizations = new HashSet<>();
 
         // Filtered organizationId to Usernames Map
         final Map<String, Set<String>> dbOrganizationUsernamesMap = identifyCrowdOrganizationUsersFromEditions(service, crowdRulesMembersMap, filteredEditionRulesMap);
 
-        for (String organizationId : dbOrganizationUsernamesMap.keySet()) {
+        for (final String organizationId : dbOrganizationUsernamesMap.keySet()) {
 
             final Map<String, User> dbUserIdMap = new HashMap<>();
             final Organization organization = service.get(organizationId, Organization.class);
 
             // Initialize user information per organization
-            for (User user : organization.getMembers()) {
-                user = service.get(user.getId(), User.class);
-                dbUserMap.put(user.getUserName(), user);
-                dbUserIdMap.put(user.getId(), user);
+            for (final User user : organization.getMembers()) {
+                final User dbUser = service.get(user.getId(), User.class);
+                dbUserMap.put(user.getUserName(), dbUser);
+                dbUserIdMap.put(user.getId(), dbUser);
             }
 
             final List<User> localMembers = new ArrayList<>();
             organization.getMembers().stream().forEach(user -> localMembers.add(dbUserIdMap.get(user.getId())));
 
             // Identify and remove users from RT2 organization
-            Set<User> removeLocally = new HashSet<User>(localMembers);
+            final Set<User> removeLocally = new HashSet<User>(localMembers);
             localMembers.stream().filter(u -> dbOrganizationUsernamesMap.get(organizationId).contains(u.getUserName())).forEach(u -> removeLocally.remove(u));
 
             // Remove users from RT2 organization
-            for (User user : removeLocally) {
+            for (final User user : removeLocally) {
 
-                logger.info("remove local users {} from organization {}: ", removeLocally, organization.getName());
+                LOG.info("remove local users {} from organization {}: ", removeLocally, organization.getName());
                 if (organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
                     final Organization removedOrganization = OrganizationService.removeUserFromOrganization(service, SecurityService.getUserFromSession(), user.getId(), organization.getId());
                     updatedOrganizations.add(removedOrganization.getId());
@@ -190,13 +191,13 @@ public class SyncCrowdAgent extends SyncAgent {
             }
 
             // Identify and add users to RT2 organization
-            Set<String> addLocally = new HashSet<String>(dbOrganizationUsernamesMap.get(organizationId));
+            final Set<String> addLocally = new HashSet<String>(dbOrganizationUsernamesMap.get(organizationId));
             localMembers.stream().filter(u -> dbOrganizationUsernamesMap.get(organizationId).contains(u.getUserName())).forEach(us -> addLocally.remove(us.getUserName()));
 
             // Add users to RT2 organization
-            for (String username : addLocally) {
+            for (final String username : addLocally) {
 
-                logger.info("add local users {} to organization {}: ", addLocally, organization.getName());
+                LOG.info("add local users {} to organization {}: ", addLocally, organization.getName());
                 if (organization.getMembers().stream().noneMatch(m -> m.getUserName().equals(username))) {
                     final Organization addedOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), organization.getId(), dbUserMap.get(username));
                     updatedOrganizations.add(addedOrganization.getId());
@@ -207,13 +208,13 @@ public class SyncCrowdAgent extends SyncAgent {
         return updatedOrganizations;
     }
 
-    private Map<String, Set<String>> identifyCrowdOrganizationUsersFromEditions(TerminologyService service, Map<String, Set<String>> crowdRulesMembersMap,
-        Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
+    private Map<String, Set<String>> identifyCrowdOrganizationUsersFromEditions(final TerminologyService service, final Map<String, Set<String>> crowdRulesMembersMap,
+        final Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
 
         final Map<String, Set<String>> retMap = new HashMap<>();
 
-        for (String editionId : filteredEditionRulesMap.keySet()) {
-            Edition edition = service.get(editionId, Edition.class);
+        for (final String editionId : filteredEditionRulesMap.keySet()) {
+            final Edition edition = service.get(editionId, Edition.class);
 
             // Setup return map of organizations to crowd users
             if (!retMap.containsKey(edition.getOrganizationId())) {
@@ -221,7 +222,7 @@ public class SyncCrowdAgent extends SyncAgent {
             }
 
             // Assign each rule to the correct organization
-            for (String rule : filteredEditionRulesMap.get(editionId)) {
+            for (final String rule : filteredEditionRulesMap.get(editionId)) {
 
                 final String crowdEdition = rule.split("-")[EDITION_SHORTNAME];
 
@@ -239,7 +240,7 @@ public class SyncCrowdAgent extends SyncAgent {
     }
 
     // Map of those organizations to sync and their set of crowd rules
-    private Map<String, Set<String>> identifyEditionRules(TerminologyService service, Set<String> crowdRules) throws Exception {
+    private Map<String, Set<String>> identifyEditionRules(final TerminologyService service, final Set<String> crowdRules) throws Exception {
 
         final Map<String, Set<String>> retMap = new HashMap<>();
         final Set<String> editionsToSync = new HashSet<>();
@@ -248,7 +249,7 @@ public class SyncCrowdAgent extends SyncAgent {
         readDbAllEditions(service).stream().forEach(e -> dbEditionMap.put(getEditionShortNameToEdition(e.getShortName()), e));
 
         // Determine which editions are relevant and prepare return map for their organizations
-        for (Edition edition : dbEditionMap.values()) {
+        for (final Edition edition : dbEditionMap.values()) {
             if (filteredCodeSystems.stream().anyMatch(cs -> cs.get("shortName").asText().equals(edition.getShortName()))) {
                 editionsToSync.add(edition.getId());
             }
@@ -257,7 +258,7 @@ public class SyncCrowdAgent extends SyncAgent {
         editionsToSync.stream().forEach(id -> retMap.put(id, new HashSet<>()));
 
         // For each rule in crowd
-        for (String rule : crowdRules) {
+        for (final String rule : crowdRules) {
 
             final String[] groupCoordinates = rule.split("-");
             final String crowdCodeSystem = groupCoordinates[EDITION_SHORTNAME];
@@ -284,24 +285,24 @@ public class SyncCrowdAgent extends SyncAgent {
 
     // Returns a map from an edition to a set of projects representing projects added to rt2 during sync
     // Important: If issues arise in missing or unexpected aspects of a project, first place to look is CROWD for inconsistencies across members in projects
-    private Map<String, Set<Project>> addNewProjects(TerminologyService service, Map<String, Set<String>> crowdGroupMembersMap, Map<String, User> userMap,
-        Map<String, Set<String>> organizationGroupsMap) throws Exception {
+    private Map<String, Set<Project>> addNewProjects(final TerminologyService service, final Map<String, Set<String>> crowdGroupMembersMap, final Map<String, User> userMap,
+        final Map<String, Set<String>> organizationGroupsMap) throws Exception {
 
         final Map<String, Set<Project>> addedProjectMap = new HashMap<>();
         final Map<String, Edition> dbEditionMap = new HashMap<>();
 
         readDbAllEditions(service).stream().forEach(e -> dbEditionMap.put(getEditionShortNameToEdition(e.getShortName()), e));
 
-        Map<String, Set<String>> editionProjectsMap = identifyCrowdEditionProjects(service, crowdGroupMembersMap.keySet());
+        final Map<String, Set<String>> editionProjectsMap = identifyCrowdEditionProjects(service, crowdGroupMembersMap.keySet());
 
-        for (String editionId : editionProjectsMap.keySet()) {
+        for (final String editionId : editionProjectsMap.keySet()) {
 
-            Edition edition = service.get(editionId, Edition.class);
-            Set<String> projects = editionProjectsMap.get(editionId);
+            final Edition edition = service.get(editionId, Edition.class);
+            final Set<String> projects = editionProjectsMap.get(editionId);
 
-            Set<String> editionProjectsNames = ProjectService.getProjectNamesForEdition(edition.getId());
+            final Set<String> editionProjectsNames = ProjectService.getProjectNamesForEdition(edition.getId());
 
-            for (String projectName : projects) {
+            for (final String projectName : projects) {
 
                 if (!editionProjectsNames.contains(projectName)) {
                     final Project newProject = dbHandler.addProject(service, projectName, "Default description for crowd-defined project: " + projectName, edition);
@@ -319,7 +320,7 @@ public class SyncCrowdAgent extends SyncAgent {
     }
 
     // Returns a map from an editionId to a set of project names representing projects to add
-    private Map<String, Set<String>> identifyCrowdEditionProjects(TerminologyService service, Set<String> crowdGroups) throws Exception {
+    private Map<String, Set<String>> identifyCrowdEditionProjects(final TerminologyService service, final Set<String> crowdGroups) throws Exception {
 
         // Organization to list of Projects
         final Map<String, Set<String>> crowdEditionProjectsMap = new HashMap<>();
@@ -327,9 +328,9 @@ public class SyncCrowdAgent extends SyncAgent {
         final List<Edition> dbEditions = readDbAllEditions(service);
 
         // Sort crowdProjects by edition/groupName/Set<Role>
-        for (String group : crowdGroups) {
+        for (final String group : crowdGroups) {
 
-            if (isTesting() && !group.startsWith("rt2-" + getEditionShortNameToEdition(testingEditionShortName) + "-")) {
+            if (isTesting() && !group.startsWith("rt2-" + getEditionShortNameToEdition(TESTING_EDITION_SHORT_NAME) + "-")) {
                 continue;
             }
 
@@ -341,7 +342,7 @@ public class SyncCrowdAgent extends SyncAgent {
             if ("all".equals(crowdCodeSystem)) {
 
                 // Add project to all orgs
-                for (Edition edition : dbEditions) {
+                for (final Edition edition : dbEditions) {
                     if (!crowdEditionProjectsMap.containsKey(edition.getId())) {
                         crowdEditionProjectsMap.put(edition.getId(), new HashSet<>());
                     }
@@ -353,10 +354,10 @@ public class SyncCrowdAgent extends SyncAgent {
 
                 // Specific edition specified
                 // Identify crowd projects & edition's projectss in DB (via Org)
-                List<Edition> editions = dbEditions.stream().filter(e -> getEditionShortNameToEdition(e.getShortName()).equals(crowdCodeSystem)).collect(Collectors.toList());
+                final List<Edition> editions = dbEditions.stream().filter(e -> getEditionShortNameToEdition(e.getShortName()).equals(crowdCodeSystem)).collect(Collectors.toList());
 
                 if (editions.size() == 1) {
-                    String editionId = editions.iterator().next().getId();
+                    final String editionId = editions.iterator().next().getId();
 
                     if (!crowdEditionProjectsMap.containsKey(editionId)) {
                         crowdEditionProjectsMap.put(editionId, new HashSet<>());
@@ -365,18 +366,18 @@ public class SyncCrowdAgent extends SyncAgent {
                     crowdEditionProjectsMap.get(editions.iterator().next().getId()).add(crowdProject);
                 } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().stream().noneMatch(s -> crowdCodeSystem.equals(getEditionShortNameToEdition(s)))) {
                     // Group does not reference an ignored code system
-                    logger.error("Unexpected number of editions (expected 1) for {}: {} ", crowdCodeSystem, editions.size());
+                    LOG.error("Unexpected number of editions (expected 1) for {}: {} ", crowdCodeSystem, editions.size());
                 }
             }
         }
 
         final Map<String, Set<String>> organizationProjectsToUpdateMap = new HashMap<>();
 
-        for (String editionId : crowdEditionProjectsMap.keySet()) {
-            Edition edition = service.get(editionId, Edition.class);
-            List<Project> dbEditionProjects = OrganizationService.getOrganizationProjects(service, edition.getOrganizationId()).getItems();
+        for (final String editionId : crowdEditionProjectsMap.keySet()) {
+            final Edition edition = service.get(editionId, Edition.class);
+            final List<Project> dbEditionProjects = OrganizationService.getOrganizationProjects(service, edition.getOrganizationId()).getItems();
 
-            for (String crowdProjectName : crowdEditionProjectsMap.get(editionId)) {
+            for (final String crowdProjectName : crowdEditionProjectsMap.get(editionId)) {
                 if (dbEditionProjects.stream().noneMatch(p -> p.getName().equals(crowdProjectName))) {
 
                     if (!organizationProjectsToUpdateMap.containsKey(editionId)) {
@@ -391,7 +392,7 @@ public class SyncCrowdAgent extends SyncAgent {
         return organizationProjectsToUpdateMap;
     }
 
-    private String getEditionShortNameToEdition(String editionShortName) {
+    private String getEditionShortNameToEdition(final String editionShortName) {
         return editionShortName.toLowerCase().replace("-", "");
     }
 }

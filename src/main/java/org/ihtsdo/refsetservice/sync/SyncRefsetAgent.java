@@ -52,7 +52,7 @@ public class SyncRefsetAgent extends SyncAgent {
     // rttProject Id to Rt2Project
     private final Map<String, Project> rttProjects = new HashMap<>();
 
-    private Map<String, Project> refsetProjectMap = new HashMap<>();
+    private final Map<String, Project> refsetProjectMap = new HashMap<>();
 
     @Override
     public void syncComponent(final TerminologyService service) throws Exception {
@@ -93,7 +93,7 @@ public class SyncRefsetAgent extends SyncAgent {
         statistics.setRefsetIdsAdded(addedRefsetIds.size());
 
         // Activate previously inactivated refsets. Note: Will log and update stats after remove those that were activatedAndModified
-        List<String> activatedRefsetIds = termserverRefsetIds.stream()
+        final List<String> activatedRefsetIds = termserverRefsetIds.stream()
                 .filter(refsetId -> dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId) && (!dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId)
                         || (dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet().stream().noneMatch(version -> dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version).isActive()))))
                 .collect(Collectors.toList());
