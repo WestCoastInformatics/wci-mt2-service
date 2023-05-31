@@ -112,16 +112,17 @@ public class TeamService extends BaseService {
 
             if (!isNew) {
                 query += " AND !(id: " + team.getId() + ")";
+            } else {
+
+                final ResultList<Team> results = service.find(query, null, Team.class, null);
+
+                if (results.getTotal() > 0) {
+                    final String message = "There is already a team with that name in this Organization";
+                    LOG.error(message);
+                    throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+                }
             }
 
-            final ResultList<Team> results = service.find(query, null, Team.class, null);
-
-            if (results.getTotal() > 0) {
-
-                final String message = "There is already a team with that name in this Organization";
-                LOG.error(message);
-                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
-            }
         }
 
         if (team.getRoles().isEmpty() && isNew) {
@@ -591,7 +592,7 @@ public class TeamService extends BaseService {
      */
     public static Team removeUserFromTeam(final TerminologyService service, final User user, final Team team, final User userToRemove) throws Exception {
 
-        // The user being removed has at least one reference set iin Edit or Review
+        // The user being removed has at least one reference set in Edit or Review
         // assigned to them
         // As the admin, you are able to un-assign the reference set(s) first before
         // inactivating user.
