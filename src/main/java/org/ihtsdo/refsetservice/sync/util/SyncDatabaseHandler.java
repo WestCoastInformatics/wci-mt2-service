@@ -57,9 +57,8 @@ public class SyncDatabaseHandler {
 
             utilities.validateMatches(organizations, organizationName);
 
-            final Organization organization = organizations.iterator().next();
-
             // Create a single Admin team per Edition when we first discover it
+            final Organization organization = organizations.iterator().next();
             createAdminOrganizationTeam(service, organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
@@ -143,7 +142,6 @@ public class SyncDatabaseHandler {
     }
 
     public Refset addRefset(final TerminologyService service, final String name, final String refsetId, final String moduleId, long versionDate, final String type, final Project project) {
-
         try {
             final Refset refset = new Refset();
 
@@ -157,6 +155,7 @@ public class SyncDatabaseHandler {
             refset.setType(type);
             refset.setLatestPublishedVersion(false);
             refset.setProject(project);
+            refset.setPrivateRefset(false);
 
             // Persist
             final Refset newRefset = service.add(refset);
@@ -650,8 +649,8 @@ public class SyncDatabaseHandler {
             if (adminTeam == null) {
 
                 adminTeam = addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization);
-
                 for (final UserRole role : UserRole.getAllRoles()) {
+
                     adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role));
                 }
             }
