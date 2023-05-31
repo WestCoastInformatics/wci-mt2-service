@@ -788,11 +788,11 @@ public class RefsetController extends BaseController {
             WorkflowService.canUserEditRefset(user, refset);
 
             service.setModifiedBy(user.getUserName());
-            // service.setTransactionPerOperation(false);
-            // service.beginTransaction();
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
             final String status = RefsetService.modifyRefset(service, user, refset, refsetParameters);
-            // service.commit();
+            service.commit();
 
             if (!status.startsWith("Error")) {
                 return new ResponseEntity<>("{\"refsetInternalId\": \"" + refsetInternalId + "\"}", HttpStatus.OK);

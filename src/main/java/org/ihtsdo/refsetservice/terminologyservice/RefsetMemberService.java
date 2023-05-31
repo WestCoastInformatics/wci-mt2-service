@@ -176,7 +176,7 @@ public final class RefsetMemberService {
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 386;
 
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
-    private static final int URL_MAX_CHAR_LENGTH = 6200;
+    private static final int URL_MAX_CHAR_LENGTH = 6000;
 
     /** The max number of record elasticsearch will return without erroring. */
     private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
@@ -2355,7 +2355,7 @@ public final class RefsetMemberService {
         // final String activeConceptsEcl = encodedLeftBrace + encodedLeftBrace + "C" + encodedSpace + "active=1" + encodedRightBrace + encodedRightBrace;
         // final String inactiveConceptsEcl = encodedLeftBrace + encodedLeftBrace + "C" + encodedSpace + "active=0" + encodedRightBrace + encodedRightBrace;
         // final String activeAndInactiveMembersEcl =
-        //    "(" + membersEcl + encodedSpace + activeConceptsEcl + encodedSpace + "OR" + encodedSpace + membersEcl + encodedSpace + inactiveConceptsEcl + ")";
+        // "(" + membersEcl + encodedSpace + activeConceptsEcl + encodedSpace + "OR" + encodedSpace + membersEcl + encodedSpace + inactiveConceptsEcl + ")";
 
         // set the appropriate way to search
         if (!searchEcl) {
