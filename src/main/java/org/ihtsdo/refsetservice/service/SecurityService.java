@@ -471,6 +471,7 @@ public class SecurityService implements AutoCloseable {
         // Reload the user to populate UserPreferences
         final User finalUser = getUser(userId);
         finalUser.setAuthToken(token);
+        finalUser.setRoles(authUser.getRoles());
         return finalUser;
 
     }
