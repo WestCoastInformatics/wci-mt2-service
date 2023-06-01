@@ -29,6 +29,7 @@ import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
+import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -126,6 +127,7 @@ public class OrganizationService extends BaseService {
         adminTeam.setPrimaryContactEmail(organization.getPrimaryContactEmail());
         adminTeam.getMembers().add(user.getId());
         adminTeam.setOrganization(newOrganization);
+        adminTeam.setType(TeamType.ORGANIZATION.getText());
         adminTeam.getRoles().add(User.ROLE_ADMIN);
 
         TeamService.createTeam(user, adminTeam);
