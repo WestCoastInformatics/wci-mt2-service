@@ -9,7 +9,7 @@
  */
 package org.ihtsdo.refsetservice.model;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -34,7 +34,7 @@ public enum UserRole {
     private String value;
 
     /** Enums as list. */
-    private static final List<UserRole> ALL_ROLES = Arrays.asList(UserRole.values());
+    private static final List<UserRole> ALL_ROLES = new ArrayList<>();
 
     /**
      * Instantiates a {@link UserRole} from the specified parameters.
@@ -63,6 +63,13 @@ public enum UserRole {
      */
     public static List<UserRole> getAllRoles() {
 
+        if (ALL_ROLES.isEmpty()) {
+            
+            ALL_ROLES.add(ADMIN);
+            ALL_ROLES.add(AUTHOR);
+            ALL_ROLES.add(REVIEWER);
+            ALL_ROLES.add(VIEWER);
+        }
         return ALL_ROLES;
     }
 
