@@ -160,10 +160,10 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         primaryContactEmail = other.getPrimaryContactEmail();
         // type = other.getType();
         // organization = other.getOrganization();
-        
+
         // if not admin updates roles, otherwise do not allow
         roles = other.getRoles();
-        
+
         memberList = other.getMemberList();
         members = other.getMembers();
         userRoles = other.getUserRoles();

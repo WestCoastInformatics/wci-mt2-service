@@ -20,6 +20,7 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
+import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -204,6 +205,7 @@ public class TeamController extends BaseController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
             }
 
+            team.setType(TeamType.PPROJECT.getText());
             final Team t = TeamService.createTeam(authUser, team);
             return ResponseEntity.status(HttpStatus.CREATED).body(t);
 
