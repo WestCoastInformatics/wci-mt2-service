@@ -446,12 +446,12 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final ObjectMapper mapper = new ObjectMapper();
         final JsonNode root = mapper.readTree(jsonString);
         final JsonNode users = root.get("users");
-        
+
         if (users == null || (users.isArray() && users.isEmpty())) {
 
             return null;
         }
-        
+
         if (users.isArray() && users.size() > 1) {
             throw new RestException(false, HttpStatus.CONFLICT, "Found multiple",
                 "Found multiple users with email of " + email + ". Can't determine which user to create.");

@@ -25,6 +25,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
+import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
@@ -518,7 +519,7 @@ public class TeamService extends BaseService {
                 }
             }
 
-            if (team.getName().contains("Administrator(s) for organization")) {
+            if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
 
                 CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization Administrators", false, true);
 
@@ -653,7 +654,8 @@ public class TeamService extends BaseService {
             }
 
             final Edition edition = EditionService.getEditionForOrganization(team.getOrganization().getId());
-            if (team.getName().contains("Administrator(s) for organization")) {
+
+            if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
 
                 final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", "admin");
                 CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
@@ -851,7 +853,7 @@ public class TeamService extends BaseService {
      */
     public static boolean isOrganizationTeam(final Team team) throws Exception {
 
-        return (team.getName().equals(ORGANIZATION_LEVEL_TEAM_PREFIX + team.getOrganization().getName()));
+        return team.getName().equalsIgnoreCase(TeamType.ORGANIZATION.getText());
     }
 
     /**

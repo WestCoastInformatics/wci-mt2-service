@@ -39,6 +39,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.micrometer.core.instrument.util.StringUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -70,6 +71,11 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     /** email for primary contact. */
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
+
+    /** The team type. */
+    @Column(nullable = false, length = 1)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String type;
 
     /** roles for team. */
     @ElementCollection
@@ -131,6 +137,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         name = other.getName();
         description = other.getDescription();
         primaryContactEmail = other.getPrimaryContactEmail();
+        type = other.getType();
         organization = other.getOrganization();
         roles = other.getRoles();
         memberList = other.getMemberList();
@@ -151,8 +158,12 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         name = other.getName();
         description = other.getDescription();
         primaryContactEmail = other.getPrimaryContactEmail();
-        organization = other.getOrganization();
+        // type = other.getType();
+        // organization = other.getOrganization();
+        
+        // if not admin updates roles, otherwise do not allow
         roles = other.getRoles();
+        
         memberList = other.getMemberList();
         members = other.getMembers();
         userRoles = other.getUserRoles();
@@ -319,6 +330,26 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     }
 
     /**
+     * Returns the team type.
+     *
+     * @return the team type
+     */
+    public String getType() {
+
+        return type;
+    }
+
+    /**
+     * Sets the team type.
+     *
+     * @param type the team type
+     */
+    public void setType(final String type) {
+
+        this.type = type;
+    }
+
+    /**
      * Returns the member list.
      *
      * @return the member list
@@ -373,15 +404,15 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
     public int hashCode() {
 
         final int prime = 31;
-        int result = 1;
+        int result = super.hashCode();
         result = prime * result + ((description == null) ? 0 : description.hashCode());
+        result = prime * result + ((memberList == null) ? 0 : memberList.hashCode());
         result = prime * result + ((members == null) ? 0 : members.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((organization == null) ? 0 : organization.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
-        result = prime * result + ((memberList == null) ? 0 : memberList.hashCode());
-        result = prime * result + ((members == null) ? 0 : members.hashCode());
+        result = prime * result + ((type == null) ? 0 : type.hashCode());
         result = prime * result + ((userRoles == null) ? 0 : userRoles.hashCode());
         return result;
     }
@@ -396,7 +427,7 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         if (!super.equals(obj)) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
+        if (!(obj instanceof Team)) {
             return false;
         }
         final Team other = (Team) obj;
@@ -407,18 +438,18 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
         } else if (!description.equals(other.description)) {
             return false;
         }
-        if (members == null) {
-            if (other.members != null) {
-                return false;
-            }
-        } else if (!members.equals(other.members)) {
-            return false;
-        }
         if (memberList == null) {
             if (other.memberList != null) {
                 return false;
             }
         } else if (!memberList.equals(other.memberList)) {
+            return false;
+        }
+        if (members == null) {
+            if (other.members != null) {
+                return false;
+            }
+        } else if (!members.equals(other.members)) {
             return false;
         }
         if (name == null) {
@@ -447,6 +478,13 @@ public class Team extends AbstractHasModified implements Copyable<Team>, Validat
                 return false;
             }
         } else if (!roles.equals(other.roles)) {
+            return false;
+        }
+        if (type == null) {
+            if (other.type != null) {
+                return false;
+            }
+        } else if (!type.equals(other.type)) {
             return false;
         }
         if (userRoles == null) {
