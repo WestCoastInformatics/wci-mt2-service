@@ -4320,7 +4320,7 @@ public final class RefsetMemberService {
         final String conceptSearchUrl = SnowstormConnection.getBaseUrl() + branchPath + "/concepts/search";
         final String memberSearchUrl = SnowstormConnection.getBaseUrl() + branchPath + "/members/search?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
         final String bodyBase = "{\"limit\": " + ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
-        final String memberSearchBodyBase = "{\"active\":true, \"referenceSet\":\"" + refsetId + "\", \"referencedComponentIds\":[";
+        final String memberSearchBodyBase = "{\"referenceSet\":\"" + refsetId + "\", \"referencedComponentIds\":[";
         final List<String> permanentFullConceptList = new ArrayList<>(conceptIds);
         final Map<String, Map<String, String>> conceptsStatus = REFSETS_UPDATED_MEMBERS.get(refset.getId());
         final List<String> validatedConcepts = new ArrayList<>();

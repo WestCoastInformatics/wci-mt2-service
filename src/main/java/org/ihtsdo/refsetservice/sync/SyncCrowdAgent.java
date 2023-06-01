@@ -71,27 +71,27 @@ public class SyncCrowdAgent extends SyncAgent {
 
             Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId());
 
-            if (adminTeam == null) {
-                // Sync must have failed before adminTeam was created for this organization. Thus create it here.
-                LOG.error("Here again why?");
-            }
+            if (adminTeam != null) {
 
-            boolean matchFound = false;
+                boolean matchFound = false;
 
-            for (final User user : adminUsers) {
-                for (final String memberId : adminTeam.getMembers()) {
+                for (final User user : adminUsers) {
+                    for (final String memberId : adminTeam.getMembers()) {
 
-                    if (memberId.equals(user.getId())) {
-                        matchFound = true;
+                        if (memberId.equals(user.getId())) {
+                            matchFound = true;
+                        }
+                    }
+
+                    if (!matchFound) {
+                        adminTeam = TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, user);
                     }
                 }
-
-                if (!matchFound) {
-                    adminTeam = TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, user);
-                }
+            } else {
+                // Sync must have failed before adminTeam was created for this organization. Thus create it here.
+                LOG.error("Here again why for edition{} ", edition);
             }
         }
-
     }
 
     // Important: If issues arise in missing or unexpected aspects of a users, first place to look is CROWD for inconsistencies across members in users

@@ -1,586 +1,172 @@
-id	negated	value
-4266012	0	<< 405729008 | Afgang af blodig afføring |
-11312903	0	<<368208006
-11844720	0	<<14669001 | Acute renal failure syndrome (disorder) |
-11844721	0	<<609482001 | Induced termination of pregnancy complicated by renal tubular necrosis (disorder) |
-11844722	0	<<236426006 | Postoperative acute tubular necrosis (disorder) |
-11844723	0	<<236427002 | Post-traumatic acute tubular necrosis (disorder) |
-11844724	0	<<57469000 | Miscarriage with acute renal failure (disorder) |
-11844725	0	<<200118004 | Post-delivery acute renal failure with postnatal problem (disorder) |
-11844726	0	<<129561000119108 | Pre-renal acute kidney injury (disorder) |
-11844727	1	<<236432001 | Pulmonary renal syndrome (disorder) |
-11844728	0	<<236574008 | Acute rejection of renal transplant (disorder) |
-11844729	1	<<236573002 | Very mild acute rejection of renal transplant (disorder) |
-11844730	0	<<723189000 | Acute renal insufficiency (disorder) |
-11844731	0	<<716864001 | Hemorrhagic fever with renal syndrome (disorder) |
-12164857	0	<< 272379006 | Event (event) |
-83463814	0	<  223366009 |Healthcare professional (occupation)|
-83463815	0	<  43741000 |Site of care (environment)|\nOR <<  224884006 |Location within hospital premises (environment)|\nOR <<  441480003 |Primary care department (environment)|\nOR <<  440654001 |Inpatient environment (environment)|\nOR <<  440655000 |Outpatient environment (environment)|\nOR <<  272497004 |Residential environment (environment)|
-83463816	0	<  129843006 |Health management finding (finding)|
-83463817	0	<< 409526008 | Personal protective equipment (physical object) |\nOR << 6919005 | Protective clothing material	 device (physical object) |\nOR << 706724001 | Face shield (physical object) |\nOR << 261382003 | Mask (physical object) |\nOR << 52291003 | Glove	 device (physical object) |\nOR << 15922004 | Gown	 device (physical object) |\nOR << 706154004 | Shoe cover (physical object) |\nOR << 465982004 | Surgical hood (physical object) |
-83463818	0	<  277973009 |Respiratory equipment (physical object)|  \n  OR <  336589003 |Oxygen equipment (physical object)|  \n  OR <  334943003 |Respiratory appliances (physical object)|  \n  OR <  304077006 |Respiratory system device (physical object)|  \n  OR <  706167001 |Anesthesia and respiratory device (physical object)|
-83463819	0	<  429019009 |Finding related to biological sex (finding)|  \n  MINUS <<  302081005 |Finding of sex of baby (finding)|
-83463820	0	<  365873007 |Gender finding (finding)|
-83463821	0	<  372148003 |Ethnic group (ethnic group)|
-83463822	0	<  415229000 |Racial group (racial group)|
-83463823	0	<  14679004 |Occupation (occupation)|
-83463824	0	<  223496003 |Geographical and/or political region of the world (geographic location)|\n  OR <  365457007 |Foreign travel history finding (finding)|\n  OR <  420008001 |Travel (event)|
-83463825	0	<  272497004 |Residential environment (environment)|
-83463826	0	<  444148008 |Person in family of subject (person)|
-83463827	0	<  365481000 |Finding of household composition (finding)|
-83463828	0	<  365483002 |Finding related to care and support circumstances and networks (finding)|
-83406305	0	<<386725007 OR <<75367002 OR <<364075005 OR <<431314004 OR <<86290005 OR << 442476006 OR << 442349007 OR <<8499008 OR <<103228002 OR << 271626009 OR << 6942003 OR <<405161002  OR <<440398005 OR <<248592006 OR <<263731006 OR <<248598005 OR <<248565000 OR << 248582003 OR <<364533002 OR <<247433003 OR <<248750004 OR <<226379006 OR << 709017009 OR <<413384008
-83406303	0	<< 20262006 OR <<77427003 OR <<288848001 OR <<371632003 OR <<193894004 OR <<443371007 OR <<126664009 OR <<442646005 OR <<419045004 OR <<274710003 OR <<91175000 OR <<271823003 OR <<288849009 OR << 58840004 OR << 9763007 OR << 386661006 OR << 75252003 OR << 3424008 OR <<70944005 OR <<67750007
-83463808	0	<< 138389411000119105 OR \n<< 870590002 OR \n<< 870589006 OR \n<< 373895009 OR \n<< 67782005 OR \n<< 674814021000119106 OR \n<< 64779008 OR \n<< 119731000146105 OR \n<< 62914000 OR \n<< 1119304009 OR \n<< 119741000146102 OR \n<< 710027002 OR \n<< 419099009 OR \n<< 128053003 OR \n<< 34095006 OR \n<< 67406007 OR \n<< 3006004 OR \n<< 119981000146107 OR \n<< 1240561000000108 OR \n<< 119751000146104 OR \n<< 25374005 OR \n<< 56265001 OR \n<< 80394007 OR \n<< 389086002 OR \n<< 70944005 OR \n<< 1240541000000107 OR \n<< 90708001 OR \n<< 880529761000119102 OR \n<< 866151004 OR \n<< 59455009 OR \n<< 57653000 OR \n<< 1240531000000103 OR \n<< 1240521000000100 OR \n<< 183676005 OR \n<< 882784691000119100 OR \n<< 1119303003 OR \n<< 870591003 OR \n<< 302846007 OR \n<< 308906005 OR \n<< 91302008 OR \n<< 870588003 OR \n<< 76571007 OR \n<< 415623008 OR \n<< 238149007 OR \n<< 866152006 OR \n<< 429340002 OR \n<< 75570004 OR \n<< 1017214008
-83463805	0	<<367336001 OR <<788751009 OR <<234336002 OR <<86553008 OR <<76334006 OR <<108290001 OR <<312235007 OR <<265764009 OR <<313039003
-83463811	0	<<444077007 OR <<76978006 OR <<30662005 OR <<414464004 OR <<122435008 OR <<9718006 OR <<122433001 OR <<118147004 OR <<88667002 OR << 60170009 OR << 61911006 OR << 871555000 OR \n<< 871559006 OR << 871556004 OR << 871557008 OR << 871558003 OR << 871560001 OR << 1240461000000109 OR << 1240471000000102
-73614884	0	<<840535000 OR <<840536004 OR <<840533007 OR << 870361009 OR << 870362002 OR << 1240411000000107 OR <<1119343008 OR << 1155866009
-83463829	0	<<1157196000  OR <<1144997007 OR <<1157197009 OR <<1157108008 OR <<1144998002 OR << 1162646009 OR << 1156257007 OR << 1157107003 OR <<840534001 OR <<1119350007 OR << 1162645008  OR <<409524006 OR <<422181004 OR <<449399005 OR <<386242000 OR <<225368008 OR <<409529001 OR <<409686004 OR <<449390009 OR <<122467006 OR <<77248004 OR <<370832005 OR <<361235007 OR <<170499009 OR <<170500000 OR <<40174006 OR <<225995005 OR <<275827007 OR <<38883000 OR <<29537000 OR <<736762004 OR <<409525007 OR <<410410006 OR <<409522005 OR <<409684001 OR <<409583003 OR <<243791004
-83463833	0	<<698608004 OR <<385820004 OR << 736017006 OR << 223426009 OR \n<< 868263005
-83463832	0	<<183452005 OR <<305376003 OR <<305351004 OR <<305360007 OR <<32485007 OR <<417005 OR << 107724000 OR << 397821002 OR << 710112000 OR << 429202003
-83463835	0	<<40617009 OR <<233573008 OR <<447996002 OR <<243141005 OR <<428311008 OR <<371908008 OR <<371907003 OR <<11140008 OR << 229301009 OR << 431182000 OR << 697984004 OR << 829831000000100 OR <<1156748002 OR <<1156747007
-83463836	0	<< 718447001 OR <<79031000119101 OR <<931000119107 OR <<444932008 OR <<763326004 OR <<419991009 OR <<405496006 OR <<22803001 OR <<718085007 OR <<128258000 OR << 371825009 OR << 371820004
-83406304	0	<< 21522001 OR << 84387000 OR << 131148009 OR << 29857009 OR << 43724002 OR << 9826008 OR << 49727002 OR << 62315008 OR << 3006004 OR << 267036007 OR << 271807003 OR << 84229001 OR << 103001002 OR << 386661006 OR << 25064002 OR << 66857006 OR << 248567008 OR << 57676002 OR << 79890006 OR << 44169009 OR << 36955009 OR << 30746006 OR << 367391008 OR << 68962001 OR << 68235000 OR << 64531003 OR << 422587007 OR << 162397003 OR << 38880002 OR << 91175000 OR << 46742003 OR << 282145008 OR << 422400008 OR << 56018004 OR << 3415004 OR << 82272006 OR <<• 23924001 OR << 44077006 OR << 26544005
-83463810	0	<<260373001 OR <<260415000 OR <<419984006 OR <<125154007 OR << 895231008 OR << 1240581000000104 OR << 1240591000000102 OR << 897035006 OR << 897034005
-83463804	0	<<410605003 OR <<410592001 OR <<415684004
-83463809	0	<  313333008 |Sample obtained (situation)|\nOR <  168123008 |Sample sent for examination (situation)|
-84808603	0	<<419492006 | Additional dosage instructions (qualifier value) |
-84808604	0	<<272106006 | Temporal periods of day (qualifier value) |
-84808605	0	<<408102007 | Unit dose (qualifier value) |
-84808606	0	<<284009009 |Route of administration value (qualifier value)|
-84808607	0	<<307157008 | Temporal periods relating to activities (qualifier value) |
-84808608	0	<<272123002 | Frequencies (qualifier value) |
-84808609	0	<<420247005 | Dosing instruction imperative (qualifier value) |
-84808610	0	<<736542009 | Pharmaceutical dose form (dose form) |
-84808611	0	<< 732935002 | Unit of presentation (unit of presentation) |
-83463803	0	<<410594000 OR 410593006
-83463813	0	<< 734427005 OR << 168137004 OR <<697989009 OR <<119297000 OR <<258607008 OR <<258606004 OR <<258500001 OR <<258411007 OR <<258412000 OR <<418564007 OR << 119342007 OR << 119364003 OR <<122610009 OR <<445447003 OR <<119334006 OR <<119339001 OR << 445297001 OR <<472901003 OR <<258529004 OR <<122877000 OR <<309164002 OR <<122575003 OR << 871810001 OR << 461911000124106
-83463830	0	<  365581002 |Finding of marital or partnership status (finding)|
-83463831	0	<  223369002 |Country (geographic location)|
-83463812	0	<< 16332841000119106 OR << 169069000 OR << 399208008 OR << 88628008
-83678653	0	<< 78648007 OR << 27624003 OR << 49601007 OR << 414029004 OR << 235856003 OR << 118940003 OR << 50043002 OR << 8517006 OR << 80141007 OR << 107921000119107 OR << 90708001 OR << 363346000 OR << 75934005 OR << 414825006 OR << 414915002 OR << 370388006 OR << 370391006 OR << 77386006 OR << 77176002
-54283755	0	<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|
-54623570	0	^321000210102
-54623572	0	^71000210108
-54623573	0	^61000210102
-54623574	0	^261000210101
-54623575	0	^471000210108
-54623576	0	^241000210102
-54623577	0	^191000210102
-54623578	0	^91000210107
-54623579	0	^421000210109
-54623580	0	^351000210106
-54623581	0	^251000210104
-54623582	0	^50931000210104
-54623583	0	^391000210104
-54623584	0	^501000210102
-54623585	0	^461000210102
-54623586	0	^451000210100
-54623587	0	^101000210108
-54623588	0	^131000210103
-54623589	0	^181000210104
-54623590	0	^141000210106
-54623591	0	^50941000210107
-54623592	0	^121000210100
-54623593	0	^481000210105
-54623594	0	^51000210100
-54623595	0	^441000210103
-58955056	0	<< 50043002 | Disorder of respiratory system (disorder) |
-59122067	0	<<118669005 | Procedure on respiratory system (procedure) |
-59122068	0	<<183447000 | Admission to respiratory intensive care unit (procedure) |
-59122069	0	<<410205005 | Respiratory care assessment (procedure) |
-59122070	0	<<410207002 | Respiratory care management (procedure) |
-59122071	0	<<408501008 | Emergency hospital admission for chronic obstructive pulmonary disease (procedure) |
-59122072	0	<<410198006 | Respiratory function management (regime/therapy) |
-59122073	0	<<409523000 | Standard respiratory precautions (procedure) |
-59122074	0	<<183507005 | Non-urgent respiratory admission (procedure) |
-59122075	0	<<363021009 | Complication of respiratory therapy procedure (disorder) |
-59122076	0	<<23426006 | Measurement of respiratory function (procedure) |
-60063504	0	<  19829001 |Disorder of lung|  OR  <  301867009 |Edema of trunk|
-83463834	0	<< 1142182006 OR << 1142181004 OR << 1145003007 OR << 1145035007 OR << 1145034006 OR << 1145023008 OR << 1145033000 OR << 1145030002 OR << 1145022003 OR << 1145032005 OR << 1145029007 OR <<1157195001 OR <<1157106007 OR <<1162644007 OR <<1157198004 OR <<1157200005 OR <<1157199007 OR <<1157201009 OR <<1157113007 OR <<1157120000 OR <<1162648005 OR <<1162650002 OR <<1157110005 OR <<1157118003 OR <<1162647000 OR <<1162649002 OR <<1156270003 OR <<1156746003 OR <<1156256003 OR <<1156267002 OR <<1156265005
-64793764	0	(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)
-65550905	0	< 410720000 | Pain by sensation quality (finding) | : [0..0] {363698007 |Finding site (attribute)| = *}
-70418703	0	< 118598001 |Property (qualifier value)|
-81468671	0	<185823004 | Finding of skin texture (finding) |
-81468669	0	<< 417746004
-82000905	0	<< 417163006
-82814003	0	<< 554461000005103
-82814006	0	<<414174009 |Eye observable (observable entity)|
-82870605	0	<<363951001 |Pupil observable|
-82870606	0	<247010007 |Pupil finding|
-82887553	0	< 404684003 |clinical finding|: 363698007 |finding site| = << 66754008 |estructura del apéndice (estructura corporal)|
-82916353	0	< 404684003 |clinical finding|: 363698007 |finding site| = <<699602007 |estructura de órgano contenido en la cavidad abdominal propiamente dicha (estructura corporal)|
-82916354	1	<<199007008 | Pre-existing hypertensive heart and renal disease complicating pregnancy	 childbirth and the puerperium |
-82916355	1	<62484002 | Hepatic fibrosis |
-82916356	1	<3738000 | Viral hepatitis |
-82916357	1	<318191000009109 | Bacterial hepatitis |
-82916358	1	<61401005 | Gastric hemorrhage |
-82964803	0	<248982007 |hallazgo relacionado con el embarazo	 parto y puerperio (hallazgo)|
-82964804	1	<<366343003 | Birth details - finding |
-82964805	1	<<304598004 | Postnatal examination finding |
-82964806	1	<<118213005 | Postpartum finding |
-82964807	1	<<267272006 | Postpartum coagulation defects |
-82964808	1	<<237353000 | Obstetric disorders of breast and lactation |
-82964809	1	<<364826005 | Finding related to ability to perform breast-feeding |
-82964810	1	<<372046001 | Abnormal glucose tolerance test during pregnancy	 childbirth and the puerperium |
-82964811	1	<<289679007 | Finding of size of gravid uterus |
-82964812	1	<<289747009 | Finding of measures of gravid uterus |
-82964813	1	<<65727000 | Intrauterine pregnancy |
-82964814	1	<<289740006 | Finding of contraction state of uterus |
-82964815	1	<<289738001 | Uterine contractions normal |
-82964816	1	<<249014005 | Finding of shape of pregnant abdomen |
-82964817	1	<<289689006 | Finding of arrangement of gravid uterus |
-82964818	1	<<289694006 | Finding of sensation of gravid uterus |
-82999503	0	< 404684003 |hallazgo clínico (hallazgo)| : 363698007 |Finding site (attribute)| = << 28231008 |estructura de la vesícula biliar (estructura corporal)|
-83393054	0	^1157358007 |International Classification for Nursing Practice reference set (foundation metadata concept)|
-83463807	0	<< 78648007 OR << 27624003 OR << 49601007 OR << 414029004 OR << 235856003 OR << 118940003 OR << 50043002 OR << 8517006 OR << 80141007 OR << 107921000119107 OR << 90708001 OR << 363346000 OR << 75934005 OR << 414825006 OR << 414915002 OR << 370388006 OR << 370391006 OR << 77386006 OR << 77176002
-83463837	0	<< 40733004 |Infectious disease|:\n[1..*] 47429007|Associated with (attribute)|=*\nOR [1..*] 42752001|Due to (attribute)|=*\nOR [1..*] 255234002|After (attribute)|=*\nOR [1..*] 363713009|Has interpretation (attribute)|=*\nOR [1..*] 363714003|Interprets (attribute)|=*\nOR [1..*] 418775008|Finding method (attribute)|=*\nOR [1..*] 419066007|Finding informer (attribute)|=* \nOR [1..*] 246075003|Causative agent (attribute)|=<<410607006|Organism (organism)|
-84527704	0	<<936648941000119105
-84856204	0	<185823004 |Finding of skin texture (finding)|:363714003 |Interprets (attribute)| = 364530004 |Skin texture (observable entity)|
-84856205	1	<<297947008 |Finding of consistency of skin (finding)|
-84856206	1	<<366649008 |Finding of thickness of skin (finding)|
-84856207	1	<<248194004 |Wrinkled face (finding)|
-86468253	0	<<716186003 |No known allergy (situation)|
-86727803	0	(*:R246075003 |forårsakende agent|=<<64572001 |sykdom|) OR <<217591008 |Accident due to environmental factor|
-86727804	0	(*:R246075003 |forårsakende agent|=<<64572001 |sykdom|)
-86803153	0	(<<64572001 |sykdom|:<<47429007 |assosiert med|=*) OR (<<217591008 |Accident due to environmental factor|)
-87828860	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-87935354	0	< 410720000 | Pain by sensation quality (finding) | : [0..0] 363698007 |Finding site (attribute)| = *
-87956105	0	< 185823004 |Finding of skin texture (finding)| : 363698007 |Finding site (attribute)| = 39937001 |Skin structure (body structure)| AND [0..0] 363714003 |Interprets (attribute)| = 247428002 |Thickness of skin (observable entity)|
-88107454	0	<<419036000 OR <<409822003 OR <<84676004 OR <<49872002
-88340403	0	(<< 410942007 |Drug or medicament (substance)|) OR (<< 787859002 |Vaccine product (medicinal product)|)
-88585561	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-88585592	0	<185823004 |Finding of skin texture (finding)|
-88585598	1	<< 297947008 OR <<366649008 OR << 276323006 OR <<429193009 OR <<429193009 OR <<403197009 OR <<248194004 OR <<275887009
-88713303	0	<<419492006 | Additional dosage instructions (qualifier value) |
-88713304	0	<<272106006 | Temporal periods of day (qualifier value) |
-88713305	0	<<408102007 | Unit dose (qualifier value) |
-88713306	0	<<284009009 |Route of administration value (qualifier value)|
-88713307	0	<<307157008 | Temporal periods relating to activities (qualifier value) |
-88713308	0	<<272123002 | Frequencies (qualifier value) |
-88713309	0	<<420247005 | Dosing instruction imperative (qualifier value) |
-88713310	0	<<736542009 | Pharmaceutical dose form (dose form) |
-88713311	0	<< 732935002 | Unit of presentation (unit of presentation) |
-88733703	0	<233604007
-88733704	0	<233604007
-88737154	0	< 185823004 |Finding of skin texture (finding)|
-88737159	0	<185823004 |Finding of skin texture|  MINUS (  << 363698007 |Finding site|  OR << 297947008 |Finding of consistency of skin| OR << 366649008 |Thickness of skin - finding| OR << 276323006 |Finding of color of skin| OR << 297971001 |Finding of sensation of skin|  )
-88737157	0	(^ 1119415003 | Integrating the Healthcare Enterprise reference set (foundation metadata concept) |)
-88737158	0	(^ 721144007 | Global Patient Set (foundation metadata concept) |)
-89459903	0	( ( < 928000 AND ( ( ( ( < 64572001 ) MINUS ( * : * = ( (< 31156008 OR < 85421007 OR << 387713003 OR 767023003 OR 424124008 OR < 72704001 OR < 87642003 OR << 236423003 OR << 410942007 OR << 263722006 ) ) ) ) ) MINUS ( (< 17602002 OR < 31541009 OR < 44054006 OR < 46635009 OR << 109355002 OR < 312087002 OR < 56717001 OR << 128462008 ) ) ) ) ) MINUS ( (< 1145242001 OR < 2089002 OR < 64859006 OR < 396275006 OR < 71642004 OR < 157176002 OR < 125606003 OR < 125607007 OR < 125608002 OR < 33737001 OR < 78516000 OR < 58150001 OR < 9682006 OR < 66308002 OR < 60168000 OR < 77493009 OR < 71620000 OR << 35524003 OR < 111245009 OR < 92027006 OR < 254026007 OR 92064000 OR < 73297009 OR < 274147008 OR < 127328006 OR 250127009 OR < 69896004 OR < 48245008 OR < 67531005 OR << 111227009 OR < 128463003 OR < 428281000 OR < 128466006 OR < 52404001 OR < 92237006 OR << 92407004 OR < 84138006 OR < 262971000 OR < 724942006 OR < 724910000 OR < 724907007 OR < 725015002 OR < 726333009 OR < 725004007 OR < 274175005 OR < 398114001 OR < 398199007 OR < 362972006 OR < 84017003 OR < 70736000 OR < 31384009 OR < 78314001 OR < 91637004 OR < 203019005 OR < 409778008 OR << 80406003 ) )
-89459904	0	( ( < 928000 AND ( ( ( ( < 64572001 ) MINUS ( * : * = ( (< 31156008 OR < 85421007 OR << 387713003 OR 767023003 OR 424124008 OR < 72704001 OR < 87642003 OR << 236423003 OR << 410942007 OR << 263722006 ) ) ) ) ) MINUS ( (< 17602002 OR < 31541009 OR < 44054006 OR < 46635009 OR << 109355002 OR < 312087002 OR < 56717001 OR << 128462008 ) ) ) ) ) MINUS ( (< 1145242001 OR < 2089002 OR < 64859006 OR < 396275006 OR < 71642004 OR < 157176002 OR < 125606003 OR < 125607007 OR < 125608002 OR < 33737001 OR < 78516000 OR < 58150001 OR < 9682006 OR < 66308002 OR < 60168000 OR < 77493009 OR < 71620000 OR << 35524003 OR < 111245009 OR < 92027006 OR < 254026007 OR 92064000 OR < 73297009 OR < 274147008 OR < 127328006 OR 250127009 OR < 69896004 OR < 48245008 OR < 67531005 OR << 111227009 OR < 128463003 OR < 428281000 OR < 128466006 OR < 52404001 OR < 92237006 OR << 92407004 OR < 84138006 OR < 262971000 OR < 724942006 OR < 724910000 OR < 724907007 OR < 725015002 OR < 726333009 OR < 725004007 OR < 274175005 OR < 398114001 OR < 398199007 OR < 362972006 OR < 84017003 OR < 70736000 OR < 31384009 OR < 78314001 OR < 91637004 OR < 203019005 OR < 409778008 OR << 80406003 ) )
-89671353	0	<419036000 |Domain Archaea (organism)|\nOR < 409822003 |Domain Bacteria (organism)|\nOR 84676004 |Prion (organism)| \nOR <49872002 |Virus (organism)|\nOR <414561005 |Kingdom Fungi (organism)|\nOR < 417396000 |Kingdom Protozoa (organism)|\nOR < 106830004 |Subclass Acari (organism)|\nOR <441649000 |Class Cestoda and/or Class Trematoda and/or Phylum Nemata (organism)|\nOR <106744004 |Class Turbellaria (organism)|
-90151853	0	(\n  < 128598002|Disorder of integument| AND (\n    (\n      (\n      (\n      < 64572001|Disease|\n    ) MINUS (\n      * : * = (\n        (< 31156008|Structure of left half of body| OR < 85421007|Structure of right half of body| OR << 387713003|Surgical procedure| OR 767023003|Period of life between birth and death| OR 424124008|Sudden onset AND/OR short duration| OR < 72704001|Fracture| OR < 87642003|Dislocation| OR << 236423003|Renal impairment| OR << 410942007|Drug or medicament| OR << 263722006|Complete rupture|)\n      )\n    )\n    )\n  ) MINUS (\n    (< 17602002|Amyloidosis| OR < 31541009|Sarcoidosis| OR < 44054006|Type 2 diabetes mellitus| OR < 46635009|Type 1 diabetes mellitus| OR << 109355002|Carcinoma in situ| OR < 312087002|Disorder following clinical procedure| OR < 56717001|Tuberculosis| OR << 128462008|Secondary malignant neoplastic disease| OR < 70647001|Yaws| OR << 420721002|AIDS-associated disorder| OR < 15628003|Gonorrhoea| OR < 76272004|Syphilis| OR < 11817007|Actinomycotic infection| OR < 116224001|Complication of procedure|)\n  )\n  )\n) MINUS (\n  (< 372130007|Malignant neoplasm of skin| OR < 416675009|Furuncle| OR < 284196006|Burn of skin|)\n)
-90516053	0	<< 243120004
-90831706	0	< 410720000 |Pain by sensation quality (finding)| : 363698007 |Finding site (attribute)| != *
-90831704	0	<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|
-90831705	0	(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)
-90916809	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-90918008	0	< 185823004 |Finding of skin texture (finding)| : [0..0] 363698007 |Finding site (attribute)| = < 20795001 |Structure of skin region (body structure)|
-90918009	1	<<297947008 |Finding of consistency of skin (finding)|
-90918010	1	<< 366649008 |Finding of thickness of skin (finding)|
-91017555	0	< 410720000 | Pain by sensation quality (finding) |: [0..0] 363698007 |Finding site (attribute)| = *
-91031907	0	< 185823004 |Finding of skin texture (finding)|
-91254754	0	< 185823004 | Finding of skin texture (finding) |: 363698007 |Finding site (attribute)| = 39937001 |Skin structure (body structure)|
-91297603	0	< 123038009 |Specimen (specimen)|
-97189003	0	<< 303533002 |gewrichtsimplantaat van heup (fysiek object)|
-97189004	0	<< 304124003 |gewrichtsimplantaat van schouder (fysiek object)|
-97189005	0	<< 705870006 |implanteerbare polsprothese (fysiek object)|
-97189006	0	<< 705889006 |implanteerbare knieprothese (fysiek object)|
-97189007	0	<< 705880005 |implanteerbare elleboogprothese (fysiek object)|
-97189008	0	<< 705871005 |gewrichtsprothese van digitus van hand (fysiek object)|
-97189009	0	<< 705482008 |Female-incontinence urethral barrier (physical object)|
-97189010	0	<< 704802009 |Female fecal incontinence surgical mesh (physical object)|
-97189011	0	<< 702212007 |Male stress urinary incontinence surgical mesh (physical object)|
-97189012	0	<< 469626009 |Hydraulic incontinence treatment system (physical object)|
-97189013	0	<< 261680000 |Artificial urinary sphincter (physical object)|
-97189014	0	<< 469876008 |Intrauterine device	 metal-covered (physical object)|
-97189015	0	<< 705847003 |Pelvic organ prolapse surgical mesh (physical object)|
-97189016	0	<< 303619008 |cardiaal implantaat (fysiek object)|
-97189017	0	<< 470646006 |Implantable cardiac monitor (physical object)|
-97189018	0	<< 25937001 |neurostimulator (fysiek object)|
-97189019	0	<< 705565008 |Brain electrical stimulation system (physical object)|
-97189020	0	<< 470726009 |Incontinence-control electrical stimulation system	 implantable (physical object)|
-97189021	0	<< 705563001 |Analgesic electrical stimulation system (physical object)|
-97189022	0	<< 462766001 |Interferential electrical stimulation system (physical object)|
-97189023	0	<< 462797002 |Percutaneous incontinence-control electrical stimulation system (physical object)|
-97189024	0	<< 469712005 |Gait-enhancement electrical stimulation system	 implantable (physical object)|
-97189025	0	<< 447033006 |nervus-vagusstimulator (fysiek object)|
-97189026	0	<< 706122008 |Implantable infusion pump (physical object)|
-97189027	0	<< 467396002 |Cochlear implant system (physical object)|
-97189028	0	<< 705307001 |Middle ear implant system (physical object)|
-97189029	0	<< 468421000 |botverankerd hoortoestel (fysiek object)|
-97189030	0	<< 711326009 |implanteerbaar gehoorimplantaatsysteem op basis van vibraties via beengeleiding (fysiek object)|
-97189031	0	<< 360042007 |vasculaire stent (fysiek object)|
-97189032	0	<< 303617005 |vasculair implantaat (fysiek object)|
-97189033	0	<< 469040006 |Endobronchial valve (physical object)|
-97189034	0	<< 469789005 |Lung volume reduction coil (physical object)|
-97189035	0	<< 705631002 |Bronchial stent (physical object)|
-97189036	0	<< 701345007 |Laryngeal stent (physical object)|
-97189037	0	<< 2282003 |borstimplantaat (fysiek object)|
-97189038	0	<< 770738008 |bilimplantaat (fysiek object)|
-97189039	0	<< 304076002 |Male genital implant (physical object)|
-97189040	0	<< 705883007 |implanteerbare schouderprothese (fysiek object)|
-97189041	0	<< 304074004 |Urinary implant (physical object)|
-97189042	0	<< 705897004 |proefprothese van gewricht (fysiek object)|
-97189043	0	<< 705865004 |implanteerbare enkelprothese (fysiek object)|
-97189044	0	<< 706004007 |Implantable cardiac pacemaker (physical object)|
-97189045	0	<< 303913007 |Cardiac pacemaker component (physical object)|
-97189046	0	<< 462852004 |Infusion/injection port/catheter	 implantable (physical object)|
-92652903	0	< 410720000 | Pain by sensation quality (finding) |
-92654803	0	< 362966006 AND ( ( < 64572001 ) MINUS ( * : * = ( (< 31156008 OR < 85421007 OR < 387713003 ) ) ) )
-92654804	0	< 79604008 AND ( ( < 64572001 ) MINUS ( * : * = ( (< 31156008 OR < 85421007 OR < 387713003 ) ) ) )
-92654805	0	< 49601007 AND ( ( < 64572001 ) MINUS ( * : * = ( (< 31156008 OR < 85421007 OR < 387713003 ) ) ) )
-92654806	0	< 49601007 AND ( ( < 64572001 ) MINUS ( * : * = ( (< 31156008 OR < 85421007 OR < 387713003 ) ) ) )
-92654807	0	< 49601007 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-92654808	0	< 53619000 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-92654809	0	< 362969004 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-92654810	0	< 362969004 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-92654811	0	< 362969004 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-92654812	0	< 362969004 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-92654813	0	< 414027002 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-92922653	0	< 414030009 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-92922654	0	< 128598002 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-92922655	0	< 128598002 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93065354	0	<< 303533002 |gewrichtsimplantaat van heup (fysiek object)|
-93065355	0	<< 304124003 |gewrichtsimplantaat van schouder (fysiek object)|
-93065356	0	<< 705870006 |implanteerbare polsprothese (fysiek object)|
-93065357	0	<< 705889006 |implanteerbare knieprothese (fysiek object)|
-93065358	0	<< 705880005 |implanteerbare elleboogprothese (fysiek object)|
-93065359	0	<< 705871005 |gewrichtsprothese van digitus van hand (fysiek object)|
-93065360	0	<< 705482008 |Female-incontinence urethral barrier (physical object)|
-93065361	0	<< 704802009 |Female fecal incontinence surgical mesh (physical object)|
-93065362	0	<< 702212007 |Male stress urinary incontinence surgical mesh (physical object)|
-93065363	0	<< 469626009 |Hydraulic incontinence treatment system (physical object)|
-93065364	0	<< 261680000 |Artificial urinary sphincter (physical object)|
-93065365	0	<< 469876008 |Intrauterine device	 metal-covered (physical object)|
-93065366	0	<< 705847003 |Pelvic organ prolapse surgical mesh (physical object)|
-93065367	0	<< 303619008 |cardiaal implantaat (fysiek object)|
-93065368	0	<< 470646006 |Implantable cardiac monitor (physical object)|
-93065369	0	<< 25937001 |neurostimulator (fysiek object)|
-93065370	0	<< 705565008 |Brain electrical stimulation system (physical object)|
-93065371	0	<< 470726009 |Incontinence-control electrical stimulation system	 implantable (physical object)|
-93065372	0	<< 705563001 |Analgesic electrical stimulation system (physical object)|
-93065373	0	<< 462766001 |Interferential electrical stimulation system (physical object)|
-93065374	0	<< 462797002 |Percutaneous incontinence-control electrical stimulation system (physical object)|
-93065375	0	<< 469712005 |Gait-enhancement electrical stimulation system	 implantable (physical object)|
-93065376	0	<< 447033006 |nervus-vagusstimulator (fysiek object)|
-93065377	0	<< 706122008 |Implantable infusion pump (physical object)|
-93065378	0	<< 467396002 |Cochlear implant system (physical object)|
-93065379	0	<< 705307001 |Middle ear implant system (physical object)|
-93065380	0	<< 468421000 |botverankerd hoortoestel (fysiek object)|
-93065381	0	<< 711326009 |implanteerbaar gehoorimplantaatsysteem op basis van vibraties via beengeleiding (fysiek object)|
-93065382	0	<< 360042007 |vasculaire stent (fysiek object)|
-93065383	0	<< 303617005 |vasculair implantaat (fysiek object)|
-93065384	0	<< 469040006 |Endobronchial valve (physical object)|
-93065385	0	<< 469789005 |Lung volume reduction coil (physical object)|
-93065386	0	<< 705631002 |Bronchial stent (physical object)|
-93065387	0	<< 701345007 |Laryngeal stent (physical object)|
-93065388	0	<< 2282003 |borstimplantaat (fysiek object)|
-93065389	0	<< 770738008 |bilimplantaat (fysiek object)|
-93065390	0	<< 304076002 |Male genital implant (physical object)|
-93065391	0	<< 705883007 |implanteerbare schouderprothese (fysiek object)|
-93065392	0	<< 304074004 |Urinary implant (physical object)|
-93065393	0	<< 705897004 |proefprothese van gewricht (fysiek object)|
-93065394	0	<< 705865004 |implanteerbare enkelprothese (fysiek object)|
-93065395	0	<< 706004007 |Implantable cardiac pacemaker (physical object)|
-93065396	0	<< 303913007 |Cardiac pacemaker component (physical object)|
-93065397	0	<< 462852004 |Infusion/injection port/catheter	 implantable (physical object)|
-93515803	0	< 298705000 |hallazgo relacionado con la región del tórax (hallazgo)|
-93515806	0	367394000 |Texture of skin or mucosa|
-93515807	0	274672009 |Changes in skin texture (finding)|
-93515808	0	185823004 |Finding of skin texture (finding)|
-93515809	0	297947008 |Finding of consistency of skin (finding)|
-93515810	0	< 362971004 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515811	0	< 49483002 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515812	0	< 95351003 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515813	0	< 928000 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515814	0	< 118940003 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515815	0	< 50043002 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515816	0	< 42030000 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515817	0	< 128127008 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515818	0	< 409709004 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515819	0	< 278919001 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515820	0	< 66091009 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515821	0	< 362975008 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515822	0	< 5294002 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515823	0	< 40733004 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515824	0	< 362970003 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515825	0	< 414022008 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515826	0	< 414029004 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-93515827	0	(( (< 362972006 OR < 173300003 OR < 362973001 ) ) AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) ))
-94064103	0	< 232208008 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064104	0	< 87284002 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064105	0	<< 129103003 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064106	0	< 8504008 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064107	0	<< 723976005 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064108	0	< 125670008 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064109	0	< 241967006 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064110	0	< 782964007 AND ( ( < 64572001 ) MINUS ( * : * = ( (< 31156008 OR < 85421007 OR << 387713003 OR << 236423003 OR << 410942007 ) ) ) )
-94064111	0	< 128139000 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064112	0	< 74732009 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064113	0	< 75934005 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064114	0	< 399981008 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064115	0	< 2492009 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94064116	0	<< 414916001 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94272853	0	<< 75478009 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94308003	0	< 231532002 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94308004	0	< 39898005 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94308005	0	< 66214007
-94308006	0	< 417746004 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94308007	0	(< 62014003 OR < 788905002 OR < 191816009 OR < 363101005 OR << 735458004 OR < 7895008 OR << 129576003 )
-94930103	0	< 118938008 AND ( ( < 64572001 ) MINUS ( * : * = ( (<< 31156008 OR << 85421007 OR << 387713003 ) ) ) )
-94954254	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-94969703	0	< 185823004 |Finding of skin texture (finding)|
-95060955	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-95060956	0	<185823004 | Finding of skin texture (finding) |
-95069704	0	<185823004 | Finding of skin texture (finding) |
-95076354	0	< 410720000 |Pain by sensation quality (finding)| : [0..0] 363698007 |Finding site (attribute)|=*
-110807153	0	< 185823004 |Finding of skin texture (finding)| MINUS (<< 366649008 |Finding of thickness of skin (finding)| or << 297947008 |Finding of consistency of skin (finding)|   or ( < 185823004 |Finding of skin texture (finding)|  : 363698007 |Finding site (attribute)| = < 39937001 |Skin structure (body structure)| ))
-110807154	1	<<403197009 | Sun-induced wrinkles |
-95116104	0	< 410720000 : ¨[0..0] 363698007 |Finding site (attribute)| = *
-95118603	0	< 185823004 MINUS ( << 366649008 OR << 297947008 OR << 248194004 OR << 275887009 )
-95118604	0	<<2690005
-95118605	0	<<2690005 OR <<241622002 OR (<<113091000 MINUS ( <<2690005 OR <<241622002))
-95151403	0	<473010000 |estado de hipersensibilidad (hallazgo)|
-95151404	1	<<124911000119100 | Stevens Johnson syndrome AND toxic epidermal necrolysis overlap |
-95151405	1	<<73442001 | Stevens-Johnson syndrome |
-95185304	0	< 410720000 | Pain by sensation quality (finding) | : [0..0] 363698007 |Finding site| = *
-95190704	0	< 185823004 |Finding of skin texture| MINUS (\n  /* Excluded because this information is recorded in another field in the information model */\n  << 366649008 |Thickness of skin - finding| OR\n  /* Excluded because this information is recorded in another field in the information model */\n  << 297947008 |Finding of consistency of skin| OR\n  /* Excluded because this should be recorded as the parent Scaly skin with the proper body site */\n  << 275887009 |Scaly scalp| OR\n  /* Excluded because this should be recorded as the parent Wrinkled skin with the proper body site */\n  << 248194004 |Wrinkled face| )\n  /* Changes in skin texture left in to be able to record 'other' conditions if no more specific item is available */\n  /* Clinical experts should be asked if Sun-induced wrinkles should also be excluded; redundant unless it is a special kind of wrinkles; cause is not part of the information model */
-95253904	0	< 410720000 | Pain by sensation quality (finding) | : [0..0] {363698007 |Finding site (attribute)| = *}
-95261203	0	<< 27624003 | Chronic disease (disorder) |
-95293806	0	<185823004 |Finding of skin texture|
-95293807	0	<< 2704003 | Acute disease (disorder) |
-95293808	0	<< 75934005 | Metabolic disease (disorder) |
-95293809	0	<< 198609003 | Complication of pregnancy	 childbirth and/or puerperium (disorder) |
-95293810	0	<< 173300003 | Disorder of pregnancy (disorder) |
-95293811	0	<< 40733004 | Infectious disease (disorder) |
-95293812	0	<< 74732009 | Mental disorder (disorder) |
-95293813	0	<< 417163006 | Traumatic or non-traumatic injury (disorder) |
-95293816	0	< 410720000 |Pain by sensation quality (finding)|
-95293817	0	<185823004 |Finding of skin texture (finding)|
-95293820	0	<!297949006 |Finding of moistness of skin (finding)|
-95293821	0	816995008 |Rough skin (finding)|
-95293822	0	247446008 |Chapped skin (finding)|
-95507853	0	< 410720000 | Pain by sensation quality (finding) |
-95756204	0	< 410720000 | Pain by sensation quality (finding) | : [0..0] 363698007 |Finding site (attribute)| = *
-96980954	0	< 185823004 |Finding of skin texture (finding)|\nMINUS ( << 366649008 |Finding of thickness of skin (finding)| \nOR << 297947008 |Finding of consistency of skin (finding)|\nOR << 248194004 |Wrinkled face (finding)| \nOR << 275887009 |Scaly scalp (finding)| )
-96512408	0	274672009 | Changes in skin texture (finding) |
-96512409	0	185823004 | Finding of skin texture (finding) |
-96512410	0	404684003 |Clinical finding (finding)|
-96649857	0	< 410720000 |Pain by sensation quality (finding)| : [0..0] 363698007 |Finding site (attribute)| =*
-96977804	0	< 410720000 | Pain by sensation quality (finding) | : [0..0] {363698007 |Finding site (attribute)| = *}
-97189047	0	< 185823004 |Finding of skin texture (finding)|
-97761826	0	<!185823004 |Finding of skin texture (finding)|:[0..1] 363698007 |Finding site (attribute)| = >> 20795001 |Structure of skin region (body structure)|
-97761822	0	< 185823004 |Finding of skin texture (finding)|
-97803554	0	<410720000 |Pain by sensation quality (finding)|:[0..0]<<363698007 |Finding site (attribute)|=*
-98455275	0	<<394894008
-98455276	0	<<168523002
-98455277	0	439272007
-98455278	0	<<386829005
-98455279	0	<<173980008
-98455280	0	373820005
-98455281	0	373821009
-98455282	0	413495001
-98455283	0	413496000
-98455284	0	413497009
-98455285	0	413498004
-98455286	0	413499007
-98455287	0	<<27113001
-98455288	0	<<60621009
-98591653	0	(<185823004 |Finding of skin texture (finding)| MINUS (<< 297947008 |Finding of consistency of skin (finding)| OR <<366649008 |Finding of thickness of skin (finding)|)) OR <367394000 |Texture of skin or mucosa (finding)|
-98678755	0	< 410720000 | Pain by sensation quality (finding) |: [0..0] 363698007 |Finding site|=*
-98725204	0	<223369002 |Country| MINUS <!223369002 |Country|
-98725205	0	<429019009
-98776106	0	<<404684003 |Clinical finding|: 116676008 |Associated morphology|=108369006 |Neoplasm|
-98776107	0	<185823004 |Finding of skin texture| MINUS <!185823004
-98786303	0	<185823004 |Finding of skin texture (finding)|
-98786304	1	< 297947008 |Finding of consistency of skin (finding)|
-98786305	1	< 366649008 |Finding of thickness of skin (finding)|
-98790053	0	<716186003 |No known allergy|
-103145206	0	<284009009 |Route of administration value|
-98992354	0	< 185823004 |Finding of skin texture (finding)|\nMINUS ( << 366649008 |Finding of thickness of skin (finding)| \nOR << 297947008 |Finding of consistency of skin (finding)|\nOR << 248194004 |Wrinkled face (finding)| \nOR << 275887009 |Scaly scalp (finding)| )
-103145204	0	<410942007 |Drug or medicament|
-98870253	0	<303071001 |Person in the family| MINUS <!303071001 |Person in the family|
-99588153	0	^723264001 |Lateralizable body structure reference set|
-99588155	0	<57177007 |Family history with explicit context|
-99588156	0	< 243796009 |Situation with explicit context| {{ D term = "Family history"}}
-99588157	0	<40388003 |Implant|
-99588158	0	<411115002 |Drug-device combination product|
-99768403	0	<158965000 |Medical practitioner| OR <309389004 |Medical practitioner grade| OR <<398130009 |Medical student|
-99768404	0	<394658006 |Clinical specialty| MINUS (394733009 |Medical specialty| OR 722165004 |Nursing| OR 394732004 |Surgical speciality| OR 394734003 |Radiological specialties|)
-99768405	0	<108343000 |Hospital AND/OR institution|
-99768406	0	<223366009 |Healthcare professional| MINUS (<<158965000 |Medical practitioner| OR <309389004 |Medical practitioner grade| OR <<398130009 |Medical student|)
-106761004	0	< 185823004 | Finding of skin texture (finding) | MINUS (< 20795001 |Structure of skin region (body structure)| OR < 366649008 |Finding of thickness of skin (finding)| OR  < 276323006 |Finding of color of skin (finding)| OR <297971001 |Finding of sensation of skin (finding)|)
-100696355	0	< 185823004 |Finding of skin texture (finding)|  MINUS (< 297947008 |Finding of consistency of skin (finding)|  OR < 366649008 |Finding of thickness of skin (finding)|)
-100922803	0	<< 303533002 |gewrichtsimplantaat van heup (fysiek object)|
-100922804	0	<< 304124003 |gewrichtsimplantaat van schouder (fysiek object)|
-100922805	0	<< 705870006 |implanteerbare polsprothese (fysiek object)|
-100922806	0	<< 705889006 |implanteerbare knieprothese (fysiek object)|
-100922807	0	<< 705880005 |implanteerbare elleboogprothese (fysiek object)|
-100922808	0	<< 705871005 |gewrichtsprothese van digitus van hand (fysiek object)|
-100922809	0	<< 705482008 |Female-incontinence urethral barrier (physical object)|
-100922810	0	<< 704802009 |Female fecal incontinence surgical mesh (physical object)|
-100922811	0	<< 702212007 |Male stress urinary incontinence surgical mesh (physical object)|
-100922812	0	<< 469626009 |Hydraulic incontinence treatment system (physical object)|
-100922813	0	<< 261680000 |Artificial urinary sphincter (physical object)|
-100922814	0	<< 469876008 |Intrauterine device	 metal-covered (physical object)|
-100922815	0	<< 705847003 |Pelvic organ prolapse surgical mesh (physical object)|
-100922816	0	<< 303619008 |cardiaal implantaat (fysiek object)|
-100922817	0	<< 470646006 |Implantable cardiac monitor (physical object)|
-100922818	0	<< 25937001 |neurostimulator (fysiek object)|
-100922819	0	<< 705565008 |Brain electrical stimulation system (physical object)|
-100922820	0	<< 470726009 |Incontinence-control electrical stimulation system	 implantable (physical object)|
-100922821	0	<< 705563001 |Analgesic electrical stimulation system (physical object)|
-100922822	0	<< 462766001 |Interferential electrical stimulation system (physical object)|
-100922823	0	<< 462797002 |Percutaneous incontinence-control electrical stimulation system (physical object)|
-100922824	0	<< 469712005 |Gait-enhancement electrical stimulation system	 implantable (physical object)|
-100922825	0	<< 447033006 |nervus-vagusstimulator (fysiek object)|
-100922826	0	<< 706122008 |Implantable infusion pump (physical object)|
-100922827	0	<< 467396002 |Cochlear implant system (physical object)|
-100922828	0	<< 705307001 |Middle ear implant system (physical object)|
-100922829	0	<< 468421000 |botverankerd hoortoestel (fysiek object)|
-100922830	0	<< 711326009 |implanteerbaar gehoorimplantaatsysteem op basis van vibraties via beengeleiding (fysiek object)|
-100922831	0	<< 360042007 |vasculaire stent (fysiek object)|
-100922832	0	<< 303617005 |vasculair implantaat (fysiek object)|
-100922833	0	<< 469040006 |Endobronchial valve (physical object)|
-100922834	0	<< 469789005 |Lung volume reduction coil (physical object)|
-100922835	0	<< 705631002 |Bronchial stent (physical object)|
-100922836	0	<< 701345007 |Laryngeal stent (physical object)|
-100922837	0	<< 2282003 |borstimplantaat (fysiek object)|
-100922838	0	<< 770738008 |bilimplantaat (fysiek object)|
-100922839	0	<< 304076002 |Male genital implant (physical object)|
-100922840	0	<< 705883007 |implanteerbare schouderprothese (fysiek object)|
-100922841	0	<< 304074004 |Urinary implant (physical object)|
-100922842	0	<< 705897004 |proefprothese van gewricht (fysiek object)|
-100922843	0	<< 705865004 |implanteerbare enkelprothese (fysiek object)|
-100922844	0	<< 706004007 |Implantable cardiac pacemaker (physical object)|
-100922845	0	<< 303913007 |Cardiac pacemaker component (physical object)|
-100922846	0	<< 462852004 |Infusion/injection port/catheter	 implantable (physical object)|
-101187353	0	< 308335008 |Patient encounter procedure (procedure)|
-101217454	0	<307431003 |Frequency per unit time|
-101217455	0	<< 387713003 |Surgical procedure (procedure)|
-101217456	0	<< 254837009 |Malignant tumor of breast|
-101371353	0	< 105590001 |Substance (substance)|
-103316705	0	<< 43116000 |Eczema (disorder)|
-102269103	0	<365640002 |Common composite blood groups - finding|
-102336603	0	<< 709079002 | Allergen extract (product) |
-102336605	0	< 410720000 | Pain by sensation quality (finding) |: [0..0] 363698007 | Finding site (attribute) | =*
-102336609	0	<!158758004 |Management support professions|
-102357103	0	<< 185823004 | Finding of skin texture (finding) |
-102365505	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-102365506	0	< 404684003 |Clinical finding (finding)| : << 363714003 |Interprets (attribute)| = << 75367002 |Blood pressure (observable entity)|	 << 363713009 |Has interpretation (attribute)| = << 35105006 |Increased (qualifier value)|
-102409505	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-102409515	0	((((<185823004 |Finding of skin texture|: [0..0] 363698007 |Finding site (attribute)| = < 20795001 |Structure of skin region (body structure)|) MINUS << 366649008 |Finding of thickness of skin (finding)|))\nMINUS << 297947008 |Finding of consistency of skin (finding)|)\nMINUS << 276323006 |Finding of color of skin (finding)|
-102411606	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-102482954	0	< 185823004 |Finding of skin texture (finding)|\nMINUS ( << 366649008 |Finding of thickness of skin (finding)| \nOR << 297947008 |Finding of consistency of skin (finding)|\nOR << 248194004 |Wrinkled face (finding)| \nOR << 275887009 |Scaly scalp (finding)| )
-102420107	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-102458507	0	< 185823004 |Finding of skin texture (finding)|
-102458509	0	< 367394000 |Texture of skin or mucosa (finding)|
-102458510	1	<< 366649008 |Finding of thickness of skin (finding)|
-102458511	1	<< 297947008 |Finding of consistency of skin (finding)|
-102470607	0	<185823004 |Finding of skin texture (finding)|: 363698007 |Finding site| = 39937001 |Skin structure (body structure)|
-102476004	0	<185823004 |Finding of skin texture (finding)| MINUS (<<366649008 |Finding of thickness of skin (finding)| OR <<297947008 |Finding of consistency of skin (finding)| OR <<275887009 |Scaly scalp (finding)| OR << 248194004 |Wrinkled face (finding)|)
-102615957	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-102622054	0	(< 185823004 |Finding of skin texture (finding)| MINUS << 297947008 |Finding of consistency of skin (finding)|) MINUS << 366649008 |Finding of thickness of skin (finding)|
-102622057	0	< 185823004 |Finding of skin texture (finding)|\nMINUS ( << 366649008 |Finding of thickness of skin (finding)| \nOR << 297947008 |Finding of consistency of skin (finding)|)
-103145207	0	<787859002 |Vaccine product|
-103159753	0	< 410720000 | Pain by sensation quality (finding)|
-103159754	1	<< 363698007 |Finding site (attribute)|
-103159755	0	< 410720000
-103159756	1	< 410720000 : 363698007 |Finding site (attribute)| = *
-103162053	0	< 185823004 |Finding of skin texture (finding)|
-103162061	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-103314153	0	< 410720000 | Pain by sensation quality (finding) |
-103314154	0	< 185823004 |Finding of skin texture (finding)|MINUS ( << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)|OR << 248194004 |Wrinkled face (finding)| OR << 275887009 |Scaly scalp (finding)| )
-103316703	0	<<778976006
-103316704	0	<<778976006
-105511203	0	<185823004 |Finding of skin texture (finding)|
-105511204	0	<297947008 |Finding of consistency of skin (finding)|
-105511205	0	247430000 |Hard skin (finding)|
-105511206	0	297948003 |Normal skin consistency (finding)|
-103772804	0	< 185823004 |Finding of skin texture (finding)|MINUS ( << 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)|OR << 248194004 |Wrinkled face (finding)| OR << 275887009 |Scaly scalp (finding)| )
-103772803	0	<161424002 |H/O: viral illness|
-103802953	0	<<260787004 |Physical object (physical object)|
-105511207	0	<< 43116000 |Eczema (disorder)|
-105511208	0	<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|
-105511209	0	(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)
-106761903	0	<< 50043002
-106761906	0	<185823004 |Finding of skin texture| MINUS (<< 366649008 |Finding of thickness of skin (finding)| OR << 297947008 |Finding of consistency of skin (finding)|)
-107676707	0	< 410720000 | Pain by sensation quality (finding) |
-108087406	0	<185823004 |Finding of skin texture (finding)|
-108087408	1	<<20795001 |Structure of skin region (body structure)|
-108087409	0	<185823004 |Finding of skin texture (finding)|
-108091854	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-108091856	0	< 185823004 |Finding of skin texture (finding)| MINUS (<< 366649008 | Finding of thickness of skin (finding) | OR << 297947008 | Finding of consistency of skin (finding) |)
-108347157	0	<118664000 |Procedure on body system| MINUS <386053000 |Evaluation procedure|
-108771003	0	<<48694002 |angst|
-108771004	0	<<370143000 |depresjon|
-109074353	0	<< 13645005 |Chronic obstructive lung disease (disorder)| OR << 12295008 |Bronchiectasis (disorder)|
-109077754	0	< 410720000 | Pain by sensation quality (finding) |: \n[0..0] {363698007 |Finding site| = *}
-109140403	0	<404684003 |Clinical finding (finding)|: {363714003 |Interprets| = 364530004 |Skin texture|}
-109127153	0	< 410720000 | Pain by sensation quality (finding) |
-109127156	1	< 410720000 |Pain by sensation quality (finding)| : 363698007 |Finding site (attribute)| = *
-109127159	0	< 185823004 |Finding of skin texture (finding)|
-109129003	1	<< 297947008 |Finding of consistency of skin (finding)|
-109129004	1	<< 366649008 |Finding of thickness of skin (finding)|
-109136704	0	< 410720000 | Pain by sensation quality (finding) | : [0..0] {363698007 |Finding site (attribute)| = *}
-109136709	0	< 185823004 |Finding of skin texture (finding)|:[0..0] {116676008 | Associated morphology (attribute) | = *}
-109136710	0	< 410720000 | Pain by sensation quality (finding) |
-109136712	1	<<363698007 |Finding site (attribute)|
-109136716	0	<<185823004
-110822705	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-110361653	0	<<302226006 |enfermedad de nervio periférico (trastorno)|
-110361654	0	< 410720000 | Pain by sensation quality (finding) |
-110361661	0	< 185823004 |Finding of skin texture (finding)|
-110361662	0	< 410720000 | Pain by sensation quality (finding) |
-110361663	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-110378703	0	<< 185823004 |Finding of skin texture (finding)|
-110758353	0	<<252569009 | Test for allergens (procedure) |
-110758354	0	< 410720000 | Pain by sensation quality (finding) |
-110783353	0	< 185823004 |Finding of skin texture (finding)|
-110783903	0	<< 73211009 |Diabetes mellitus|
-110822708	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-110822709	0	<185823004 |Finding of skin texture (finding)|
-110828455	0	< 185823004 |Finding of skin texture (finding)| AND < 404684003 |Clinical finding (finding)|
-110828459	1	<< 297947008 |Finding of consistency of skin (finding)|
-110828460	1	<< 366649008 |Finding of thickness of skin (finding)|
-110828462	1	< 247434009 |Wrinkled skin (finding)|
-110834012	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-110834015	0	< 185823004 |Finding of skin texture (finding)|
-110834016	1	< 297947008 |Finding of consistency of skin (finding)|
-110834017	1	< 366649008 |Finding of thickness of skin (finding)|
-110834018	1	< 276323006 |Finding of color of skin (finding)|
-110834019	1	< 699697007 |Finding of sensation by site (finding)|
-110837253	0	< 410720000 | Pain by sensation quality (finding) |
-110837256	1	<279001004 |Pain finding at anatomical site (finding)|
-110837257	0	<185823004 |Finding of skin texture (finding)|
-110837260	1	<<366649008 |Finding of thickness of skin (finding)|
-110837261	1	< 297947008 |Finding of consistency of skin (finding)|
-110837262	1	<< 276323006 |Finding of color of skin (finding)|
-110837263	1	<297971001 |Finding of sensation of skin (finding)|
-110853605	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-110853606	0	<185823004 |Finding of skin texture (finding)|
-110891803	0	< 410720000  | Pain by sensation quality (finding) |
-110891806	1	<<279001004 |Pain finding at anatomical site (finding)|
-110891807	0	<185823004 |Finding of skin texture (finding)|
-110891808	1	<<248194004 |Wrinkled face (finding)|
-110891809	1	<< 366649008 |Finding of thickness of skin (finding)|
-110891810	1	<< 297947008
-110891811	1	274672009 |Changes in skin texture (finding)|
-110891812	1	403197009 |Sun-induced wrinkles (disorder)|
-110971455	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-110971456	0	<185823004 |Finding of skin texture (finding)|
-110971460	0	< 410720000 |Pain by sensation quality (finding)|: [0..0] 363698007 |Finding site| = *
-110973154	0	< 185823004 |Finding of skin texture (finding)|
-110973155	1	<<  366649008 |Finding of thickness of skin (finding)|
-110973156	1	<< 297947008 |Finding of consistency of skin (finding)|
-110973157	1	<< 20795001 |Structure of skin region (body structure)|
-110981253	0	<185823004 |Finding of skin texture (finding)| MINUS (<<366649008 | Finding of thickness of skin (finding) | OR <<64572001 | Disease (disorder) | OR <<20795001 |Structure of skin region (body structure)| OR <<297947008 |Finding of consistency of skin (finding)| OR <<276323006 |Finding of color of skin (finding)| OR <<297971001 | Finding of sensation of skin (finding) |)
-111226503	0	<738778005 |Intraoperative complication (disorder)|
-111378103	0	<41829006 |Dietary finding| {{ D term = "diet"}} AND <41829006 |Dietary finding| {{ D term = "meal"}} AND <41829006 |Dietary finding| {{ D term = "formula"}}
-111378104	0	<226029000 |Exercises|
-111378105	0	<420227002 |Recommendation to|
-111378106	0	<182777000 |Monitoring of patient|
-111378107	0	<91251008 |Physical therapy procedure|
-111538903	0	<  404684003 |Clinical finding| : 363698007 |Finding site|  = 39057004 |Pulmonary valve structure|
+terminologyId	negated	value
+1041000003106	\0	<<223369002 |Country (geographic location)|
+391000210104	\0	<<264395009 | Microorganism (organism) |
+391000210104	\0	<<264395009 | Microorganism (organism) |
+TMP-swtaub	\0	<<14669001 | Acute renal failure syndrome (disorder) |
+TMP-swtaub	\0	<<609482001 | Induced termination of pregnancy complicated by renal tubular necrosis (disorder) |
+TMP-swtaub	\0	<<236426006 | Postoperative acute tubular necrosis (disorder) |
+TMP-swtaub	\0	<<236427002 | Post-traumatic acute tubular necrosis (disorder) |
+TMP-swtaub	\0	<<57469000 | Miscarriage with acute renal failure (disorder) |
+TMP-swtaub	\0	<<200118004 | Post-delivery acute renal failure with postnatal problem (disorder) |
+TMP-swtaub	\0	<<129561000119108 | Pre-renal acute kidney injury (disorder) |
+TMP-swtaub		<<236432001 | Pulmonary renal syndrome (disorder) |
+TMP-swtaub	\0	<<236574008 | Acute rejection of renal transplant (disorder) |
+TMP-swtaub		<<236573002 | Very mild acute rejection of renal transplant (disorder) |
+TMP-swtaub	\0	<<723189000 | Acute renal insufficiency (disorder) |
+TMP-swtaub	\0	<<716864001 | Hemorrhagic fever with renal syndrome (disorder) |
+683861000189108	\0	<<272123002 | Frequencies (qualifier value) |
+683861000189108	\0	<<419492006 | Additional dosage instructions (qualifier value) |
+683861000189108	\0	<<284009009 |Route of administration value (qualifier value)|
+683861000189108	\0	<<272106006 | Temporal periods of day (qualifier value) |
+683861000189108	\0	<<307157008 | Temporal periods relating to activities (qualifier value) |
+683861000189108	\0	<<420247005 | Dosing instruction imperative (qualifier value) |
+683861000189108	\0	<<408102007 | Unit dose (qualifier value) |
+68661000052109	\0	<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|
+68661000052109	\0	<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|
+73171000052105	\0	(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)
+68661000052109	\0	<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|
+73171000052105	\0	(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)
+683861000189108	\0	<<419492006 | Additional dosage instructions (qualifier value) |
+683861000189108	\0	<<272106006 | Temporal periods of day (qualifier value) |
+683861000189108	\0	<<408102007 | Unit dose (qualifier value) |
+683861000189108	\0	<<284009009 |Route of administration value (qualifier value)|
+683861000189108	\0	<<307157008 | Temporal periods relating to activities (qualifier value) |
+683861000189108	\0	<<272123002 | Frequencies (qualifier value) |
+683861000189108	\0	<<420247005 | Dosing instruction imperative (qualifier value) |
+683861000189108	\0	<<736542009 | Pharmaceutical dose form (dose form) |
+683861000189108	\0	<< 732935002 | Unit of presentation (unit of presentation) |
+68661000052109	\0	<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|
+73171000052105	\0	(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)
+117721000146102	\0	<< 303533002 |gewrichtsimplantaat van heup (fysiek object)|
+117721000146102	\0	<< 304124003 |gewrichtsimplantaat van schouder (fysiek object)|
+117721000146102	\0	<< 705870006 |implanteerbare polsprothese (fysiek object)|
+117721000146102	\0	<< 705889006 |implanteerbare knieprothese (fysiek object)|
+117721000146102	\0	<< 705880005 |implanteerbare elleboogprothese (fysiek object)|
+117721000146102	\0	<< 705871005 |gewrichtsprothese van digitus van hand (fysiek object)|
+117721000146102	\0	<< 705482008 |Female-incontinence urethral barrier (physical object)|
+117721000146102	\0	<< 704802009 |Female fecal incontinence surgical mesh (physical object)|
+117721000146102	\0	<< 702212007 |Male stress urinary incontinence surgical mesh (physical object)|
+117721000146102	\0	<< 469626009 |Hydraulic incontinence treatment system (physical object)|
+117721000146102	\0	<< 261680000 |Artificial urinary sphincter (physical object)|
+117721000146102	\0	<< 469876008 |Intrauterine device, metal-covered (physical object)|
+117721000146102	\0	<< 705847003 |Pelvic organ prolapse surgical mesh (physical object)|
+117721000146102	\0	<< 303619008 |cardiaal implantaat (fysiek object)|
+117721000146102	\0	<< 470646006 |Implantable cardiac monitor (physical object)|
+117721000146102	\0	<< 25937001 |neurostimulator (fysiek object)|
+117721000146102	\0	<< 705565008 |Brain electrical stimulation system (physical object)|
+117721000146102	\0	<< 470726009 |Incontinence-control electrical stimulation system, implantable (physical object)|
+117721000146102	\0	<< 705563001 |Analgesic electrical stimulation system (physical object)|
+117721000146102	\0	<< 462766001 |Interferential electrical stimulation system (physical object)|
+117721000146102	\0	<< 462797002 |Percutaneous incontinence-control electrical stimulation system (physical object)|
+117721000146102	\0	<< 469712005 |Gait-enhancement electrical stimulation system, implantable (physical object)|
+117721000146102	\0	<< 447033006 |nervus-vagusstimulator (fysiek object)|
+117721000146102	\0	<< 706122008 |Implantable infusion pump (physical object)|
+117721000146102	\0	<< 467396002 |Cochlear implant system (physical object)|
+117721000146102	\0	<< 705307001 |Middle ear implant system (physical object)|
+117721000146102	\0	<< 468421000 |botverankerd hoortoestel (fysiek object)|
+117721000146102	\0	<< 711326009 |implanteerbaar gehoorimplantaatsysteem op basis van vibraties via beengeleiding (fysiek object)|
+117721000146102	\0	<< 360042007 |vasculaire stent (fysiek object)|
+117721000146102	\0	<< 303617005 |vasculair implantaat (fysiek object)|
+117721000146102	\0	<< 469040006 |Endobronchial valve (physical object)|
+117721000146102	\0	<< 469789005 |Lung volume reduction coil (physical object)|
+117721000146102	\0	<< 705631002 |Bronchial stent (physical object)|
+117721000146102	\0	<< 701345007 |Laryngeal stent (physical object)|
+117721000146102	\0	<< 2282003 |borstimplantaat (fysiek object)|
+117721000146102	\0	<< 770738008 |bilimplantaat (fysiek object)|
+117721000146102	\0	<< 304076002 |Male genital implant (physical object)|
+117721000146102	\0	<< 705883007 |implanteerbare schouderprothese (fysiek object)|
+117721000146102	\0	<< 304074004 |Urinary implant (physical object)|
+117721000146102	\0	<< 705897004 |proefprothese van gewricht (fysiek object)|
+117721000146102	\0	<< 705865004 |implanteerbare enkelprothese (fysiek object)|
+117721000146102	\0	<< 706004007 |Implantable cardiac pacemaker (physical object)|
+117721000146102	\0	<< 303913007 |Cardiac pacemaker component (physical object)|
+117721000146102	\0	<< 462852004 |Infusion/injection port/catheter, implantable (physical object)|
+117721000146102	\0	<< 303533002 |gewrichtsimplantaat van heup (fysiek object)|
+117721000146102	\0	<< 304124003 |gewrichtsimplantaat van schouder (fysiek object)|
+117721000146102	\0	<< 705870006 |implanteerbare polsprothese (fysiek object)|
+117721000146102	\0	<< 705889006 |implanteerbare knieprothese (fysiek object)|
+117721000146102	\0	<< 705880005 |implanteerbare elleboogprothese (fysiek object)|
+117721000146102	\0	<< 705871005 |gewrichtsprothese van digitus van hand (fysiek object)|
+117721000146102	\0	<< 705482008 |Female-incontinence urethral barrier (physical object)|
+117721000146102	\0	<< 704802009 |Female fecal incontinence surgical mesh (physical object)|
+117721000146102	\0	<< 702212007 |Male stress urinary incontinence surgical mesh (physical object)|
+117721000146102	\0	<< 469626009 |Hydraulic incontinence treatment system (physical object)|
+117721000146102	\0	<< 261680000 |Artificial urinary sphincter (physical object)|
+117721000146102	\0	<< 469876008 |Intrauterine device, metal-covered (physical object)|
+117721000146102	\0	<< 705847003 |Pelvic organ prolapse surgical mesh (physical object)|
+117721000146102	\0	<< 303619008 |cardiaal implantaat (fysiek object)|
+117721000146102	\0	<< 470646006 |Implantable cardiac monitor (physical object)|
+117721000146102	\0	<< 25937001 |neurostimulator (fysiek object)|
+117721000146102	\0	<< 705565008 |Brain electrical stimulation system (physical object)|
+117721000146102	\0	<< 470726009 |Incontinence-control electrical stimulation system, implantable (physical object)|
+117721000146102	\0	<< 705563001 |Analgesic electrical stimulation system (physical object)|
+117721000146102	\0	<< 462766001 |Interferential electrical stimulation system (physical object)|
+117721000146102	\0	<< 462797002 |Percutaneous incontinence-control electrical stimulation system (physical object)|
+117721000146102	\0	<< 469712005 |Gait-enhancement electrical stimulation system, implantable (physical object)|
+117721000146102	\0	<< 447033006 |nervus-vagusstimulator (fysiek object)|
+117721000146102	\0	<< 706122008 |Implantable infusion pump (physical object)|
+117721000146102	\0	<< 467396002 |Cochlear implant system (physical object)|
+117721000146102	\0	<< 705307001 |Middle ear implant system (physical object)|
+117721000146102	\0	<< 468421000 |botverankerd hoortoestel (fysiek object)|
+117721000146102	\0	<< 711326009 |implanteerbaar gehoorimplantaatsysteem op basis van vibraties via beengeleiding (fysiek object)|
+117721000146102	\0	<< 360042007 |vasculaire stent (fysiek object)|
+117721000146102	\0	<< 303617005 |vasculair implantaat (fysiek object)|
+117721000146102	\0	<< 469040006 |Endobronchial valve (physical object)|
+117721000146102	\0	<< 469789005 |Lung volume reduction coil (physical object)|
+117721000146102	\0	<< 705631002 |Bronchial stent (physical object)|
+117721000146102	\0	<< 701345007 |Laryngeal stent (physical object)|
+117721000146102	\0	<< 2282003 |borstimplantaat (fysiek object)|
+117721000146102	\0	<< 770738008 |bilimplantaat (fysiek object)|
+117721000146102	\0	<< 304076002 |Male genital implant (physical object)|
+117721000146102	\0	<< 705883007 |implanteerbare schouderprothese (fysiek object)|
+117721000146102	\0	<< 304074004 |Urinary implant (physical object)|
+117721000146102	\0	<< 705897004 |proefprothese van gewricht (fysiek object)|
+117721000146102	\0	<< 705865004 |implanteerbare enkelprothese (fysiek object)|
+117721000146102	\0	<< 706004007 |Implantable cardiac pacemaker (physical object)|
+117721000146102	\0	<< 303913007 |Cardiac pacemaker component (physical object)|
+117721000146102	\0	<< 462852004 |Infusion/injection port/catheter, implantable (physical object)|
+1000391000202108	\0	<<778976006
+68661000052109	\0	<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|
+73171000052105	\0	(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)
+117721000146102	\0	<< 303533002 |gewrichtsimplantaat van heup (fysiek object)|
+117721000146102	\0	<< 304124003 |gewrichtsimplantaat van schouder (fysiek object)|
+117721000146102	\0	<< 705870006 |implanteerbare polsprothese (fysiek object)|
+117721000146102	\0	<< 705889006 |implanteerbare knieprothese (fysiek object)|
+117721000146102	\0	<< 705880005 |implanteerbare elleboogprothese (fysiek object)|
+117721000146102	\0	<< 705871005 |gewrichtsprothese van digitus van hand (fysiek object)|
+117721000146102	\0	<< 705482008 |Female-incontinence urethral barrier (physical object)|
+117721000146102	\0	<< 704802009 |Female fecal incontinence surgical mesh (physical object)|
+117721000146102	\0	<< 702212007 |Male stress urinary incontinence surgical mesh (physical object)|
+117721000146102	\0	<< 469626009 |Hydraulic incontinence treatment system (physical object)|
+117721000146102	\0	<< 469876008 |Intrauterine device, metal-covered (physical object)|
+117721000146102	\0	<< 705847003 |Pelvic organ prolapse surgical mesh (physical object)|
+117721000146102	\0	<< 303619008 |cardiaal implantaat (fysiek object)|
+117721000146102	\0	<< 470646006 |Implantable cardiac monitor (physical object)|
+117721000146102	\0	<< 25937001 |neurostimulator (fysiek object)|
+117721000146102	\0	<< 705565008 |Brain electrical stimulation system (physical object)|
+117721000146102	\0	<< 470726009 |Incontinence-control electrical stimulation system, implantable (physical object)|
+117721000146102	\0	<< 705563001 |Analgesic electrical stimulation system (physical object)|
+117721000146102	\0	<< 462766001 |Interferential electrical stimulation system (physical object)|
+117721000146102	\0	<< 462797002 |Percutaneous incontinence-control electrical stimulation system (physical object)|
+117721000146102	\0	<< 706122008 |Implantable infusion pump (physical object)|
+117721000146102	\0	<< 467396002 |Cochlear implant system (physical object)|
+117721000146102	\0	<< 705307001 |Middle ear implant system (physical object)|
+117721000146102	\0	<< 468421000 |botverankerd hoortoestel (fysiek object)|
+117721000146102	\0	<< 711326009 |implanteerbaar gehoorimplantaatsysteem op basis van vibraties via beengeleiding (fysiek object)|
+117721000146102	\0	<< 360042007 |vasculaire stent (fysiek object)|
+117721000146102	\0	<< 303617005 |vasculair implantaat (fysiek object)|
+117721000146102	\0	<< 469040006 |Endobronchial valve (physical object)|
+117721000146102	\0	<< 469789005 |Lung volume reduction coil (physical object)|
+117721000146102	\0	<< 705631002 |Bronchial stent (physical object)|
+117721000146102	\0	<< 701345007 |Laryngeal stent (physical object)|
+117721000146102	\0	<< 2282003 |borstimplantaat (fysiek object)|
+117721000146102	\0	<< 770738008 |bilimplantaat (fysiek object)|
+117721000146102	\0	<< 304076002 |Male genital implant (physical object)|
+117721000146102	\0	<< 304074004 |Urinary implant (physical object)|
+117721000146102	\0	<< 705897004 |proefprothese van gewricht (fysiek object)|
+117721000146102	\0	<< 705865004 |implanteerbare enkelprothese (fysiek object)|
+117721000146102	\0	<< 706004007 |Implantable cardiac pacemaker (physical object)|
+117721000146102	\0	<< 303913007 |Cardiac pacemaker component (physical object)|
+117721000146102	\0	<< 462852004 |Infusion/injection port/catheter, implantable (physical object)|
+68661000052109	\0	<405277009 |legitimerad läkare som gör specialiseringstjänstgöring|
+73171000052105	\0	(((<<102572006 |ödem i ben| OR <<444848005 |ryggödem|) MINUS <<403385000 |lymfödem i ben|) MINUS <<65605001 |ryggmärgsödem|) OR (271808008 |generaliserat ödem|) OR (248499004 |ödem i lågt belägna kroppsdelar|)

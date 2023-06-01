@@ -286,9 +286,9 @@ public class SyncPropertyFileReader {
 
                 if (!projectIdToProjectInfoMap.containsKey(columns[0])) {
 
-                    final Map<String, String> projectNameDescription = new HashMap<>();
-                    projectNameDescription.put(columns[2], columns[3]);
-                    projectIdToProjectInfoMap.put(columns[0], projectNameDescription);
+                    final Map<String, String> projectNameDescriptionMap = new HashMap<>();
+                    projectNameDescriptionMap.put(columns[2], columns[3]);
+                    projectIdToProjectInfoMap.put(columns[0], projectNameDescriptionMap);
                 }
 
                 line = reader.readLine();

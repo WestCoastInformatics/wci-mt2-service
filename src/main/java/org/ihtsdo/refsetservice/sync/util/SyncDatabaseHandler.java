@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -53,12 +54,10 @@ public class SyncDatabaseHandler {
 
             // Identify Matching Organization
 
-            final List<Organization> organizations = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(organizationName)).collect(Collectors.toList());
-
-            utilities.validateMatches(organizations, organizationName);
+            final Stream<Organization> organizationStream = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(organizationName));
+            final Organization organization = (Organization) utilities.validateMatches(organizationStream, organizationName);
 
             // Create a single Admin team per Edition when we first discover it
-            final Organization organization = organizations.iterator().next();
             createAdminOrganizationTeam(service, organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
@@ -324,10 +323,8 @@ public class SyncDatabaseHandler {
     public Edition updateEditionStatus(final TerminologyService service, final String shortName, boolean isActive) {
 
         try {
-            final List<Edition> matchingEditions = service.getAll(Edition.class).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
-            utilities.validateMatches(matchingEditions, shortName);
-
-            final Edition edition = matchingEditions.iterator().next();
+            final Stream<Edition> editionStream = service.getAll(Edition.class).stream().filter(e -> e.getShortName().equals(shortName));
+            final Edition edition = (Edition) utilities.validateMatches(editionStream, shortName);
 
             if (isActive == edition.isActive()) {
 
@@ -358,10 +355,8 @@ public class SyncDatabaseHandler {
         try {
             final List<Organization> allOrganizations = service.getAll(Organization.class);
 
-            final List<Organization> matchingOrganizations = allOrganizations.stream().filter(o -> o.getName().equals(organizationName)).collect(Collectors.toList());
-            utilities.validateMatches(matchingOrganizations, organizationName);
-
-            final Organization organization = matchingOrganizations.iterator().next();
+            final Stream<Organization> organizationStream = allOrganizations.stream().filter(o -> o.getName().equals(organizationName));
+            final Organization organization = (Organization) utilities.validateMatches(organizationStream, organizationName);
 
             if (isActive == organization.isActive()) {
                 LOG.error("Attempting to set active status to " + isActive + " for an organization " + organizationName + " whose status is already that");
@@ -438,31 +433,36 @@ public class SyncDatabaseHandler {
     }
 
     public Set<Refset> updateMultipleRefsets(final TerminologyService service, final Set<Refset> refsets) {
-
-        final Set<String> refsetDbIds = new HashSet<>();
+        Refset refsetToPersist = null;
 
         try {
             final Set<Refset> updatedRefsets = new HashSet<>();
 
-            for (final Refset refset : refsets) {
-                refsetDbIds.add(refset.getId());
-            }
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
             // Adding refsets identified on termserver
             for (final Refset refset : refsets) {
+                refsetToPersist = refset;
+                LOG.debug("About to {} with version {}", refsetToPersist.getName(), refsetToPersist.getVersionDate());
 
-                final Refset updatedRefset = service.update(refset);
-
-                service.add(AuditEntryHelper.updateRefsetVersionEntry(updatedRefset));
-
-                LOG.info("Updated refset version: " + updatedRefset.getId() + "  (" + updatedRefset.getName() + ") " + updatedRefset.getVersionDate());
+                final Refset updatedRefset = service.update(refsetToPersist);
 
                 updatedRefsets.add(updatedRefset);
             }
 
+            service.commit();
+            service.setTransactionPerOperation(true);
+
+            StringBuffer updatedRefsetInfo = new StringBuffer();
+            updatedRefsets.stream().forEach(r -> updatedRefsetInfo.append("Pair Added: " + r.getName() + " - " + r.getVersionDate() + ", "));
+
+            LOG.info("Updated multiple refset versions: " + updatedRefsetInfo.toString());
+            service.add(AuditEntryHelper.updateMultipleRefsetVersionsEntry("updated " + refsets.size() + " refset/version pairs."));
+
             return updatedRefsets;
         } catch (Exception e) {
-            LOG.error("Failed to update refest database ids: " + refsetDbIds + " with Exception --> " + e.getMessage());
+            LOG.error("Failed to update multiple refests failing on : " + refsets + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 
@@ -503,10 +503,8 @@ public class SyncDatabaseHandler {
 
         try {
             final List<Refset> allRefsets = service.getAll(Refset.class);
-            final List<Refset> matchingRefsets = allRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().getTime() == versionDate).collect(Collectors.toList());
-            utilities.validateMatches(matchingRefsets, refsetId + " / " + versionDate);
-
-            final Refset matchingRefset = matchingRefsets.iterator().next();
+            final Stream<Refset> refsetStream = allRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().getTime() == versionDate);
+            final Refset matchingRefset = (Refset) utilities.validateMatches(refsetStream, refsetId + " / " + versionDate);
 
             return updateRefset(service, matchingRefset);
         } catch (Exception e) {
@@ -642,6 +640,9 @@ public class SyncDatabaseHandler {
     }
 
     public Team createAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
+        
+        service.setTransactionPerOperation(false);
+        service.beginTransaction();
 
         try {
             Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
@@ -660,6 +661,11 @@ public class SyncDatabaseHandler {
             LOG.error("Failed to create admin team with Exception --> " + e.getMessage());
 
             return null;
+        } finally {
+            
+            service.commit();
+            service.setTransactionPerOperation(true);
+
         }
     }
 }

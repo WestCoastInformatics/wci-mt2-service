@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.ws.rs.core.Response;
 
@@ -162,12 +163,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // Determine and create new editions (not in active nor in inactive DB editions)
         final List<String> addedShortNames =
                 termserverShortNames.stream().filter(c -> !dbActiveEditionShortNames.contains(c)).filter(c -> !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
+
         statistics.setEditionsAdded(addedShortNames.size());
         addedShortNames.stream().filter(shortName -> termserverShortNameCodeSystemMap.containsKey(shortName))
                 .forEach(shortName -> dbHandler.addEdition(service, termserverShortNameCodeSystemMap.get(shortName), termserverEditionToOrganizationMap.get(shortName)));
-
-        // Create a Default Project for the edition if no projects already exist from Crowd
-        statistics.setEditionsAdded(addedShortNames.size());
 
         // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
         final List<String> activatedShortNames = termserverShortNames.stream().filter(c -> dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
@@ -215,28 +214,26 @@ public class SyncCodeSystemAgent extends SyncAgent {
         final List<String> updatedEditionOrganizationMaps = new ArrayList<>();
 
         // TODO: Not using termserverEditionToOrganizationMap... why?
-
+        // TODO: singleCommit
         for (final String shortName : existingShortNames) {
 
             // Prepare DB edition for analysis
-            final List<Edition> matchingDbEditions = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
-            utilities.validateMatches(matchingDbEditions, shortName);
-            final Edition dbEdition = matchingDbEditions.iterator().next();
+            final Stream<Edition> editionStream = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName));
+            final Edition dbEdition = (Edition) utilities.validateMatches(editionStream, shortName);
             final String dbOrganizationName = dbEdition.getOrganizationName();
 
             // Prepare termserver edition for analysis
-            final List<JsonNode> matchingSnowstormEditions = filteredCodeSystems.stream().filter(cs -> cs.get("shortName").asText().equals(shortName)).collect(Collectors.toList());
-            utilities.validateMatches(matchingSnowstormEditions, shortName);
-            final JsonNode termserverEdition = matchingSnowstormEditions.iterator().next();
+            final Stream<JsonNode> jsonStream = filteredCodeSystems.stream().filter(cs -> cs.get("shortName").asText().equals(shortName));
+            final JsonNode termserverEdition = (JsonNode) utilities.validateMatches(jsonStream, shortName);
             final String termserverOrganizationName = determineOrganizationName(termserverEdition);
 
-            // compare
+            // compare and update if needed
             if (!dbOrganizationName.equals(termserverOrganizationName)) {
 
-                final List<Organization> matchedOrganizations = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(termserverOrganizationName)).collect(Collectors.toList());
-                utilities.validateMatches(matchedOrganizations, termserverOrganizationName);
+                final Stream<Organization> organizationStream = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(termserverOrganizationName));
+                final Organization dbOrganization = (Organization) utilities.validateMatches(organizationStream, termserverOrganizationName);
 
-                dbEdition.setOrganization(matchedOrganizations.iterator().next());
+                dbEdition.setOrganization(dbOrganization);
 
                 dbHandler.updateEdition(service, dbEdition);
                 updatedEditionOrganizationMaps.add(shortName);
@@ -257,8 +254,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
             if (termserverShortNameCodeSystemMap.containsKey(shortName)) {
 
                 // Find associated DB edition
-                final List<Edition> matchingEditions = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName)).collect(Collectors.toList());
-                final Edition dbEdition = (Edition) utilities.validateMatches(matchingEditions, shortName);
+                final Stream<Edition> editionStream = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName));
+                final Edition dbEdition = (Edition) utilities.validateMatches(editionStream, shortName);
                 final Edition modifyingEdition = new Edition(dbEdition);
 
                 // Find values for Snowstorm Edition

@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -88,8 +89,7 @@ public class SyncRefsetAgent extends SyncAgent {
         final List<String> addedRefsetIds = termserverRefsetIds.stream()
                 .filter(refsetId -> !dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId) && !dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId)).collect(Collectors.toList());
 
-        addedRefsetIds.stream().filter(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId)).forEach(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet()
-                .stream().forEach(version -> addRefset(service, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).get(version))));
+        addMultipleRefsets(service, addedRefsetIds);
 
         addedRefsetIds.stream().filter(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId))
                 .forEach(refsetId -> newlyCreatedAndUnchangedRefsetToVersionsMap.put(refsetId, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet()));
@@ -188,8 +188,7 @@ public class SyncRefsetAgent extends SyncAgent {
                                     && (!dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId) || !dbInactiveRefsetIdToVersionRefsetMap.get(refsetId).containsKey(date)))
                             .collect(Collectors.toList());
 
-            addedVersions.stream().forEach(version -> addRefset(service, termserverVersionDataMaps.get(version)));
-            statistics.setRefsetVersionsAdded(addedVersions.size());
+            addMultipleRefsets(service, addedVersions, termserverVersionDataMaps);
 
             // Activate previously inactivated refsetVersions. Note: Will log and update stats after remove those that were activatedAndModified
             if (dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId)) {
@@ -280,6 +279,32 @@ public class SyncRefsetAgent extends SyncAgent {
         }
     }
 
+    public void addMultipleRefsets(TerminologyService service, List<Long> addedVersions, Map<Long, SyncRefsetMetadata> termserverVersionDataMaps) throws Exception {
+
+        service.setTransactionPerOperation(false);
+        service.beginTransaction();
+
+        addedVersions.stream().forEach(version -> addRefset(service, termserverVersionDataMaps.get(version)));
+
+        service.commit();
+        service.setTransactionPerOperation(true);
+
+        statistics.setRefsetVersionsAdded(addedVersions.size());
+
+    }
+    public void addMultipleRefsets(TerminologyService service, List<String> addedRefsetIds) throws Exception {
+        service.setTransactionPerOperation(false);
+        service.beginTransaction();
+
+        addedRefsetIds.stream().filter(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId)).forEach(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet()
+                .stream().forEach(version -> addRefset(service, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).get(version))));
+
+        service.commit();
+        service.setTransactionPerOperation(true);
+
+    }
+
+
     // RefsetId to map of Dates to dbRefset
     private Map<String, Map<Long, Refset>> generateDatabaseRefsetIdtoRefsetVersionsMap(final Set<Refset> dbRefsets) {
         final Map<String, Map<Long, Refset>> generatedMap = new HashMap<>();
@@ -352,8 +377,8 @@ public class SyncRefsetAgent extends SyncAgent {
         }
 
         // determine matching editions
-        final List<Edition> matchingEditions = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(editionShortName)).collect(Collectors.toList());
-        final Edition edition = (Edition) utilities.validateMatches(matchingEditions, editionShortName);
+        final Stream<Edition> editionStream = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(editionShortName));
+        final Edition edition = (Edition) utilities.validateMatches(editionStream, editionShortName);
 
         return edition;
     }
@@ -398,9 +423,8 @@ public class SyncRefsetAgent extends SyncAgent {
         for (final long testingVersionDate : versionDatesToCompare) {
 
             // Find associated DB refset
-            final List<Refset> matchingVersions = dbVersions.stream().filter(dbr -> dbr.getVersionDate().getTime() == testingVersionDate).collect(Collectors.toList());
-            utilities.validateMatches(matchingVersions, refsetId + " / " + testingVersionDate);
-            final Refset modifyingVersion = matchingVersions.iterator().next();
+            final Stream<Refset> refsetVersionStream = dbVersions.stream().filter(dbr -> dbr.getVersionDate().getTime() == testingVersionDate);
+            final Refset modifyingVersion = (Refset) utilities.validateMatches(refsetVersionStream, refsetId + " / " + testingVersionDate);
 
             final List<Long> matchingTermserverRefsetVersionData =
                     termserverPairDataMap.keySet().stream().filter(termserverVersion -> (testingVersionDate == termserverVersion)).collect(Collectors.toList());
@@ -570,6 +594,7 @@ public class SyncRefsetAgent extends SyncAgent {
          * b) thus no need to create  new version.
          * c) Move onto nex refset
          */
+        LOG.debug("ERROR? With {} on branch {} " +refsetId, termserverRefsetBranchPath);
         Long refsetVersionDate = RefsetMemberService.getLatestChangedVersionDate(termserverRefsetBranchPath, refsetId);
         long updatedVersionDate = versionDate;
 
@@ -705,14 +730,27 @@ public class SyncRefsetAgent extends SyncAgent {
 
                     final String rttProjectName = rttProjectInfo.keySet().iterator().next();
 
-                    final String rttProjectDescription = rttProjectInfo.get(rttProjectName);
+                    // Rather than query the database each time, see if already have project used. Otherwise create it.
+                    // Note: The primary key for a project in this case is it's projectName/organizationId pair.
+                    if (refsetProjectMap.values().stream()
+                            .anyMatch(project -> project.getName().equals(rttProjectName) && project.getOrganizationId().equals(metadata.getEdition().getOrganization().getId()))) {
 
-                    // Create project
-                    final Project addedProject = dbHandler.addProject(service, rttProjectName, rttProjectDescription, metadata.getEdition());
+                        /// Use if already have a refset pointed to that project, locate it and use that refset reference here to obtain it
+                        final String refsetIdToUse = refsetProjectMap.keySet().stream().filter(refsetId -> refsetProjectMap.get(refsetId).getName().equals(rttProjectName)).iterator().next();
+                        final Project projectToUse = refsetProjectMap.get(refsetIdToUse);
 
-                    statistics.incrementProjectsAdded();
+                        refsetProjectMap.put(metadata.getRefsetId(), projectToUse);
 
-                    refsetProjectMap.put(metadata.getRefsetId(), addedProject);
+                    } else {
+
+                        final String rttProjectDescription = rttProjectInfo.get(rttProjectName);
+
+                        // Create project
+                        final Project addedProject = dbHandler.addProject(service, rttProjectName, rttProjectDescription, metadata.getEdition());
+                        statistics.incrementProjectsAdded();
+
+                        refsetProjectMap.put(metadata.getRefsetId(), addedProject);
+                    }
                 }
             }
 
@@ -783,10 +821,9 @@ public class SyncRefsetAgent extends SyncAgent {
 
             for (final long version : newlyCreatedAndUnchangedRefsetToVersionsMap.get(refsetId)) {
                 try {
-
-                    final List<Refset> matchingRefsets = dbRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().getTime() == version).collect(Collectors.toList());
-
-                    final Refset refset = (Refset) utilities.validateMatches(matchingRefsets, refsetId + " / " + version);
+                    Refset refset = null;
+                    Stream<Refset> refsetStream = dbRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().getTime() == version);
+                    refset = (Refset) utilities.validateMatches(refsetStream, refsetId + " / " + version);
 
                     // Actually process the refset here
                     finalizeRefset(service, refset, latestVersionCache);

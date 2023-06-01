@@ -16,6 +16,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -415,15 +417,18 @@ public class SyncUtilities {
         undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
     }
 
-    public Object validateMatches(final List<?> list, final String matchingValueDescription) throws Exception {
+    public Object validateMatches(final Stream<?> stream, final String matchingValueDescription) throws Exception {
+        final List<?> items = stream.collect(Collectors.toList());
 
-        if (list.isEmpty()) {
-            throw new Exception("Cannot find an element to matching value: " + matchingValueDescription);
-        } else if (list.size() > 1) {
-            throw new Exception("Found multiple elements with same matching value: " + matchingValueDescription);
+        if (items.size() == 1) {
+            return items.get(0);
         }
 
-        return list.iterator().next();
+        if (items.isEmpty()) {
+            throw new Exception("Cannot find an element to matching value: " + matchingValueDescription);
+        } else {
+            throw new Exception("Found multiple elements with same matching value: " + matchingValueDescription);
+        }
     }
 
     public String determineMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {

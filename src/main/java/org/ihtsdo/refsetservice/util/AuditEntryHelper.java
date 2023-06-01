@@ -565,6 +565,18 @@ public final class AuditEntryHelper {
         return entry;
     }
 
+
+    public static HasModified updateMultipleRefsetVersionsEntry(final String refsetList) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.REFSET.toString());
+        entry.setEntityId("Multiple refsets updated");
+        entry.setMessage("UPDATE Multiple Refsets");
+        entry.setDetails(refsetList);
+        log(entry);
+        return entry;
+    }
+
     /**
      * Update refset entry.
      *
